@@ -26,11 +26,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Sent by coordinator across the ring to finish node add process.
@@ -59,8 +58,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** Serialized client node attributes. */
     @Order(value = 8, method = "clientNodeAttributesBytes")
-    @SuppressWarnings("unused")
-    private @Nullable byte[] clientNodeAttrsBytesHolder;
+    private @Nullable byte[] clientNodeAttrsBytes;
 
     /** Constructor. */
     public TcpDiscoveryNodeAddFinishedMessage() {
@@ -139,30 +137,46 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     /**
      * @return Serialized client node attributes.
      */
-    public byte[] clientNodeAttributesBytes() {
-        if (clientNodeAttrs == null)
-            return null;
-
-        try {
-            return U.marshal(jdk(), clientNodeAttrs);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    public @Nullable byte[] clientNodeAttributesBytes() {
+        return clientNodeAttrsBytes;
     }
 
     /**
      * @param clientNodeAttrsBytes Serialized client node attributes.
      */
-    public void clientNodeAttributesBytes(byte[] clientNodeAttrsBytes) {
+    public void clientNodeAttributesBytes(@Nullable byte[] clientNodeAttrsBytes) {
+        this.clientNodeAttrsBytes = clientNodeAttrsBytes;
+    }
+
+    /**
+     * @param marsh Marshaller.
+     */
+    public void prepareMarshal(Marshaller marsh) {
+        if (clientNodeAttrs != null && clientNodeAttrsBytes == null) {
+            try {
+                clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal client node attributes", e);
+            }
+        }
+    }
+
+    /**
+     * @param marsh Marshaller.
+     * @param clsLdr Class loader.
+     */
+    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (F.isEmpty(clientNodeAttrsBytes))
             clientNodeAttrs = null;
         else {
             try {
-                clientNodeAttrs = U.unmarshal(jdk(), clientNodeAttrsBytes, U.gridClassLoader());
+                clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
+
+                clientNodeAttrsBytes = null;
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw new IgniteException("Failed to unmarshal client node attributes", e);
             }
         }
     }
