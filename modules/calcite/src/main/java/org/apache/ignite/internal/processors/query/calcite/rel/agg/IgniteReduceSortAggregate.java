@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  *
@@ -81,7 +82,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
             groupSets,
             aggCalls,
             rowType,
-            copyCollation(traitSet)
+            TraitUtils.collation(sole(inputs).getTraitSet())
         );
     }
 

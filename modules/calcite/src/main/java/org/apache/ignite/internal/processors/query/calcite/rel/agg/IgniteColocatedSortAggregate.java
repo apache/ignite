@@ -33,6 +33,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  *
@@ -73,7 +74,7 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteColocatedSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, copyCollation(traitSet));
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(input.getTraitSet()));
     }
 
     /** {@inheritDoc} */
