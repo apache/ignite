@@ -90,7 +90,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}")
     public static Collection<Object[]> parameters() {
         return List.of(
-            new Object[] {CLI_CMD_HND, true},
+            new Object[] {CLI_CMD_HND, false},
             new Object[] {CLI_CMD_HND, true}
         );
     }
