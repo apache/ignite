@@ -335,5 +335,4 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 ));
         }
     }
-
 }
