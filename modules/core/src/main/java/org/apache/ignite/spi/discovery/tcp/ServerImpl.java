@@ -3768,8 +3768,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
                         sndState = new CrossRingMessageSendState();
+
+                        // The corner node case. Next node is from neighbour DC. Another DC might be entierly unavailable.
+                        // To prevent sequential nodes failure in current DC, we have to guess whether we can reach that DC.
+                        // We ping nodes from another DC within the same timeot in parallel.
+                        if (!F.isEmpty(locNode.dataCenterId())) {
+                            assert !F.isEmpty(next.dataCenterId());
+
+                            if(!next.dataCenterId().equals(locNode.dataCenterId()))
+                                sndState.pingNodes
+                        }
+                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
