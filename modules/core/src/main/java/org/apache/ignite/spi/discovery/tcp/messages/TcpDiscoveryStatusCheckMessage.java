@@ -21,8 +21,11 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * If a failed node id is specified then the message is sent across the ring up to the sender node
  * to ensure that the failed node is actually failed.
  */
-public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,17 +46,22 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     /** Status RECONNECT. */
     public static final int STATUS_RECON = 2;
 
-    /** Creator node. */
-    private final TcpDiscoveryNode creatorNode;
-
     /** Creator node addresses. */
-    private final Collection<InetSocketAddress> creatorNodeAddrs;
+    @Order(value = 5, method = "creatorNodeAddressesMessages")
+    @Nullable private Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs;
 
     /** Failed node id. */
-    private final UUID failedNodeId;
+    @Order(6)
+    @Nullable private UUID failedNodeId;
 
     /** Creator node status (initialized by coordinator). */
+    @Order(7)
     private int status;
+
+    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryStatusCheckMessage() {
+       // No-op.
+    }
 
     /**
      * Constructor.
@@ -62,21 +70,19 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      * @param creatorNodeId Creator node ID.
      * @param failedNodeId Failed node id.
      */
-    public TcpDiscoveryStatusCheckMessage(UUID creatorNodeId, Collection<InetSocketAddress> creatorNodeAddrs, UUID failedNodeId) {
+    public TcpDiscoveryStatusCheckMessage(
+        UUID creatorNodeId,
+        @Nullable Collection<InetSocketAddress> creatorNodeAddrs,
+        @Nullable UUID failedNodeId
+    ) {
         super(creatorNodeId);
 
-        this.creatorNodeAddrs = creatorNodeAddrs;
-        this.creatorNode = null;
-        this.failedNodeId = failedNodeId;
-    }
+        if (creatorNodeAddrs != null) {
+            creatorNodeAddrsMsgs = creatorNodeAddrs.stream().map(a -> new InetSocketAddressMessage(a.getAddress(), a.getPort()))
+                .collect(Collectors.toList());
+        }
 
-    /**
-     * Gets creator node.
-     *
-     * @return Creator node.
-     */
-    public @Nullable TcpDiscoveryNode creatorNode() {
-        return creatorNode;
+        this.failedNodeId = failedNodeId;
     }
 
     /**
@@ -84,8 +90,30 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      *
      * @return Creator node addresses.
      */
-    public Collection<InetSocketAddress> creatorNodeAddrs() {
-        return creatorNodeAddrs;
+    public @Nullable Collection<InetSocketAddress> creatorNodeAddresses() {
+        if (creatorNodeAddrsMsgs == null)
+            return null;
+
+        return creatorNodeAddrsMsgs.stream().map(m -> new InetSocketAddress(m.address(), m.port()))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Gets creator node addresses.
+     *
+     * @return Creator node addresses.
+     */
+    public @Nullable Collection<InetSocketAddressMessage> creatorNodeAddressesMessages() {
+        return creatorNodeAddrsMsgs;
+    }
+
+    /**
+     * Sets creator node addresses.
+     *
+     * @param creatorNodeAddrsMsgs Creator node addresses.
+     */
+    public void creatorNodeAddressesMessages(@Nullable Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs) {
+        this.creatorNodeAddrsMsgs = creatorNodeAddrsMsgs;
     }
 
     /**
@@ -93,8 +121,17 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      *
      * @return Failed node id.
      */
-    public UUID failedNodeId() {
+    public @Nullable UUID failedNodeId() {
         return failedNodeId;
+    }
+
+    /**
+     * Sets failed node id.
+     *
+     * @param failedNodeId Failed node id.
+     */
+    public void failedNodeId(@Nullable UUID failedNodeId) {
+        this.failedNodeId = failedNodeId;
     }
 
     /**
@@ -113,6 +150,11 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      */
     public void status(int status) {
         this.status = status;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 18;
     }
 
     /** {@inheritDoc} */

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.stat.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
+import org.apache.ignite.internal.systemview.Filtrable;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * Statistics partition data view.
  */
+@SystemViewDescriptor
 public class StatisticsColumnPartitionDataView {
     /** Statistics key */
     private final StatisticsKey key;

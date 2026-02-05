@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.commandline.cache.check_indexes_inline_size;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Represents information about secondary indexes inline size from the cluster nodes.
@@ -36,31 +32,7 @@ public class CheckIndexInlineSizesResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index info (index name, inline size) per node. */
-    private Map<UUID, Map<String, Integer>> nodeToIndexes = new HashMap<>();
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(nodeToIndexes.size());
-
-        for (UUID id : nodeToIndexes.keySet()) {
-            U.writeUuid(out, id);
-
-            U.writeMap(out, nodeToIndexes.get(id));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        int size = in.readInt();
-
-        for (int i = 0; i < size; i++) {
-            UUID id = U.readUuid(in);
-
-            Map<String, Integer> map = U.readMap(in);
-
-            nodeToIndexes.put(id, map);
-        }
-    }
+    Map<UUID, Map<String, Integer>> nodeToIndexes = new HashMap<>();
 
     /**
      * Adds to result information about indexes from node.
