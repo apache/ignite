@@ -1035,7 +1035,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         log.registerListener(logLsnr);
 
-        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT).setQueryInitiatorId(initiatorId))
+        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT + 1).setQueryInitiatorId(initiatorId))
             .getAll();
 
         assertTrue(logLsnr.check(1000));
@@ -1056,18 +1056,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         int sleepTime = 500;
 
         for (int i = 0; i < 2; i++) {
-            FunctionsLibrary.latch = new CountDownLatch(1);
-
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(
-                () -> cache.query(new SqlFieldsQuery("select * from test where waitLatch(10000)")).getAll());
-
-            U.sleep(sleepTime);
-
-            GridTestClockTimer.update();
-
-            FunctionsLibrary.latch.countDown();
-
-            fut.get();
+            cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(sleepTime)).getAll();
 
             assertTrue(waitForCondition(() -> {
                 SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);
