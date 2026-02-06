@@ -47,7 +47,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -168,30 +166,28 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
 
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                if (CustomMessageWrapper.class.isAssignableFrom(msg.getClass())) {
-                    DiscoveryCustomMessage delegate = ((CustomMessageWrapper)msg).delegate();
+            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+                DiscoveryCustomMessage realMsg = GridTestUtils.unwrap(msg);
 
-                    if (DynamicCacheChangeBatch.class.isAssignableFrom(delegate.getClass())) {
-                        ((DynamicCacheChangeBatch)delegate).requests().stream()
-                            .filter((c) -> !c.cacheName().equalsIgnoreCase("default"))
-                            .findAny()
-                            .ifPresent((c) -> {
-                                try {
-                                    awaitTimeout();
-                                }
-                                catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            });
+                if (DynamicCacheChangeBatch.class.isAssignableFrom(realMsg.getClass())) {
+                    ((DynamicCacheChangeBatch)realMsg).requests().stream()
+                        .filter((c) -> !c.cacheName().equalsIgnoreCase("default"))
+                        .findAny()
+                        .ifPresent((c) -> {
+                            try {
+                                awaitTimeout();
+                            }
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                }
+                else if (SchemaProposeDiscoveryMessage.class.isAssignableFrom(realMsg.getClass())) {
+                    try {
+                        awaitTimeout();
                     }
-                    else if (SchemaProposeDiscoveryMessage.class.isAssignableFrom(delegate.getClass())) {
-                        try {
-                            awaitTimeout();
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
 

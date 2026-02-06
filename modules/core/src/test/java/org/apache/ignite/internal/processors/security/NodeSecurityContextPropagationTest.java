@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -43,14 +42,15 @@ import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageW
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -188,24 +188,25 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                DiscoverySpiCustomMessage customMsg = U.field(msg, "msg");
+                TcpDiscoveryCustomEventMessage msg1 = (TcpDiscoveryCustomEventMessage)msg;
 
+                DiscoveryCustomMessage customMsg = msg1.message();
+
+                // Skip unmarshalled message.
                 if (customMsg == null) {
                     try {
-                        customMsg = U.unmarshal(
-                            ignite.context().marshallerContext().jdkMarshaller(),
-                            (byte[])U.field(msg, "msgBytes"),
-                            U.resolveClassLoader(ignite.configuration())
-                        );
+                        msg1.finishUnmarhal(Marshallers.jdk(), U.gridClassLoader());
+
+                        customMsg = msg1.message();
                     }
                     catch (IgniteCheckedException e) {
-                        fail(e.getMessage());
+                        throw new RuntimeException(e);
                     }
                 }
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 
-                unwrappedMsg = ((CustomMessageWrapper)customMsg).delegate();
+                unwrappedMsg = GridTestUtils.unwrap(customMsg);
             }
 
             if (predicate.test(unwrappedMsg))
