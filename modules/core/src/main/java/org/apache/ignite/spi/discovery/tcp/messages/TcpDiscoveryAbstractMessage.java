@@ -80,17 +80,17 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     private Set<UUID> failedNodes;
 
     /** */
-    public byte[] array() {
-        return array;
+    public byte[] serializedData() {
+        return serData;
     }
 
     /** */
-    public void array(byte[] array) {
-        this.array = array;
+    public void serializedData(byte[] serData) {
+        this.serData = serData;
     }
 
     /** */
-    private byte[] array;
+    private byte[] serData;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.

@@ -7649,6 +7649,16 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
+            try {
+                ses.serializeMessage(msg);
+            }
+            catch (IgniteCheckedException | IOException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Serialization failed [msg=" + msg + ']', e);
+
+                onException("Serialization failed [msg=" + msg + ']', e);
+            }
+
             if (msg.highPriority())
                 queue.addFirst(msg);
             else
@@ -7666,8 +7676,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             try {
                 assert msg.verified() : msg;
-
-                ses.serializeMessage(msg);
 
                 DebugLogger msgLog = messageLogger(msg);
 
@@ -7690,7 +7698,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                         }
 
-                        spi.writeToSocket(sock, msg, msg.array(), spi.failureDetectionTimeoutEnabled() ?
+                        spi.writeToSocket(sock, msg, msg.serializedData(), spi.failureDetectionTimeoutEnabled() ?
                             spi.clientFailureDetectionTimeout() : spi.getSocketTimeout());
                     }
                 }
@@ -7702,7 +7710,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    spi.writeToSocket(sock, msg, msg.array(), spi.getEffectiveSocketTimeout(false));
+                    spi.writeToSocket(sock, msg, msg.serializedData(), spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
@@ -7712,7 +7720,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 success = !clientFailed;
             }
-            catch (IgniteCheckedException | IOException e) {
+            catch (IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
                         + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);

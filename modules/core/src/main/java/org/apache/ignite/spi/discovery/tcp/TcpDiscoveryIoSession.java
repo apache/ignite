@@ -246,16 +246,16 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (msg.array() != null)
+        if (msg.serializedData() != null)
             return;
 
         if (!(msg instanceof Message))
-            msg.array(U.marshal(spi.marshaller(), msg));
+            msg.serializedData(U.marshal(spi.marshaller(), msg));
         else
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 serializeMessage((Message)msg, out);
 
-                msg.array(out.toByteArray());
+                msg.serializedData(out.toByteArray());
             }
     }
 
