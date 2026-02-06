@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.ByteArrayOutputStream;
@@ -28,21 +27,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 
-/**
- * Serializer of messages. Converts discovery messages into bytes.
- */
-public class TcpDiscoveryIoSerializer {
+/** */
+public class TcpDiscoveryMessageMarshaller {
     /** Size for an intermediate buffer for serializing discovery messages. */
-    static final int MSG_BUFFER_SIZE = 100;
+    static final int MSG_BUFFER_SIZE = 128;
 
     /** */
-    final TcpDiscoverySpi spi;
-
-    /** Loads discovery messages classes during java deserialization. */
-    final ClassLoader clsLdr;
+    private final TcpDiscoverySpi spi;
 
     /** */
-    final DirectMessageWriter msgWriter;
+    private final DirectMessageWriter msgWriter;
 
     /** Intermediate buffer for serializing discovery messages. */
     final ByteBuffer msgBuf;
@@ -50,10 +44,8 @@ public class TcpDiscoveryIoSerializer {
     /**
      * @param spi Discovery SPI instance.
      */
-    public TcpDiscoveryIoSerializer(TcpDiscoverySpi spi) {
+    public TcpDiscoveryMessageMarshaller(TcpDiscoverySpi spi) {
         this.spi = spi;
-
-        clsLdr = U.resolveClassLoader(spi.ignite().configuration());
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
@@ -68,12 +60,12 @@ public class TcpDiscoveryIoSerializer {
      * @throws IgniteCheckedException If serialization fails.
      * @throws IOException If serialization fails.
      */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    byte[] marshal(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         if (!(msg instanceof Message))
             return U.marshal(spi.marshaller(), msg);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            serializeMessage((Message)msg, out);
+            marshal((Message)msg, out);
 
             return out.toByteArray();
         }
@@ -87,7 +79,7 @@ public class TcpDiscoveryIoSerializer {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    void serializeMessage(Message m, OutputStream out) throws IOException {
+    void marshal(Message m, OutputStream out) throws IOException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();

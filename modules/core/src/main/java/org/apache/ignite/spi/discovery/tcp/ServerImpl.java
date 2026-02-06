@@ -2835,6 +2835,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Socket. */
         private Socket sock;
 
+        /** */
+        private TcpDiscoveryMessageMarshaller msgMarsh = new TcpDiscoveryMessageMarshaller(spi);
+
         /** IO session. */
         private TcpDiscoveryIoSession ses;
 
@@ -3245,22 +3248,21 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (clientMsgWorkers.isEmpty())
                     return;
 
-                byte[] msgBytes;
+                byte[] msgBytes = null;
 
-                TcpDiscoveryIoSerializer ser = ses != null ? ses : new TcpDiscoveryIoSerializer(spi);
+                if (!(msg instanceof TcpDiscoveryNodeAddedMessage)) {
+                    try {
+                        msgBytes = msgMarsh.marshal(msg);
+                    }
+                    catch (IgniteCheckedException | IOException e) {
+                        U.error(log, "Failed to serialize message: " + msg, e);
 
-                try {
-                    msgBytes = ser.serializeMessage(msg);
-                }
-                catch (IgniteCheckedException | IOException e) {
-                    U.error(log, "Failed to serialize message: " + msg, e);
-
-                    return;
+                        return;
+                    }
                 }
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     TcpDiscoveryAbstractMessage msg0 = msg;
-                    byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
@@ -3269,12 +3271,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
-
-                            msgBytes0 = null;
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes0);
+                    clientMsgWorker.addMessage(msg0, msgBytes);
                 }
             }
         }
@@ -3398,7 +3398,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             try {
                                 sock = spi.openSocket(addr, timeoutHelper);
 
-                                ses = createSession(sock);
+                                ses = createSession(sock, msgMarsh);
 
                                 openSock = true;
 
@@ -7608,7 +7608,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final UUID clientNodeId;
 
         /** */
-        private final TcpDiscoveryIoSession ses;
+        private final TcpDiscoveryMessageMarshaller msgMarsh;
 
         /** Socket. */
         private final Socket sock;
@@ -7638,7 +7638,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.sock = sock;
             this.clientNodeId = clientNodeId;
 
-            ses = createSession(sock);
+            msgMarsh = new TcpDiscoveryMessageMarshaller(spi);
 
             lastMetricsUpdateMsgTimeNanos = System.nanoTime();
         }
@@ -7768,7 +7768,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void writeToSocket(T2<TcpDiscoveryAbstractMessage, byte[]> msgT, long timeout)
             throws IgniteCheckedException, IOException {
-            byte[] msgBytes = msgT.get2() == null ? ses.serializeMessage(msgT.get1()) : msgT.get2();
+            byte[] msgBytes = msgT.get2() == null ? msgMarsh.marshal(msgT.get1()) : msgT.get2();
 
             spi.writeToSocket(sock, msgT.get1(), msgBytes, timeout);
         }

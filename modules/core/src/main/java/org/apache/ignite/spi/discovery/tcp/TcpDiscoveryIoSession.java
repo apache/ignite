@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
@@ -53,7 +54,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMe
  * </ul>
  * A leading byte is used to distinguish between the modes. The byte will be removed in future.
  */
-public class TcpDiscoveryIoSession extends TcpDiscoveryIoSerializer {
+public class TcpDiscoveryIoSession {
     /** Default size of buffer used for buffering socket in/out. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 8192;
 
@@ -66,6 +67,15 @@ public class TcpDiscoveryIoSession extends TcpDiscoveryIoSerializer {
 
     /** */
     private final Socket sock;
+
+    /** */
+    private final TcpDiscoveryMessageMarshaller msgMarsh;
+
+    /** */
+    private final TcpDiscoverySpi spi;
+
+    /** */
+    private final ClassLoader clsLdr;
 
     /** */
     private final DirectMessageReader msgReader;
@@ -83,10 +93,11 @@ public class TcpDiscoveryIoSession extends TcpDiscoveryIoSerializer {
      * @param spi  Discovery SPI instance owning this session.
      * @throws IgniteException If an I/O error occurs while initializing buffers.
      */
-    TcpDiscoveryIoSession(Socket sock, TcpDiscoverySpi spi) {
-        super(spi);
-
+    TcpDiscoveryIoSession(Socket sock, TcpDiscoveryMessageMarshaller msgMarshaller, TcpDiscoverySpi spi) {
         this.sock = sock;
+        msgMarsh = msgMarshaller;
+        this.spi = spi;
+        clsLdr = U.resolveClassLoader(spi.ignite().configuration());
 
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
 
@@ -120,7 +131,7 @@ public class TcpDiscoveryIoSession extends TcpDiscoveryIoSerializer {
         try {
             out.write(MESSAGE_SERIALIZATION);
 
-            serializeMessage((Message)msg, out);
+            msgMarsh.marshal((Message)msg, out);
 
             out.flush();
         }
@@ -156,6 +167,8 @@ public class TcpDiscoveryIoSession extends TcpDiscoveryIoSerializer {
             }
 
             Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+
+            ByteBuffer msgBuf = msgMarsh.msgBuf;
 
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
