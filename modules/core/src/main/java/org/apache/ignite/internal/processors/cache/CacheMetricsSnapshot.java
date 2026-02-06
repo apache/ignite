@@ -79,10 +79,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
 
     /** {@inheritDoc} */
     @Override public float getCacheHitPercentage() {
-        if (m.cacheHits() == 0 || m.cacheGets() == 0)
-            return 0;
-
-        return (float)m.cacheHits() / m.cacheGets() * 100.0f;
+        return m.cacheHitPercentage();
     }
 
     /** {@inheritDoc} */
@@ -92,10 +89,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
 
     /** {@inheritDoc} */
     @Override public float getCacheMissPercentage() {
-        if (m.cacheMisses() == 0 || m.cacheGets() == 0)
-            return 0;
-
-        return (float)m.cacheMisses() / m.cacheGets() * 100.0f;
+        return m.cacheMissPercentage();
     }
 
     /** {@inheritDoc} */
@@ -240,10 +234,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
 
     /** {@inheritDoc} */
     @Override public float getOffHeapHitPercentage() {
-        if (m.offHeapHits() == 0 || m.offHeapGets() == 0)
-            return 0;
-
-        return (float)m.offHeapHits() / m.offHeapGets() * 100.0f;
+        return m.offHeapHitPercentage();
     }
 
     /** {@inheritDoc} */
@@ -253,10 +244,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
 
     /** {@inheritDoc} */
     @Override public float getOffHeapMissPercentage() {
-        if (m.offHeapMisses() == 0 || m.offHeapGets() == 0)
-            return 0;
-
-        return (float)m.offHeapMisses() / m.offHeapGets() * 100.0f;
+        return m.offHeapMissPercentage();
     }
 
     /** {@inheritDoc} */
