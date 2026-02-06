@@ -21,31 +21,28 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** */
-public class MultiDataCenterRingTest extends GridCommonAbstractTest {
+@RunWith(Parameterized.class)
+public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_0 = "DC0";
 
@@ -58,11 +55,30 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
     /** */
     @Nullable private Long failureDetectionTimeout;
 
+    /** */
+    @Parameterized.Parameter()
+    public int serversPerDc;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean fullTimeoutFailure;
+
+    /** */
+    @Parameterized.Parameters(name = "serversPerDc={0}, fullTimeoutFailure={1}")
+    public static Collection<Object[]> params() {
+        return GridTestUtils.cartesianProduct(
+            F.asList(2, 3, 4),
+            F.asList(true, false)
+        );
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
@@ -92,16 +108,14 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testConnectionRecoveryWithEntiryDCFailure() throws Exception {
-        int serversPerDc = 4;
-
+    public void testConnectionRecoveryWithEntireDCFailure() throws Exception {
         // Fastens the tests.
-        failureDetectionTimeout = 7000L;
+        failureDetectionTimeout = 3000L;
 
         // Start DC0 with the test DiscoverySPI.
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
         discoSpiSupplier = () -> new TestTcpDiscoverySpi(TcpDiscoverySpi.DFLT_PORT + serversPerDc,
-            TcpDiscoverySpi.DFLT_PORT + serversPerDc * 2 - 1);
+            TcpDiscoverySpi.DFLT_PORT + serversPerDc * 2 - 1, fullTimeoutFailure);
 
         startGridsMultiThreaded(serversPerDc);
 
@@ -123,103 +137,7 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
                 discoSpi(G.ignite(n.id())).block = true;
         }
 
-        Thread.sleep(45000);
-    }
-
-    /** */
-    @Test
-    public void testRing() throws Exception {
-        int cnt = 10;
-
-        generateRandomDcOrderCluster(cnt);
-
-        assertEquals(cnt, grid(0).cluster().nodes().size());
-
-        checkHops(2);
-
-        stopGrid(cnt - 1);
-        stopGrid(0);
-
-        assertEquals(cnt - 2, grid(1).cluster().nodes().size());
-
-        checkHops(2);
-    }
-
-    /** */
-    @Test
-    public void testMessageOrder() throws Exception {
-        int cnt = 10;
-
-        generateRandomDcOrderCluster(cnt);
-
-        Collection<Ignite> nodes = G.allGrids();
-
-        CountDownLatch latch = new CountDownLatch(cnt);
-        List<String> dcs = new ArrayList<>();
-
-        for (Ignite node : nodes) {
-            DiscoverySpi disco = node.configuration().getDiscoverySpi();
-
-            ((TcpDiscoverySpi)disco).addSendMessageListener(new IgniteInClosure<>() {
-                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
-                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                        dcs.add(Ignition.localIgnite().cluster().localNode().dataCenterId());
-
-                        latch.countDown();
-                    }
-                }
-            });
-        }
-
-        startGrid(cnt + 1);
-
-        latch.await();
-
-        String curDc = null;
-        int hops = 0;
-
-        for (String dcId : dcs) {
-            if (!dcId.equals(curDc)) {
-                hops++;
-                curDc = dcId;
-            }
-        }
-
-        assertEquals(2, hops);
-    }
-
-    /** */
-    private void generateRandomDcOrderCluster(int cnt) throws Exception {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        for (int i = 0; i < cnt; i++) {
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, rnd.nextBoolean() ? DC_ID_0 : DC_ID_1);
-
-            startGrid(i);
-        }
-
-        waitForTopology(cnt);
-    }
-
-    /** */
-    private void checkHops(int expected) {
-        Collection<Ignite> nodes = G.allGrids();
-
-        int hops = 0;
-
-        for (Ignite node : nodes) {
-            DiscoverySpi disco = node.configuration().getDiscoverySpi();
-
-            ServerImpl serverImpl = U.field(disco, "impl");
-
-            String nextDcId = serverImpl.ring().nextNode().dataCenterId();
-            String locDcId = node.cluster().localNode().dataCenterId();
-
-            if (!locDcId.equals(nextDcId))
-                hops++;
-        }
-
-        assertEquals(expected, hops);
+        Thread.sleep(25000);
     }
 
     /** */
@@ -229,23 +147,23 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
 
     /** */
     private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** Minimal port number to block a message being sent to. */
-        private final int minPortToBlockMsgTo;
+        /** */
+        private final int minPortToBlockMsg;
 
-        /** Maximal port number to block a message being sent to. */
-        private final int maxPortToBlockMsgTo;
+        /** */
+        private final int maxPortToBlockMsg;
+
+        /** */
+        private final boolean fullTimeoutFailure;
 
         /** */
         private volatile boolean block;
 
-        /**
-         * @param minPortToBlockMsgTo Minimal port number to block a message being sent to.
-         * @param maxPortToBlockMsgTo Maximal port number to block a message being sent to.
-         * @see #blockMessage(Socket, long)
-         */
-        private TestTcpDiscoverySpi(int minPortToBlockMsgTo, int maxPortToBlockMsgTo) {
-            this.minPortToBlockMsgTo = minPortToBlockMsgTo;
-            this.maxPortToBlockMsgTo = maxPortToBlockMsgTo;
+        /** */
+        private TestTcpDiscoverySpi(int minPortToBlockMsg, int maxPortToBlockMsg, boolean fullTimeoutFailure) {
+            this.minPortToBlockMsg = minPortToBlockMsg;
+            this.maxPortToBlockMsg = maxPortToBlockMsg;
+            this.fullTimeoutFailure = fullTimeoutFailure;
         }
 
         /** {@inheritDoc} */
@@ -271,22 +189,30 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
 
             int rmpPort = ((InetSocketAddress)sock.getRemoteSocketAddress()).getPort();
 
-            if (rmpPort >= minPortToBlockMsgTo && rmpPort <= maxPortToBlockMsgTo) {
-                if (log.isDebugEnabled())
-                    log.debug("Simulation timeout of " + timeout + "ms to " + sock);
+            if (rmpPort < minPortToBlockMsg || rmpPort > maxPortToBlockMsg)
+                return;
 
-                try {
-                    U.sleep(timeout);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IOException("Timeout simulation interrupted.", e);
-                }
+            if (log.isDebugEnabled())
+                log.debug("Simulation network delay of " + (fullTimeoutFailure ? timeout : 50) + "ms on " + sock);
 
+            try {
+                U.sleep(fullTimeoutFailure ? timeout : 50);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IOException("Network delay simulation interrupted.", e);
+            }
+
+            if (fullTimeoutFailure) {
                 if (log.isDebugEnabled())
-                    log.debug("Firing the timeout exception after " + timeout + "ms to " + sock);
+                    log.debug("Firing a timeout exception after " + timeout + "ms on " + sock);
 
                 throw new SocketTimeoutException("Simulated timeout");
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Firing a timeout exception after " + timeout + "ms on " + sock);
+
+            throw new SocketTimeoutException("Simulated timeout");
         }
     }
 }
