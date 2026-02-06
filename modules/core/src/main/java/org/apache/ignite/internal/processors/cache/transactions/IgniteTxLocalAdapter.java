@@ -596,7 +596,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     txEntry.cached().unswap(false);
 
                                 IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
-                                    true, null);
+                                    true, null, true);
 
                                 GridCacheVersion dhtVer = null;
 

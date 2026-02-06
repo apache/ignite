@@ -26,15 +26,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
@@ -45,6 +48,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -67,6 +71,8 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     /** */
     @Parameterized.Parameter(1)
     public Boolean withPersistence;
+
+    private static final String CORRECT_VERIFY_MSG = "The check procedure has finished, no conflicts have been found.";
 
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}")
@@ -168,8 +174,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         stopFut.get(getTestTimeout());
 
-        doSleep(1_000L);
-
         awaitPartitionMapExchange();
 
         assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
@@ -177,7 +181,18 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         String out = testOut.toString();
 
         int cacheSize = cache.size();
-        System.err.println();
+        assertEquals(1, cacheSize);
+
+        for (Ignite g : G.allGrids()) {
+            //assertEquals("grid instance: " + g.name(), 1, g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY,  CachePeekMode.BACKUP));
+            //g.compute(g.compute().clusterGroup().forNodeId(g.cluster().localNode().id())).execute(() -> , null);
+            assertNotNull("grid instance: " + g.name(), g.cache(DEFAULT_CACHE_NAME).get(primaryKey));
+            Object peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.PRIMARY);
+            if (peeked == null)
+                peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.BACKUP);
+
+            assertNotNull("grid instance: " + g.name(), peeked);
+        }
 
         // partVerHash are different, thus only partial size and counters check here
         assertContains(log, out, "The check procedure has failed");
@@ -201,17 +216,9 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
             assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
             out = testOut.toString();
-            // partVerHash are different, thus only regex check here
-            String regexCheck = "Partition instances: \\[PartitionHashRecord" +
-                ".*?consistentId=%s, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1";
-            Pattern part0Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest0"));
-            Pattern part1Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest1"));
-            Pattern part2Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest2"));
 
-            boolean matches =
-                part0Pattern.matcher(out).find() &&
-                part1Pattern.matcher(out).find() &&
-                part2Pattern.matcher(out).find();
+            Pattern regexCheck = Pattern.compile(CORRECT_VERIFY_MSG);
+            boolean matches = regexCheck.matcher(out).find();
 
             assertTrue(out, matches);
         }
@@ -325,6 +332,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.REPLICATED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        //ccfg.setNearConfiguration(new NearCacheConfiguration());
 
         if (writeThrough) {
             ccfg.setReadThrough(true);

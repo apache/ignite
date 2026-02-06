@@ -45,7 +45,9 @@ public enum GridCacheOperation {
      * This operation is used when lock has been acquired,
      * but filter validation failed.
      */
-    NOOP;
+    NOOP,
+
+    DETACH;
 
     /** Enum values. */
     private static final GridCacheOperation[] VALS = values();

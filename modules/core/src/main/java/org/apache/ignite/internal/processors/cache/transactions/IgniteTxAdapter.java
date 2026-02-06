@@ -98,6 +98,7 @@ import static org.apache.ignite.events.EventType.EVT_TX_ROLLED_BACK;
 import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DETACH;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -1433,7 +1434,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         if (intercept || !F.isEmpty(e.entryProcessors()))
                             e.cached().unswap(false);
 
-                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
+                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null, true);
 
                         GridCacheContext<?, ?> cacheCtx = e.context();
 
@@ -1594,6 +1595,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param txEntry Entry to process.
      * @param metrics {@code True} if metrics should be updated.
      * @param ret Optional return value to initialize.
+     * @param masterNodeInvolved
      * @return Tuple containing transformation results.
      * @throws IgniteCheckedException If failed to get previous value for transform.
      * @throws GridCacheEntryRemovedException If entry was concurrently deleted.
@@ -1601,15 +1603,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
         boolean metrics,
-        @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        @Nullable GridCacheReturn ret,
+        boolean masterNodeInvolved) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
 
         GridCacheContext<?, ?> cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
 
+        // TODO: write description
         if (isSystemInvalidate())
-            return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
+            return F.t(cacheCtx.writeThrough() ? (masterNodeInvolved ? RELOAD : DETACH) : DELETE, null);
 
         if (F.isEmpty(txEntry.entryProcessors())) {
             if (ret != null) {

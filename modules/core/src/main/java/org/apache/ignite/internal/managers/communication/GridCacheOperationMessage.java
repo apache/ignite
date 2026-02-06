@@ -57,6 +57,7 @@ public class GridCacheOperationMessage implements Message {
             case TRANSFORM: return 4;
             case RELOAD: return 5;
             case NOOP: return 6;
+            case DETACH: return 7;
         }
 
         throw new IllegalArgumentException("Unknown cache operation: " + operation);
@@ -73,6 +74,7 @@ public class GridCacheOperationMessage implements Message {
             case 4: return GridCacheOperation.TRANSFORM;
             case 5: return GridCacheOperation.RELOAD;
             case 6: return GridCacheOperation.NOOP;
+            case 7: return GridCacheOperation.DETACH;
         }
 
         throw new IllegalArgumentException("Unknown cache operation code: " + code);

@@ -3136,11 +3136,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                System.err.println("!!!salvage from: " + cctx.localNode() + " " + activeTransactions().size());
-
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        //|| (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId) && tx.originatingNodeId().equals(evtNodeId))) {
                         || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
@@ -3148,9 +3145,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else {
                         // Check prepare only if originating node ID failed. Otherwise, parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-/*                            if (tx.storeWriteThrough()) {
-                                tx.rollbackAsync();
-                            }*/
                             if (tx.state() == PREPARED)
                                 processPrepared(tx, evtNodeId);
                             else {
