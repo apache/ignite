@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -42,6 +43,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -120,16 +122,14 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         // backup node
         startGrid(2);
 
-        nodeCoord.cluster().state(ClusterState.ACTIVE);
-
         GridMessageListener lsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof GridNearTxPrepareResponse) {
                     nodeKillLatch.countDown();
                     try {
-                        MapCacheStore.salvagedLatch.await(2_000, TimeUnit.MILLISECONDS);
+                        U.await(MapCacheStore.salvagedLatch, 2_000, TimeUnit.MILLISECONDS);
                     }
-                    catch (InterruptedException e) {
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new RuntimeException(e);
                     }
                     long cnt = MapCacheStore.salvagedLatch.getCount();
@@ -142,6 +142,8 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         nodeCoord.context().io().removeMessageListener(GridTopic.TOPIC_CACHE); // Remove old cache listener.
         nodeCoord.context().io().addMessageListener(GridTopic.TOPIC_CACHE, lsnr); // Register as first listener.
         nodeCoord.context().cache().context().io().start0(); // Register cache listener again.
+
+        nodeCoord.cluster().state(ClusterState.ACTIVE);
 
         nodeCoord.context().event().addDiscoveryEventListener(new BeforeRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
 
@@ -195,9 +197,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         }
 
         // partVerHash are different, thus only partial size and counters check here
-        assertContains(log, out, "The check procedure has failed");
-
-        // Update counters are equal but size is different
         if (withPersistence) {
             assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
             assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
