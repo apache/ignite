@@ -233,15 +233,11 @@ public class SnapshotCheckProcess {
             }
 
             Map<String, Map<UUID, SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
-            Collection<UUID> execNodes = new ArrayList<>(reduced.size());
 
             // Checking node -> Map by consistend id.
             for (Map.Entry<UUID, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : reduced.entrySet()) {
                 // Consistent id -> Map by handler name.
                 for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> res : nodeRes.getValue().entrySet()) {
-                    // Depending on the job mapping, we can get several different results from one node.
-                    execNodes.add(nodeRes.getKey());
-
                     Map<String, SnapshotHandlerResult<?>> nodeDataMap = res.getValue();
 
                     assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
@@ -256,7 +252,7 @@ public class SnapshotCheckProcess {
             }
 
             kctx.cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, execNodes, wrns -> {});
+                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, ctx.req.nodes(), wrns -> {});
 
             fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
         }
