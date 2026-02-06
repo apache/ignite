@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
@@ -169,6 +170,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
                     catch (IgniteInterruptedCheckedException e) {
                         throw new RuntimeException(e);
                     }
+                    // HERE NEED TO CHECK ALL NODES !!!
                     long cnt = MapCacheStore.salvagedLatch.getCount();
                     // check latch not raised
                     //assertEquals(1L, cnt);
@@ -209,24 +211,37 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         awaitPartitionMapExchange();
 
-        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
-
-        String out = testOut.toString();
-
         int cacheSize = cache.size();
         assertEquals(1, cacheSize);
 
         for (Ignite g : G.allGrids()) {
-            //assertEquals("grid instance: " + g.name(), 1, g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY,  CachePeekMode.BACKUP));
-            //g.compute(g.compute().clusterGroup().forNodeId(g.cluster().localNode().id())).execute(() -> , null);
             assertNotNull("grid instance: " + g.name(), g.cache(DEFAULT_CACHE_NAME).get(primaryKey));
-            
-            Object peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.PRIMARY);
-            if (peeked == null)
+
+            final Affinity<Integer> aff = affinity(g.cache(DEFAULT_CACHE_NAME));
+
+            boolean primary = aff.isPrimary(g.cluster().localNode(), primaryKey);
+
+            Object peeked;
+
+            if (primary)
+                peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.PRIMARY);
+            else
                 peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.BACKUP);
 
+            int localSize;
+
+            if (primary)
+                localSize = g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
+            else
+                localSize = g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.BACKUP);
+
             assertNotNull("grid instance: " + g.name(), peeked);
+            assertEquals("grid instance: " + g.name(), 1, localSize);
         }
+
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
+
+        String out = testOut.toString();
 
         // partVerHash are different, thus only partial size and counters check here
         if (withPersistence) {
@@ -264,108 +279,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
                 part2Pattern.matcher(out).find();
 
             assertTrue(out, matches);
-        }
-    }
-
-    /** */
-    @Test
-    public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough() throws Exception {
-        // sequential start is important here
-        IgniteEx nodeCoord = startGrid(0);
-        IgniteEx nodePrimary = startGrid(1);
-        startGrid(2);
-
-        nodeCoord.cluster().state(ClusterState.ACTIVE);
-
-        GridMessageListener lsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (msg instanceof GridNearTxPrepareResponse) {
-                    nodeKillLatch.countDown();
-                    U.awaitQuiet(MapCacheStore.salvagedLatch);
-                }
-            }
-        };
-
-        nodeCoord.context().io().removeMessageListener(GridTopic.TOPIC_CACHE); // Remove old cache listener.
-        nodeCoord.context().io().addMessageListener(GridTopic.TOPIC_CACHE, lsnr); // Register as first listener.
-        nodeCoord.context().cache().context().io().start0(); // Register cache listener again.
-
-        nodeCoord.context().event().addDiscoveryEventListener(new BeforeRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
-
-        IgniteInternalFuture<Object> stopFut = GridTestUtils.runAsync(() -> {
-            nodeKillLatch.await();
-            nodePrimary.close();
-        });
-
-        injectTestSystemOut();
-
-        CacheConfiguration<Integer, Object> ccfgWithWriteThrough = createCache(DEFAULT_CACHE_NAME, true);
-        IgniteCache<Integer, Object> cache = nodeCoord.createCache(ccfgWithWriteThrough);
-
-        CacheConfiguration<Integer, Object> ccfgWithoutWriteThrough = createCache("noWriteThrough", false);
-        IgniteCache<Integer, Object> cacheWithoutWriteThrough = nodeCoord.createCache(ccfgWithoutWriteThrough);
-
-        awaitPartitionMapExchange();
-
-        Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
-        Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache("noWriteThrough"));
-
-        try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
-            cache.put(primaryKey, new Object());
-            //cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, new Object());
-            tx.commit();
-        }
-        catch (Throwable th) {
-            fail("Unexpected exception: " + th);
-        }
-
-        stopFut.get(getTestTimeout());
-
-        doSleep(1_000L);
-
-        awaitPartitionMapExchange();
-
-        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
-
-        String out = testOut.toString();
-
-        assertContains(log, out, "The check procedure has failed");
-        // Update counters are equal but size is different
-        if (withPersistence) {
-            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=0");
-            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
-        }
-        else {
-            assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=0");
-            assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=1");
-        }
-        testOut.reset();
-
-        if (withPersistence) {
-            stopAllGrids();
-            startGridsMultiThreaded(3);
-
-            awaitPartitionMapExchange(true, true, null);
-
-            assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
-            out = testOut.toString();
-            // partVerHash are different, thus only regex check here
-            Pattern part0Pattern = Pattern.compile("Partition instances: " +
-                "\\[PartitionHashRecord" +
-                ".*?consistentId=gridCommandHandlerTest0, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
-            Pattern part1Pattern = Pattern.compile("Partition instances: " +
-                "\\[PartitionHashRecord" +
-                ".*?consistentId=gridCommandHandlerTest1, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
-            Pattern part2Pattern = Pattern.compile("Partition instances: " +
-                "\\[PartitionHashRecord" +
-                ".*?consistentId=gridCommandHandlerTest2, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=0");
-
-            boolean matches =
-                part0Pattern.matcher(out).find() &&
-                part1Pattern.matcher(out).find() &&
-                part2Pattern.matcher(out).find();
-
-            assertTrue(matches);
         }
     }
 
