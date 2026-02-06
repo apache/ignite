@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
@@ -207,6 +208,33 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
                         .and(hasChildThat(isTableScan("BROADCAST_TBL")))
                     )
                 )
+        );
+    }
+
+    /**
+     * Re-hashing right hand for merge join.
+     */
+    @Test
+    public void joinMergeJoinAffinityRehash() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("ORDERS", IgniteDistributions.affinity(0, "orders", "hash"),
+                "ID", INTEGER, "REGION", INTEGER)
+                .addIndex("ORDER_ID_IDX", 0),
+            createTable("ORDER_ITEMS", IgniteDistributions.affinity(0, "order_items", "hash"),
+                "ID", INTEGER, "ORDER_ID", INTEGER, "AMOUNT", INTEGER)
+                .addIndex("ORDER_ITEMS_ORDER_ID_IDX", 1)
+        );
+
+        String sql = "SELECT sum(amount)" +
+            " FROM order_items i JOIN orders o ON o.id=i.order_id" +
+            " WHERE o.region = ?";
+
+        assertPlan(sql, schema,
+            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class))
+                .and(hasChildThat(isIndexScan("ORDERS", "ORDER_ID_IDX")))
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)
+                    .and(hasDistribution(IgniteDistributions.affinity(0, "orders", "hash")))
+                    .and(hasChildThat(isIndexScan("ORDER_ITEMS", "ORDER_ITEMS_ORDER_ID_IDX")))))
         );
     }
 }

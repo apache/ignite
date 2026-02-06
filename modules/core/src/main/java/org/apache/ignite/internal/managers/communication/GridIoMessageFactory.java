@@ -48,6 +48,7 @@ import org.apache.ignite.internal.codegen.CachePartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
 import org.apache.ignite.internal.codegen.ClusterMetricsUpdateMessageSerializer;
+import org.apache.ignite.internal.codegen.ContinuousRoutineStartResultMessageSerializer;
 import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.ExchangeInfoSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
@@ -162,6 +163,7 @@ import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TransactionAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.TxEntriesInfoSerializer;
+import org.apache.ignite.internal.codegen.TxEntryValueHolderSerializer;
 import org.apache.ignite.internal.codegen.TxInfoSerializer;
 import org.apache.ignite.internal.codegen.TxLockListSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
@@ -433,7 +435,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
         factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
         factory.register((short)100, IgniteTxEntry::new);
-        factory.register((short)101, TxEntryValueHolder::new);
+        factory.register((short)101, TxEntryValueHolder::new, new TxEntryValueHolderSerializer());
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
         factory.register((short)103, GridCacheRawVersionedEntry::new);
         factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
@@ -460,7 +462,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)132, UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer());
         factory.register(ClusterMetricsUpdateMessage.TYPE_CODE, ClusterMetricsUpdateMessage::new,
             new ClusterMetricsUpdateMessageSerializer());
-        factory.register((short)134, ContinuousRoutineStartResultMessage::new);
+        factory.register((short)134, ContinuousRoutineStartResultMessage::new, new ContinuousRoutineStartResultMessageSerializer());
         factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
         factory.register(NodeMetricsMessage.TYPE_CODE, NodeMetricsMessage::new, new NodeMetricsMessageSerializer());
