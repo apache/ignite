@@ -79,7 +79,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     @Order(4)
     private Set<UUID> failedNodes;
 
-    /** Helps to avoid multiply serialization in case message is sended more than once using different workers. */
+    /** Helps to avoid multiply serialization in case message is sent more than once using different workers. */
     public byte[] serializedData() {
         return serData;
     }
