@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptRule;
@@ -125,7 +126,21 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      * @param inTraits Relational node input traits.
      * @return List of possible input-output traits combinations.
      */
-    List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
+    default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits
+    ) {
+        // Check if node traits has correlation, and all inputs are rewindable.
+        if (TraitUtils.correlation(nodeTraits).correlated()) {
+            if (inTraits.stream().allMatch(t -> TraitUtils.rewindability(t).rewindable()))
+                return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inTraits));
+            else
+                return ImmutableList.of();
+        }
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
+            Commons.transform(inTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
+    }
 
     /**
      * Propagates distribution trait in bottom-up manner.
