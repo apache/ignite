@@ -89,6 +89,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         this.array = array;
     }
 
+    /** */
     private byte[] array;
 
     /**
