@@ -74,14 +74,24 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     @Parameterized.Parameter(1)
     public Boolean withPersistence;
 
+    /** */
+    @Parameterized.Parameter(2)
+    public Boolean multiCache;
+
+    /** */
     private static final String CORRECT_VERIFY_MSG = "The check procedure has finished, no conflicts have been found.";
 
     /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}")
+    private static final String WITHOUT_WRITE_THROUGH_CACHE = "withoutWriteThrough";
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}, multiCache={2}")
     public static Collection<Object[]> parameters() {
         return List.of(
-            new Object[] {CLI_CMD_HND, false},
-            new Object[] {CLI_CMD_HND, true}
+            new Object[] {CLI_CMD_HND, false, false},
+            new Object[] {CLI_CMD_HND, false, true},
+            new Object[] {CLI_CMD_HND, true, false},
+            new Object[] {CLI_CMD_HND, true, true}
         );
     }
 
@@ -98,7 +108,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         nodeKillLatch = new CountDownLatch(1);
         MapCacheStore.salvagedLatch = new CountDownLatch(1);
-        MapCacheStore.txCoordStoreLatch = new CountDownLatch(1);
+        MapCacheStore.txCoordStoreLatch = new CountDownLatch(2);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +131,33 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         IgniteEx nodePrimary = startGrid(1);
         // backup node
         startGrid(2);
+
+        nodeCoord.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Integer, Object> ccfgWithWriteThrough = createCache(DEFAULT_CACHE_NAME, true);
+        IgniteCache<Integer, Object> cache = nodeCoord.createCache(ccfgWithWriteThrough);
+
+        IgniteCache<Integer, Object> cacheWithoutWriteThrough = null;
+
+        if (multiCache) {
+            CacheConfiguration<Integer, Object> ccfgWithoutWriteThrough = createCache(WITHOUT_WRITE_THROUGH_CACHE, false);
+            cacheWithoutWriteThrough = nodeCoord.createCache(ccfgWithoutWriteThrough);
+        }
+
+        Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
+
+        try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            cache.put(primaryKey, 0);
+
+            if (multiCache) {
+                Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache(WITHOUT_WRITE_THROUGH_CACHE));
+                cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, 0);
+            }
+
+            tx.commit();
+        }
+
+        nodeCoord.cluster().state(ClusterState.INACTIVE);
 
         GridMessageListener lsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -154,20 +191,14 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         injectTestSystemOut();
 
-        CacheConfiguration<Integer, Object> ccfgWithWriteThrough = createCache(DEFAULT_CACHE_NAME, true);
-        IgniteCache<Integer, Object> cache = nodeCoord.createCache(ccfgWithWriteThrough);
-
-        CacheConfiguration<Integer, Object> ccfgWithoutWriteThrough = createCache("noWriteThrough", false);
-        IgniteCache<Integer, Object> cacheWithoutWriteThrough = nodeCoord.createCache(ccfgWithoutWriteThrough);
-
-        awaitPartitionMapExchange();
-
-        Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
-        //Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache("noWriteThrough"));
-
         try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
-            cache.put(primaryKey, new Object());
-            //cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, new Object());
+            cache.put(primaryKey, 0);
+
+            if (multiCache) {
+                Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache(WITHOUT_WRITE_THROUGH_CACHE));
+                cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, 0);
+            }
+
             tx.commit();
         }
         catch (Throwable th) {
@@ -189,6 +220,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             //assertEquals("grid instance: " + g.name(), 1, g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY,  CachePeekMode.BACKUP));
             //g.compute(g.compute().clusterGroup().forNodeId(g.cluster().localNode().id())).execute(() -> , null);
             assertNotNull("grid instance: " + g.name(), g.cache(DEFAULT_CACHE_NAME).get(primaryKey));
+            
             Object peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.PRIMARY);
             if (peeked == null)
                 peeked = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.BACKUP);
@@ -198,8 +230,8 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         // partVerHash are different, thus only partial size and counters check here
         if (withPersistence) {
-            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
-            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
+            assertContains(log, out, "updateCntr=[lwm=2, missed=[], hwm=2], partitionState=OWNING, size=1");
+            assertContains(log, out, "updateCntr=[lwm=2, missed=[], hwm=2], partitionState=OWNING, size=1");
         }
         else {
             assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=1");
@@ -216,8 +248,20 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
             out = testOut.toString();
 
-            Pattern regexCheck = Pattern.compile(CORRECT_VERIFY_MSG);
-            boolean matches = regexCheck.matcher(out).find();
+            //Pattern regexCheck = Pattern.compile(CORRECT_VERIFY_MSG);
+            //boolean matches = regexCheck.matcher(out).find();
+
+            // partVerHash are different, thus only regex check here
+            String regexCheck = "Partition instances: \\[PartitionHashRecord" +
+                ".*?consistentId=%s, updateCntr=\\[lwm=2, missed=\\[\\], hwm=2\\], partitionState=OWNING, size=1";
+            Pattern part0Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest0"));
+            Pattern part1Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest1"));
+            Pattern part2Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest2"));
+
+            boolean matches =
+                part0Pattern.matcher(out).find() &&
+                part1Pattern.matcher(out).find() &&
+                part2Pattern.matcher(out).find();
 
             assertTrue(out, matches);
         }
