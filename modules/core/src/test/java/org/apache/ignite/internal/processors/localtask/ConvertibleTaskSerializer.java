@@ -20,6 +20,6 @@ package org.apache.ignite.internal.processors.localtask;
 /**
  * The task to be convertible after restoring from metaStorage.
  */
-public class ConvertibleTaskSerializer extends SimpleTaskSerializer  {
+public class ConvertibleTaskSerializer extends SimpleTaskSerializer {
     // No-op.
 }
