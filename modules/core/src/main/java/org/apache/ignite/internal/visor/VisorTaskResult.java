@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,9 +29,11 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
+    @Order(value = 0)
     @Nullable R res;
 
     /** Error. */
+    @Order(value = 1)
     @Nullable Exception err;
 
     /** */

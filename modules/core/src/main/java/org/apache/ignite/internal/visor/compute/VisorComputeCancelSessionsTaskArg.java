@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.compute;
 
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,6 +31,7 @@ public class VisorComputeCancelSessionsTaskArg extends IgniteDataTransferObject 
     private static final long serialVersionUID = 0L;
 
     /** Session IDs to cancel. */
+    @Order(value = 0)
     Set<IgniteUuid> sesIds;
 
     /**

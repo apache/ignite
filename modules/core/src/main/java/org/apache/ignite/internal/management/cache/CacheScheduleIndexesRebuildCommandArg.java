@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
@@ -42,6 +43,7 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
     private static final String CACHE_NAMES_FORMAT = "cacheName[index1,...indexN],cacheName2,cacheName3[index1]";
 
     /** */
+    @Order(value = 0)
     @Argument(
         description = "(Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes " +
             "(deprecated. Use --node-ids or --all-nodes instead)",
@@ -49,6 +51,7 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
     UUID nodeId;
 
     /** */
+    @Order(value = 1)
     @Argument(
         description = "Comma-separated list of nodes ids to schedule index rebuild on",
         example = "nodeId1,...nodeIdN"
@@ -56,10 +59,12 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
     UUID[] nodeIds;
 
     /** Flag to launch index rebuild on all nodes. */
+    @Order(value = 2)
     @Argument(description = "Rebuild index on all nodes")
     boolean allNodes;
 
     /** */
+    @Order(value = 3)
     @Argument(description = "Comma-separated list of cache names with optionally specified indexes. " +
         "If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. " +
         "Can be used simultaneously with cache group names",
@@ -67,12 +72,14 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
     String cacheNames;
 
     /** */
+    @Order(value = 4)
     @Argument(description = "Comma-separated list of cache group names for which indexes should be scheduled for the "
         + "rebuild. Can be used simultaneously with cache names",
         example = "groupName1,groupName2,...groupNameN")
     String[] groupNames;
 
     /** Cache name -> indexes. */
+    @Order(value = 5)
     Map<String, Set<String>> cacheToIndexes;
 
     /** */

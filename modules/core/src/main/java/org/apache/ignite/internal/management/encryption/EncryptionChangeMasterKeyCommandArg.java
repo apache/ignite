@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.encryption;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -27,6 +28,7 @@ public class EncryptionChangeMasterKeyCommandArg extends IgniteDataTransferObjec
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(example = "newMasterKeyName")
     String newMasterKeyName;

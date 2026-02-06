@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.metric;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.F;
@@ -27,6 +28,7 @@ public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 2)
     @Argument(description = "Comma-separated list of longs to configure histogram", example = "newBounds")
     @Positional
     long[] newBounds;

@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -53,6 +54,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -229,7 +231,7 @@ public class IDTOSerializerGenerator {
 
         String simpleClsName = String.valueOf(type.getSimpleName());
 
-        List<VariableElement> flds = fields(type);
+        Collection<VariableElement> flds = fields(type);
 
         List<String> write = generateWrite(simpleClsName, flds);
         List<String> read = generateRead(simpleClsName, flds);
@@ -288,7 +290,7 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
-    private List<String> generateWrite(String clsName, List<VariableElement> flds) {
+    private List<String> generateWrite(String clsName, Collection<VariableElement> flds) {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
@@ -302,7 +304,7 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#readExternal(T, ObjectInput)} method. */
-    private List<String> generateRead(String clsName, List<VariableElement> flds) {
+    private List<String> generateRead(String clsName, Collection<VariableElement> flds) {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
@@ -344,7 +346,7 @@ public class IDTOSerializerGenerator {
      * @return Lines to serdes fields.
      */
     private List<String> fieldsSerdes(
-        List<VariableElement> flds,
+        Collection<VariableElement> flds,
         BiFunction<IgniteBiTuple<String, String>, Boolean, String> lineProvider
     ) {
         TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
@@ -408,8 +410,8 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return List of non-static and non-transient field for given {@code type}. */
-    private List<VariableElement> fields(TypeElement type) {
-        List<VariableElement> res = new ArrayList<>();
+    private Collection<VariableElement> fields(TypeElement type) {
+        SortedMap<Integer, VariableElement> flds = new TreeMap<>();
 
         while (type != null) {
             for (Element el: type.getEnclosedElements()) {
@@ -419,7 +421,19 @@ public class IDTOSerializerGenerator {
                 if (el.getModifiers().contains(Modifier.STATIC) || el.getModifiers().contains(Modifier.TRANSIENT))
                     continue;
 
-                res.add((VariableElement)el);
+                Order order = el.getAnnotation(Order.class);
+
+                if (order == null) {
+                    throw new IllegalStateException("Please, add @Order " +
+                        "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + "]");
+                }
+
+                VariableElement prev = flds.put(order.value(), (VariableElement)el);
+
+                if (prev != null) {
+                    throw new IllegalStateException("Duplicate @Order for " + type.getQualifiedName() + ": " +
+                        "[order=" + order.value() + ", fld1=" + prev.getSimpleName() + ", fld2 = " + el.getSimpleName() + ']');
+                }
             }
 
             Element superType = env.getTypeUtils().asElement(type.getSuperclass());
@@ -427,7 +441,12 @@ public class IDTOSerializerGenerator {
             type = (TypeElement)superType;
         }
 
-        return res;
+        for (int i = 0; i < flds.size(); i++) {
+            if (!flds.containsKey(i))
+                throw new IllegalStateException("@Order not found: " + i);
+        }
+
+        return flds.values();
     }
 
     /** @return FQN of {@code comp}. */

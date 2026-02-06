@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache.distribution;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -29,15 +30,19 @@ public class CacheDistributionNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Node identifier. */
+    @Order(value = 0)
     UUID nodeId;
 
     /** Network addresses. */
+    @Order(value = 1)
     String addrs;
 
     /** User attribute in result. */
+    @Order(value = 2)
     Map<String, String> userAttrs;
 
     /** Information about groups. */
+    @Order(value = 3)
     List<CacheDistributionGroup> groups;
 
     /** Default constructor. */

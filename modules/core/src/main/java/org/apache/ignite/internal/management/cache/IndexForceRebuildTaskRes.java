@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -28,12 +29,15 @@ public class IndexForceRebuildTaskRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Caches for which indexes rebuild was triggered. */
+    @Order(value = 0)
     Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild;
 
     /** Caches with indexes rebuild in progress. */
+    @Order(value = 1)
     Set<IndexRebuildStatusInfoContainer> cachesWithRebuildInProgress;
 
     /** Names of caches that were not found. */
+    @Order(value = 2)
     Set<String> notFoundCacheNames;
 
     /**

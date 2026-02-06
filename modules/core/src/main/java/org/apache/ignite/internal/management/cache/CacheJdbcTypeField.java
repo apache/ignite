@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -29,15 +30,19 @@ public class CacheJdbcTypeField extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Column name in database. */
+    @Order(value = 0)
     String dbName;
 
     /** Column JDBC type in database. */
+    @Order(value = 1)
     int dbType;
 
     /** Field name in java object. */
+    @Order(value = 2)
     String javaName;
 
     /** Corresponding java type. */
+    @Order(value = 3)
     String javaType;
 
     /**

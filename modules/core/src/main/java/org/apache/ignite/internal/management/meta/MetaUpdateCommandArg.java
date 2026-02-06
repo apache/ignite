@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,10 +34,12 @@ public class MetaUpdateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(example = "<fileName>")
     String in;
 
     /** Marshaled metadata. */
+    @Order(value = 1)
     byte[] metaMarshalled;
 
     /** */

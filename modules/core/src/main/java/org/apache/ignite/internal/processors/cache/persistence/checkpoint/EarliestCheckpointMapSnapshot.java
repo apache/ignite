@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,9 +35,11 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Last snapshot's checkpoint timestamp. */
+    @Order(value = 0)
     Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
 
     /** Ids of checkpoints present at the time of the snapshot capture. */
+    @Order(value = 1)
     Set<UUID> checkpointIds;
 
     /** Constructor. */
@@ -98,12 +101,15 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         private static final long serialVersionUID = 0L;
 
         /** Partition ids. */
+        @Order(value = 0)
         int[] parts;
 
         /** Partition counters which corresponds to partition ids. */
+        @Order(value = 1)
         long[] cnts;
 
         /** Partitions count. */
+        @Order(value = 2)
         int size;
 
         /**

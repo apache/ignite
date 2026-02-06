@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.consistency;
 
 import org.apache.ignite.cache.ReadRepairStrategy;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
@@ -28,14 +29,17 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(description = "Cache to be checked/repaired")
     String cache;
 
     /** */
+    @Order(value = 1)
     @Argument(description = "Cache's partition to be checked/repaired", example = "partition")
     int[] partitions;
 
     /** Strategy. */
+    @Order(value = 2)
     @Argument(description = "Repair strategy")
     @EnumDescription(
         names = {
@@ -56,6 +60,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     ReadRepairStrategy strategy;
 
     /** */
+    @Order(value = 3)
     @Argument(description = "Run concurrently on each node", optional = true)
     boolean parallel;
 

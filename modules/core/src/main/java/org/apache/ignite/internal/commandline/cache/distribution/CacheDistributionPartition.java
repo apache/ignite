@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.cache.distribution;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 
@@ -28,18 +29,23 @@ public class CacheDistributionPartition extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Partition identifier. */
+    @Order(value = 0)
     int partId;
 
     /** Flag primary or backup partition. */
+    @Order(value = 1)
     boolean primary;
 
     /** Partition status. */
+    @Order(value = 2)
     GridDhtPartitionState state;
 
     /** Partition update counters. */
+    @Order(value = 3)
     long updateCntr;
 
     /** Number of entries in partition. */
+    @Order(value = 4)
     long size;
 
     /** Default constructor. */

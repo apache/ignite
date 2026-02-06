@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,18 +36,22 @@ public class BaselineNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     String consistentId;
 
     /** */
+    @Order(value = 1)
     Map<String, Object> attrs;
 
     /** */
+    @Order(value = 2)
     @Nullable Long order;
 
     /**
      * Resolved list of (ip, hostname) pairs
      * (if ip has no resolved host, hostname will be the string representation of ip).
      */
+    @Order(value = 3)
     @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
 
     /**
@@ -115,9 +120,11 @@ public class BaselineNode extends IgniteDataTransferObject {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @Order(value = 0)
         String hostname;
 
         /** Textual representation of IP address. */
+        @Order(value = 1)
         String addr;
 
         /**

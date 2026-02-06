@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 
@@ -32,6 +33,7 @@ public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 2)
     @Argument(optional = true, example = "<fileName>")
     String out;
 

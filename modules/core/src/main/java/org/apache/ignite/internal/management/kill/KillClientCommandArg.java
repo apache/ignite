@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -28,11 +29,13 @@ public class KillClientCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(description = "Connection identifier or ALL")
     String connectionId;
 
     /** */
+    @Order(value = 1)
     @Argument(description = "Node id to drop connection from", optional = true)
     UUID nodeId;
 

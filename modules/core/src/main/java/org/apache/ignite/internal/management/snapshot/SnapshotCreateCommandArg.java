@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -27,24 +28,28 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(description = "Snapshot name. " +
         "In the case of incremental snapshot (--incremental) full snapshot name must be provided")
     String snapshotName;
 
     /** */
+    @Order(value = 1)
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot will be saved. " +
         "If not specified, the default configured snapshot directory will be used")
     String dest;
 
     /** */
+    @Order(value = 2)
     @Argument(optional = true, description = "Run the operation synchronously, " +
         "the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control")
     boolean sync;
 
     /** */
+    @Order(value = 3)
     @Argument(optional = true, description = "Create an incremental snapshot for previously created full snapshot. " +
         "Full snapshot must be accessible via --dest and snapshot_name")
     boolean incremental;

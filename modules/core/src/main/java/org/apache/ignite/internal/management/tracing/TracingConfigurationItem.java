@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.tracing;
 
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,17 +36,20 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      * Specifies the {@link Scope} of a trace's root span to which some specific tracing configuration will be applied.
      * It's a mandatory attribute.
      */
+    @Order(value = 0)
     Scope scope;
 
     /**
      * Specifies the label of a traced operation. It's an optional attribute.
      */
+    @Order(value = 1)
     String lb;
 
     /**
      * Number between 0 and 1 that more or less reflects the probability of sampling specific trace. 0 and 1 have
      * special meaning here, 0 means never 1 means always. Default value is 0 (never).
      */
+    @Order(value = 2)
     Double samplingRate;
 
     /**
@@ -54,6 +58,7 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      * will be attached to the current trace, otherwise it'll be skipped. See {@link
      * Span#isChainable(Scope)} for more details.
      */
+    @Order(value = 3)
     Set<Scope> includedScopes;
 
     /**

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,10 +37,12 @@ public class CacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject 
     private static final long serialVersionUID = 0L;
 
     /** Per node job result. */
+    @Order(value = 0)
     @GridToStringInclude
     Map<UUID, T> results;
 
     /** Per node execution problems. */
+    @Order(value = 1)
     @GridToStringInclude
     Map<UUID, IgniteException> exceptions;
 

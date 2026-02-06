@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
@@ -31,6 +32,7 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument
     @EnumDescription(
@@ -48,10 +50,12 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     ClusterState state;
 
     /** */
+    @Order(value = 1)
     @Argument(optional = true, description = "If true, cluster deactivation will be forced")
     boolean force;
 
     /** */
+    @Order(value = 2)
     String clusterName;
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.defragmentation;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
@@ -25,9 +26,11 @@ public class DefragmentationTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     boolean success;
 
     /** */
+    @Order(value = 1)
     String msg;
 
     /** Empty constructor for serialization. */

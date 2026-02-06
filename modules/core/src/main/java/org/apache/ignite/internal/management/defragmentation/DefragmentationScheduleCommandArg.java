@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.defragmentation;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 
@@ -26,10 +27,12 @@ public class DefragmentationScheduleCommandArg extends DefragmentationStatusComm
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(example = "consistentId0,consistentId1")
     String[] nodes;
 
     /** */
+    @Order(value = 1)
     @Argument(example = "cache1,cache2,cache3", optional = true)
     String[] caches;
 

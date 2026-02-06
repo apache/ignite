@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.diagnostic;
 
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +31,7 @@ public class ConnectivityResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     @Nullable Map<ClusterNode, Boolean> nodeStatuses;
 
     /**

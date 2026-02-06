@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.aware;
 
 import java.io.Externalizable;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,12 +32,14 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
+    @Order(value = 0)
     String cacheName;
 
     /**
      * {@code True} if index.bin recreating, {@code false} otherwise.
      * @see IndexesRebuildTask
      */
+    @Order(value = 1)
     boolean recreate;
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.tx;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
@@ -33,38 +34,47 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(example = "XID", optional = true)
     String xid;
 
     /** */
+    @Order(value = 1)
     @Argument(example = "SECONDS", optional = true)
     Long minDuration;
 
     /** */
+    @Order(value = 2)
     @Argument(example = "SIZE", optional = true)
     Integer minSize;
 
     /** */
+    @Order(value = 3)
     @Argument(example = "PATTERN_REGEX", optional = true)
     String label;
 
     /** */
+    @Order(value = 4)
     @Argument
     boolean servers;
 
     /** */
+    @Order(value = 5)
     @Argument
     boolean clients;
 
     /** */
+    @Order(value = 6)
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
     String[] nodes;
 
     /** */
+    @Order(value = 7)
     @Argument(optional = true, example = "NUMBER")
     Integer limit;
 
     /** */
+    @Order(value = 8)
     @Argument(optional = true, description = "Output order")
     @EnumDescription(
         names = {
@@ -81,6 +91,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     TxSortOrder order;
 
     /** */
+    @Order(value = 9)
     @Argument(optional = true)
     boolean kill;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
@@ -29,6 +30,7 @@ public class ShutdownPolicyCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(optional = true)
     @EnumDescription(

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** Result of {@link ClearCachesTask}. */
@@ -26,9 +27,11 @@ public class ClearCachesTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** List of cleared caches. */
+    @Order(value = 0)
     List<String> clearedCaches;
 
     /** List of non-existent caches. */
+    @Order(value = 1)
     List<String> nonExistentCaches;
 
     /** */

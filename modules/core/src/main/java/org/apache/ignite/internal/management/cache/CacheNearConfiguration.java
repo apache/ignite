@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,15 +37,19 @@ public class CacheNearConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Flag indicating if near cache enabled. */
+    @Order(value = 0)
     boolean nearEnabled;
 
     /** Near cache start size. */
+    @Order(value = 1)
     int nearStartSize;
 
     /** Near cache eviction policy. */
+    @Order(value = 2)
     String nearEvictPlc;
 
     /** Near cache eviction policy maximum size. */
+    @Order(value = 3)
     Integer nearEvictMaxSize;
 
     /**

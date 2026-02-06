@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.meta;
 
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -32,6 +33,7 @@ public class MetadataListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster metadata. */
+    @Order(value = 0)
     Collection<BinaryMetadata> meta = Collections.emptyList();
 
     /**

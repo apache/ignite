@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.List;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,12 +31,15 @@ public class QueryIndex extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Name of index. */
+    @Order(value = 0)
     String name;
 
     /** Type of index. */
+    @Order(value = 1)
     QueryIndexType type;
 
     /** Fields to create group indexes for. */
+    @Order(value = 2)
     List<QueryIndexField> fields;
 
     /**

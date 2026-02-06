@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.persistence;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -28,18 +29,23 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     boolean inMaintenanceMode;
 
     /** */
+    @Order(value = 1)
     boolean maintenanceTaskCompleted;
 
     /** */
+    @Order(value = 2)
     Collection<String> handledCaches;
 
     /** */
+    @Order(value = 3)
     Collection<String> failedToHandleCaches;
 
     /** */
+    @Order(value = 4)
     Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo;
 
     /** */

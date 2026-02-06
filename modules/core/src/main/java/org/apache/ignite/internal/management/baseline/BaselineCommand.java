@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.baseline;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
@@ -78,6 +79,7 @@ public class BaselineCommand extends CommandRegistryImpl<BaselineTaskArg, Baseli
     /** */
     public abstract static class BaselineTaskArg extends IgniteDataTransferObject {
         /** */
+        @Order(value = 0)
         @Argument(optional = true, description = "Show the full list of node ips")
         boolean verbose;
 

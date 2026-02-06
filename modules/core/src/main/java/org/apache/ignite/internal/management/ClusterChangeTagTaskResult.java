@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,12 +29,15 @@ public class ClusterChangeTagTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     String tag;
 
     /** */
+    @Order(value = 1)
     Boolean success;
 
     /** */
+    @Order(value = 2)
     String errResp;
 
     /** Default constructor. */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
@@ -30,6 +31,7 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument
     @EnumDescription(
@@ -47,11 +49,13 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     CacheMetricsOperation operation;
 
     /** */
+    @Order(value = 1)
     @Argument(description = "specifies a comma-separated list of cache names to which operation should be applied",
         example = "cache1[,...,cacheN]")
     String[] caches;
 
     /** */
+    @Order(value = 2)
     @Argument(description = "applies operation to all user caches")
     boolean allCaches;
 

@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.management.tx;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,15 +29,19 @@ public class TxVerboseKey extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Tx key. */
+    @Order(value = 0)
     String txKey;
 
     /** Lock type. */
+    @Order(value = 1)
     TxKeyLockType lockType;
 
     /** Owner version. */
+    @Order(value = 2)
     GridCacheVersion ownerVer;
 
     /** Is read entry. */
+    @Order(value = 3)
     boolean read;
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -31,9 +32,11 @@ public class ContentionJobResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     ClusterNode node;
 
     /** */
+    @Order(value = 1)
     List<String> entries;
 
     /** */

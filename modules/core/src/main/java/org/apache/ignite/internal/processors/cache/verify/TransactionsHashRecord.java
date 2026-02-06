@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.verify;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,14 +28,17 @@ public class TransactionsHashRecord extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
+    @Order(value = 0)
     @GridToStringInclude
     Object locConsistentId;
 
     /** Consistent ID of remote node that participated in the transactions. */
+    @Order(value = 1)
     @GridToStringInclude
     Object rmtConsistentId;
 
     /** Committed transactions IDs hash. */
+    @Order(value = 2)
     @GridToStringInclude
     int txHash;
 

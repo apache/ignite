@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache.scan;
 
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,9 +31,11 @@ public class CacheScanTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Column titles. */
+    @Order(value = 0)
     List<String> titles;
 
     /** Cache entries. */
+    @Order(value = 1)
     List<List<?>> entries;
 
     /**

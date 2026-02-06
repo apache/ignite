@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.LongFunction;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +44,7 @@ public final class DistributedMetaStorageVersion extends IgniteDataTransferObjec
      *
      * @see #INITIAL_VERSION
      */
+    @Order(value = 0)
     @GridToStringInclude
     long id;
 
@@ -50,6 +52,7 @@ public final class DistributedMetaStorageVersion extends IgniteDataTransferObjec
      * Hash of the whole updates list. Hashing algorinthm is almost the same as in {@link List#hashCode()}, but with
      * {@code long} value instead of {@code int}.
      */
+    @Order(value = 1)
     @GridToStringInclude
     long hash;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
@@ -30,46 +31,55 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(description = "Snapshot name. " +
         "In the case of incremental snapshot (--incremental) full snapshot name must be provided")
     String snapshotName;
 
     /** */
+    @Order(value = 1)
     @Argument(optional = true, example = "incrementIndex", description = "Incremental snapshot index. " +
         "The command will restore snapshot and after that all its increments sequentially from 1 to the specified index")
     int increment;
 
     /** */
+    @Order(value = 2)
     @Argument(optional = true, description = "Cache group names", example = "group1,...groupN")
     String[] groups;
 
     /** */
+    @Order(value = 3)
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
     String src;
 
     /** */
+    @Order(value = 4)
     @Argument(optional = true, description = "Run the operation synchronously, " +
         "the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control")
     boolean sync;
 
     /** */
+    @Order(value = 5)
     @Argument(optional = true,
         description = "Check snapshot data integrity before restore (slow!). Similar to the \"check\" command")
     boolean check;
 
     /** */
+    @Order(value = 6)
     @Argument(description = "Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead)")
     boolean status;
 
     /** */
+    @Order(value = 7)
     @Argument(description = "Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead)")
     boolean cancel;
 
     /** */
+    @Order(value = 8)
     @Argument(description = "Start snapshot restore operation (Default action)")
     boolean start;
 

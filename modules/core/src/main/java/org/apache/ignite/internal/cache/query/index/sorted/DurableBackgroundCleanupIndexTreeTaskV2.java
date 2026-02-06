@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
@@ -73,24 +74,31 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     @Nullable private transient volatile IgniteLogger log;
 
     /** Unique id. */
+    @Order(value = 0)
     String uid;
 
     /** Cache group name. */
+    @Order(value = 1)
     @Nullable String grpName;
 
     /** Cache name. */
+    @Order(value = 2)
     String cacheName;
 
     /** Index name. */
+    @Order(value = 3)
     String idxName;
 
     /** Old name of underlying index tree name. */
+    @Order(value = 4)
     String oldTreeName;
 
     /** New name of underlying index tree name. */
+    @Order(value = 5)
     String newTreeName;
 
     /** Number of segments. */
+    @Order(value = 6)
     int segments;
 
     /** Need to rename index root pages. */

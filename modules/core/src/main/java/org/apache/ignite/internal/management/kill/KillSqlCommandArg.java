@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -32,14 +33,17 @@ public class KillSqlCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(description = "Query identifier")
     String queryId;
 
     /** */
+    @Order(value = 1)
     UUID nodeId;
 
     /** */
+    @Order(value = 2)
     long qryId;
 
     /** */

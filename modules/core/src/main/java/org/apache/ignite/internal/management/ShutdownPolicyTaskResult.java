@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -28,6 +29,7 @@ public class ShutdownPolicyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Shutdown policy on result. */
+    @Order(value = 0)
     ShutdownPolicy shutdown;
 
     /**

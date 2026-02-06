@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -40,9 +41,11 @@ public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map of snapshot metadata information found on each cluster node. */
+    @Order(value = 0)
     Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
+    @Order(value = 1)
     @Nullable IdleVerifyResult idleRes;
 
     /** Default constructor. */

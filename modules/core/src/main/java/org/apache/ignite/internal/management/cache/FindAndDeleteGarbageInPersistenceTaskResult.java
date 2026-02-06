@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,10 +33,12 @@ public class FindAndDeleteGarbageInPersistenceTaskResult extends IgniteDataTrans
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @Order(value = 0)
     @GridToStringInclude
     Map<UUID, FindAndDeleteGarbageInPersistenceJobResult> result;
 
     /** Exceptions while indexes validation from node. */
+    @Order(value = 1)
     @GridToStringInclude
     Map<UUID, Exception> exceptions;
 

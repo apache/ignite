@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.wal;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
@@ -29,6 +30,7 @@ public class WalDeleteCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(optional = true, example = "consistentId1,consistentId2,....,consistentIdN")
     String[] consistentIds;

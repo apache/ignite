@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.tx;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -30,6 +31,7 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(
         example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|" +
@@ -37,9 +39,11 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     String value;
 
     /** */
+    @Order(value = 1)
     IgniteUuid uuid;
 
     /** */
+    @Order(value = 2)
     GridCacheVersion gridCacheVersion;
 
     /** */

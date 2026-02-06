@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -27,18 +28,21 @@ public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Positional
     @Argument(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")
     String snapshotName;
 
     /** */
+    @Order(value = 1)
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
     String src;
 
     /** */
+    @Order(value = 2)
     @Argument(example = "incrementIndex", optional = true,
         description = "Incremental snapshot index. " +
             "The command will check incremental snapshots sequentially from 1 to the specified index")

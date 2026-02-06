@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -34,12 +35,15 @@ public class CacheEvictionConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Eviction policy. */
+    @Order(value = 0)
     String plc;
 
     /** Cache eviction policy max size. */
+    @Order(value = 1)
     Integer plcMaxSize;
 
     /** Eviction filter to specify which entries should not be evicted. */
+    @Order(value = 2)
     String filter;
 
     /**

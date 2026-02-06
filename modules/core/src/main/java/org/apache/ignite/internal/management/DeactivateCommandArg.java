@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
@@ -28,10 +29,12 @@ public class DeactivateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(optional = true)
     boolean force;
 
     /** */
+    @Order(value = 1)
     String clusterName;
 
     /** */

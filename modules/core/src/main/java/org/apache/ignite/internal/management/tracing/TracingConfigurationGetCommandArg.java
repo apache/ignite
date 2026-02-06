@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.tracing;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
@@ -28,6 +29,7 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(description = "Tracing span scope")
     @EnumDescription(
         names = {
@@ -48,6 +50,7 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
     Scope scope;
 
     /** */
+    @Order(value = 1)
     @Argument(optional = true)
     String label;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.wal;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
@@ -26,6 +27,7 @@ public class WalStateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(
         description = "Comma-separated list of cache groups. If not set action applied to all groups",
         optional = true

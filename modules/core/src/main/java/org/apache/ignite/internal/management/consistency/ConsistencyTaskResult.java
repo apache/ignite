@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.consistency;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -27,12 +28,15 @@ public class ConsistencyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Result. */
+    @Order(value = 0)
     String msg;
 
     /** Failed. */
+    @Order(value = 1)
     boolean failed;
 
     /** Cancelled. */
+    @Order(value = 2)
     boolean cancelled;
 
     /**

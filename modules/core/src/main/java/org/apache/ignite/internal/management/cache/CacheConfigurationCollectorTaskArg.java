@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,9 +31,11 @@ public class CacheConfigurationCollectorTaskArg extends IgniteDataTransferObject
     private static final long serialVersionUID = 0L;
 
     /** Collection of cache names. */
+    @Order(value = 0)
     Collection<String> cacheNames;
 
     /** Cache name regexp. */
+    @Order(value = 1)
     String regex;
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.property;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 
 /** */
@@ -25,6 +26,7 @@ public class PropertySetCommandArg extends PropertyGetCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 1)
     @Argument(example = "<property_value>")
     String val;
 

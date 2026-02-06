@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
@@ -45,18 +46,23 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
+    @Order(value = 0)
     AffinityTopologyVersion topVer;
 
     /** Collection of calculated affinity nodes. */
+    @Order(value = 1)
     List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
+    @Order(value = 2)
     Map<UUID, Set<Integer>> primary;
 
     /** Map of backup node partitions. */
+    @Order(value = 3)
     Map<UUID, Set<Integer>> backup;
 
     /** Set of partitions which primary is different than in ideal assignment. */
+    @Order(value = 4)
     Set<Integer> primariesDifferentToIdeal;
 
     /** Assignment node IDs */

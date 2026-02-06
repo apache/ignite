@@ -18,6 +18,7 @@ package org.apache.ignite.internal.commandline.cache.reset_lost_partitions;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -30,6 +31,7 @@ public class CacheResetLostPartitionsTaskResult extends IgniteDataTransferObject
     /**
      * Map group name to result execute message.
      */
+    @Order(value = 0)
     Map<String, String> msgMap;
 
     /**

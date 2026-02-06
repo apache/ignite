@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,24 +31,31 @@ public class CacheRebalanceConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache rebalance mode. */
+    @Order(value = 0)
     CacheRebalanceMode mode;
 
     /** Cache rebalance batch size. */
+    @Order(value = 1)
     int batchSize;
 
     /** Rebalance partitioned delay. */
+    @Order(value = 2)
     long partitionedDelay;
 
     /** Time in milliseconds to wait between rebalance messages. */
+    @Order(value = 3)
     long throttle;
 
     /** Rebalance timeout. */
+    @Order(value = 4)
     long timeout;
 
     /** Rebalance batches prefetch count. */
+    @Order(value = 5)
     long batchesPrefetchCnt;
 
     /** Cache rebalance order. */
+    @Order(value = 6)
     int rebalanceOrder;
 
     /**

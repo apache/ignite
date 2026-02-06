@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.List;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,18 +33,23 @@ public class QueryConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0)
     List<String> sqlFuncClss;
 
     /** */
+    @Order(value = 1)
     long longQryWarnTimeout;
 
     /** */
+    @Order(value = 2)
     boolean sqlEscapeAll;
 
     /** */
+    @Order(value = 3)
     List<String> indexedTypes;
 
     /** */
+    @Order(value = 4)
     String sqlSchema;
 
     /**

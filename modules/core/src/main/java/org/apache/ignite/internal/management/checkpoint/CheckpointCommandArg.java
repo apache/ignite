@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.checkpoint;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
@@ -26,14 +27,17 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(value = 0)
     @Argument(description = "Reason (visible in logs)", optional = true)
     String reason;
 
     /** */
+    @Order(value = 1)
     @Argument(description = "Wait for checkpoint to finish", optional = true)
     boolean waitForFinish;
 
     /** */
+    @Order(value = 2)
     @Argument(description = "Timeout in milliseconds", optional = true)
     long timeout = -1;
 
