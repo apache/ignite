@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.internal.codegen.idto.IDTOSerializerFactory;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -68,14 +70,25 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @param out Output object to write data content.
      * @throws IOException If I/O errors occur.
      */
-    protected abstract void writeExternalData(ObjectOutput out) throws IOException;
+    protected void writeExternalData(ObjectOutput out) throws IOException {
+        throw new UnsupportedOperationException("Please, implement custom method or provide support in " +
+            "IDTOSerializerGenerator for " + getClass());
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
         try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
-            writeExternalData(dtout);
+            IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
+
+            if (serializer == IgniteUtils.EMPTY_DTO_SERIALIZER) {
+                writeExternalData(dtout);
+
+                return;
+            }
+
+            serializer.writeExternal(this, dtout);
         }
     }
 
@@ -86,7 +99,10 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @throws IOException If I/O errors occur.
      * @throws ClassNotFoundException If the class for an object being restored cannot be found.
      */
-    protected abstract void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException;
+    protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        throw new UnsupportedOperationException("Please, implement custom method or provide support in " +
+            "IDTOSerializerGenerator for " + getClass());
+    }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -97,7 +113,15 @@ public abstract class IgniteDataTransferObject implements Externalizable {
                 "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
-            readExternalData(dtin);
+            IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
+
+            if (serializer == IgniteUtils.EMPTY_DTO_SERIALIZER) {
+                readExternalData(dtin);
+
+                return;
+            }
+
+            serializer.readExternal(this, dtin);
         }
     }
 }

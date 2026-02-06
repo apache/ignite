@@ -81,6 +81,7 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
         waitingLeft = 0;
         waitingRight = 0;
         left = null;
+        processed = 0;
 
         leftInBuf.clear();
     }

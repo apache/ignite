@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.EnumSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -25,7 +24,6 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
@@ -38,9 +36,6 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new HashJoinConverterRule();
 
-    /** */
-    private static final EnumSet<JoinRelType> NON_EQ_CONDITIONS_SUPPORT = EnumSet.of(JoinRelType.INNER, JoinRelType.SEMI);
-
     /** Ctor. */
     private HashJoinConverterRule() {
         super("HashJoinConverter", HintDefinition.HASH_JOIN);
@@ -52,16 +47,7 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
 
         IgniteJoinInfo joinInfo = IgniteJoinInfo.of(join);
 
-        if (joinInfo.pairs().isEmpty())
-            return false;
-
-        // IS NOT DISTINCT is currently not supported by HashJoin
-        if (joinInfo.allowNulls().cardinality() > 0)
-            return false;
-
-        // Current limitation: unmatched products on left or right part requires special handling of non-equi condition
-        // on execution level.
-        return joinInfo.isEqui() || NON_EQ_CONDITIONS_SUPPORT.contains(join.getJoinType());
+        return !joinInfo.pairs().isEmpty();
     }
 
     /** {@inheritDoc} */

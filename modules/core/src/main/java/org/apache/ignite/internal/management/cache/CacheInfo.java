@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -27,7 +24,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Cache info DTO.
@@ -37,46 +33,46 @@ public class CacheInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Sequence name. */
-    private String seqName;
+    String seqName;
 
     /** Sequence value. */
-    private long seqVal;
+    long seqVal;
 
     /** Cache name. */
-    private String cacheName;
+    String cacheName;
 
     /** Cache id. */
-    private int cacheId;
+    int cacheId;
 
     /** Group name. */
-    private String grpName;
+    String grpName;
 
     /** Group id. */
-    private int grpId;
+    int grpId;
 
     /** Caches count. */
-    private int cachesCnt;
+    int cachesCnt;
 
     /** Partitions. */
-    private int partitions;
+    int partitions;
 
     /** Mapped. */
-    private int mapped;
+    int mapped;
 
     /** Topology version. */
     public AffinityTopologyVersion topVer;
 
     /** Mode. */
-    private CacheMode mode;
+    CacheMode mode;
 
     /** Atomicity mode. */
-    private CacheAtomicityMode atomicityMode;
+    CacheAtomicityMode atomicityMode;
 
     /** Backups count. */
-    private int backupsCnt;
+    int backupsCnt;
 
     /** Affinity class name. */
-    private String affinityClsName;
+    String affinityClsName;
 
     /** */
     public String getSeqName() {
@@ -340,42 +336,6 @@ public class CacheInfo extends IgniteDataTransferObject {
         }
 
         return map;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, seqName);
-        out.writeLong(seqVal);
-        U.writeString(out, cacheName);
-        out.writeInt(cacheId);
-        U.writeString(out, grpName);
-        out.writeInt(grpId);
-        out.writeInt(partitions);
-        out.writeInt(mapped);
-        out.writeObject(topVer);
-        out.writeByte(CacheMode.toCode(mode));
-        out.writeInt(backupsCnt);
-        U.writeString(out, affinityClsName);
-        out.writeInt(cachesCnt);
-        U.writeEnum(out, atomicityMode);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        seqName = U.readString(in);
-        seqVal = in.readLong();
-        cacheName = U.readString(in);
-        cacheId = in.readInt();
-        grpName = U.readString(in);
-        grpId = in.readInt();
-        partitions = in.readInt();
-        mapped = in.readInt();
-        topVer = (AffinityTopologyVersion)in.readObject();
-        mode = CacheMode.fromCode(in.readByte());
-        backupsCnt = in.readInt();
-        affinityClsName = U.readString(in);
-        cachesCnt = in.readInt();
-        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
     }
 
     /** {@inheritDoc} */

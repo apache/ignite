@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class KillTransactionCommandArg extends IgniteDataTransferObject {
@@ -33,17 +29,7 @@ public class KillTransactionCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Transaction identifier")
-    private String xid;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, xid);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        xid = U.readString(in);
-    }
+    String xid;
 
     /** */
     public String xid() {
