@@ -252,7 +252,7 @@ public class SnapshotCheckProcess {
             }
 
             kctx.cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, ctx.req.nodes(), wrns -> {});
+                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, reduced.keySet(), wrns -> {});
 
             fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
         }
