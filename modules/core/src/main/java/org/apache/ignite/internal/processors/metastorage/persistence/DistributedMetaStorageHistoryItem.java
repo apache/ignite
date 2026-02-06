@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
-public final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
+final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 

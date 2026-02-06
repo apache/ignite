@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -412,10 +411,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     /** {@inheritDoc} */
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null;
-
-        if (val instanceof DistributedMetaStorageHistoryItem) {
-            System.out.println("key = " + key);
-        }
 
         if (!readOnly)
             writeRaw(key, marshaller.marshal(val));
