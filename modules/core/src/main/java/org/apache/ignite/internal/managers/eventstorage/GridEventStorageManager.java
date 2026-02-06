@@ -1027,10 +1027,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     if (res.eventsBytes() != null)
                         res.events(U.<Collection<Event>>unmarshal(marsh, res.eventsBytes(),
                             U.resolveClassLoader(ctx.config())));
-
-                    if (res.exceptionBytes() != null)
-                        res.exception(U.<Throwable>unmarshal(marsh, res.exceptionBytes(),
-                            U.resolveClassLoader(ctx.config())));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal events query response: " + msg, e);
@@ -1260,10 +1256,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     if (log.isDebugEnabled())
                         log.debug("Sending event query response to node [nodeId=" + nodeId + "res=" + res + ']');
 
-                    if (!ctx.localNodeId().equals(nodeId)) {
+                    if (!ctx.localNodeId().equals(nodeId))
                         res.eventsBytes(U.marshal(marsh, res.events()));
-                        res.exceptionBytes(U.marshal(marsh, res.exception()));
-                    }
 
                     ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
                 }

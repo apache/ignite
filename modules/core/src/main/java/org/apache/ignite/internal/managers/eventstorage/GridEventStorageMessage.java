@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -53,11 +54,8 @@ public class GridEventStorageMessage implements Message {
     private byte[] evtsBytes;
 
     /** */
-    private Throwable ex;
-
-    /** */
-    @Order(value = 3, method = "exceptionBytes")
-    private byte[] exBytes;
+    @Order(value = 3, method = "errorMessage")
+    private ErrorMessage errMsg;
 
     /** */
     @Order(value = 4, method = "classLoaderId")
@@ -111,7 +109,7 @@ public class GridEventStorageMessage implements Message {
         this.ldrParties = ldrParties;
 
         evts = null;
-        ex = null;
+        errMsg = null;
     }
 
     /**
@@ -120,7 +118,9 @@ public class GridEventStorageMessage implements Message {
      */
     GridEventStorageMessage(Collection<Event> evts, Throwable ex) {
         this.evts = evts;
-        this.ex = ex;
+
+        if (ex != null)
+            errMsg = new ErrorMessage(ex);
 
         resTopic = null;
         filter = null;
@@ -273,29 +273,22 @@ public class GridEventStorageMessage implements Message {
     /**
      * @return Exception.
      */
-    Throwable exception() {
-        return ex;
+    @Nullable Throwable exception() {
+        return ErrorMessage.error(errMsg);
     }
 
     /**
-     * @param ex Exception.
+     * @return Error message.
      */
-    void exception(Throwable ex) {
-        this.ex = ex;
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
     }
 
     /**
-     * @return Serialized exception.
+     * @param errMsg Error message.
      */
-    public byte[] exceptionBytes() {
-        return exBytes;
-    }
-
-    /**
-     * @param exBytes Serialized exception.
-     */
-    public void exceptionBytes(byte[] exBytes) {
-        this.exBytes = exBytes;
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
