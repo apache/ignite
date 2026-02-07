@@ -190,7 +190,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int nodeIdx = i;
 
-            try (OperationSecurityContext ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
+            try (Scope ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
                 GridTestUtils.assertThrows(log, () -> {
                     grid(nodeIdx).context().security().createUser("test1", "test1".toCharArray());
 
