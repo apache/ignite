@@ -85,6 +85,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.binary.streams.BinaryStreamsTestUtils;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
@@ -100,7 +101,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -4159,7 +4159,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         iCfg.setBinaryConfiguration(bCfg);
         iCfg.setClientMode(false);
         iCfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
                 //No-op.
             }
         });
@@ -4217,7 +4217,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         iCfg.setBinaryConfiguration(bCfg);
         iCfg.setClientMode(false);
         iCfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
                 //No-op.
             }
         });
