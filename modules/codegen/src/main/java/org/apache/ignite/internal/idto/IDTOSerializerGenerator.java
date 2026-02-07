@@ -147,8 +147,6 @@ public class IDTOSerializerGenerator {
         ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, obj.${f});", "U.readByteArray(in)"));
         ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, obj.${f});", "U.readIntArray(in)"));
         ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, obj.${f});", "U.readLongArray(in)"));
-        ARRAY_TYPE_SERDES.put(String.class.getName(), OBJ_ARRAY_SERDES);
-        ARRAY_TYPE_SERDES.put(UUID.class.getName(), OBJ_ARRAY_SERDES);
     }
 
     /** Environment. */
@@ -370,8 +368,31 @@ public class IDTOSerializerGenerator {
 
                 serDes = ARRAY_TYPE_SERDES.get(className(comp));
 
-                if (serDes == null && enumType(env, comp))
-                     serDes = OBJ_ARRAY_SERDES;
+                if (serDes == null) {
+                    System.out.println("comp.toString() = " + comp.toString());
+                    if (enumType(env, comp))
+                        serDes = OBJ_ARRAY_SERDES;
+                    else if (TYPE_SERDES.containsKey(comp.toString())) {
+                        IgniteBiTuple<String, String> arrElSerdes = TYPE_SERDES.get(comp.toString());
+
+                        String writeStr = arrElSerdes.get1().replaceAll("obj.\\$\\{f}", "el");
+
+                        String write = "{\n" +
+                            TAB + "int len = obj.${f} == null ? 0 : obj.${f}.length;\n" +
+                            TAB + "out.writeInt(len);\n" +
+                            TAB + "if (obj.${f} != null && len > 0) {\n" +
+                            TAB + TAB + "for (int i = 0; i < len; i++) {\n" +
+                            TAB + TAB + TAB + "${c} el = obj.${f}[i];\n" +
+                            TAB + TAB + TAB + writeStr + "\n" +
+                            TAB + TAB + "}\n" +
+                            TAB + "}\n" +
+                            "}";
+
+                        serDes = F.t(write, "null; // FIXME");
+                    }
+                    else
+                        serDes = OBJ_ARRAY_SERDES;
+                }
             }
             else {
                 if (className(type).equals(Map.class.getName())) {
