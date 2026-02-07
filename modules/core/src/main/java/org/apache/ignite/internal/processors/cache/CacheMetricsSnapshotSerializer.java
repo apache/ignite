@@ -193,5 +193,7 @@ public class CacheMetricsSnapshotSerializer implements IgniteDataTransferObjectS
         m.keySize(in.readInt());
         m.txKeyCollisions(U.readLongString(in));
         m.indexBuildPartitionsLeftCount(in.readInt());
+
+        obj.m = m;
     }
 }
