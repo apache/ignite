@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.diagnostic;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -27,6 +28,7 @@ public class PageLocksResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     String payload;
 
     /**

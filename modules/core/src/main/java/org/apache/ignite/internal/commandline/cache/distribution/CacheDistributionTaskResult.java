@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,9 +39,11 @@ public class CacheDistributionTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Job results. */
+    @Order(0)
     List<CacheDistributionNode> nodeResList;
 
     /** Exceptions. */
+    @Order(1)
     Map<UUID, Exception> exceptions;
 
     /**

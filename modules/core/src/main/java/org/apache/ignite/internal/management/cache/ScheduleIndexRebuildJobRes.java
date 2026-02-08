@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -29,15 +30,19 @@ public class ScheduleIndexRebuildJobRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map cache names -> indexes scheduled for the rebuild. */
+    @Order(0)
     Map<String, Set<String>> cacheToIndexes;
 
     /** Names of cache indexes that were not found (cache -> set of indexes). */
+    @Order(1)
     Map<String, Set<String>> notFoundIndexes;
 
     /** Names of caches that were not found. */
+    @Order(2)
     Set<String> notFoundCacheNames;
 
     /** Names of cache groups that were not found. */
+    @Order(3)
     Set<String> notFoundGroupNames;
 
     /**

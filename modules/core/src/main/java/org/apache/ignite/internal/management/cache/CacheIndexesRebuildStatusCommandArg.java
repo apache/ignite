@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
@@ -27,6 +28,7 @@ public class CacheIndexesRebuildStatusCommandArg extends IgniteDataTransferObjec
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(
         description = "Specify node for job execution. If not specified explicitly, info will be gathered from all nodes",
         example = "nodeId",

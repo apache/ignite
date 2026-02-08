@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
@@ -28,11 +29,13 @@ public class CacheDestroyCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "specifies a comma-separated list of cache names to be destroyed",
         example = "cache1,...,cacheN")
     String[] caches;
 
     /** */
+    @Order(1)
     @Argument(description = "permanently destroy all user-created caches")
     boolean destroyAllCaches;
 

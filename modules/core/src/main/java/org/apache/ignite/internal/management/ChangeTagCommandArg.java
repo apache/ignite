@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
@@ -30,6 +31,7 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "newTagValue")
     String newTagValue;

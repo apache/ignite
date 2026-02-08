@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
@@ -38,6 +39,7 @@ public class TracingConfigurationTaskResult extends IgniteDataTransferObject {
     private static final Character RES_PRINTER_SEPARATOR = ',';
 
     /** Retrieved reseted or updated tracing configuration. */
+    @Order(0)
     List<TracingConfigurationItem> tracingConfigurations = new ArrayList<>();
 
     /**

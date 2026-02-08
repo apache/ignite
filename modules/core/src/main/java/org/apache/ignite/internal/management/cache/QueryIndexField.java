@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -33,9 +34,11 @@ public class QueryIndexField extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index field name. */
+    @Order(0)
     String name;
 
     /** Index field sort order. */
+    @Order(1)
     boolean sort;
 
     /**

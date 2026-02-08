@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.tracing;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.spi.tracing.Scope;
 
@@ -29,11 +30,13 @@ public class TracingConfigurationSetCommandArg extends TracingConfigurationGetCo
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(2)
     @Argument(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
         "More or less reflects the probability of sampling specific trace.")
     double samplingRate;
 
     /** */
+    @Order(3)
     @Argument(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
     Scope[] includedScopes;
 

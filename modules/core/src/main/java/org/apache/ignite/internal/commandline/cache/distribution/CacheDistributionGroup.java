@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.commandline.cache.distribution;
 
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -27,12 +28,15 @@ public class CacheDistributionGroup extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group identifier. */
+    @Order(0)
     int grpId;
 
     /** Group name. */
+    @Order(1)
     String grpName;
 
     /** List of partitions. */
+    @Order(2)
     List<CacheDistributionPartition> partitions;
 
     /** Default constructor. */

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -28,16 +29,19 @@ public class CacheContentionCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** Min queue size. */
+    @Order(0)
     @Positional
     @Argument(example = "minQueueSize")
     int minQueueSize;
 
     /** Node id. */
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "nodeId")
     UUID nodeId;
 
     /** Max print. */
+    @Order(2)
     @Positional
     @Argument(optional = true, example = "maxPrint")
     int maxPrint = 10;

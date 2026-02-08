@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,24 +44,31 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster state. */
+    @Order(0)
     ClusterState clusterState;
 
     /** Current topology version. */
+    @Order(1)
     long topVer;
 
     /** Current baseline nodes. */
+    @Order(2)
     TreeMap<String, BaselineNode> baseline;
 
     /** Current server nodes. */
+    @Order(3)
     TreeMap<String, BaselineNode> servers;
 
     /** Baseline autoadjustment settings. */
+    @Order(4)
     BaselineAutoAdjustSettings autoAdjustSettings;
 
     /** Time to next baseline adjust. */
+    @Order(5)
     long remainingTimeToBaselineAdjust = -1;
 
     /** Is baseline adjust in progress? */
+    @Order(6)
     boolean baselineAdjustInProgress = false;
 
     /**

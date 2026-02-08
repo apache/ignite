@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.rollingupgrade;
 
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -28,15 +29,19 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     IgniteProductVersion curVer;
 
     /** */
+    @Order(1)
     IgniteProductVersion targetVer;
 
     /** */
+    @Order(2)
     String errMsg;
 
     /** */
+    @Order(3)
     List<RollingUpgradeStatusNode> nodes;
 
     /** */

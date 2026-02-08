@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,15 +30,19 @@ public class IndexValidationIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
+    @Order(0)
     String key;
 
     /** Cache name. */
+    @Order(1)
     String cacheName;
 
     /** Index name. */
+    @Order(2)
     String idxName;
 
     /** T. */
+    @Order(3)
     @GridToStringExclude
     Throwable t;
 

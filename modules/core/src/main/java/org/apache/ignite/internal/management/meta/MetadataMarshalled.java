@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -30,9 +31,11 @@ public class MetadataMarshalled extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Marshaled metadata. */
+    @Order(0)
     byte[] metaMarshalled;
 
     /** Metadata. */
+    @Order(1)
     BinaryMetadata meta;
 
     /**

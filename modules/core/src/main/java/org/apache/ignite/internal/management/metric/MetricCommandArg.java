@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.metric;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -28,11 +29,13 @@ public class MetricCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "Name of the metric")
     @Positional
     String name;
 
     /** */
+    @Order(1)
     @Argument(description = "Node id", optional = true)
     UUID nodeId;
 

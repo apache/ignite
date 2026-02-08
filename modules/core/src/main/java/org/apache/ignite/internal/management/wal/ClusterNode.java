@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.wal;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,17 +32,21 @@ public class ClusterNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster node consistent id. */
+    @Order(0)
     @GridToStringInclude
     String consistentId;
 
     /** Cluster node attributes. */
+    @Order(1)
     Map<String, Object> attrs;
 
     /** Cluster node addresses. */
+    @Order(2)
     @GridToStringInclude
     Collection<String> addrs;
 
     /** Cluster node host names. */
+    @Order(3)
     @GridToStringInclude
     Collection<String> hostNames;
 

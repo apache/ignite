@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -27,12 +28,14 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** Target version. */
+    @Order(0)
     @Positional
     @Argument(description = "Target Ignite version. The target version can be one minor higher if its maintenance version is zero, "
         + "or one maintenance version higher (e.g. 2.18.0 -> 2.18.1 or 2.18.1 -> 2.19.0)")
     String targetVersion;
 
     /** Force flag. */
+    @Order(1)
     @Argument(description = "Enable rolling upgrade without target version checks."
         + " Use only when required, if the upgrade cannot proceed otherwise", optional = true)
     boolean force;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.tx;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,39 +32,51 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Near xid version. */
+    @Order(0)
     GridCacheVersion nearXidVer;
 
     /** Local node id. */
+    @Order(1)
     UUID locNodeId;
 
     /** Local node consistent id. */
+    @Order(2)
     Object locNodeConsistentId;
 
     /** Near node id. */
+    @Order(3)
     UUID nearNodeId;
 
     /** Near node consistent id. */
+    @Order(4)
     Object nearNodeConsistentId;
 
     /** Tx mapping type. */
+    @Order(5)
     TxMappingType txMappingType;
 
     /** Dht node id. */
+    @Order(6)
     UUID dhtNodeId;
 
     /** Dht node consistent id. */
+    @Order(7)
     Object dhtNodeConsistentId;
 
     /** Used caches. */
+    @Order(8)
     Map<Integer, String> usedCaches;
 
     /** Used cache groups. */
+    @Order(9)
     Map<Integer, String> usedCacheGroups;
 
     /** Local tx keys. */
+    @Order(10)
     List<TxVerboseKey> locTxKeys;
 
     /** Near only tx keys. */
+    @Order(11)
     List<TxVerboseKey> nearOnlyTxKeys;
 
     /**

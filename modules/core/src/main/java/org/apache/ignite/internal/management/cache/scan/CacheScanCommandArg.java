@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache.scan;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -30,15 +31,18 @@ public class CacheScanCommandArg extends IgniteDataTransferObject {
     private static final int DFLT_LIMIT = 1_000;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "cacheName")
     String cacheName;
 
     /** */
+    @Order(1)
     @Argument(description = "Pluggable output format. 'default', 'table' exists by default", example = "table", optional = true)
     String outputFormat;
 
     /** */
+    @Order(2)
     @Argument(description = "limit count of entries to scan (" + DFLT_LIMIT + " by default)", example = "N", optional = true)
     int limit = DFLT_LIMIT;
 

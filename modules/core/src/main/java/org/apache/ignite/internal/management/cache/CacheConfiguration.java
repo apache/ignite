@@ -25,6 +25,7 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,129 +42,171 @@ public class CacheConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
+    @Order(0)
     String name;
 
     /** Cache group name. */
+    @Order(1)
     String grpName;
 
     /** Cache mode. */
+    @Order(2)
     CacheMode mode;
 
     /** Cache atomicity mode. */
+    @Order(3)
     CacheAtomicityMode atomicityMode;
 
     /** Eager ttl flag. */
+    @Order(4)
     boolean eagerTtl;
 
     /** Write synchronization mode. */
+    @Order(5)
     CacheWriteSynchronizationMode writeSynchronizationMode;
 
     /** Invalidate. */
+    @Order(6)
     boolean invalidate;
 
     /** Max concurrent async operations. */
+    @Order(7)
     int maxConcurrentAsyncOps;
 
     /** Cache interceptor. */
+    @Order(8)
     String interceptor;
 
     /** Default lock acquisition timeout. */
+    @Order(9)
     long dfltLockTimeout;
 
     /** Cache affinity config. */
+    @Order(10)
     CacheAffinityConfiguration affinityCfg;
 
     /** Preload config. */
+    @Order(11)
     CacheRebalanceConfiguration rebalanceCfg;
 
     /** Eviction config. */
+    @Order(12)
     CacheEvictionConfiguration evictCfg;
 
     /** Near cache config. */
+    @Order(13)
     CacheNearConfiguration nearCfg;
 
     /** Store config. */
+    @Order(14)
     CacheStoreConfiguration storeCfg;
 
     /** Collection of query entities. */
+    @Order(15)
     List<QueryEntity> qryEntities;
 
     /** Collection of type metadata. */
+    @Order(16)
     List<CacheJdbcType> jdbcTypes;
 
     /** Whether statistics collection is enabled. */
+    @Order(17)
     boolean statisticsEnabled;
 
     /** Whether management is enabled. */
+    @Order(18)
     boolean mgmtEnabled;
 
     /** Class name of cache loader factory. */
+    @Order(19)
     String ldrFactory;
 
     /** Class name of cache writer factory. */
+    @Order(20)
     String writerFactory;
 
     /** Class name of expiry policy factory. */
+    @Order(21)
     String expiryPlcFactory;
 
     /** Query configuration. */
+    @Order(22)
     QueryConfiguration qryCfg;
 
     /** System cache flag. */
+    @Order(23)
     boolean sys;
 
     /** Keep binary in store flag. */
+    @Order(24)
     boolean storeKeepBinary;
 
     /** On-heap cache enabled flag. */
+    @Order(25)
     boolean onheapCache;
 
     /** Partition loss policy. */
+    @Order(26)
     PartitionLossPolicy partLossPlc;
 
     /** Query parallelism. */
+    @Order(27)
     int qryParallelism;
 
     /** Copy on read flag. */
+    @Order(28)
     boolean cpOnRead;
 
     /** Eviction filter. */
+    @Order(29)
     String evictFilter;
 
     /** Listener configurations. */
+    @Order(30)
     String lsnrConfigurations;
 
     /** */
+    @Order(31)
     boolean loadPrevVal;
 
     /** Name of {@link DataRegionConfiguration} for this cache */
+    @Order(32)
     String dataRegName;
 
     /** Maximum inline size for sql indexes. */
+    @Order(33)
     int sqlIdxMaxInlineSize;
 
     /** Node filter specifying nodes on which this cache should be deployed. */
+    @Order(34)
     String nodeFilter;
 
     /** */
+    @Order(35)
     int qryDetailMetricsSz;
 
     /** Flag indicating whether data can be read from backup. */
+    @Order(36)
     boolean readFromBackup;
 
     /** Name of class implementing GridCacheTmLookup. */
+    @Order(37)
     String tmLookupClsName;
 
     /** Cache topology validator. */
+    @Order(38)
     String topValidator;
 
     /** Dynamic deployment ID. */
+    @Order(39)
     IgniteUuid dynamicDeploymentId;
 
     /** Disk page compression algorithm. */
+    @Order(40)
     DiskPageCompression diskPageCompression;
 
     /** Algorithm specific disk page compression level. */
+    @Order(41)
     Integer diskPageCompressionLevel;
 
     /**

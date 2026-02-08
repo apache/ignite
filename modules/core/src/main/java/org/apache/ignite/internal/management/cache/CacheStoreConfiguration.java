@@ -21,6 +21,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheAbstractJdbcStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,39 +37,51 @@ public class CacheStoreConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Whether cache has JDBC store. */
+    @Order(0)
     boolean jdbcStore;
 
     /** Cache store class name. */
+    @Order(1)
     String store;
 
     /** Cache store factory class name. */
+    @Order(2)
     String storeFactory;
 
     /** Whether cache should operate in read-through mode. */
+    @Order(3)
     boolean readThrough;
 
     /** Whether cache should operate in write-through mode. */
+    @Order(4)
     boolean writeThrough;
 
     /** Flag indicating whether write-behind behaviour should be used for the cache store. */
+    @Order(5)
     boolean writeBehindEnabled;
 
     /** Maximum batch size for write-behind cache store operations. */
+    @Order(6)
     int batchSz;
 
     /** Frequency with which write-behind cache is flushed to the cache store in milliseconds. */
+    @Order(7)
     long flushFreq;
 
     /** Maximum object count in write-behind cache. */
+    @Order(8)
     int flushSz;
 
     /** Number of threads that will perform cache flushing. */
+    @Order(9)
     int flushThreadCnt;
 
     /** Keep binary in store flag. */
+    @Order(10)
     boolean storeKeepBinary;
 
     /** Write coalescing flag for write-behind cache store */
+    @Order(11)
     boolean writeBehindCoalescing;
 
     /**

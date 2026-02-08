@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,12 +33,15 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Node IDs task should be mapped to. */
+    @Order(0)
     List<UUID> nodes;
 
     /** Task argument. */
+    @Order(1)
     A arg;
 
     /** Debug flag. */
+    @Order(2)
     boolean debug;
 
     /**

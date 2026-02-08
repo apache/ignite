@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,9 +33,11 @@ public class ValidateIndexesCheckSizeResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache size. */
+    @Order(0)
     long cacheSize;
 
     /** Issues. */
+    @Order(1)
     @GridToStringExclude
     Collection<ValidateIndexesCheckSizeIssue> issues;
 

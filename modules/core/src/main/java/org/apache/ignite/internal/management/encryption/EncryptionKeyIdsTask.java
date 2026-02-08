@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.encryption;
 
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -67,6 +68,7 @@ public class EncryptionKeyIdsTask extends CacheGroupEncryptionTask<List<Integer>
         private static final long serialVersionUID = 0L;
 
         /** */
+        @Order(0)
         List<Integer> val;
 
         /** {@inheritDoc} */

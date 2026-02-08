@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.metric;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 
@@ -26,6 +27,7 @@ public class MetricConfigureMaxValueCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(2)
     @Argument(description = "Time interval of the metric", example = "newTimeInterval")
     @Positional
     long newTimeInterval;

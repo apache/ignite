@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
@@ -26,6 +27,7 @@ public class CacheClearCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "specifies a comma-separated list of cache names to be cleared")
     String[] caches;
 

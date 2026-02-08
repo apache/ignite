@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,9 +30,11 @@ public class IndexIntegrityCheckIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache group name. */
+    @Order(0)
     String grpName;
 
     /** T. */
+    @Order(1)
     @GridToStringExclude
     Throwable t;
 

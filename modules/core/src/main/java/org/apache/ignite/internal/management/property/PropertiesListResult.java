@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.property;
 
 import java.util.Collection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -31,6 +32,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Properties info: name, value, description. */
+    @Order(0)
     Collection<T3<String, String, String>> props;
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.Comparator;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -35,19 +36,24 @@ public class IndexListInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
+    @Order(0)
     String grpName;
 
     /** Cache name. */
+    @Order(1)
     String cacheName;
 
     /** Index name. */
+    @Order(2)
     String idxName;
 
     /** Columns names. */
+    @Order(3)
     @GridToStringInclude
     Collection<String> colsNames;
 
     /** Table name. */
+    @Order(4)
     String tblName;
 
     /**

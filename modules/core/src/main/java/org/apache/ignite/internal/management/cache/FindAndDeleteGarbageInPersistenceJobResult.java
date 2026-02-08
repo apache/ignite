@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,6 +32,7 @@ public class FindAndDeleteGarbageInPersistenceJobResult extends IgniteDataTransf
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @Order(0)
     @GridToStringInclude
     Map<Integer, Map<Integer, Long>> result;
 

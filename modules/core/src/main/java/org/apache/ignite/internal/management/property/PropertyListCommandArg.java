@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.property;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
@@ -26,6 +27,7 @@ public class PropertyListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(optional = true, description = "Print detailed information: name, value, description")
     boolean info;
 

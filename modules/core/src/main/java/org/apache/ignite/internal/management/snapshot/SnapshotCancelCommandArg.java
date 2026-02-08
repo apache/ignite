@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
@@ -29,10 +30,12 @@ public class SnapshotCancelCommandArg extends CancelSnapshotArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "Snapshot operation request ID", optional = true)
     UUID id;
 
     /** */
+    @Order(1)
     @Argument(description = "Snapshot name (deprecated)", optional = true)
     String name;
 

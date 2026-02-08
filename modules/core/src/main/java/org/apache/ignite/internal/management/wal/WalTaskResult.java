@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.wal;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,14 +32,17 @@ public class WalTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Exceptions by node consistent id. */
+    @Order(0)
     @GridToStringInclude
     Map<String, Exception> exceptions;
 
     /** Archived wal segments path search results by node consistent id. */
+    @Order(1)
     @GridToStringInclude
     Map<String, Collection<String>> results;
 
     /** Nodes info by node consistent id. */
+    @Order(2)
     @GridToStringInclude
     Map<String, ClusterNode> nodesInfo;
 
