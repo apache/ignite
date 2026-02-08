@@ -79,6 +79,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     @Order(4)
     private Set<UUID> failedNodes;
 
+    /** Helps to avoid multiply serialization in case message is sent more than once using different workers. */
+    public byte[] serializedData() {
+        return serData;
+    }
+
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
@@ -104,6 +109,14 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         topVer = msg.topVer;
         flags = msg.flags;
     }
+
+    /** */
+    public void serializedData(byte[] serData) {
+        this.serData = serData;
+    }
+
+    /** */
+    private byte[] serData;
 
     /**
      * @return {@code True} if need use trace logging for this message (to reduce amount of logging with debug level).
