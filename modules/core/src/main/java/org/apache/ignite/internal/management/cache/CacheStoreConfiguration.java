@@ -77,11 +77,11 @@ public class CacheStoreConfiguration extends IgniteDataTransferObject {
     int flushThreadCnt;
 
     /** Keep binary in store flag. */
-    @Order(value = 10)
+    @Order(10)
     boolean storeKeepBinary;
 
     /** Write coalescing flag for write-behind cache store */
-    @Order(value = 11)
+    @Order(11)
     boolean writeBehindCoalescing;
 
     /**

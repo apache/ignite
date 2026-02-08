@@ -88,19 +88,19 @@ public class TxInfo extends IgniteDataTransferObject {
     int size;
 
     /** */
-    @Order(value = 10)
+    @Order(10)
     IgniteUuid nearXid;
 
     /** */
-    @Order(value = 11)
+    @Order(11)
     Collection<UUID> masterNodeIds;
 
     /** */
-    @Order(value = 12)
+    @Order(12)
     AffinityTopologyVersion topVer;
 
     /** Tx verbose info. */
-    @Order(value = 13)
+    @Order(13)
     TxVerboseInfo txVerboseInfo;
 
     /**

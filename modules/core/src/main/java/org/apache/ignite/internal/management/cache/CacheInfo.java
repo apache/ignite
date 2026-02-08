@@ -74,19 +74,19 @@ public class CacheInfo extends IgniteDataTransferObject {
     public AffinityTopologyVersion topVer;
 
     /** Mode. */
-    @Order(value = 10)
+    @Order(10)
     CacheMode mode;
 
     /** Atomicity mode. */
-    @Order(value = 11)
+    @Order(11)
     CacheAtomicityMode atomicityMode;
 
     /** Backups count. */
-    @Order(value = 12)
+    @Order(12)
     int backupsCnt;
 
     /** Affinity class name. */
-    @Order(value = 13)
+    @Order(13)
     String affinityClsName;
 
     /** */

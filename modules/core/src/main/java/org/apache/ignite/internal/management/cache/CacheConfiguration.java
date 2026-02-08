@@ -82,131 +82,131 @@ public class CacheConfiguration extends IgniteDataTransferObject {
     long dfltLockTimeout;
 
     /** Cache affinity config. */
-    @Order(value = 10)
+    @Order(10)
     CacheAffinityConfiguration affinityCfg;
 
     /** Preload config. */
-    @Order(value = 11)
+    @Order(11)
     CacheRebalanceConfiguration rebalanceCfg;
 
     /** Eviction config. */
-    @Order(value = 12)
+    @Order(12)
     CacheEvictionConfiguration evictCfg;
 
     /** Near cache config. */
-    @Order(value = 13)
+    @Order(13)
     CacheNearConfiguration nearCfg;
 
     /** Store config. */
-    @Order(value = 14)
+    @Order(14)
     CacheStoreConfiguration storeCfg;
 
     /** Collection of query entities. */
-    @Order(value = 15)
+    @Order(15)
     List<QueryEntity> qryEntities;
 
     /** Collection of type metadata. */
-    @Order(value = 16)
+    @Order(16)
     List<CacheJdbcType> jdbcTypes;
 
     /** Whether statistics collection is enabled. */
-    @Order(value = 17)
+    @Order(17)
     boolean statisticsEnabled;
 
     /** Whether management is enabled. */
-    @Order(value = 18)
+    @Order(18)
     boolean mgmtEnabled;
 
     /** Class name of cache loader factory. */
-    @Order(value = 19)
+    @Order(19)
     String ldrFactory;
 
     /** Class name of cache writer factory. */
-    @Order(value = 20)
+    @Order(20)
     String writerFactory;
 
     /** Class name of expiry policy factory. */
-    @Order(value = 21)
+    @Order(21)
     String expiryPlcFactory;
 
     /** Query configuration. */
-    @Order(value = 22)
+    @Order(22)
     QueryConfiguration qryCfg;
 
     /** System cache flag. */
-    @Order(value = 23)
+    @Order(23)
     boolean sys;
 
     /** Keep binary in store flag. */
-    @Order(value = 24)
+    @Order(24)
     boolean storeKeepBinary;
 
     /** On-heap cache enabled flag. */
-    @Order(value = 25)
+    @Order(25)
     boolean onheapCache;
 
     /** Partition loss policy. */
-    @Order(value = 26)
+    @Order(26)
     PartitionLossPolicy partLossPlc;
 
     /** Query parallelism. */
-    @Order(value = 27)
+    @Order(27)
     int qryParallelism;
 
     /** Copy on read flag. */
-    @Order(value = 28)
+    @Order(28)
     boolean cpOnRead;
 
     /** Eviction filter. */
-    @Order(value = 29)
+    @Order(29)
     String evictFilter;
 
     /** Listener configurations. */
-    @Order(value = 30)
+    @Order(30)
     String lsnrConfigurations;
 
     /** */
-    @Order(value = 31)
+    @Order(31)
     boolean loadPrevVal;
 
     /** Name of {@link DataRegionConfiguration} for this cache */
-    @Order(value = 32)
+    @Order(32)
     String dataRegName;
 
     /** Maximum inline size for sql indexes. */
-    @Order(value = 33)
+    @Order(33)
     int sqlIdxMaxInlineSize;
 
     /** Node filter specifying nodes on which this cache should be deployed. */
-    @Order(value = 34)
+    @Order(34)
     String nodeFilter;
 
     /** */
-    @Order(value = 35)
+    @Order(35)
     int qryDetailMetricsSz;
 
     /** Flag indicating whether data can be read from backup. */
-    @Order(value = 36)
+    @Order(36)
     boolean readFromBackup;
 
     /** Name of class implementing GridCacheTmLookup. */
-    @Order(value = 37)
+    @Order(37)
     String tmLookupClsName;
 
     /** Cache topology validator. */
-    @Order(value = 38)
+    @Order(38)
     String topValidator;
 
     /** Dynamic deployment ID. */
-    @Order(value = 39)
+    @Order(39)
     IgniteUuid dynamicDeploymentId;
 
     /** Disk page compression algorithm. */
-    @Order(value = 40)
+    @Order(40)
     DiskPageCompression diskPageCompression;
 
     /** Algorithm specific disk page compression level. */
-    @Order(value = 41)
+    @Order(41)
     Integer diskPageCompressionLevel;
 
     /**

@@ -72,11 +72,11 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
     Map<Integer, String> usedCacheGroups;
 
     /** Local tx keys. */
-    @Order(value = 10)
+    @Order(10)
     List<TxVerboseKey> locTxKeys;
 
     /** Near only tx keys. */
-    @Order(value = 11)
+    @Order(11)
     List<TxVerboseKey> nearOnlyTxKeys;
 
     /**

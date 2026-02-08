@@ -96,17 +96,17 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @see GridBinaryMarshaller#BINARY_OBJ
      */
-    @Order(value = 10)
+    @Order(10)
     @GridToStringExclude
     int binKeys;
 
     /** Count of type supported by Ignite out of the box (numbers, strings, etc). */
-    @Order(value = 11)
+    @Order(11)
     @GridToStringExclude
     int regKeys;
 
     /** If partition has entries to expire. */
-    @Order(value = 12)
+    @Order(12)
     @GridToStringExclude
     boolean hasExpiringEntries;
 
