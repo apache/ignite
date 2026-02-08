@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
@@ -25,8 +24,6 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
-import org.apache.ignite.internal.managers.communication.GridCacheOperationMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -38,8 +35,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +45,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
-    /** . */
+    /** */
     private static final int NEED_PRIMARY_RES_FLAG_MASK = 0x01;
 
     /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
@@ -88,13 +83,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     @Order(value = 5, method = "topologyVersion")
     protected AffinityTopologyVersion topVer;
 
-    /** Cache operation wrapper message. */
-    @Order(value = 6, method = "cacheOperationMessage")
-    protected GridCacheOperationMessage opMsg;
+    /** Cache update operation. */
+    @Order(value = 6, method = "operation")
+    protected GridCacheOperation op;
 
-    /** Write synchronization mode wrapper message. */
-    @Order(value = 7, method = "writeSynchronizationModeMessage")
-    protected CacheWriteSynchronizationModeMessage syncModeMsg;
+    /** Write synchronization mode. */
+    @Order(value = 7, method = "writeSynchronizationMode")
+    protected CacheWriteSynchronizationMode syncMode;
 
     /** Task name hash. */
     @Order(8)
@@ -143,8 +138,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;
-        this.opMsg = new GridCacheOperationMessage(op);
-        this.syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
+        this.op = op;
+        this.syncMode = syncMode;
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
@@ -241,7 +236,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public final IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.atomicMessageLogger();
     }
 
@@ -270,9 +265,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return {@code True} if update is processed in {@link CacheWriteSynchronizationMode#FULL_SYNC} mode.
      */
     boolean fullSync() {
-        assert syncModeMsg != null && writeSynchronizationMode() != null;
+        assert syncMode != null;
 
-        return writeSynchronizationMode() == CacheWriteSynchronizationMode.FULL_SYNC;
+        return syncMode == CacheWriteSynchronizationMode.FULL_SYNC;
     }
 
     /**
@@ -304,15 +299,29 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @return Update opreation.
+     * @return Cache update operation.
      */
-    @Nullable public GridCacheOperation operation() {
-        return opMsg.value();
+    public GridCacheOperation operation() {
+        return op;
     }
 
-    /** @return Cache operatrion. */
-    @Nullable public CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return syncModeMsg.value();
+    /**
+     * @param op Cache update operation.
+     */
+    public void operation(GridCacheOperation op) {
+        this.op = op;
+    }
+
+    /** @return Write synchronization mode. */
+    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncMode;
+    }
+
+    /**
+     * @param syncMode Write synchronization mode.
+     */
+    public void writeSynchronizationMode(CacheWriteSynchronizationMode syncMode) {
+        this.syncMode = syncMode;
     }
 
     /**
@@ -336,28 +345,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.futId = futId;
     }
 
-    /** @return The cache operation wrapper message. */
-    public GridCacheOperationMessage cacheOperationMessage() {
-        return opMsg;
-    }
-
-    /** Sets the cache operation wrapper message. */
-    public void cacheOperationMessage(GridCacheOperationMessage cacheOpMsg) {
-        this.opMsg = cacheOpMsg;
-    }
-
-    /**
-     * @return The write mode synchronization wrapper message.
-     */
-    public final CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
-        return syncModeMsg;
-    }
-
-    /** Sets the write mode synchronization wrapper message */
-    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
-        this.syncModeMsg = writeSyncModeMsg;
-    }
-
     /**
      * @param res Response.
      * @return {@code True} if current response was {@code null}.
@@ -376,7 +363,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      *
      */
     void resetResponse() {
-        this.res = null;
+        res = null;
     }
 
     /**
@@ -401,24 +388,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @param val {@code True} if topology is locked on near node.
-     */
-    private void topologyLocked(boolean val) {
-        setFlag(val, TOP_LOCKED_FLAG_MASK);
-    }
-
-    /**
      * @return Return value flag.
      */
     public final boolean returnValue() {
         return isFlag(RET_VAL_FLAG_MASK);
-    }
-
-    /**
-     * @param val Return value flag.
-     */
-    public final void returnValue(boolean val) {
-        setFlag(val, RET_VAL_FLAG_MASK);
     }
 
     /**
@@ -434,13 +407,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @param val Skip store flag.
-     */
-    public void skipStore(boolean val) {
-        setFlag(val, SKIP_STORE_FLAG_MASK);
-    }
-
-    /**
      * @return Keep binary flag.
      */
     public final boolean keepBinary() {
@@ -448,24 +414,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @param val Keep binary flag.
-     */
-    public void keepBinary(boolean val) {
-        setFlag(val, KEEP_BINARY_FLAG_MASK);
-    }
-
-    /**
      * @return Recovery flag.
      */
     public final boolean recovery() {
         return isFlag(RECOVERY_FLAG_MASK);
-    }
-
-    /**
-     * @param val Recovery flag.
-     */
-    public void recovery(boolean val) {
-        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /**
@@ -584,125 +536,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return Key.
      */
     public abstract KeyCacheObject key(int idx);
-
-    // TODO: remove after IGNITE-26599, IGNITE-26577
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeShort(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeMessage(opMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeMessage(syncModeMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    // TODO: remove after IGNITE-26599, IGNITE-26577
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                flags = reader.readShort();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                opMsg = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                syncModeMsg = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                taskNameHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
