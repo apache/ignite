@@ -28,15 +28,15 @@ public class ConsistencyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Result. */
-    @Order(value = 0)
+    @Order(0)
     String msg;
 
     /** Failed. */
-    @Order(value = 1)
+    @Order(1)
     boolean failed;
 
     /** Cancelled. */
-    @Order(value = 2)
+    @Order(2)
     boolean cancelled;
 
     /**

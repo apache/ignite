@@ -31,7 +31,7 @@ public class CacheResetLostPartitionsTaskResult extends IgniteDataTransferObject
     /**
      * Map group name to result execute message.
      */
-    @Order(value = 0)
+    @Order(0)
     Map<String, String> msgMap;
 
     /**

@@ -30,7 +30,7 @@ public class PropertyOperationResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Property value. */
-    @Order(value = 0)
+    @Order(0)
     String val;
 
     /**

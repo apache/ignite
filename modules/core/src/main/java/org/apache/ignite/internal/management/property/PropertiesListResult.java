@@ -32,7 +32,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Properties info: name, value, description. */
-    @Order(value = 0)
+    @Order(0)
     Collection<T3<String, String, String>> props;
 
     /**

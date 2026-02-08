@@ -29,23 +29,23 @@ public class CacheDistributionPartition extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Partition identifier. */
-    @Order(value = 0)
+    @Order(0)
     int partId;
 
     /** Flag primary or backup partition. */
-    @Order(value = 1)
+    @Order(1)
     boolean primary;
 
     /** Partition status. */
-    @Order(value = 2)
+    @Order(2)
     GridDhtPartitionState state;
 
     /** Partition update counters. */
-    @Order(value = 3)
+    @Order(3)
     long updateCntr;
 
     /** Number of entries in partition. */
-    @Order(value = 4)
+    @Order(4)
     long size;
 
     /** Default constructor. */

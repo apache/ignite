@@ -27,7 +27,7 @@ public class CacheClearCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(description = "specifies a comma-separated list of cache names to be cleared")
     String[] caches;
 

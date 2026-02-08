@@ -29,7 +29,7 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(description = "Tracing span scope")
     @EnumDescription(
         names = {
@@ -50,7 +50,7 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
     Scope scope;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(optional = true)
     String label;
 

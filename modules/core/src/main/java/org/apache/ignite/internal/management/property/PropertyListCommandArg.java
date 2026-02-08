@@ -27,7 +27,7 @@ public class PropertyListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(optional = true, description = "Print detailed information: name, value, description")
     boolean info;
 

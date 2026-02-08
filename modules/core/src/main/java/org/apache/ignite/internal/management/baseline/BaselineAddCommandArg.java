@@ -30,7 +30,7 @@ public class BaselineAddCommandArg extends BaselineTaskArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
     String[] consistentIDs;

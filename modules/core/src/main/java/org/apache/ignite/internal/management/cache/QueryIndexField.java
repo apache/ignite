@@ -34,11 +34,11 @@ public class QueryIndexField extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index field name. */
-    @Order(value = 0)
+    @Order(0)
     String name;
 
     /** Index field sort order. */
-    @Order(value = 1)
+    @Order(1)
     boolean sort;
 
     /**

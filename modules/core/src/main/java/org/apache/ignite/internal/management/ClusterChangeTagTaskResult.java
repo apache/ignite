@@ -29,15 +29,15 @@ public class ClusterChangeTagTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     String tag;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     Boolean success;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     String errResp;
 
     /** Default constructor. */

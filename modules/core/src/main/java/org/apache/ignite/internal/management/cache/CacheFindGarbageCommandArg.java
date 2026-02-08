@@ -30,27 +30,27 @@ public class CacheFindGarbageCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(optional = true, example = "groupName1,...,groupNameN")
     String value;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "nodeId")
     String value2;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     String[] groups;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     UUID[] nodeIds;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     @Argument(optional = true)
     boolean delete;
 

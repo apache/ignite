@@ -32,14 +32,14 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    @Order(value = 0)
+    @Order(0)
     String cacheName;
 
     /**
      * {@code True} if index.bin recreating, {@code false} otherwise.
      * @see IndexesRebuildTask
      */
-    @Order(value = 1)
+    @Order(1)
     boolean recreate;
 
     /**

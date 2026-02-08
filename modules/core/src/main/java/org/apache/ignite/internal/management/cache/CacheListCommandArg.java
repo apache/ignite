@@ -31,36 +31,36 @@ public class CacheListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(example = "regexPattern")
     String regex;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "print all configuration parameters for each cache", optional = true)
     boolean config;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Positional
     @Argument(optional = true, example = "nodeId")
     UUID nodeId;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(description = "print configuration parameters per line. " +
         "This option has effect only when used with --config and without [--groups|--seq]",
         example = "multi-line", optional = true)
     String outputFormat;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     @Argument(description = "print information about groups")
     boolean groups;
 
     /** */
-    @Order(value = 5)
+    @Order(5)
     @Argument(description = "print information about sequences")
     boolean seq;
 

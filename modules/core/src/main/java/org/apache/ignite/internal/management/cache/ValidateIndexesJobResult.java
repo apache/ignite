@@ -36,22 +36,22 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
 
     /** Results of reverse indexes validation from node. */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringInclude
     Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
-    @Order(value = 2)
+    @Order(2)
     @GridToStringInclude
     Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
     /** Results of checking size cache and index. */
-    @Order(value = 3)
+    @Order(3)
     @GridToStringInclude
     Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 

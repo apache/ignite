@@ -30,19 +30,19 @@ public class IndexValidationIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    @Order(value = 0)
+    @Order(0)
     String key;
 
     /** Cache name. */
-    @Order(value = 1)
+    @Order(1)
     String cacheName;
 
     /** Index name. */
-    @Order(value = 2)
+    @Order(2)
     String idxName;
 
     /** T. */
-    @Order(value = 3)
+    @Order(3)
     @GridToStringExclude
     Throwable t;
 

@@ -44,7 +44,7 @@ public final class DistributedMetaStorageVersion extends IgniteDataTransferObjec
      *
      * @see #INITIAL_VERSION
      */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     long id;
 
@@ -52,7 +52,7 @@ public final class DistributedMetaStorageVersion extends IgniteDataTransferObjec
      * Hash of the whole updates list. Hashing algorinthm is almost the same as in {@link List#hashCode()}, but with
      * {@code long} value instead of {@code int}.
      */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringInclude
     long hash;
 

@@ -27,7 +27,7 @@ public class PersistenceBackupCachesTaskArg extends PersistenceCommand.Persisten
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(example = "cache1,cache2,cache3")
     String[] caches;

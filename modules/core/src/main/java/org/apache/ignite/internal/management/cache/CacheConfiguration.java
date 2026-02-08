@@ -42,43 +42,43 @@ public class CacheConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    @Order(value = 0)
+    @Order(0)
     String name;
 
     /** Cache group name. */
-    @Order(value = 1)
+    @Order(1)
     String grpName;
 
     /** Cache mode. */
-    @Order(value = 2)
+    @Order(2)
     CacheMode mode;
 
     /** Cache atomicity mode. */
-    @Order(value = 3)
+    @Order(3)
     CacheAtomicityMode atomicityMode;
 
     /** Eager ttl flag. */
-    @Order(value = 4)
+    @Order(4)
     boolean eagerTtl;
 
     /** Write synchronization mode. */
-    @Order(value = 5)
+    @Order(5)
     CacheWriteSynchronizationMode writeSynchronizationMode;
 
     /** Invalidate. */
-    @Order(value = 6)
+    @Order(6)
     boolean invalidate;
 
     /** Max concurrent async operations. */
-    @Order(value = 7)
+    @Order(7)
     int maxConcurrentAsyncOps;
 
     /** Cache interceptor. */
-    @Order(value = 8)
+    @Order(8)
     String interceptor;
 
     /** Default lock acquisition timeout. */
-    @Order(value = 9)
+    @Order(9)
     long dfltLockTimeout;
 
     /** Cache affinity config. */

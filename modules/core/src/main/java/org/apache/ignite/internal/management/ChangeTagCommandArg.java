@@ -31,7 +31,7 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(example = "newTagValue")
     String newTagValue;

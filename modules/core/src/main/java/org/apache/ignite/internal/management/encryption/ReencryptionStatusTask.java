@@ -74,7 +74,7 @@ public class ReencryptionStatusTask extends CacheGroupEncryptionTask<Long> {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @Order(value = 0)
+        @Order(0)
         Long val;
 
         /** {@inheritDoc} */

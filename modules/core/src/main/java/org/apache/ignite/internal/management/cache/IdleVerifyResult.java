@@ -50,37 +50,37 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Counter conflicts. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
 
     /** Hash conflicts. */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringInclude
     Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
 
     /** Moving partitions. */
-    @Order(value = 2)
+    @Order(2)
     @GridToStringInclude
     Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
 
     /** Lost partitions. */
-    @Order(value = 3)
+    @Order(3)
     @GridToStringInclude
     Map<PartitionKey, List<PartitionHashRecord>> lostPartitions;
 
     /** Transaction hashes conflicts. */
-    @Order(value = 4)
+    @Order(4)
     @GridToStringInclude
     @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
     /** Partial committed transactions. */
-    @Order(value = 5)
+    @Order(5)
     @GridToStringInclude
     @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
-    @Order(value = 6)
+    @Order(6)
     @GridToStringInclude
     Map<ClusterNode, Exception> exceptions;
 

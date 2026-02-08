@@ -26,7 +26,7 @@ public class PropertySetCommandArg extends PropertyGetCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(example = "<property_value>")
     String val;
 

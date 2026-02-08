@@ -33,15 +33,15 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Node IDs task should be mapped to. */
-    @Order(value = 0)
+    @Order(0)
     List<UUID> nodes;
 
     /** Task argument. */
-    @Order(value = 1)
+    @Order(1)
     A arg;
 
     /** Debug flag. */
-    @Order(value = 2)
+    @Order(2)
     boolean debug;
 
     /**

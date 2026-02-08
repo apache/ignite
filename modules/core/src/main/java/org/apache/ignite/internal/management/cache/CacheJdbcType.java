@@ -37,27 +37,27 @@ public class CacheJdbcType extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Schema name in database. */
-    @Order(value = 0)
+    @Order(0)
     String dbSchema;
 
     /** Table name in database. */
-    @Order(value = 1)
+    @Order(1)
     String dbTbl;
 
     /** Key class used to store key in cache. */
-    @Order(value = 2)
+    @Order(2)
     String keyType;
 
     /** Value class used to store value in cache. */
-    @Order(value = 3)
+    @Order(3)
     String valType;
 
     /** Key fields. */
-    @Order(value = 4)
+    @Order(4)
     List<CacheJdbcTypeField> keyFields;
 
     /** Value fields. */
-    @Order(value = 5)
+    @Order(5)
     List<CacheJdbcTypeField> valFields;
 
     /**

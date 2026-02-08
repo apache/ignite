@@ -29,13 +29,13 @@ public class KillClientCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Connection identifier or ALL")
     String connectionId;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "Node id to drop connection from", optional = true)
     UUID nodeId;
 

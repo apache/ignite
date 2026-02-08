@@ -31,31 +31,31 @@ public class CacheRebalanceConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache rebalance mode. */
-    @Order(value = 0)
+    @Order(0)
     CacheRebalanceMode mode;
 
     /** Cache rebalance batch size. */
-    @Order(value = 1)
+    @Order(1)
     int batchSize;
 
     /** Rebalance partitioned delay. */
-    @Order(value = 2)
+    @Order(2)
     long partitionedDelay;
 
     /** Time in milliseconds to wait between rebalance messages. */
-    @Order(value = 3)
+    @Order(3)
     long throttle;
 
     /** Rebalance timeout. */
-    @Order(value = 4)
+    @Order(4)
     long timeout;
 
     /** Rebalance batches prefetch count. */
-    @Order(value = 5)
+    @Order(5)
     long batchesPrefetchCnt;
 
     /** Cache rebalance order. */
-    @Order(value = 6)
+    @Order(6)
     int rebalanceOrder;
 
     /**

@@ -28,14 +28,14 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** Target version. */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Target Ignite version. The target version can be one minor higher if its maintenance version is zero, "
         + "or one maintenance version higher (e.g. 2.18.0 -> 2.18.1 or 2.18.1 -> 2.19.0)")
     String targetVersion;
 
     /** Force flag. */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "Enable rolling upgrade without target version checks."
         + " Use only when required, if the upgrade cannot proceed otherwise", optional = true)
     boolean force;

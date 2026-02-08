@@ -27,7 +27,7 @@ public class MetricConfigureHitrateCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(description = "Rate time interval of hitrate", example = "newRateTimeInterval")
     @Positional
     long newRateTimeInterval;

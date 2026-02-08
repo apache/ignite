@@ -30,7 +30,7 @@ public class WalDeleteCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(optional = true, example = "consistentId1,consistentId2,....,consistentIdN")
     String[] consistentIds;

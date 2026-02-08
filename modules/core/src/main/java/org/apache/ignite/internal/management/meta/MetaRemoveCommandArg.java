@@ -33,7 +33,7 @@ public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(optional = true, example = "<fileName>")
     String out;
 

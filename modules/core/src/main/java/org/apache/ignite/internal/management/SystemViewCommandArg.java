@@ -31,7 +31,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** System view name. */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
@@ -39,7 +39,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     String systemViewName;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(
         description = "ID of the node to get the system view from (deprecated. Use --node-ids instead). " +
             "If not set, random node will be chosen"
@@ -47,7 +47,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     UUID nodeId;
 
     /** ID of the nodes to get the system view content from. */
-    @Order(value = 2)
+    @Order(2)
     @Argument(
         description = "Comma-separated list of nodes IDs to get the system view from. " +
         "If not set, random node will be chosen",
@@ -56,7 +56,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     UUID[] nodeIds;
 
     /** Flag to get the system view from all nodes. */
-    @Order(value = 3)
+    @Order(3)
     @Argument(description = "Get the system view from all nodes. If not set, random node will be chosen")
     boolean allNodes;
 

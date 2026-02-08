@@ -29,7 +29,7 @@ public class KillComputeCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Session identifier")
     IgniteUuid sessionId;

@@ -32,7 +32,7 @@ public class FindAndDeleteGarbageInPersistenceJobResult extends IgniteDataTransf
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     Map<Integer, Map<Integer, Long>> result;
 

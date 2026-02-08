@@ -27,7 +27,7 @@ public class PropertyGetCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(example = "<property_name>")
     String name;
 

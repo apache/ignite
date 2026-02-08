@@ -29,13 +29,13 @@ public class KillSnapshotCommandArg extends CancelSnapshotArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Request id")
     UUID requestId;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     String snapshotName;
 
     /** {@inheritDoc} */

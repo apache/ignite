@@ -33,7 +33,7 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(optional = true)
     @EnumDescription(
@@ -49,7 +49,7 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     Enabled enabled;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
     Long timeout;
 

@@ -30,12 +30,12 @@ public class SnapshotCancelCommandArg extends CancelSnapshotArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(description = "Snapshot operation request ID", optional = true)
     UUID id;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "Snapshot name (deprecated)", optional = true)
     String name;
 

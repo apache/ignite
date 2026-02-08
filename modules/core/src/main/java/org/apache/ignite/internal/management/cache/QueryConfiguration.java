@@ -33,23 +33,23 @@ public class QueryConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     List<String> sqlFuncClss;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     long longQryWarnTimeout;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     boolean sqlEscapeAll;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     List<String> indexedTypes;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     String sqlSchema;
 
     /**

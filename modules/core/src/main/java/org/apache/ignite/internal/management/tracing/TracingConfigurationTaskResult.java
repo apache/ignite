@@ -39,7 +39,7 @@ public class TracingConfigurationTaskResult extends IgniteDataTransferObject {
     private static final Character RES_PRINTER_SEPARATOR = ',';
 
     /** Retrieved reseted or updated tracing configuration. */
-    @Order(value = 0)
+    @Order(0)
     List<TracingConfigurationItem> tracingConfigurations = new ArrayList<>();
 
     /**

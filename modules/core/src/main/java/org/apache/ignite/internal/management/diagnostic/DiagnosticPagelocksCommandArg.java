@@ -33,7 +33,7 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(optional = true)
     @Positional
     @EnumDescription(
@@ -49,17 +49,17 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
     Operation operation = DUMP_LOG;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(optional = true)
     String path;
 
     /** Run command for all nodes. */
-    @Order(value = 2)
+    @Order(2)
     @Argument(description = "Run for all nodes")
     boolean all;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(
         description = "Comma separated list of node ids or consistent ids",
         example = "node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]"

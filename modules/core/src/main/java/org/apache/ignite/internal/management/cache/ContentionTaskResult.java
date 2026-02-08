@@ -33,11 +33,11 @@ public class ContentionTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster infos. */
-    @Order(value = 0)
+    @Order(0)
     List<ContentionJobResult> clusterInfos;
 
     /** Exceptions. */
-    @Order(value = 1)
+    @Order(1)
     Map<UUID, Exception> exceptions;
 
     /**

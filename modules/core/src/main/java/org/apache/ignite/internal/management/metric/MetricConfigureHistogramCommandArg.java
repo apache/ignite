@@ -28,7 +28,7 @@ public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(description = "Comma-separated list of longs to configure histogram", example = "newBounds")
     @Positional
     long[] newBounds;

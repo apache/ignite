@@ -32,43 +32,43 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Near xid version. */
-    @Order(value = 0)
+    @Order(0)
     GridCacheVersion nearXidVer;
 
     /** Local node id. */
-    @Order(value = 1)
+    @Order(1)
     UUID locNodeId;
 
     /** Local node consistent id. */
-    @Order(value = 2)
+    @Order(2)
     Object locNodeConsistentId;
 
     /** Near node id. */
-    @Order(value = 3)
+    @Order(3)
     UUID nearNodeId;
 
     /** Near node consistent id. */
-    @Order(value = 4)
+    @Order(4)
     Object nearNodeConsistentId;
 
     /** Tx mapping type. */
-    @Order(value = 5)
+    @Order(5)
     TxMappingType txMappingType;
 
     /** Dht node id. */
-    @Order(value = 6)
+    @Order(6)
     UUID dhtNodeId;
 
     /** Dht node consistent id. */
-    @Order(value = 7)
+    @Order(7)
     Object dhtNodeConsistentId;
 
     /** Used caches. */
-    @Order(value = 8)
+    @Order(8)
     Map<Integer, String> usedCaches;
 
     /** Used cache groups. */
-    @Order(value = 9)
+    @Order(9)
     Map<Integer, String> usedCacheGroups;
 
     /** Local tx keys. */

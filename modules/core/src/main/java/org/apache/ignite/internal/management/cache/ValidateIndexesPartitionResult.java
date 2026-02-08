@@ -35,7 +35,7 @@ public class ValidateIndexesPartitionResult extends IgniteDataTransferObject {
     private static final int MAX_ISSUES = 10;
 
     /** Issues. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringExclude
     List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
 

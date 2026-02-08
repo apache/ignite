@@ -31,7 +31,7 @@ public class ConnectivityResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Nullable Map<ClusterNode, Boolean> nodeStatuses;
 
     /**

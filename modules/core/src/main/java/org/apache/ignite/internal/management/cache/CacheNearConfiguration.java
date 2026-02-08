@@ -37,19 +37,19 @@ public class CacheNearConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Flag indicating if near cache enabled. */
-    @Order(value = 0)
+    @Order(0)
     boolean nearEnabled;
 
     /** Near cache start size. */
-    @Order(value = 1)
+    @Order(1)
     int nearStartSize;
 
     /** Near cache eviction policy. */
-    @Order(value = 2)
+    @Order(2)
     String nearEvictPlc;
 
     /** Near cache eviction policy maximum size. */
-    @Order(value = 3)
+    @Order(3)
     Integer nearEvictMaxSize;
 
     /**
