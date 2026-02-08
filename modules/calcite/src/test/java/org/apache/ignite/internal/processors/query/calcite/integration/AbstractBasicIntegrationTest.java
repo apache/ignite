@@ -44,8 +44,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.Search
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -245,7 +245,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected List<List<?>> sqlAsRoot(IgniteEx ignite, String sql) throws Exception {
         SecurityContext secCtx = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        try (OperationSecurityContext ignored = ignite.context().security().withContext(secCtx)) {
+        try (Scope ignored = ignite.context().security().withContext(secCtx)) {
             return sql(ignite, sql);
         }
     }
