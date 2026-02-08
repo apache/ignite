@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +33,6 @@ import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -60,9 +58,6 @@ public class TcpDiscoveryIoSession {
     /** Default size of buffer used for buffering socket in/out. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 8192;
 
-    /** Size for an intermediate buffer for serializing discovery messages. */
-    private static final int MSG_BUFFER_SIZE = 100;
-
     /** Leading byte for messages use {@link JdkMarshaller} for serialization. */
     // TODO: remove these flags after refactoring all discovery messages.
     static final byte JAVA_SERIALIZATION = (byte)1;
@@ -71,16 +66,16 @@ public class TcpDiscoveryIoSession {
     static final byte MESSAGE_SERIALIZATION = (byte)2;
 
     /** */
-    private final TcpDiscoverySpi spi;
-
-    /** Loads discovery messages classes during java deserialization. */
-    private final ClassLoader clsLdr;
-
-    /** */
     private final Socket sock;
 
     /** */
-    private final DirectMessageWriter msgWriter;
+    private final TcpDiscoveryMessageMarshaller msgMarsh;
+
+    /** */
+    private final TcpDiscoverySpi spi;
+
+    /** */
+    private final ClassLoader clsLdr;
 
     /** */
     private final DirectMessageReader msgReader;
@@ -91,9 +86,6 @@ public class TcpDiscoveryIoSession {
     /** Buffered socket input stream. */
     private final CompositeInputStream in;
 
-    /** Intermediate buffer for serializing discovery messages. */
-    private final ByteBuffer msgBuf;
-
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -101,15 +93,12 @@ public class TcpDiscoveryIoSession {
      * @param spi  Discovery SPI instance owning this session.
      * @throws IgniteException If an I/O error occurs while initializing buffers.
      */
-    TcpDiscoveryIoSession(Socket sock, TcpDiscoverySpi spi) {
+    TcpDiscoveryIoSession(Socket sock, TcpDiscoveryMessageMarshaller msgMarshaller, TcpDiscoverySpi spi) {
         this.sock = sock;
+        msgMarsh = msgMarshaller;
         this.spi = spi;
-
         clsLdr = U.resolveClassLoader(spi.ignite().configuration());
 
-        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-
-        msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
 
         try {
@@ -142,7 +131,7 @@ public class TcpDiscoveryIoSession {
         try {
             out.write(MESSAGE_SERIALIZATION);
 
-            serializeMessage((Message)msg, out);
+            msgMarsh.marshal((Message)msg, out);
 
             out.flush();
         }
@@ -178,6 +167,8 @@ public class TcpDiscoveryIoSession {
             }
 
             Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+
+            ByteBuffer msgBuf = msgMarsh.msgBuf;
 
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
@@ -238,54 +229,9 @@ public class TcpDiscoveryIoSession {
         }
     }
 
-    /**
-     * Serializes a discovery message into a byte array.
-     *
-     * @param msg Discovery message to serialize.
-     * @return Serialized byte array containing the message data.
-     * @throws IgniteCheckedException If serialization fails.
-     * @throws IOException If serialization fails.
-     */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message))
-            return U.marshal(spi.marshaller(), msg);
-
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            serializeMessage((Message)msg, out);
-
-            return out.toByteArray();
-        }
-    }
-
     /** @return Socket. */
     public Socket socket() {
         return sock;
-    }
-
-    /**
-     * Serializes a discovery message into given output stream.
-     *
-     * @param m Discovery message to serialize.
-     * @param out Output stream to write serialized message.
-     * @throws IOException If serialization fails.
-     */
-    private void serializeMessage(Message m, OutputStream out) throws IOException {
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
-
-        msgWriter.reset();
-        msgWriter.setBuffer(msgBuf);
-
-        boolean finished;
-
-        do {
-            // Should be cleared before first operation.
-            msgBuf.clear();
-
-            finished = msgSer.writeTo(m, msgWriter);
-
-            out.write(msgBuf.array(), 0, msgBuf.position());
-        }
-        while (!finished);
     }
 
     /**
