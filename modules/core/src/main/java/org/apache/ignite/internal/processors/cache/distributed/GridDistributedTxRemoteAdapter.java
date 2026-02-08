@@ -79,6 +79,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DETACH;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
@@ -549,8 +550,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                     if (!F.isEmpty(txEntry.entryProcessors()))
                                         txEntry.cached().unswap(false);
 
+                                    boolean masterNodeInvolved = masterNodeIds().contains(cctx.localNodeId());
+
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
-                                        applyTransformClosures(txEntry, false, ret);
+                                        applyTransformClosures(txEntry, false, ret, masterNodeInvolved);
 
                                     GridCacheOperation op = res.get1();
                                     CacheObject val = res.get2();
@@ -597,7 +600,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
                                     if (!near() && cacheCtx.group().logDataRecords() &&
-                                        op != NOOP && op != RELOAD && op != READ) {
+                                        op != NOOP && op != RELOAD && op != READ && op != DETACH) {
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
 
@@ -704,8 +707,13 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                         if (nearCached != null)
                                             nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId, topVer);
                                     }
-                                    else if (op == RELOAD) {
-                                        CacheObject reloaded = cached.innerReload();
+                                    else if (op == RELOAD || op == DETACH) {
+                                        CacheObject reloaded = null;
+
+                                        if (op == DETACH)
+                                            cached.markObsolete(dhtVer);
+                                        else
+                                            reloaded = cached.innerReload();
 
                                         if (nearCached != null) {
                                             nearCached.innerReload();

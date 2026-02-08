@@ -914,6 +914,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     lsnr.onSessionStart(locSes);
             }
         }
+        catch (RuntimeException e) {
+            U.error(log, "Exception raised during the notification of cache store session listeners: ", e);
+
+            throw e;
+        }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to start store session: " + e, e);
         }
@@ -933,6 +938,14 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 if (!sesHolder.get().ended(store))
                     store.sessionEnd(!threwEx);
             }
+        }
+        catch (RuntimeException e) {
+            U.error(log, "Exception raised during the notification of cache store session listeners: ", e);
+
+            if (!threwEx)
+                throw U.cast(e);
+            else
+                throw e;
         }
         catch (Exception e) {
             if (!threwEx)

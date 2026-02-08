@@ -40,6 +40,7 @@ public class GridCacheOperationModeMessageTest {
         assertEquals(4, new GridCacheOperationMessage(GridCacheOperation.TRANSFORM).code());
         assertEquals(5, new GridCacheOperationMessage(GridCacheOperation.RELOAD).code());
         assertEquals(6, new GridCacheOperationMessage(GridCacheOperation.NOOP).code());
+        assertEquals(7, new GridCacheOperationMessage(GridCacheOperation.DETACH).code());
 
         for (GridCacheOperation op : GridCacheOperation.values()) {
             assertTrue(new GridCacheOperationMessage(op).code() >= 0);
@@ -76,8 +77,11 @@ public class GridCacheOperationModeMessageTest {
         msg.code((byte)6);
         assertSame(GridCacheOperation.NOOP, msg.value());
 
-        Throwable t = assertThrowsWithCause(() -> msg.code((byte)7), IllegalArgumentException.class);
-        assertEquals("Unknown cache operation code: 7", t.getMessage());
+        msg.code((byte)7);
+        assertSame(GridCacheOperation.DETACH, msg.value());
+
+        Throwable t = assertThrowsWithCause(() -> msg.code((byte)8), IllegalArgumentException.class);
+        assertEquals("Unknown cache operation code: 8", t.getMessage());
     }
 
     /** */
