@@ -26,9 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.thread.context.pool.ContextAwareStripedExecutor;
-import org.apache.ignite.internal.thread.context.pool.ContextAwareStripedThreadPoolExecutor;
-import org.apache.ignite.internal.thread.context.pool.ContextAwareThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.ContextAwareStripedExecutor;
+import org.apache.ignite.internal.thread.pool.ContextAwareStripedThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.ContextAwareThreadPoolExecutor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
