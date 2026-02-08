@@ -19,13 +19,14 @@ package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.thread.context.concurrent.ContextAwareExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
 
 /**
- * Represents a storage of {@link ContextAttribute}s and their corresponding values bound to the thread.
+ * Represents a storage of {@link ContextAttribute}s and their corresponding values bound to the JVM thread.
  * The state of Context is determined by a sequence of {@link Update}s applied to it. Each Update stores the
  * updated or newly added {@link ContextAttribute} values and link to the previous Update.
  * <pre>
@@ -37,6 +38,16 @@ import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
  *</pre>
  * Context Updates can be undone in the same order they were applied by closing the {@link Scope} associated with each
  * update (see {@link #set(ContextAttribute, Object)} and related methods).
+ *<p>
+ * Context bound to one JVM thread can be saved and restored in another thread using the snapshot mechanism
+ * (see {@link #createSnapshot()} and {@link #restoreSnapshot(ContextSnapshot) methods}). This provides basic
+ * functionality for implementing asynchronous executors that automatically propagate Context data between JVM threads.
+ *</p>
+ *
+ * @see Scope
+ * @see ContextSnapshot
+ * @see ContextAwareWrapper
+ * @see ContextAwareExecutor
  */
 public class Context {
     /** */
