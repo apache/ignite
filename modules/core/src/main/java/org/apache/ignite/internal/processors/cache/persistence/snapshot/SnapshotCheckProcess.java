@@ -207,7 +207,7 @@ public class SnapshotCheckProcess {
                 throw F.firstValue(errors);
 
             // Check responses: checking node -> snapshot part's consistent id -> handler name -> handler result.
-            Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>(results.size(), 1.0f);
+            Map<UUID, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>(results.size(), 1.0f);
 
             for (Map.Entry<UUID, SnapshotCheckResponse> respEntry : results.entrySet()) {
                 SnapshotCheckResponse nodeResp = respEntry.getValue();
@@ -225,23 +225,19 @@ public class SnapshotCheckProcess {
                 cstHndRes.forEach((consId, respPerConsIdMap) -> {
                     // Reduced map of the handlers results per snapshot part's consistent id for certain node.
                     Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdResultMap
-                        = reduced.computeIfAbsent(kctx.cluster().get().node(nodeId), n -> new HashMap<>());
+                        = reduced.computeIfAbsent(nodeId, n -> new HashMap<>());
 
                     respPerConsIdMap.forEach((hndId, hndRes) ->
                         nodePerConsIdResultMap.computeIfAbsent(consId, cstId -> new HashMap<>()).put(hndId, hndRes));
                 });
             }
 
-            Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
-            Collection<UUID> execNodes = new ArrayList<>(reduced.size());
+            Map<String, Map<UUID, SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
 
             // Checking node -> Map by consistend id.
-            for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : reduced.entrySet()) {
+            for (Map.Entry<UUID, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : reduced.entrySet()) {
                 // Consistent id -> Map by handler name.
                 for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> res : nodeRes.getValue().entrySet()) {
-                    // Depending on the job mapping, we can get several different results from one node.
-                    execNodes.add(nodeRes.getKey().id());
-
                     Map<String, SnapshotHandlerResult<?>> nodeDataMap = res.getValue();
 
                     assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
@@ -249,13 +245,14 @@ public class SnapshotCheckProcess {
                     for (Map.Entry<String, SnapshotHandlerResult<?>> entry : nodeDataMap.entrySet()) {
                         String hndName = entry.getKey();
 
-                        clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
+                        clusterResults.computeIfAbsent(hndName, v -> new HashMap<>())
+                            .put(nodeRes.getKey(), entry.getValue());
                     }
                 }
             }
 
             kctx.cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, execNodes, wrns -> {});
+                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, reduced.keySet(), wrns -> {});
 
             fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
         }

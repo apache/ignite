@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,18 +36,13 @@ public class SnapshotHandlerResult<T> implements Serializable {
     /** Processing error. */
     private final Exception err;
 
-    /** Processing node. */
-    private final ClusterNode node;
-
     /**
      * @param data Result of local processing.
      * @param err Processing error.
-     * @param node Processing node.
      */
-    public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err, ClusterNode node) {
+    public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err) {
         this.data = data;
         this.err = err;
-        this.node = node;
     }
 
     /** @return Result of local processing. */
@@ -59,10 +53,5 @@ public class SnapshotHandlerResult<T> implements Serializable {
     /** @return Processing error. */
     public @Nullable Exception error() {
         return err;
-    }
-
-    /** @return Processing node. */
-    public ClusterNode node() {
-        return node;
     }
 }

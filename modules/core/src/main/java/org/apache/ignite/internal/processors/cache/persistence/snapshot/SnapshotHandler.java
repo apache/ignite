@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.Extension;
 import org.jetbrains.annotations.Nullable;
@@ -45,9 +47,9 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
-     *      passed into {@link #complete(String, Collection)} handler method.
+     *      passed into {@link #complete(String, Map)} handler method.
      * @throws Exception If invocation caused an exception. This exception will be returned in {@link
-     *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
+     *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Map)} handler method.
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws Exception;
 
@@ -65,16 +67,18 @@ public interface SnapshotHandler<T> extends Extension {
      * @throws Exception If the snapshot operation needs to be aborted.
      * @see SnapshotHandlerResult
      */
-    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results)
+    public default void complete(String name, Map<UUID, SnapshotHandlerResult<T>> results)
         throws SnapshotWarningException, Exception {
-        for (SnapshotHandlerResult<T> res : results) {
-            if (res.error() == null)
+        for (Map.Entry<UUID, SnapshotHandlerResult<T>> e : results.entrySet()) {
+            SnapshotHandlerResult<T> hndRes = e.getValue();
+
+            if (hndRes.error() == null)
                 continue;
 
-            throw new IgniteCheckedException("Snapshot handler has failed. " + res.error().getMessage() +
+            throw new IgniteCheckedException("Snapshot handler has failed. " + hndRes.error().getMessage() +
                 " [snapshot=" + name +
                 ", handler=" + getClass().getName() +
-                ", nodeId=" + res.node().id() + "].", res.error());
+                ", nodeId=" + e.getKey() + "].", hndRes.error());
         }
     }
 }
