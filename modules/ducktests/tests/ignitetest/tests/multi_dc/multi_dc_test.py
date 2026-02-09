@@ -15,7 +15,6 @@
 
 from ducktape.mark import matrix
 
-from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -33,83 +32,82 @@ JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.multi_dc.Bin
 class MultiDCTest(IgniteTest):
     @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(delay_ms=[10, 20, 50, 100, 500], pacing_ms=[10])
-    def test_binary_meta_update_on_crd_change(self, ignite_version, delay_ms, pacing_ms):
+    @matrix(delay_ms=[20], thread_cnt=[8], rps=[30], object_cnt=[600], prepare_timout=[300])
+    def test_binary_meta_update_on_crd_change(self, ignite_version, delay_ms, thread_cnt, rps, object_cnt,
+                                              prepare_timout):
         """
-        Test that DCServiceManager correctly start and stop for 2 DCs
+        Test binary meta update on coordinator change
         """
         cross_dc_cfg_store = self._get_cross_dc_cfg_store(delay_ms=delay_ms)
+        context = self.test_context
 
-        with DCService.scope(self.test_context, cross_dc_cfg_store) as mgr:
-            ignite_cfg = self._get_ignite_cfg(ignite_version=ignite_version)
+        with DCService.scope(context, cross_dc_cfg_store) as dc_mgr:
+            ign_cfg = self._get_ignite_cfg(ignite_version=ignite_version)
 
-            svc_1 = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
-            svc_2 = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
-            svc_3 = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
-            svc_4 = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
+            svc_1 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=1, svc_name="node_1", dc_idx=1)
+            svc_2 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=1, svc_name="node_2", dc_idx=2)
+            svc_3 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=1, svc_name="node_3", dc_idx=1)
+            svc_4 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=1, svc_name="node_4", dc_idx=1)
 
-            mgr.start_service(svc_name="node_1", dc_idx=1, svc=svc_1)
-            mgr.start_service(svc_name="node_2", dc_idx=2, svc=svc_2)
-            mgr.start_service(svc_name="node_3", dc_idx=1, svc=svc_3)
-            mgr.start_service(svc_name="node_4", dc_idx=1, svc=svc_4)
-
-            client_cfg = ignite_cfg._replace(
+            client_cfg = ign_cfg._replace(
                 client_mode=True,
                 discovery_spi=from_ignite_services([svc_1, svc_2, svc_3, svc_4])
             )
 
-            cli = self._get_cache_metadata_update_app(client_cfg, pacing_ms)
+            cli = self._get_cache_metadata_update_app(client_cfg, thread_cnt, rps, object_cnt)
 
             cli.start()
+            cli.await_event("Prepare BinaryObjects is completed", timeout_sec=prepare_timout,
+                            from_the_beginning=True)
 
-            mgr.stop_service(svc_name="node_3")
-            mgr.start_service(svc_name="node_3", dc_idx=1, svc=svc_3)
+            dc_mgr.stop_service(svc_name="node_3")
+            dc_mgr.start_service(svc_name="node_3", dc_idx=1, svc=svc_3)
 
-            mgr.stop_service(svc_name="node_1")
+            cur_crd_disco_info = svc_1.nodes[0].discovery_info()
+
+            assert cur_crd_disco_info.is_coordinator, f"{svc_1.who_am_i(svc_1.nodes[0])} is not a coordinator"
+
+            dc_mgr.stop_service(svc_name="node_1")
 
             total_alive = sum(len(ignite.alive_nodes) for ignite in [svc_1, svc_2, svc_3, svc_4])
 
             assert total_alive == 3, f"All nodes should be alive [expected=3, actual={total_alive}]"
 
-            self._check_coordinator(svc_2)
+            cur_crd_disco_info = svc_2.nodes[0].discovery_info()
+
+            assert cur_crd_disco_info.is_coordinator, f"{svc_2.who_am_i(svc_2.nodes[0])} is not a coordinator"
 
             cli.stop()
 
-            assert int(cli.extract_result("putCnt")) > 0
+            put_cnt = int(cli.extract_result("putCnt"))
 
-            mgr.stop_service(svc_name="node_2")
-            mgr.stop_service(svc_name="node_3")
-            mgr.stop_service(svc_name="node_4")
+            assert put_cnt > 0
 
-    def _get_cache_metadata_update_app(self, client_config, pacing_ms):
+            if put_cnt == object_cnt:
+                self.logger.warn(f"Load completed exactly at expected object [count={object_cnt}]. Consider adjusting "
+                                 f"test parameters to extend load duration.")
+
+            dc_mgr.stop_service(svc_name="node_2")
+            dc_mgr.stop_service(svc_name="node_3")
+            dc_mgr.stop_service(svc_name="node_4")
+
+    def _get_cache_metadata_update_app(self, client_config, thread_cnt, rps, object_cnt):
         app_params = {
             "cacheName": TEST_CACHE_NAME,
-            "pacing": pacing_ms
+            "threadCnt": thread_cnt,
+            "rps": rps,
+            "objectCnt": object_cnt
         }
 
         return IgniteApplicationService(self.test_context, client_config, java_class_name=JAVA_CLIENT_CLASS_NAME,
                                         num_nodes=1, params=app_params)
 
     @staticmethod
-    def _check_coordinator(crd_svc):
-        crd = crd_svc.nodes[0]
-
-        crd_discovery_info = crd.discovery_info()
-
-        order = crd_discovery_info.order()
-        int_order = crd_discovery_info.int_order()
-        crd = crd_discovery_info.coordinator()
-
-        assert order == 1, f"Expected coordinator order is wrong [exp=1, actual={order}]"
-        assert int_order == 2, f"Expected coordinator internal order is wrong [exp=2, actual={int_order}]"
-        assert crd == "node-2", f"Expected coordinator is wrong [exp=node-2, actual={crd}]"
-
-    @staticmethod
     def _get_ignite_cfg(ignite_version):
         """
         Ignite service configuration
         """
-        cache_cfg = CacheConfiguration(name=TEST_CACHE_NAME, cache_mode='REPLICATED')
+        cache_cfg = CacheConfiguration(name=TEST_CACHE_NAME, backups=2)
 
         return IgniteConfiguration(
                 version=IgniteVersion(ignite_version),

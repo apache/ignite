@@ -16,6 +16,7 @@
 import socket
 from typing import Dict, Optional
 
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.utils.netem_manager import NetworkEmulatorManager
 
@@ -130,6 +131,11 @@ class _DCServiceManager:
     def logger(self):
         """The logger instance for this manager."""
         return self.context.logger
+
+    def start_ignite_service(self, context, ignite_cfg, num_nodes, svc_name, dc_idx):
+        svc = IgniteService(context, ignite_cfg, num_nodes=num_nodes, jvm_opts=[f"-DIGNITE_DATA_CENTER_ID=DC{dc_idx}"])
+
+        return self.start_service(svc_name=svc_name, dc_idx=dc_idx, svc=svc)
 
     def start_service(self, svc_name: str, dc_idx: int, svc):
         self._ensure_active()
