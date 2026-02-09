@@ -649,9 +649,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         /** {@inheritDoc} */
         @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
-            DiscoveryCustomMessage realMsg = GridTestUtils.unwrap(msg);
-
-            if (toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(realMsg.getClass()))) {
+            if (toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(GridTestUtils.unwrap(msg).getClass()))) {
                 blocked.add(msg);
 
                 return;

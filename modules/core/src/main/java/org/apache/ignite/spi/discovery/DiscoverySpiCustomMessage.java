@@ -27,7 +27,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * Message to send across ring.
  *
  * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
+ * TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27778
  */
+@Deprecated
 public abstract class DiscoverySpiCustomMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
