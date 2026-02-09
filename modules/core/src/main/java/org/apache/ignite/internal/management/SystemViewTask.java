@@ -63,15 +63,14 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
             if (r.getException() != null)
                 throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
 
-            res = r.getData();
+            if (r.getData() != null) {
+                res = r.getData();
 
-            if (res == null)
-                return null;
-
-            merged.putAll(res.rows());
+                merged.putAll(res.rows());
+            }
         }
 
-        return new SystemViewTaskResult(res.attributes(), res.types(), merged);
+        return res == null ? null : new SystemViewTaskResult(res.attributes(), res.types(), merged);
     }
 
     /** */
