@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,45 +34,59 @@ public class CacheInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Sequence name. */
+    @Order(0)
     String seqName;
 
     /** Sequence value. */
+    @Order(1)
     long seqVal;
 
     /** Cache name. */
+    @Order(2)
     String cacheName;
 
     /** Cache id. */
+    @Order(3)
     int cacheId;
 
     /** Group name. */
+    @Order(4)
     String grpName;
 
     /** Group id. */
+    @Order(5)
     int grpId;
 
     /** Caches count. */
+    @Order(6)
     int cachesCnt;
 
     /** Partitions. */
+    @Order(7)
     int partitions;
 
     /** Mapped. */
+    @Order(8)
     int mapped;
 
     /** Topology version. */
+    @Order(9)
     public AffinityTopologyVersion topVer;
 
     /** Mode. */
+    @Order(10)
     CacheMode mode;
 
     /** Atomicity mode. */
+    @Order(11)
     CacheAtomicityMode atomicityMode;
 
     /** Backups count. */
+    @Order(12)
     int backupsCnt;
 
     /** Affinity class name. */
+    @Order(13)
     String affinityClsName;
 
     /** */

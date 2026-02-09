@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.PartitionKey;
@@ -38,39 +39,48 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     public static final long MOVING_PARTITION_SIZE = Long.MIN_VALUE;
 
     /** Partition key. */
+    @Order(0)
     @GridToStringExclude
     PartitionKey partKey;
 
     /** Is primary flag. */
+    @Order(1)
     boolean isPrimary;
 
     /** Consistent id. */
+    @Order(2)
     @GridToStringInclude
     Object consistentId;
 
     /** Partition entries content hash. */
+    @Order(3)
     @GridToStringExclude
     int partHash;
 
     /** Partition entries versions hash. */
+    @Order(4)
     @GridToStringExclude
     int partVerHash;
 
     /** Update counter's state. */
+    @Order(5)
     @GridToStringInclude
     Object updateCntr;
 
     /** Size. */
+    @Order(6)
     @GridToStringExclude
     long size;
 
     /** Partition state. */
+    @Order(7)
     PartitionState partitionState;
 
     /**
      * Count of keys with compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
+    @Order(8)
     @GridToStringExclude
     int cfKeys;
 
@@ -78,6 +88,7 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of keys without compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
+    @Order(9)
     @GridToStringExclude
     int noCfKeys;
 
@@ -85,14 +96,17 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @see GridBinaryMarshaller#BINARY_OBJ
      */
+    @Order(10)
     @GridToStringExclude
     int binKeys;
 
     /** Count of type supported by Ignite out of the box (numbers, strings, etc). */
+    @Order(11)
     @GridToStringExclude
     int regKeys;
 
     /** If partition has entries to expire. */
+    @Order(12)
     @GridToStringExclude
     boolean hasExpiringEntries;
 

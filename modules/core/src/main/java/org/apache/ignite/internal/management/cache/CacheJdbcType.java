@@ -23,6 +23,7 @@ import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,21 +37,27 @@ public class CacheJdbcType extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Schema name in database. */
+    @Order(0)
     String dbSchema;
 
     /** Table name in database. */
+    @Order(1)
     String dbTbl;
 
     /** Key class used to store key in cache. */
+    @Order(2)
     String keyType;
 
     /** Value class used to store value in cache. */
+    @Order(3)
     String valType;
 
     /** Key fields. */
+    @Order(4)
     List<CacheJdbcTypeField> keyFields;
 
     /** Value fields. */
+    @Order(5)
     List<CacheJdbcTypeField> valFields;
 
     /**

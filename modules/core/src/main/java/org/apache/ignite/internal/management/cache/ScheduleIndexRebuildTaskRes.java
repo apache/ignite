@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -29,6 +30,7 @@ public class ScheduleIndexRebuildTaskRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map node id -> rebuild command result. */
+    @Order(0)
     Map<UUID, ScheduleIndexRebuildJobRes> results;
 
     /**

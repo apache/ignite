@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -36,18 +37,23 @@ public class CacheAffinityConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache affinity function. */
+    @Order(0)
     String function;
 
     /** Cache affinity mapper. */
+    @Order(1)
     String mapper;
 
     /** Number of backup nodes for one partition. */
+    @Order(2)
     int partitionedBackups;
 
     /** Total partition count. */
+    @Order(3)
     int partitions;
 
     /** Cache partitioned affinity exclude neighbors. */
+    @Order(4)
     Boolean exclNeighbors;
 
     /**
