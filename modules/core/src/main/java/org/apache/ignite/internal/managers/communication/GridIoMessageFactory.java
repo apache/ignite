@@ -64,6 +64,7 @@ import org.apache.ignite.internal.codegen.GridChangeGlobalStateMessageResponseSe
 import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicDeferredUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicNearResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicSingleUpdateRequestSerializer;
@@ -381,7 +382,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)26, GridDistributedTxPrepareResponse::new, new GridDistributedTxPrepareResponseSerializer());
         // Type 27 is former GridDistributedUnlockRequest
         factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
-        factory.register((short)29, GridDhtAffinityAssignmentResponse::new);
+        factory.register((short)29, GridDhtAffinityAssignmentResponse::new, new GridDhtAffinityAssignmentResponseSerializer());
         factory.register((short)30, GridDhtLockRequest::new, new GridDhtLockRequestSerializer());
         factory.register((short)31, GridDhtLockResponse::new, new GridDhtLockResponseSerializer());
         factory.register((short)32, GridDhtTxFinishRequest::new, new GridDhtTxFinishRequestSerializer());
