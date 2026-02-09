@@ -36,6 +36,7 @@ import org.apache.ignite.internal.GridStopWithCollisionSpiTest;
 import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
+import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
 import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
@@ -151,7 +152,8 @@ import org.junit.runners.Suite;
     ErrorMessageSelfTest.class,
     CacheEntryPredicateAdapterMessageTest.class,
     DefaultEnumMapperTest.class,
-    IndexKeyTypeMessageTest.class
+    IndexKeyTypeMessageTest.class,
+    IgniteDataTransferObjectProcessorTest.class,
 })
 public class IgniteBasicTestSuite {
 }
