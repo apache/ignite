@@ -100,7 +100,7 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
         private static final long serialVersionUID = 0L;
 
         /** Re-encryption rate limit. */
-        @Order(value = 0)
+        @Order(0)
         Double limit;
 
         /** */

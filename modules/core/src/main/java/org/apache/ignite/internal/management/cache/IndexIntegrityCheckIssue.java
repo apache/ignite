@@ -30,11 +30,11 @@ public class IndexIntegrityCheckIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache group name. */
-    @Order(value = 0)
+    @Order(0)
     String grpName;
 
     /** T. */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringExclude
     Throwable t;
 

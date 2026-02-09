@@ -30,23 +30,23 @@ public class CacheDistributionCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(example = "nodeId|null")
     String nodeIdOrNull;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
     String[] caches;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     UUID nodeId;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(optional = true, example = "attrName1,...,attrNameN")
     String[] userAttributes;
 

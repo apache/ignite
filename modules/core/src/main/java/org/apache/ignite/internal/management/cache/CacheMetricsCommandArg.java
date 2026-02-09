@@ -31,7 +31,7 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument
     @EnumDescription(
@@ -49,13 +49,13 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     CacheMetricsOperation operation;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "specifies a comma-separated list of cache names to which operation should be applied",
         example = "cache1[,...,cacheN]")
     String[] caches;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(description = "applies operation to all user caches")
     boolean allCaches;
 

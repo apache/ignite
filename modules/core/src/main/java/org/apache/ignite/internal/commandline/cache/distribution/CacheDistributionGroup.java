@@ -28,15 +28,15 @@ public class CacheDistributionGroup extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group identifier. */
-    @Order(value = 0)
+    @Order(0)
     int grpId;
 
     /** Group name. */
-    @Order(value = 1)
+    @Order(1)
     String grpName;
 
     /** List of partitions. */
-    @Order(value = 2)
+    @Order(2)
     List<CacheDistributionPartition> partitions;
 
     /** Default constructor. */

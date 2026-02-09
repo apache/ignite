@@ -32,27 +32,27 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     UUID uuid;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     Object consistentId;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     Collection<String> addresses;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     IgniteProductVersion ver;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     long order;
 
     /** */
-    @Order(value = 5)
+    @Order(5)
     boolean client;
 
     /** */

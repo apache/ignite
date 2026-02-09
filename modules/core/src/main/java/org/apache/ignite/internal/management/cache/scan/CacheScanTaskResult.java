@@ -31,11 +31,11 @@ public class CacheScanTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Column titles. */
-    @Order(value = 0)
+    @Order(0)
     List<String> titles;
 
     /** Cache entries. */
-    @Order(value = 1)
+    @Order(1)
     List<List<?>> entries;
 
     /**

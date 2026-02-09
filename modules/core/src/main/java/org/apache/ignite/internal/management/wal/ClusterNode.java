@@ -32,21 +32,21 @@ public class ClusterNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster node consistent id. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     String consistentId;
 
     /** Cluster node attributes. */
-    @Order(value = 1)
+    @Order(1)
     Map<String, Object> attrs;
 
     /** Cluster node addresses. */
-    @Order(value = 2)
+    @Order(2)
     @GridToStringInclude
     Collection<String> addrs;
 
     /** Cluster node host names. */
-    @Order(value = 3)
+    @Order(3)
     @GridToStringInclude
     Collection<String> hostNames;
 

@@ -33,17 +33,17 @@ public class KillSqlCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Query identifier")
     String queryId;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     UUID nodeId;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     long qryId;
 
     /** */

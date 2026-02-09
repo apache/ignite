@@ -26,11 +26,11 @@ public class BaselineAutoAdjustSettings extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** "Enable" flag. */
-    @Order(value = 0)
+    @Order(0)
     public Boolean enabled;
 
     /** Soft timeout. */
-    @Order(value = 1)
+    @Order(1)
     public Long softTimeout;
 
     /** Default constructor. */

@@ -29,19 +29,19 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     IgniteProductVersion curVer;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     IgniteProductVersion targetVer;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     String errMsg;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     List<RollingUpgradeStatusNode> nodes;
 
     /** */

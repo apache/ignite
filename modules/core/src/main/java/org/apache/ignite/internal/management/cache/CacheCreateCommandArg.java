@@ -31,18 +31,18 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(description = "Path to the Spring XML configuration that contains " +
         "'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from", example = "springXmlConfigPath")
     String springxmlconfig;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "Optional flag to skip existing caches", optional = true)
     boolean skipExisting;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     String fileContent;
 
     /** */

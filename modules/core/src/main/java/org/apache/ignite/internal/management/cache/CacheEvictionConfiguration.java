@@ -35,15 +35,15 @@ public class CacheEvictionConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Eviction policy. */
-    @Order(value = 0)
+    @Order(0)
     String plc;
 
     /** Cache eviction policy max size. */
-    @Order(value = 1)
+    @Order(1)
     Integer plcMaxSize;
 
     /** Eviction filter to specify which entries should not be evicted. */
-    @Order(value = 2)
+    @Order(2)
     String filter;
 
     /**

@@ -34,47 +34,47 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(example = "XID", optional = true)
     String xid;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(example = "SECONDS", optional = true)
     Long minDuration;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(example = "SIZE", optional = true)
     Integer minSize;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(example = "PATTERN_REGEX", optional = true)
     String label;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     @Argument
     boolean servers;
 
     /** */
-    @Order(value = 5)
+    @Order(5)
     @Argument
     boolean clients;
 
     /** */
-    @Order(value = 6)
+    @Order(6)
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
     String[] nodes;
 
     /** */
-    @Order(value = 7)
+    @Order(7)
     @Argument(optional = true, example = "NUMBER")
     Integer limit;
 
     /** */
-    @Order(value = 8)
+    @Order(8)
     @Argument(optional = true, description = "Output order")
     @EnumDescription(
         names = {
@@ -91,7 +91,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     TxSortOrder order;
 
     /** */
-    @Order(value = 9)
+    @Order(9)
     @Argument(optional = true)
     boolean kill;
 

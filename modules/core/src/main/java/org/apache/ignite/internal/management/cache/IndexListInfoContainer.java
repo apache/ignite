@@ -36,24 +36,24 @@ public class IndexListInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
-    @Order(value = 0)
+    @Order(0)
     String grpName;
 
     /** Cache name. */
-    @Order(value = 1)
+    @Order(1)
     String cacheName;
 
     /** Index name. */
-    @Order(value = 2)
+    @Order(2)
     String idxName;
 
     /** Columns names. */
-    @Order(value = 3)
+    @Order(3)
     @GridToStringInclude
     Collection<String> colsNames;
 
     /** Table name. */
-    @Order(value = 4)
+    @Order(4)
     String tblName;
 
     /**

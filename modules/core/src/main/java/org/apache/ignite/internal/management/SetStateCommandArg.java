@@ -32,7 +32,7 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument
     @EnumDescription(
@@ -50,12 +50,12 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     ClusterState state;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(optional = true, description = "If true, cluster deactivation will be forced")
     boolean force;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     String clusterName;
 
     /** */

@@ -31,7 +31,7 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(
         example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|" +
@@ -39,11 +39,11 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     String value;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     IgniteUuid uuid;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     GridCacheVersion gridCacheVersion;
 
     /** */

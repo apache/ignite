@@ -46,61 +46,61 @@ public class TxInfo extends IgniteDataTransferObject {
     private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     IgniteUuid xid;
 
     /**
      * Transaction start time.
      */
-    @Order(value = 1)
+    @Order(1)
     long startTime;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     long duration;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     TransactionIsolation isolation;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     TransactionConcurrency concurrency;
 
     /** */
-    @Order(value = 5)
+    @Order(5)
     long timeout;
 
     /** */
-    @Order(value = 6)
+    @Order(6)
     String lb;
 
     /** */
-    @Order(value = 7)
+    @Order(7)
     Collection<UUID> primaryNodes;
 
     /** */
-    @Order(value = 8)
+    @Order(8)
     TransactionState state;
 
     /** */
-    @Order(value = 9)
+    @Order(9)
     int size;
 
     /** */
-    @Order(value = 10)
+    @Order(10)
     IgniteUuid nearXid;
 
     /** */
-    @Order(value = 11)
+    @Order(11)
     Collection<UUID> masterNodeIds;
 
     /** */
-    @Order(value = 12)
+    @Order(12)
     AffinityTopologyVersion topVer;
 
     /** Tx verbose info. */
-    @Order(value = 13)
+    @Order(13)
     TxVerboseInfo txVerboseInfo;
 
     /**

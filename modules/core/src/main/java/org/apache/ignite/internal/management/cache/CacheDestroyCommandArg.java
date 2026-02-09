@@ -29,13 +29,13 @@ public class CacheDestroyCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(description = "specifies a comma-separated list of cache names to be destroyed",
         example = "cache1,...,cacheN")
     String[] caches;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "permanently destroy all user-created caches")
     boolean destroyAllCaches;
 

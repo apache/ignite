@@ -34,29 +34,29 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
     String[] caches;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(optional = true)
     boolean skipZeros;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(description = "check the CRC-sum of pages stored on disk before verifying data consistency " +
         "in partitions between primary and backup nodes", optional = true)
     boolean checkCrc;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
     String[] excludeCaches;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     @Argument(optional = true, description = "Type of cache(s)")
     @EnumDescription(
         names = {

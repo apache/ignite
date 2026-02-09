@@ -38,11 +38,11 @@ public class ValidateIndexesTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Exceptions. */
-    @Order(value = 0)
+    @Order(0)
     @Nullable Map<NodeInfo, Exception> exceptions;
 
     /** Results from cluster. */
-    @Order(value = 1)
+    @Order(1)
     @Nullable Map<NodeInfo, ValidateIndexesJobResult> results;
 
     /**

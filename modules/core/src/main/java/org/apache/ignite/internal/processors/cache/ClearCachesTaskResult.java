@@ -27,11 +27,11 @@ public class ClearCachesTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** List of cleared caches. */
-    @Order(value = 0)
+    @Order(0)
     List<String> clearedCaches;
 
     /** List of non-existent caches. */
-    @Order(value = 1)
+    @Order(1)
     List<String> nonExistentCaches;
 
     /** */

@@ -29,13 +29,13 @@ public class MetricCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(description = "Name of the metric")
     @Positional
     String name;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(description = "Node id", optional = true)
     UUID nodeId;
 

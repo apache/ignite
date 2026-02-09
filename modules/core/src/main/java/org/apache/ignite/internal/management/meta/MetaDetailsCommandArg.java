@@ -31,12 +31,12 @@ public class MetaDetailsCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(optional = true, example = "<typeId>", javaStyleName = true)
     int typeId;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(optional = true, example = "<typeName>", javaStyleName = true)
     String typeName;
 

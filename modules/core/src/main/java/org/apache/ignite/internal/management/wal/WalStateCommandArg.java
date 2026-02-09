@@ -27,7 +27,7 @@ public class WalStateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(
         description = "Comma-separated list of cache groups. If not set action applied to all groups",
         optional = true

@@ -28,7 +28,7 @@ public class CacheResetLostPartitionsCommandArg extends IgniteDataTransferObject
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(example = "cacheName1,...,cacheNameN")
     String[] caches;

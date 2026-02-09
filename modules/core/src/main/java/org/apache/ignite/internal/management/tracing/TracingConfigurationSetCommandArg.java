@@ -30,13 +30,13 @@ public class TracingConfigurationSetCommandArg extends TracingConfigurationGetCo
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
         "More or less reflects the probability of sampling specific trace.")
     double samplingRate;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
     Scope[] includedScopes;
 

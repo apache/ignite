@@ -29,11 +29,11 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
-    @Order(value = 0)
+    @Order(0)
     @Nullable R res;
 
     /** Error. */
-    @Order(value = 1)
+    @Order(1)
     @Nullable Exception err;
 
     /** */

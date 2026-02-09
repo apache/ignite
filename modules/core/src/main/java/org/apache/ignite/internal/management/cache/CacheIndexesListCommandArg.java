@@ -30,7 +30,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(
         example = "nodeId",
         optional = true,
@@ -38,7 +38,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     UUID nodeId;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Argument(
         example = "grpRegExp",
         optional = true,
@@ -46,7 +46,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     String groupName;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(
         example = "cacheRegExp",
         optional = true,
@@ -54,7 +54,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     String cacheName;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     @Argument(
         example = "idxNameRegExp",
         optional = true,

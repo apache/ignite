@@ -27,7 +27,7 @@ public class MetricConfigureMaxValueCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Argument(description = "Time interval of the metric", example = "newTimeInterval")
     @Positional
     long newTimeInterval;

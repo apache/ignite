@@ -35,19 +35,19 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
-    @Order(value = 0)
+    @Order(0)
     String groupName;
 
     /** Cache name. */
-    @Order(value = 1)
+    @Order(1)
     String cacheName;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     int indexBuildPartitionsLeftCount;
 
     /** Local partitions count. */
-    @Order(value = 3)
+    @Order(3)
     int totalPartitionsCount;
 
     /**

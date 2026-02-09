@@ -28,7 +28,7 @@ public class EncryptionReencryptionRateLimitCommandArg extends IgniteDataTransfe
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
     Double newLimit;

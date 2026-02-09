@@ -31,11 +31,11 @@ public class MetadataMarshalled extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Marshaled metadata. */
-    @Order(value = 0)
+    @Order(0)
     byte[] metaMarshalled;
 
     /** Metadata. */
-    @Order(value = 1)
+    @Order(1)
     BinaryMetadata meta;
 
     /**

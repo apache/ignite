@@ -34,12 +34,12 @@ public class MetaUpdateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Argument(example = "<fileName>")
     String in;
 
     /** Marshaled metadata. */
-    @Order(value = 1)
+    @Order(1)
     byte[] metaMarshalled;
 
     /** */

@@ -31,15 +31,15 @@ public class QueryIndex extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Name of index. */
-    @Order(value = 0)
+    @Order(0)
     String name;
 
     /** Type of index. */
-    @Order(value = 1)
+    @Order(1)
     QueryIndexType type;
 
     /** Fields to create group indexes for. */
-    @Order(value = 2)
+    @Order(2)
     List<QueryIndexField> fields;
 
     /**

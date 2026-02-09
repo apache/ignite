@@ -30,7 +30,7 @@ public class BaselineVersionCommandArg extends BaselineTaskArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(example = "topologyVersion")
     long topologyVersion;

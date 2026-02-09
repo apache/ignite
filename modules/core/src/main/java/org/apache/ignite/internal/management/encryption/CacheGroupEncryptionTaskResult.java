@@ -37,12 +37,12 @@ public class CacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject 
     private static final long serialVersionUID = 0L;
 
     /** Per node job result. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     Map<UUID, T> results;
 
     /** Per node execution problems. */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringInclude
     Map<UUID, IgniteException> exceptions;
 

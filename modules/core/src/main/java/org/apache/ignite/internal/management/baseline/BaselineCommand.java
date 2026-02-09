@@ -79,7 +79,7 @@ public class BaselineCommand extends CommandRegistryImpl<BaselineTaskArg, Baseli
     /** */
     public abstract static class BaselineTaskArg extends IgniteDataTransferObject {
         /** */
-        @Order(value = 0)
+        @Order(0)
         @Argument(optional = true, description = "Show the full list of node ips")
         boolean verbose;
 

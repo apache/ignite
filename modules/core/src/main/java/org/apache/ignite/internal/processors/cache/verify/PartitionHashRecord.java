@@ -39,48 +39,48 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     public static final long MOVING_PARTITION_SIZE = Long.MIN_VALUE;
 
     /** Partition key. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringExclude
     PartitionKey partKey;
 
     /** Is primary flag. */
-    @Order(value = 1)
+    @Order(1)
     boolean isPrimary;
 
     /** Consistent id. */
-    @Order(value = 2)
+    @Order(2)
     @GridToStringInclude
     Object consistentId;
 
     /** Partition entries content hash. */
-    @Order(value = 3)
+    @Order(3)
     @GridToStringExclude
     int partHash;
 
     /** Partition entries versions hash. */
-    @Order(value = 4)
+    @Order(4)
     @GridToStringExclude
     int partVerHash;
 
     /** Update counter's state. */
-    @Order(value = 5)
+    @Order(5)
     @GridToStringInclude
     Object updateCntr;
 
     /** Size. */
-    @Order(value = 6)
+    @Order(6)
     @GridToStringExclude
     long size;
 
     /** Partition state. */
-    @Order(value = 7)
+    @Order(7)
     PartitionState partitionState;
 
     /**
      * Count of keys with compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
-    @Order(value = 8)
+    @Order(8)
     @GridToStringExclude
     int cfKeys;
 
@@ -88,7 +88,7 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of keys without compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
-    @Order(value = 9)
+    @Order(9)
     @GridToStringExclude
     int noCfKeys;
 
@@ -96,17 +96,17 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @see GridBinaryMarshaller#BINARY_OBJ
      */
-    @Order(value = 10)
+    @Order(10)
     @GridToStringExclude
     int binKeys;
 
     /** Count of type supported by Ignite out of the box (numbers, strings, etc). */
-    @Order(value = 11)
+    @Order(11)
     @GridToStringExclude
     int regKeys;
 
     /** If partition has entries to expire. */
-    @Order(value = 12)
+    @Order(12)
     @GridToStringExclude
     boolean hasExpiringEntries;
 

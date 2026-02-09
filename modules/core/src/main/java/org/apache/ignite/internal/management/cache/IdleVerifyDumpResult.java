@@ -32,7 +32,7 @@ public class IdleVerifyDumpResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster hashes. */
-    @Order(value = 0)
+    @Order(0)
     LinkedHashMap<PartitionKey, List<PartitionHashRecord>> clusterHashes;
 
     /**

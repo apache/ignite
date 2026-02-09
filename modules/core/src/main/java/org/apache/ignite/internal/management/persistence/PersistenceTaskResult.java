@@ -29,23 +29,23 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     boolean inMaintenanceMode;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     boolean maintenanceTaskCompleted;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     Collection<String> handledCaches;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     Collection<String> failedToHandleCaches;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo;
 
     /** */

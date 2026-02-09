@@ -30,42 +30,42 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(example = "cacheName1,...,cacheNameN", optional = true)
     String value;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(example = "nodeId", optional = true)
     String value2;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     String[] caches;
 
     /** */
-    @Order(value = 3)
+    @Order(3)
     UUID[] nodeIds;
 
     /** */
-    @Order(value = 4)
+    @Order(4)
     @Argument(example = "N", description = "validate only the first N keys", optional = true)
     int checkFirst = -1;
 
     /** */
-    @Order(value = 5)
+    @Order(5)
     @Argument(example = "K", description = "validate every Kth key", optional = true)
     int checkThrough = -1;
 
     /** */
-    @Order(value = 6)
+    @Order(6)
     @Argument(description = "check the CRC-sum of pages stored on disk", optional = true)
     boolean checkCrc;
 
     /** */
-    @Order(value = 7)
+    @Order(7)
     @Argument(description = "check that index size and cache size are the same", optional = true)
     boolean checkSizes;
 

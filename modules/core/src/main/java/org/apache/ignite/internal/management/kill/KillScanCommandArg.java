@@ -29,19 +29,19 @@ public class KillScanCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     @Positional
     @Argument(description = "Originating node id")
     UUID originNodeId;
 
     /** */
-    @Order(value = 1)
+    @Order(1)
     @Positional
     @Argument(description = "Cache name")
     String cacheName;
 
     /** */
-    @Order(value = 2)
+    @Order(2)
     @Positional
     @Argument(description = "Query identifier")
     long queryId;

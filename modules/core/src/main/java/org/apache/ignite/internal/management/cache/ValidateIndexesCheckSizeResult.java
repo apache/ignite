@@ -33,11 +33,11 @@ public class ValidateIndexesCheckSizeResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache size. */
-    @Order(value = 0)
+    @Order(0)
     long cacheSize;
 
     /** Issues. */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringExclude
     Collection<ValidateIndexesCheckSizeIssue> issues;
 

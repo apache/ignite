@@ -28,17 +28,17 @@ public class TransactionsHashRecord extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
-    @Order(value = 0)
+    @Order(0)
     @GridToStringInclude
     Object locConsistentId;
 
     /** Consistent ID of remote node that participated in the transactions. */
-    @Order(value = 1)
+    @Order(1)
     @GridToStringInclude
     Object rmtConsistentId;
 
     /** Committed transactions IDs hash. */
-    @Order(value = 2)
+    @Order(2)
     @GridToStringInclude
     int txHash;
 

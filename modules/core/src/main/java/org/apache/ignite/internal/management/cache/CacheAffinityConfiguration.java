@@ -37,23 +37,23 @@ public class CacheAffinityConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache affinity function. */
-    @Order(value = 0)
+    @Order(0)
     String function;
 
     /** Cache affinity mapper. */
-    @Order(value = 1)
+    @Order(1)
     String mapper;
 
     /** Number of backup nodes for one partition. */
-    @Order(value = 2)
+    @Order(2)
     int partitionedBackups;
 
     /** Total partition count. */
-    @Order(value = 3)
+    @Order(3)
     int partitions;
 
     /** Cache partitioned affinity exclude neighbors. */
-    @Order(value = 4)
+    @Order(4)
     Boolean exclNeighbors;
 
     /**
