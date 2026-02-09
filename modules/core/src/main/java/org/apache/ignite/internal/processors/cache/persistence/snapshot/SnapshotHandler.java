@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,11 +29,11 @@ import org.jetbrains.annotations.Nullable;
  * The execution of the handler consists of two steps:
  * <ol>
  * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data.</li>
- * <li>Processing the results of local invocations in the {@link #complete(String, Collection)} method on one of the
+ * <li>Processing the results of local invocations in the {@link #complete(String, Map)} method on one of the
  * nodes containing the snapshot data.</li>
  * </ol>
  * Note: If during the execution of a snapshot operation some node exits, then whole operation is rolled back, in which
- *       case the {@link #complete(String, Collection)} method may not be called.
+ *       case the {@link #complete(String, Map)} method may not be called.
  *
  * @param <T> Type of the local processing result.
  */
