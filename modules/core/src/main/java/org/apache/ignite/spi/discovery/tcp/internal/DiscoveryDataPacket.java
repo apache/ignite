@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -66,7 +65,7 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /** */
     @Order(3)
-    private Map<UUID, NodeSpecificData> nodeSpecificData = new LinkedHashMap<>();
+    private Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
 
     /** */
     private transient boolean joiningNodeClient;
