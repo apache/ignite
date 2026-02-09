@@ -476,9 +476,7 @@ public class DiscoveryDataPacket implements Serializable, Message {
         }
     }
 
-    /**
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4435
-     */
+    /** */
     private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
         for (NodeSpecificData existingData : nodeSpecificData.values()) {
             Iterator<Map.Entry<Integer, byte[]>> it = discoData.entrySet().iterator();
