@@ -44,8 +44,8 @@ final class ClientChannelConfiguration {
     /** Tcp no delay. */
     private final boolean tcpNoDelay;
 
-    /** Connection timeout. */
-    private final int connTimeout;
+    /** Handshake timeout. */
+    private final int handshakeTimeout;
 
     /** Request timeout. */
     private final int reqTimeout;
@@ -126,7 +126,7 @@ final class ClientChannelConfiguration {
     ClientChannelConfiguration(ClientConfiguration cfg, List<InetSocketAddress> addrs) {
         this.sslMode = cfg.getSslMode();
         this.tcpNoDelay = cfg.isTcpNoDelay();
-        this.connTimeout = cfg.getConnectionTimeout();
+        this.handshakeTimeout = cfg.getHandshakeTimeout();
         this.reqTimeout = cfg.getRequestTimeout();
         this.sndBufSize = cfg.getSendBufferSize();
         this.rcvBufSize = cfg.getReceiveBufferSize();
@@ -176,7 +176,7 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @deprecated Use {@link #getConnectionTimeout()} and {@link #getRequestTimeout()} instead.
+     * @deprecated Use {@link #getHandshakeTimeout()} and {@link #getRequestTimeout()} instead.
      * @return Request timeout.
      */
     @Deprecated
@@ -185,10 +185,10 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @return Connection timeout.
+     * @return Handshake timeout.
      */
-    public int getConnectionTimeout() {
-        return connTimeout;
+    public int getHandshakeTimeout() {
+        return handshakeTimeout;
     }
 
     /**

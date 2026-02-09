@@ -68,7 +68,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
     /** {@inheritDoc} */
     @Override protected ClientConfiguration getClientConfiguration() {
-        return super.getClientConfiguration().setConnectionTimeout(TIMEOUT).setRequestTimeout(TIMEOUT);
+        return super.getClientConfiguration().setHandshakeTimeout(TIMEOUT).setRequestTimeout(TIMEOUT);
     }
 
     /**
@@ -246,7 +246,7 @@ public class TimeoutTest extends AbstractThinClientTest {
         try {
             ClientConfiguration cfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1:" + DFLT_PORT)
-                .setConnectionTimeout(500)
+                .setHandshakeTimeout(500)
                 .setRequestTimeout(Integer.MAX_VALUE);
 
             GridTestUtils.assertThrowsWithCause(
@@ -272,7 +272,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
         try (Ignite ignite = startGrid(igniteCfg)) {
             ClientConfiguration cfg = getClientConfiguration(ignite)
-                .setConnectionTimeout(Integer.MAX_VALUE)
+                .setHandshakeTimeout(Integer.MAX_VALUE)
                 .setRequestTimeout(500);
 
             try (IgniteClient client = Ignition.startClient(cfg)) {

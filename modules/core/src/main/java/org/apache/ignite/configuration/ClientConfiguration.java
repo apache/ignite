@@ -58,8 +58,8 @@ public final class ClientConfiguration implements Serializable {
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
 
-    /** @serial Connection timeout in milliseconds. 0 means infinite. */
-    private int connTimeout;
+    /** @serial Handshake timeout in milliseconds. 0 means infinite. */
+    private int handshakeTimeout;
 
     /** @serial Request timeout in milliseconds. 0 means infinite. */
     private int reqTimeout;
@@ -231,46 +231,47 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @deprecated Use {@link #getConnectionTimeout()} and {@link #getRequestTimeout()} instead.
+     * @deprecated Use {@link #getHandshakeTimeout()} and {@link #getRequestTimeout()} instead.
      * @return Request timeout in milliseconds.
      */
     @Deprecated
     public int getTimeout() {
-        if (reqTimeout != connTimeout)
+        if (reqTimeout != handshakeTimeout) {
             U.warn(logger, String.format(
-                "Deprecated getTimeout() API is used while request timeout (%d) differs from connection timeout (%d). " +
-                "Returning request timeout. Please use getRequestTimeout() and getConnectionTimeout() instead.",
-                reqTimeout, connTimeout
+                "Deprecated getTimeout() API is used while request timeout (%d) differs from handshake timeout (%d). " +
+                    "Returning request timeout. Please use getRequestTimeout() and getHandshakeTimeout() instead.",
+                reqTimeout, handshakeTimeout
             ));
+        }
 
         return reqTimeout;
     }
 
     /**
-     * @deprecated Use {@link #setConnectionTimeout(int)} and {@link #setRequestTimeout(int)} instead.
+     * @deprecated Use {@link #setHandshakeTimeout(int)} and {@link #setRequestTimeout(int)} instead.
      * @param timeout Send/receive timeout in milliseconds.
      * @return {@code this} for chaining.
      */
     @Deprecated
     public ClientConfiguration setTimeout(int timeout) {
-        this.connTimeout = timeout;
+        this.handshakeTimeout = timeout;
         this.reqTimeout = timeout;
         return this;
     }
 
     /**
-     * @return Connection timeout in milliseconds. 0 means infinite.
+     * @return Handshake timeout in milliseconds. 0 means infinite.
      */
-    public int getConnectionTimeout() {
-        return connTimeout;
+    public int getHandshakeTimeout() {
+        return handshakeTimeout;
     }
 
     /**
-     * @param connTimeout Connection timeout in milliseconds. 0 means infinite.
+     * @param handshakeTimeout Handshake timeout in milliseconds. 0 means infinite.
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setConnectionTimeout(int connTimeout) {
-        this.connTimeout = connTimeout;
+    public ClientConfiguration setHandshakeTimeout(int handshakeTimeout) {
+        this.handshakeTimeout = handshakeTimeout;
         return this;
     }
 
