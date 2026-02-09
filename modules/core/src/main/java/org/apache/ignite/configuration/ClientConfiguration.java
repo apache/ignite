@@ -254,8 +254,9 @@ public final class ClientConfiguration implements Serializable {
      */
     @Deprecated
     public ClientConfiguration setTimeout(int timeout) {
-        this.handshakeTimeout = timeout;
-        this.reqTimeout = timeout;
+        handshakeTimeout = timeout;
+        reqTimeout = timeout;
+
         return this;
     }
 
@@ -272,6 +273,7 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setHandshakeTimeout(int handshakeTimeout) {
         this.handshakeTimeout = handshakeTimeout;
+
         return this;
     }
 
@@ -288,6 +290,7 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setRequestTimeout(int reqTimeout) {
         this.reqTimeout = reqTimeout;
+
         return this;
     }
 

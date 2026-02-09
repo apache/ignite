@@ -238,8 +238,7 @@ public class TimeoutTest extends AbstractThinClientTest {
                     Thread.sleep(10);
             }
             finally {
-                if (accepted == null)
-                    U.closeQuiet(accepted);
+                U.closeQuiet(accepted);
             }
         });
 

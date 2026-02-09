@@ -176,15 +176,6 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @deprecated Use {@link #getHandshakeTimeout()} and {@link #getRequestTimeout()} instead.
-     * @return Request timeout.
-     */
-    @Deprecated
-    public int getTimeout() {
-        return reqTimeout;
-    }
-
-    /**
      * @return Handshake timeout.
      */
     public int getHandshakeTimeout() {
