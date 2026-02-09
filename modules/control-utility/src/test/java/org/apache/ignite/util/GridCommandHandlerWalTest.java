@@ -221,7 +221,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache4"));
         outputContains(".*cache4.*true.*false.*true.*true.*false");
 
-        //Error when using cache name instead of group name
+        // Error when using cache name instead of group name.
         assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache3"));
         outputContains("Failed to enable WAL for groups:");
         outputContains("cache3 - Cache group not found");

@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.management.wal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Result of WAL enable/disable operation.
@@ -36,10 +31,10 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Successfully processed groups. */
-    private List<String> successGrps;
+    List<String> successGrps;
 
     /** Errors by group name. */
-    private Map<String, String> errorsByGrp;
+    Map<String, String> errorsByGrp;
 
     /** Default constructor. */
     public WalSetStateTaskResult() {
@@ -53,33 +48,31 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
      * @param errorsByGrp Error messages.
      */
     public WalSetStateTaskResult(List<String> successGrps, Map<String, String> errorsByGrp) {
-        this.successGrps = new ArrayList<>(successGrps);
-        this.errorsByGrp = new HashMap<>(errorsByGrp);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, successGrps);
-        U.writeMap(out, errorsByGrp);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        successGrps = U.readList(in);
-        errorsByGrp = U.readMap(in);
+        this.successGrps = successGrps;
+        this.errorsByGrp = errorsByGrp;
     }
 
     /**
-     * @return Successfully processed groups.
+     * Print WAL disable/enable command result.
+     *
+     * @param enable If {@code true} then "enable" operation, otherwise "disable".
+     * @param printer Output consumer.
      */
-    public List<String> successGroups() {
-        return Collections.unmodifiableList(successGrps);
-    }
+    void print(boolean enable, Consumer<String> printer) {
+        String op = enable ? "enable" : "disable";
 
-    /**
-     * @return Error messages by group name if operation failed.
-     */
-    public Map<String, String> errorsByGroup() {
-        return Collections.unmodifiableMap(errorsByGrp);
+        if (!successGrps.isEmpty()) {
+            printer.accept("Successfully " + op + "d WAL for groups:");
+
+            for (String grp : successGrps)
+                printer.accept("  " + grp);
+        }
+
+        if (!F.isEmpty(errorsByGrp)) {
+            printer.accept("Failed to " + op + " WAL for groups:");
+
+            for (Map.Entry<String, String> entry : errorsByGrp.entrySet())
+                printer.accept("  " + entry.getKey() + " - " + entry.getValue());
+        }
     }
 }

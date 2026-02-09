@@ -44,7 +44,7 @@ public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDi
 
     /** {@inheritDoc} */
     @Override public void printResult(WalDisableCommandArg arg, WalSetStateTaskResult res, Consumer<String> printer) {
-        WalSetStateResultReporter.printResult(arg, res, printer);
+        res.print(false, printer);
     }
 
     /** */

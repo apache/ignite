@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
 import org.apache.ignite.internal.management.wal.WalEnableCommand.WalEnableCommandArg;
@@ -53,14 +55,15 @@ public class WalSetStateTask extends VisorOneNodeTask<WalDisableCommandArg, WalS
 
         /** {@inheritDoc} */
         @Override protected WalSetStateTaskResult run(@Nullable WalDisableCommandArg arg) throws IgniteException {
-            List<String> requestedGrps = F.isEmpty(arg.groups()) ? null : new ArrayList<>(Arrays.asList(arg.groups()));
+            Set<String> grps = arg.groups == null ? null : Arrays.stream(arg.groups).collect(Collectors.toSet());
+
             List<String> successGrps = new ArrayList<>();
-            Map<String, String> errorsByGrp = new HashMap<>();
+            Map<String, String> failedGrps = new HashMap<>();
 
             for (CacheGroupContext gctx : ignite.context().cache().cacheGroups()) {
                 String grpName = gctx.cacheOrGroupName();
 
-                if (requestedGrps != null && !requestedGrps.remove(grpName))
+                if (grps != null && !grps.remove(grpName))
                     continue;
 
                 try {
@@ -71,16 +74,17 @@ public class WalSetStateTask extends VisorOneNodeTask<WalDisableCommandArg, WalS
 
                     successGrps.add(grpName);
                 }
-                catch (Exception e) {
-                    errorsByGrp.put(grpName, e.getMessage());
+                catch (IgniteException e) {
+                    failedGrps.put(grpName, e.getMessage());
                 }
             }
 
-            if (requestedGrps != null && !requestedGrps.isEmpty())
-                for (String requestedGrp : requestedGrps)
-                    errorsByGrp.put(requestedGrp, "Cache group not found");
+            if (!F.isEmpty(grps)) {
+                for (String grp: grps)
+                    failedGrps.put(grp, "Cache group not found");
+            }
 
-            return new WalSetStateTaskResult(successGrps, errorsByGrp);
+            return new WalSetStateTaskResult(successGrps, failedGrps);
         }
     }
 }
