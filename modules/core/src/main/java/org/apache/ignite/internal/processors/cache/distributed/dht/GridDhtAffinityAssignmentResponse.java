@@ -97,6 +97,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
         affAssignmentIds = ids(affAssignment);
     }
+
     /** */
     public void futureId(long futId) {
         this.futId = futId;
