@@ -49,10 +49,8 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
-                DiscoveryCustomMessage delegate = GridTestUtils.unwrap(msg);
-
-                if (delegate instanceof MetadataUpdateProposedMessage)
-                    metadataUpdateProposedMessages.add(delegate);
+                if (GridTestUtils.unwrap(msg) instanceof MetadataUpdateProposedMessage)
+                    metadataUpdateProposedMessages.add(GridTestUtils.unwrap(msg));
 
                 super.sendCustomEvent(msg);
             }

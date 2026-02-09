@@ -92,13 +92,7 @@ public interface DiscoveryCustomMessage extends Serializable {
     public boolean isMutable();
 
     /**
-     * Called on discovery coordinator node after listener is notified. If returns {@code true}
-     * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
-     * message, it is sent to all nodes.
-     *
-     * Note: this method is used then and only then the zookeeper discovery is configured.
-     *
-     * @return {@code True} if message should not be sent to all nodes.
+     * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.
      */
     public default boolean stopProcess() {
         return false;
