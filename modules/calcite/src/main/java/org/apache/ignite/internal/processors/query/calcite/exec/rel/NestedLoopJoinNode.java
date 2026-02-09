@@ -66,16 +66,17 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
         assert downstream() != null;
         assert waitingRight > 0;
 
-        checkState();
-
         nodeMemoryTracker.onRowAdded(row);
 
         waitingRight--;
 
         rightMaterialized.add(row);
 
-        if (waitingRight == 0)
+        if (waitingRight == 0) {
+            checkState();
+
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
+        }
     }
 
     /** */
@@ -138,7 +139,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                             left = leftInBuf.remove();
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                                 continue;
@@ -206,7 +208,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                         }
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                                 continue;
@@ -294,7 +297,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                             left = leftInBuf.remove();
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             Row right = rightMaterialized.get(rightIdx++);
 
@@ -323,16 +327,16 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);
+
                 try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        checkState();
+                    Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
 
-                        if (lastPushedInd < 0)
-                            break;
+                    while (lastPushedInd >= 0) {
+                        if (rescheduleJoin())
+                            return;
 
-                        Row row = rowHnd.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+                        Row row = rowHnd.concat(emptyLeft, rightMaterialized.get(lastPushedInd));
 
                         rightNotMatchedIndexes.clear(lastPushedInd);
 
@@ -341,6 +345,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
                         if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
                             break;
+
+                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1);
                     }
                 }
                 finally {
@@ -415,7 +421,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                         }
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             Row right = rightMaterialized.get(rightIdx++);
 
@@ -456,16 +463,16 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);
+
                 try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        checkState();
+                    Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
 
-                        if (lastPushedInd < 0)
-                            break;
+                    while (lastPushedInd >= 0) {
+                        if (rescheduleJoin())
+                            return;
 
-                        Row row = rowHnd.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+                        Row row = rowHnd.concat(emptyLeft, rightMaterialized.get(lastPushedInd));
 
                         rightNotMatchedIndexes.clear(lastPushedInd);
 
@@ -474,6 +481,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
                         if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
                             break;
+
+                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1);
                     }
                 }
                 finally {
@@ -505,7 +514,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                     boolean matched = false;
 
                     while (!matched && requested > 0 && rightIdx < rightMaterialized.size()) {
-                        checkState();
+                        if (rescheduleJoin())
+                            return;
 
                         if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                             continue;
@@ -549,7 +559,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                         boolean matched = false;
 
                         while (!matched && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             if (cond.test(left, rightMaterialized.get(rightIdx++)))
                                 matched = true;
