@@ -62,8 +62,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     Map<UUID, Set<Integer>> backup;
 
     /** Set of partitions which primary is different than in ideal assignment. */
-    @Order(4)
-    Set<Integer> primariesDifferentToIdeal;
+    private transient Set<Integer> primariesDifferentToIdeal;
 
     /** Assignment node IDs */
     private transient volatile List<Collection<UUID>> assignmentIds;
