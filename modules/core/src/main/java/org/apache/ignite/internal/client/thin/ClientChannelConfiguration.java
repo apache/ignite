@@ -44,8 +44,11 @@ final class ClientChannelConfiguration {
     /** Tcp no delay. */
     private final boolean tcpNoDelay;
 
-    /** Timeout. */
-    private final int timeout;
+    /** Connection timeout. */
+    private final int connTimeout;
+
+    /** Request timeout. */
+    private final int reqTimeout;
 
     /** Send buffer size. */
     private final int sndBufSize;
@@ -123,7 +126,8 @@ final class ClientChannelConfiguration {
     ClientChannelConfiguration(ClientConfiguration cfg, List<InetSocketAddress> addrs) {
         this.sslMode = cfg.getSslMode();
         this.tcpNoDelay = cfg.isTcpNoDelay();
-        this.timeout = cfg.getTimeout();
+        this.connTimeout = cfg.getConnectionTimeout();
+        this.reqTimeout = cfg.getRequestTimeout();
         this.sndBufSize = cfg.getSendBufferSize();
         this.rcvBufSize = cfg.getReceiveBufferSize();
         this.sslClientCertKeyStorePath = cfg.getSslClientCertificateKeyStorePath();
@@ -172,10 +176,26 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @return Timeout.
+     * @deprecated Use {@link #getConnectionTimeout()} and {@link #getRequestTimeout()} instead.
+     * @return Request timeout.
      */
+    @Deprecated
     public int getTimeout() {
-        return timeout;
+        return reqTimeout;
+    }
+
+    /**
+     * @return Connection timeout.
+     */
+    public int getConnectionTimeout() {
+        return connTimeout;
+    }
+
+    /**
+     * @return Request timeout.
+     */
+    public int getRequestTimeout() {
+        return reqTimeout;
     }
 
     /**

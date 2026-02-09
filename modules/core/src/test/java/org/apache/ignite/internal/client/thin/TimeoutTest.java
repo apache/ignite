@@ -39,6 +39,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -67,7 +68,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
     /** {@inheritDoc} */
     @Override protected ClientConfiguration getClientConfiguration() {
-        return super.getClientConfiguration().setTimeout(TIMEOUT);
+        return super.getClientConfiguration().setConnectionTimeout(TIMEOUT).setRequestTimeout(TIMEOUT);
     }
 
     /**
@@ -214,6 +215,106 @@ public class TimeoutTest extends AbstractThinClientTest {
                     ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2);
 
                 fut.get();
+            }
+        }
+    }
+
+    /**
+     * Test that connection timeout is independent of request timeout during connection establishment.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testConnectionTimeoutIndependentOfRequest() throws Exception {
+        ServerSocket sock = new ServerSocket();
+        sock.bind(new InetSocketAddress("127.0.0.1", DFLT_PORT));
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            Socket accepted = null;
+
+            try {
+                accepted = sock.accept();
+
+                while (!Thread.currentThread().isInterrupted())
+                    Thread.sleep(10);
+            }
+            finally {
+                if (accepted == null)
+                    U.closeQuiet(accepted);
+            }
+        });
+
+        try {
+            ClientConfiguration cfg = new ClientConfiguration()
+                .setAddresses("127.0.0.1:" + DFLT_PORT)
+                .setConnectionTimeout(500)
+                .setRequestTimeout(Integer.MAX_VALUE);
+
+            GridTestUtils.assertThrowsWithCause(
+                () -> Ignition.startClient(cfg),
+                IgniteFutureTimeoutCheckedException.class
+            );
+
+            fut.cancel();
+        }
+        finally {
+            U.closeQuiet(sock);
+        }
+    }
+
+    /**
+     * Test that request timeout is independent of connection timeout during operations.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testRequestTimeoutIndependentOfConnection() throws Exception {
+        IgniteConfiguration igniteCfg = getConfiguration(getTestIgniteInstanceName());
+        igniteCfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setHandshakeTimeout(Integer.MAX_VALUE));
+
+        try (Ignite ignite = startGrid(igniteCfg)) {
+            ClientConfiguration cfg = getClientConfiguration(ignite)
+                .setConnectionTimeout(Integer.MAX_VALUE)
+                .setRequestTimeout(500);
+
+            try (IgniteClient client = Ignition.startClient(cfg)) {
+                ClientCache<Object, Object> cache = client.getOrCreateCache("testTimeoutCache");
+
+                ClientCacheConfiguration txCacheCfg = new ClientCacheConfiguration()
+                    .setName("txCache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+                ClientCache<Object, Object> txCache = client.getOrCreateCache(txCacheCfg);
+
+                CyclicBarrier barrier = new CyclicBarrier(2);
+
+                IgniteInternalFuture<?> blockingThread = GridTestUtils.runAsync(() -> {
+                    try (ClientTransaction ignored1 = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        txCache.put(1, "blocked");
+
+                        barrier.await(2, TimeUnit.SECONDS);
+
+                        // Wait for main thread to time out
+                        barrier.await(2, TimeUnit.SECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                });
+
+                barrier.await(2, TimeUnit.SECONDS);
+
+                try (ClientTransaction ignored1 = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    GridTestUtils.assertThrowsWithCause(
+                        () -> txCache.put(1, "should timeout"),
+                        IgniteFutureTimeoutCheckedException.class
+                    );
+                }
+
+                barrier.await(2, TimeUnit.SECONDS);
+
+                cache.put(1, "still works");
+                assertEquals("still works", cache.get(1));
+
+                blockingThread.get();
             }
         }
     }
