@@ -314,8 +314,9 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
                 try {
                     TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                    DiscoveryCustomMessage discoCustomMsg = GridTestUtils.unwrap(evtMsg.message(marshaller(),
-                        U.gridClassLoader()));
+                    evtMsg.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                    DiscoveryCustomMessage discoCustomMsg = GridTestUtils.unwrap(evtMsg.message());
 
                     if (discoCustomMsg instanceof SchemaFinishDiscoveryMessage) {
                         SchemaFinishDiscoveryMessage finishMsg = (SchemaFinishDiscoveryMessage)discoCustomMsg;

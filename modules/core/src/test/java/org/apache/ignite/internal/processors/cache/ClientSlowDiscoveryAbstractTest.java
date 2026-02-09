@@ -32,7 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -95,22 +94,17 @@ public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
 
             TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-            DiscoveryCustomMessage delegate;
-
             try {
-                DiscoveryCustomMessage custMsg = cm.message(marshaller(),
-                    U.resolveClassLoader(ignite().configuration()));
+                cm.finishUnmarhal(marshaller(), U.resolveClassLoader(ignite().configuration()));
 
-                assertNotNull(custMsg);
-
-                delegate = GridTestUtils.unwrap(custMsg);
+                assertNotNull(cm.message());
             }
             catch (Throwable throwable) {
                 throw new RuntimeException(throwable);
             }
 
             if (interceptor != null)
-                interceptor.apply(delegate);
+                interceptor.apply(cm.message());
         }
     }
 }
