@@ -1194,7 +1194,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
+     * Execute the {@link SnapshotHandler#complete(String, Map)} method of the snapshot handlers asynchronously.
      *
      * @param snpOp Snapshot creation operation.
      * @param res Results.
@@ -1211,11 +1211,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Map<String, Map<UUID, SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
-        res.forEach((nodeId, r) -> {
-            if (r == null || r.handlerResults() == null)
+        res.forEach((nodeId, snpRes) -> {
+            if (snpRes == null || snpRes.handlerResults() == null)
                 return;
 
-            r.handlerResults().forEach((hndName, hndRes) ->
+            snpRes.handlerResults().forEach((hndName, hndRes) ->
                 clusterHndResults.computeIfAbsent(hndName, v -> new HashMap<>())
                     .put(nodeId, hndRes));
         });
