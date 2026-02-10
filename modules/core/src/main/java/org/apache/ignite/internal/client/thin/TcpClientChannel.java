@@ -160,8 +160,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Executor for async operation listeners. */
     private final Executor asyncContinuationExecutor;
 
-    /** Connection timeout in milliseconds. */
-    private final int connTimeout;
+    /** Handshake timeout in milliseconds. */
+    private final int handshakeTimeout;
 
     /** Request timeout in milliseconds. */
     private final int reqTimeout;
@@ -198,7 +198,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
-        connTimeout = cfg.getHandshakeTimeout();
+        handshakeTimeout = cfg.getHandshakeTimeout();
         reqTimeout = cfg.getRequestTimeout();
 
         List<InetSocketAddress> addrs = cfg.getAddresses();
@@ -717,9 +717,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         long reqId = -1L;
         long startTime = System.nanoTime();
 
-        eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
-            new ProtocolContext(ver).toString(), null));
-
         while (true) {
             ClientRequestFuture fut;
 
@@ -737,10 +734,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 pendingReqsLock.readLock().unlock();
             }
 
+            eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
+                new ProtocolContext(ver).toString(), null));
+
             handshakeReq(ver, user, pwd, userAttrs);
 
             try {
-                ByteBuffer buf = connTimeout > 0 ? fut.get(connTimeout) : fut.get();
+                ByteBuffer buf = handshakeTimeout > 0 ? fut.get(handshakeTimeout) : fut.get();
 
                 BinaryInputStream res = BinaryStreams.inputStream(buf);
 

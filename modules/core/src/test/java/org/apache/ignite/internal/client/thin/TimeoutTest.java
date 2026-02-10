@@ -252,10 +252,10 @@ public class TimeoutTest extends AbstractThinClientTest {
                 () -> Ignition.startClient(cfg),
                 IgniteFutureTimeoutCheckedException.class
             );
-
-            fut.cancel();
         }
         finally {
+            fut.cancel();
+
             U.closeQuiet(sock);
         }
     }
