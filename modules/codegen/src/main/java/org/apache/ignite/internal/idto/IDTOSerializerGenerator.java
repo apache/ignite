@@ -38,6 +38,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -294,7 +296,7 @@ public class IDTOSerializerGenerator {
         code.add("/** {@inheritDoc} */");
         code.add("@Override public void writeExternal(" + clsName + " obj, ObjectOutput out) throws IOException {");
 
-        fieldsSerdes(flds, (t, noNull) -> t.get1()).forEach(line -> addToCode(code, line));
+        fieldsSerdes(flds, (t, noNull) -> Stream.of(t.get1() + ";")).forEach(line -> code.add(TAB + line));
 
         code.add("}");
 
@@ -311,7 +313,7 @@ public class IDTOSerializerGenerator {
             String pattern = "${var} = " + t.get2();
 
             if (!notNull)
-                return pattern;
+                return Stream.of(pattern + ";");
 
             /**
              * Intention here to change `obj.field = U.readSomething();` line to:
@@ -324,12 +326,12 @@ public class IDTOSerializerGenerator {
              * ```
              * We want to respect @NotNull annotation and keep default value.
              */
-            return "{\n" +
-                TAB + "${Type} maybeNull = " + t.get2() + ";\n" +
-                TAB + "if (maybeNull != null)\n" +
-                TAB + TAB + "${var} = maybeNull;\n" +
-                "}";
-        }).forEach(line -> addToCode(code, line));
+            return Stream.of("{",
+                TAB + "${Type} maybeNull = " + t.get2() + ";",
+                TAB + "if (maybeNull != null)",
+                TAB + TAB + "${var} = maybeNull;",
+                "}");
+        }).forEach(line -> code.add(TAB + line));
         code.add("}");
 
         return code;
@@ -342,27 +344,22 @@ public class IDTOSerializerGenerator {
      */
     private List<String> fieldsSerdes(
         Collection<VariableElement> flds,
-        BiFunction<IgniteBiTuple<String, String>, Boolean, String> lineProvider
+        BiFunction<IgniteBiTuple<String, String>, Boolean, Stream<String>> lineProvider
     ) {
-        List<String> code = new ArrayList<>();
-
-        for (VariableElement fld : flds)
-            variableCode(fld.asType(), "obj." + fld.getSimpleName().toString(), lineProvider, code);
-
-        return code;
+        return flds.stream()
+            .flatMap(fld -> variableCode(fld.asType(), "obj." + fld.getSimpleName().toString(), lineProvider))
+            .collect(Collectors.toList());
     }
 
     /**
      * @param type Type of variable.
      * @param var Name of the variable.
      * @param lineProvider Function to generated serdes code for the field.
-     * @param code List of lines of code.
      */
-    private void variableCode(
+    private Stream<String> variableCode(
         TypeMirror type,
         String var,
-        BiFunction<IgniteBiTuple<String, String>, Boolean, String> lineProvider,
-        List<String> code
+        BiFunction<IgniteBiTuple<String, String>, Boolean, Stream<String>> lineProvider
     ) {
         TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
 
@@ -407,11 +404,11 @@ public class IDTOSerializerGenerator {
         if (serDes == null)
             throw new IllegalStateException("Unsupported type: " + type);
 
-        String pattern = lineProvider.apply(serDes, notNull);
+        TypeMirror type1 = comp == null ? type : comp;
 
-        code.add(pattern
+        return lineProvider.apply(serDes, notNull).map(line -> line
             .replaceAll("\\$\\{var}", var)
-            .replaceAll("\\$\\{Type}", simpleClassName(comp == null ? type : comp)));
+            .replaceAll("\\$\\{Type}", simpleClassName(type1)));
     }
 
     /**
@@ -509,15 +506,5 @@ public class IDTOSerializerGenerator {
     /** @return Simple class name. */
     public static String simpleName(String fqn) {
         return fqn.substring(fqn.lastIndexOf('.') + 1);
-    }
-
-    /** */
-    private static void addToCode(List<String> code, String line) {
-        if (line.indexOf('\n') != -1) {
-            for (String line0 : line.split("\n"))
-                code.add(TAB + line0);
-        }
-        else
-            code.add(TAB + line + ';');
     }
 }
