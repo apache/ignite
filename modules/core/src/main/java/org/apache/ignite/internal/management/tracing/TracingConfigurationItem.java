@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
 /**
@@ -39,18 +36,21 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      * Specifies the {@link Scope} of a trace's root span to which some specific tracing configuration will be applied.
      * It's a mandatory attribute.
      */
-    private Scope scope;
+    @Order(0)
+    Scope scope;
 
     /**
      * Specifies the label of a traced operation. It's an optional attribute.
      */
-    private String lb;
+    @Order(1)
+    String lb;
 
     /**
      * Number between 0 and 1 that more or less reflects the probability of sampling specific trace. 0 and 1 have
      * special meaning here, 0 means never 1 means always. Default value is 0 (never).
      */
-    private Double samplingRate;
+    @Order(2)
+    Double samplingRate;
 
     /**
      * Set of {@link Scope} that defines which sub-traces will be included in given trace. In other words, if child's
@@ -58,7 +58,8 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      * will be attached to the current trace, otherwise it'll be skipped. See {@link
      * Span#isChainable(Scope)} for more details.
      */
-    private Set<Scope> includedScopes;
+    @Order(3)
+    Set<Scope> includedScopes;
 
     /**
      * Default constructor.
@@ -122,33 +123,6 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      */
     public Set<Scope> includedScopes() {
         return includedScopes;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(scope != null);
-
-        if (scope != null)
-            out.writeShort(scope.idx());
-
-        U.writeString(out, label());
-
-        out.writeObject(samplingRate);
-
-        U.writeCollection(out, includedScopes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-
-        if (in.readBoolean())
-            scope = Scope.fromIndex(in.readShort());
-
-        lb = U.readString(in);
-
-        samplingRate = (Double)in.readObject();
-
-        includedScopes = U.readSet(in);
     }
 
     /** {@inheritDoc} */

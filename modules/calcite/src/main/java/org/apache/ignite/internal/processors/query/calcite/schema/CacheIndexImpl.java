@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -42,7 +41,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
@@ -89,17 +87,6 @@ public class CacheIndexImpl implements IgniteIndex {
     /** Underlying query index. */
     public Index queryIndex() {
         return idx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteLogicalIndexScan toRel(
-        RelOptCluster cluster,
-        RelOptTable relOptTbl,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
-    ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
     }
 
     /** */

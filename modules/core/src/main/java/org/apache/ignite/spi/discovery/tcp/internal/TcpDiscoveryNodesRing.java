@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpDiscoveryNodesRing {
     /** */
-    public static final boolean MDC_AWARE_RING = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
+    private static final boolean MDC_AWARE_RING = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
 
     /** Visible nodes filter. */
     public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {

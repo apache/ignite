@@ -77,6 +77,9 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     /** */
     protected boolean inLoop;
 
+    /** */
+    private int processed;
+
     /**
      * Flag indicating that at least one of the inputs has exchange underneath. In this case we can't prematurely end
      * downstream if one of the inputs is drained, we need to wait for both inputs, since async message from remote
@@ -107,24 +110,16 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
-        checkState();
-
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::doJoin, this::onError);
-    }
-
-    /** */
-    private void doJoin() throws Exception {
-        checkState();
-
-        join();
+            context().execute(this::join0, this::onError);
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
         requested = 0;
+        processed = 0;
         waitingLeft = 0;
         waitingRight = 0;
 
@@ -184,8 +179,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        checkState();
-
         waitingLeft--;
 
         if (!finishing)
@@ -198,8 +191,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     private void pushRight(Row row) throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        checkState();
 
         waitingRight--;
 
@@ -214,8 +205,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        checkState();
-
         waitingLeft = NOT_WAITING;
 
         join();
@@ -225,8 +214,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     private void endRight() throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        checkState();
 
         waitingRight = NOT_WAITING;
 
@@ -339,7 +326,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && (right != null || !rightInBuf.isEmpty()
                     || rightMaterialization != null)) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     if (left == null)
                         left = leftInBuf.remove();
@@ -469,7 +457,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && (right != null || !rightInBuf.isEmpty()
                     || rightMaterialization != null || waitingRight == NOT_WAITING)) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     if (left == null) {
                         left = leftInBuf.remove();
@@ -622,7 +611,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             try {
                 while (requested > 0 && !(left == null && leftInBuf.isEmpty() && waitingLeft != NOT_WAITING)
                     && (right != null || !rightInBuf.isEmpty() || rightMaterialization != null)) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     if (left == null && !leftInBuf.isEmpty())
                         left = leftInBuf.remove();
@@ -796,7 +786,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             try {
                 while (requested > 0 && !(left == null && leftInBuf.isEmpty() && waitingLeft != NOT_WAITING)
                     && !(right == null && rightInBuf.isEmpty() && rightMaterialization == null && waitingRight != NOT_WAITING)) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     if (left == null && !leftInBuf.isEmpty()) {
                         left = leftInBuf.remove();
@@ -975,7 +966,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             inLoop = true;
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && (right != null || !rightInBuf.isEmpty())) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     if (left == null)
                         left = leftInBuf.remove();
@@ -1031,7 +1023,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) &&
                     !(right == null && rightInBuf.isEmpty() && waitingRight != NOT_WAITING)) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     if (left == null)
                         left = leftInBuf.remove();
@@ -1069,5 +1062,25 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
         }
+    }
+
+    /** */
+    private void join0() throws Exception {
+        checkState();
+
+        processed = 0;
+
+        join();
+    }
+
+    /** */
+    protected boolean rescheduleJoin() {
+        if (processed++ > IN_BUFFER_SIZE) {
+            context().execute(this::join0, this::onError);
+
+            return true;
+        }
+
+        return false;
     }
 }

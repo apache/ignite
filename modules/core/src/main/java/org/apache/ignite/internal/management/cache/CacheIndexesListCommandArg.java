@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
@@ -29,6 +30,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(
         example = "nodeId",
         optional = true,
@@ -36,6 +38,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     UUID nodeId;
 
     /** */
+    @Order(1)
     @Argument(
         example = "grpRegExp",
         optional = true,
@@ -43,6 +46,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     String groupName;
 
     /** */
+    @Order(2)
     @Argument(
         example = "cacheRegExp",
         optional = true,
@@ -50,6 +54,7 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     String cacheName;
 
     /** */
+    @Order(3)
     @Argument(
         example = "idxNameRegExp",
         optional = true,

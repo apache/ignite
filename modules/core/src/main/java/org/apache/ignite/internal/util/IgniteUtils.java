@@ -8248,12 +8248,12 @@ public abstract class IgniteUtils extends CommonUtils {
     public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
         /** {@inheritDoc} */
         @Override public void writeExternal(Object instance, ObjectOutput out) {
-            // No-op.
+            throw new IllegalStateException("Can't find serializer for: " + instance.getClass());
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(Object instance, ObjectInput in) {
-            // No-op.
+            throw new IllegalStateException("Can't find serializer for: " + instance.getClass());
         }
     };
 

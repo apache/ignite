@@ -32,6 +32,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
@@ -75,6 +76,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         RelOptTable optTable = scan.getTable();
         IgniteTable igniteTable = optTable.unwrap(IgniteTable.class);
+        RelDataType rowType = scan.getRowType();
         List<RexNode> proj = scan.projects();
         RexNode condition = scan.condition();
         ImmutableBitSet requiredCols = scan.requiredColumns();
@@ -83,7 +85,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
             return;
 
         List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().values().stream()
-            .map(idx -> idx.toRel(cluster, optTable, proj, condition, requiredCols))
+            .map(idx -> idx.toRel(cluster, optTable, rowType, proj, condition, requiredCols))
             .collect(Collectors.toList());
 
         assert !indexes.isEmpty();

@@ -365,7 +365,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
+        // Can't change deterministic flag on SqlUserDefinedFunction, at least store this flag in wrapped function
+        // to process it in Ignite-controlled code.
+        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method, deterministic));
 
         rebuild();
     }

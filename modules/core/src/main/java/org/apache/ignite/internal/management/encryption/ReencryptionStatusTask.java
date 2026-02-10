@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -54,35 +53,33 @@ public class ReencryptionStatusTask extends CacheGroupEncryptionTask<Long> {
 
         /** {@inheritDoc} */
         @Override protected SingleFieldDto<Long> run0(CacheGroupContext grp) {
-            long res;
+            long val;
 
             if (!ignite.context().encryption().reencryptionInProgress(grp.groupId()))
-                res = -1;
+                val = -1;
             else
-                res = ignite.context().encryption().getBytesLeftForReencryption(grp.groupId());
+                val = ignite.context().encryption().getBytesLeftForReencryption(grp.groupId());
 
-            return new ReencryptionStatusResult().value(res);
+            ReencryptionStatusResult res = new ReencryptionStatusResult();
+
+            res.val = val;
+
+            return res;
         }
     }
 
     /** */
-    protected static class ReencryptionStatusResult extends SingleFieldDto<Long> {
+    public static class ReencryptionStatusResult extends IgniteDataTransferObject implements SingleFieldDto<Long> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        public ReencryptionStatusResult() {
-            // No-op.
-        }
+        @Order(0)
+        Long val;
 
         /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            out.writeLong(value());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            value(in.readLong());
+        @Override public Long value() {
+            return val;
         }
     }
 }
