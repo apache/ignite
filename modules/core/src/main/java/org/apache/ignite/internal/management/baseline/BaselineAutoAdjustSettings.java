@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
@@ -25,9 +26,11 @@ public class BaselineAutoAdjustSettings extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** "Enable" flag. */
+    @Order(0)
     public Boolean enabled;
 
     /** Soft timeout. */
+    @Order(1)
     public Long softTimeout;
 
     /** Default constructor. */

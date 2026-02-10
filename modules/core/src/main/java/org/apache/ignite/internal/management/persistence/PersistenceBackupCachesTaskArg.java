@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.persistence;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 
@@ -26,6 +27,7 @@ public class PersistenceBackupCachesTaskArg extends PersistenceCommand.Persisten
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "cache1,cache2,cache3")
     String[] caches;

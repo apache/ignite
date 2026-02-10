@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.diagnostic;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
@@ -26,6 +27,7 @@ public class DiagnosticConnectivityCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     UUID[] nodes;
 
     /** */

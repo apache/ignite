@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.TimeZone;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -45,47 +46,61 @@ public class TxInfo extends IgniteDataTransferObject {
     private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     /** */
+    @Order(0)
     IgniteUuid xid;
 
     /**
      * Transaction start time.
      */
+    @Order(1)
     long startTime;
 
     /** */
+    @Order(2)
     long duration;
 
     /** */
+    @Order(3)
     TransactionIsolation isolation;
 
     /** */
+    @Order(4)
     TransactionConcurrency concurrency;
 
     /** */
+    @Order(5)
     long timeout;
 
     /** */
+    @Order(6)
     String lb;
 
     /** */
+    @Order(7)
     Collection<UUID> primaryNodes;
 
     /** */
+    @Order(8)
     TransactionState state;
 
     /** */
+    @Order(9)
     int size;
 
     /** */
+    @Order(10)
     IgniteUuid nearXid;
 
     /** */
+    @Order(11)
     Collection<UUID> masterNodeIds;
 
     /** */
+    @Order(12)
     AffinityTopologyVersion topVer;
 
     /** Tx verbose info. */
+    @Order(13)
     TxVerboseInfo txVerboseInfo;
 
     /**

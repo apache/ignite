@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.rollingupgrade;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -31,21 +32,27 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     UUID uuid;
 
     /** */
+    @Order(1)
     Object consistentId;
 
     /** */
+    @Order(2)
     Collection<String> addresses;
 
     /** */
+    @Order(3)
     IgniteProductVersion ver;
 
     /** */
+    @Order(4)
     long order;
 
     /** */
+    @Order(5)
     boolean client;
 
     /** */

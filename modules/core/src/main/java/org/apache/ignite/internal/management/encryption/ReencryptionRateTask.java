@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -99,6 +100,7 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
         private static final long serialVersionUID = 0L;
 
         /** Re-encryption rate limit. */
+        @Order(0)
         Double limit;
 
         /** */
