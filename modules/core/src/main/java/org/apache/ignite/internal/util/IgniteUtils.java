@@ -3643,7 +3643,7 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /**
      * @param in Stream to read from.
-     * @return Read byte array, possibly <tt>null</tt>.
+     * @return Read char array, possibly <tt>null</tt>.
      * @throws IOException If read failed.
      */
     public static char[] readCharArray(DataInput in) throws IOException {
