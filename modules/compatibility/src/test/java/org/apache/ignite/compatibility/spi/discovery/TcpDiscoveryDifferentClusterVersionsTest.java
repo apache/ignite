@@ -35,7 +35,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilityAbstractTest {
     /** */
-    private static final String LEGACY_PROTOCOL_MSG = "Remote node uses legacy discovery protocol";
+    private static final String INCOMPATIBLE_NODE_MSG = "is this an incompatible Ignite node?";
 
     /** */
     private static final IgniteReleasedVersion OLD_VERSION = IgniteReleasedVersion.VER_2_17_0;
@@ -77,7 +77,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
         listeningLog = new ListeningTestLogger(log);
 
-        LogListener logListener = LogListener.matches(LEGACY_PROTOCOL_MSG).build();
+        LogListener logListener = LogListener.matches(INCOMPATIBLE_NODE_MSG).build();
 
         listeningLog.registerListener(logListener);
 
