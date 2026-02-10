@@ -58,6 +58,7 @@ import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
 import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
@@ -342,19 +343,13 @@ public class IDTOSerializerGenerator {
     ) {
         TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
 
-        TypeMirror comp = null;
-
-        //boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
-
         IgniteBiTuple<String, String> serDes = null;
 
-        if (env.getTypeUtils().isAssignable(type, dtoCls))
-            serDes = OBJECT_SERDES;
-        else if (type.getKind() == TypeKind.ARRAY) {
-            comp = ((ArrayType)type).getComponentType();
+        if (type.getKind() == TypeKind.ARRAY)
+            return arrayCode(type, var);
 
-            serDes = arraySerdes(comp);
-        }
+        else if (env.getTypeUtils().isAssignable(type, dtoCls))
+            serDes = OBJECT_SERDES;
         else if (type.getKind() == TypeKind.TYPEVAR)
             serDes = F.t("out.writeObject(${var})", "in.readObject()");
         else {
@@ -383,27 +378,78 @@ public class IDTOSerializerGenerator {
         if (serDes == null)
             throw new IllegalStateException("Unsupported type: " + type);
 
-        String line = (write ? serDes.get1() : ("${var} = " + serDes.get2())) + ";";
+        boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
 
-        return Stream.of(line
-            .replaceAll("\\$\\{var}", var)
-            .replaceAll("\\$\\{Type}", simpleClassName(comp == null ? type : comp)));
+        Stream<String> code;
+
+        if (notNull && !write) {
+            /**
+             * Intention here to change `obj.field = U.readSomething();` line to:
+             * ```
+             * {
+             *    Type maybeNull = U.readSomething();
+             *    if (maybeNull != null)
+             *        obj.field = maybeNull;
+             * }
+             * ```
+             * We want to respect @NotNull annotation and keep default value.
+             */
+
+            code = Stream.of("{",
+                TAB + "${Type} maybeNull = " + serDes.get2() + ";",
+                TAB + "if (maybeNull != null)",
+                TAB + TAB + "${var} = maybeNull;",
+                "}");
+        }
+        else
+            code = Stream.of((write ? serDes.get1() : simpleRead(serDes)) + ";");
+
+        return code.map(line -> replacePlaceholders(line, var, type));
     }
 
     /**
-     * @param comp Array component.
+     * @param type Array type.
      * @return Serdes tuple for array.
      */
-    private IgniteBiTuple<String, String> arraySerdes(TypeMirror comp) {
-        IgniteBiTuple<String, String> serDes = ARRAY_TYPE_SERDES.get(className(comp));
+    private Stream<String> arrayCode(TypeMirror type, String var) {
+        TypeMirror comp = ((ArrayType)type).getComponentType();
 
-        if (serDes != null)
-            return serDes;
+        IgniteBiTuple<String, String> arrSerdes = ARRAY_TYPE_SERDES.get(className(comp));
 
-        if (!TYPE_SERDES.containsKey(className(comp)) && !enumType(env, comp))
-            return OBJ_ARRAY_SERDES;
+        if (arrSerdes == null && !TYPE_SERDES.containsKey(className(comp)) && !enumType(env, comp)) {
+            // Ignite can't serialize array element efficiently.
+            arrSerdes = OBJ_ARRAY_SERDES;
+        }
 
-        return OBJ_ARRAY_SERDES;
+        if (arrSerdes != null) {
+            return Stream.of((write ? arrSerdes.get1() : simpleRead(arrSerdes)) + ";")
+                .map(line -> replacePlaceholders(line, var, comp));
+        }
+
+        Stream<String> res;
+
+        if (write) {
+            res = Stream.of("{",
+                TAB + "int len = ${var} == null ? -1 : ${var}.length;",
+                TAB + "out.writeInt(len);",
+                TAB + "if (len > 0) {",
+                TAB + TAB + "for (int i=0; i<len; i++) {");
+
+            res = Stream.concat(res, variableCode(comp, var + "[i]").map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
+        }
+        else {
+            res = Stream.of("{",
+                TAB + "int len = in.readInt();",
+                TAB + "if (len >= 0) {",
+                TAB + TAB + "${var} = new ${Type}[len];",
+                TAB + TAB + "for (int i=0; i<len; i++) {");
+
+            res = Stream.concat(res, variableCode(comp, var + "[i]").map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
+        }
+
+        return res.map(line -> replacePlaceholders(line, var, comp));
     }
 
     /** @return List of non-static and non-transient field for given {@code type}. */
@@ -476,7 +522,7 @@ public class IDTOSerializerGenerator {
 
         String fqn = className(type);
 
-        if (!fqn.startsWith("java.lang") && type.getKind() != TypeKind.TYPEVAR)
+        if (!fqn.startsWith("java.lang") && type.getKind() != TypeKind.TYPEVAR && type.getKind() != TypeKind.ARRAY)
             imports.add(fqn);
 
         return simpleName(fqn);
@@ -485,5 +531,17 @@ public class IDTOSerializerGenerator {
     /** @return Simple class name. */
     public static String simpleName(String fqn) {
         return fqn.substring(fqn.lastIndexOf('.') + 1);
+    }
+
+    /** Replaces placeholders to current values. */
+    private String replacePlaceholders(String line, String var, TypeMirror type) {
+        return line
+            .replaceAll("\\$\\{var}", var)
+            .replaceAll("\\$\\{Type}", simpleClassName(type));
+    }
+
+    /** */
+    private static String simpleRead(IgniteBiTuple<String, String> serDes) {
+        return "${var} = " + serDes.get2();
     }
 }
