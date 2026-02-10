@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.processing.FilerException;
@@ -59,7 +58,6 @@ import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
 import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
@@ -159,6 +157,9 @@ public class IDTOSerializerGenerator {
 
     /** Serializer imports. */
     private final Set<String> imports = new HashSet<>();
+
+    /** If {@code True} then write method generated now. */
+    private boolean write;
 
     /**
      * @param env Environment.
@@ -291,12 +292,14 @@ public class IDTOSerializerGenerator {
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
     private List<String> generateWrite(String clsName, Collection<VariableElement> flds) {
+        write = true;
+
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
         code.add("@Override public void writeExternal(" + clsName + " obj, ObjectOutput out) throws IOException {");
 
-        fieldsSerdes(flds, (t, noNull) -> Stream.of(t.get1() + ";")).forEach(line -> code.add(TAB + line));
+        fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
         code.add("}");
 
@@ -305,33 +308,15 @@ public class IDTOSerializerGenerator {
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#readExternal(T, ObjectInput)} method. */
     private List<String> generateRead(String clsName, Collection<VariableElement> flds) {
+        write = false;
+
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
         code.add("@Override public void readExternal(" + clsName + " obj, ObjectInput in) throws IOException, ClassNotFoundException {");
-        fieldsSerdes(flds, (t, notNull) -> {
-            String pattern = "${var} = " + t.get2();
 
-            if (!notNull)
-                return Stream.of(pattern + ";");
+        fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
-            /**
-             * Intention here to change `obj.field = U.readSomething();` line to:
-             * ```
-             * {
-             *    Type maybeNull = U.readSomething();
-             *    if (maybeNull != null)
-             *        obj.field = maybeNull;
-             * }
-             * ```
-             * We want to respect @NotNull annotation and keep default value.
-             */
-            return Stream.of("{",
-                TAB + "${Type} maybeNull = " + t.get2() + ";",
-                TAB + "if (maybeNull != null)",
-                TAB + TAB + "${var} = maybeNull;",
-                "}");
-        }).forEach(line -> code.add(TAB + line));
         code.add("}");
 
         return code;
@@ -339,33 +324,27 @@ public class IDTOSerializerGenerator {
 
     /**
      * @param flds Fields to generated serdes for.
-     * @param lineProvider Function to generated serdes code for the field.
      * @return Lines to serdes fields.
      */
-    private List<String> fieldsSerdes(
-        Collection<VariableElement> flds,
-        BiFunction<IgniteBiTuple<String, String>, Boolean, Stream<String>> lineProvider
-    ) {
+    private List<String> fieldsSerdes(Collection<VariableElement> flds) {
         return flds.stream()
-            .flatMap(fld -> variableCode(fld.asType(), "obj." + fld.getSimpleName().toString(), lineProvider))
+            .flatMap(fld -> variableCode(fld.asType(), "obj." + fld.getSimpleName().toString()))
             .collect(Collectors.toList());
     }
 
     /**
      * @param type Type of variable.
      * @param var Name of the variable.
-     * @param lineProvider Function to generated serdes code for the field.
      */
     private Stream<String> variableCode(
         TypeMirror type,
-        String var,
-        BiFunction<IgniteBiTuple<String, String>, Boolean, Stream<String>> lineProvider
+        String var
     ) {
         TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
 
         TypeMirror comp = null;
 
-        boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
+        //boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
 
         IgniteBiTuple<String, String> serDes = null;
 
@@ -406,7 +385,9 @@ public class IDTOSerializerGenerator {
 
         TypeMirror type1 = comp == null ? type : comp;
 
-        return lineProvider.apply(serDes, notNull).map(line -> line
+        String line = (write ? serDes.get1() : ("${var} = " + serDes.get2())) + ";";
+
+        return Stream.of(line
             .replaceAll("\\$\\{var}", var)
             .replaceAll("\\$\\{Type}", simpleClassName(type1)));
     }
