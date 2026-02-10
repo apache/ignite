@@ -186,9 +186,9 @@ public class TcpHandshakeExecutor {
          * @throws IgniteCheckedException If failed.
          */
         void sendHandshake(HandshakeMessage msg) throws IgniteCheckedException {
-            ByteBuffer buf = ByteBuffer.allocate(msg.getMessageSize() + U.IGNITE_HEADER_V1.length)
+            ByteBuffer buf = ByteBuffer.allocate(msg.getMessageSize() + U.IGNITE_HEADER.length)
                     .order(ByteOrder.LITTLE_ENDIAN)
-                    .put(U.IGNITE_HEADER_V1);
+                    .put(U.IGNITE_HEADER);
 
             writer.setBuffer(buf);
 

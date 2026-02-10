@@ -228,7 +228,6 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -350,19 +349,8 @@ public abstract class IgniteUtils extends CommonUtils {
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
-    /**
-     * Network packet header for discovery protocol V1 (legacy).
-     * V1 discovery messages use Java serialization (JdkMarshaller).
-     */
-    public static final byte[] IGNITE_HEADER_V1 = intToBytes(0x00004747);
-
-    /**
-     * Network packet header for discovery protocol V2.
-     * Used in discovery handshake to support rolling upgrade compatibility.
-     * V2 packets include a leading serialization mode byte ({@code serMode}) which defines how the payload is serialized.
-     * See {@link TcpDiscoveryIoSession#JAVA_SERIALIZATION} and {@link TcpDiscoveryIoSession#MESSAGE_SERIALIZATION}.
-     */
-    public static final byte[] IGNITE_HEADER_V2 = intToBytes(0x0049474E);
+    /** Network packet header. */
+    public static final byte[] IGNITE_HEADER = intToBytes(0x0049474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;

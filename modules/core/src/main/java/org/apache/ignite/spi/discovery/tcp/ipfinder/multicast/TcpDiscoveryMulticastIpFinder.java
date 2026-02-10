@@ -93,7 +93,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     public static final int DFLT_ADDR_REQ_ATTEMPTS = 2;
 
     /** Address request message data. */
-    private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER_V2;
+    private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER;
 
     /** */
     private Marshaller marsh;
@@ -621,12 +621,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                             byte[] data = resPckt.getData();
 
-                            if (!U.bytesEqual(U.IGNITE_HEADER_V2, 0, data, 0, U.IGNITE_HEADER_V2.length)) {
-                                if (U.bytesEqual(U.IGNITE_HEADER_V1, 0, data, 0, U.IGNITE_HEADER_V1.length)) {
-                                    log.warning("Received message with the old header.");
-                                    continue;
-                                }
-
+                            if (!U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length)) {
                                 U.error(log, "Failed to verify message header.");
 
                                 continue;
@@ -743,12 +738,12 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         /** */
         private static AddressResponse of(Marshaller marsh, Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
             byte[] addrsData = U.marshal(marsh, addrs);
-            byte[] data = new byte[U.IGNITE_HEADER_V2.length + addrsData.length];
+            byte[] data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
                 throw new IgniteCheckedException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
 
-            System.arraycopy(U.IGNITE_HEADER_V2, 0, data, 0, U.IGNITE_HEADER_V2.length);
+            System.arraycopy(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
             System.arraycopy(addrsData, 0, data, 4, addrsData.length);
 
             return new AddressResponse(addrs, data);
@@ -756,11 +751,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         /** */
         private static AddressResponse of(Marshaller marsh, byte[] data) throws IgniteCheckedException {
-            assert U.bytesEqual(U.IGNITE_HEADER_V2, 0, data, 0, U.IGNITE_HEADER_V2.length);
+            assert U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
 
-            Collection<InetSocketAddress> addrs = U.unmarshal(marsh,
-                Arrays.copyOfRange(data, U.IGNITE_HEADER_V2.length, data.length),
-                null);
+            Collection<InetSocketAddress> addrs = U.unmarshal(marsh, Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
 
             return new AddressResponse(addrs, data);
         }
@@ -908,12 +901,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                     sock.receive(pckt);
 
-                    if (!U.bytesEqual(U.IGNITE_HEADER_V2, 0, reqData, 0, U.IGNITE_HEADER_V2.length)) {
-                        if (U.bytesEqual(U.IGNITE_HEADER_V1, 0, reqData, 0, U.IGNITE_HEADER_V1.length)) {
-                            U.warn(log, "Received message with old header.");
-                            continue;
-                        }
-
+                    if (!U.bytesEqual(U.IGNITE_HEADER, 0, reqData, 0, U.IGNITE_HEADER.length)) {
                         U.error(log, "Failed to verify message header.");
 
                         continue;

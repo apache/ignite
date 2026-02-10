@@ -82,7 +82,7 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
 
                 readHandshake(connection);
 
-                connection.getOutputStream().write(U.IGNITE_HEADER_V2);
+                connection.getOutputStream().write(U.IGNITE_HEADER);
 
                 clientFut.get(20_000);
             }
@@ -120,7 +120,7 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
                 fail("Failed to read from socket.");
         }
 
-        assertEquals("Handshake did not pass, read bytes: " + read, Arrays.asList(U.IGNITE_HEADER_V2), Arrays.asList(U.IGNITE_HEADER_V2));
+        assertEquals("Handshake did not pass, read bytes: " + read, Arrays.asList(U.IGNITE_HEADER), Arrays.asList(U.IGNITE_HEADER));
     }
 
     /**
@@ -138,7 +138,7 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
             long handshakeStartTime = System.currentTimeMillis();
 
             //need to send message in order to ssl handshake passed.
-            clientSock.getOutputStream().write(U.IGNITE_HEADER_V2);
+            clientSock.getOutputStream().write(U.IGNITE_HEADER);
 
             readHandshake(clientSock);
 
