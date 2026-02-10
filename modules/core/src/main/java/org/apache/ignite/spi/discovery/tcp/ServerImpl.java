@@ -2489,6 +2489,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
+                    addFinishMsg.prepareMarshal(spi.marshaller());
+
                     msg = addFinishMsg;
 
                     DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
@@ -4833,6 +4835,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
+
+                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
