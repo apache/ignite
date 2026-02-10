@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
@@ -30,10 +31,12 @@ public class MetaDetailsCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(optional = true, example = "<typeId>", javaStyleName = true)
     int typeId;
 
     /** */
+    @Order(1)
     @Argument(optional = true, example = "<typeName>", javaStyleName = true)
     String typeName;
 

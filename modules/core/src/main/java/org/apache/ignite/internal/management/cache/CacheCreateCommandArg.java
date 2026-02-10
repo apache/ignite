@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import java.io.File;
 import java.io.IOException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -30,15 +31,18 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "Path to the Spring XML configuration that contains " +
         "'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from", example = "springXmlConfigPath")
     String springxmlconfig;
 
     /** */
+    @Order(1)
     @Argument(description = "Optional flag to skip existing caches", optional = true)
     boolean skipExisting;
 
     /** */
+    @Order(2)
     String fileContent;
 
     /** */

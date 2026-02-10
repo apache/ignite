@@ -28,8 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.asRoot;
 
 /**
  * Tests for authenticated an non authenticated JDBC thin connection.
@@ -40,7 +39,6 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -66,9 +64,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
-        try (AutoCloseable ignored = withSecurityContextOnAllNodes(authenticate(grid(0), "ignite", "ignite"))) {
-            grid(0).context().security().createUser("another_user", "passwd".toCharArray());
-        }
+        asRoot(grid(0), s -> s.createUser("another_user", "passwd".toCharArray()));
     }
 
     /** {@inheritDoc} */

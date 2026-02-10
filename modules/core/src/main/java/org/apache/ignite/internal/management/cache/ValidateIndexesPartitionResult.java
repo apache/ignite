@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Encapsulates intermediate results of validation of SQL index.
@@ -38,8 +35,9 @@ public class ValidateIndexesPartitionResult extends IgniteDataTransferObject {
     private static final int MAX_ISSUES = 10;
 
     /** Issues. */
+    @Order(0)
     @GridToStringExclude
-    private List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
+    List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
 
     /**
      *
@@ -66,16 +64,6 @@ public class ValidateIndexesPartitionResult extends IgniteDataTransferObject {
         issues.add(t);
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, issues);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        issues = U.readList(in);
     }
 
     /** {@inheritDoc} */

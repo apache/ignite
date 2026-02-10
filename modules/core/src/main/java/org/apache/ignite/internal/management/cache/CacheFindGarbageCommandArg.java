@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -29,22 +30,27 @@ public class CacheFindGarbageCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(optional = true, example = "groupName1,...,groupNameN")
     String value;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "nodeId")
     String value2;
 
     /** */
+    @Order(2)
     String[] groups;
 
     /** */
+    @Order(3)
     UUID[] nodeIds;
 
     /** */
+    @Order(4)
     @Argument(optional = true)
     boolean delete;
 

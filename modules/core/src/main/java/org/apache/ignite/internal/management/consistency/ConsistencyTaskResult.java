@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.management.consistency;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -31,31 +28,16 @@ public class ConsistencyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Result. */
-    private String msg;
+    @Order(0)
+    String msg;
 
     /** Failed. */
-    private boolean failed;
+    @Order(1)
+    boolean failed;
 
     /** Cancelled. */
-    private boolean cancelled;
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, msg);
-        out.writeBoolean(failed);
-        out.writeBoolean(cancelled);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        msg = U.readString(in);
-        failed = in.readBoolean();
-        cancelled = in.readBoolean();
-    }
+    @Order(2)
+    boolean cancelled;
 
     /**
      * @return Result.
