@@ -147,8 +147,6 @@ public class IDTOSerializerGenerator {
         ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, ${var})", "U.readByteArray(in)"));
         ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, ${var})", "U.readIntArray(in)"));
         ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, ${var})", "U.readLongArray(in)"));
-        ARRAY_TYPE_SERDES.put(String.class.getName(), OBJ_ARRAY_SERDES);
-        ARRAY_TYPE_SERDES.put(UUID.class.getName(), OBJ_ARRAY_SERDES);
     }
 
     /** Environment. */
@@ -346,64 +344,90 @@ public class IDTOSerializerGenerator {
         Collection<VariableElement> flds,
         BiFunction<IgniteBiTuple<String, String>, Boolean, String> lineProvider
     ) {
-        TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
-
         List<String> code = new ArrayList<>();
 
-        for (VariableElement fld : flds) {
-            TypeMirror type = fld.asType();
-            TypeMirror comp = null;
-
-            boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
-
-            IgniteBiTuple<String, String> serDes = null;
-
-            if (env.getTypeUtils().isAssignable(type, dtoCls))
-                serDes = OBJECT_SERDES;
-            else if (type.getKind() == TypeKind.TYPEVAR)
-                serDes = F.t("out.writeObject(${var})", "in.readObject()");
-            else if (type.getKind() == TypeKind.ARRAY) {
-                comp = ((ArrayType)type).getComponentType();
-
-                serDes = ARRAY_TYPE_SERDES.get(className(comp));
-
-                if (serDes == null && enumType(env, comp))
-                     serDes = OBJ_ARRAY_SERDES;
-            }
-            else {
-                if (className(type).equals(Map.class.getName())) {
-                    TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
-
-                    DeclaredType dt = (DeclaredType)type;
-
-                    List<? extends TypeMirror> ta = dt.getTypeArguments();
-
-                    if (ta.size() == 2
-                        && env.getTypeUtils().isAssignable(ta.get(0), strCls)
-                        && env.getTypeUtils().isAssignable(ta.get(1), strCls)) {
-                        serDes = STR_STR_MAP;
-                    }
-                }
-
-                if (serDes == null) {
-                    serDes = TYPE_SERDES.get(className(type));
-
-                    if (serDes == null && enumType(env, type))
-                        serDes = ENUM_SERDES;
-                }
-            }
-
-            if (serDes == null)
-                throw new IllegalStateException("Unsupported type: " + type);
-
-            String pattern = lineProvider.apply(serDes, notNull);
-
-            code.add(pattern
-                .replaceAll("\\$\\{var}", "obj." + fld.getSimpleName().toString())
-                .replaceAll("\\$\\{Type}", simpleClassName(comp == null ? type : comp)));
-        }
+        for (VariableElement fld : flds)
+            variableCode(fld.asType(), "obj." + fld.getSimpleName().toString(), lineProvider, code);
 
         return code;
+    }
+
+    /**
+     * @param type Type of variable.
+     * @param var Name of the variable.
+     * @param lineProvider Function to generated serdes code for the field.
+     * @param code List of lines of code.
+     */
+    private void variableCode(
+        TypeMirror type,
+        String var,
+        BiFunction<IgniteBiTuple<String, String>, Boolean, String> lineProvider,
+        List<String> code
+    ) {
+        TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
+
+        TypeMirror comp = null;
+
+        boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
+
+        IgniteBiTuple<String, String> serDes = null;
+
+        if (env.getTypeUtils().isAssignable(type, dtoCls))
+            serDes = OBJECT_SERDES;
+        else if (type.getKind() == TypeKind.ARRAY) {
+            comp = ((ArrayType)type).getComponentType();
+
+            serDes = arraySerdes(comp);
+        }
+        else if (type.getKind() == TypeKind.TYPEVAR)
+            serDes = F.t("out.writeObject(${var})", "in.readObject()");
+        else {
+            if (className(type).equals(Map.class.getName())) {
+                TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
+
+                DeclaredType dt = (DeclaredType)type;
+
+                List<? extends TypeMirror> ta = dt.getTypeArguments();
+
+                if (ta.size() == 2
+                    && env.getTypeUtils().isAssignable(ta.get(0), strCls)
+                    && env.getTypeUtils().isAssignable(ta.get(1), strCls)) {
+                    serDes = STR_STR_MAP;
+                }
+            }
+
+            if (serDes == null) {
+                serDes = TYPE_SERDES.get(className(type));
+
+                if (serDes == null && enumType(env, type))
+                    serDes = ENUM_SERDES;
+            }
+        }
+
+        if (serDes == null)
+            throw new IllegalStateException("Unsupported type: " + type);
+
+        String pattern = lineProvider.apply(serDes, notNull);
+
+        code.add(pattern
+            .replaceAll("\\$\\{var}", var)
+            .replaceAll("\\$\\{Type}", simpleClassName(comp == null ? type : comp)));
+    }
+
+    /**
+     * @param comp Array component.
+     * @return Serdes tuple for array.
+     */
+    private IgniteBiTuple<String, String> arraySerdes(TypeMirror comp) {
+        IgniteBiTuple<String, String> serDes = ARRAY_TYPE_SERDES.get(className(comp));
+
+        if (serDes != null)
+            return serDes;
+
+        if (!TYPE_SERDES.containsKey(className(comp)) && !enumType(env, comp))
+            return OBJ_ARRAY_SERDES;
+
+        return OBJ_ARRAY_SERDES;
     }
 
     /** @return List of non-static and non-transient field for given {@code type}. */
