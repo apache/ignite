@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -37,9 +38,11 @@ public class ValidateIndexesTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Exceptions. */
+    @Order(0)
     @Nullable Map<NodeInfo, Exception> exceptions;
 
     /** Results from cluster. */
+    @Order(1)
     @Nullable Map<NodeInfo, ValidateIndexesJobResult> results;
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -29,6 +30,7 @@ public class BaselineVersionCommandArg extends BaselineTaskArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(example = "topologyVersion")
     long topologyVersion;

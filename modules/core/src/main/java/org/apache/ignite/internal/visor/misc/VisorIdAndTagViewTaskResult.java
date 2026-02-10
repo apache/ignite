@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.misc;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -28,12 +29,15 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     UUID id;
 
     /** */
+    @Order(1)
     String tag;
 
     /** */
+    @Order(2)
     String clusterName;
 
     /** Default constructor. */

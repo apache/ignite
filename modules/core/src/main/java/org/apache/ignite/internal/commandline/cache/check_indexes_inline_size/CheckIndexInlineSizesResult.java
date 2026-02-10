@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.cache.check_indexes_inline_size;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 
@@ -32,6 +33,7 @@ public class CheckIndexInlineSizesResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index info (index name, inline size) per node. */
+    @Order(0)
     Map<UUID, Map<String, Integer>> nodeToIndexes = new HashMap<>();
 
     /**

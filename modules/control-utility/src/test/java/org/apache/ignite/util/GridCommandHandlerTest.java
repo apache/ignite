@@ -19,8 +19,6 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -4071,7 +4069,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public static class OfflineTestCommandArg extends IgniteDataTransferObject {
         /** */
         @Argument
-        private String input;
+        String input;
 
         /** */
         public String input() {
@@ -4081,16 +4079,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         /** */
         public void input(String input) {
             this.input = input;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, input);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException {
-            input = U.readString(in);
         }
     }
 }
