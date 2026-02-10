@@ -90,7 +90,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
             null
         );
 
-        assertTrue("Expected log about different protocol.", logListener.check(getTestTimeout()));
+        assertTrue("Expected log about unknown connection.", logListener.check(getTestTimeout()));
     }
 
     /** Setup node closure. */
