@@ -145,9 +145,10 @@ public class IDTOSerializerGenerator {
     private static final Map<String, IgniteBiTuple<String, String>> ARRAY_TYPE_SERDES = new HashMap<>();
 
     {
-        ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, ${var})", "U.readByteArray(in)"));
-        ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, ${var})", "U.readIntArray(in)"));
-        ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, ${var})", "U.readLongArray(in)"));
+        ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, obj.${f});", "U.readByteArray(in)"));
+        ARRAY_TYPE_SERDES.put(char.class.getName(), F.t("U.writeCharArray(out, obj.${f});", "U.readCharArray(in)"));
+        ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, obj.${f});", "U.readIntArray(in)"));
+        ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, obj.${f});", "U.readLongArray(in)"));
     }
 
     /** Environment. */

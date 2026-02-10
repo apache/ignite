@@ -3626,6 +3626,41 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeCharArray(DataOutput out, char[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int c : arr)
+                out.writeChar(c);
+        }
+    }
+
+    /**
+     * @param in Stream to read from.
+     * @return Read char array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    public static char[] readCharArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        char[] res = new char[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readChar();
+
+        return res;
+    }
+
+    /**
      * @param out Output.
      * @param map Map to write.
      * @throws IOException If write failed.
