@@ -451,7 +451,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res = e.getValue();
 
             if (res.error() != null) {
-                bldr.addException(cctx.discovery().node(nodeId), res.error());
+                bldr.addException(cctx.discovery().historicalNode(nodeId), res.error());
 
                 continue;
             }
