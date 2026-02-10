@@ -21,18 +21,21 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
+/**
+ * A wrapper message that holds the mapping of discovery data belonging to a cluster node and is sent to the joining node.
+ */
 public class NodeSpecificData implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Node specific data. */
     @Order(0)
     private Map<Integer, byte[]> nodeSpecificData;
 
-    /** */
+    /** Constructor. */
     public NodeSpecificData() {
         // No-op.
     }
@@ -79,5 +82,10 @@ public class NodeSpecificData implements Message, Serializable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hashCode(nodeSpecificData);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NodeSpecificData.class, this);
     }
 }
