@@ -383,13 +383,11 @@ public class IDTOSerializerGenerator {
         if (serDes == null)
             throw new IllegalStateException("Unsupported type: " + type);
 
-        TypeMirror type1 = comp == null ? type : comp;
-
         String line = (write ? serDes.get1() : ("${var} = " + serDes.get2())) + ";";
 
         return Stream.of(line
             .replaceAll("\\$\\{var}", var)
-            .replaceAll("\\$\\{Type}", simpleClassName(type1)));
+            .replaceAll("\\$\\{Type}", simpleClassName(comp == null ? type : comp)));
     }
 
     /**
