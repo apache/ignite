@@ -275,6 +275,17 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("REGEXP_REPLACE('aAaA', '[Aa]+', 'X', 2)").returns("aX").check();
         assertExpression("REGEXP_REPLACE('aAbaAcaA', '[Aa]+', 'X', 2, 2)").returns("aAbXcaA").check();
         assertExpression("REGEXP_REPLACE('aAbaAcaA', 'a', 'X', 2, 0, 'i')").returns("aXbXXcXX").check();
+        assertExpression("REGEXP_SUBSTR('hello world', 'l.o')").returns("llo").check();
+        assertExpression("REGEXP_SUBSTR('abc123def456', '[0-9]+')").returns("123").check();
+        assertExpression("REGEXP_SUBSTR('hello', 'xyz')").returns((String)null).check();
+        assertExpression("REGEXP_SUBSTR('abc123def456', '[0-9]+', 7)").returns("456").check();
+        assertExpression("REGEXP_SUBSTR('hello', 'l', 10)").returns((String)null).check();
+        assertExpression("REGEXP_SUBSTR('aaaaaa', 'aa+', 3)").returns("aaaa").check();
+        assertExpression("REGEXP_SUBSTR('123-456-789', '[0-9]+', 1, 3)").returns("789").check();
+        assertExpression("REGEXP_SUBSTR('one,two,three', '[a-z]+', 1, 5)").returns((String)null).check();
+        assertExpression("REGEXP_EXTRACT('cat dog cat bird', 'c.t')").returns("cat").check();
+        assertExpression("REGEXP_EXTRACT('abc123def456', '[0-9]+', 4)").returns("123").check();
+        assertExpression("REGEXP_EXTRACT('apple,banana,apple,grape', 'a[^,]+', 1, 2)").returns("anana").check();
     }
 
     /** */
