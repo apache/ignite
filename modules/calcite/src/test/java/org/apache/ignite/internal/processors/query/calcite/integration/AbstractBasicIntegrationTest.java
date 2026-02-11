@@ -44,11 +44,15 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.Search
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -235,6 +239,15 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
     protected List<List<?>> sql(String sql, Object... params) {
         return sql(client, sql, params);
+    }
+
+    /** */
+    protected List<List<?>> sqlAsRoot(IgniteEx ignite, String sql) throws Exception {
+        SecurityContext secCtx = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+
+        try (OperationSecurityContext ignored = ignite.context().security().withContext(secCtx)) {
+            return sql(ignite, sql);
+        }
     }
 
     /** */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,6 +35,7 @@ public class ValidateIndexesPartitionResult extends IgniteDataTransferObject {
     private static final int MAX_ISSUES = 10;
 
     /** Issues. */
+    @Order(0)
     @GridToStringExclude
     List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
 

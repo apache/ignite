@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,18 +36,22 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @Order(0)
     @GridToStringInclude
     Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
 
     /** Results of reverse indexes validation from node. */
+    @Order(1)
     @GridToStringInclude
     Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
+    @Order(2)
     @GridToStringInclude
     Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
     /** Results of checking size cache and index. */
+    @Order(3)
     @GridToStringInclude
     Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 

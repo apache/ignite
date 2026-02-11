@@ -198,8 +198,11 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 hashStore.computeIfAbsent(key, k -> createRowList()).add(row);
             }
 
-            if (waitingRight == 0)
+            if (waitingRight == 0) {
+                checkState();
+
                 rightSource().request(waitingRight = IN_BUFFER_SIZE);
+            }
         }
 
         /** */

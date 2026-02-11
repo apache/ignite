@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,9 +33,11 @@ public class ContentionTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster infos. */
+    @Order(0)
     List<ContentionJobResult> clusterInfos;
 
     /** Exceptions. */
+    @Order(1)
     Map<UUID, Exception> exceptions;
 
     /**

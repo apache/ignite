@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
@@ -28,11 +29,13 @@ public class KillSnapshotCommandArg extends CancelSnapshotArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(description = "Request id")
     UUID requestId;
 
     /** */
+    @Order(1)
     String snapshotName;
 
     /** {@inheritDoc} */

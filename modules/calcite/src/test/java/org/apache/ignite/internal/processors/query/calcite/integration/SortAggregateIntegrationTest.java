@@ -140,6 +140,21 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
         assertEquals(ROWS, cursors.size());
     }
 
+    /** */
+    @Test
+    public void testNullsReordering() {
+        sql("CREATE TABLE t(a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("INSERT INTO t VALUES (1, 1), (2, 2), (1, 3), (3, 4), (NULL, 1), (1, NULL)");
+
+        assertQuery("SELECT a, SUM(b), COUNT(b), COUNT(*) FROM t GROUP BY a ORDER BY a NULLS LAST")
+            .ordered()
+            .returns(1, 4L, 2L, 3L)
+            .returns(2, 2L, 1L, 1L)
+            .returns(3, 4L, 1L, 1L)
+            .returns(null, 1L, 1L, 1L)
+            .check();
+    }
+
     /**
      * @param c Cache.
      * @param rows Rows count.

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Comparator;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,15 +35,19 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
+    @Order(0)
     String groupName;
 
     /** Cache name. */
+    @Order(1)
     String cacheName;
 
     /** */
+    @Order(2)
     int indexBuildPartitionsLeftCount;
 
     /** Local partitions count. */
+    @Order(3)
     int totalPartitionsCount;
 
     /**

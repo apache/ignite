@@ -1,2 +1,3 @@
 org.apache.ignite.internal.MessageProcessor
 org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor
+org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
@@ -32,6 +33,7 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(optional = true)
     @EnumDescription(
@@ -47,6 +49,7 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     Enabled enabled;
 
     /** */
+    @Order(2)
     @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
     Long timeout;
 
