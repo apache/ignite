@@ -242,13 +242,13 @@ public class H2QueryInfo implements TrackableQuery {
      * @return SQL plan without the scanCount suffix.
      */
     public String planWithoutScanCount(String plan) {
-        if (plan == null || !plan.contains("scanCount:"))
+        if (!plan.contains("scanCount:"))
             return plan;
 
         StringBuilder res = new StringBuilder(plan);
 
-        removePattern(res, "\n    /* scanCount:", "*/");
-        removePattern(res, "\n    /++ scanCount:", "++/");
+        removeLineWithPattern(res, "/* scanCount:", "*/");
+        removeLineWithPattern(res, "/++ scanCount:", "++/");
 
         return res.toString();
     }
@@ -258,10 +258,14 @@ public class H2QueryInfo implements TrackableQuery {
      * @param startPattern Start pattern.
      * @param endMarker End marker.
      */
-    private void removePattern(StringBuilder sb, String startPattern, String endMarker) {
-        int start = sb.lastIndexOf(startPattern);
+    private void removeLineWithPattern(StringBuilder sb, String startPattern, String endMarker) {
+        int searchFrom = 0;
+        int start = sb.indexOf(startPattern, searchFrom);
 
         while (start != -1) {
+            while (start > 0 && sb.charAt(start) != '\n')
+                --start;
+
             int end = sb.indexOf(endMarker, start);
 
             if (end == -1)
@@ -269,7 +273,8 @@ public class H2QueryInfo implements TrackableQuery {
 
             sb.delete(start, end + endMarker.length());
 
-            start = sb.lastIndexOf(startPattern);
+            searchFrom = start;
+            start = sb.indexOf(startPattern, searchFrom);
         }
     }
 
