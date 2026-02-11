@@ -1859,7 +1859,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             U.clearClassCache();
             MarshallerExclusions.clearCache();
-            BinaryUtils.clearCache();
+            BinaryUtils.binariesFactory.clearCache();
 
             gw.writeLock();
 
