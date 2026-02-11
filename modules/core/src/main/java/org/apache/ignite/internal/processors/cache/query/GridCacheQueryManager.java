@@ -46,7 +46,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
@@ -1124,10 +1123,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (part != null) {
                 final GridDhtLocalPartition locPart = cctx.dht().topology().localPartition(part);
 
-                boolean nonLocPart = locPart == null || locPart.state() != OWNING ||
-                        (cctx.config().getCacheMode() == CacheMode.PARTITIONED && !locPart.primary(AffinityTopologyVersion.NONE));
-
-                if (nonLocPart) {
+                if (locPart == null || locPart.state() != OWNING) {
                     throw new CacheInvalidStateException("Failed to execute index query because required partition " +
                         "has not been found on local node [cacheName=" + cctx.name() + ", part=" + part + "]");
                 }

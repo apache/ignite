@@ -840,9 +840,12 @@ public class CacheQuery<T> {
     }
 
     /**
+     * Collects query data nodes matching specified {@code prj} and {@code part}.
+     *
      * @param cctx Cache context.
      * @param prj Projection (optional).
-     * @return Collection of data nodes in provided projection (if any).
+     * @param part Partition (optional).
+     * @return Collection of data nodes matching specified {@code prj} and {@code part}.
      * @throws IgniteCheckedException If partition number is invalid.
      */
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
@@ -856,25 +859,17 @@ public class CacheQuery<T> {
         if (prj == null && part == null)
             return affNodes;
 
-        if (part != null && part >= cctx.affinity().partitions())
-            throw new IgniteCheckedException("Invalid partition number: " + part);
-
-        final Set<ClusterNode> partHolders;
-
         if (part != null) {
-            if (cctx.config().getCacheMode() == CacheMode.PARTITIONED)
-                partHolders = Collections.singleton(cctx.affinity().primaryByPartition(part, topVer));
-            else
-                partHolders = new HashSet<>(cctx.topology().owners(part, topVer));
+            if (part >= cctx.affinity().partitions())
+                throw new IgniteCheckedException("Invalid partition number: " + part);
+
+            affNodes = cctx.topology().nodes(part, topVer);
         }
-        else
-            partHolders = Collections.emptySet();
 
         return F.view(affNodes, new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || partHolders.contains(n));
+                    (prj == null || prj.node(n.id()) != null);
             }
         });
     }
