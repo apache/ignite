@@ -1,0 +1,118 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Maintenance Mode
+
+== Overview
+
+Maintenance mode is a special state of the node where its functionality is limited.
+Nodes in this mode do not join the cluster and remain isolated until maintenance mode has been completed.
+
+Nodes can enter maintenance mode during restarts when situations that could lead to data corruption or actions required may affect the functioning of the cluster while the node remains part of it.
+To enter nodes into emergency mode requires a restart. More details are provided below in the section “<<Reasons for Transitioning into Maintenance Mode>>”
+
+When a node enters maintenance mode, it becomes isolated from the cluster and does not receive data updates.
+Depending on the task at hand, manual intervention by an administrator might be necessary, or the node will resolve issues automatically (for example, repairing problems with data and indexes).
+
+After all tasks associated with maintenance mode have been completed, the administrator must manually restart the node — after which it exits maintenance mode.
+The node rejoins the cluster upon next restart.
+
+During operation in maintenance mode, the node is considered offline within the cluster topology.
+Before making changes to base topology, ensure that the node is no longer in maintenance mode.
+
+== The process of computing tasks in maintenance mode
+
+When a node receives a command to enter maintenance mode, it creates a `maintenance_tasks.mntc` file in the working directory.
+If this file exists after a restart, the node automatically enters emergency mode and attempts to perform the necessary tasks.
+
+Task list:
+
+[cols="1,4,1",opts="header"]
+|===
+| Task | Maintenance  | Is it performed automatically at startup
+| `defragmentationMaintenanceTask` | Node defragmentation is scheduled | Yes
+
+| `indexRebuildMaintenanceTask` | Data indexes are scheduled to be restored | Yes
+|===
+
+Once the tasks are completed, the `maintenance_tasks.mntc` file is removed.
+The node continues operating in maintenance mode until a manual restart occurs.
+
+Additionally, entering maintenance mode can also be initiated manually as scheduled.
+For more information about this, see the section titled "<<Scheduled Maintenance Mode>>" below.
+
+== Reasons for Transitioning into Maintenance Mode
+
+=== Possible data corruption
+
+If a node with persistence enabled and write-ahead logging disabled terminates abnormally during checkpointing, it cannot reliably determine whether any data corruption occurred.
+In this case the node detects possible data damage on subsequent startup and shuts down.
+Upon the next restart, the node enters maintenance mode and waits for administrative action.
+
+To solve the problem:
+
+- Restart the node and it will enter maintenance mode.
+- Use the management script to execute the following command to remove potentially corrupted data:
++
+`control.sh --persistence clean corrupted`.
++
+You can also create backups using the following command:
++
+`control.sh --persistence backup corrupted`
++
+Command examples:
++
+[source, shell]
+----
+ control.sh|bat --host {host} --port {port} --persistence backup corrupted
+ control.sh|bat --host {host} --port {port} --persistence clean corrupted
+----
+A node's IP address and port can be found in its logs.
+- After completing the task, restart the node — it will resume the checkpointing process.
+
+The node remains in maintenance mode until potentially corrupted data is cleared.
+This deletion can be done manually followed by a node restart.
+Afterward, the node will recover lost data from backups stored on other cluster nodes through the rebalancing process.
+More detailed information about this procedure can be found in the "link:data-rebalancing[Data Rebalancing]" section of the "Application Developer Guide."
+
+Following data removal, the node will exit maintenance mode and rejoin the cluster upon the next restart.
+
+== Scheduled Maintenance Mode
+
+Some tasks require isolating the node so their execution doesn't impact the cluster.
+Once the command is executed, the node will enter maintenance mode on the next restart and complete the required tasks.
+Another restart will then be needed to bring the node back into the cluster.
+
+Commands that trigger maintenance mode on the next restart:
+
+- `control.sh --defragmentation` - node defragmentation;
+- `control.sh --cache schedule_indexes_rebuild` - schedule rebuilding cache data indexes in Maintenance Mode.
+
+More details about these commands can be found in the "Control Script" section under subsections "link:tools/control-script#defragmentation[Defragmentation]" and "link:tools/control-script#rebuild_index[Rebuild index]".
+
+To exit maintenance mode and return the node to the cluster, restart the node.
+
+== Outdated Caches
+
+A cache is considered outdated if both conditions are met:
+
+- the node left the cluster (e.g., entered maintenance mode);
+- while the node was unavailable, the cache was removed from the cluster.
+
+Outdated caches need to be deleted.
+
+To maintain data consistency, the node marks outdated caches for deletion and enters maintenance mode.
+
+While in maintenance mode, the node automatically deletes outdated caches.
+After maintenance mode completes, restart the node to rejoin the cluster.
