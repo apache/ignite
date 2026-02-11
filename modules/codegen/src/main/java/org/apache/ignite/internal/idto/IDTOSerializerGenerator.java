@@ -493,6 +493,7 @@ public class IDTOSerializerGenerator {
         TypeMirror valType = ta.get(1);
         TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
 
+        // TODO: Move me to common code generation.
         if (className(type).equals(Map.class.getName()) && assignableFrom(keyType, strCls) && assignableFrom(valType, strCls))
             serDes = STR_STR_MAP;
         else if (className(type).equals(TreeMap.class.getName()))
