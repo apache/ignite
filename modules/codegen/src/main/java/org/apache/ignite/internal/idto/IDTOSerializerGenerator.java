@@ -163,11 +163,14 @@ public class IDTOSerializerGenerator {
     /** Dto type. */
     private final TypeMirror dtoCls;
 
-    /** Collection type. */
+    /** Want to generate specialized code for collections. */
     private final TypeMirror coll;
 
-    /** Map type. */
+    /** Want to generate specialized code for maps. */
     private final TypeMirror map;
+
+    /** IgniteBiTuple extends Map (sic!) and placed in public API (sic!) so want to generate specialized code for it. */
+    private final TypeMirror biTuple;
 
     /** Type to generated serializer for. */
     private final TypeElement type;
@@ -193,7 +196,7 @@ public class IDTOSerializerGenerator {
         dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
         coll = env.getElementUtils().getTypeElement(Collection.class.getName()).asType();
         map = env.getElementUtils().getTypeElement(Map.class.getName()).asType();
-
+        biTuple = env.getTypeUtils().erasure(env.getElementUtils().getTypeElement(IgniteBiTuple.class.getName()).asType());
     }
 
     /** @return Fully qualified name for generated class. */
@@ -370,6 +373,8 @@ public class IDTOSerializerGenerator {
             return arrayCode(type, var);
         else if (isCollection(type))
             return collectionCode(type, var);
+        else if (isBiTuple(type))
+            return biTupleCode(type, var);
         else if (isMap(type))
             return mapCode(type, var);
         else if (isDto(type))
@@ -405,7 +410,6 @@ public class IDTOSerializerGenerator {
          * ```
          * We want to respect @NotNull annotation and keep default value.
          */
-
         return Stream.of("{",
             TAB + "${Type} maybeNull = " + serDes.get2() + ";",
             TAB + "if (maybeNull != null)",
@@ -415,9 +419,66 @@ public class IDTOSerializerGenerator {
     }
 
     /**
+     * @param type IgniteBiTuple type.
+     * @param var Variable to read(write) from(to).
+     * @return Serdes code for IgniteBiTuple.
+     */
+    private Stream<String> biTupleCode(TypeMirror type, String var) {
+        DeclaredType dt = (DeclaredType)type;
+
+        List<? extends TypeMirror> ta = dt.getTypeArguments();
+
+        assert ta.size() == 2;
+
+        TypeMirror keyType = ta.get(0);
+        TypeMirror valType = ta.get(1);
+
+        Stream<String> res;
+
+        String k = "k" + (level == 0 ? "" : level);
+        String v = "v" + (level == 0 ? "" : level);
+
+        Map<String, String> params = Map.of(
+            "${var}", var,
+            "${KeyType}", typeWithGeneric(keyType),
+            "${ValType}", typeWithGeneric(valType),
+            "${len}", "len" + (level == 0 ? "" : level),
+            "${k}", k,
+            "${v}", v
+        );
+
+        level++;
+
+        if (write) {
+            res = Stream.of("{",
+                TAB + "${KeyType} ${k} = ${var}.get1();",
+                TAB + "${ValType} ${v} = ${var}.get2();");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + line));
+            res = Stream.concat(res, Stream.of("}"));
+        }
+        else {
+            imports.add(IgniteBiTuple.class.getName());
+
+            res = Stream.of("{",
+                TAB + "${KeyType} ${k} = null;",
+                TAB + "${ValType} ${v} = null;");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + "${var} = new IgniteBiTuple<>(${k}, ${v});", "}"));
+        }
+
+        level--;
+
+        return res.map(line -> replacePlaceholders(line, params));
+    }
+
+    /**
      * @param type Map type.
      * @param var Variable to read(write) from(to).
-     * @return Serdes code for collection.
+     * @return Serdes code for map.
      */
     private Stream<String> mapCode(TypeMirror type, String var) {
         IgniteBiTuple<String, String> serDes = null;
@@ -762,6 +823,7 @@ public class IDTOSerializerGenerator {
         return TYPE_SERDES.containsKey(className(type))
             || enumType(env, type)
             || isCollection(type)
+            || isBiTuple(type)
             || isMap(type)
             || isArray(type)
             || isDto(type);
@@ -790,6 +852,11 @@ public class IDTOSerializerGenerator {
     /** */
     private static boolean isArray(TypeMirror type) {
         return type.getKind() == TypeKind.ARRAY;
+    }
+
+    /** */
+    private boolean isBiTuple(TypeMirror type) {
+        return env.getTypeUtils().isSameType(env.getTypeUtils().erasure(type), biTuple);
     }
 
     /** */
