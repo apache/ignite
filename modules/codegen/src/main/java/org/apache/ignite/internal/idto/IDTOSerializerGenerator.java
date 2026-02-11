@@ -147,6 +147,7 @@ public class IDTOSerializerGenerator {
 
     {
         ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, ${var})", "U.readByteArray(in)"));
+        ARRAY_TYPE_SERDES.put(char.class.getName(), F.t("U.writeCharArray(out, ${var})", "U.readCharArray(in)"));
         ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, ${var})", "U.readIntArray(in)"));
         ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, ${var})", "U.readLongArray(in)"));
     }
