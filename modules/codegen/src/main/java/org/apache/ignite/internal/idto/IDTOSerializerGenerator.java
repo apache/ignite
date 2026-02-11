@@ -310,7 +310,7 @@ public class IDTOSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
         writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) +
-            "<" + typeWithGeneric() + "> {" + NL);
+            "<" + typeWithGeneric(type.asType()) + "> {" + NL);
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
@@ -320,7 +320,7 @@ public class IDTOSerializerGenerator {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void writeExternal(" + typeWithGeneric() + " obj, ObjectOutput out) throws IOException {");
+        code.add("@Override public void writeExternal(" + typeWithGeneric(type.asType()) + " obj, ObjectOutput out) throws IOException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
@@ -336,7 +336,7 @@ public class IDTOSerializerGenerator {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void readExternal(" + typeWithGeneric() + " obj, ObjectInput in) " +
+        code.add("@Override public void readExternal(" + typeWithGeneric(type.asType()) + " obj, ObjectInput in) " +
             "throws IOException, ClassNotFoundException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
@@ -454,8 +454,8 @@ public class IDTOSerializerGenerator {
 
         Map<String, String> params = Map.of(
             "${var}", var,
-            "${KeyType}", className(keyType),
-            "${ValType}", className(valType),
+            "${KeyType}", typeWithGeneric(keyType),
+            "${ValType}", typeWithGeneric(valType),
             "${len}", "len" + (level == 0 ? "" : level),
             "${i}", "i" + (level == 0 ? "" : level),
             "${k}", k,
@@ -482,7 +482,20 @@ public class IDTOSerializerGenerator {
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
         else {
-            res = Stream.of("// FIXME");
+            imports.add(HashMap.class.getName());
+
+            res = Stream.of("{",
+                TAB + "int ${len} = in.readInt();",
+                TAB + "if (${len} >= 0) {",
+                TAB + TAB + "${var} = new HashMap<>();",
+                TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {",
+                TAB + TAB + TAB + "${KeyType} ${k} = null;",
+                TAB + TAB + TAB + "${ValType} ${v} = null;");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + TAB + "${var}.put(${k}, ${v});"));
+            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
 
         level--;
@@ -528,78 +541,6 @@ public class IDTOSerializerGenerator {
             "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
             "${len}", "len" + (level == 0 ? "" : level),
             "${i}", "i" + (level == 0 ? "" : level),
-            "${el}", el
-        );
-
-        level++;
-
-        if (write) {
-            res = Stream.of("{",
-                TAB + "int ${len} = ${var} == null ? -1 : ${var}.size();",
-                TAB + "out.writeInt(${len});",
-                TAB + "if (${len} > 0) {",
-                TAB + TAB + "for (${Type} ${el} : ${var}) {");
-
-            res = Stream.concat(res, variableCode(colEl, el).map(line -> TAB + TAB + TAB + line));
-            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
-        }
-        else {
-            String implCls = COLL_IMPL.get(className(type));
-
-            imports.add(implCls);
-
-            assert implCls != null;
-
-            res = Stream.of("{",
-                TAB + "int ${len} = in.readInt();",
-                TAB + "if (${len} >= 0) {",
-                TAB + TAB + "${var} = new ${CollectionImpl}<>();",
-                TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {",
-                TAB + TAB + TAB + "${Type} ${el} = null;");
-
-            res = Stream.concat(res, variableCode(colEl, el).map(line -> TAB + TAB + TAB + line));
-            res = Stream.concat(res, Stream.of(TAB + TAB + TAB + "${var}.add(${el});"));
-            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
-        }
-
-        level--;
-
-        return res.map(line -> replacePlaceholders(line, params));
-    }
-
-    /**
-     * @param type Collection type
-     * @param var Variable to read(write) from(to).
-     * @return Serdes code for collection.
-     */
-    private Stream<String> collectionCode(TypeMirror type, String var) {
-        DeclaredType dt = (DeclaredType)type;
-
-        assert dt.getTypeArguments().size() == 1;
-
-        TypeMirror colEl = dt.getTypeArguments().get(0);
-
-        if (!TYPE_SERDES.containsKey(className(colEl)) && !enumType(env, colEl)) {
-            // Ignite can't serialize collections elements efficiently.
-            IgniteBiTuple<String, String> serDes = TYPE_SERDES.get(className(type));
-
-            throwIfNull(type, serDes);
-
-            return Stream.of((write ? serDes.get1() : simpleRead(serDes)) + ";")
-                .map(line -> replacePlaceholders(line, var, type));
-        }
-
-        Stream<String> res;
-
-        String el = "el" + (level == 0 ? "" : level);
-
-        Map<String, String> params = Map.of(
-            "${var}", var,
-            "${Type}", colEl.toString(),
-            "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
-            "${len}", "len" + (level == 0 ? "" : level),
-            "${i}", "i" + (level == 0 ? "" : level),
-            "${iter}", "iter" + (level == 0 ? "" : level),
             "${el}", el
         );
 
@@ -765,8 +706,9 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return Simple class name. */
-    private String typeWithGeneric() {
-        TypeMirror tp = type.asType();
+    private String typeWithGeneric(TypeMirror tp) {
+        if (tp.getKind() == TypeKind.TYPEVAR || tp.getKind() == TypeKind.WILDCARD)
+            return "Object";
 
         if (!(tp instanceof DeclaredType))
             return simpleClassName(tp);
@@ -776,14 +718,20 @@ public class IDTOSerializerGenerator {
         if (F.size(dt.getTypeArguments()) == 0)
             return simpleClassName(tp);
 
-        StringBuilder generic = new StringBuilder("<Object");
+        StringBuilder generic = new StringBuilder("<");
 
-        for (int i = 1; i < F.size(dt.getTypeArguments()); i++)
-            generic.append(", Object");
+        for (int i = 0; i < F.size(dt.getTypeArguments()); i++) {
+            TypeMirror gt = dt.getTypeArguments().get(i);
 
-        generic.append(">");
+            if (i > 0)
+                generic.append(", ");
 
-        return simpleClassName(tp) + generic;
+            generic.append((gt.getKind() == TypeKind.TYPEVAR || gt.getKind() == TypeKind.WILDCARD)
+                ? "Object"
+                : gt.toString());
+        }
+
+        return simpleClassName(tp) + generic.append(">");
     }
 
     /** @return Simple class name. */
