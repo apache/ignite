@@ -150,23 +150,23 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(serversPerDc, serversPerDc);
 
         // Register the log listeners.
-        LogListener logLsnr0 = LogListener.matches("During the connection recovery process, starting ping "
+        LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping "
             + "of DC '" + DC_ID_1 + "'. Nodes number to ping: " + serversPerDc).times(1).build();
         LogListener logLsnr1 = LogListener.matches("Few nodes or only half of the remote DC has responded. "
             + "Considering DC '" + DC_ID_1 + "' is unavailable.").times(1).build();
-        LogListener logLsnr2 = LogListener.matches("During the connection recovery process, entire remote DC '"
-            + DC_ID_1 + "' has been traversed. Failed to connect to any node.").times(1).build();
+        LogListener logLsnr2 = LogListener.matches("During the connection recovery, entire remote DC '"
+            + DC_ID_1 + "' has been traversed. Failed to connect to any its node.").times(1).build();
 
         LogListener logLsnr3;
 
+        // he 'Responded nodes' log depends of successful pings.
         if (someRemoteDcNodesRespond) {
-            logLsnr3 = LogListener.matches("During the connection recovery process, nodes ping of DC '" + DC_ID_1
-                    + "' from current corner node has finished. Responded nodes: [").times(1)
-                .andMatches("Responded nodes: []").times(0)
-                .build();
+            logLsnr3 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
+                    + "' from current corner node has finished. Responded nodes: [").times(1).andMatches("Responded nodes: []")
+                .times(0).build();
         }
         else {
-            logLsnr3 = LogListener.matches("During the connection recovery process, nodes ping of DC '" + DC_ID_1
+            logLsnr3 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
                 + "' from current corner node has finished. Responded nodes: []").times(1).build();
         }
 
