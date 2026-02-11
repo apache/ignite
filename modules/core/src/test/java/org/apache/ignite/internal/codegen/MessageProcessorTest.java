@@ -272,7 +272,7 @@ public class MessageProcessorTest {
 
     /** */
     private Compilation compile(String... srcFiles) {
-        return compile(new MessageProcessor());
+        return compile(new MessageProcessor(), srcFiles);
     }
 
     /** */
