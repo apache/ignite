@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -156,6 +157,9 @@ public class IDTOSerializerGenerator {
     /** Environment. */
     private final ProcessingEnvironment env;
 
+    /** Serializable type. */
+    private final TypeMirror serializableCls;
+
     /** Dto type. */
     private final TypeMirror dtoCls;
 
@@ -185,6 +189,7 @@ public class IDTOSerializerGenerator {
         this.env = env;
         this.type = type;
 
+        serializableCls = env.getElementUtils().getTypeElement(Serializable.class.getName()).asType();
         dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
         coll = env.getElementUtils().getTypeElement(Collection.class.getName()).asType();
         map = env.getElementUtils().getTypeElement(Map.class.getName()).asType();
@@ -359,7 +364,7 @@ public class IDTOSerializerGenerator {
         TypeMirror type,
         String var
     ) {
-        IgniteBiTuple<String, String> serDes = null;
+        IgniteBiTuple<String, String> serDes;
 
         if (isArray(type))
             return arrayCode(type, var);
@@ -372,11 +377,13 @@ public class IDTOSerializerGenerator {
         else if (type.getKind() == TypeKind.TYPEVAR)
             serDes = F.t("out.writeObject(${var})", "in.readObject()");
         else {
-            if (serDes == null) {
-                serDes = TYPE_SERDES.get(className(type));
+            serDes = TYPE_SERDES.get(className(type));
 
-                if (serDes == null && enumType(env, type))
+            if (serDes == null) {
+                if (enumType(env, type))
                     serDes = ENUM_SERDES;
+                else if (isSerializable(type))
+                    serDes = OBJECT_SERDES;
             }
         }
 
@@ -439,7 +446,48 @@ public class IDTOSerializerGenerator {
         if (serDes != null)
             return simpleSerdes(serDes, var, type);
 
-        throw new IllegalStateException("Unknown map: " + type);
+        Stream<String> res;
+
+        String el = "el" + (level == 0 ? "" : level);
+        String k = "k" + (level == 0 ? "" : level);
+        String v = "v" + (level == 0 ? "" : level);
+
+        Map<String, String> params = Map.of(
+            "${var}", var,
+            "${KeyType}", className(keyType),
+            "${ValType}", className(valType),
+            "${len}", "len" + (level == 0 ? "" : level),
+            "${i}", "i" + (level == 0 ? "" : level),
+            "${k}", k,
+            "${v}", v,
+            "${el}", el
+        );
+
+        level++;
+
+        if (write) {
+            imports.add(Map.class.getName());
+            imports.add(Map.Entry.class.getName().replace('$', '.'));
+
+            res = Stream.of("{",
+                TAB + "int ${len} = ${var} == null ? -1 : ${var}.size();",
+                TAB + "out.writeInt(${len});",
+                TAB + "if (${len} > 0) {",
+                TAB + TAB + "for (Map.Entry<${KeyType}, ${ValType}> ${el} : ${var}.entrySet()) {",
+                TAB + TAB + TAB + "${KeyType} ${k} = ${el}.getKey();",
+                TAB + TAB + TAB + "${ValType} ${v} = ${el}.getValue();");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
+        }
+        else {
+            res = Stream.of("// FIXME");
+        }
+
+        level--;
+
+        return res.map(line -> replacePlaceholders(line, params));
     }
 
     /**
@@ -480,7 +528,6 @@ public class IDTOSerializerGenerator {
             "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
             "${len}", "len" + (level == 0 ? "" : level),
             "${i}", "i" + (level == 0 ? "" : level),
-            "${iter}", "iter" + (level == 0 ? "" : level),
             "${el}", el
         );
 
@@ -719,6 +766,11 @@ public class IDTOSerializerGenerator {
     /** */
     private boolean isDto(TypeMirror type) {
         return assignableFrom(type, dtoCls);
+    }
+
+    /** */
+    private boolean isSerializable(TypeMirror type) {
+        return assignableFrom(type, serializableCls);
     }
 
     /** */
