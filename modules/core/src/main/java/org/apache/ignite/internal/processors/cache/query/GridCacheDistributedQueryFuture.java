@@ -262,7 +262,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      */
     private void requestPages(UUID nodeId) {
         try {
-            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(cctx, reqId, query().query(), fields());
+            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(cctx, reqId, query().query());
 
             qryMgr.sendRequest(this, req, Collections.singletonList(nodeId));
         }
@@ -279,7 +279,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     // TODO IGNITE-15731: Refactor how CacheQueryReducer handles remote nodes.
     private void cancelPages(UUID nodeId) {
         try {
-            GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(cctx, reqId, fields());
+            GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(cctx, reqId);
 
             if (nodeId.equals(cctx.localNodeId())) {
                 // Process cancel query directly (without sending) for local node,
