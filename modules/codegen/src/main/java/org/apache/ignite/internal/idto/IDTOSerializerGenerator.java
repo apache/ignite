@@ -435,14 +435,13 @@ public class IDTOSerializerGenerator {
 
         Stream<String> res;
 
-        String k = "k" + (level == 0 ? "" : level);
-        String v = "v" + (level == 0 ? "" : level);
+        String k = withLevel("k");
+        String v = withLevel("v");
 
         Map<String, String> params = Map.of(
             "${var}", var,
             "${KeyType}", typeWithGeneric(keyType),
             "${ValType}", typeWithGeneric(valType),
-            "${len}", "len" + (level == 0 ? "" : level),
             "${k}", k,
             "${v}", v
         );
@@ -510,16 +509,16 @@ public class IDTOSerializerGenerator {
 
         Stream<String> res;
 
-        String el = "el" + (level == 0 ? "" : level);
-        String k = "k" + (level == 0 ? "" : level);
-        String v = "v" + (level == 0 ? "" : level);
+        String el = withLevel("el");
+        String k = withLevel("k");
+        String v = withLevel("v");
 
         Map<String, String> params = Map.of(
             "${var}", var,
             "${KeyType}", typeWithGeneric(keyType),
             "${ValType}", typeWithGeneric(valType),
-            "${len}", "len" + (level == 0 ? "" : level),
-            "${i}", "i" + (level == 0 ? "" : level),
+            "${len}", withLevel("len"),
+            "${i}", withLevel("i"),
             "${k}", k,
             "${v}", v,
             "${el}", el
@@ -595,14 +594,14 @@ public class IDTOSerializerGenerator {
 
         Stream<String> res;
 
-        String el = "el" + (level == 0 ? "" : level);
+        String el = withLevel("el");
 
         Map<String, String> params = Map.of(
             "${var}", var,
             "${Type}", colEl.toString(),
             "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
-            "${len}", "len" + (level == 0 ? "" : level),
-            "${i}", "i" + (level == 0 ? "" : level),
+            "${len}", withLevel("len"),
+            "${i}", withLevel("i"),
             "${el}", el
         );
 
@@ -686,8 +685,8 @@ public class IDTOSerializerGenerator {
         return res.map(line -> replacePlaceholders(line, Map.of(
             "${var}", var,
             "${Type}", simpleClassName(comp),
-            "${len}", "len" + (level == 0 ? "" : level),
-            "${i}", "i" + (level == 0 ? "" : level)
+            "${len}", withLevel("len"),
+            "${i}", withLevel("i")
         )));
     }
 
@@ -875,5 +874,10 @@ public class IDTOSerializerGenerator {
     private static void throwIfNull(TypeMirror type, IgniteBiTuple<String, String> serDes) {
         if (serDes == null)
             throw new IllegalStateException("Unsupported type: " + type);
+    }
+
+    /** */
+    private @NotNull String withLevel(String name) {
+        return name + (level == 0 ? "" : level);
     }
 }
