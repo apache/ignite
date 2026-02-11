@@ -166,6 +166,32 @@ public interface ClientCache<K, V> {
     public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException;
 
     /**
+     * Gets the number of all entries cached across all nodes as a long value. By default, if {@code peekModes} value
+     * isn't defined, only size of primary copies across all nodes will be returned. This behavior is identical to
+     * calling this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size across all nodes.
+     * @throws ClientException On error.
+     */
+    public long sizeLong(CachePeekMode... peekModes) throws ClientException;
+
+    /**
+     * Asynchronously gets the number of all entries cached across all nodes as a long value. By default,
+     * if {@code peekModes} value isn't defined, only size of primary copies across all nodes will be returned.
+     * This behavior is identical to calling this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return a Future representing pending completion of the operation.
+     * @throws ClientException On error.
+     */
+    public IgniteClientFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws ClientException;
+
+    /**
      * Gets a collection of entries from the {@link ClientCache}, returning them as
      * {@link Map} of the values associated with the set of keys requested.
      *

@@ -313,10 +313,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     @Override public int size(CachePeekMode... peekModes) throws ClientException {
         return ch.service(
             ClientOperation.CACHE_GET_SIZE,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
-            },
+            req -> writePeekModes(peekModes, req),
             res -> (int)res.in().readLong()
         );
     }
@@ -324,12 +321,27 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException {
         return ch.serviceAsync(
-                ClientOperation.CACHE_GET_SIZE,
-                req -> {
-                    writeCacheInfo(req);
-                    ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
-                },
-                res -> (int)res.in().readLong()
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> (int)res.in().readLong()
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws ClientException {
+        return ch.service(
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> res.in().readLong()
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws ClientException {
+        return ch.serviceAsync(
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> res.in().readLong()
         );
     }
 
@@ -1639,6 +1651,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                 serDes.writeObject(out, e.getKey());
                 serDes.writeObject(out, e.getValue());
             });
+    }
+
+    /** */
+    private void writePeekModes(CachePeekMode[] peekModes, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
     }
 
     /**
