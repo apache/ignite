@@ -122,22 +122,22 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     /**
      * @return A local node if available, otherwise a random node from the given collection.
      */
-    private static ClusterNode localOrRemoteNode(Collection<ClusterNode> nodes) {
+    private ClusterNode localOrRemoteNode(Collection<ClusterNode> nodes) {
         int remoteNodeIdx = ThreadLocalRandom.current().nextInt(nodes.size());
 
-        ClusterNode remoteNode = null;
+        ClusterNode rmtNode = null;
 
         for (ClusterNode node : nodes) {
             if (node.isLocal())
                 return node;
 
             if (remoteNodeIdx-- == 0)
-                remoteNode = node;
+                rmtNode = node;
         }
 
-        assert remoteNode != null;
+        assert rmtNode != null;
 
-        return remoteNode;
+        return rmtNode;
     }
 
     /** {@inheritDoc} */

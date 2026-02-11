@@ -182,7 +182,7 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
                 GridTestUtils.assertThrows(null, () -> grid().cache("CACHE").query(qry).getAll(),
                     client ? IgniteException.class : CacheInvalidStateException.class,
                     client ? "Failed to execute local index query on a client node." :
-                        "Failed to execute index query because required partition has not been found on local node");
+                        "Failed to execute index query because required partition is not primary on local node");
             }
             else
                 assertTrue(!grid().cache("CACHE").query(qry).getAll().isEmpty());
