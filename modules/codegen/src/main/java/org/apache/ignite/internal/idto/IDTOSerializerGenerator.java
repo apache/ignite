@@ -174,7 +174,7 @@ public class IDTOSerializerGenerator {
     private boolean write;
 
     /** Nesting level. */
-    private int level = 0;
+    private int level;
 
     /**
      * @param env Environment.
@@ -362,9 +362,8 @@ public class IDTOSerializerGenerator {
 
         if (type.getKind() == TypeKind.ARRAY)
             return arrayCode(type, var);
-        else if (env.getTypeUtils().isAssignable(env.getTypeUtils().erasure(type), coll)) {
+        else if (env.getTypeUtils().isAssignable(env.getTypeUtils().erasure(type), coll))
             return collectionCode(type, var);
-        }
         else if (env.getTypeUtils().isAssignable(type, dtoCls))
             serDes = OBJECT_SERDES;
         else if (type.getKind() == TypeKind.TYPEVAR)
