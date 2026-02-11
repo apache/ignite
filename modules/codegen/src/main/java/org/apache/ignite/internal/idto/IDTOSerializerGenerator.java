@@ -448,46 +448,53 @@ public class IDTOSerializerGenerator {
 
         imports.add(Iterator.class.getName());
 
-        String elName = "el" + (level == 0 ? "" : level);
-        String lenName = "len" + (level == 0 ? "" : level);
-        String iterName = "iter" + (level == 0 ? "" : level);
+        String el = "el" + (level == 0 ? "" : level);
+
+        Map<String, String> params = Map.of(
+            "${var}", var,
+            "${Type}", colEl.toString(),
+            "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
+            "${len}", "len" + (level == 0 ? "" : level),
+            "${i}", "i" + (level == 0 ? "" : level),
+            "${iter}", "iter" + (level == 0 ? "" : level),
+            "${el}", el
+        );
 
         level++;
 
         if (write) {
             res = Stream.of("{",
-                TAB + "int " + lenName + " = ${var} == null ? -1 : ${var}.size();",
-                TAB + "out.writeInt(" + lenName + ");",
-                TAB + "if (" + lenName + " > 0) {",
-                TAB + TAB + "for (Iterator<" + colEl + "> " + iterName + " = ${var}.iterator(); " + iterName + ".hasNext();) {",
-                TAB + TAB + TAB + "${Type} " + elName + " = " + iterName + ".next();");
+                TAB + "int ${len} = ${var} == null ? -1 : ${var}.size();",
+                TAB + "out.writeInt(${len});",
+                TAB + "if (${len} > 0) {",
+                TAB + TAB + "for (Iterator<${Type}> ${iter} = ${var}.iterator(); ${iter}.hasNext();) {",
+                TAB + TAB + TAB + "${Type} ${el} = ${iter}.next();");
 
-            res = Stream.concat(res, variableCode(colEl, elName).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(colEl, el).map(line -> TAB + TAB + TAB + line));
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
         else {
             String implCls = COLL_IMPL.get(className(type));
-            String iname = "i" + (level == 0 ? "" : level);
 
             imports.add(implCls);
 
             assert implCls != null;
 
             res = Stream.of("{",
-                TAB + "int " + lenName + " = in.readInt();",
-                TAB + "if (" + lenName + " >= 0) {",
-                TAB + TAB + "${var} = new " + simpleName(implCls) + "<>();",
-                TAB + TAB + "for (int " + iname + " = 0; " + iname + " < " + lenName + "; " + iname + "++) {",
-                TAB + TAB + TAB + "${Type} " + elName + " = null;");
+                TAB + "int ${len} = in.readInt();",
+                TAB + "if (${len} >= 0) {",
+                TAB + TAB + "${var} = new ${CollectionImpl}<>();",
+                TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {",
+                TAB + TAB + TAB + "${Type} ${el} = null;");
 
-            res = Stream.concat(res, variableCode(colEl, elName).map(line -> TAB + TAB + TAB + line));
-            res = Stream.concat(res, Stream.of(TAB + TAB + TAB + "${var}.add(" + elName + ");"));
+            res = Stream.concat(res, variableCode(colEl, el).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + TAB + "${var}.add(${el});"));
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
 
         level--;
 
-        return res.map(line -> replacePlaceholders(line, var, colEl));
+        return res.map(line -> replacePlaceholders(line, params));
     }
 
     /**
@@ -514,26 +521,31 @@ public class IDTOSerializerGenerator {
 
         if (write) {
             res = Stream.of("{",
-                TAB + "int len = ${var} == null ? -1 : ${var}.length;",
-                TAB + "out.writeInt(len);",
-                TAB + "if (len > 0) {",
-                TAB + TAB + "for (int i=0; i<len; i++) {");
+                TAB + "int ${len} = ${var} == null ? -1 : ${var}.length;",
+                TAB + "out.writeInt(${len});",
+                TAB + "if (${len} > 0) {",
+                TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {");
 
-            res = Stream.concat(res, variableCode(comp, var + "[i]").map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(comp, var + "[${i}]").map(line -> TAB + TAB + TAB + line));
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
         else {
             res = Stream.of("{",
-                TAB + "int len = in.readInt();",
-                TAB + "if (len >= 0) {",
-                TAB + TAB + "${var} = new ${Type}[len];",
-                TAB + TAB + "for (int i=0; i<len; i++) {");
+                TAB + "int ${len} = in.readInt();",
+                TAB + "if (${len} >= 0) {",
+                TAB + TAB + "${var} = new ${Type}[${len}];",
+                TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {");
 
-            res = Stream.concat(res, variableCode(comp, var + "[i]").map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(comp, var + "[${i}]").map(line -> TAB + TAB + TAB + line));
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
 
-        return res.map(line -> replacePlaceholders(line, var, comp));
+        return res.map(line -> replacePlaceholders(line, Map.of(
+            "${var}", var,
+            "${Type}", simpleClassName(comp),
+            "${len}", "len" + (level == 0 ? "" : level),
+            "${i}", "i" + (level == 0 ? "" : level)
+        )));
     }
 
     /** @return List of non-static and non-transient field for given {@code type}. */
@@ -619,9 +631,20 @@ public class IDTOSerializerGenerator {
 
     /** Replaces placeholders to current values. */
     private String replacePlaceholders(String line, String var, TypeMirror type) {
-        return line
-            .replaceAll("\\$\\{var}", var)
-            .replaceAll("\\$\\{Type}", simpleClassName(type));
+        return replacePlaceholders(line, Map.of("${var}", var, "${Type}", simpleClassName(type)));
+    }
+
+    /** Replaces placeholders to current values. */
+    private String replacePlaceholders(String line, Map<String, String> subst) {
+        for (Map.Entry<String, String> e : subst.entrySet()) {
+            String line0 = line;
+            do {
+                line = line0;
+                line0 = line.replace(e.getKey(), e.getValue());
+            } while (!line0.equals(line));
+        }
+
+        return line;
     }
 
     /** */
