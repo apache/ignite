@@ -1024,13 +1024,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 GridEventStorageMessage res = (GridEventStorageMessage)msg;
 
                 try {
-                    if (res.eventsBytes() != null)
-                        res.events(U.<Collection<Event>>unmarshal(marsh, res.eventsBytes(),
-                            U.resolveClassLoader(ctx.config())));
-
-                    if (res.exceptionBytes() != null)
-                        res.exception(U.<Throwable>unmarshal(marsh, res.exceptionBytes(),
-                            U.resolveClassLoader(ctx.config())));
+                    res.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), null);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal events query response: " + msg, e);
@@ -1066,8 +1060,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             ioMgr.addMessageListener(resTopic, resLsnr);
 
-            byte[] serFilter = U.marshal(marsh, p);
-
             GridDeployment dep = ctx.deploy().deploy(p.getClass(), U.detectClassLoader(p.getClass()));
 
             if (dep == null)
@@ -1075,8 +1067,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             GridEventStorageMessage msg = new GridEventStorageMessage(
                 resTopic,
-                serFilter,
-                p.getClass().getName(),
+                p,
                 dep.classLoaderId(),
                 dep.deployMode(),
                 dep.userVersion(),
@@ -1154,7 +1145,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             ctx.io().sendToGridTopic(locNode, topic, msg, plc);
 
         if (!rmtNodes.isEmpty()) {
-            msg.responseTopicBytes(U.marshal(marsh, msg.responseTopic()));
+            msg.prepareMarshal(marsh);
 
             ctx.io().sendToGridTopic(rmtNodes, topic, msg, plc);
         }
@@ -1209,9 +1200,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    if (req.responseTopicBytes() != null)
-                        req.responseTopic(U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
-
                     GridDeployment dep = ctx.deploy().getGlobalDeployment(
                         req.deploymentMode(),
                         req.filterClassName(),
@@ -1226,7 +1214,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
-                    filter = U.unmarshal(marsh, req.filter(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    req.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+
+                    filter = (IgnitePredicate<Event>)req.filter();
 
                     // Resource injection.
                     ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);
@@ -1260,10 +1250,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     if (log.isDebugEnabled())
                         log.debug("Sending event query response to node [nodeId=" + nodeId + "res=" + res + ']');
 
-                    if (!ctx.localNodeId().equals(nodeId)) {
-                        res.eventsBytes(U.marshal(marsh, res.events()));
-                        res.exceptionBytes(U.marshal(marsh, res.exception()));
-                    }
+                    if (!ctx.localNodeId().equals(nodeId))
+                        res.prepareMarshal(marsh);
 
                     ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
                 }

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -69,21 +69,21 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     /** {@inheritDoc} */
     @Override public void complete(
         String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
+        Map<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
     ) throws IgniteCheckedException {
-        Exception err = results.stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().orElse(null);
+        Exception err = results.values().stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().orElse(null);
 
         if (err != null)
             throw U.cast(err);
 
         // Null means that the streamer was already detected (See #invoke).
-        if (results.stream().anyMatch(res -> res.data() == null))
+        if (results.values().stream().anyMatch(res -> res.data() == null))
             return;
 
         Set<Integer> wrnGrps = new HashSet<>();
         Map<PartitionKey, PartitionHashRecord> total = new HashMap<>();
 
-        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> result : results) {
+        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> result : results.values()) {
             result.data().forEach((part, val) -> {
                 PartitionHashRecord other = total.putIfAbsent(part, val);
 

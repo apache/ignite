@@ -34,13 +34,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
 import org.jetbrains.annotations.Nullable;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.openjdk.jmh.annotations.Scope.Thread;
 
 /** */
@@ -110,7 +111,7 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
             Mockito.when(cctxMock.localNodeId()).thenReturn(localNodeId);
 
             topologyMock = Mockito.mock(GridDhtPartitionTopology.class);
-            Mockito.when(topologyMock.partitionState(Matchers.any(), Matchers.anyInt())).thenReturn(GridDhtPartitionState.OWNING);
+            Mockito.when(topologyMock.partitionState(any(), anyInt())).thenReturn(GridDhtPartitionState.OWNING);
             Mockito.when(topologyMock.groupId()).thenReturn(0);
 
             Mockito.when(topologyMock.partitions()).thenReturn(PARTS);

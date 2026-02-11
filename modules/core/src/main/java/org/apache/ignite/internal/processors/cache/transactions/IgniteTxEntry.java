@@ -382,7 +382,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.val = new TxEntryValueHolder();
 
         cp.filters = filters;
-        cp.val.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+        cp.val.value(val.operation(), val.value(), val.hasWriteValue(), val.hasReadValue());
         cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
         cp.conflictExpireTime = conflictExpireTime;
@@ -485,7 +485,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * to further peek operations.
      */
     public void markValid() {
-        prevVal.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+        prevVal.value(val.operation(), val.value(), val.hasWriteValue(), val.hasReadValue());
     }
 
     /**
@@ -720,7 +720,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Previous operation to revert entry in case of filter failure.
      */
     @Nullable public GridCacheOperation previousOperation() {
-        return prevVal.op();
+        return prevVal.operation();
     }
 
     /**
@@ -757,7 +757,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param readVal Read value flag.
      */
     public void value(@Nullable CacheObject val, boolean writeVal, boolean readVal) {
-        this.val.value(this.val.op(), val, writeVal, readVal);
+        this.val.value(this.val.operation(), val, writeVal, readVal);
     }
 
     /**
@@ -766,7 +766,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param val Read value to set.
      */
     public void readValue(@Nullable CacheObject val) {
-        this.val.value(this.val.op(), val, false, true);
+        this.val.value(this.val.operation(), val, false, true);
     }
 
     /**
@@ -782,7 +782,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
 
-        val.op(TRANSFORM);
+        val.operation(TRANSFORM);
     }
 
     /**
@@ -853,14 +853,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Cache operation.
      */
     public GridCacheOperation op() {
-        return val.op();
+        return val.operation();
     }
 
     /**
      * @param op Cache operation.
      */
     public void op(GridCacheOperation op) {
-        val.op(op);
+        val.operation(op);
     }
 
     /**

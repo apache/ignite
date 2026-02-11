@@ -28,16 +28,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  *  Integration test for CREATE/ALTER/DROP USER DDL commands.
  */
 public class UserDdlIntegrationTest extends AbstractDdlIntegrationTest {
-    /** Security context for default user. */
-    private SecurityContext secCtxDflt;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -55,41 +50,30 @@ public class UserDdlIntegrationTest extends AbstractDdlIntegrationTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
-
-        assertNotNull(secCtxDflt);
-    }
-
     /**
      * Creates, alter and drops user.
      */
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testCreateAlterDropUser() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-
         for (Ignite ignite : G.allGrids()) {
             IgniteEx igniteEx = (IgniteEx)ignite;
 
-            sql(igniteEx, "CREATE USER test WITH PASSWORD 'test'");
+            sqlAsRoot(igniteEx, "CREATE USER test WITH PASSWORD 'test'");
 
             SecurityContext secCtx = authenticate(igniteEx, "TEST", "test");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
-            sql(igniteEx, "ALTER USER test WITH PASSWORD 'newpasswd'");
+            sqlAsRoot(igniteEx, "ALTER USER test WITH PASSWORD 'newpasswd'");
 
             secCtx = authenticate(igniteEx, "TEST", "newpasswd");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
-            sql(igniteEx, "DROP USER test");
+            sqlAsRoot(igniteEx, "DROP USER test");
 
             GridTestUtils.assertThrowsWithCause(() -> authenticate(igniteEx, "TEST", "newpasswd"),
                 IgniteAccessControlException.class);

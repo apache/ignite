@@ -22,8 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -100,8 +100,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
 
             @Override public void complete(String name,
-                Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
-                for (SnapshotHandlerResult<UUID> res : results) {
+                Map<UUID, SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
+                for (SnapshotHandlerResult<UUID> res : results.values()) {
                     if (!reqIdRef.compareAndSet(null, res.data()) && !reqIdRef.get().equals(res.data()))
                         throw new IgniteCheckedException("The request ID must be the same on all nodes.");
                 }
@@ -118,8 +118,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
 
             @Override public void complete(String name,
-                Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
-                for (SnapshotHandlerResult<UUID> res : results) {
+                Map<UUID, SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
+                for (SnapshotHandlerResult<UUID> res : results.values()) {
                     if (!reqIdRef.get().equals(res.data()))
                         throw new IgniteCheckedException(expMsg);
                 }
@@ -305,7 +305,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
     /**
      * Test ensures that the snapshot creation is aborted if node exits while the {@link
-     * SnapshotHandler#complete(String, Collection)} method is executed.
+     * SnapshotHandler#complete(String, Map)} method is executed.
      *
      * @throws Exception If fails.
      */
@@ -322,7 +322,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return null;
             }
 
-            @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results)
+            @Override public void complete(String name, Map<UUID, SnapshotHandlerResult<Void>> results)
                 throws Exception {
                 if (latch.getCount() == 1) {
                     latch.countDown();
