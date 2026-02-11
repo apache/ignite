@@ -1122,6 +1122,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
+        joinReqMsg.prepareMarshal(spi.marshaller());
+
         joinReqMsg.spanContainer().span(
             tracing.create(TraceableMessagesTable.traceName(joinReqMsg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> locNode.id().toString())
@@ -3982,6 +3984,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
+
+            msg.prepareMarshal(spi.marshaller());
 
             final TcpDiscoveryNode node = msg.node();
 
@@ -6926,6 +6930,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
+
+                            req.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                             // Current node holds connection with the node that is joining the cluster. Therefore, it can
                             // save certificates with which the connection was established to joining node attributes.
