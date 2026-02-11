@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -245,15 +244,13 @@ public class IDTOSerializerGenerator {
         if (type.getNestingKind() != NestingKind.TOP_LEVEL)
             imports.add(type.getQualifiedName().toString());
 
-        String simpleClsName = String.valueOf(type.getSimpleName());
-
         Collection<VariableElement> flds = fields(type);
 
-        List<String> write = generateWrite(simpleClsName, flds);
-        List<String> read = generateRead(simpleClsName, flds);
+        List<String> write = generateWrite(flds);
+        List<String> read = generateRead(flds);
 
         try (Writer writer = new StringWriter()) {
-            writeClassHeader(writer, simpleClsName);
+            writeClassHeader(writer);
 
             for (String line : write) {
                 writer.write(TAB);
@@ -277,10 +274,9 @@ public class IDTOSerializerGenerator {
 
     /**
      * @param writer Writer to write class to.
-     * @param simpleClsName Class name
      * @throws IOException  In case of error.
      */
-    private void writeClassHeader(Writer writer, String simpleClsName) throws IOException {
+    private void writeClassHeader(Writer writer) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 
@@ -302,17 +298,17 @@ public class IDTOSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
         writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) +
-            "<" + simpleClsName + "> {" + NL);
+            "<" + typeWithGeneric() + "> {" + NL);
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
-    private List<String> generateWrite(String clsName, Collection<VariableElement> flds) {
+    private List<String> generateWrite(Collection<VariableElement> flds) {
         write = true;
 
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void writeExternal(" + clsName + " obj, ObjectOutput out) throws IOException {");
+        code.add("@Override public void writeExternal(" + typeWithGeneric() + " obj, ObjectOutput out) throws IOException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
@@ -322,13 +318,14 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#readExternal(T, ObjectInput)} method. */
-    private List<String> generateRead(String clsName, Collection<VariableElement> flds) {
+    private List<String> generateRead(Collection<VariableElement> flds) {
         write = false;
 
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void readExternal(" + clsName + " obj, ObjectInput in) throws IOException, ClassNotFoundException {");
+        code.add("@Override public void readExternal(" + typeWithGeneric() + " obj, ObjectInput in) " +
+            "throws IOException, ClassNotFoundException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
@@ -446,8 +443,6 @@ public class IDTOSerializerGenerator {
 
         Stream<String> res;
 
-        imports.add(Iterator.class.getName());
-
         String el = "el" + (level == 0 ? "" : level);
 
         Map<String, String> params = Map.of(
@@ -467,8 +462,7 @@ public class IDTOSerializerGenerator {
                 TAB + "int ${len} = ${var} == null ? -1 : ${var}.size();",
                 TAB + "out.writeInt(${len});",
                 TAB + "if (${len} > 0) {",
-                TAB + TAB + "for (Iterator<${Type}> ${iter} = ${var}.iterator(); ${iter}.hasNext();) {",
-                TAB + TAB + TAB + "${Type} ${el} = ${iter}.next();");
+                TAB + TAB + "for (${Type} ${el} : ${var}) {");
 
             res = Stream.concat(res, variableCode(colEl, el).map(line -> TAB + TAB + TAB + line));
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
@@ -622,6 +616,28 @@ public class IDTOSerializerGenerator {
             imports.add(fqn);
 
         return simpleName(fqn);
+    }
+
+    /** @return Simple class name. */
+    private String typeWithGeneric() {
+        TypeMirror tp = type.asType();
+
+        if (!(tp instanceof DeclaredType))
+            return simpleClassName(tp);
+
+        DeclaredType dt = (DeclaredType)tp;
+
+        if (F.size(dt.getTypeArguments()) == 0)
+            return simpleClassName(tp);
+
+        StringBuilder generic = new StringBuilder("<Object");
+
+        for (int i = 1; i < F.size(dt.getTypeArguments()); i++)
+            generic.append(", Object");
+
+        generic.append(">");
+
+        return simpleClassName(tp) + generic;
     }
 
     /** @return Simple class name. */
