@@ -798,6 +798,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                             .end()
                     );
 
+                    joinReqMsg.prepareMarshal(spi.marshaller());
+
                     msg = joinReqMsg;
                 }
                 else
