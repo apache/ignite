@@ -6617,14 +6617,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this Ignite port?" +
+                                "this Ignite port, or is this an incompatible Ignite node?" +
                                 (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
-                                ") [rmtAddr=" + rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                                ") [rmtAddr=" + rmtAddr +
+                                ", locAddr=" + sock.getLocalSocketAddress() +
+                                ", rcvdHdr=" + U.byteArray2HexString(buf) + ']');
 
                         LT.warn(log, "Unknown connection detected (is some other software connecting to " +
-                            "this Ignite port?" +
+                            "this Ignite port, or is this an incompatible Ignite node?" +
                             (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
-                            ") [rmtAddr=" + sock.getInetAddress() + ']', true);
+                            ") [rmtAddr=" + sock.getInetAddress() + ", rcvdHdr=" + U.byteArray2HexString(buf) + ']', true);
 
                         return;
                     }
