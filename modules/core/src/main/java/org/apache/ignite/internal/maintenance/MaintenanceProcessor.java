@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.maintenance;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -258,6 +259,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceTask activeMaintenanceTask(String maitenanceTaskName) {
         return activeTasks.get(maitenanceTaskName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Map<String, MaintenanceTask> activeMaintenanceTasks() {
+        return activeTasks.isEmpty() ? null : Collections.unmodifiableMap(activeTasks);
     }
 
     /** {@inheritDoc} */
