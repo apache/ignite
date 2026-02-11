@@ -52,6 +52,7 @@ import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.ExchangeInfoSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
+import org.apache.ignite.internal.codegen.GridCacheQueryRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheQueryResponseSerializer;
 import org.apache.ignite.internal.codegen.GridCacheReturnSerializer;
 import org.apache.ignite.internal.codegen.GridCacheSqlQuerySerializer;
@@ -91,6 +92,7 @@ import org.apache.ignite.internal.codegen.GridDistributedTxFinishRequestSerializ
 import org.apache.ignite.internal.codegen.GridDistributedTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareResponseSerializer;
+import org.apache.ignite.internal.codegen.GridEventStorageMessageSerializer;
 import org.apache.ignite.internal.codegen.GridIoMessageSerializer;
 import org.apache.ignite.internal.codegen.GridIoSecurityAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
@@ -369,7 +371,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)10, GridDeploymentInfoBean::new);
         factory.register((short)11, GridDeploymentRequest::new);
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
-        factory.register((short)13, GridEventStorageMessage::new);
+        factory.register((short)13, GridEventStorageMessage::new, new GridEventStorageMessageSerializer());
         factory.register((short)16, GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer());
         factory.register((short)17, GridCacheTxRecoveryResponse::new, new GridCacheTxRecoveryResponseSerializer());
         factory.register((short)18, IndexQueryResultMeta::new, new IndexQueryResultMetaSerializer());
@@ -411,7 +413,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)55, GridNearTxPrepareRequest::new, new GridNearTxPrepareRequestSerializer());
         factory.register((short)56, GridNearTxPrepareResponse::new, new GridNearTxPrepareResponseSerializer());
         factory.register((short)57, GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer());
-        factory.register((short)58, GridCacheQueryRequest::new);
+        factory.register((short)58, GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer());
         factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
         factory.register((short)61, GridContinuousMessage::new);
         factory.register((short)62, DataStreamerRequest::new);

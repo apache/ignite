@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -439,13 +440,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
+    @Override public void complete(
+        String name,
+        Map<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
+    ) throws IgniteCheckedException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
+        for (Map.Entry<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> e : results.entrySet()) {
+            UUID nodeId = e.getKey();
+            SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res = e.getValue();
+
             if (res.error() != null) {
-                bldr.addException(res.node(), res.error());
+                bldr.addException(cctx.discovery().historicalNode(nodeId), res.error());
 
                 continue;
             }

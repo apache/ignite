@@ -2307,6 +2307,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         delayDiscoData.clear();
                     }
 
+                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
                     locNode.setAttributes(msg.clientNodeAttributes());
 
                     clearNodeSensitiveData(locNode);
