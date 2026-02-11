@@ -34,6 +34,24 @@
             </bean>
         </property>
 
+        <property name="queryThreadPoolSize" value="48"/>
+        <property name="systemThreadPoolSize" value="48"/>
+        <property name="stripedPoolSize" value="48"/>
+
+        <property name="activeOnStart" value="true"/>
+
+        <property name="sqlConfiguration">
+            <bean class="org.apache.ignite.configuration.SqlConfiguration">
+                <property name="queryEnginesConfiguration">
+                    <list>
+                        <bean class="org.apache.ignite.indexing.IndexingQueryEngineConfiguration">
+                            <property name="default" value="true"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
         <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="igniteInstanceName" value="{{ config.ignite_instance_name }}"/>
@@ -136,11 +154,7 @@
             </property>
         {% endif %}
 
-        {% if config.sql_configuration %}
-            <property name="sqlConfiguration">
-            {{ misc_utils.bean(config.sql_configuration) }}
-            </property>
-        {% endif %}
+
 
         {{ misc_utils.plugins(config) }}
     </bean>
