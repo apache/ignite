@@ -552,6 +552,38 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Ensures H2 auto-generated numeric aliases (e.g. "_1", "_4") are normalized so that repeated executions of the same
+     * query produce a single unique plan in SQL plan history.
+     */
+    @Test
+    public void testH2AutoAliasInPlanHistory() throws Exception {
+        assumeTrue(IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine));
+
+        assumeFalse(isPerfStatsEnabled);
+
+        startTestGrid();
+
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
+
+        queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
+
+        cache.query(new SqlFieldsQuery("CREATE TABLE users(id INT PRIMARY KEY, name VARCHAR)")).getAll();
+        cache.query(new SqlFieldsQuery("INSERT INTO users VALUES (1, 'a'), (2, 'b')")).getAll();
+
+        String qry = "SELECT id, name FROM (SELECT id, name FROM users) WHERE id = 1";
+
+        for (int i = 0; i < planHistorySize; i++)
+            cache.query(new SqlFieldsQuery(qry).setLocal(loc)).getAll();
+
+        List<String> plans = getSqlPlanHistory().stream()
+            .filter(planView -> planView.sql().contains(qry))
+            .map(SqlPlanHistoryView::plan)
+            .collect(Collectors.toList());
+
+        assertEquals("Expected 1 unique plan, got " + plans.size() + ": " + plans, plans.size(), 1);
+    }
+
+    /**
      * @param qry Query.
      */
     public void runSuccessfulQuery(Query qry) throws Exception {
