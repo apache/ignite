@@ -112,7 +112,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     DC_AWARE(22),
 
     /** SqlFieldsQuery initiatorId property. */
-    QRY_INITIATOR_ID(23);
+    QRY_INITIATOR_ID(23),
+
+    /** Partitions count in cache configuration. */
+    CACHE_CFG_PARTITIONS(24);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
