@@ -492,16 +492,17 @@ public class IDTOSerializerGenerator {
         TypeMirror valType = ta.get(1);
         TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
 
-        // TODO: Move me to common code generation.
         if (className(type).equals(Map.class.getName()) && assignableFrom(keyType, strCls) && assignableFrom(valType, strCls))
             serDes = STR_STR_MAP;
-        else if (className(type).equals(TreeMap.class.getName()))
-            serDes = F.t("U.writeMap(out, ${var})", "U.readTreeMap(in)");
-        else if (className(type).equals(LinkedHashMap.class.getName()))
-            serDes = F.t("U.writeMap(out, ${var})", "U.readLinkedMap(in)");
 
-        if (serDes == null && !hasCustomSerdes(keyType) && !hasCustomSerdes(valType))
-            serDes = F.t("U.writeMap(out, ${var})", "U.readMap(in)");
+        if (serDes == null && !hasCustomSerdes(keyType) && !hasCustomSerdes(valType)) {
+            if (className(type).equals(TreeMap.class.getName()))
+                serDes = F.t("U.writeMap(out, ${var})", "U.readTreeMap(in)");
+            else if (className(type).equals(LinkedHashMap.class.getName()))
+                serDes = F.t("U.writeMap(out, ${var})", "U.readLinkedMap(in)");
+            else
+                serDes = F.t("U.writeMap(out, ${var})", "U.readMap(in)");
+        }
 
         // Map special case or Ignite can't serialize map entries efficiently.
         if (serDes != null)
@@ -512,11 +513,19 @@ public class IDTOSerializerGenerator {
         String el = withLevel("el");
         String k = withLevel("k");
         String v = withLevel("v");
+        String mapImpl = className(type).equals(TreeMap.class.getName())
+            ? TreeMap.class.getName()
+            : className(type).equals(LinkedHashMap.class.getName())
+                ? LinkedHashMap.class.getName()
+                : HashMap.class.getName();
+
+        imports.add(mapImpl);
 
         Map<String, String> params = Map.of(
             "${var}", var,
             "${KeyType}", typeWithGeneric(keyType),
             "${ValType}", typeWithGeneric(valType),
+            "${MapImpl}", simpleName(mapImpl),
             "${len}", withLevel("len"),
             "${i}", withLevel("i"),
             "${k}", k,
@@ -548,7 +557,7 @@ public class IDTOSerializerGenerator {
             res = Stream.of("{",
                 TAB + "int ${len} = in.readInt();",
                 TAB + "if (${len} >= 0) {",
-                TAB + TAB + "${var} = new HashMap<>();",
+                TAB + TAB + "${var} = new ${MapImpl}<>();",
                 TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {",
                 TAB + TAB + TAB + "${KeyType} ${k} = null;",
                 TAB + TAB + TAB + "${ValType} ${v} = null;");
