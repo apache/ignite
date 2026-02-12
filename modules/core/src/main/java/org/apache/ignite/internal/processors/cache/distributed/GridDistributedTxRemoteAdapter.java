@@ -844,8 +844,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         if (optimistic())
             state(PREPARED);
 
-        if (!state(COMMITTING) && finalizationStatus() != RECOVERY_FINISH_WT) {
-            TransactionState state = state();
+        TransactionState state = state();
+
+        // Possible GridDhtTxFinishRequest with checkCommited flag
+        if (!state(COMMITTING) && state != COMMITTING) {
+            state = state();
 
             // If other thread is doing commit, then no-op.
             if (state == COMMITTING || state == COMMITTED)
