@@ -73,7 +73,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter()
-    public int serversPerDc;
+    public int srvrsPerDc;
 
     /** */
     @Parameterized.Parameter(1)
@@ -81,15 +81,20 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter(2)
-    public boolean someRemoteDcNodesRespond;
+    public boolean rmtDcNodesRespond;
 
     /** */
-    @Parameterized.Parameters(name = "serversPerDc={0}, fullTimeoutFailure={1}, someRemoteDcNodesRespond={2}")
+    @Parameterized.Parameter(3)
+    public int pingPoolSize;
+
+    /** */
+    @Parameterized.Parameters(name = "serversPerDc={0}, fullTimeoutFailure={1}, rmtDcNodesResponds={2}, pingPoolSize={3}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
-            F.asList(2, 3, 4), // Servers number per DC.
+            F.asList(2, 4), // Servers number per DC.
             F.asList(true, false), // Full-timeout failure (or fail quickly).
-            F.asList( false, true) // Whether some nodes or remote DC respond to the ping.
+            F.asList( false, true), // Whether few nodes of the remote DC respond to the ping.
+            F.asList( 1, 2, 4) // Ping pool size.
         );
     }
 
@@ -115,14 +120,15 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(LOCAL_IP_FINDER);
         cfg.setDiscoverySpi(discoSpi);
 
-        // Disable unnesessary disco. messages.
+        // Disable unnesessary discovery messages.
         cfg.setMetricsUpdateFrequency(getTestTimeout() * 3);
         cfg.setClientFailureDetectionTimeout(cfg.getMetricsUpdateFrequency());
 
+        // To block nodes traffic we rely on exact ports.
         assert ((TcpDiscoverySpi)cfg.getDiscoverySpi()).locPort == TcpDiscoverySpi.DFLT_PORT;
 
         // Fastens the tests.
-        cfg.setFailureDetectionTimeout(3000L);
+        cfg.setFailureDetectionTimeout((long)((float)srvrsPerDc / pingPoolSize * 3000));
 
         cfg.setGridLogger(listeningLog);
 
@@ -132,84 +138,94 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testConnectionRecoveryWithEntireDCFailure() throws Exception {
-        if (someRemoteDcNodesRespond)
-            assumeTrue(serversPerDc > 2);
+        if (rmtDcNodesRespond)
+            assumeTrue(srvrsPerDc > 2);
+
+        // Fastens the tests. Also reduces number of flaky tests. JVM/GC pauses can change or disrupt the supposed
+        // connection recovery strategy. We should avoid to short timeouts.
+        assumeTrue(pingPoolSize <= srvrsPerDc && srvrsPerDc / pingPoolSize <= 2);
 
         // Start DC0.
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-        discoSpiSupplier = () -> testDiscovery(TcpDiscoverySpi.DFLT_PORT + serversPerDc,
-            TcpDiscoverySpi.DFLT_PORT + serversPerDc * 2 - 1, someRemoteDcNodesRespond);
+        discoSpiSupplier = () -> testDiscovery(TcpDiscoverySpi.DFLT_PORT + srvrsPerDc,
+            TcpDiscoverySpi.DFLT_PORT + srvrsPerDc * 2 - 1, rmtDcNodesRespond);
 
-        startGridsMultiThreaded(serversPerDc);
+        startGridsMultiThreaded(srvrsPerDc);
 
         // Start DC1.
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-        discoSpiSupplier = () -> testDiscovery(TcpDiscoverySpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT + serversPerDc - 1,
-            someRemoteDcNodesRespond);
+        discoSpiSupplier = () -> testDiscovery(TcpDiscoverySpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT + srvrsPerDc - 1,
+            rmtDcNodesRespond);
 
-        startGridsMultiThreaded(serversPerDc, serversPerDc);
+        startGridsMultiThreaded(srvrsPerDc, srvrsPerDc);
 
         // Register the log listeners.
+        // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
+        // in some time before the connection recovery timeout and before corner node gets segmented; 2 - corner node
+        // is able to traverse entire remote DC in the connection recovery timeout;
         LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping "
-            + "of DC '" + DC_ID_1 + "'. Nodes number to ping: " + serversPerDc).times(1).build();
-        LogListener logLsnr1 = LogListener.matches("Few nodes or only half of the remote DC has responded. "
+            + "of DC '" + DC_ID_1 + "'. Nodes number to ping: " + srvrsPerDc).times(1).build();
+
+        LogListener logLsnr10 = LogListener.matches("Few nodes or only half of the remote DC has responded. "
             + "Considering DC '" + DC_ID_1 + "' is unavailable.").times(1).build();
-        LogListener logLsnr2 = LogListener.matches("During the connection recovery, entire remote DC '"
-            + DC_ID_1 + "' has been traversed. Failed to connect to any its node.").times(1).build();
 
-        LogListener logLsnr3;
-
-        // he 'Responded nodes' log depends of successful pings.
-        if (someRemoteDcNodesRespond) {
-            logLsnr3 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
+        LogListener logLsnr11;
+        // The 'Responded nodes' log depends of successful pings.
+        if (rmtDcNodesRespond) {
+            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
                     + "' from current corner node has finished. Responded nodes: [").times(1).andMatches("Responded nodes: []")
                 .times(0).build();
         }
         else {
-            logLsnr3 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
+            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
                 + "' from current corner node has finished. Responded nodes: []").times(1).build();
         }
 
-        listeningLog.registerAllListeners(logLsnr0, logLsnr1, logLsnr2, logLsnr3);
+        // Corner node is able to traverse entire remote DC in the connection recovery timeout
+        LogListener logLsnr2 = LogListener.matches("During the connection recovery, entire remote DC '"
+            + DC_ID_1 + "' has been traversed. Failed to connect to any its node.").times(1).build();
+
+        listeningLog.registerAllListeners(logLsnr0, logLsnr10, logLsnr11, logLsnr2);
 
         // Check the DCs and break connections between them.
         for (ClusterNode n : grid(0).cluster().nodes()) {
-            assertTrue(n.dataCenterId().equals(n.order() <= serversPerDc ? DC_ID_0 : DC_ID_1));
+            assertTrue(n.dataCenterId().equals(n.order() <= srvrsPerDc ? DC_ID_0 : DC_ID_1));
 
             discoSpi(G.ignite(n.id())).block = true;
         }
 
         // We expect 2 separated rings.
-        checkDcSplit(0, serversPerDc, DC_ID_0);
-        checkDcSplit(serversPerDc, serversPerDc * 2, DC_ID_1);
+        checkDcSplited(0, srvrsPerDc, DC_ID_0);
+        checkDcSplited(srvrsPerDc, srvrsPerDc * 2, DC_ID_1);
 
-        // Check the logs.
-        long failureDetectionTimeout = grid(0).configuration().getFailureDetectionTimeout();
+        // The connection recovery should take <= failureDetectionTimeout * 2.
+        long testTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
 
-        assertTrue(logLsnr0.check(failureDetectionTimeout * 2));
+        // Now we check the logs.
+        assertTrue(logLsnr0.check(testTimeout));
 
         AtomicInteger logCntr = new AtomicInteger();
 
         runAsync(() -> {
-            if (logLsnr1.check(failureDetectionTimeout * 2) && logLsnr3.check(failureDetectionTimeout * 2))
+            if (logLsnr10.check(testTimeout) && logLsnr11.check(testTimeout))
                 logCntr.incrementAndGet();
         });
         runAsync(() -> {
-            if (logLsnr2.check(failureDetectionTimeout * 2))
+            if (logLsnr2.check(testTimeout))
                 logCntr.incrementAndGet();
         });
 
-        Thread.sleep(failureDetectionTimeout * 2);
+        Thread.sleep(testTimeout);
 
-        // Only one log variant is expected.
+        // Only one of the variants is expected.
         assertTrue(logCntr.get() == 1);
     }
 
-    /** Creates test blocking discovery. */
+    /** Creates the test Discovery SPI. */
     private TcpDiscoverySpi testDiscovery(int portFrom, int portTo, boolean someRemoteDcNodesRespond) {
         Set<Integer> portPingExceptions = pingPortExceptions(someRemoteDcNodesRespond, portFrom, portTo);
 
-        return new TestTcpDiscoverySpi(portFrom, portTo, fullTimeoutFailure, portPingExceptions);
+        return new TestTcpDiscoverySpi(portFrom, portTo, fullTimeoutFailure, portPingExceptions, pingPoolSize);
     }
 
     /** */
@@ -221,14 +237,14 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        while (list.size() > serversPerDc / 2)
+        while (list.size() > srvrsPerDc / 2)
             list.remove(rnd.nextInt(list.size()));
 
         return new HashSet<>(list);
     }
 
     /** */
-    private void checkDcSplit(int nodeIdxFrom, int nodeIdxTo, String dcId) throws IgniteInterruptedCheckedException {
+    private void checkDcSplited(int nodeIdxFrom, int nodeIdxTo, String dcId) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             for (int i = nodeIdxFrom; i < nodeIdxTo; ++i) {
                 if (!grid(i).cluster().localNode().dataCenterId().equals(dcId))
@@ -243,7 +259,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
                     ++cnt;
                 }
 
-                if (cnt != serversPerDc)
+                if (cnt != srvrsPerDc)
                     return false;
             }
 
@@ -265,6 +281,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         private final int maxPortToBlockMsg;
 
         /** */
+        private final int pingPoolSize;
+
+        /** */
         private final Collection<Integer> portPingExceptions;
 
         /** */
@@ -278,12 +297,26 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
             int minPortToBlockMsg,
             int maxPortToBlockMsg,
             boolean fullTimeoutFailure,
-            Collection<Integer> portPingExceptions
+            Collection<Integer> portPingExceptions,
+            int pingPoolSize
         ) {
             this.minPortToBlockMsg = minPortToBlockMsg;
             this.maxPortToBlockMsg = maxPortToBlockMsg;
             this.fullTimeoutFailure = fullTimeoutFailure;
             this.portPingExceptions = portPingExceptions;
+            this.pingPoolSize = pingPoolSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void initializeImpl() {
+            if (impl != null)
+                return;
+
+            super.initializeImpl();
+
+            // In theory, might be a ClientImpl.
+            if (impl instanceof ServerImpl)
+                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, pingPoolSize);
         }
 
         /** {@inheritDoc} */
@@ -317,19 +350,15 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
             if (rmpPort < minPortToBlockMsg || rmpPort > maxPortToBlockMsg)
                 return;
 
-            if (portPingExceptions.contains(rmpPort)) {
-                if (msg instanceof TcpDiscoveryPingRequest)
-                    return;
-
-                if (!F.isEmpty(data) && Arrays.equals(data, U.IGNITE_HEADER))
-                    return;
-            }
+            if (portPingExceptions.contains(rmpPort) && ((msg instanceof TcpDiscoveryPingRequest)
+                || (data != null && Arrays.equals(U.IGNITE_HEADER, data))))
+                return;
 
             if (log.isDebugEnabled())
-                log.debug("Simulation network delay of " + (fullTimeoutFailure ? timeout : 50) + "ms on " + sock);
+                log.debug("Simulation network delay of " + (fullTimeoutFailure ? timeout : 5) + "ms on " + sock);
 
             try {
-                U.sleep(fullTimeoutFailure ? timeout : 50);
+                U.sleep(fullTimeoutFailure ? timeout : 5);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IOException("Network delay simulation interrupted.", e);

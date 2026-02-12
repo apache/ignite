@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -220,14 +221,20 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Maximal interval of connection check to next node in the ring. */
     private static final long MAX_CON_CHECK_INTERVAL = 500;
 
-    /** Minimal size of pool to ping remote DC at the connection recovery. */
-    private static final int RMT_DC_PING_MIN_POOL_SIZE = Math.max(8, Runtime.getRuntime().availableProcessors() / 2);
+    /**
+     * @see #connCheckTick
+     * @see #effectiveExchangeTimeout()
+     */
+    private static final int CONNECTION_RECOVERY_TICKS = 3;
 
     /**
      * Part of the connection recovery timeout to ping remote DC. We can't spend the whole timeout.
      * We need some time reserved to close the ring to local DC.
+     *
+     * @see #CONNECTION_RECOVERY_TICKS
+     * @see #connCheckTick
      */
-    private static final double RMT_DC_PING_RECOVER_TIMEOUT_RATIO = 0.65;
+    private static final double RMT_DC_PING_TIMEOUT_RATIO = 0.5;
 
     /** Number of retries to ping remote DC. Must not be less than 2. */
     private static final int RMT_DC_PING_TRIES = 3;
@@ -238,11 +245,19 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
 
-    /** Fundamental value for connection checking actions. */
+    /**
+     * Foundumental timeout tick for actions related to the ring connection recovery. Often, we cannot use whole
+     * connection recovery timeout for a one single action. We may have to check several nodes in a row.
+     * The less this value, the more connection checking actions we can do within the connection recovery timeout.
+     * The more nodes we can check. But the less timeout we have for each such an action.
+     */
     private long connCheckTick;
 
     /** */
     private final IgniteThreadPoolExecutor utilityPool;
+
+    /** Pool size to ping remote DC if a corner node loses the ring connection. */
+    private final int pingRmtDcPoolSz;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -343,9 +358,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * @param adapter Adapter.
      */
-    ServerImpl(TcpDiscoverySpi adapter, int utilityPoolSize) {
+    ServerImpl(TcpDiscoverySpi adapter, int utilityPoolSize, int pingRmtDcPoolSize) {
         super(adapter);
 
+        // Using a size changing pool with a non-limited task queue is useless because it prefers to put task in a queue
+        // instead of creating a new thread.
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             utilityPoolSize,
@@ -362,6 +379,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         cliConnEnabled = props.get(0);
         srvConnEnabled = props.get(1);
+
+        pingRmtDcPoolSz = pingRmtDcPoolSize;
     }
 
     /** {@inheritDoc} */
@@ -429,8 +448,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        // Foundumental timeout value for actions related to connection check.
-        connCheckTick = effectiveExchangeTimeout() / 3;
+        connCheckTick = effectiveExchangeTimeout() / CONNECTION_RECOVERY_TICKS;
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
@@ -3294,12 +3312,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMessageToClients(msg);
 
-            List<TcpDiscoveryNode> failedNodes;
+            // Must sequential, a list or a LinkedHashSet, etc.
+            Collection<TcpDiscoveryNode> failedNodes;
 
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
+                failedNodes = new LinkedHashSet<>(ServerImpl.this.failedNodes.keySet());
 
                 state = spiState;
             }
@@ -3438,7 +3457,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
                                     if (previousNode)
-                                        failedNodes.remove(failedNodes.size() - 1);
+                                        failedNodes.remove(F.last(failedNodes));
                                     else {
                                         newNextNode = false;
 
@@ -3524,7 +3543,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         debugLog(msg, "Initialized connection with next node: " + next.id());
 
                                     errs = null;
-                                    sndState = null;
+
                                     success = true;
 
                                     next.lastSuccessfulAddress(addr);
@@ -3800,7 +3819,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", next=" + next + ']');
 
                         if (prev)
-                            failedNodes.remove(failedNodes.size() - 1);
+                            failedNodes.remove(F.last(failedNodes));
                         else {
                             newNextNode = false;
 
@@ -8248,7 +8267,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Keeps number of attempt to ping node. Negative value means that node successfully responded. */
         @Nullable private Map<TcpDiscoveryNode, Integer> rmtDcPingRes;
 
-        /** Thread pool to ping remote DC. */
+        /**
+         * Thread pool to ping remote DC. We do not use {@link #utilityPool} because we need significantly more threads
+         * to ping a remote DC during the connection recovery. The thread pools here come with an unlimited task queue.
+         * With such a task queue, thread pools prefer putting a task in its queue instead of creating a new worker thread.
+         * To utilize more threads we have to keep the core pool size large enough. But we don't need a wide discovery
+         * thread pool for ordinary, typical tasks.
+         */
         @Nullable private volatile ThreadPoolExecutor rmtDcPingPool;
 
         /** Stop remote DC ping flag. */
@@ -8322,35 +8347,30 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private void pingRemoteDC(List<TcpDiscoveryNode> nodesToPing) {
-            rmtDcPingMaxTimeNs = System.nanoTime()
-                + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_RECOVER_TIMEOUT_RATIO);
+            rmtDcPingMaxTimeNs = System.nanoTime() + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO);
 
             assert !remoteDcPingStarted();
             assert !stopRmtDcPing;
             assert !F.isEmpty(nodesToPing);
 
-            int poolSz = Math.max(RMT_DC_PING_MIN_POOL_SIZE, Runtime.getRuntime().availableProcessors()) / 2;
-
             AtomicInteger thrdIdx = new AtomicInteger();
 
-            rmtDcPingPool = new ThreadPoolExecutor(poolSz, poolSz, 0, TimeUnit.MILLISECONDS,
+            rmtDcPingPool = new ThreadPoolExecutor(pingRmtDcPoolSz, pingRmtDcPoolSz, 0, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(), r -> {
-                Thread t = new Thread(r, "disco-remote-dc-ping-worker-" + thrdIdx.incrementAndGet());
-
+                Thread t = new Thread(r, "disco-remote-dc-ping-worker-" + thrdIdx.getAndIncrement());
                 t.setDaemon(true);
-
                 return t;
             });
 
             if (log.isInfoEnabled()) {
-                log.info("During the connection recovery, starting ping of DC '"
-                    + nodesToPing.get(0).dataCenterId() + "'. Nodes number to ping: " + nodesToPing.size()
-                    + ". Timeout: " + U.nanosToMillis(rmtDcPingMaxTimeNs - System.nanoTime()) + "ms.");
+                log.info("During the connection recovery, starting ping of DC '" + nodesToPing.get(0).dataCenterId()
+                    + "'. Nodes number to ping: " + nodesToPing.size() + ". Timeout: "
+                    + U.nanosToMillis(rmtDcPingMaxTimeNs - System.nanoTime()) + "ms.");
             }
 
             rmtDcPingRes = new ConcurrentHashMap<>(nodesToPing.size(), 1.0f);
 
-            // Merk every node to ping with 0 attempts.
+            // Fill the map and mark every node to ping with 0 attempts.
             nodesToPing.forEach(n -> rmtDcPingRes.put(n, 0));
 
             // We should assume that the ping won't receive any response or exception and would spend its whole timeout.
@@ -8383,7 +8403,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private void pingNodeJob(TcpDiscoveryNode node, int steps) {
             // Total allowed ping timeout per step.
-            double stepTimeoutNs = ((failTimeNanos - System.nanoTime()) * RMT_DC_PING_RECOVER_TIMEOUT_RATIO) / steps;
+            double stepTimeoutNs = ((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO) / steps;
 
             long attemptDelayNs = (long)(stepTimeoutNs * RMT_DC_PING_ATTEMPT_DELAY_RATIO) / (RMT_DC_PING_TRIES - 1);
 
@@ -8405,12 +8425,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Thread.sleep(U.nanosToMillis(attemptDelayNs));
 
                 if (log.isDebugEnabled()) {
-                    log.debug("During the connection recovery, pinging " + node
-                        + " of DC '" + node.dataCenterId()
-                        + "'. Attempt: " + attempt
-                        + ". Timeout per address (ms): " + addrsTimeoutMs
-                        + ". Total time left (ms): " + remoteDcPingTimeLeft()
-                        + ". Nodes to ping left: " + nodesToPingLeft() + '.');
+                    log.debug("During the connection recovery, pinging " + node + " of DC '" + node.dataCenterId()
+                        + "'. Attempt: " + attempt + ". Timeout per address (ms): " + addrsTimeoutMs
+                        + ". Total time left (ms): " + remoteDcPingTimeLeft() + ". Nodes to ping left: " + nodesToPingLeft() + '.');
                 }
 
                 for (InetSocketAddress addrs : nodeAddrs) {
@@ -8426,9 +8443,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         rmtDcPingRes.put(node, -1);
 
                         if (log.isDebugEnabled()) {
-                            log.debug("During the connection recovery, node " + node
-                                + " of DC '" + node.dataCenterId() + "' has responded to the ping " +
-                                "at attempt " + attempt + '.');
+                            log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
+                                + "' has responded to the ping at attempt " + attempt + '.');
                         }
 
                         // At least one node's address reached.
@@ -8445,9 +8461,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (rmtDcPingRes.get(node) > 0) {
                     if (log.isDebugEnabled()) {
-                        log.debug("During the connection recovery, node " + node
-                            + " of DC '" + node.dataCenterId() + "' didn't respond to the ping"
-                            + " at attempt " + attempt + " within the timeout " + addrsTimeoutMs + "ms.");
+                        log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
+                            + "' didn't respond to the ping at attempt " + attempt + " within the timeout " + addrsTimeoutMs
+                            + "ms.");
                     }
 
                     if (!remoteDcPingStopped() && attempt < RMT_DC_PING_TRIES)

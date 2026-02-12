@@ -601,7 +601,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             // To make the test stable, we want a loopback paddress of the previous node responds first.
             // We don't need a concurrent ping execution.
             if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, 1);
+                impl = new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
         }
 
         /** */
