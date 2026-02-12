@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.wal;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -31,9 +32,11 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Successfully processed groups. */
+    @Order(0)
     List<String> successGrps;
 
     /** Errors by group name. */
+    @Order(1)
     Map<String, String> errorsByGrp;
 
     /** Default constructor. */
