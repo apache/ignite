@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -29,34 +30,42 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "cacheName1,...,cacheNameN", optional = true)
     String value;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(example = "nodeId", optional = true)
     String value2;
 
     /** */
+    @Order(2)
     String[] caches;
 
     /** */
+    @Order(3)
     UUID[] nodeIds;
 
     /** */
+    @Order(4)
     @Argument(example = "N", description = "validate only the first N keys", optional = true)
     int checkFirst = -1;
 
     /** */
+    @Order(5)
     @Argument(example = "K", description = "validate every Kth key", optional = true)
     int checkThrough = -1;
 
     /** */
+    @Order(6)
     @Argument(description = "check the CRC-sum of pages stored on disk", optional = true)
     boolean checkCrc;
 
     /** */
+    @Order(7)
     @Argument(description = "check that index size and cache size are the same", optional = true)
     boolean checkSizes;
 

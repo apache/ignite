@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,30 +36,39 @@ public class QueryEntity extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Key class used to store key in cache. */
+    @Order(0)
     String keyType;
 
     /** Value class used to store value in cache. */
+    @Order(1)
     String valType;
 
     /** Fields to be queried, in addition to indexed fields. */
+    @Order(2)
     Map<String, String> qryFlds;
 
     /** Key fields. */
+    @Order(3)
     List<String> keyFields;
 
     /** Aliases. */
+    @Order(4)
     Map<String, String> aliases;
 
     /** Table name. */
+    @Order(5)
     String tblName;
 
     /** Key name. Can be used in field list to denote the key as a whole. */
+    @Order(6)
     String keyFieldName;
 
     /** Value name. Can be used in field list to denote the entire value. */
+    @Order(7)
     String valFieldName;
 
     /** Fields to create group indexes for. */
+    @Order(8)
     List<QueryIndex> grps;
 
     /**
