@@ -394,28 +394,6 @@ namespace Apache.Ignite.Core
         void ResetLostPartitions(params string[] cacheNames);
 
         /// <summary>
-        /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
-        /// <para />
-        /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
-        /// <para />
-        /// Obsolete, use <see cref="GetDataRegionMetrics()"/>.
-        /// </summary>
-        [Obsolete("Use GetDataRegionMetrics.")]
-        ICollection<IMemoryMetrics> GetMemoryMetrics();
-
-        /// <summary>
-        /// Gets the memory metrics for the specified memory policy.
-        /// <para />
-        /// To get metrics for the default memory region,
-        /// use <see cref="MemoryConfiguration.DefaultMemoryPolicyName"/>.
-        /// <para />
-        /// Obsolete, use <see cref="GetDataRegionMetrics(string)"/>.
-        /// </summary>
-        /// <param name="memoryPolicyName">Name of the memory policy.</param>
-        [Obsolete("Use GetDataRegionMetrics.")]
-        IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
-
-        /// <summary>
         /// Changes Ignite grid state to active or inactive.
         /// </summary>
         [Obsolete("Use GetCluster().SetActive instead.")]
