@@ -19,6 +19,7 @@
 
  import java.io.ObjectOutput;
  import org.apache.ignite.internal.util.typedef.internal.U;
+ import org.apache.ignite.internal.TestIgniteDataTransferObject;
  import java.io.ObjectInput;
  import java.io.IOException;
  import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
