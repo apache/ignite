@@ -728,6 +728,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 sock = spi.openSocket(addr, timeoutHelper);
 
+                openSock = true;
+
                 TcpDiscoveryIoSession ses = createSession(sock);
 
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
@@ -744,6 +746,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 if (redirectAddrs != null) {
                     U.closeQuiet(sock);
+
+                    openSock = false;
 
                     if (log.isInfoEnabled())
                         log.info("Reconnecting to the addresses of a proper DC [addrs=" + redirectAddrs + ']');
@@ -2302,6 +2306,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         delayDiscoData.clear();
                     }
+
+                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
 

@@ -17,26 +17,22 @@
 
 package org.apache.ignite.internal.processors.localtask;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Simple {@link DurableBackgroundTask} implementation for tests.
  */
-class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTask<Void> {
+public class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTask<Void> {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /** Task name. */
-    private String name;
+    String name;
 
     /** Future that will be completed at the beginning of the {@link #executeAsync}. */
     final GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>();
@@ -77,16 +73,6 @@ class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTa
         onExecFut.onDone();
 
         return taskFut;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeLongString(out, name);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readLongString(in);
     }
 
     /**

@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PersistenceBackupCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
@@ -30,23 +27,10 @@ public class PersistenceBackupCachesTaskArg extends PersistenceCommand.Persisten
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "cache1,cache2,cache3")
-    private String[] caches;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, caches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        caches = U.readArray(in, String.class);
-    }
+    String[] caches;
 
     /** */
     public String[] caches() {

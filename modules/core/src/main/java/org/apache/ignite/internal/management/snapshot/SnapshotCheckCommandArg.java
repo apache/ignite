@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
@@ -31,36 +28,25 @@ public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")
-    private String snapshotName;
+    String snapshotName;
 
     /** */
+    @Order(1)
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
-    private String src;
+    String src;
 
     /** */
+    @Order(2)
     @Argument(example = "incrementIndex", optional = true,
         description = "Incremental snapshot index. " +
             "The command will check incremental snapshots sequentially from 1 to the specified index")
-    private int increment;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, snapshotName);
-        U.writeString(out, src);
-        out.writeInt(increment);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        snapshotName = U.readString(in);
-        src = U.readString(in);
-        increment = in.readInt();
-    }
+    int increment;
 
     /** */
     public String snapshotName() {
