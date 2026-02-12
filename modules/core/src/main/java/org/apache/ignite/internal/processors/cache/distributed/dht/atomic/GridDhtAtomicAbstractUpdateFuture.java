@@ -377,10 +377,13 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
             return;
         }
 
+        boolean hasPrimaryUpdErrors = updateRes.errors() != null;
+
         boolean needReplyToNear = updateReq.writeSynchronizationMode() == PRIMARY_SYNC ||
             !ret.emptyResult() ||
             updateReq.nearCache() ||
-            cctx.localNodeId().equals(nearNode.id());
+            cctx.localNodeId().equals(nearNode.id()) ||
+            hasPrimaryUpdErrors;
 
         boolean needMapping = updateReq.fullSync() && (updateReq.needPrimaryResponse() || !sendAllToDht());
 
@@ -402,8 +405,10 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
             needReplyToNear = true;
         }
 
-        // If there are readers updates then nearNode should not finish before primary response received.
-        sendDhtRequests(nearNode, ret, !readersOnlyNodes);
+        // "Near" node should not finish until it receives a response from primary node in the following cases:
+        // - only "near cache" is updated
+        // - primary failed to process any keys
+        sendDhtRequests(nearNode, ret, !(readersOnlyNodes || hasPrimaryUpdErrors));
 
         if (needReplyToNear)
             completionCb.apply(updateReq, updateRes);

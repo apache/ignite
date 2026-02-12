@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,7 +84,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
@@ -114,6 +112,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosab
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -202,6 +201,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private InjectResourcesService injectSvc;
+
+    /** */
+    private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /**
      * @param ctx Kernal.
@@ -441,9 +443,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         performanceStatisticsProcessor(ctx.performanceStatistics());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(
-            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
+        CalciteQueryProcessor proc = queryProcessor(ctx);
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
         taskExecutor(proc.taskExecutor());
@@ -502,7 +502,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
+    private FragmentPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
         return new FragmentPlan(jsonFragment, fromJson(ctx, jsonFragment));
     }
 
@@ -885,12 +885,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.applicationAttributes() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.applicationAttributes())),
                 msg.schema());
 
-            QueryPlan qryPlan = queryPlanCache().queryPlan(
-                new CacheKey(msg.schema(), msg.root()),
-                () -> prepareFragment(qctx, msg.root())
-            );
-
-            assert qryPlan.type() == QueryPlan.Type.FRAGMENT;
+            FragmentPlan fragmentPlan = fragmentPlanCache.computeIfAbsent(msg.root(), k -> prepareFragment(qctx, k));
 
             ExecutionContext<Row> ectx = new ExecutionContext<>(
                 qctx,
@@ -909,7 +904,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.queryTransactionEntries()
             );
 
-            executeFragment(qry, (FragmentPlan)qryPlan, ectx);
+            executeFragment(qry, fragmentPlan, ectx);
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);

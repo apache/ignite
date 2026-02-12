@@ -217,7 +217,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        List<String> joinConverters = Arrays.asList("CorrelatedNestedLoopJoin", "MergeJoinConverter", "NestedLoopJoinConverter");
+        List<String> joinConverters = Arrays.asList("CorrelatedNestedLoopJoin", "MergeJoinConverter", "NestedLoopJoinConverter",
+            "HashJoinConverter");
 
         // CorrelatedNestedLoopJoin skipped intentionally since it takes too long to finish
         // the query with only CNLJ

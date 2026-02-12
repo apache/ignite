@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,10 +35,12 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Last snapshot's checkpoint timestamp. */
-    private Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
+    @Order(0)
+    Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
 
     /** Ids of checkpoints present at the time of the snapshot capture. */
-    private Set<UUID> checkpointIds;
+    @Order(1)
+    Set<UUID> checkpointIds;
 
     /** Constructor. */
     public EarliestCheckpointMapSnapshot(
@@ -96,31 +95,22 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         return checkpointIds.contains(checkpointId);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, data);
-        U.writeCollection(out, checkpointIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        data = U.readMap(in);
-        checkpointIds = U.readSet(in);
-    }
-
     /** {@link CheckpointEntry.GroupState} snapshot. */
-    static class GroupStateSnapshot extends IgniteDataTransferObject {
+    public static class GroupStateSnapshot extends IgniteDataTransferObject {
         /** Serial version UUID. */
         private static final long serialVersionUID = 0L;
 
         /** Partition ids. */
-        private int[] parts;
+        @Order(0)
+        int[] parts;
 
         /** Partition counters which corresponds to partition ids. */
-        private long[] cnts;
+        @Order(1)
+        long[] cnts;
 
         /** Partitions count. */
-        private int size;
+        @Order(2)
+        int size;
 
         /**
          * @param parts Partitions' ids.
@@ -158,20 +148,6 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
          */
         public int size() {
             return size;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeIntArray(out, parts);
-            U.writeLongArray(out, cnts);
-            out.writeInt(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            parts = U.readIntArray(in);
-            cnts = U.readLongArray(in);
-            size = in.readInt();
         }
     }
 }

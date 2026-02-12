@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -97,12 +95,13 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
     }
 
     /** */
-    protected static class ReencryptionRateJobResult extends IgniteDataTransferObject {
+    public static class ReencryptionRateJobResult extends IgniteDataTransferObject {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** Re-encryption rate limit. */
-        private Double limit;
+        @Order(0)
+        Double limit;
 
         /** */
         public ReencryptionRateJobResult() {
@@ -119,16 +118,6 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
          */
         public Double limit() {
             return limit;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            out.writeDouble(limit);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            limit = in.readDouble();
         }
     }
 }
