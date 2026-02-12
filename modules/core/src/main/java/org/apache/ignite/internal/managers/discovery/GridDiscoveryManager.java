@@ -72,6 +72,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -177,7 +178,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOA
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_WAL_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -1281,8 +1281,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
-        WALMode locWalMode = locNode.attribute(ATTR_WAL_MODE) == null ? null :
-            WALMode.fromOrdinal(locNode.attribute(ATTR_WAL_MODE));
+        WALMode locWalMode = ExtractWalModeFromDataStorageConfigurationMarshalled(locNode.attribute(
+            IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG));
 
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
@@ -1389,8 +1389,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            WALMode rmtWalMode = n.attribute(ATTR_WAL_MODE) == null ? null :
-                WALMode.fromOrdinal(n.attribute(ATTR_WAL_MODE));
+            WALMode rmtWalMode = ExtractWalModeFromDataStorageConfigurationMarshalled(n.attribute(
+                IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG));
 
             if (locWalMode != null && rmtWalMode != null && locWalMode != rmtWalMode) {
                 throw new IgniteCheckedException("Remote node has WAL mode different from local " +
@@ -2186,6 +2186,27 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return cache;
+    }
+
+    /**
+     * Extracts WAL mode from marshalled Data Storage Configuration
+     * @param dsCfgBytes Marshalled Data Storage Configuration
+     * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got null dsCfg
+     */
+    private WALMode ExtractWalModeFromDataStorageConfigurationMarshalled(Object dsCfgBytes) {
+        try {
+            if (dsCfgBytes instanceof byte[]) {
+                DataStorageConfiguration dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal(
+                        (byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+
+                if (dsCfg != null)
+                    return dsCfg.getWalMode();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to unmarshal data storage configuration", e);
+        }
+        return null;
     }
 
     /**
