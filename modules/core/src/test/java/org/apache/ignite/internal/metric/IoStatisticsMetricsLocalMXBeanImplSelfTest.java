@@ -166,6 +166,50 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
     /** */
     @Test
+    public void testInsertedDeletedBytesInplaceUpdate() {
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes = mreg.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes = mreg.findMetric(REMOVED_BYTES);
+
+        ignite.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+        long inserted0 = insertedBytes.value();
+
+        assertNotSame(0, inserted0);
+
+        // Inplace update.
+        ignite.cache(DEFAULT_CACHE_NAME).put(0, 1);
+
+        assertNotSame(0, removedBytes.value());
+        assertEquals(insertedBytes.value() - inserted0, removedBytes.value());
+    }
+
+    /** */
+    @Test
+    public void testInsertedDeletedBytesMultipage() {
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes = mreg.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes = mreg.findMetric(REMOVED_BYTES);
+
+        assertEquals(0, insertedBytes.value());
+
+        int size = 100_000;
+
+        ignite.cache(DEFAULT_CACHE_NAME).put(0, new byte[size]);
+
+        assertTrue("Unexpected value for insertedBytes: " + insertedBytes.value(), insertedBytes.value() > size);
+
+        ignite.cache(DEFAULT_CACHE_NAME).remove(0);
+
+        assertEquals(insertedBytes.value(), removedBytes.value());
+    }
+
+    /** */
+    @Test
     public void testInsertedDeletedBytesOnRebalance() throws Exception {
         int cnt = 100;
 

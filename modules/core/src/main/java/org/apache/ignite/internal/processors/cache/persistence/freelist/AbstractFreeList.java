@@ -135,6 +135,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
+                statHolder.trackPageRemoveData(rowSize);
+                statHolder.trackPageInsertData(rowSize);
+
                 wal.log(new DataPageUpdateRecord(
                     cacheId,
                     pageId,
