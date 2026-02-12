@@ -3524,7 +3524,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         debugLog(msg, "Initialized connection with next node: " + next.id());
 
                                     errs = null;
-
+                                    sndState = null;
                                     success = true;
 
                                     next.lastSuccessfulAddress(addr);
