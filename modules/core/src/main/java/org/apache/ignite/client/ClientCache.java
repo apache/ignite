@@ -150,7 +150,9 @@ public interface ClientCache<K, V> {
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return The number of all entries cached across all nodes.
+     * @deprecated Use {@link #sizeLong} instead.
      */
+    @Deprecated
     public int size(CachePeekMode... peekModes) throws ClientException;
 
     /**
@@ -162,7 +164,9 @@ public interface ClientCache<K, V> {
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return a Future representing pending completion of the operation, which wraps the cache size.
+     * @deprecated Use {@link #sizeLongAsync} instead.
      */
+    @Deprecated
     public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException;
 
     /**

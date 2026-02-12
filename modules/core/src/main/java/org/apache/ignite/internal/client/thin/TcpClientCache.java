@@ -314,7 +314,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         return ch.service(
             ClientOperation.CACHE_GET_SIZE,
             req -> writePeekModes(peekModes, req),
-            res -> (int)res.in().readLong()
+            this::readCacheSizeInt
         );
     }
 
@@ -323,7 +323,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         return ch.serviceAsync(
             ClientOperation.CACHE_GET_SIZE,
             req -> writePeekModes(peekModes, req),
-            res -> (int)res.in().readLong()
+            this::readCacheSizeInt
         );
     }
 
@@ -1657,6 +1657,18 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     private void writePeekModes(CachePeekMode[] peekModes, PayloadOutputChannel req) {
         writeCacheInfo(req);
         ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
+    }
+
+    /** */
+    private int readCacheSizeInt(PayloadInputChannel res) {
+        long size = res.in().readLong();
+
+        if (size <= Integer.MAX_VALUE)
+            return (int)size;
+        else {
+            throw new ClientException("Cache size exceeded maximum value for int type, use " +
+                "sizeLong/sizeLongAsync methods to get correct value");
+        }
     }
 
     /**
