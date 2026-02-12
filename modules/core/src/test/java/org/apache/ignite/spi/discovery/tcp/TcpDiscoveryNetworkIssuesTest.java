@@ -405,12 +405,15 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(node1AliveStatus.get());
 
-        // Wait a bit until node0 restore connection node1.
-        U.sleep(failureDetectionTimeout / 2);
-
         // Node 1 must not be kicked.
-        for (Ignite ig : G.allGrids())
-            assertEquals(3, ig.cluster().nodes().size());
+        assertTrue(waitForCondition(() -> {
+            for (Ignite ig : G.allGrids()) {
+                if (ig.cluster().nodes().size() != 3)
+                    return false;
+            }
+
+            return true;
+        }, failureDetectionTimeout * 3));
     }
 
     /**
