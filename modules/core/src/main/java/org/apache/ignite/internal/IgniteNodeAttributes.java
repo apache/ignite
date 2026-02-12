@@ -202,9 +202,6 @@ public final class IgniteNodeAttributes {
     /** Data center ID. */
     public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".datacenter.id";
 
-    /** WAL mode configuration. */
-    public static final String ATTR_WAL_MODE = ATTR_PREFIX + ".wal.mode";
-
     /**
      * Enforces singleton.
      */
