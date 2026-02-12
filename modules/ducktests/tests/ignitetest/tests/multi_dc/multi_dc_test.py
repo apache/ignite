@@ -27,6 +27,49 @@ NUM_NODES = 12
 
 
 class MultiDCTest(IgniteTest):
+    """
+    Tests for Multi-DC functionality.
+    """
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH))
+    @matrix(cross_dc_latency_ms=[20, 50, 100], partition_time_sec=[0.5, 1, 5], is_node_count_odd=[True, False])
+    def test_network_partition(self, ignite_version, cross_dc_latency_ms, partition_time_sec, is_node_count_odd):
+        """
+        Test Ignite cluster resilience to cross dc network partition
+        """
+        cross_dc_cfg_store = self._get_cross_dc_cfg_store(delay_ms=cross_dc_latency_ms)
+        context = self.test_context
+
+        with DCService.scope(context, cross_dc_cfg_store) as dc_mgr:
+            ign_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
+
+            dc_1_nodes_num = NUM_NODES // 2
+            dc_2_nodes_num = NUM_NODES // 2 - 1 if is_node_count_odd else NUM_NODES // 2
+
+            dc_1 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=dc_1_nodes_num, svc_name="dc_1", dc_idx=1)
+            dc_2 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=dc_2_nodes_num, svc_name="dc_2", dc_idx=2)
+
+            dc_mgr.enable_network_partition(dc_1_idx=1, dc_2_idx=2)
+
+            sleep(partition_time_sec)
+
+            dc_mgr.disable_network_partition(dc_1_idx=1, dc_2_idx=2)
+
+            total_alive = sum(len(ignite.alive_nodes) for ignite in [dc_1, dc_2])
+
+            min_dc_node_count = NUM_NODES // 2 - 1 if is_node_count_odd else NUM_NODES // 2
+
+            assert total_alive >= min_dc_node_count, (f"At least {min_dc_node_count} nodes should be alive! "
+                                                      f"[actual={total_alive}]")
+
+            assert dc_1.alive(dc_1.nodes[0]), "Coordinator should remain alive"
+
+            disco_info_dc_1 = dc_1.nodes[0].discovery_info()
+
+            assert disco_info_dc_1.is_coordinator, f"{dc_1.who_am_i(dc_1.nodes[0])} is not a coordinator"
+
+            dc_mgr.stop_service(svc_name="dc_1")
+            dc_mgr.stop_service(svc_name="dc_2")
 
     @staticmethod
     def _get_cross_dc_cfg_store(delay_ms):

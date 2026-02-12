@@ -367,6 +367,43 @@ class _DCServiceManager:
 
         self.logger.info("Cluster-wide network restoration completed.")
 
+    def enable_network_partition(self, dc_1_idx: int, dc_2_idx: int):
+        self._network_partition(dc_1_idx, dc_2_idx, enable=True)
+
+    def disable_network_partition(self, dc_1_idx: int, dc_2_idx: int):
+        self._network_partition(dc_1_idx, dc_2_idx, enable=False)
+
+    def _network_partition(self, dc_1_idx: int, dc_2_idx: int, enable: bool):
+        action = "Enabling" if enable else "Disabling"
+
+        self.logger.info(f"{action} network partitioning between DC nodes [dc_1_idx={dc_1_idx}, dc_2_idx={dc_2_idx}].")
+
+        dc_1_nodes = self.get_nodes_by_dc(dc_1_idx)
+        dc_2_nodes = self.get_nodes_by_dc(dc_2_idx)
+
+        for dc_1_node in dc_1_nodes:
+            for dc_2_node in dc_2_nodes:
+                dc_1_node_ip = dc_1_node.account.externally_routable_ip
+                dc_2_node_ip = dc_2_node.account.externally_routable_ip
+
+                self.logger.debug(f"{action} network partitioning between "
+                                  f"{dc_1_node.account.hostname} [ip={dc_1_node_ip}] and " 
+                                  f"{dc_2_node.account.hostname} [ip={dc_2_node_ip}].")
+                if enable:
+                    self.netem_manager.block_traffic(node=dc_1_node, destination_ip=dc_2_node_ip)
+                    self.netem_manager.block_traffic(node=dc_2_node, destination_ip=dc_1_node_ip)
+                else:
+                    self.netem_manager.unblock_traffic(node=dc_1_node, destination_ip=dc_2_node_ip)
+                    self.netem_manager.unblock_traffic(node=dc_2_node, destination_ip=dc_1_node_ip)
+
+        self.logger.info(f"Network partition is enabled between DC nodes [dc_1_idx={dc_1_idx}, dc_2_idx={dc_2_idx}].")
+
+    def get_nodes_by_dc(self, dc_idx: int):
+        return [node for svc in self.get_services_by_dc(dc_idx) for node in svc.nodes]
+
+    def get_services_by_dc(self, dc_idx: int) -> list[IgniteAwareService]:
+        return [svc for name, svc in self._svc_by_svc_name.items() if self._dc_by_svc_name.get(name) == dc_idx]
+
 
 class DCService:
     """

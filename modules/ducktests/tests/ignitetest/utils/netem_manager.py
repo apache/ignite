@@ -25,6 +25,10 @@ from ignitetest.services.utils.decorators import memoize
 # Note: {traffic_mark} = {dc_idx} * 10 (e.g., DC 1 → mark=10)
 CMD_MARK_TRAFFIC = "sudo iptables -t mangle -{action_flag} OUTPUT -d {destination_ip} -j MARK --set-mark {traffic_mark}"
 
+# Block or unblock outgoing traffic to {destination_ip}.
+# Uses iptables: -I to drop before marking, -D to restore.
+CMD_DROP_TRAFFIC = "sudo iptables -t mangle -{action_flag} OUTPUT -d {destination_ip} -j DROP"
+
 # Initialize root HTB qdisc with default class for unclassified traffic.
 # Sets up:
 #   - root qdisc with handle 1:
@@ -228,6 +232,14 @@ class NetworkEmulatorManager:
 
         node.account.ssh(CMD_MARK_TRAFFIC.format(action_flag="D", destination_ip=destination_ip,
                                                  traffic_mark=traffic_mark))
+
+    @log_network_components(debug_only=True)
+    def block_traffic(self, node, destination_ip):
+        node.account.ssh(CMD_DROP_TRAFFIC.format(action_flag="I", destination_ip=destination_ip))
+
+    @log_network_components(debug_only=True)
+    def unblock_traffic(self, node, destination_ip):
+        node.account.ssh(CMD_DROP_TRAFFIC.format(action_flag="D", destination_ip=destination_ip))
 
     @log_network_components()
     def reset_network_settings(self, node):
