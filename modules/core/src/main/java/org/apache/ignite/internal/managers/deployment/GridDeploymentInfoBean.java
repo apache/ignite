@@ -36,25 +36,37 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     *
+     */
     @Order(value = 0, method = "classLoaderId")
     private IgniteUuid clsLdrId;
 
-    /** */
+    /**
+     *
+     */
     @Order(value = 1, method = "deployMode")
     private DeploymentMode depMode;
 
-
-    /** */
+    /**
+     *
+     */
     @Order(value = 2, method = "localDeploymentOwner")
     @Deprecated // Left for backward compatibility only.
     private boolean locDepOwner;
 
-    /** Node class loader participant map. */
+    /**
+     * Node class loader participant map.
+     */
     @GridToStringInclude
     @Order(3)
     private Map<UUID, IgniteUuid> participants;
 
-    /** */
+    /**
+     *
+     */
     @Order(value = 4, method = "userVersion")
     private String userVer;
 
@@ -66,9 +78,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /**
-     * @param clsLdrId Class loader ID.
-     * @param userVer User version.
-     * @param depMode Deployment mode.
+     * @param clsLdrId     Class loader ID.
+     * @param userVer      User version.
+     * @param depMode      Deployment mode.
      * @param participants Participants.
      */
     public GridDeploymentInfoBean(
@@ -93,7 +105,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         participants = Map.copyOf(dep.participants());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public IgniteUuid classLoaderId() {
         return clsLdrId;
     }
@@ -105,7 +119,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         this.clsLdrId = clsLdrId;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public DeploymentMode deployMode() {
         return depMode;
     }
@@ -117,7 +133,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         this.depMode = depMode;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String userVersion() {
         return userVer;
     }
@@ -129,12 +147,16 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         this.userVer = userVer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public long sequenceNumber() {
         return clsLdrId.localId();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean localDeploymentOwner() {
         return locDepOwner;
     }
@@ -146,7 +168,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         this.locDepOwner = locDepOwner;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
     }
@@ -158,23 +182,31 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         this.participants = participants;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public int hashCode() {
         return clsLdrId.hashCode();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean equals(Object o) {
         return o == this || o instanceof GridDeploymentInfoBean &&
             clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public short directType() {
         return 10;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeIgniteUuid(out, clsLdrId);
         U.writeEnum(out, depMode);
@@ -183,7 +215,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         U.writeMap(out, participants);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         clsLdrId = U.readIgniteUuid(in);
         depMode = DeploymentMode.fromOrdinal(in.readByte());
@@ -192,7 +226,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         participants = U.readMap(in);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String toString() {
         return S.toString(GridDeploymentInfoBean.class, this);
     }

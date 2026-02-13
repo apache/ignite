@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import static java.util.UUID.randomUUID;
-import static org.apache.ignite.lang.IgniteUuid.randomUuid;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Function;
@@ -37,11 +31,19 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.junit.Test;
 
+import static java.util.UUID.randomUUID;
+import static org.apache.ignite.lang.IgniteUuid.randomUuid;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Tests for {@link GridDeploymentInfoBean} serialization.
  */
 public class GridDeploymentInfoBeanTest {
-    /** Message factory. */
+    /**
+     * Message factory.
+     */
     private final MessageFactory msgFactory =
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory()});
 
@@ -76,7 +78,7 @@ public class GridDeploymentInfoBeanTest {
 
     /**
      * @param srcMsg Message to marshal.
-     * @param <T> Message type.
+     * @param <T>    Message type.
      * @return Unmarshalled message.
      */
     private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
@@ -116,9 +118,9 @@ public class GridDeploymentInfoBeanTest {
     }
 
     /**
-     * @param buf Byte buffer.
+     * @param buf   Byte buffer.
      * @param start Start position.
-     * @param func Function that is sequentially executed on a different-sized part of the buffer.
+     * @param func  Function that is sequentially executed on a different-sized part of the buffer.
      * @return {@code True} if the function returns {@code True} at least once, {@code False} otherwise.
      */
     private boolean loopBuffer(ByteBuffer buf, int start, Function<ByteBuffer, Boolean> func) {
