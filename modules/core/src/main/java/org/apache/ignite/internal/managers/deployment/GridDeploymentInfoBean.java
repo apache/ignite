@@ -98,14 +98,35 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return clsLdrId;
     }
 
+    /**
+     * @param clsLdrId Class loader ID.
+     */
+    public void classLoaderId(IgniteUuid clsLdrId) {
+        this.clsLdrId = clsLdrId;
+    }
+
     /** {@inheritDoc} */
     @Override public DeploymentMode deployMode() {
         return depMode;
     }
 
+    /**
+     * @param depMode Deployment mode.
+     */
+    public void deployMode(DeploymentMode depMode) {
+        this.depMode = depMode;
+    }
+
     /** {@inheritDoc} */
     @Override public String userVersion() {
         return userVer;
+    }
+
+    /**
+     * @param userVer User version.
+     */
+    public void userVersion(String userVer) {
+        this.userVer = userVer;
     }
 
     /** {@inheritDoc} */
@@ -118,37 +139,16 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return locDepOwner;
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<UUID, IgniteUuid> participants() {
-        return participants;
-    }
-
-    /**
-     * @param clsLdrId Class loader ID.
-     */
-    public void classLoaderId(IgniteUuid clsLdrId) {
-        this.clsLdrId = clsLdrId;
-    }
-
-    /**
-     * @param depMode Deployment mode.
-     */
-    public void deployMode(DeploymentMode depMode) {
-        this.depMode = depMode;
-    }
-
-    /**
-     * @param userVer User version.
-     */
-    public void userVersion(String userVer) {
-        this.userVer = userVer;
-    }
-
     /**
      * @param locDepOwner Local deployment owner flag.
      */
     public void localDeploymentOwner(boolean locDepOwner) {
         this.locDepOwner = locDepOwner;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<UUID, IgniteUuid> participants() {
+        return participants;
     }
 
     /**
