@@ -52,6 +52,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettingsS
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBeanSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
@@ -386,7 +387,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
         factory.register((short)8, GridIoMessage::new, new GridIoMessageSerializer());
         factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
-        factory.register((short)10, GridDeploymentInfoBean::new);
+        factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
         factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
         factory.register((short)13, GridEventStorageMessage::new, new GridEventStorageMessageSerializer());
