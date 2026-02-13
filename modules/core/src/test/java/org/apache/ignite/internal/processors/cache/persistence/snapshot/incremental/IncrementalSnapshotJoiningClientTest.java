@@ -247,8 +247,9 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
                 TcpDiscoveryCustomEventMessage m = (TcpDiscoveryCustomEventMessage)msg;
 
                 try {
-                    CustomMessageWrapper m0 = (CustomMessageWrapper)m.message(
-                        marshaller(), U.resolveClassLoader(ignite().configuration()));
+                    m.finishUnmarhal(marshaller(), U.resolveClassLoader(ignite().configuration()));
+
+                    CustomMessageWrapper m0 = (CustomMessageWrapper)m.message();
 
                     if (m0.delegate() instanceof InitMessage)
                         rcvStartSnpReq.countDown();

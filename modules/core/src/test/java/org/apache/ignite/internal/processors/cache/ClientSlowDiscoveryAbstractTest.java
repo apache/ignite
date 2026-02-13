@@ -99,8 +99,9 @@ public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
             DiscoveryCustomMessage delegate;
 
             try {
-                DiscoverySpiCustomMessage custMsg = cm.message(marshaller(),
-                    U.resolveClassLoader(ignite().configuration()));
+                cm.finishUnmarhal(marshaller(), U.resolveClassLoader(ignite().configuration()));
+
+                DiscoverySpiCustomMessage custMsg = cm.message();
 
                 assertNotNull(custMsg);
 
