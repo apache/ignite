@@ -33,7 +33,7 @@ public class ClientClusterImpl extends ClientClusterGroupImpl implements ClientC
     /**
      * Constructor.
      */
-    ClientClusterImpl(ReliableChannelImpl ch, ClientBinaryMarshaller marsh) {
+    ClientClusterImpl(ReliableChannelEx ch, ClientBinaryMarshaller marsh) {
         super(ch, marsh);
 
         dfltClusterGrp = (ClientClusterGroupImpl)forServers();

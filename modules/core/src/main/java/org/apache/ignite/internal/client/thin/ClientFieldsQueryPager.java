@@ -40,7 +40,7 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
 
     /** Constructor. */
     ClientFieldsQueryPager(
-        ReliableChannelImpl ch,
+        ReliableChannelEx ch,
         @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
@@ -59,7 +59,7 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
 
     /** Constructor. */
     ClientFieldsQueryPager(
-        ReliableChannelImpl ch,
+        ReliableChannelEx ch,
         @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,

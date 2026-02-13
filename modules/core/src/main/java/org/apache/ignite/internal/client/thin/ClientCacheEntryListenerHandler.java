@@ -53,7 +53,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
     private final Cache<K, V> jCacheAdapter;
 
     /** */
-    private final ReliableChannelImpl ch;
+    private final ReliableChannelEx ch;
 
     /** */
     private final boolean keepBinary;
@@ -76,7 +76,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
     /** */
     ClientCacheEntryListenerHandler(
         Cache<K, V> jCacheAdapter,
-        ReliableChannelImpl ch,
+        ReliableChannelEx ch,
         ClientBinaryMarshaller marsh,
         boolean keepBinary
     ) {

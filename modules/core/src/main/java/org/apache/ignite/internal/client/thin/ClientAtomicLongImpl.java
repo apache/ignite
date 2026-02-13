@@ -35,7 +35,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     private final String groupName;
 
     /** */
-    private final ReliableChannelImpl ch;
+    private final ReliableChannelEx ch;
 
     /** Cache id. */
     private final int cacheId;
@@ -47,7 +47,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
      * @param groupName Cache group name.
      * @param ch Channel.
      */
-    public ClientAtomicLongImpl(String name, @Nullable String groupName, ReliableChannelImpl ch) {
+    public ClientAtomicLongImpl(String name, @Nullable String groupName, ReliableChannelEx ch) {
         // name and groupName uniquely identify the data structure.
         this.name = name;
         this.groupName = groupName;

@@ -36,7 +36,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
 
     /** Constructor. */
     ClientQueryPager(
-        ReliableChannelImpl ch,
+        ReliableChannelEx ch,
         @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
@@ -53,7 +53,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
 
     /** Constructor. */
     ClientQueryPager(
-        ReliableChannelImpl ch,
+        ReliableChannelEx ch,
         @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
