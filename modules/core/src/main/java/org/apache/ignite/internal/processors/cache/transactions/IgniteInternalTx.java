@@ -56,7 +56,10 @@ public interface IgniteInternalTx {
         USER_FINISH,
 
         /** Transaction is being finalized by recovery procedure. */
-        RECOVERY_FINISH
+        RECOVERY_FINISH,
+
+        /** */
+        RECOVERY_FINISH_WT
     }
 
     /**

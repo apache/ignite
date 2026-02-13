@@ -1351,6 +1351,8 @@ public class IgniteTxHandler {
             assert nodeId != null;
             assert req != null;
 
+            GridDhtTxRemote dhtTx = null;
+
             if (req.checkCommitted()) {
                 boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
@@ -1362,14 +1364,20 @@ public class IgniteTxHandler {
                     fut.listen(() -> sendReply(nodeId, req, true, null));
                 }
 
-                return;
+                dhtTx = (GridDhtTxRemote)ctx.tm().hackMap.get(req.version());
+
+                if (dhtTx == null)
+                    return;
             }
 
             // Always add version to rollback history to prevent races with rollbacks.
             if (!req.commit())
                 ctx.tm().addRolledbackTx(null, req.version());
 
-            GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
+            dhtTx = ctx.tm().tx(req.version()); // NOT GOOD NEED DIFFERENT APPROACH !!!
+            if (dhtTx == null)
+                dhtTx = (GridDhtTxRemote)ctx.tm().hackMap.get(req.version());
+
             GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
             IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);

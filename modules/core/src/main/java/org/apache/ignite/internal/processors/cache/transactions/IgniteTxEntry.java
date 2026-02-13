@@ -108,7 +108,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Owning transaction. */
     @GridToStringExclude
     @GridDirectTransient
-    public IgniteInternalTx tx;
+    @Nullable public IgniteInternalTx tx;
 
     /** Cache key. */
     @GridToStringExclude

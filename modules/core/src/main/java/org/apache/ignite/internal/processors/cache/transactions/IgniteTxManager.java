@@ -140,6 +140,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -238,6 +239,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
+
+    /** */
+    public final ConcurrentMap<GridCacheVersion, IgniteInternalTx> hackMap = newMap();
 
     /** Deadlock detection futures. */
     private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
@@ -3137,10 +3141,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         ", failedNodeId=" + evtNodeId + ']');
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
-                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
+                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId)) ||
+                        (tx.storeWriteThrough() && tx.eventNodeId().equals(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
+                    }
+                    else if ((tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
+                        salvageTx(tx, RECOVERY_FINISH_WT);
                     }
                     else {
                         // Check prepare only if originating node ID failed. Otherwise, parent node will finish this tx.

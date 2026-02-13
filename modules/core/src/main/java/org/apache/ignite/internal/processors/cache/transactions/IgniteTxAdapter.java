@@ -604,6 +604,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 break;
 
+            case RECOVERY_FINISH_WT:
             case RECOVERY_FINISH:
                 res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, status) || finalizing == status;
 
@@ -1608,6 +1609,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         assert cacheCtx != null;
 
+        // TODO: write description
         if (isSystemInvalidate())
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
