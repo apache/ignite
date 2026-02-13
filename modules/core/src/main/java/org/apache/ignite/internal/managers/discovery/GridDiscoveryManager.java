@@ -1281,8 +1281,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
-        WALMode locWalMode = ExtractWalModeFromDataStorageConfigurationMarshalled(locNode.attribute(
-            IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG));
+        WALMode locWalMode = nodeWalMode(locNode);
 
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
@@ -1389,8 +1388,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            WALMode rmtWalMode = ExtractWalModeFromDataStorageConfigurationMarshalled(n.attribute(
-                IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG));
+            WALMode rmtWalMode = nodeWalMode(n);
 
             if (locWalMode != null && rmtWalMode != null && locWalMode != rmtWalMode) {
                 throw new IgniteCheckedException("Remote node has WAL mode different from local " +
@@ -2189,11 +2187,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Extracts WAL mode from marshalled Data Storage Configuration
-     * @param dsCfgBytes Marshalled Data Storage Configuration
+     * Extracts WAL mode from marshalled Data Storage Configuration of Cluster node
+     * @param n Cluster node
      * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got null dsCfg
      */
-    private WALMode ExtractWalModeFromDataStorageConfigurationMarshalled(Object dsCfgBytes) {
+    private WALMode nodeWalMode(ClusterNode n) {
+        Object dsCfgBytes = n.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
         try {
             if (dsCfgBytes instanceof byte[]) {
                 DataStorageConfiguration dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal(
@@ -2204,7 +2203,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal data storage configuration", e);
+            U.error(log, "Failed to unmarshal data storage configuration [remoteNode=" + n + "]", e);
         }
         return null;
     }
