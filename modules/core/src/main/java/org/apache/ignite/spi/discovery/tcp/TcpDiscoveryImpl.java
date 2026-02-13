@@ -484,7 +484,7 @@ abstract class TcpDiscoveryImpl {
      * @return IO session for writing and reading {@link TcpDiscoveryAbstractMessage}.
      */
     TcpDiscoveryIoSession createSession(Socket sock) {
-        return createSession(sock, null);
+        return createSession(sock, new TcpDiscoveryMessageMarshaller(spi));
     }
 
     /** */
