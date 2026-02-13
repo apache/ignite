@@ -789,6 +789,21 @@ This view exposes information about the distribution of cache group partitions a
 |IS_PRIMARY | boolean  | Primary partition flag
 |===
 
+== LOCAL_CACHE_GROUPS_IO
+
+This view exposes information about local node IO statistics for cache groups.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|CACHE_GROUP_ID | int| Cache group ID
+|CACHE_GROUP_NAME | string| Cache group name
+|PHYSICAL_READS | long | Count of logical page reads
+|LOGICAL_READS | long | Count of physical page reads
+|INSERTED_BYTES | long | Count of inserted to store bytes
+|REMOVED_BYTES | long | Count of removed from store bytes
+|===
+
 == BINARY_METADATA
 
 This view exposes information about all available binary types.
