@@ -18,19 +18,23 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
+public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
     /** */
     @Order(value = 0, method = "classLoaderId")
     private IgniteUuid clsLdrId;
@@ -39,9 +43,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
     @Order(value = 1, method = "deployMode")
     private DeploymentMode depMode;
 
-    /** */
-    @Order(value = 4, method = "userVersion")
-    private String userVer;
 
     /** */
     @Order(value = 2, method = "localDeploymentOwner")
@@ -52,6 +53,10 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
     @GridToStringInclude
     @Order(3)
     private Map<UUID, IgniteUuid> participants;
+
+    /** */
+    @Order(value = 4, method = "userVersion")
+    private String userVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -167,6 +172,24 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 10;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeIgniteUuid(out, clsLdrId);
+        U.writeEnum(out, depMode);
+        U.writeString(out, userVer);
+        out.writeBoolean(locDepOwner);
+        U.writeMap(out, participants);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        clsLdrId = U.readIgniteUuid(in);
+        depMode = DeploymentMode.fromOrdinal(in.readByte());
+        userVer = U.readString(in);
+        locDepOwner = in.readBoolean();
+        participants = U.readMap(in);
     }
 
     /** {@inheritDoc} */
