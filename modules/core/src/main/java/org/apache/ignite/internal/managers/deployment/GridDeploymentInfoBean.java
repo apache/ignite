@@ -21,19 +21,15 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Deployment info bean.
@@ -43,22 +39,27 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0, method = "classLoaderId")
     private IgniteUuid clsLdrId;
 
     /** */
+    @Order(value = 1, method = "deployMode")
     private DeploymentMode depMode;
 
-    /** */
-    private String userVer;
 
     /** */
+    @Order(value = 2, method = "localDeploymentOwner")
     @Deprecated // Left for backward compatibility only.
     private boolean locDepOwner;
 
     /** Node class loader participant map. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    @Order(3)
     private Map<UUID, IgniteUuid> participants;
+
+    /** */
+    @Order(value = 4, method = "userVersion")
+    private String userVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -100,14 +101,35 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return clsLdrId;
     }
 
+    /**
+     * @param clsLdrId Class loader ID.
+     */
+    public void classLoaderId(IgniteUuid clsLdrId) {
+        this.clsLdrId = clsLdrId;
+    }
+
     /** {@inheritDoc} */
     @Override public DeploymentMode deployMode() {
         return depMode;
     }
 
+    /**
+     * @param depMode Deployment mode.
+     */
+    public void deployMode(DeploymentMode depMode) {
+        this.depMode = depMode;
+    }
+
     /** {@inheritDoc} */
     @Override public String userVersion() {
         return userVer;
+    }
+
+    /**
+     * @param userVer User version.
+     */
+    public void userVersion(String userVer) {
+        this.userVer = userVer;
     }
 
     /** {@inheritDoc} */
@@ -120,9 +142,23 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return locDepOwner;
     }
 
+    /**
+     * @param locDepOwner Local deployment owner flag.
+     */
+    public void localDeploymentOwner(boolean locDepOwner) {
+        this.locDepOwner = locDepOwner;
+    }
+
     /** {@inheritDoc} */
     @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
+    }
+
+    /**
+     * @param participants Node class loader participant map.
+     */
+    public void participants(Map<UUID, IgniteUuid> participants) {
+        this.participants = participants;
     }
 
     /** {@inheritDoc} */
@@ -134,107 +170,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Override public boolean equals(Object o) {
         return o == this || o instanceof GridDeploymentInfoBean &&
             clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(clsLdrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(locDepOwner))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMap(participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeString(userVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                clsLdrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                byte depModeOrd;
-
-                depModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                depMode = DeploymentMode.fromOrdinal(depModeOrd);
-
-                reader.incrementState();
-
-            case 2:
-                locDepOwner = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                participants = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                userVer = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
