@@ -50,7 +50,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
 
     /** Node class loader participant map. */
     @GridToStringInclude
-    @Order(value = 3, method = "participants")
+    @Order(3)
     private Map<UUID, IgniteUuid> participants;
 
     /**
