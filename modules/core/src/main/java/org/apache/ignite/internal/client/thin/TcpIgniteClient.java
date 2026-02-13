@@ -88,7 +88,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpIgniteClient implements IgniteClient {
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Ignite Binary. */
     private final IgniteBinary binary;
@@ -148,7 +148,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         binary = new ClientBinary(marsh);
 
-        ch = new ReliableChannel(chFactory, cfg, binary);
+        ch = new ReliableChannelImpl(chFactory, cfg, binary);
 
         evtLsnrs = cfg.getEventListeners() == null ? null : cfg.getEventListeners().clone();
 

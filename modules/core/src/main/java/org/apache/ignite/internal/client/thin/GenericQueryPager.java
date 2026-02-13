@@ -39,7 +39,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     private final Consumer<PayloadOutputChannel> qryWriter;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Client Transaction. */
     private final @Nullable TcpClientTransaction tx;
@@ -64,7 +64,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Constructor. */
     GenericQueryPager(
-        ReliableChannel ch,
+        ReliableChannelImpl ch,
         @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
@@ -83,7 +83,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Constructor. */
     GenericQueryPager(
-        ReliableChannel ch,
+        ReliableChannelImpl ch,
         @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,

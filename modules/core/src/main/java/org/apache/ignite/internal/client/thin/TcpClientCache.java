@@ -108,7 +108,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     private final int cacheId;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Cache name. */
     private final String name;
@@ -142,13 +142,13 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         "non-transactional ClientCache %s operation within a transaction.";
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
+    TcpClientCache(String name, ReliableChannelImpl ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
         ClientCacheEntryListenersRegistry lsnrsRegistry, IgniteLogger log) {
         this(name, ch, marsh, transactions, lsnrsRegistry, false, null, log);
     }
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh,
+    TcpClientCache(String name, ReliableChannelImpl ch, ClientBinaryMarshaller marsh,
         TcpClientTransactions transactions, ClientCacheEntryListenersRegistry lsnrsRegistry, boolean keepBinary,
         ExpiryPolicy expiryPlc, IgniteLogger log) {
         this.name = name;

@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  */
 class ClientClusterGroupImpl implements ClientClusterGroup {
     /** Channel. */
-    protected final ReliableChannel ch;
+    protected final ReliableChannelImpl ch;
 
     /** Marshaller utils. */
     protected final ClientUtils utils;
@@ -79,7 +79,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      *
      */
-    ClientClusterGroupImpl(ReliableChannel ch, ClientBinaryMarshaller marsh) {
+    ClientClusterGroupImpl(ReliableChannelImpl ch, ClientBinaryMarshaller marsh) {
         this.ch = ch;
 
         utils = new ClientUtils(marsh);
@@ -90,7 +90,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      *
      */
-    private ClientClusterGroupImpl(ReliableChannel ch, ClientUtils utils,
+    private ClientClusterGroupImpl(ReliableChannelImpl ch, ClientUtils utils,
         ProjectionFilters projectionFilters) {
         this.ch = ch;
         this.utils = utils;

@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.TRAN
  */
 class TcpClientTransactions implements ClientTransactions {
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
@@ -56,7 +56,7 @@ class TcpClientTransactions implements ClientTransactions {
     private final ClientTransactionConfiguration txCfg;
 
     /** Constructor. */
-    TcpClientTransactions(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientTransactionConfiguration txCfg) {
+    TcpClientTransactions(ReliableChannelImpl ch, ClientBinaryMarshaller marsh, ClientTransactionConfiguration txCfg) {
         this.ch = ch;
         this.marsh = marsh;
         this.txCfg = txCfg;

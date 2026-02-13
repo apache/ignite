@@ -43,7 +43,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final String name;
 
     /** */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** */
     private final ClientUtils serDes;
@@ -69,7 +69,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param cacheId Cache id.
      */
     public ClientIgniteSetImpl(
-            ReliableChannel ch,
+            ReliableChannelImpl ch,
             ClientUtils serDes,
             String name,
             boolean colocated,

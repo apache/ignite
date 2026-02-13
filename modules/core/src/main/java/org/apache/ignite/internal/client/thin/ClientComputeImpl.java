@@ -57,7 +57,7 @@ class ClientComputeImpl implements ClientCompute {
     private static final byte NO_RESULT_CACHE_FLAG_MASK = 0x02;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Utils for serialization/deserialization. */
     private final ClientUtils utils;
@@ -69,7 +69,7 @@ class ClientComputeImpl implements ClientCompute {
     private final AtomicInteger tasksCnt = new AtomicInteger();
 
     /** Constructor. */
-    ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
+    ClientComputeImpl(ReliableChannelImpl ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
         this.ch = ch;
         this.dfltGrp = dfltGrp;
 

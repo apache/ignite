@@ -60,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Communication channel with failover and partition awareness.
  */
-final class ReliableChannel implements ReliableChannelEx {
+final class ReliableChannelImpl implements ReliableChannelEx {
     /** Channel factory. */
     private final BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory;
 
@@ -124,7 +124,7 @@ final class ReliableChannel implements ReliableChannelEx {
     /**
      * Constructor.
      */
-    ReliableChannel(
+    ReliableChannelImpl(
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
             ClientConfiguration clientCfg,
             IgniteBinary binary
@@ -1103,7 +1103,7 @@ final class ReliableChannel implements ReliableChannelEx {
                     ClientChannel channel = chFactory.apply(chCfg, connMgr);
 
                     if (channel.serverNodeId() != null) {
-                        channel.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
+                        channel.addTopologyChangeListener(ReliableChannelImpl.this::onTopologyChanged);
 
                         UUID prevId = serverNodeId;
 
