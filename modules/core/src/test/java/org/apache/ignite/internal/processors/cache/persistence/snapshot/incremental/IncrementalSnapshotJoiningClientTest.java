@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -43,6 +43,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -247,10 +248,10 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
                 TcpDiscoveryCustomEventMessage m = (TcpDiscoveryCustomEventMessage)msg;
 
                 try {
-                    CustomMessageWrapper m0 = (CustomMessageWrapper)m.message(
+                    DiscoveryCustomMessage m0 = m.message(
                         marshaller(), U.resolveClassLoader(ignite().configuration()));
 
-                    if (m0.delegate() instanceof InitMessage)
+                    if (GridTestUtils.unwrap(m0) instanceof InitMessage)
                         rcvStartSnpReq.countDown();
                 }
                 catch (Throwable e) {

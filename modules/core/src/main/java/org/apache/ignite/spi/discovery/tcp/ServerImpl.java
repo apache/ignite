@@ -78,8 +78,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -120,7 +121,6 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -1017,11 +1017,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
+    @Override public void sendCustomEvent(DiscoveryCustomMessage evt) {
         try {
             TcpDiscoveryCustomEventMessage msg;
 
-            if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
+            DiscoveryCustomMessage customMsg = evt instanceof SecurityAwareCustomMessageWrapper ?
+                ((SecurityAwareCustomMessageWrapper)evt).delegate() : evt;
+
+            if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
                 msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
                     U.marshal(spi.marshaller(), evt));
             else
@@ -1032,7 +1035,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
                     () -> locNode.consistentId().toString())
-                .addTag(SpanTags.MESSAGE_CLASS, () -> ((CustomMessageWrapper)evt).delegate().getClass().getSimpleName())
+                .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
                 .addLog(() -> "Created");
 
             // This root span will be parent both from local and remote nodes.
@@ -6046,7 +6049,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
-                    DiscoverySpiCustomMessage msgObj = null;
+                    DiscoveryCustomMessage msgObj = null;
 
                     try {
                         msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
@@ -6056,7 +6059,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (msgObj != null) {
-                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
+                        DiscoveryCustomMessage nextMsg = msgObj.ackMessage();
 
                         if (nextMsg != null) {
                             try {
@@ -6234,7 +6237,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (node == null)
                     return;
 
-                DiscoverySpiCustomMessage msgObj;
+                DiscoveryCustomMessage msgObj;
 
                 try {
                     msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
