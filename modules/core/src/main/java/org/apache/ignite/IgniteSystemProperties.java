@@ -1804,7 +1804,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @deprecated Use {@link ShutdownPolicy} instead.
      */
     @Deprecated
-    @IgniteExperimental
     @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
         "caches exist that have backups configured")
@@ -1815,7 +1814,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * If enabled, subquery will be rewritten to JOIN where possible.
      * Default is {@code true}.
      */
-    @IgniteExperimental
     @SystemProperty("Enables subquery rewriting optimization. " +
         "If enabled, subquery will be rewritten to JOIN where possible")
     public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
@@ -1967,7 +1965,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      */
     @SystemProperty(value = "Flag to indicate that disk writes during snapshot process should be in a sequential " +
         "manner when possible. This generates extra disk space usage", defaults = "" + DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE)
-    @IgniteExperimental
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
 
     /**
@@ -1977,7 +1974,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @see org.apache.ignite.spi.systemview.view.ConfigurationView
      */
     @SystemProperty(value = "Packages list to expose in configuration view")
-    @IgniteExperimental
     public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
 
     /**

@@ -24,12 +24,10 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
-import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
-@IgniteExperimental
 public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, TracingConfigurationTaskResult>
     implements ComputeCommand<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** */

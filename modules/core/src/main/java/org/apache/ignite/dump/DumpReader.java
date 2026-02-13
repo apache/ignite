@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -75,7 +74,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  * The application runs independently of Ignite node process and provides the ability to the {@link DumpConsumer} to consume
  * all data stored in cache dump ({@link Dump})
  */
-@IgniteExperimental
 public class DumpReader implements Runnable {
     /** Configuration. */
     private final DumpReaderConfiguration cfg;

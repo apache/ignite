@@ -24,8 +24,6 @@ Internally, SQL tables have the same data structure as link:data-modeling/data-m
 
 Ignite's default SQL engine uses H2 Database to parse and optimize queries and generate execution plans, but also the Apache Calcite-based SQL engine can be enabled to execute queries.
 
-WARNING: Apache Calcite-based SQL engine is an experimental feature. For more information, see the link:SQL/sql-calcite[Calcite-based SQL engine, window=_blank] section.
-
 == Distributed Queries
 
 Queries against link:data-modeling/data-partitioning#partitioned[partitioned] tables are executed in a distributed manner:

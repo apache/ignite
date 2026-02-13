@@ -176,13 +176,6 @@ include::{javaFile}[tags=multiple-endpoints, indent=0]
 
 === Partition Awareness [[partition-awareness]]
 
-[WARNING]
-====
-[discrete]
-Partition awareness is an experimental feature whose API or design architecture might be changed
-before a GA version is released.
-====
-
 Partition awareness is a feature that makes the JDBC driver "aware" of the partition distribution in the cluster.
 It allows the driver to pick the nodes that own the data that is being queried and send the query directly to those nodes
 (if the addresses of the nodes are provided in the driver's configuration). Partition awareness can increase average
