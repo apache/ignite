@@ -30,6 +30,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryClientNodesMetricsMessageS
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryConnectionCheckMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryCustomEventMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDiscardMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDuplicateIdMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeRequestSerializer;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryNodeMetricsMessageSerializ
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryStatusCheckMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -60,6 +62,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetri
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
@@ -74,6 +77,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 
 /** Message factory for discovery messages. */
@@ -110,5 +114,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageSerializer());
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new, new TcpDiscoveryNodeAddFinishedMessageSerializer());
+        factory.register((short)20, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
+        factory.register((short)21, TcpDiscoveryServerOnlyCustomEventMessage::new,
+            new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
     }
 }

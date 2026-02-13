@@ -58,7 +58,9 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         DiscoveryCustomMessage delegate;
 
         try {
-            DiscoverySpiCustomMessage custMsg = cm.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
+            cm.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+            DiscoverySpiCustomMessage custMsg = cm.message();
 
             assertNotNull(custMsg);
 

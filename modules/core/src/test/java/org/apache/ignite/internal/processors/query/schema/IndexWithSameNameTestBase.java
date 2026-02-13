@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexC
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -313,10 +312,11 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
                 try {
-                    DiscoverySpiCustomMessage spiCustomMsg = ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(),
-                        U.resolveClassLoader(ignite().configuration()));
+                    TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                    DiscoveryCustomMessage discoCustomMsg = ((CustomMessageWrapper)spiCustomMsg).delegate();
+                    evtMsg.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                    DiscoveryCustomMessage discoCustomMsg = ((CustomMessageWrapper)evtMsg.message()).delegate();
 
                     if (discoCustomMsg instanceof SchemaFinishDiscoveryMessage) {
                         SchemaFinishDiscoveryMessage finishMsg = (SchemaFinishDiscoveryMessage)discoCustomMsg;

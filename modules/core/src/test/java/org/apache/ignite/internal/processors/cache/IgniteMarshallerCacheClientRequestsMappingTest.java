@@ -163,8 +163,11 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoverySpiCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
+
+                            evtMsg.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                            DiscoverySpiCustomMessage custom = evtMsg.message();
 
                             if (custom instanceof CustomMessageWrapper) {
                                 DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
@@ -240,8 +243,11 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoverySpiCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
+
+                            evtMsg.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                            DiscoverySpiCustomMessage custom = evtMsg.message();
 
                             if (custom instanceof CustomMessageWrapper) {
                                 DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
