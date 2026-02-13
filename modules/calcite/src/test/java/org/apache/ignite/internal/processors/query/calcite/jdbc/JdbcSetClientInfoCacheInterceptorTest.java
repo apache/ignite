@@ -35,8 +35,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.session.SessionContextProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -65,12 +67,9 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
     /** */
     @Parameterized.Parameters(name = "runInTx={0}, mode={1}")
     public static Collection<Object[]> data() {
-        return F.asList(
-            new Object[] { false, CacheAtomicityMode.TRANSACTIONAL },
-            new Object[] { false, CacheAtomicityMode.ATOMIC },
-            new Object[] { true, CacheAtomicityMode.TRANSACTIONAL },
-            new Object[] { true, CacheAtomicityMode.ATOMIC }
-        );
+        return GridTestUtils.cartesianProduct(
+            F.asList(false, true),
+            F.asList(CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC));
     }
 
     /** */
@@ -102,26 +101,70 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
     }
 
     /** */
+    @Override protected void beforeTest() {
+        assumeFalse(runInTx && cacheMode == CacheAtomicityMode.ATOMIC);
+    }
+
+    /** */
     @Test
     public void testInterceptInsert() throws Exception {
-        assumeFalse(runInTx && cacheMode == CacheAtomicityMode.ATOMIC);
-
         try (Ignite ignore = startGrid(); Connection conn = DriverManager.getConnection(URL)) {
             conn.setClientInfo(SESSION_ID, "42");
 
             try (Statement s = conn.createStatement()) {
-                assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, 1);"));
+                assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, '1');"));
             }
+
+            checkRecordExist(conn, "42");
+        }
+    }
+
+    /** */
+    @Test
+    public void testInterceptUpdate() throws Exception {
+        try (Ignite ignore = startGrid(); Connection conn = DriverManager.getConnection(URL)) {
+            try (Statement s = conn.createStatement()) {
+                assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, '1');"));
+            }
+
+            conn.setClientInfo(SESSION_ID, "42");
 
             try (Statement s = conn.createStatement()) {
-                assertTrue(s.execute("select id, sessionId from PUBLIC.MYTABLE;"));
-
-                ResultSet rs = s.getResultSet();
-                assertTrue(rs.next());
-
-                assertEquals(0, rs.getInt("id"));
-                assertEquals("42", rs.getString("sessionId"));
+                assertEquals(1, s.executeUpdate("update PUBLIC.MYTABLE set sessionId = '2' where id = 0;"));
             }
+
+            checkRecordExist(conn, "42");
+        }
+    }
+
+    /** */
+    @Test
+    public void testInterceptDelete() throws Exception {
+        try (Ignite ignore = startGrid(); Connection conn = DriverManager.getConnection(URL)) {
+            try (Statement s = conn.createStatement()) {
+                assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, '1');"));
+            }
+
+            conn.setClientInfo(SESSION_ID, "42");
+
+            try (Statement s = conn.createStatement()) {
+                s.executeUpdate("delete from PUBLIC.MYTABLE where id = 0;");
+            }
+
+            checkRecordExist(conn, "1");
+        }
+    }
+
+    /** */
+    private void checkRecordExist(Connection conn, String expVal) throws Exception {
+        try (Statement s = conn.createStatement()) {
+            assertTrue(s.execute("select id, sessionId from PUBLIC.MYTABLE;"));
+
+            ResultSet rs = s.getResultSet();
+            assertTrue(rs.next());
+
+            assertEquals(0, rs.getInt("id"));
+            assertEquals(expVal, rs.getString("sessionId"));
         }
     }
 
@@ -131,9 +174,18 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
         @SessionContextProviderResource
         private SessionContextProvider sessionCtxProv;
 
-        /** */
+        /** Replaces {@code newVal} explicitly inserted by user with {@code SESSION_ID} attribute value. */
         @Override public @Nullable String onBeforePut(Cache.Entry<Integer, String> entry, String newVal) {
-            return sessionCtxProv.getSessionContext().getAttribute(SESSION_ID);
+            String val = sessionCtxProv.getSessionContext().getAttribute(SESSION_ID);
+
+            return val == null ? newVal : val;
+        }
+
+        /** Cancels removing entry in case {@code SESSION_ID} attribute is set. */
+        @Override public @Nullable IgniteBiTuple<Boolean, String> onBeforeRemove(Cache.Entry<Integer, String> entry) {
+            String val = sessionCtxProv.getSessionContext().getAttribute(SESSION_ID);
+
+            return new IgniteBiTuple<>(val != null, entry.getValue());
         }
     }
 
