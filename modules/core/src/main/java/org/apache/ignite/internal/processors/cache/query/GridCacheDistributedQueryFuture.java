@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
 import org.apache.ignite.internal.processors.cache.query.reducer.TextQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
@@ -92,7 +94,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         qryMgr = (GridCacheDistributedQueryManager<K, V>)ctx.queries();
 
         if (qry.query().partition() != null)
-            nodes = Collections.singletonList(node(nodes));
+            nodes = Collections.singletonList(cctx.isReplicated() ? localOrRemoteNode(nodes) : F.first(nodes));
 
         streams = new ConcurrentHashMap<>(nodes.size());
 
@@ -118,17 +120,22 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /**
-     * @return Nodes for query execution.
+     * @return A local node if available, otherwise a random node from the given collection.
      */
-    private ClusterNode node(Collection<ClusterNode> nodes) {
+    private ClusterNode localOrRemoteNode(Collection<ClusterNode> nodes) {
+        int remoteNodeIdx = ThreadLocalRandom.current().nextInt(nodes.size());
+
         ClusterNode rmtNode = null;
 
         for (ClusterNode node : nodes) {
             if (node.isLocal())
                 return node;
 
-            rmtNode = node;
+            if (remoteNodeIdx-- == 0)
+                rmtNode = node;
         }
+
+        assert rmtNode != null;
 
         return rmtNode;
     }
@@ -282,7 +289,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(cctx, reqId, fields());
 
             if (nodeId.equals(cctx.localNodeId())) {
-                // Process cancel query directly (without sending) for local node,
+                // Process cancel query directly (without sending) for local node.
                 cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
                     @Override public Object call() {
                         qryMgr.processQueryRequest(cctx.localNodeId(), req);
