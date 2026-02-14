@@ -3296,7 +3296,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             boolean newNextNode = false;
 
             // Used only if spi.getEffectiveConnectionRecoveryTimeout > 0
-            CrossRingMessageSendState sndState = null;
+            CrossRingMessageSendState connRecoverState = null;
 
             UUID locNodeId = getLocalNodeId();
 
@@ -3368,8 +3368,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // message sending like IgniteConfiguration.failureDetectionTimeout. Here we are in the
                             // state of conenction recovering and have to work with
                             // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
-                            if (timeoutHelper == null || sndState != null)
-                                timeoutHelper = serverOperationTimeoutHelper(sndState, -1);
+                            if (timeoutHelper == null || connRecoverState != null)
+                                timeoutHelper = serverOperationTimeoutHelper(connRecoverState, -1);
 
                             boolean success = false;
 
@@ -3387,13 +3387,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                                 // Topology treated as changes if next node is not available.
-                                boolean changeTop = sndState != null && !sndState.isStartingPoint();
+                                boolean changeTop = connRecoverState != null && !connRecoverState.isStartingPoint();
 
                                 if (changeTop)
                                     hndMsg.previousNodeId(ring.previousNodeOf(next).id());
 
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + connRecoverState +
                                         "] with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
                                 }
 
@@ -3411,11 +3411,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // We should take previousNodeAlive flag into account
                                 // only if we received the response from the correct node.
-                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    sndState.checkTimeout();
+                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && connRecoverState != null) {
+                                    connRecoverState.checkTimeout();
 
                                     // Remote node checked connection to it's previous and got success.
-                                    boolean previousNode = sndState.markLastFailedNodeAlive();
+                                    boolean previousNode = connRecoverState.markLastFailedNodeAlive();
 
                                     if (previousNode)
                                         failedNodes.remove(failedNodes.size() - 1);
@@ -3429,7 +3429,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     sock = null;
 
-                                    if (sndState.isFailed()) {
+                                    if (connRecoverState.isFailed()) {
                                         segmentLocalNodeOnSendFail(failedNodes);
 
                                         return; // Nothing to do here.
@@ -3507,7 +3507,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         debugLog(msg, "Initialized connection with next node: " + next.id());
 
                                     errs = null;
-
+                                    connRecoverState = null;
                                     success = true;
 
                                     next.lastSuccessfulAddress(addr);
@@ -3526,7 +3526,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
                                 // Fastens failure detection.
-                                if (sndState != null && sndState.checkTimeout()) {
+                                if (connRecoverState != null && connRecoverState.checkTimeout()) {
                                     segmentLocalNodeOnSendFail(failedNodes);
 
                                     return; // Nothing to do here.
@@ -3599,7 +3599,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     addFailedNodes(pendingMsg, failedNodes);
 
                                     if (timeoutHelper == null)
-                                        timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
+                                        timeoutHelper = serverOperationTimeoutHelper(connRecoverState, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeMessage(ses, pendingMsg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
@@ -3643,7 +3643,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
+                                    timeoutHelper = serverOperationTimeoutHelper(connRecoverState, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -3742,15 +3742,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
-                        sndState = new CrossRingMessageSendState();
-                    else if (sndState != null && sndState.checkTimeout()) {
+                    if (connRecoverState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                        connRecoverState = new CrossRingMessageSendState();
+                    else if (connRecoverState != null && connRecoverState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
                     }
 
-                    boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
+                    boolean failedNextNode = connRecoverState == null || connRecoverState.markNextNodeFailed();
 
                     if (failedNextNode && !failedNodes.contains(next)) {
                         failedNodes.add(next);
@@ -3767,8 +3767,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                         }
                     }
-                    else if (!failedNextNode && sndState != null && sndState.isBackward()) {
-                        boolean prev = sndState.markLastFailedNodeAlive();
+                    else if (!failedNextNode && connRecoverState != null && connRecoverState.isBackward()) {
+                        boolean prev = connRecoverState.markLastFailedNodeAlive();
 
                         U.warn(log, "Failed to send message to next node, try previous [msg=" + msg +
                             ", next=" + next + ']');
