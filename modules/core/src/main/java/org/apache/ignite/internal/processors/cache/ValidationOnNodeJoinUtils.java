@@ -52,8 +52,8 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -153,7 +153,7 @@ public class ValidationOnNodeJoinUtils {
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
-                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
+                    try (Scope ignored = ctx.security().withContext(secCtx)) {
                         GridCacheProcessor.authorizeCacheCreate(ctx.security(), cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {
