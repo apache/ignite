@@ -20,18 +20,20 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,16 +44,27 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private static final byte ENABLED_MASK = 0x02;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    private IgniteUuid id;
 
     /** Request id. */
-    private final UUID reqId;
+    @Order(value = 1, method = "requestId")
+    private UUID reqId;
 
     /** Cache names. */
-    private final Collection<String> caches;
+    @Order(2)
+    private Collection<String> caches;
 
     /** Flags. */
-    private final byte flags;
+    @Order(3)
+    private byte flags;
+
+    /**
+     * Default constructor.
+     */
+    public CacheStatisticsModeChangeMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor for response.
@@ -59,6 +72,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param req Request message.
      */
     private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
+        id = IgniteUuid.randomUuid();
         reqId = req.reqId;
         caches = null;
 
@@ -73,8 +87,9 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      *
      * @param caches Collection of cache names.
      */
-    public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
-        this.reqId = reqId;
+    public CacheStatisticsModeChangeMessage(Collection<String> caches, boolean enabled) {
+        id = IgniteUuid.randomUuid();
+        reqId = UUID.randomUUID();
         this.caches = Collections.unmodifiableCollection(caches);
 
         byte flags = INITIAL_MSG_MASK;
@@ -83,11 +98,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
             flags |= ENABLED_MASK;
 
         this.flags = flags;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */
@@ -106,11 +116,58 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
+    }
+
+    /**
+     * @param id Custom message ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /**
+     * @return Request id.
+     */
+    public UUID requestId() {
+        return reqId;
+    }
+
+    /**
+     * @param reqId Request id.
+     */
+    public void requestId(UUID reqId) {
+        this.reqId = reqId;
+    }
+
     /**
      * @return Cache names.
      */
     public Collection<String> caches() {
-        return Collections.unmodifiableCollection(caches);
+        return caches;
+    }
+
+    /**
+     * @param caches Cache names.
+     */
+    public void caches(Collection<String> caches) {
+        this.caches = caches;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /**
@@ -127,15 +184,13 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         return (flags & ENABLED_MASK) != 0;
     }
 
-    /**
-     * @return Request id.
-     */
-    public UUID requestId() {
-        return reqId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheStatisticsModeChangeMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 500;
     }
 }
