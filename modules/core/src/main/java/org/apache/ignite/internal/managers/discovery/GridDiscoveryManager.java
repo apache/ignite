@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DefaultCommunicationFailureResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -1279,6 +1281,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
+        WALMode locWalMode = nodeWalMode(locNode);
+
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
@@ -1382,6 +1386,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
+            }
+
+            WALMode rmtWalMode = nodeWalMode(n);
+
+            if (locWalMode != null && rmtWalMode != null && locWalMode != rmtWalMode) {
+                throw new IgniteCheckedException("Remote node has WAL mode different from local " +
+                    "[locId8=" + U.id8(locNode.id()) + ", locWalMode=" + locWalMode +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtWalMode=" + rmtWalMode +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
@@ -2171,6 +2184,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return cache;
+    }
+
+    /**
+     * Extracts WAL mode from marshalled Data Storage Configuration of Cluster node
+     * @param n Cluster node
+     * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got null dsCfg
+     */
+    private WALMode nodeWalMode(ClusterNode n) {
+        Object dsCfgBytes = n.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+        try {
+            if (dsCfgBytes instanceof byte[]) {
+                DataStorageConfiguration dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal(
+                        (byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+
+                if (dsCfg != null)
+                    return dsCfg.getWalMode();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to unmarshal data storage configuration [remoteNode=" + n + "]", e);
+        }
+        return null;
     }
 
     /**
