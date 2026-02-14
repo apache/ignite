@@ -405,12 +405,15 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(node1AliveStatus.get());
 
-        // Wait a bit until node0 restore connection node1.
-        U.sleep(failureDetectionTimeout / 2);
-
         // Node 1 must not be kicked.
-        for (Ignite ig : G.allGrids())
-            assertEquals(3, ig.cluster().nodes().size());
+        assertTrue(waitForCondition(() -> {
+            for (Ignite ig : G.allGrids()) {
+                if (ig.cluster().nodes().size() != 3)
+                    return false;
+            }
+
+            return true;
+        }, failureDetectionTimeout * 3));
     }
 
     /**
@@ -598,7 +601,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             // To make the test stable, we want a loopback paddress of the previous node responds first.
             // We don't need a concurrent ping execution.
             if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, 1);
+                impl = new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
         }
 
         /** */
