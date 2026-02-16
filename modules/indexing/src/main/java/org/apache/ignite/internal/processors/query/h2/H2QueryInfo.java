@@ -302,6 +302,7 @@ public class H2QueryInfo implements TrackableQuery {
         int n = plan.length();
 
         Map<String, String> aliasMap = new HashMap<>();
+
         StringBuilder out = new StringBuilder(n);
 
         for (int l = 0; l < n; ) {
