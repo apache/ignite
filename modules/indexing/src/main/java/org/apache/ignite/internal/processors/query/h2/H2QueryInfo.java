@@ -271,8 +271,7 @@ public class H2QueryInfo implements TrackableQuery {
      * @param endMarker End marker.
      */
     private void removeLineWithPattern(StringBuilder sb, String startPattern, String endMarker) {
-        int searchFrom = 0;
-        int start = sb.indexOf(startPattern, searchFrom);
+        int start = sb.indexOf(startPattern, 0);
 
         while (start != -1) {
             while (start > 0 && sb.charAt(start) != '\n')
@@ -285,8 +284,7 @@ public class H2QueryInfo implements TrackableQuery {
 
             sb.delete(start, end + endMarker.length());
 
-            searchFrom = start;
-            start = sb.indexOf(startPattern, searchFrom);
+            start = sb.indexOf(startPattern, start);
         }
     }
 
