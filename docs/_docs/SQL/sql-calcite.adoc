@@ -20,8 +20,6 @@ Apache Calcite is a dynamic data management framework, which mainly serves for m
 
 The current H2-based SQL engine has a number of fundamental limitations of query execution in a distributed environment. To address these limitations, a new SQL engine was implemented. The new engine uses tools provided by Apache Calcite for parsing and planning queries. It also has a new query execution flow.
 
-CAUTION: The Calcite-based query engine is currently in beta status.
-
 == Calcite Module Libraries
 
 To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.
