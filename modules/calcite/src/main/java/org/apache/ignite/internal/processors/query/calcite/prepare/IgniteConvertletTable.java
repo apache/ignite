@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.math.BigDecimal;
 import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.List;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.RelDataType;
@@ -27,6 +28,9 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -42,6 +46,21 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Ignite convertlet table.
  */
 public class IgniteConvertletTable extends ReflectiveConvertletTable {
+    /**
+     * The call is used to register convertlet for {@code REGEXP_SUBSTR} function, since it is a library function and
+     * Calcite's convertlet table doesn't support it.
+     * The call itself is never used, since we override {@link #get(SqlCall)} method to return convertlet for it.
+     */
+    public static final SqlCall REGEXP_EXTRACT_CALL = new SqlCall(SqlParserPos.ZERO) {
+        @Override public SqlOperator getOperator() {
+            return SqlLibraryOperators.REGEXP_EXTRACT;
+        }
+
+        @Override public List<SqlNode> getOperandList() {
+            return List.of();
+        }
+    };
+
     /** Instance. */
     public static final IgniteConvertletTable INSTANCE = new IgniteConvertletTable();
 
@@ -49,6 +68,7 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
     protected IgniteConvertletTable() {
         // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
+        registerOp(SqlLibraryOperators.REGEXP_SUBSTR, StandardConvertletTable.INSTANCE.get(REGEXP_EXTRACT_CALL));
 
         addAlias(IgniteOwnSqlOperatorTable.LENGTH, SqlStdOperatorTable.CHAR_LENGTH);
     }

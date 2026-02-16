@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -120,8 +120,8 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.LEFT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.LOG;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.MD5;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.MONTHNAME;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_EXTRACT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_REPLACE_3;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_SUBSTR;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
@@ -457,7 +457,7 @@ public class RexImpTable {
             BuiltInMethod.REGEXP_REPLACE4.method,
             BuiltInMethod.REGEXP_REPLACE5_OCCURRENCE.method,
             BuiltInMethod.REGEXP_REPLACE6.method);
-        defineReflective(REGEXP_EXTRACT,
+        defineReflective(REGEXP_SUBSTR,
             BuiltInMethod.REGEXP_EXTRACT2.method,
             BuiltInMethod.REGEXP_EXTRACT3.method,
             BuiltInMethod.REGEXP_EXTRACT4.method);
