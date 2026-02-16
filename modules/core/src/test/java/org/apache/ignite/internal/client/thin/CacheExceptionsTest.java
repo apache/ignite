@@ -41,7 +41,7 @@ public class CacheExceptionsTest extends AbstractThinClientTest {
      * Tests cache name in wrapped cache exception for server errors.
      */
     @Test
-    public void testCacheExceptionWrapped() throws Exception {
+    public void testCacheExceptionWrapped() {
         try (IgniteClient client = startClient(0)) {
             String cacheName = "testCacheName";
 

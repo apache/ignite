@@ -1792,11 +1792,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
-        ) throws ClientException, ClientError {
+        ) throws ClientException {
             try {
                 return delegate.service(op, payloadWriter, payloadReader);
             }
-            catch (ClientException e) {
+            catch (Exception e) {
                 throw convertException(e, cacheName);
             }
         }
@@ -1807,11 +1807,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader,
             List<UUID> targetNodes
-        ) throws ClientException, ClientError {
+        ) throws ClientException {
             try {
                 return delegate.service(op, payloadWriter, payloadReader, targetNodes);
             }
-            catch (ClientException e) {
+            catch (Exception e) {
                 throw convertException(e, cacheName);
             }
         }
@@ -1821,7 +1821,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
-        ) throws ClientException, ClientError {
+        ) {
             CompletableFuture<T> fut = new CompletableFuture<>();
 
             delegate.serviceAsync(op, payloadWriter, payloadReader).whenComplete((res, err) -> {
@@ -1841,11 +1841,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
-        ) throws ClientException, ClientError {
+        ) throws ClientException {
             try {
                 return delegate.affinityService(cacheId, key, op, payloadWriter, payloadReader);
             }
-            catch (ClientException e) {
+            catch (Exception e) {
                 throw convertException(e, cacheName);
             }
         }
@@ -1857,11 +1857,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
-        ) throws ClientException, ClientError {
+        ) throws ClientException {
             try {
                 return delegate.affinityService(cacheId, part, op, payloadWriter, payloadReader);
             }
-            catch (ClientException e) {
+            catch (Exception e) {
                 throw convertException(e, cacheName);
             }
         }
@@ -1873,7 +1873,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader
-        ) throws ClientException, ClientError {
+        ) {
             CompletableFuture<T> fut = new CompletableFuture<>();
 
             delegate.affinityServiceAsync(cacheId, key, op, payloadWriter, payloadReader).whenComplete((res, err) -> {
