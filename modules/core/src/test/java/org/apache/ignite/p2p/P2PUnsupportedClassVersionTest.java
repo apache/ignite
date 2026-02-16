@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -172,21 +173,21 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
 
         /** */
         private void incComputeClassVersion(GridDeploymentResponse resp) {
-            byte[] byteSrc = resp.byteSource();
+            GridByteArrayList byteSrc = U.field(resp, "byteSrc");
 
             // Assert byte array contains class file.
-            assertEquals(0xCAFEBABE, U.bytesToInt(byteSrc, 0));
+            assertEquals(0xCAFEBABE, byteSrc.getInt(0));
 
             // Assert minor version and first byte of major class version is zero.
-            assertEquals(0, byteSrc[4]);
-            assertEquals(0, byteSrc[5]);
-            assertEquals(0, byteSrc[6]);
+            assertEquals(0, byteSrc.get(4));
+            assertEquals(0, byteSrc.get(5));
+            assertEquals(0, byteSrc.get(6));
 
-            byte majorClsVer = byteSrc[7];
+            byte majorClsVer = byteSrc.get(7);
 
-            assertTrue(byteSrc[7] > 0);
+            assertTrue(byteSrc.get(7) > 0);
 
-            byteSrc[7] = (byte)(majorClsVer + 1);
+            byteSrc.set(7, (byte)(majorClsVer + 1));
         }
     }
 

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringBufferInputStream;
 import java.util.Map;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -79,15 +80,16 @@ public class GridTestClassLoader extends ClassLoader {
             InputStream in = getResourceAsStream(path);
 
             if (in != null) {
-                byte[] bytes;
+                GridByteArrayList bytes = new GridByteArrayList(1024);
+
                 try {
-                    bytes = in.readAllBytes();
+                    bytes.readAll(in);
                 }
                 catch (IOException e) {
                     throw new ClassNotFoundException("Failed to upload class ", e);
                 }
 
-                return defineClass(name, bytes, 0, bytes.length);
+                return defineClass(name, bytes.internalArray(), 0, bytes.size());
             }
 
             throw new ClassNotFoundException("Failed to upload resource [class=" + path + ", parent classloader="

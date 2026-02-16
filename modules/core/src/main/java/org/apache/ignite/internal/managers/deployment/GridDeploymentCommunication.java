@@ -34,6 +34,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -260,7 +261,9 @@ class GridDeploymentCommunication {
             }
             else {
                 try {
-                    byte[] bytes = in.readAllBytes();
+                    GridByteArrayList bytes = new GridByteArrayList(1024);
+
+                    bytes.readAll(in);
 
                     res.success(true);
                     res.byteSource(bytes);

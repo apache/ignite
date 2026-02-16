@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -35,7 +36,7 @@ public class GridDeploymentResponse implements Message {
 
     /** Raw class/resource/task. */
     @Order(value = 2, method = "byteSource")
-    private byte[] byteSrc;
+    private GridByteArrayList byteSrc;
 
     /**
      * Default constructor.
@@ -50,7 +51,7 @@ public class GridDeploymentResponse implements Message {
      *
      * @param byteSrc Class/resource/task source.
      */
-    public void byteSource(byte[] byteSrc) {
+    public void byteSource(GridByteArrayList byteSrc) {
         this.byteSrc = byteSrc;
     }
 
@@ -58,7 +59,7 @@ public class GridDeploymentResponse implements Message {
      * Gets raw class/resource or serialized task source as bytes array.
      * @return Class/resource/task source.
      */
-    public byte[] byteSource() {
+    public GridByteArrayList byteSource() {
         return byteSrc;
     }
 
