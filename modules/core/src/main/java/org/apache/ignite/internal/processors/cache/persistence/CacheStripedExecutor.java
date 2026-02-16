@@ -21,26 +21,26 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_LOCK_HOLD_COUNT;
 
-/** Wrapper over {@link StripedExecutor}, that groups submitted tasks by cache group and partition. */
+/** Wrapper over {@link IgniteStripedExecutor}, that groups submitted tasks by cache group and partition. */
 public class CacheStripedExecutor {
     /** Error appeared during submitted task execution. */
     private final AtomicReference<IgniteCheckedException> error = new AtomicReference<>();
 
     /** Delegate striped executor. */
-    private final StripedExecutor exec;
+    private final IgniteStripedExecutor exec;
 
     /** Limit number of concurrent tasks submitted to the executor. Helps to avoid OOM error. */
     private final Semaphore semaphore;
 
     /** */
-    public CacheStripedExecutor(StripedExecutor exec) {
+    public CacheStripedExecutor(IgniteStripedExecutor exec) {
         this.exec = exec;
 
         semaphore = new Semaphore(semaphorePermits(exec));
@@ -117,7 +117,7 @@ public class CacheStripedExecutor {
     }
 
     /** @return Underlying striped executor. */
-    public StripedExecutor executor() {
+    public IgniteStripedExecutor executor() {
         return exec;
     }
 
@@ -127,7 +127,7 @@ public class CacheStripedExecutor {
      * @param exec Striped executor.
      * @return Number of permits.
      */
-    private int semaphorePermits(StripedExecutor exec) {
+    private int semaphorePermits(IgniteStripedExecutor exec) {
         // 4 task per-stripe by default.
         int permits = exec.stripesCount() * 4;
 
