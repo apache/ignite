@@ -570,7 +570,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         List<SqlPlanHistoryView> plans = getSqlPlanHistory();
 
-        assertEquals("Expected 1 unique plan, got " + plans.size() + ": " + plans, 1, plans.size());
+        assertEquals("Expected 1 unique plan, got " + plans.size(), 1, plans.size());
     }
 
     /**
