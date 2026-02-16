@@ -131,7 +131,7 @@ public class H2QueryInfo implements TrackableQuery {
         if (plan == null) {
             String plan0 = stmt.getPlanSQL();
 
-            plan = (plan0 != null) ? cleanPlan(plan0) : "";
+            plan = (plan0 != null) ? normalizePlan(plan0) : "";
         }
 
         return plan;
@@ -140,7 +140,7 @@ public class H2QueryInfo implements TrackableQuery {
     /**
      * @param plan Plan.
      */
-    private String cleanPlan(String plan) {
+    private String normalizePlan(String plan) {
         plan = planWithoutScanCount(plan);
         plan = planWithoutSystemAliases(plan);
 
