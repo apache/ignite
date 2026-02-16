@@ -36,6 +36,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.BinaryMetadataVersionInfoSerializer;
 import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer;
+import org.apache.ignite.internal.codegen.CacheContinuousQueryEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.codegen.CacheEntryPredicateAdapterSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
@@ -440,7 +441,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)93, CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer());
         factory.register((short)94, IgniteTxKey::new, new IgniteTxKeySerializer());
         factory.register((short)95, DataStreamerEntry::new);
-        factory.register((short)96, CacheContinuousQueryEntry::new);
+        factory.register((short)96, CacheContinuousQueryEntry::new, new CacheContinuousQueryEntrySerializer());
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
         factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
         factory.register((short)100, IgniteTxEntry::new);
