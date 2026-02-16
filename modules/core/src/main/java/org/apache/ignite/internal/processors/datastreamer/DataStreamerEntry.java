@@ -17,26 +17,26 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
+    @Order(value = 0, method = "keyCacheObject")
     @GridToStringInclude
     protected KeyCacheObject key;
 
     /** */
+    @Order(value = 1, method = "valueCacheObject")
     @GridToStringInclude
     protected CacheObject val;
 
@@ -96,63 +96,36 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeKeyCacheObject(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCacheObject(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                key = reader.readKeyCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                val = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 95;
+    }
+
+    /**
+     * @return Key.
+     */
+    public KeyCacheObject keyCacheObject() {
+        return key;
+    }
+
+    /**
+     * @param key New key.
+     */
+    public void keyCacheObject(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /**
+     * @return Value.
+     */
+    public CacheObject valueCacheObject() {
+        return val;
+    }
+
+    /**
+     * @param val New value.
+     */
+    public void valueCacheObject(CacheObject val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
