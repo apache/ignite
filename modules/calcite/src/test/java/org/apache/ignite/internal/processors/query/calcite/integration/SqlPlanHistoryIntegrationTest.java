@@ -559,8 +559,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void testH2AutoAliasInPlanHistory() throws Exception {
         assumeTrue(IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine));
 
-        assumeFalse(isPerfStatsEnabled);
-
         startTestGrid();
 
         IgniteCache<Integer, String> cache = queryNode().cache("A");
