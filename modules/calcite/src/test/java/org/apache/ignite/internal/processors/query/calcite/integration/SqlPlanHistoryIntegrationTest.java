@@ -580,7 +580,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             .map(SqlPlanHistoryView::plan)
             .collect(Collectors.toList());
 
-        assertEquals("Expected 1 unique plan, got " + plans.size() + ": " + plans, plans.size(), 1);
+        assertEquals("Expected 1 unique plan, got " + plans.size() + ": " + plans, 1, plans.size());
     }
 
     /**
