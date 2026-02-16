@@ -264,24 +264,7 @@ public class GridJobExecuteResponse implements Message {
      * Serializes user data to byte[] with provided marshaller.
      * Erases non-marshalled data like {@link #getJobAttributes()} or {@link #getJobResult()}.
      */
-    public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) {
-        if (gridEx != null) {
-            try {
-                gridExBytes = U.marshal(marsh, gridEx);
-            }
-            catch (IgniteCheckedException e) {
-                gridExBytes = null;
-
-                String msg = "Failed to serialize job exception [nodeId=" + nodeId +
-                    ", ses=" + sesId + ", jobId=" + jobId +
-                    ", msg=\"" + e.getMessage() + "\"]";
-
-                wrapSerializationError(e, msg, log);
-            }
-
-            gridEx = null;
-        }
-
+    public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) throws IgniteCheckedException {
         if (res != null) {
             try {
                 resBytes = U.marshal(marsh, res);
@@ -315,6 +298,27 @@ public class GridJobExecuteResponse implements Message {
 
             jobAttrs = null;
         }
+
+        if (gridEx != null) {
+            try {
+                gridExBytes = U.marshal(marsh, gridEx);
+            }
+            catch (IgniteCheckedException e) {
+                String msg = "Failed to serialize job exception [nodeId=" + nodeId +
+                    ", ses=" + sesId + ", jobId=" + jobId +
+                    ", msg=\"" + e.getMessage() + "\"]";
+
+                wrapSerializationError(e, msg, log);
+
+                gridEx = new IgniteException(msg);
+
+                U.error(log, msg, e);
+
+                gridExBytes = U.marshal(marsh, gridEx);
+            }
+
+            gridEx = null;
+        }
     }
 
     /**
@@ -344,9 +348,9 @@ public class GridJobExecuteResponse implements Message {
     /** */
     private void wrapSerializationError(IgniteCheckedException e, String msg, @Nullable IgniteLogger log) {
         if (gridEx != null)
-            e.addSuppressed(gridEx);
-
-        gridEx = U.convertException(e);
+            gridEx.addSuppressed(e);
+        else
+            gridEx = U.convertException(e);
 
         if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
             U.error(log, msg, e);
