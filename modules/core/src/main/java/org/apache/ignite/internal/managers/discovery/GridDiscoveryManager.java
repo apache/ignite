@@ -72,7 +72,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -86,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -2187,24 +2187,34 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param node Cluster node to extract Data storage configuration.
+     * @param ctx Context.
+     * @return Data storage configuration
+     */
+    private static DataStorageConfiguration extractDataStorage(ClusterNode node, GridKernalContext ctx) throws IgniteException {
+        return GridCacheUtils.extractDataStorage(
+                node,
+                ctx.marshallerContext().jdkMarshaller(),
+                U.resolveClassLoader(ctx.config())
+        );
+    }
+
+    /**
      * Extracts WAL mode from marshalled Data Storage Configuration of Cluster node
-     * @param n Cluster node
+     * @param node Cluster node
      * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got null dsCfg
      */
-    private WALMode nodeWalMode(ClusterNode n) {
-        Object dsCfgBytes = n.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+    private WALMode nodeWalMode(ClusterNode node) {
         try {
-            if (dsCfgBytes instanceof byte[]) {
-                DataStorageConfiguration dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal(
-                        (byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+            DataStorageConfiguration dsCfg = extractDataStorage(node, ctx);
 
-                if (dsCfg != null)
-                    return dsCfg.getWalMode();
-            }
+            if (dsCfg != null)
+                return dsCfg.getWalMode();
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal data storage configuration [remoteNode=" + n + "]", e);
+        catch (IgniteException e) {
+            U.error(log, "Failed to unmarshal data storage configuration [remoteNode=" + node + "]", e);
         }
+
         return null;
     }
 
