@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.codegen;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.TestMessage;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.TestMessage;
 
 /**
  * This class is generated automatically.
@@ -33,10 +32,8 @@ import org.apache.ignite.internal.TestMessage;
  */
 public class TestMessageSerializer implements MessageSerializer {
     /** */
-    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, MessageWriter writer) {
         TestMessage msg = (TestMessage)m;
-
-        writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -118,16 +115,31 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 12:
+                if (!writer.writeKeyCacheObject(msg.keyCacheObject()))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeCacheObject(msg.cacheObject()))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeGridLongList(msg.gridLongList()))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
     }
 
     /** */
-    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, MessageReader reader) {
         TestMessage msg = (TestMessage)m;
-
-        reader.setBuffer(buf);
 
         switch (reader.state()) {
             case 0:
@@ -226,6 +238,29 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 reader.incrementState();
 
+            case 12:
+                msg.keyCacheObject(reader.readKeyCacheObject());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                msg.cacheObject(reader.readCacheObject());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                msg.gridLongList(reader.readGridLongList());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;

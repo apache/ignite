@@ -42,7 +42,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -325,10 +324,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
             assert fieldDesc != null;
 
-            boolean descending = keyDef.getValue().order().sortOrder() == SortOrder.DESC;
             int fieldIdx = fieldDesc.fieldIndex();
 
-            collations.add(TraitUtils.createFieldCollation(fieldIdx, !descending));
+            collations.add(TraitUtils.createFieldCollation(fieldIdx, keyDef.getValue().ascending()));
         }
 
         return RelCollations.of(collations);
@@ -367,7 +365,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
+        // Can't change deterministic flag on SqlUserDefinedFunction, at least store this flag in wrapped function
+        // to process it in Ignite-controlled code.
+        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method, deterministic));
 
         rebuild();
     }

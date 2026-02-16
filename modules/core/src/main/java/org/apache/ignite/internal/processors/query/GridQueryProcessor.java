@@ -250,8 +250,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Coordinator node (initialized lazily). */
     private ClusterNode crd;
 
-    /** Registered cache names. */
-    private final Collection<String> cacheNames = ConcurrentHashMap.newKeySet();
+    /** Registered cache names to schema mapping. */
+    private final Map<String, String> cacheNamesToSchema = new ConcurrentHashMap();
 
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
@@ -976,7 +976,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         boolean cacheExists = cacheDesc != null && Objects.equals(msg.deploymentId(), cacheDesc.deploymentId());
 
-        boolean cacheRegistered = cacheExists && cacheNames.contains(cacheName);
+        boolean cacheRegistered = cacheExists && cacheNamesToSchema.containsKey(cacheName);
 
         // Validate schema state and decide whether we should proceed or not.
         SchemaAbstractOperation op = msg.operation();
@@ -1696,8 +1696,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         else if (op instanceof SchemaAddQueryEntityOperation) {
-            if (cacheNames.contains(op.cacheName()))
-                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, op.cacheName());
+            String cacheSchema = cacheNamesToSchema.get(cacheName);
+
+            if (cacheSchema != null) {
+                if (!Objects.equals(cacheSchema, op.schemaName()))
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INVALID_SCHEMA, op.schemaName());
+                else {
+                    for (QueryTypeIdKey t : types.keySet()) {
+                        if (Objects.equals(t.cacheName(), cacheName)) {
+                            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, cacheName);
+
+                            break;
+                        }
+                    }
+                }
+            }
         }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
@@ -1745,8 +1758,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         SchemaOperationException err = null;
 
         if (op instanceof SchemaAddQueryEntityOperation) {
-            if (cacheSupportSql(desc.cacheConfiguration()))
+            CacheConfiguration<?, ?> ccfg = desc.cacheConfiguration();
+
+            if (!F.isEmpty(ccfg.getQueryEntities()))
                 err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, desc.cacheName());
+            else if (!F.isEmpty(ccfg.getSqlSchema()) && !Objects.equals(ccfg.getSqlSchema(), op.schemaName()))
+                err = new SchemaOperationException(SchemaOperationException.CODE_INVALID_SCHEMA, op.schemaName());
 
             return new T2<>(nop, err);
         }
@@ -2173,15 +2190,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAddQueryEntityOperation) {
                 SchemaAddQueryEntityOperation op0 = (SchemaAddQueryEntityOperation)op;
 
-                if (!cacheNames.contains(op0.cacheName())) {
-                    cacheInfo.onSchemaAddQueryEntity(op0);
+                cacheInfo.onSchemaAddQueryEntity(op0);
 
-                    T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
-                        candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
-                        op0.isSqlEscape());
+                T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                    candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
+                    op0.isSqlEscape());
 
-                    registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
-                }
+                registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
 
                 if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
                     rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, cancelTok);
@@ -2350,7 +2365,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean isSql
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
-            if (moduleEnabled()) {
+            if (moduleEnabled() && !cacheNamesToSchema.containsKey(cacheName)) {
                 ctx.indexProcessor().idxRowCacheRegistry().onCacheRegistered(cacheInfo);
 
                 schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());
@@ -2391,7 +2406,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         schemaMgr.onCacheTypeCreated(cacheInfo, desc, isSql);
                 }
 
-                cacheNames.add(CU.mask(cacheName));
+                cacheNamesToSchema.putIfAbsent(CU.mask(cacheName), schemaName);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 onCacheStop0(cacheInfo, true, true);
@@ -2410,7 +2425,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clearIdx Clear flag.
      */
     public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy, boolean clearIdx) {
-        if (!moduleEnabled() || !cacheNames.contains(cacheInfo.name()))
+        if (!moduleEnabled() || !cacheNamesToSchema.containsKey(cacheInfo.name()))
             return;
 
         String cacheName = cacheInfo.name();
@@ -2462,7 +2477,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to clear schema manager on cache unregister (will ignore): " + cacheName, e);
             }
 
-            cacheNames.remove(cacheName);
+            cacheNamesToSchema.remove(cacheName);
 
             Iterator<Long> missedCacheTypeIter = missedCacheTypes.iterator();
 
@@ -3527,7 +3542,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qryParallelism != null && qryParallelism > 1 && cfg.getCacheMode() != PARTITIONED)
             throw new IgniteSQLException("Segmented indices are supported for PARTITIONED mode only.");
 
-        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(ctx, entity, sqlEscape);
+        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(ctx.recoveryMode(), entity, sqlEscape);
 
         SchemaAddQueryEntityOperation op = new SchemaAddQueryEntityOperation(
                 UUID.randomUUID(),

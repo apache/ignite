@@ -22,8 +22,12 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -37,7 +41,10 @@ public interface MessageReader {
      *
      * @param buf Byte buffer.
      */
-    public void setBuffer(ByteBuffer buf);
+    @Deprecated
+    public default void setBuffer(ByteBuffer buf) {
+        // No-op.
+    }
 
     /**
      * Reads {@code byte} value.
@@ -195,23 +202,53 @@ public interface MessageReader {
     public <T extends Message> T readMessage();
 
     /**
+     * Reads {@link CacheObject}.
+     *
+     * @return Cache object.
+     */
+    public CacheObject readCacheObject();
+
+    /**
+     * Reads {@link KeyCacheObject}.
+     *
+     * @return Key cache object.
+     */
+    public KeyCacheObject readKeyCacheObject();
+
+    /**
+     * Reads {@link GridLongList}.
+     *
+     * @return Grid long list.
+     */
+    public GridLongList readGridLongList();
+
+    /**
      * Reads array of objects.
      *
      * @param itemType Array component type.
      * @param itemCls Array component class.
-     * @param <T> Type of the red object .
+     * @param <T> Type of the read object.
      * @return Array of objects.
      */
     public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls);
 
     /**
-     * Reads collection.
+     * Reads any collection.
      *
      * @param itemType Collection item type.
-     * @param <C> Type of the red collection.
+     * @param <C> Type of the read collection.
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType);
+
+    /**
+     * Reads any collection and provides it as a set.
+     *
+     * @param itemType Set item type.
+     * @param <S> Type of the read set.
+     * @return Set.
+     */
+    public <S extends Set<?>> S readSet(MessageCollectionItemType itemType);
 
     /**
      * Reads map.
@@ -219,7 +256,7 @@ public interface MessageReader {
      * @param keyType Map key type.
      * @param valType Map value type.
      * @param linked Whether {@link LinkedHashMap} should be created.
-     * @param <M> Type of the red map.
+     * @param <M> Type of the read map.
      * @return Map.
      */
     // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter

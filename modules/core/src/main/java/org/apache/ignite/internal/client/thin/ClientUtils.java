@@ -62,6 +62,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.CACHE_STORAGES;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.QRY_INITIATOR_ID;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -241,8 +243,11 @@ public final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, boolean sql, BinaryOutputStream out, ProtocolContext protocolCtx) {
         try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), out, null)) {
+            if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.SQL_CACHE_CREATION))
+                out.writeBoolean(sql);
+
             int origPos = out.position();
 
             writer.writeInt(0); // configuration length is to be assigned in the end
@@ -516,7 +521,7 @@ public final class ClientUtils {
     }
 
     /** Serialize SQL field query to stream. */
-    void write(SqlFieldsQuery qry, BinaryOutputStream out) {
+    void write(SqlFieldsQuery qry, BinaryOutputStream out, ProtocolContext protocolCtx) {
         writeObject(out, qry.getSchema());
         out.writeInt(qry.getPageSize());
         out.writeInt(-1); // do not limit
@@ -532,16 +537,21 @@ public final class ClientUtils {
         out.writeLong(qry.getTimeout());
         out.writeBoolean(true); // include column names
 
-        if (qry.getPartitions() != null) {
-            out.writeInt(qry.getPartitions().length);
+        if (protocolCtx.isFeatureSupported(QRY_PARTITIONS_BATCH_SIZE)) {
+            if (qry.getPartitions() != null) {
+                out.writeInt(qry.getPartitions().length);
 
-            for (int part : qry.getPartitions())
-                out.writeInt(part);
+                for (int part : qry.getPartitions())
+                    out.writeInt(part);
+            }
+            else
+                out.writeInt(-1);
+
+            out.writeInt(qry.getUpdateBatchSize());
         }
-        else
-            out.writeInt(-1);
 
-        out.writeInt(qry.getUpdateBatchSize());
+        if (protocolCtx.isFeatureSupported(QRY_INITIATOR_ID))
+            writeObject(out, qry.getQueryInitiatorId());
     }
 
     /** Write Ignite binary object to output stream. */

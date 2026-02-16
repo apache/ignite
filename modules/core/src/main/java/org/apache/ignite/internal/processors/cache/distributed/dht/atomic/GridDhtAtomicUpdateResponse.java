@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -30,9 +29,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * DHT atomic cache backup update response.
@@ -42,17 +38,20 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future version. */
+    @Order(value = 4, method = "futureId")
     private long futId;
 
     /** */
+    @Order(value = 5, method = "errors")
     private UpdateErrors errs;
 
     /** Evicted readers. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(6)
     private List<KeyCacheObject> nearEvicted;
 
     /** */
+    @Order(value = 7, method = "partition")
     private int partId;
 
     /**
@@ -88,6 +87,27 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     }
 
     /**
+     * @param futId New future version.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /**
+     * @return Errors.
+     */
+    public UpdateErrors errors() {
+        return errs;
+    }
+
+    /**
+     * @param errs Errors.
+     */
+    public void errors(UpdateErrors errs) {
+        this.errs = errs;
+    }
+
+    /**
      * Sets update error.
      *
      * @param err Error.
@@ -96,18 +116,18 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.onError(err);
+        errs.error(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
+    @Override public Throwable error() {
         return errs != null ? errs.error() : null;
     }
 
     /**
      * @return Evicted readers.
      */
-    Collection<KeyCacheObject> nearEvicted() {
+    public Collection<KeyCacheObject> nearEvicted() {
         return nearEvicted;
     }
 
@@ -121,6 +141,13 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId Partition.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
@@ -158,95 +185,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeMessage(errs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt(partId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errs = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                nearEvicted = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                partId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

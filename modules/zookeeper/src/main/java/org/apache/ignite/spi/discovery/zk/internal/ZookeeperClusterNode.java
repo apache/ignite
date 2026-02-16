@@ -380,6 +380,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "ZookeeperClusterNode [id=" + id +
+            ", dataCenterId=" + dataCenterId() +
             ", addrs=" + addrs +
             ", order=" + order +
             ", loc=" + loc +

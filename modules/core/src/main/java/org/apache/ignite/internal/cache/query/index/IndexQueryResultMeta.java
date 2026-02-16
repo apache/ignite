@@ -17,32 +17,36 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
  * Thick client nodes may have irrelevant information about index structure, {@link MetaPageInfo}.
  */
-public class IndexQueryResultMeta implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IndexQueryResultMeta implements Message {
     /** Index key settings. */
+    @Order(0)
     private IndexKeyTypeSettings keyTypeSettings;
 
-    /** Index key definitions. */
-    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+    /** Index names order holder. Should be serialized together with  the definitions. */
+    @Order(value = 1, method = "orderedIndexNames")
+    private @Nullable String[] idxNames;
+
+    /** Index definitions serialization holder. Should be serialized together with the names. */
+    @Order(value = 2, method = "orderedIndexDefinitions")
+    private @Nullable IndexKeyDefinition[] idxDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -53,15 +57,24 @@ public class IndexQueryResultMeta implements Externalizable {
     public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
         keyTypeSettings = def.keyTypeSettings();
 
-        keyDefs = new LinkedHashMap<>();
-
         Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
 
-        for (int i = 0; i < critSize; i++) {
-            Map.Entry<String, IndexKeyDefinition> key = keys.next();
+        if (critSize > 0) {
+            idxNames = new String[critSize];
+            idxDefs = new IndexKeyDefinition[critSize];
 
-            keyDefs.put(key.getKey(), key.getValue());
+            for (int i = 0; i < critSize; i++) {
+                Map.Entry<String, IndexKeyDefinition> key = keys.next();
+
+                idxNames[i] = key.getKey();
+                idxDefs[i] = key.getValue();
+            }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 18;
     }
 
     /** */
@@ -70,21 +83,43 @@ public class IndexQueryResultMeta implements Externalizable {
     }
 
     /** */
+    public void keyTypeSettings(IndexKeyTypeSettings keyTypeSettings) {
+        this.keyTypeSettings = keyTypeSettings;
+    }
+
+    /** @return Map of index definitions with proper order. */
     public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
-        return keyDefs;
+        if (F.isEmpty(idxNames) && F.isEmpty(idxDefs))
+            return U.newLinkedHashMap(0);
+
+        assert idxNames.length == idxDefs.length : "Number of index names and index definitions must be equal " +
+            "[idxNames=" + Arrays.toString(idxNames) + ", idxDefs=" + Arrays.toString(idxDefs) + "]";
+
+        LinkedHashMap<String, IndexKeyDefinition> idxDefsMap = U.newLinkedHashMap(idxNames.length);
+
+        for (int i = 0; i < idxNames.length; i++)
+            idxDefsMap.put(idxNames[i], idxDefs[i]);
+
+        return idxDefsMap;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(keyTypeSettings);
-
-        U.writeMap(out, keyDefs);
+    /** @return Index names with proper order. */
+    public @Nullable String[] orderedIndexNames() {
+        return idxNames;
     }
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        keyTypeSettings = (IndexKeyTypeSettings)in.readObject();
+    /** Stores index names with proper order to build the linked map later. */
+    public void orderedIndexNames(@Nullable String[] idxNames) {
+        this.idxNames = idxNames;
+    }
 
-        keyDefs = U.readLinkedMap(in);
+    /** @return Index definitions with proper order. */
+    public @Nullable IndexKeyDefinition[] orderedIndexDefinitions() {
+        return idxDefs;
+    }
+
+    /** Process the index definitions with proper order and buils the linked map. */
+    public void orderedIndexDefinitions(@Nullable IndexKeyDefinition[] idxDefs) {
+        this.idxDefs = idxDefs;
     }
 }

@@ -22,13 +22,20 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -212,6 +220,10 @@ public class DirectByteBufferStream {
     @GridToStringExclude
     private final MessageFactory msgFactory;
 
+    /** Is required to instantiate {@link CacheObject} while reading messages. */
+    @GridToStringExclude
+    private final IgniteCacheObjectProcessor cacheObjProc;
+
     /** */
     @GridToStringExclude
     protected ByteBuffer buf;
@@ -313,10 +325,41 @@ public class DirectByteBufferStream {
     private int topVerMinor;
 
     /**
+     * This field represents a phase of reading or writing {@code CacheObject} object enabling ser/des mechanism to keep
+     * track of fields that are already read/written.
+     */
+    private byte cacheObjState;
+
+    /** */
+    private byte[] cacheObjArr;
+
+    /** */
+    private int keyCacheObjPart;
+
+    /** */
+    private byte cacheObjType;
+
+    /**
+     * Constructror for stream used for writing messages.
+     *
      * @param msgFactory Message factory.
      */
     public DirectByteBufferStream(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
+
+        // Is not used while writing messages.
+        cacheObjProc = null;
+    }
+
+    /**
+     * Constructror for stream used for reading messages.
+     *
+     * @param msgFactory Message factory.
+     * @param cacheObjProc Cache object processor.
+     */
+    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+        this.msgFactory = msgFactory;
+        this.cacheObjProc = cacheObjProc;
     }
 
     /**
@@ -752,6 +795,88 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param obj Cache object.
+     */
+    public void writeCacheObject(CacheObject obj) {
+        try {
+            if (obj != null) {
+                switch (cacheObjState) {
+                    case 0:
+                        writeByte(obj.cacheObjectType());
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState++;
+
+                    case 1:
+                        writeByteArray(obj.valueBytes(null));
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState = 0;
+                }
+            }
+            else
+                writeByte((byte)-1);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param keyObj Key cache object.
+     */
+    public void writeKeyCacheObject(KeyCacheObject keyObj) {
+        try {
+            if (keyObj != null) {
+                switch (cacheObjState) {
+                    case 0:
+                        writeByte(keyObj.cacheObjectType());
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState++;
+
+                    case 1:
+                        writeByteArray(keyObj.valueBytes(null));
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState++;
+
+                    case 2:
+                        writeInt(keyObj.partition());
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState = 0;
+                }
+            }
+            else
+                writeByte((byte)-1);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param val Value.
+     */
+    public void writeGridLongList(@Nullable GridLongList val) {
+        if (val != null)
+            writeLongArray(val.array(), val.size());
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param msg Message.
      * @param writer Writer.
      */
@@ -761,7 +886,7 @@ public class DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
+                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1314,6 +1439,83 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @return Value.
+     */
+    public KeyCacheObject readKeyCacheObject() {
+        switch (cacheObjState) {
+            case 0:
+                cacheObjType = readByte();
+
+                if (!lastFinished || cacheObjType == (byte)-1)
+                    return null;
+
+                cacheObjState++;
+
+            case 1:
+                cacheObjArr = readByteArray();
+
+                if (!lastFinished)
+                    return null;
+
+                cacheObjState++;
+
+            case 2:
+                keyCacheObjPart = readInt();
+
+                if (!lastFinished)
+                    return null;
+
+                cacheObjState = 0;
+        }
+
+        try {
+            KeyCacheObject key = cacheObjProc.toKeyCacheObject(null, cacheObjType, cacheObjArr);
+
+            if (keyCacheObjPart != -1)
+                key.partition(keyCacheObjPart);
+
+            return key;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @return Value.
+     */
+    public CacheObject readCacheObject() {
+        switch (cacheObjState) {
+            case 0:
+                cacheObjType = readByte();
+
+                if (!lastFinished || cacheObjType == (byte)-1)
+                    return null;
+
+                cacheObjState++;
+
+            case 1:
+                cacheObjArr = readByteArray();
+
+                if (!lastFinished)
+                    return null;
+
+                cacheObjState = 0;
+        }
+
+        return cacheObjProc.toCacheObject(null, cacheObjType, cacheObjArr);
+    }
+
+    /**
+     * @return Value.
+     */
+    public GridLongList readGridLongList() {
+        long[] arr = readLongArray();
+
+        return arr != null ? new GridLongList(arr) : null;
+    }
+
+    /**
      * @param reader Reader.
      * @return Message.
      */
@@ -1336,7 +1538,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, buf, reader);
+                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
             }
             finally {
                 reader.afterInnerMessageRead(lastFinished);
@@ -1401,11 +1603,36 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * Reads collection as an {@link ArrayList}.
+     *
      * @param itemType Item type.
      * @param reader Reader.
-     * @return Collection.
+     * @return {@link ArrayList}.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader) {
+    public <L extends List<?>> L readList(MessageCollectionItemType itemType, MessageReader reader) {
+        return readCollection(itemType, reader, false);
+    }
+
+    /**
+     * Reads collection as a {@link HashSet}.
+     *
+     * @param itemType Item type.
+     * @param reader Reader.
+     * @return {@link HashSet}.
+     */
+    public <SET extends Set<?>> SET readSet(MessageCollectionItemType itemType, MessageReader reader) {
+        return readCollection(itemType, reader, true);
+    }
+
+    /**
+     * Reads collection eather as a {@link ArrayList} or a {@link HashSet}.
+     *
+     * @param itemType Item type.
+     * @param reader Reader.
+     * @param set Read-as-Set flag.
+     * @return {@link ArrayList} or a {@link HashSet}.
+     */
+    private <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader, boolean set) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1417,7 +1644,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = new ArrayList<>(readSize);
+                col = set ? U.newHashSet(readSize) : new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);
@@ -1862,6 +2089,22 @@ public class DirectByteBufferStream {
                 writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
                 break;
+
+            case KEY_CACHE_OBJECT:
+                writeKeyCacheObject((KeyCacheObject)val);
+
+                break;
+
+            case CACHE_OBJECT:
+                writeCacheObject((CacheObject)val);
+
+                break;
+
+            case GRID_LONG_LIST:
+                writeGridLongList((GridLongList)val);
+
+                break;
+
             case MSG:
                 try {
                     if (val != null)
@@ -1950,6 +2193,15 @@ public class DirectByteBufferStream {
 
             case AFFINITY_TOPOLOGY_VERSION:
                 return readAffinityTopologyVersion();
+
+            case KEY_CACHE_OBJECT:
+                return readKeyCacheObject();
+
+            case CACHE_OBJECT:
+                return readCacheObject();
+
+            case GRID_LONG_LIST:
+                return readGridLongList();
 
             case MSG:
                 return readMessage(reader);

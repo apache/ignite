@@ -31,8 +31,9 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
     @Test
     public void testQueryBlockingUnblocking() throws Exception {
         long waitTimeout = 10_000L;
+        long waitTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(waitTimeout);
 
-        QueryTasksQueue queue = new QueryTasksQueue();
+        QueryTasksQueue queue = new QueryTasksQueue(1);
         UUID qryId1 = UUID.randomUUID();
         UUID qryId2 = UUID.randomUUID();
         QueryKey qryKey1 = new QueryKey(qryId1, 0);
@@ -46,13 +47,13 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         queue.addTask(new TestQueryAwareTask(qryKey1));
         queue.addTask(new TestQueryAwareTask(qryKey3));
 
-        QueryAwareTask task = queue.pollTaskAndBlockQuery(waitTimeout, TimeUnit.MILLISECONDS);
+        QueryAwareTask task = queue.pollTaskAndBlockQuery(waitTimeoutNanos);
         assertEquals(qryKey1, task.queryKey());
 
-        task = queue.pollTaskAndBlockQuery(waitTimeout, TimeUnit.MILLISECONDS);
+        task = queue.pollTaskAndBlockQuery(waitTimeoutNanos);
         assertEquals(qryKey2, task.queryKey());
 
-        task = queue.pollTaskAndBlockQuery(waitTimeout, TimeUnit.MILLISECONDS);
+        task = queue.pollTaskAndBlockQuery(waitTimeoutNanos);
         assertEquals(qryKey3, task.queryKey());
 
         // Test threads parking and unparking.
@@ -60,21 +61,19 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
 
         Runnable pollAndStoreResult = () -> {
             try {
-                res[0] = queue.pollTaskAndBlockQuery(waitTimeout, TimeUnit.MILLISECONDS);
+                res[0] = queue.pollTaskAndBlockQuery(waitTimeoutNanos);
             }
             catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         };
 
-        // Unparking on unblock query.
+        // Query unblock check.
         Thread thread1 = new Thread(pollAndStoreResult);
 
-        thread1.start();
-
-        assertTrue(GridTestUtils.waitForCondition(() -> thread1.getState() == Thread.State.TIMED_WAITING, waitTimeout));
-
         queue.unblockQuery(qryKey2);
+
+        thread1.start();
 
         thread1.join(waitTimeout);
 
@@ -104,17 +103,15 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         queue.unblockQuery(qryKey2);
         queue.unblockQuery(qryKey3);
 
-        task = queue.pollTaskAndBlockQuery(waitTimeout, TimeUnit.MILLISECONDS);
+        task = queue.pollTaskAndBlockQuery(waitTimeoutNanos);
         assertEquals(qryKey1, task.queryKey());
 
-        // Unparking on unblock query second time.
+        // Query unblock check second time.
         Thread thread3 = new Thread(pollAndStoreResult);
 
-        thread3.start();
-
-        assertTrue(GridTestUtils.waitForCondition(() -> thread3.getState() == Thread.State.TIMED_WAITING, waitTimeout));
-
         queue.unblockQuery(qryKey1);
+
+        thread3.start();
 
         thread3.join(waitTimeout);
 
@@ -128,7 +125,7 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testToArray() {
-        QueryTasksQueue queue = new QueryTasksQueue();
+        QueryTasksQueue queue = new QueryTasksQueue(1);
 
         QueryKey qryKey1 = new QueryKey(UUID.randomUUID(), 0);
         QueryKey qryKey2 = new QueryKey(UUID.randomUUID(), 1);
@@ -169,7 +166,7 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDrainTo() {
-        QueryTasksQueue queue = new QueryTasksQueue();
+        QueryTasksQueue queue = new QueryTasksQueue(1);
 
         QueryKey qryKey1 = new QueryKey(UUID.randomUUID(), 0);
         QueryKey qryKey2 = new QueryKey(UUID.randomUUID(), 1);
@@ -210,7 +207,7 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() {
-        QueryTasksQueue queue = new QueryTasksQueue();
+        QueryTasksQueue queue = new QueryTasksQueue(1);
 
         QueryKey qryKey1 = new QueryKey(UUID.randomUUID(), 0);
         QueryKey qryKey2 = new QueryKey(UUID.randomUUID(), 1);

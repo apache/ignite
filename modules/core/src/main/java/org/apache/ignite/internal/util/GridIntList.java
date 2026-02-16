@@ -22,25 +22,22 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.plugin.extensions.communication.Message;
+
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_INTS;
 
 /**
  * Minimal list API to work with primitive ints. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
-public class GridIntList implements Message, Externalizable {
+public class GridIntList implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(0)
     private int[] arr;
 
     /** */
-    @Order(1)
     private int idx;
 
     /**
@@ -65,54 +62,6 @@ public class GridIntList implements Message, Externalizable {
         this.arr = arr;
 
         idx = arr.length;
-    }
-
-    /**
-     * @param vals Values.
-     * @return List from values.
-     */
-    public static GridIntList asList(int... vals) {
-        if (F.isEmpty(vals))
-            return new GridIntList();
-
-        return new GridIntList(vals);
-    }
-
-    /**
-     * @param arr Array.
-     * @param size Size.
-     */
-    private GridIntList(int[] arr, int size) {
-        this.arr = arr;
-        idx = size;
-    }
-
-    /**
-     * @return Array.
-     */
-    public int[] arr() {
-        return arr;
-    }
-
-    /**
-     * @param arr New array.
-     */
-    public void arr(int[] arr) {
-        this.arr = arr;
-    }
-
-    /**
-     * @return Index.
-     */
-    public int idx() {
-        return idx;
-    }
-
-    /**
-     * @param idx New index.
-     */
-    public void idx(int idx) {
-        this.idx = idx;
     }
 
     /** {@inheritDoc} */
@@ -162,44 +111,6 @@ public class GridIntList implements Message, Externalizable {
             arr = Arrays.copyOf(arr, arr.length << 1);
 
         arr[idx++] = x;
-    }
-
-    /**
-     * Returns (possibly reordered) copy of this list, excluding all elements of given list.
-     *
-     * @param l List of elements to remove.
-     * @return New list without all elements from {@code l}.
-     */
-    public GridIntList copyWithout(GridIntList l) {
-        assert l != null;
-
-        if (idx == 0)
-            return new GridIntList();
-
-        if (l.idx == 0)
-            return new GridIntList(Arrays.copyOf(arr, idx));
-
-        int[] newArr = Arrays.copyOf(arr, idx);
-        int newIdx = idx;
-
-        for (int i = 0; i < l.size(); i++) {
-            int rmVal = l.get(i);
-
-            for (int j = 0; j < newIdx; j++) {
-                if (newArr[j] == rmVal) {
-
-                    while (newIdx > 0 && newArr[newIdx - 1] == rmVal)
-                        newIdx--;
-
-                    if (newIdx > 0) {
-                        newArr[j] = newArr[newIdx - 1];
-                        newIdx--;
-                    }
-                }
-            }
-        }
-
-        return new GridIntList(newArr, newIdx);
     }
 
     /**
@@ -302,6 +213,9 @@ public class GridIntList implements Message, Externalizable {
      * @return Array copy.
      */
     public int[] arrayCopy() {
+        if (arr == null)
+            return EMPTY_INTS;
+
         int[] res = new int[idx];
 
         System.arraycopy(arr, 0, res, 0, idx);
@@ -354,16 +268,6 @@ public class GridIntList implements Message, Externalizable {
             Arrays.sort(arr, 0, idx);
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -52;
     }
 
     /**

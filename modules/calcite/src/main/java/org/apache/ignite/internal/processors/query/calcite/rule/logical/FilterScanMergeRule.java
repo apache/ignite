@@ -158,7 +158,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
                 return null;
             }
 
-            return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
+            return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(), scan.getRowType(),
                 scan.projects(), cond, scan.requiredColumns());
         }
     }
@@ -177,8 +177,8 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             RelTraitSet traits,
             RexNode cond
         ) {
-            return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.getHints(), scan.projects(),
-                cond, scan.requiredColumns());
+            return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.getHints(), scan.getRowType(),
+                scan.projects(), cond, scan.requiredColumns());
         }
     }
 

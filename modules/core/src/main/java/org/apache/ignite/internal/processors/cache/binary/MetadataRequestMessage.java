@@ -54,11 +54,6 @@ public class MetadataRequestMessage implements Message {
         return 80;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        //No-op.
-    }
-
     /**
      * @return Type ID.
      */

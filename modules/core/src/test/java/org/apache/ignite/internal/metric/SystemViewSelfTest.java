@@ -82,10 +82,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
-import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
@@ -94,6 +90,11 @@ import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetric
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.systemview.BaselineNodeAttributeViewWalker;
+import org.apache.ignite.internal.systemview.CachePagesListViewWalker;
+import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
+import org.apache.ignite.internal.systemview.MetastorageViewWalker;
+import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -143,12 +144,14 @@ import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.IgniteKernal.CFG_VIEW;
@@ -829,6 +832,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_DATA_CENTER_ID, value = "DC0")
     public void testNodes() throws Exception {
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
@@ -840,7 +844,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 checkViewsState(views, g1.localNode(), g2.localNode());
                 checkViewsState(g2.context().systemView().view(NODES_SYS_VIEW), g2.localNode(), g1.localNode());
-
             }
 
             assertEquals(1, views.size());
@@ -962,6 +965,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertEquals(node.version().toString(), view.version());
         assertEquals(isLoc, view.isLocal());
         assertEquals(node.isClient(), view.isClient());
+        assertEquals(node.dataCenterId(), view.dataCenterId());
+        assertEquals("DC0", view.dataCenterId());
     }
 
     /** */
@@ -2175,6 +2180,19 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertNotNull(F.find(metaStoreView, null,
                 (IgnitePredicate<? super MetastorageView>)view ->
                     unmarshalledName.equals(view.name()) && unmarshalledVal.equals(view.value())));
+
+            // Test filtering.
+            assertTrue(metaStoreView instanceof FiltrableSystemView);
+
+            Iterator<MetastorageView> iter = ((FiltrableSystemView<MetastorageView>)metaStoreView)
+                .iterator(F.asMap(MetastorageViewWalker.NAME_FILTER, name));
+
+            assertTrue(iter.hasNext());
+
+            MetastorageView row = iter.next();
+
+            assertTrue(name.equals(row.name()) && val.equals(row.value()));
+            assertFalse(iter.hasNext());
         }
     }
 
@@ -2200,18 +2218,33 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             dms.write(name, val);
 
+            SystemView<MetastorageView> dmsView = ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
+
             assertNotNull(F.find(
-                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                dmsView,
                 null,
                 (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()))
             );
 
             assertNotNull(F.find(
-                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                dmsView,
                 null,
                 (IgnitePredicate<? super MetastorageView>)
                     view -> view.name().endsWith(histogramName) && "[1, 2, 3]".equals(view.value()))
             );
+
+            // Test filtering.
+            assertTrue(dmsView instanceof FiltrableSystemView);
+
+            Iterator<MetastorageView> iter = ((FiltrableSystemView<MetastorageView>)dmsView)
+                .iterator(F.asMap(MetastorageViewWalker.NAME_FILTER, name));
+
+            assertTrue(iter.hasNext());
+
+            MetastorageView row = iter.next();
+
+            assertTrue(name.equals(row.name()) && val.equals(row.value()));
+            assertFalse(iter.hasNext());
         }
     }
 

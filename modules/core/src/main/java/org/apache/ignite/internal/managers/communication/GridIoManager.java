@@ -375,7 +375,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /**
      * @param ctx Grid kernal context.
      */
-    @SuppressWarnings("deprecation")
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
@@ -433,14 +432,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
-                    assert rmtNodeId != null;
-
+                @Override public MessageWriter writer(MessageFactory msgFactory) {
                     return new DirectMessageWriter(msgFactory);
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory);
+                @Override public MessageReader reader(MessageFactory msgFactory) {
+                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
                 }
             };
         }
@@ -918,7 +915,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -1206,8 +1202,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             if (initMsg.topic() == null) {
                 int topicOrd = initMsg.topicOrdinal();
 
-                initMsg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    U.unmarshal(marsh, initMsg.topicBytes(), U.resolveClassLoader(ctx.config())));
+                if (topicOrd >= 0)
+                    initMsg.topic(GridTopic.fromOrdinal(topicOrd));
+                else
+                    initMsg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
 
             byte plc = initMsg.policy();
@@ -1253,8 +1251,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             if (msg.topic() == null) {
                 int topicOrd = msg.topicOrdinal();
 
-                msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
+                if (topicOrd >= 0)
+                    msg.topic(GridTopic.fromOrdinal(topicOrd));
+                else
+                    msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
 
             if (!started) {
@@ -1981,7 +1981,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         try {
             if (topicOrd < 0)
-                ioMsg.topicBytes(U.marshal(marsh, topic));
+                ioMsg.prepareMarshal(marsh);
 
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
@@ -2055,7 +2055,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             }
             else {
                 if (topicOrd < 0)
-                    ioMsg.topicBytes(U.marshal(marsh, topic));
+                    ioMsg.prepareMarshal(marsh);
 
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
@@ -3768,7 +3768,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override public void onTimeout() {
             GridMessageListener lsnr = listenerGet0(topic);
 
@@ -4316,7 +4315,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (ctx.security().enabled()) {
             assert msg instanceof GridIoSecurityAwareMessage;
 
-            return ((GridIoSecurityAwareMessage)msg).secSubjId();
+            return ((GridIoSecurityAwareMessage)msg).securitySubjectId();
         }
 
         return null;

@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
@@ -52,14 +51,21 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -69,9 +75,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** Ignite instance aware of application attributes set with {@link Ignite#withApplicationAttributes(Map)}. */
-public class IgniteApplicationAttributesAware implements Ignite {
+public class IgniteApplicationAttributesAware implements IgniteEx {
     /** */
-    private final Ignite delegate;
+    private final IgniteEx delegate;
 
     /** Application attributes. */
     private final Map<String, String> attrs;
@@ -83,7 +89,7 @@ public class IgniteApplicationAttributesAware implements Ignite {
      * @param delegate Parent Ignite instance.
      * @param attrs Application attributes.
      */
-    public IgniteApplicationAttributesAware(Ignite delegate, Map<String, String> attrs) {
+    public IgniteApplicationAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
         A.notNull(attrs, "application attributes");
 
         this.delegate = delegate;
@@ -204,8 +210,91 @@ public class IgniteApplicationAttributesAware implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCluster cluster() {
+    @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
+        return delegate.utilityCache();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable <K, V> IgniteInternalCache<K, V> cachex(String name) {
+        return delegate.cachex(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
+        return delegate.cachesx(p);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
+        CacheConfiguration<K, V> cacheCfg,
+        boolean sql
+    ) throws CacheException {
+        return delegate.getOrCreateCache0(cacheCfg, sql);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
+        return delegate.destroyCache0(cacheName, sql);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean eventUserRecordable(int type) {
+        return delegate.eventUserRecordable(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allEventsUserRecordable(int[] types) {
+        return delegate.allEventsUserRecordable(types);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isJmxRemoteEnabled() {
+        return delegate.isJmxRemoteEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isRestartEnabled() {
+        return delegate.isRestartEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClusterEx cluster() {
         return delegate.cluster();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String latestVersion() {
+        return delegate.latestVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterNode localNode() {
+        return delegate.localNode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridKernalContext context() {
+        return delegate.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isRebalanceEnabled() {
+        return delegate.isRebalanceEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
+        delegate.rebalanceEnabled(rebalanceEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException {
+        return delegate.set(name, cacheId, collocated, separated);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCommandRegistry commandsRegistry() {
+        return delegate.commandsRegistry();
     }
 
     /** {@inheritDoc} */

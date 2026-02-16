@@ -207,6 +207,9 @@ public enum ClientOperation {
     /** Get nodes endpoints. */
     CLUSTER_GROUP_GET_NODE_ENDPOINTS(5102),
 
+    /** Get nodes of data center. */
+    CLUSTER_GET_DC_NODES(5103),
+
     /** Execute compute task. */
     COMPUTE_TASK_EXECUTE(6000),
 

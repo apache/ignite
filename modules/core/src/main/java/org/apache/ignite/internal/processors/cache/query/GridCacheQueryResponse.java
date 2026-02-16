@@ -17,30 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,43 +42,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
+    @Order(4)
     private boolean finished;
 
     /** */
+    @Order(value = 5, method = "requestId")
     private long reqId;
 
     /** */
-    @GridDirectTransient
-    private Throwable err;
+    @Order(value = 6, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
     /** */
-    private byte[] errBytes;
-
-    /** */
+    @Order(value = 7)
     private boolean fields;
 
     /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> metaDataBytes;
-
-    /** */
-    @GridToStringInclude
-    @GridDirectTransient
-    private List<GridQueryFieldMetadata> metadata;
-
-    /** */
-    @GridDirectTransient
+    @Order(value = 8, method = "indexQueryMetadata")
     private IndexQueryResultMeta idxQryMetadata;
 
     /** */
-    private byte[] idxQryMetadataBytes;
-
-    /** */
-    @GridDirectCollection(byte[].class)
+    @Order(value = 9)
     private Collection<byte[]> dataBytes;
 
     /** */
-    @GridDirectTransient
     private Collection<Object> data;
 
     /**
@@ -118,7 +99,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     public GridCacheQueryResponse(int cacheId, long reqId, Throwable err, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.reqId = reqId;
-        this.err = err;
+        errMsg = new ErrorMessage(err);
         this.addDepInfo = addDepInfo;
 
         finished = true;
@@ -126,19 +107,10 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-
-        if (metaDataBytes == null && metadata != null)
-            metaDataBytes = marshalCollection(metadata, cctx);
-
-        if (idxQryMetadataBytes == null && idxQryMetadata != null)
-            idxQryMetadataBytes = U.marshal(ctx, idxQryMetadata);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
@@ -146,7 +118,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
                 if (o instanceof Map.Entry) {
-                    Map.Entry e = (Map.Entry)o;
+                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
                     prepareObject(e.getKey(), cctx);
                     prepareObject(e.getValue(), cctx);
@@ -156,17 +128,8 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (metadata == null)
-            metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
-
-        if (idxQryMetadataBytes != null && idxQryMetadata == null)
-            idxQryMetadata = U.unmarshal(ctx, idxQryMetadataBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (data == null)
             data = unmarshalCollection0(dataBytes, ctx, ldr);
@@ -221,30 +184,16 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /**
-     * @return Metadata.
-     */
-    public List<GridQueryFieldMetadata> metadata() {
-        return metadata;
-    }
-
-    /**
      * @return IndexQuery metadata.
      */
-    public IndexQueryResultMeta idxQryMetadata() {
+    public IndexQueryResultMeta indexQueryMetadata() {
         return idxQryMetadata;
-    }
-
-    /**
-     * @param metadata Metadata.
-     */
-    public void metadata(@Nullable List<GridQueryFieldMetadata> metadata) {
-        this.metadata = metadata;
     }
 
     /**
      * @param idxQryMetadata IndexQuery metadata.
      */
-    public void idxQryMetadata(IndexQueryResultMeta idxQryMetadata) {
+    public void indexQueryMetadata(IndexQueryResultMeta idxQryMetadata) {
         this.idxQryMetadata = idxQryMetadata;
     }
 
@@ -265,7 +214,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /**
      * @return If this is last response for this request or not.
      */
-    public boolean isFinished() {
+    public boolean finished() {
         return finished;
     }
 
@@ -276,6 +225,16 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.finished = finished;
     }
 
+    /** */
+    public Collection<byte[]> dataBytes() {
+        return dataBytes;
+    }
+
+    /** */
+    public void dataBytes(Collection<byte[]> dataBytes) {
+        this.dataBytes = dataBytes;
+    }
+
     /**
      * @return Request id.
      */
@@ -283,9 +242,29 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return reqId;
     }
 
+    /** */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
+    }
+
     /** {@inheritDoc} */
-    @Override public Throwable error() {
-        return err;
+    @Override public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
+    }
+
+    /** */
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /** */
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
+    }
+
+    /** */
+    public void fields(boolean fields) {
+        this.fields = fields;
     }
 
     /**
@@ -293,135 +272,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      */
     public boolean fields() {
         return fields;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeCollection(dataBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeBoolean(fields))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeBoolean(finished))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeCollection(metaDataBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeByteArray(idxQryMetadataBytes))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                dataBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                fields = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                finished = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                metaDataBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                idxQryMetadataBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

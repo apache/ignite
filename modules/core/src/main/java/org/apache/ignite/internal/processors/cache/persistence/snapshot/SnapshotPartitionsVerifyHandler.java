@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -113,10 +114,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         SnapshotMetadata meta = opCtx.metadata();
 
-        Map<Integer, Set<Integer>> grps = F.isEmpty(opCtx.groups())
-            ? new HashMap<>(meta.partitions())
-            : opCtx.groups().stream().map(CU::cacheId)
-                .collect(Collectors.toMap(Function.identity(), grpId -> meta.partitions().getOrDefault(grpId, Collections.emptySet())));
+        Map<Integer, Set<Integer>> grps;
+
+        if (F.isEmpty(opCtx.groups()))
+            grps = new HashMap<>(meta.partitions());
+        else {
+            grps = opCtx.groups().stream()
+                .map(CU::cacheId)
+                .filter(meta.partitions()::containsKey) // Filter out groups for which there are no partitions in snapshot.
+                .collect(Collectors.toMap(
+                    Function.identity(),
+                    grpId -> meta.partitions().get(grpId))
+                );
+        }
 
         if (type() == SnapshotHandlerType.CREATE) {
             grps.entrySet().removeIf(e -> {
@@ -385,7 +395,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
-                part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part))
+                part -> calculateDumpedPartitionHash(
+                    dump,
+                    opCtx.snapshotFileTree().folderName(),
+                    cacheName(part.getParentFile()),
+                    partId(part)
+                )
             );
 
             return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
@@ -398,7 +413,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private PartitionHashRecord calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
+    private PartitionHashRecord calculateDumpedPartitionHash(Dump dump, String folderName, String grpName, int part) {
         if (skipHash()) {
             return new PartitionHashRecord(
                 new PartitionKey(CU.cacheId(grpName), part, grpName),
@@ -412,9 +427,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         try {
-            String node = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
-
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(folderName, CU.cacheId(grpName), part, null)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
@@ -444,13 +457,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
+    @Override public void complete(
+        String name,
+        Map<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
+    ) throws IgniteCheckedException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
+        for (Map.Entry<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> e : results.entrySet()) {
+            UUID nodeId = e.getKey();
+            SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res = e.getValue();
+
             if (res.error() != null) {
-                bldr.addException(res.node(), res.error());
+                bldr.addException(cctx.discovery().historicalNode(nodeId), res.error());
 
                 continue;
             }

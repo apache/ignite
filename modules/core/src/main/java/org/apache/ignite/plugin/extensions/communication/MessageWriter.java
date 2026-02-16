@@ -21,9 +21,14 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication message writer.
@@ -36,7 +41,10 @@ public interface MessageWriter {
      *
      * @param buf Byte buffer.
      */
-    public void setBuffer(ByteBuffer buf);
+    @Deprecated
+    public default void setBuffer(ByteBuffer buf) {
+        // No-op.
+    }
 
     /**
      * Writes message header.
@@ -242,6 +250,30 @@ public interface MessageWriter {
     public boolean writeMessage(Message val);
 
     /**
+     * Writes {@link CacheObject}.
+     *
+     * @param obj Cache object.
+     * @return Whether value was fully written.
+     */
+    public boolean writeCacheObject(CacheObject obj);
+
+    /**
+     * Writes {@link KeyCacheObject}.
+     *
+     * @param obj Key cache object.
+     * @return Whether value was fully written.
+     */
+    public boolean writeKeyCacheObject(KeyCacheObject obj);
+
+    /**
+     * Writes {@link GridLongList}.
+     *
+     * @param ll Grid long list.
+     * @return Whether value was fully written.
+     */
+    public boolean writeGridLongList(@Nullable GridLongList ll);
+
+    /**
      * Writes array of objects.
      *
      * @param arr Array of objects.
@@ -252,7 +284,7 @@ public interface MessageWriter {
     public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType);
 
     /**
-     * Writes collection.
+     * Writes collection with its elements order.
      *
      * @param col Collection.
      * @param itemType Collection item type.
@@ -260,6 +292,16 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType);
+
+    /**
+     * Writes set with its elements order.
+     *
+     * @param set Set.
+     * @param itemType Set item type.
+     * @param <T> Type of the objects that set contains.
+     * @return Whether value was fully written.
+     */
+    public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType);
 
     /**
      * Writes map.

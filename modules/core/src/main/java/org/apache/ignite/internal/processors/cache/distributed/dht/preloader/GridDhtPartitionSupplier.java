@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -54,6 +53,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -287,27 +287,6 @@ public class GridDhtPartitionSupplier {
                 }
 
                 iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
-
-                for (Integer part : demandMsg.partitions().fullSet()) {
-                    if (iter.isPartitionMissing(part))
-                        continue;
-
-                    GridDhtLocalPartition loc = top.localPartition(part, demandMsg.topologyVersion(), false);
-
-                    assert loc != null && loc.state() == GridDhtPartitionState.OWNING
-                        : "Partition should be in OWNING state: " + loc;
-
-                    supplyMsg.addEstimatedKeysCount(loc.dataStore().fullSize());
-                }
-
-                for (int i = 0; i < histMap.size(); i++) {
-                    int p = histMap.partitionAt(i);
-
-                    if (iter.isPartitionMissing(p))
-                        continue;
-
-                    supplyMsg.addEstimatedKeysCount(histMap.updateCounterAt(i) - histMap.initialUpdateCounterAt(i));
-                }
             }
             else {
                 iter = sctx.iterator;
@@ -381,7 +360,7 @@ public class GridDhtPartitionSupplier {
                 supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
 
                 if (iter.isPartitionDone(part)) {
-                    supplyMsg.last(part, loc.updateCounter());
+                    supplyMsg.addLast(part, loc.updateCounter());
 
                     remainingParts.remove(part);
 
@@ -401,7 +380,7 @@ public class GridDhtPartitionSupplier {
                     assert loc != null
                         : "Supply partition is gone: grp=" + grp.cacheOrGroupName() + ", p=" + p;
 
-                    supplyMsg.last(p, loc.updateCounter());
+                    supplyMsg.addLast(p, loc.updateCounter());
 
                     remainingIter.remove();
 
@@ -488,7 +467,7 @@ public class GridDhtPartitionSupplier {
                     errMsg = supplyMsg;
                 }
                 else {
-                    errMsg = new GridDhtPartitionSupplyErrorMessage(
+                    errMsg = new GridDhtPartitionSupplyMessage(
                         demandMsg.rebalanceId(),
                         grp.groupId(),
                         demandMsg.topologyVersion(),
@@ -540,7 +519,7 @@ public class GridDhtPartitionSupplier {
             if (log.isDebugEnabled())
                 log.debug("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) + "]");
 
-            grp.shared().io().sendOrderedMessage(demander, demandMsg.topic(), supplyMsg, grp.ioPolicy(), demandMsg.timeout());
+            grp.shared().io().sendOrderedMessage(demander, REBALANCE_TOPIC, supplyMsg, grp.ioPolicy(), demandMsg.timeout());
 
             // Throttle preloading.
             if (rebalanceThrottleOverride > 0)

@@ -88,6 +88,35 @@ This utility can do the following commands:
   Delete unused archived wal segments on each node:
     control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
 
+  Print state of WAL:
+    Global     - WAL enabled for group cluster-wide. May be disabled by `--wal disable` command.
+    Local      - WAL enabled for group on specific node. May be disabled during rebalance or other system processes.
+    Index      - WAL enabled for groups indexes on specific node. May be disabled during index rebuilt:
+    control.(sh|bat) --wal state [--groups group1[,group2,....,groupN]]
+
+     Parameters:
+       --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
+
+  Disable WAL for specific cache groups:
+    control.(sh|bat) --wal disable [--groups group1[,group2,....,groupN]]
+
+    Parameters:
+      --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
+
+  Enable WAL for specific cache groups:
+    control.(sh|bat) --wal enable [--groups group1[,group2,....,groupN]]
+
+    Parameters:
+      --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
+
+  Trigger checkpoint:
+    control.(sh|bat) --checkpoint [--reason reason] [--wait-for-finish] [--timeout timeout]
+
+    Parameters:
+      --reason reason    - Reason (visible in logs).
+      --wait-for-finish  - Wait for checkpoint to finish.
+      --timeout timeout  - Timeout in milliseconds.
+
   Print diagnostic command help:
     control.(sh|bat) --diagnostic
 
@@ -350,6 +379,22 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Set the property value:
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
+  [EXPERIMENTAL]
+  Enable rolling upgrade mode. It allows cluster with mixed-version nodes:
+      control.(sh|bat) --rolling-upgrade enable target_version [--force]
+
+      Parameters:
+        target_version  - Target Ignite version. The target version can be one minor higher if its maintenance version is zero, or one maintenance version higher (e.g. 2.18.0 -> 2.18.1 or 2.18.1 -> 2.19.0).
+        --force         - Enable rolling upgrade without target version checks. Use only when required, if the upgrade cannot proceed otherwise.
+
+  [EXPERIMENTAL]
+  Disable rolling upgrade mode. All nodes in the cluster must be running the same version:
+    control.(sh|bat) --rolling-upgrade disable
+
+  [EXPERIMENTAL]
+    Get status of rolling upgrade mode:
+      control.(sh|bat) --rolling-upgrade status
+
   Print system view content:
     control.(sh|bat) --system-view system_view_name [--node-id node_id|--node-ids nodeId1,nodeId2,..|--all-nodes]
 
@@ -381,6 +426,14 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       name                 - Name of the metric.
       newRateTimeInterval  - Rate time interval of hitrate.
       --node-id node_id    - Node id.
+
+  Configure MaxValue metric:
+    control.(sh|bat) --metric --configure-max-value name newTimeInterval [--node-id node_id]
+
+    Parameters:
+      name               - Name of the metric.
+      newTimeInterval    - Time interval of the metric.
+      --node-id node_id  - Node id.
 
   Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence

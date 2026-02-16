@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -396,6 +397,11 @@ public class ValidationOnNodeJoinUtils {
         if (!ctx.clientNode()) {
             if (!F.isEmpty(cc.getStoragePaths())) {
                 List<String> csp = Arrays.asList(cc.getStoragePaths());
+
+                if (csp.size() != new HashSet<>(csp).size()) {
+                    throw new IgniteCheckedException("CacheConfiguration contains duplicates " +
+                        "[storagePaths=" + Arrays.toString(cc.getStoragePaths()) + ']');
+                }
 
                 Set<String> nodeStorages = nodeStorages(c.getDataStorageConfiguration());
 
