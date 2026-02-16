@@ -202,7 +202,7 @@ public class SqlAPI {
 
         IgniteCache cache = ignite.createCache(cfg);
 
-        SqlFieldsQuery query = new SqlFieldsQuery("SELECT STR_COL FROM TABLE_FUNCTION(10) WHERE INT_COL > 50");
+        SqlFieldsQuery query = new SqlFieldsQuery("SELECT STR_COL FROM TABLE(TABLE_FUNCTION(10)) WHERE INT_COL > 50");
 
         cache.query(query).getAll();
         // end::sql-table-function-config-query[]
