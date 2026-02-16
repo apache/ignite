@@ -42,7 +42,6 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientAuthenticationException;
-import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientOperationType;
@@ -61,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Communication channel with failover and partition awareness.
  */
-final class ReliableChannel implements AutoCloseable {
+final class ReliableChannelImpl implements ReliableChannelEx {
     /** Channel factory. */
     private final BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory;
 
@@ -125,7 +124,7 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Constructor.
      */
-    ReliableChannel(
+    ReliableChannelImpl(
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
             ClientConfiguration clientCfg,
             IgniteBinary binary
@@ -183,16 +182,8 @@ final class ReliableChannel implements AutoCloseable {
             log.debug("ReliableChannel stopped");
     }
 
-    /**
-     * Send request and handle response.
-     *
-     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
-     * @throws ClientAuthenticationException When user name or password is invalid.
-     * @throws ClientAuthorizationException When user has no permission to perform operation.
-     * @throws ClientProtocolError When failed to handshake with server.
-     * @throws ClientServerError When failed to process request on server.
-     */
-    public <T> T service(
+    /** {@inheritDoc} */
+    @Override public <T> T service(
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
@@ -200,16 +191,8 @@ final class ReliableChannel implements AutoCloseable {
         return service(op, payloadWriter, payloadReader, affinityCtx.dataCenterNodes());
     }
 
-    /**
-     * Send request to one of the passed nodes and handle response.
-     *
-     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
-     * @throws ClientAuthenticationException When user name or password is invalid.
-     * @throws ClientAuthorizationException When user has no permission to perform operation.
-     * @throws ClientProtocolError When failed to handshake with server.
-     * @throws ClientServerError When failed to process request on server.
-     */
-    public <T> T service(
+    /** {@inheritDoc} */
+    @Override public <T> T service(
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
@@ -225,13 +208,11 @@ final class ReliableChannel implements AutoCloseable {
         );
     }
 
-    /**
-     * Send request and handle response asynchronously.
-     */
-    public <T> IgniteClientFuture<T> serviceAsync(
-            ClientOperation op,
-            Consumer<PayloadOutputChannel> payloadWriter,
-            Function<PayloadInputChannel, T> payloadReader
+    /** {@inheritDoc} */
+    @Override public <T> IgniteClientFuture<T> serviceAsync(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
         CompletableFuture<T> fut = new CompletableFuture<>();
 
@@ -371,42 +352,8 @@ final class ReliableChannel implements AutoCloseable {
             fut.completeExceptionally(composeException(failures));
     }
 
-    /**
-     * Send request without payload and handle response.
-     */
-    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-            throws ClientException, ClientError {
-        return service(op, null, payloadReader);
-    }
-
-    /**
-     * Send request without payload and handle response asynchronously.
-     */
-    public <T> IgniteClientFuture<T> serviceAsync(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientException, ClientError {
-        return serviceAsync(op, null, payloadReader);
-    }
-
-    /**
-     * Send request and handle response without payload.
-     */
-    public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
-        throws ClientException, ClientError {
-        service(op, payloadWriter, null);
-    }
-
-    /**
-     * Send request and handle response without payload.
-     */
-    public IgniteClientFuture<Void> requestAsync(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
-        throws ClientException, ClientError {
-        return serviceAsync(op, payloadWriter, null);
-    }
-
-    /**
-     * Send request to affinity node and handle response.
-     */
-    public <T> T affinityService(
+    /** {@inheritDoc} */
+    @Override public <T> T affinityService(
         int cacheId,
         Object key,
         ClientOperation op,
@@ -425,10 +372,8 @@ final class ReliableChannel implements AutoCloseable {
         return service(op, payloadWriter, payloadReader);
     }
 
-    /**
-     * Send request to affinity node and handle response.
-     */
-    public <T> T affinityService(
+    /** {@inheritDoc} */
+    @Override public <T> T affinityService(
         int cacheId,
         int part,
         ClientOperation op,
@@ -447,10 +392,8 @@ final class ReliableChannel implements AutoCloseable {
         return service(op, payloadWriter, payloadReader);
     }
 
-    /**
-     * Send request to affinity node and handle response.
-     */
-    public <T> IgniteClientFuture<T> affinityServiceAsync(
+    /** {@inheritDoc} */
+    @Override public <T> IgniteClientFuture<T> affinityServiceAsync(
         int cacheId,
         Object key,
         ClientOperation op,
@@ -1160,7 +1103,7 @@ final class ReliableChannel implements AutoCloseable {
                     ClientChannel channel = chFactory.apply(chCfg, connMgr);
 
                     if (channel.serverNodeId() != null) {
-                        channel.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
+                        channel.addTopologyChangeListener(ReliableChannelImpl.this::onTopologyChanged);
 
                         UUID prevId = serverNodeId;
 

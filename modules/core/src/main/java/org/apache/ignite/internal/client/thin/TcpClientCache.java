@@ -108,7 +108,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     private final int cacheId;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Cache name. */
     private final String name;
@@ -142,13 +142,13 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         "non-transactional ClientCache %s operation within a transaction.";
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
+    TcpClientCache(String name, ReliableChannelImpl ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
         ClientCacheEntryListenersRegistry lsnrsRegistry, IgniteLogger log) {
         this(name, ch, marsh, transactions, lsnrsRegistry, false, null, log);
     }
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh,
+    TcpClientCache(String name, ReliableChannelImpl ch, ClientBinaryMarshaller marsh,
         TcpClientTransactions transactions, ClientCacheEntryListenersRegistry lsnrsRegistry, boolean keepBinary,
         ExpiryPolicy expiryPlc, IgniteLogger log) {
         this.name = name;
@@ -313,23 +313,35 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     @Override public int size(CachePeekMode... peekModes) throws ClientException {
         return ch.service(
             ClientOperation.CACHE_GET_SIZE,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
-            },
-            res -> (int)res.in().readLong()
+            req -> writePeekModes(peekModes, req),
+            this::readCacheSizeInt
         );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException {
         return ch.serviceAsync(
-                ClientOperation.CACHE_GET_SIZE,
-                req -> {
-                    writeCacheInfo(req);
-                    ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
-                },
-                res -> (int)res.in().readLong()
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            this::readCacheSizeInt
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws ClientException {
+        return ch.service(
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> res.in().readLong()
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws ClientException {
+        return ch.serviceAsync(
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> res.in().readLong()
         );
     }
 
@@ -1639,6 +1651,24 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                 serDes.writeObject(out, e.getKey());
                 serDes.writeObject(out, e.getValue());
             });
+    }
+
+    /** */
+    private void writePeekModes(CachePeekMode[] peekModes, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
+    }
+
+    /** */
+    private int readCacheSizeInt(PayloadInputChannel res) {
+        long size = res.in().readLong();
+
+        if (size <= Integer.MAX_VALUE)
+            return (int)size;
+        else {
+            throw new ClientException("Cache size exceeded maximum value for int type, use " +
+                "sizeLong/sizeLongAsync methods to get correct value");
+        }
     }
 
     /**
