@@ -342,7 +342,7 @@ public class H2QueryInfo implements TrackableQuery {
 
             String token = plan.substring(l, r);
 
-            String repl = aliasMap.computeIfAbsent(token, k -> "__A" + aliasMap.size());
+            String repl = aliasMap.computeIfAbsent(token, k -> "__IGNITE_H2_ALIAS_" + aliasMap.size());
 
             out.append(repl);
 
