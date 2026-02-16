@@ -36,9 +36,6 @@ public class CompressedMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = -101;
 
-    /** Instance of empty compressed message. */
-    public static final CompressedMessage EMPTY = empty();
-
     /** */
     private static final int CHUNK_SIZE = 1024 * 10;
 
@@ -49,7 +46,7 @@ public class CompressedMessage implements Message {
     private ByteBuffer tmpBuf;
 
     /** */
-    private int dataSize = -1;
+    private int dataSize;
 
     /** */
     private ChunkedByteReader chunkedReader;
@@ -70,18 +67,9 @@ public class CompressedMessage implements Message {
      */
     public CompressedMessage(ByteBuffer buf) {
         dataSize = buf.remaining();
-        chunkedReader = new ChunkedByteReader(compress(buf), CHUNK_SIZE);
-    }
 
-    /** */
-    private static CompressedMessage empty() {
-        CompressedMessage msg = new CompressedMessage();
-
-        msg.dataSize = -1;
-        msg.finalChunk = true;
-        msg.chunk = null;
-
-        return msg;
+        if (dataSize > 0)
+            chunkedReader = new ChunkedByteReader(compress(buf), CHUNK_SIZE);
     }
 
     /** */
@@ -122,7 +110,7 @@ public class CompressedMessage implements Message {
 
                     writer.incrementState();
 
-                    if (dataSize == -1)
+                    if (dataSize == 0)
                         return true;
 
                 case 1:
@@ -163,7 +151,7 @@ public class CompressedMessage implements Message {
                     if (!reader.isLastRead())
                         return false;
 
-                    if (dataSize == -1)
+                    if (dataSize == 0)
                         return true;
 
                     reader.incrementState();

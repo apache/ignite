@@ -1050,12 +1050,7 @@ public class DirectByteBufferStream {
      * @param valType Value type.
      * @param writer Writer.
      */
-    public <K, V> void writeMap(
-        Map<K, V> map,
-        MessageCollectionItemType keyType,
-        MessageCollectionItemType valType,
-        MessageWriter writer
-    ) {
+    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType, MessageWriter writer) {
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -1593,7 +1588,6 @@ public class DirectByteBufferStream {
             Message msg0 = msg;
 
             msgTypeDone = false;
-
             msg = null;
 
             return (T)msg0;
@@ -2149,9 +2143,6 @@ public class DirectByteBufferStream {
                 break;
 
             case MSG:
-                if (val instanceof CompressedMessage)
-                    throw new IllegalArgumentException("CompressedMessage is not supported in collections.");
-
                 try {
                     if (val != null)
                         writer.beforeInnerMessageWrite();

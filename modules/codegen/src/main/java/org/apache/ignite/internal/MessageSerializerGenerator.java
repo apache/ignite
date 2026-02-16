@@ -89,6 +89,10 @@ public class MessageSerializerGenerator {
     /** */
     static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
 
+    /** */
+    private static final String COMPRESSED_MSG_ERROR = "CompressedMessage should not be used explicitly. " +
+        "To compress the required field use the @Compress annotation.";
+
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
 
@@ -395,6 +399,9 @@ public class MessageSerializerGenerator {
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                    throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
+
                 if (compress)
                     returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr, "true");
                 else
@@ -616,6 +623,9 @@ public class MessageSerializerGenerator {
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                    throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
+
                 if (compress)
                     returnFalseIfReadFailed(name, "reader.readMessage", "true");
                 else
@@ -706,6 +716,9 @@ public class MessageSerializerGenerator {
 
             if (primitiveType != null)
                 return primitiveType.getKind().toString();
+
+            if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))

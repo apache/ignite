@@ -487,7 +487,7 @@ public class DirectMessageReader implements MessageReader {
 
         CompressedMessage msg0 = (CompressedMessage)msg;
 
-        if (msg0.dataSize() == -1)
+        if (msg0.dataSize() == 0)
             return null;
 
         byte[] uncompressed = msg0.uncompressed();

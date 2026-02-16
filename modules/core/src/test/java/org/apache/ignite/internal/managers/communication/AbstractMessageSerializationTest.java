@@ -95,9 +95,6 @@ public abstract class AbstractMessageSerializationTest {
 
         Message msg = msgFactory.create(msgType);
 
-        if (msg instanceof CompressedMessage)
-            return;
-
         initializeMessage(msg);
 
         while (!msgFactory.serializer(msgType).writeTo(msg, writer)) {

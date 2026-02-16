@@ -312,7 +312,7 @@ public interface MessageReader {
     public void incrementState();
 
     /**
-     * Deccrements read state.
+     * Decrements read state.
      */
     public void decrementState();
 

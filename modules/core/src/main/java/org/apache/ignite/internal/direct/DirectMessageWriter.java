@@ -433,9 +433,9 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** */
-    private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean empty, DirectByteBufferStream stream) {
-        if (empty) {
-            stream.writeMessage(CompressedMessage.EMPTY, this);
+    private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean isNull, DirectByteBufferStream stream) {
+        if (isNull) {
+            stream.writeShort(Short.MIN_VALUE);
 
             return;
         }
