@@ -79,9 +79,8 @@ public class SnapshotChecker {
     ) {
         assert incIdx > 0;
 
-        //TODO: totalCnsmr, checkedCnsmr
         return CompletableFuture.supplyAsync(
-            new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx),
+            new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx, totalCnsmr, checkedCnsmr),
             executor
         );
     }
@@ -166,26 +165,29 @@ public class SnapshotChecker {
         @Nullable Collection<String> grps,
         boolean check,
         @Nullable Consumer<Integer> totalCnsmr,
-        @Nullable Consumer<Integer> processedPartCnsmr
+        @Nullable Consumer<Integer> processedCnsmr
     ) {
-        //TODO:
         // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
-         return fCompletableFuture.supplyAsync(() -> new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check).execute(
-            totalCnsmr == null ? null : (hndCls, totalCnt) -> {
-                if (SnapshotPartitionsVerifyHandler.class == hndCls)
-                    totalCnsmr.accept(totalCnt);
-            },
-            processedPartCnsmr == null ? null : (hndCls, partId) -> {
-                if (SnapshotPartitionsVerifyHandler.class == hndCls)
-                    processedPartCnsmr.accept(partId);
-            }
-        ));
+        return CompletableFuture.supplyAsync(() -> {
+                try {
+                    SnapshotHandlerContext hndCnt = new SnapshotHandlerContext(
+                        meta,
+                        grps,
+                        kctx.cluster().get().localNode(),
+                        sft,
+                        false,
+                        check,
+                        totalCnsmr == null ? null : (hndCls, totalCnt) -> totalCnsmr.accept(totalCnt),
+                        processedCnsmr == null ? null : (hndCls, partId) -> processedCnsmr.accept(partId)
+                    );
 
-        // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
-        // the same pool might block it.
-        return CompletableFuture.supplyAsync(
-            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check)
+                    return kctx.cache().context().snapshotMgr().handlers().invokeAll(SnapshotHandlerType.RESTORE, hndCnt);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
         );
     }
 

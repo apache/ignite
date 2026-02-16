@@ -714,7 +714,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Set<Object> baseline = grid(coordId).cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
             .collect(Collectors.toSet());
 
-        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> fut1 = null;
+        IgniteInternalFuture<SnapshotPartitionsVerifyResult> fut1 = null;
         IgniteFuture<?> fut2 = null;
 
         try {

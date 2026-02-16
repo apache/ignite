@@ -163,8 +163,7 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
         }
         finally {
-            if (ctx != null)
-                unregisterMetrics(ctx.req.snapshotName());
+            unregisterMetrics(ctx.req.snapshotName());
 
             if (log.isInfoEnabled())
                 log.info("Finished snapshot validation [req=" + ctx.req + ']');
@@ -356,16 +355,12 @@ public class SnapshotCheckProcess {
 
         CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
-        // TODO:
-        fCompletableFuture<IncrementalSnapshotVerificationTaskResult> workingFut = snpChecker.checkIncrementalSnapshot(
+        CompletableFuture<IncrementalSnapshotVerifyResult> workingFut = snpChecker.checkIncrementalSnapshot(
             ctx.locFileTree.get(meta.consistentId()),
             ctx.req.incrementalIndex(),
             ctx.totalCounter::addAndGet,
             ctx.checkedCounter::addAndGet
         );
-
-        CompletableFuture<IncrementalSnapshotVerifyResult> workingFut = snpChecker.checkIncrementalSnapshot(
-            ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
 
         workingFut.whenComplete((res, err) -> {
             if (err != null)
