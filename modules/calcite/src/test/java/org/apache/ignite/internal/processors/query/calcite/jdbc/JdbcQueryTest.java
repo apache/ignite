@@ -41,9 +41,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -69,8 +72,14 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("TEST_CACHE_OWN")
+            .setSqlSchema("OWN_SCHEMA")
+            .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class);
+
         return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+            new SqlConfiguration()
+                .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()))
+                .setCacheConfiguration(ccfg);
     }
 
     /** {@inheritDoc} */
@@ -111,6 +120,21 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         assert conn.isClosed();
 
         stopAllGrids();
+    }
+
+    /** Test user defined table through jdbc. */
+    @Test
+    public void testUdt() throws Exception {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM TABLE(\"OWN_SCHEMA\".STR_ARRAY_CONSUME_TABLE(?))")) {
+            ps.setObject(1, List.of("row1", "row2"));
+            ResultSet rs = ps.executeQuery();
+
+            assertTrue(rs.next());
+            assertEquals("row1", rs.getString(1));
+
+            assertTrue(rs.next());
+            assertEquals("row2", rs.getString(1));
+        }
     }
 
     /**

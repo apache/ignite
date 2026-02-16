@@ -174,6 +174,14 @@ public class SqlAPI {
                 new Object[] {i * 10, "empty"}
             );
         }
+
+        @QuerySqlTableFunction(alias = "TABLE_FUNC_WITH_ARRAY", columnTypes = {String.class}, columnNames = {"RES_COL"})
+        public static Iterable<Object[]> table_function_with_arr(List<Object> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .toList();
+        }
     }
     // end::sql-table-function-example[]
 
@@ -203,6 +211,10 @@ public class SqlAPI {
         IgniteCache cache = ignite.createCache(cfg);
 
         SqlFieldsQuery query = new SqlFieldsQuery("SELECT STR_COL FROM TABLE(TABLE_FUNCTION(10)) WHERE INT_COL > 50");
+
+        cache.query(query).getAll();
+
+        query = new SqlFieldsQuery("SELECT RES_COL FROM TABLE(TABLE_FUNC_WITH_ARRAY(?))").setArgs(List.of("row1", "row2"));
 
         cache.query(query).getAll();
         // end::sql-table-function-config-query[]

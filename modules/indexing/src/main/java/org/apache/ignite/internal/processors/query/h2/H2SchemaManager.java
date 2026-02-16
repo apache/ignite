@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -98,7 +100,12 @@ public class H2SchemaManager implements SchemaChangeListener {
     public void start() throws IgniteCheckedException {
         schemaMgr = ctx.query().schemaManager();
 
-        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
+        QueryEngineConfiguration[] queryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+        QueryEngineConfiguration idxEngine = F.find(List.of(queryEnginesCfg), null,
+            it -> it instanceof IndexingQueryEngineConfiguration);
+
+        if (idxEngine != null)
+            ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
 
         // Register predefined system functions.
         createSqlFunction(QueryUtils.DFLT_SCHEMA, "QUERY_ENGINE", true,
