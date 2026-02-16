@@ -274,7 +274,10 @@ public class H2QueryInfo implements TrackableQuery {
         int start = sb.indexOf(startPattern, 0);
 
         while (start != -1) {
-            while (start > 0 && sb.charAt(start) != '\n')
+            while (start > 0 && sb.charAt(start - 1) == ' ')
+                --start;
+
+            if (start > 0 && sb.charAt(start - 1) == '\n')
                 --start;
 
             int end = sb.indexOf(endMarker, start);
