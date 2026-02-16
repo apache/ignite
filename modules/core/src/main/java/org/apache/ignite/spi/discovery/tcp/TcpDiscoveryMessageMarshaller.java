@@ -32,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
  */
 public class TcpDiscoveryMessageMarshaller {
     /** Size for an intermediate buffer for serializing discovery messages. */
-    static final int MSG_BUFFER_SIZE = 128;
+    static final int MSG_BUFFER_SIZE = 100;
 
     /** */
     private final TcpDiscoverySpi spi;
