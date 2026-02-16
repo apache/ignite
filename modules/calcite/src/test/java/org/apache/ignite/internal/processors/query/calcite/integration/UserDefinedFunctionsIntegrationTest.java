@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
@@ -726,7 +727,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return array.stream()
                 .map(Object::toString)
                 .map(str -> new Object[]{str})
-                .toList();
+                .collect(Collectors.toList());
         }
 
         /** Table function with Object array as input. */
@@ -735,7 +736,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return array.stream()
                 .map(Object::toString)
                 .map(str -> new Object[]{str})
-                .toList();
+                .collect(Collectors.toList());
         }
     }
 

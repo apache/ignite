@@ -2647,7 +2647,7 @@ public final class GridTestUtils {
             return array.stream()
                 .map(Object::toString)
                 .map(str -> new Object[]{str})
-                .toList();
+                .collect(Collectors.toList());
         }
     }
 

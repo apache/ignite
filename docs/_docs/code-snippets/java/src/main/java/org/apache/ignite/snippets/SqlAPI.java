@@ -180,7 +180,7 @@ public class SqlAPI {
             return array.stream()
                 .map(Object::toString)
                 .map(str -> new Object[]{str})
-                .toList();
+                .collect(Collectors.toList());
         }
     }
     // end::sql-table-function-example[]
