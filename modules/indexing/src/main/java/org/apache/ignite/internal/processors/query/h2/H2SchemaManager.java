@@ -100,8 +100,8 @@ public class H2SchemaManager implements SchemaChangeListener {
     public void start() throws IgniteCheckedException {
         schemaMgr = ctx.query().schemaManager();
 
-        QueryEngineConfiguration[] queryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
-        QueryEngineConfiguration idxEngine = F.find(List.of(queryEnginesCfg), null,
+        QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+        QueryEngineConfiguration idxEngine = F.find(List.of(qryEnginesCfg), null,
             it -> it instanceof IndexingQueryEngineConfiguration);
 
         if (idxEngine != null)
