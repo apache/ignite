@@ -49,10 +49,10 @@ import org.apache.ignite.internal.thread.pool.ContextAwareIoPool;
 import org.apache.ignite.internal.thread.pool.ContextAwareStripedExecutor;
 import org.apache.ignite.internal.thread.pool.ContextAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.ContextAwareThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.SameThreadExecutor;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -125,16 +125,16 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** Task execution time metric description. */
     public static final String TASK_EXEC_TIME_DESC = "Tasks execution times as histogram (milliseconds).";
 
-    /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
+    /** Name of the system view for a data streamer {@link IgniteStripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
 
-    /** Description of the system view for a data streamer {@link StripedExecutor} queue view. */
+    /** Description of the system view for a data streamer {@link IgniteStripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW_DESC = "Datastream thread pool task queue";
 
-    /** Name of the system view for a system {@link StripedExecutor} queue view. */
+    /** Name of the system view for a system {@link IgniteStripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
 
-    /** Description of the system view for a system {@link StripedExecutor} queue view. */
+    /** Description of the system view for a system {@link IgniteStripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
 
     /** Group for a thread pools. */
@@ -165,7 +165,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** */
     @GridToStringExclude
-    private StripedExecutor stripedExecSvc;
+    private IgniteStripedExecutor stripedExecSvc;
 
     /** Management executor service. */
     @GridToStringExclude
@@ -177,7 +177,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Data streamer executor service. */
     @GridToStringExclude
-    private StripedExecutor dataStreamerExecSvc;
+    private IgniteStripedExecutor dataStreamerExecSvc;
 
     /** REST requests executor service. */
     @GridToStringExclude
@@ -661,13 +661,13 @@ public class PoolProcessor extends GridProcessorAdapter {
         ctx.systemView().registerInnerCollectionView(SYS_POOL_QUEUE_VIEW, SYS_POOL_QUEUE_VIEW_DESC,
             new StripedExecutorTaskViewWalker(),
             Arrays.asList(stripedExecSvc.stripes()),
-            StripedExecutor.Stripe::queue,
+            IgniteStripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
 
         ctx.systemView().registerInnerCollectionView(STREAM_POOL_QUEUE_VIEW, STREAM_POOL_QUEUE_VIEW_DESC,
             new StripedExecutorTaskViewWalker(),
             Arrays.asList(dataStreamerExecSvc.stripes()),
-            StripedExecutor.Stripe::queue,
+            IgniteStripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
     }
 
@@ -709,8 +709,8 @@ public class PoolProcessor extends GridProcessorAdapter {
                         checkPoolStarvation(name, exec0.completedTaskCount(), exec0.poolSize(),
                             exec0.activeCount(), exec0.queueEmpty());
                     }
-                    else if (exec instanceof StripedExecutor)
-                        ((StripedExecutor)exec).detectStarvation();
+                    else if (exec instanceof IgniteStripedExecutor)
+                        ((IgniteStripedExecutor)exec).detectStarvation();
                 }
             }
 
@@ -890,7 +890,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Thread pool implementation to be used in grid for internal system messages.
      */
-    public StripedExecutor getStripedExecutorService() {
+    public IgniteStripedExecutor getStripedExecutorService() {
         return stripedExecSvc;
     }
 
@@ -918,7 +918,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Thread pool implementation to be used for data stream messages.
      */
-    public StripedExecutor getDataStreamerExecutorService() {
+    public IgniteStripedExecutor getDataStreamerExecutorService() {
         return dataStreamerExecSvc;
     }
 
@@ -1232,8 +1232,8 @@ public class PoolProcessor extends GridProcessorAdapter {
                 keepAliveTime);
     }
 
-    /** Creates instance {@link StripedExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
-    private StripedExecutor createStripedExecutor(
+    /** Creates instance {@link IgniteStripedExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
+    private IgniteStripedExecutor createStripedExecutor(
         int cnt,
         String igniteInstanceName,
         String poolName,
@@ -1253,7 +1253,16 @@ public class PoolProcessor extends GridProcessorAdapter {
                 stealTasks,
                 gridWorkerLsnr,
                 failureDetectionTimeout)
-            : new StripedExecutor(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout);
+            : new IgniteStripedExecutor(
+                cnt,
+                igniteInstanceName,
+                poolName,
+                log,
+                errHnd,
+                stealTasks,
+                gridWorkerLsnr,
+                failureDetectionTimeout
+        );
     }
 
     /** Creates instance {@link IgniteThreadPoolExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */
