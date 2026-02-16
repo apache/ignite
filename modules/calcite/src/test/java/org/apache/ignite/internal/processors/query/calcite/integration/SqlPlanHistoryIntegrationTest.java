@@ -561,22 +561,14 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         startTestGrid();
 
-        IgniteCache<Integer, String> cache = queryNode().cache("A");
-
         queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
 
-        cache.query(new SqlFieldsQuery("CREATE TABLE users(id INT PRIMARY KEY, name VARCHAR)")).getAll();
-        cache.query(new SqlFieldsQuery("INSERT INTO users VALUES (1, 'a'), (2, 'b')")).getAll();
-
-        String qry = "SELECT id, name FROM (SELECT id, name FROM users) WHERE id = 1";
+        String qry = "SELECT _key, _val FROM (SELECT _key, _val FROM String) WHERE _key = 0";
 
         for (int i = 0; i < planHistorySize; i++)
-            cache.query(new SqlFieldsQuery(qry).setLocal(loc)).getAll();
+            cacheQuery(new SqlFieldsQuery(qry), "A");
 
-        List<String> plans = getSqlPlanHistory().stream()
-            .filter(planView -> planView.sql().contains(qry))
-            .map(SqlPlanHistoryView::plan)
-            .collect(Collectors.toList());
+        List<SqlPlanHistoryView> plans = getSqlPlanHistory();
 
         assertEquals("Expected 1 unique plan, got " + plans.size() + ": " + plans, 1, plans.size());
     }
