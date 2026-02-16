@@ -40,19 +40,19 @@ public class ContextAwareCallable<T> extends ContextAwareWrapper<Callable<T>> im
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Callable} along with the Snapshot of the Context bound
-     * to the thread when this method is called. Captured Context will be restored before {@link Callable} execution,
-     * potentially in another thread.
+     * Creates a wrapper that stores a specified {@link Callable} along with the {@link ContextSnapshot} of {@link Context}
+     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * {@link Callable} execution, potentially in another thread.
      */
     public static <T> Callable<T> wrap(Callable<T> delegate) {
         return wrap(delegate, ContextAwareCallable::new);
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Callable} along with the Snapshot of the Context bound
-     * to the thread when this method is called. Captured Context will be restored before {@link Callable} execution,
-     * potentially in another thread.
-     * If Context holds no data when this method is called, it does nothing and returns original {@link Callable}.
+     * Creates a wrapper that stores a specified {@link Callable} along with the {@link ContextSnapshot} of {@link Context}
+     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * {@link Callable} execution, potentially in another thread.
+     * If {@link Context} holds no data when this method is called, it does nothing and returns original {@link Callable}.
      */
     public static <T> Callable<T> wrapIfContextNotEmpty(Callable<T> delegate) {
         return wrap(delegate, ContextAwareCallable::new, true);

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.thread.context.concurrent;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.internal.thread.context.Context;
+import org.apache.ignite.internal.thread.context.ContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,9 +39,9 @@ public class ContextAwareExecutor implements Executor {
     }
 
     /**
-     * Creates executor wrapper that automatically captures Context Snapshot for the thread that
-     * invokes task execution. Captured Context will be restored before task execution, potentially in another
-     * thread.
+     * Creates executor wrapper that automatically captures {@link ContextSnapshot} of {@link Context} for the thread
+     * that invokes task execution. Captured {@link ContextSnapshot} will be restored before task execution, potentially
+     * in another thread.
      */
     public static Executor wrap(Executor delegate) {
         return delegate == null ? null : new ContextAwareExecutor(delegate);

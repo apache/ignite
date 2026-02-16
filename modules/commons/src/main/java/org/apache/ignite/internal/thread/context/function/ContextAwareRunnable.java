@@ -37,19 +37,19 @@ public class ContextAwareRunnable extends ContextAwareWrapper<Runnable> implemen
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Runnable} along with the Snapshot of the Context bound
-     * to the thread when this method is called. Captured Context will be restored before {@link Runnable} execution,
-     * potentially in another thread.
+     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link ContextSnapshot} of {@link Context}
+     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * {@link Runnable} execution, potentially in another thread.
      */
     public static Runnable wrap(Runnable delegate) {
         return wrap(delegate, ContextAwareRunnable::new);
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Runnable} along with the Snapshot of the Context bound
-     * to the thread when this method is called. Captured Context will be restored before {@link Runnable} execution,
-     * potentially in another thread.
-     * If Context holds no data when this method is called, it does nothing and returns original {@link Runnable}.
+     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link ContextSnapshot} of {@link Context}
+     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * {@link Runnable} execution, potentially in another thread.
+     * If {@link Context} holds no data when this method is called, it does nothing and returns original {@link Runnable}.
      */
     public static Runnable wrapIfContextNotEmpty(Runnable delegate) {
         return wrap(delegate, ContextAwareRunnable::new, true);
