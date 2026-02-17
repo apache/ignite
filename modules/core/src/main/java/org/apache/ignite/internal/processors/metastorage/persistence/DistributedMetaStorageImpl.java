@@ -1128,9 +1128,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateMessage msg
     ) {
-        if (msg.errorMessage() != null)
-            return;
-
         lock.writeLock().lock();
 
         try {
@@ -1166,17 +1163,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.requestId());
 
         if (fut != null) {
-            String errorMsg = msg.errorMessage();
+            Boolean res = msg instanceof DistributedMetaStorageCasAckMessage
+                ? ((DistributedMetaStorageCasAckMessage)msg).updated()
+                : null;
 
-            if (errorMsg == null) {
-                Boolean res = msg instanceof DistributedMetaStorageCasAckMessage
-                    ? ((DistributedMetaStorageCasAckMessage)msg).updated()
-                    : null;
-
-                fut.onDone(res);
-            }
-            else
-                fut.onDone(new IllegalStateException(errorMsg));
+            fut.onDone(res);
         }
     }
 
@@ -1330,7 +1321,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         Serializable expVal = unmarshal(marshaller, msg.expectedValue());
 
         if (!Objects.deepEquals(oldVal, expVal)) {
-            msg.setMatches(false);
+            msg.matches(false);
 
             // Do nothing if expected value doesn't match with the actual one.
             return;

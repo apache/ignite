@@ -38,12 +38,8 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
     private final UUID reqId;
 
     /** */
-    private final String errorMsg;
-
-    /** */
-    public DistributedMetaStorageUpdateAckMessage(UUID reqId, String errorMsg) {
+    public DistributedMetaStorageUpdateAckMessage(UUID reqId) {
         this.reqId = reqId;
-        this.errorMsg = errorMsg;
     }
 
     /** {@inheritDoc} */
@@ -54,11 +50,6 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
     /** */
     public UUID requestId() {
         return reqId;
-    }
-
-    /** */
-    public String errorMessage() {
-        return errorMsg;
     }
 
     /** {@inheritDoc} */

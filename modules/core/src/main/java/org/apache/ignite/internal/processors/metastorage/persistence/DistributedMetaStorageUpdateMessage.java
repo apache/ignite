@@ -18,39 +18,50 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
+public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    private IgniteUuid id;
 
     /** Request ID. */
+    @Order(value = 1, method = "requestId")
     @GridToStringInclude
-    private final UUID reqId;
+    private UUID reqId;
 
     /** */
+    @Order(2)
     @GridToStringInclude
-    private final String key;
+    private String key;
 
     /** */
-    private final byte[] valBytes;
+    @Order(value = 3, method = "value")
+    private byte[] valBytes;
 
-    /** */
-    private String errorMsg;
+    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    public DistributedMetaStorageUpdateMessage() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
+        id = IgniteUuid.randomUuid();
+
         this.reqId = reqId;
         this.key = key;
         this.valBytes = valBytes;
@@ -62,8 +73,18 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     }
 
     /** */
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /** */
     public UUID requestId() {
         return reqId;
+    }
+
+    /** */
+    public void requestId(UUID reqId) {
+        this.reqId = reqId;
     }
 
     /** */
@@ -72,8 +93,18 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     }
 
     /** */
+    public void key(String key) {
+        this.key = key;
+    }
+
+    /** */
     public byte[] value() {
         return valBytes;
+    }
+
+    /** */
+    public void value(byte[] valBytes) {
+        this.valBytes = valBytes;
     }
 
     /** */
@@ -81,19 +112,9 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-    /** */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
-
-    /** */
-    protected String errorMessage() {
-        return errorMsg;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageUpdateAckMessage(reqId, errorMsg);
+        return new DistributedMetaStorageUpdateAckMessage(reqId);
     }
 
     /** {@inheritDoc} */
@@ -108,6 +129,11 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         DiscoCache discoCache
     ) {
         throw new UnsupportedOperationException("createDiscoCache");
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 20;
     }
 
     /** {@inheritDoc} */
