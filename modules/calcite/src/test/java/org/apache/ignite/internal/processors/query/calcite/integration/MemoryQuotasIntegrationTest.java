@@ -379,6 +379,20 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testMassiveSequentialCheck() {
+        sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
+
+        for (int i = 0; i < 2000; i++)
+            sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
+
+        for (int i = 0; i < 1000; i++) {
+            assertThrows("SELECT ANY_VALUE(b) FROM tbl2 GROUP BY id",
+                IgniteException.class, "Query quota exceeded");
+        }
+    }
+
+    /** */
+    @Test
     public void testGlobalQuota() {
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=REPLICATED");
 
