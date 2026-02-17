@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -2187,26 +2186,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param node Cluster node to extract Data storage configuration.
-     * @param ctx Context.
-     * @return Data storage configuration
-     */
-    private static DataStorageConfiguration extractDataStorage(ClusterNode node, GridKernalContext ctx) throws IgniteException {
-        return GridCacheUtils.extractDataStorage(
-                node,
-                ctx.marshallerContext().jdkMarshaller(),
-                U.resolveClassLoader(ctx.config())
-        );
-    }
-
-    /**
      * Extracts WAL mode from marshalled Data Storage Configuration of Cluster node
      * @param node Cluster node
      * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got null dsCfg
      */
     private WALMode nodeWalMode(ClusterNode node) {
         try {
-            DataStorageConfiguration dsCfg = extractDataStorage(node, ctx);
+            DataStorageConfiguration dsCfg = CU.extractDataStorage(
+                node,
+                ctx.marshallerContext().jdkMarshaller(),
+                U.resolveClassLoader(ctx.config())
+            );
 
             if (dsCfg != null)
                 return dsCfg.getWalMode();
