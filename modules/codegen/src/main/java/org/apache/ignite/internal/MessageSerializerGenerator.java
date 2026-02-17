@@ -794,7 +794,8 @@ public class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            read.add(identedLine("((%s)msg).%s = %s;", field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
+            read.add(identedLine("((%s)msg).%s = %s;",
+                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
         else
             read.add(identedLine("msg.%s(%s);", methodName, readOp));
 
