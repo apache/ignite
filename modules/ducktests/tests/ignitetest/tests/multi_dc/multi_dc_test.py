@@ -32,9 +32,8 @@ JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.multi_dc.Bin
 class MultiDCTest(IgniteTest):
     @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(delay_ms=[20], thread_cnt=[8], rps=[30], object_cnt=[600], prepare_timout=[300])
-    def test_binary_meta_update_on_crd_change(self, ignite_version, delay_ms, thread_cnt, rps, object_cnt,
-                                              prepare_timout):
+    @matrix(delay_ms=[10], thread_cnt=[10], rps=[100], object_cnt=[1_000])
+    def test_binary_meta_update_on_crd_change(self, ignite_version, delay_ms, thread_cnt, rps, object_cnt):
         """
         Test binary meta update on coordinator change
         """
@@ -57,11 +56,12 @@ class MultiDCTest(IgniteTest):
             cli = self._get_cache_metadata_update_app(client_cfg, thread_cnt, rps, object_cnt)
 
             cli.start()
-            cli.await_event("Prepare BinaryObjects is completed", timeout_sec=prepare_timout,
-                            from_the_beginning=True)
 
             dc_mgr.stop_service(svc_name="node_3")
             dc_mgr.start_service(svc_name="node_3", dc_idx=1, svc=svc_3)
+
+            dc_mgr.stop_service(svc_name="node_4")
+            dc_mgr.start_service(svc_name="node_4", dc_idx=1, svc=svc_3)
 
             cur_crd_disco_info = svc_1.nodes[0].discovery_info()
 
@@ -80,12 +80,18 @@ class MultiDCTest(IgniteTest):
             cli.stop()
 
             put_cnt = int(cli.extract_result("putCnt"))
+            actual_rps = int(cli.extract_result("rps"))
 
             assert put_cnt > 0
+            assert actual_rps > 0
 
             if put_cnt == object_cnt:
                 self.logger.warn(f"Load completed exactly at expected object [count={object_cnt}]. Consider adjusting "
                                  f"test parameters to extend load duration.")
+
+            if actual_rps < rps:
+                self.logger.warning(f"Actual RPS [{actual_rps}] is lower than expected [{rps}]. "
+                                    f"Consider adjusting test parameters or investigating performance issues.")
 
             dc_mgr.stop_service(svc_name="node_2")
             dc_mgr.stop_service(svc_name="node_3")

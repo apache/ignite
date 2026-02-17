@@ -73,37 +73,13 @@ public class BinaryMetadataUpdatesApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        prepareData(threadCnt, objCnt);
-        log.info("Prepare BinaryObjects is completed");
-
         int putCnt = loadUntilTerminated(threadCnt, rps, objCnt, cacheName);
 
         checkData(cacheName, putCnt);
+
         log.info("Data check is successful");
 
-        recordResult("putCnt", putCnt);
-
         markFinished();
-    }
-
-    /** */
-    private void prepareData(int threadCnt, int objCnt) throws InterruptedException {
-        ExecutorService pool = Executors.newFixedThreadPool(threadCnt);
-        CountDownLatch latch = new CountDownLatch(objCnt);
-
-        for (int i = 0; i < objCnt; i++) {
-            final int idx = i;
-
-            pool.submit(() -> {
-                Object obj = getBinaryObject(idx);
-
-                binObjHolder.add(obj);
-                latch.countDown();
-            });
-        }
-
-        latch.await();
-        pool.shutdown();
     }
 
     /** */
@@ -127,7 +103,7 @@ public class BinaryMetadataUpdatesApplication extends IgniteAwareApplication {
                         break;
 
                     if (idx.compareAndSet(key, key + 1)) {
-                        Object val = binObjHolder.poll();
+                        Object val = getBinaryObject(key);
 
                         try {
                             limiter.acquire(1);
@@ -154,6 +130,9 @@ public class BinaryMetadataUpdatesApplication extends IgniteAwareApplication {
         double actualRps = idx.get() / durationSec;
 
         log.info("Data load is finished [putCnt={}, rps={}]", idx.get(), actualRps);
+
+        recordResult("putCnt", idx.get());
+        recordResult("rps", (long)actualRps);
 
         while (!terminated())
             Thread.sleep(100);
