@@ -106,6 +106,8 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
             GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
 
+            startParentPipeWatcher(ignite);
+
             if (args.length == 6) {
                 IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[5]);
 
@@ -125,6 +127,33 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             throw e;
         }
+    }
+
+    /**
+     * Checks that parent is alive.
+     *
+     * @param ignite Started Ignite instance in child JVM.
+     */
+    private static void startParentPipeWatcher(Ignite ignite) {
+        Thread thread = new Thread(() -> {
+            try {
+                while (System.in.read() != -1) {
+                    // No-op
+                }
+            }
+            catch (IOException e) {
+                X.println("Failed to read parent stdin pipe, stopping compatibility node: " + e);
+            }
+
+            X.println("Parent JVM stdin pipe is closed, stopping compatibility node");
+
+            Ignition.stop(ignite.name(), true);
+
+            System.exit(0);
+        }, "compatibility-parent-pipe-watcher");
+
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**
