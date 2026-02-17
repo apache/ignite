@@ -150,10 +150,10 @@ public class MessageSerializerGenerator {
     /** */
     private static List<TypeMirror> getAllSuperclasses(Types typeUtils, TypeMirror typeMirror) {
         List<TypeMirror> superclasses = new ArrayList<>();
-        TypeMirror currentMirror = typeMirror;
+        TypeMirror curMirror = typeMirror;
 
-        while (currentMirror != null && currentMirror.getKind() == TypeKind.DECLARED) {
-            TypeElement typeElement = (TypeElement)typeUtils.asElement(currentMirror);
+        while (curMirror != null && curMirror.getKind() == TypeKind.DECLARED) {
+            TypeElement typeElement = (TypeElement)typeUtils.asElement(curMirror);
             TypeMirror directSuperclass = typeElement.getSuperclass();
 
             if (directSuperclass == null ||
@@ -163,7 +163,7 @@ public class MessageSerializerGenerator {
             }
 
             superclasses.add(directSuperclass);
-            currentMirror = directSuperclass;
+            curMirror = directSuperclass;
         }
 
         return superclasses;
@@ -524,11 +524,18 @@ public class MessageSerializerGenerator {
     /**
      * Generate code of writing single enum field mapped with EnumMapper:
      */
-    private void returnFalseIfEnumWriteFailed(Collection<String> code, VariableElement field, String writerCall, String mapperCall, String fieldGetterCall) {
+    private void returnFalseIfEnumWriteFailed(
+        Collection<String> code,
+        VariableElement field,
+        String writerCall,
+        String mapperCall,
+        String fieldGetterCall)
+    {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            code.add(line("if (!%s(%s(((%s)msg).%s)))", writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
+            code.add(line("if (!%s(%s(((%s)msg).%s)))",
+                writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
         else
             code.add(line("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
 
@@ -606,7 +613,7 @@ public class MessageSerializerGenerator {
                 returnFalseIfReadFailed(field, "reader.readBitSet");
 
             else if (sameType(type, UUID.class))
-                returnFalseIfReadFailed(field , "reader.readUuid");
+                returnFalseIfReadFailed(field, "reader.readUuid");
 
             else if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
                 returnFalseIfReadFailed(field, "reader.readIgniteUuid");
@@ -756,7 +763,8 @@ public class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            read.add(line("((%s)msg).%s = %s(%s);", field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
+            read.add(line("((%s)msg).%s = %s(%s);",
+                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
         else
             read.add(line("msg.%s(%s(%s));", methodName, mtd, argsStr));
 
