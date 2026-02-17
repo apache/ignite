@@ -47,9 +47,6 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     private final byte[] valBytes;
 
     /** */
-    private String errorMsg;
-
-    /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
         this.reqId = reqId;
         this.key = key;
@@ -81,19 +78,9 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-    /** */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
-
-    /** */
-    protected String errorMessage() {
-        return errorMsg;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageUpdateAckMessage(reqId, errorMsg);
+        return new DistributedMetaStorageUpdateAckMessage(reqId);
     }
 
     /** {@inheritDoc} */

@@ -42,20 +42,15 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
     @Order(value = 1, method = "requestId")
     private UUID reqId;
 
-    /** */
-    @Order(value = 2, method = "errorMessage")
-    private String errorMsg;
-
     /** Empty constructor of {@link DiscoveryMessageFactory}. */
     public DistributedMetaStorageUpdateAckMessage() {
         // No-op.
     }
 
     /** */
-    public DistributedMetaStorageUpdateAckMessage(UUID reqId, String errorMsg) {
+    public DistributedMetaStorageUpdateAckMessage(UUID reqId) {
         id = IgniteUuid.randomUuid();
         this.reqId = reqId;
-        this.errorMsg = errorMsg;
     }
 
     /** {@inheritDoc} */
@@ -76,16 +71,6 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
     /** @param reqId Request ID. */
     public void requestId(UUID reqId) {
         this.reqId = reqId;
-    }
-
-    /** */
-    public String errorMessage() {
-        return errorMsg;
-    }
-
-    /** */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
     }
 
     /** {@inheritDoc} */
