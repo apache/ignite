@@ -391,6 +391,8 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
 
         String clsName = lambdaEnclosingClsName == null ? rsrcName : lambdaEnclosingClsName;
 
+        ClassLoader ldr = Thread.currentThread().getContextClassLoader();
+
         GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
         meta.record(true);
@@ -398,6 +400,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         meta.alias(rsrcName);
         meta.className(clsName);
         meta.senderNodeId(ctx.localNodeId());
+        meta.classLoader(ldr);
 
         return locStore.getDeployment(meta);
     }
