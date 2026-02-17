@@ -87,7 +87,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
@@ -2639,15 +2638,6 @@ public final class GridTestUtils {
             can_fail(fail);
 
             return sleep;
-        }
-
-        /** Function consume String array and output it row by row. */
-        @QuerySqlTableFunction(alias = "STR_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
-        public static Iterable<Object[]> strArrConsumeTable(List<String> array) {
-            return array.stream()
-                .map(Object::toString)
-                .map(str -> new Object[]{str})
-                .collect(Collectors.toList());
         }
     }
 

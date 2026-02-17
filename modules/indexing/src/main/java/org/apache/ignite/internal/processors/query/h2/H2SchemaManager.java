@@ -104,7 +104,7 @@ public class H2SchemaManager implements SchemaChangeListener {
         QueryEngineConfiguration idxEngine = F.isEmpty(qryEnginesCfg) ? null : F.find(List.of(qryEnginesCfg), null,
             it -> it instanceof IndexingQueryEngineConfiguration);
 
-        if (idxEngine != null)
+        if (F.isEmpty(qryEnginesCfg) || idxEngine != null)
             ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
 
         // Register predefined system functions.

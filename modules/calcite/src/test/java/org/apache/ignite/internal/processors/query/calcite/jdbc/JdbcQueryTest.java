@@ -40,6 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -72,7 +73,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("TEST_CACHE_OWN")
             .setSqlSchema("OWN_SCHEMA")
-            .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class);
+            .setSqlFunctionClasses(FunctionsLibrary.class);
 
         return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
             new SqlConfiguration()
@@ -510,6 +511,18 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         /** */
         @Override public int hashCode() {
             return Objects.hash(id, name, val);
+        }
+    }
+
+    /** User defined functions. */
+    public static class FunctionsLibrary {
+        /** Function consume String array and output it row by row. */
+        @QuerySqlTableFunction(alias = "STR_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Object[]> strArrConsumeTable(List<String> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
         }
     }
 }
