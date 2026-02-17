@@ -2186,9 +2186,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Extracts WAL mode from marshalled Data Storage Configuration of Cluster node
-     * @param node Cluster node
-     * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got null dsCfg
+     * Extracts WAL mode from marshalled {@link DataStorageConfiguration} of Cluster node.
+     * @param node Cluster node.
+     * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got {@code null} dsCfg.
      */
     private WALMode nodeWalMode(ClusterNode node) {
         try {
