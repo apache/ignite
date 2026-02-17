@@ -109,13 +109,16 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
     @Test
     public void testInterceptInsert() throws Exception {
         try (Ignite ignore = startGrid(); Connection conn = DriverManager.getConnection(URL)) {
-            conn.setClientInfo(SESSION_ID, "42");
+            String sessionid = "42";
+
+            conn.setClientInfo(SESSION_ID, sessionid);
 
             try (Statement s = conn.createStatement()) {
-                assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, '1');"));
+                assertEquals(1, s.executeUpdate(
+                    "insert into PUBLIC.MYTABLE(id, sessionId) values (0, 'must be changed to sessionId in CacheInterceptor');"));
             }
 
-            checkRecordExist(conn, "42");
+            checkRecordExist(conn, sessionid);
         }
     }
 
@@ -127,13 +130,16 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
                 assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, '1');"));
             }
 
-            conn.setClientInfo(SESSION_ID, "42");
+            String sessionid = "42";
+
+            conn.setClientInfo(SESSION_ID, sessionid);
 
             try (Statement s = conn.createStatement()) {
-                assertEquals(1, s.executeUpdate("update PUBLIC.MYTABLE set sessionId = '2' where id = 0;"));
+                assertEquals(1, s.executeUpdate(
+                    "update PUBLIC.MYTABLE set sessionId = 'must be changed to sessionId in CacheInterceptor' where id = 0;"));
             }
 
-            checkRecordExist(conn, "42");
+            checkRecordExist(conn, sessionid);
         }
     }
 
@@ -142,16 +148,18 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
     public void testInterceptDelete() throws Exception {
         try (Ignite ignore = startGrid(); Connection conn = DriverManager.getConnection(URL)) {
             try (Statement s = conn.createStatement()) {
-                assertEquals(1, s.executeUpdate("insert into PUBLIC.MYTABLE(id, sessionId) values (0, '1');"));
+                assertEquals(1, s.executeUpdate(
+                    "insert into PUBLIC.MYTABLE(id, sessionId) values (0, 'survives deletion due to CacheInterceptor');"));
             }
 
             conn.setClientInfo(SESSION_ID, "42");
 
             try (Statement s = conn.createStatement()) {
+                // Record will be kept in table because of SessionContextCacheInterceptor#onBeforeRemove cancels the remove.
                 s.executeUpdate("delete from PUBLIC.MYTABLE where id = 0;");
             }
 
-            checkRecordExist(conn, "1");
+            checkRecordExist(conn, "survives deletion due to CacheInterceptor");
         }
     }
 
