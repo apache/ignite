@@ -213,7 +213,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientError {
+    ) {
         CompletableFuture<T> fut = new CompletableFuture<>();
 
         // Use the only one attempt to avoid blocking async method.
@@ -399,7 +399,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientError {
+    ) {
         if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
             UUID affNodeId = affinityCtx.affinityNode(cacheId, key, op);
 
