@@ -33,8 +33,8 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
 
     /** Serialization holder of {@link #spanContainer}'s bytes. */
     @SuppressWarnings("unused")
-    @Order(value = 5, method = "spanBytes")
-    private @Nullable byte[] spanBytesHolder;
+    @Order(5)
+    @Nullable byte[] spanBytesHolder;
 
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.

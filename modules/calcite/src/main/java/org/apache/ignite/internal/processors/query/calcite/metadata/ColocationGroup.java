@@ -43,12 +43,12 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class ColocationGroup implements CalciteMessage {
     /** */
-    @Order(value = 0, method = "sourceIds")
-    private long[] srcIds;
+    @Order(0)
+    long[] srcIds;
 
     /** */
     @Order(1)
-    private List<UUID> nodeIds;
+    List<UUID> nodeIds;
 
     /** */
     private List<List<UUID>> assignments;
@@ -61,7 +61,7 @@ public class ColocationGroup implements CalciteMessage {
 
     /** Marshalled assignments serialization call holder. */
     @Order(2)
-    private int[] marshalledAssignments;
+    int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {

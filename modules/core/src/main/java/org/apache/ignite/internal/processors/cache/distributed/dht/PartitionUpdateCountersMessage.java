@@ -33,11 +33,11 @@ public class PartitionUpdateCountersMessage implements Message {
 
     /** Byte representation of partition counters. */
     @Order(0)
-    private byte[] data;
+    byte[] data;
 
     /** */
     @Order(1)
-    private int cacheId;
+    int cacheId;
 
     /** */
     private int size;

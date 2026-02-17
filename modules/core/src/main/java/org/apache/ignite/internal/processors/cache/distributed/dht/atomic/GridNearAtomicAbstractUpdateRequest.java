@@ -76,19 +76,19 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected UUID nodeId;
 
     /** Future version. */
-    @Order(value = 4, method = "futureId")
+    @Order(4)
     protected long futId;
 
     /** Topology version. */
-    @Order(value = 5, method = "topologyVersion")
+    @Order(5)
     protected AffinityTopologyVersion topVer;
 
     /** Cache update operation. */
-    @Order(value = 6, method = "operation")
+    @Order(6)
     protected GridCacheOperation op;
 
     /** Write synchronization mode. */
-    @Order(value = 7, method = "writeSynchronizationMode")
+    @Order(7)
     protected CacheWriteSynchronizationMode syncMode;
 
     /** Task name hash. */

@@ -42,17 +42,17 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
     @Order(1)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** */
     @GridToStringExclude
     @Order(2)
-    private byte[] jobBytes;
+    byte[] jobBytes;
 
     /** */
     @GridToStringExclude
@@ -60,33 +60,33 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @Order(3)
-    private long startTaskTime;
+    long startTaskTime;
 
     /** */
     @Order(4)
-    private long timeout;
+    long timeout;
 
     /** */
     @Order(5)
-    private String taskName;
+    String taskName;
 
     /** */
-    @Order(value = 6, method = "userVersion")
-    private String userVer;
+    @Order(6)
+    String userVer;
 
     /** */
-    @Order(value = 7, method = "taskClassName")
-    private String taskClsName;
+    @Order(7)
+    String taskClsName;
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @Order(value = 8, method = "loaderParticipants")
-    private Map<UUID, IgniteUuid> ldrParticipants;
+    @Order(8)
+    Map<UUID, IgniteUuid> ldrParticipants;
 
     /** */
     @GridToStringExclude
-    @Order(value = 9, method = "sessionAttributesBytes")
-    private byte[] sesAttrsBytes;
+    @Order(9)
+    byte[] sesAttrsBytes;
 
     /** */
     @GridToStringExclude
@@ -94,77 +94,77 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @GridToStringExclude
-    @Order(value = 10, method = "jobAttributesBytes")
-    private byte[] jobAttrsBytes;
+    @Order(10)
+    byte[] jobAttrsBytes;
 
     /** */
     @GridToStringExclude
     private Map<? extends Serializable, ? extends Serializable> jobAttrs;
 
     /** Checkpoint SPI name. */
-    @Order(value = 11, method = "checkpointSpi")
-    private String cpSpi;
+    @Order(11)
+    String cpSpi;
 
     /** */
     private Collection<ComputeJobSibling> siblings;
 
     /** */
     @Order(12)
-    private byte[] siblingsBytes;
+    byte[] siblingsBytes;
 
     /** Transient since needs to hold local creation time. */
     private final long createTime = U.currentTimeMillis();
 
     /** */
-    @Order(value = 13, method = "classLoaderId")
-    private IgniteUuid clsLdrId;
+    @Order(13)
+    IgniteUuid clsLdrId;
 
     /** */
-    @Order(value = 14, method = "deploymentMode")
-    private DeploymentMode depMode;
+    @Order(14)
+    DeploymentMode depMode;
 
     /** */
     @Order(15)
-    private boolean dynamicSiblings;
+    boolean dynamicSiblings;
 
     /** */
-    @Order(value = 16, method = "forceLocalDeployment")
-    private boolean forceLocDep;
+    @Order(16)
+    boolean forceLocDep;
 
     /** */
-    @Order(value = 17, method = "sessionFullSupport")
-    private boolean sesFullSup;
+    @Order(17)
+    boolean sesFullSup;
 
     /** */
     @Order(18)
-    private boolean internal;
+    boolean internal;
 
     /** */
-    @Order(value = 19, method = "topology")
-    private Collection<UUID> top;
+    @Order(19)
+    Collection<UUID> top;
 
     /** */
     private IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    @Order(value = 20, method = "topologyPredicateBytes")
-    private byte[] topPredBytes;
+    @Order(20)
+    byte[] topPredBytes;
 
     /** */
     @Order(21)
-    private int[] cacheIds;
+    int[] cacheIds;
 
     /** */
-    @Order(value = 22, method = "partition")
-    private int part;
+    @Order(22)
+    int part;
 
     /** */
-    @Order(value = 23, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(23)
+    AffinityTopologyVersion topVer;
 
     /** */
-    @Order(value = 24, method = "executorName")
-    private String execName;
+    @Order(24)
+    String execName;
 
     /**
      * Default constructor.

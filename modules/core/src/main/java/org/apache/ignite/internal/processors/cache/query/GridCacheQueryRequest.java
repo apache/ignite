@@ -60,107 +60,107 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** */
     @Order(4)
-    private long id;
+    long id;
 
     /** */
     @Order(5)
-    private String cacheName;
+    String cacheName;
 
     /** */
     @Order(6)
-    private GridCacheQueryType type;
+    GridCacheQueryType type;
 
     /** */
     @Order(7)
     @GridToStringInclude(sensitive = true)
-    private String clause;
+    String clause;
 
     /** */
     private IndexQueryDesc idxQryDesc;
 
     /** */
-    @Order(value = 8, method = "indexQueryDescriptionBytes")
-    private byte[] idxQryDescBytes;
+    @Order(8)
+    byte[] idxQryDescBytes;
 
     /** */
     @Order(9)
-    private int limit;
+    int limit;
 
     /** */
-    @Order(value = 10, method = "className")
-    private String clsName;
+    @Order(10)
+    String clsName;
 
     /** */
     private IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
-    @Order(value = 11, method = "keyValueFilterBytes")
-    private byte[] keyValFilterBytes;
+    @Order(11)
+    byte[] keyValFilterBytes;
 
     /** */
     private IgniteReducer<Object, Object> rdc;
 
     /** */
-    @Order(value = 12, method = "reducerBytes")
-    private byte[] rdcBytes;
+    @Order(12)
+    byte[] rdcBytes;
 
     /** */
     private IgniteClosure<?, ?> trans;
 
     /** */
-    @Order(value = 13, method = "transformerBytes")
-    private byte[] transBytes;
+    @Order(13)
+    byte[] transBytes;
 
     /** */
     private Object[] args;
 
     /** */
-    @Order(value = 14, method = "argumentsBytes")
-    private byte[] argsBytes;
+    @Order(14)
+    byte[] argsBytes;
 
     /** */
     @Order(15)
-    private int pageSize;
+    int pageSize;
 
     /** */
-    @Order(value = 16, method = "includeBackups")
-    private boolean incBackups;
+    @Order(16)
+    boolean incBackups;
 
     /** */
     @Order(17)
-    private boolean cancel;
+    boolean cancel;
 
     /** */
-    @Order(value = 18, method = "includeMetaData")
-    private boolean incMeta;
+    @Order(18)
+    boolean incMeta;
 
     /** */
-    @Order(value = 19, method = "allPages")
-    private boolean all;
+    @Order(19)
+    boolean all;
 
     /** */
     @Order(20)
-    private boolean keepBinary;
+    boolean keepBinary;
 
     /** */
     @Order(21)
-    private int taskHash;
+    int taskHash;
 
     /** Partition. */
-    @Order(value = 22, method = "partition")
-    private int part = -1;
+    @Order(22)
+    int part = -1;
 
     /** */
-    @Order(value = 23, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(23)
+    AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
     @Order(24)
-    private Collection<KeyCacheObject> skipKeys;
+    Collection<KeyCacheObject> skipKeys;
 
     /** */
     @Order(25)
-    private byte flags;
+    byte flags;
 
     /**
      * Empty constructor.

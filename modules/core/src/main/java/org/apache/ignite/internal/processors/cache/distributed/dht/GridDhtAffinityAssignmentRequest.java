@@ -31,15 +31,15 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
 
     /** */
     @Order(4)
-    private byte flags;
+    byte flags;
 
     /** */
-    @Order(value = 5, method = "futureId")
-    private long futId;
+    @Order(5)
+    long futId;
 
     /** Topology version being queried. */
-    @Order(value = 6, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(6)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor.

@@ -28,23 +28,23 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SchemaOperationStatusMessage implements Message {
     /** Operation ID. */
-    @Order(value = 0, method = "operationId")
-    private UUID opId;
+    @Order(0)
+    UUID opId;
 
     /** Error code. */
-    @Order(value = 1, method = "errorCode")
-    private int errCode;
+    @Order(1)
+    int errCode;
 
     /** Error message. */
-    @Order(value = 2, method = "errorMessage")
-    private String errMsg;
+    @Order(2)
+    String errMsg;
 
     /** Sender node ID. */
     private UUID sndNodeId;
 
     /** No-op flag. */
     @Order(3)
-    private boolean nop;
+    boolean nop;
 
     /**
      * Default constructor.

@@ -40,15 +40,15 @@ import org.jetbrains.annotations.Nullable;
 public class GridJobExecuteResponse implements Message {
     /** */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
-    @Order(value = 1, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(1)
+    IgniteUuid sesId;
 
     /** */
     @Order(2)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** */
     private IgniteException gridEx;
@@ -57,35 +57,35 @@ public class GridJobExecuteResponse implements Message {
      * Serialization call holder for {@code gridEx}. Works with {@link #marshallUserData(Marshaller)}.
      * Wraps also possible serialization error.
      */
-    @Order(value = 3, method = "exceptionMessage")
-    private @Nullable ErrorMessage gridExMsg;
+    @Order(3)
+    @Nullable ErrorMessage gridExMsg;
 
     /** Job result serialization call holder. */
-    @Order(value = 4, method = "jobResultBytes")
-    private @Nullable byte[] resBytes;
+    @Order(4)
+    @Nullable byte[] resBytes;
 
     /** */
     private @Nullable Object res;
 
     /** */
     /** Job attributes serialization call holder. */
-    @Order(value = 5, method = "jobAttrubutesBytes")
-    private byte[] jobAttrsBytes;
+    @Order(5)
+    byte[] jobAttrsBytes;
 
     /** */
     private Map<Object, Object> jobAttrs;
 
     /** */
-    @Order(value = 6, method = "cancelled")
-    private boolean isCancelled;
+    @Order(6)
+    boolean isCancelled;
 
     /** */
     @GridToStringExclude
     private IgniteException fakeEx;
 
     /** Retry topology version. */
-    @Order(value = 7, method = "retryTopologyVersion")
-    private AffinityTopologyVersion retry;
+    @Order(7)
+    AffinityTopologyVersion retry;
 
     /**
      * Default constructor.

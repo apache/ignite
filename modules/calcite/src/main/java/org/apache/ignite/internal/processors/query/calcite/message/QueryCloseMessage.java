@@ -25,8 +25,8 @@ import org.apache.ignite.internal.Order;
  */
 public class QueryCloseMessage implements CalciteMessage {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     public QueryCloseMessage() {

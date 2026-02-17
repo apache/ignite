@@ -62,16 +62,16 @@ public class TestMessage implements Message {
     @Order(10)
     private BitSet bitSet;
 
-    @Order(value = 11, method = "overridenFieldMethod")
+    @Order(11)
     private String field;
 
-    @Order(value = 12)
+    @Order(12)
     private KeyCacheObject keyCacheObject;
 
-    @Order(value = 13)
+    @Order(13)
     private CacheObject cacheObject;
 
-    @Order(value = 14)
+    @Order(14)
     private GridLongList gridLongList;
 
     public int id() {

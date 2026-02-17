@@ -38,28 +38,28 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     /** Entries keys. */
     @GridToStringInclude
     @Order(4)
-    private List<KeyCacheObject> keys;
+    List<KeyCacheObject> keys;
 
     /** Entries versions. */
-    @Order(value = 5, method = "versions")
-    private List<GridCacheVersion> vers;
+    @Order(5)
+    List<GridCacheVersion> vers;
 
     /** Near entries keys. */
     @GridToStringInclude
     @Order(6)
-    private List<KeyCacheObject> nearKeys;
+    List<KeyCacheObject> nearKeys;
 
     /** Near entries versions. */
-    @Order(value = 7, method = "nearVersions")
-    private List<GridCacheVersion> nearVers;
+    @Order(7)
+    List<GridCacheVersion> nearVers;
 
     /** New TTL. */
     @Order(8)
-    private long ttl;
+    long ttl;
 
     /** Topology version. */
-    @Order(value = 9, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(9)
+    AffinityTopologyVersion topVer;
 
     /**
      * Required empty constructor.

@@ -43,47 +43,47 @@ public class GridEventStorageMessage implements Message {
     private Object resTopic;
 
     /** */
-    @Order(value = 0, method = "responseTopicBytes")
-    private byte[] resTopicBytes;
+    @Order(0)
+    byte[] resTopicBytes;
 
     /** */
     private IgnitePredicate<?> filter;
 
     /** */
-    @Order(value = 1, method = "filterBytes")
-    private byte[] filterBytes;
+    @Order(1)
+    byte[] filterBytes;
 
     /** */
     private Collection<Event> evts;
 
     /** */
-    @Order(value = 2, method = "eventsBytes")
-    private byte[] evtsBytes;
+    @Order(2)
+    byte[] evtsBytes;
 
     /** */
-    @Order(value = 3, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(3)
+    ErrorMessage errMsg;
 
     /** */
-    @Order(value = 4, method = "classLoaderId")
-    private IgniteUuid clsLdrId;
+    @Order(4)
+    IgniteUuid clsLdrId;
 
     /** */
-    @Order(value = 5, method = "deploymentMode")
-    private DeploymentMode depMode;
+    @Order(5)
+    DeploymentMode depMode;
 
     /** */
-    @Order(value = 6, method = "filterClassName")
-    private String filterClsName;
+    @Order(6)
+    String filterClsName;
 
     /** */
-    @Order(value = 7, method = "userVersion")
-    private String userVer;
+    @Order(7)
+    String userVer;
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @Order(value = 8, method = "loaderParticipants")
-    private Map<UUID, IgniteUuid> ldrParties;
+    @Order(8)
+    Map<UUID, IgniteUuid> ldrParties;
 
     /** */
     public GridEventStorageMessage() {

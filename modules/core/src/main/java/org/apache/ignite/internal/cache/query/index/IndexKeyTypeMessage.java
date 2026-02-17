@@ -36,7 +36,7 @@ public class IndexKeyTypeMessage implements Message {
 
     /** Code. */
     @Order(0)
-    private byte code = NULL_VALUE_CODE;
+    byte code = NULL_VALUE_CODE;
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
     public IndexKeyTypeMessage() {

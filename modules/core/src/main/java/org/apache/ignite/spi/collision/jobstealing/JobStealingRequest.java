@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class JobStealingRequest implements Message {
     /** Delta. */
     @Order(0)
-    private int delta;
+    int delta;
 
     /**
      * Empty constructor.

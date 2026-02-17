@@ -59,18 +59,18 @@ public abstract class GridCacheMessage implements Message {
     private static final long NULL_MSG_ID = -1;
 
     /** ID of this message. */
-    @Order(value = 0, method = "messageId")
-    private long msgId = NULL_MSG_ID;
+    @Order(0)
+    public long msgId = NULL_MSG_ID;
 
     /** */
     @GridToStringInclude
-    @Order(value = 1, method = "deployInfo")
-    private GridDeploymentInfoBean depInfo;
+    @Order(1)
+    public GridDeploymentInfoBean depInfo;
 
     /** */
     @GridToStringInclude
-    @Order(value = 2, method = "lastAffinityChangedTopologyVersion")
-    private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
+    @Order(2)
+    @Nullable public AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
     protected boolean addDepInfo;
