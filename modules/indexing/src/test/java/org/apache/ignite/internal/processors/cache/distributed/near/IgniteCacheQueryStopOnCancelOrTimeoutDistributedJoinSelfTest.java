@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -91,7 +90,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
     /** */
     private void testQueryCancel(Ignite ignite, String cacheName, String sql, int timeoutUnits, TimeUnit timeUnit,
                            boolean timeout, boolean checkCanceled) throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);;
 
         IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
@@ -104,18 +103,17 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         else {
             cursor = cache.query(qry);
 
-            ignite.scheduler().runLocal(new Runnable() {
-                @Override public void run() {
-                    cursor.close();
-                }
-            }, timeoutUnits, timeUnit);
+            ignite.scheduler().runLocal(cursor::close, timeoutUnits, timeUnit);
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            cursor.getAll();
+            int resSize = 0;
+            for (List<?> ignored1 : cursor) {
+                ++resSize;
+            }
 
             if (checkCanceled)
-                fail("Query not canceled");
+                fail("Query not canceled, result size=" + resSize);
         }
         catch (CacheException ex) {
             log().error("Got expected exception", ex);
@@ -124,7 +122,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         // Give some time to clean up.
-        Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
+        Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 1_000);
 
         checkCleanState();
     }
@@ -132,7 +130,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
     /**
      * Validates clean state on all participating nodes after query cancellation.
      */
-    private void checkCleanState() throws IgniteCheckedException {
+    private void checkCleanState() {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx grid = grid(i);
 

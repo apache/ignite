@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
-import java.util.Random;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -77,7 +74,7 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
     private static final int PERS_CNT = 600;
 
     /** */
-    private static final int PURCHASE_CNT = 6_000;
+    private static final int PURCHASE_CNT = 24_000;
 
     /** */
     private static final int COMPANY_CNT = 25;
@@ -103,7 +100,6 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setRebalanceMode(SYNC);
             cc.setLongQueryWarningTimeout(15_000);
-            cc.setAffinity(new RendezvousAffinityFunction(false, 60));
 
             switch (name) {
                 case "pe":
@@ -163,10 +159,8 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
 
         IgniteCache<Integer, Product> pr = grid(0).cache("pr");
 
-        Random rnd = new GridRandom();
-
         for (int i = 0; i < PRODUCT_CNT; i++)
-            pr.put(i, new Product(i, rnd.nextInt(COMPANY_CNT)));
+            pr.put(i, new Product(i, i % COMPANY_CNT));
 
         IgniteCache<Integer, Person> pe = grid(0).cache("pe");
 
@@ -176,8 +170,8 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         IgniteCache<Integer, Purchase> pu = grid(0).cache("pu");
 
         for (int i = 0; i < PURCHASE_CNT; i++) {
-            int persId = rnd.nextInt(PERS_CNT);
-            int prodId = rnd.nextInt(PRODUCT_CNT);
+            int persId = i % PERS_CNT;
+            int prodId = i % PRODUCT_CNT;
 
             pu.put(i, new Purchase(persId, prodId));
         }
