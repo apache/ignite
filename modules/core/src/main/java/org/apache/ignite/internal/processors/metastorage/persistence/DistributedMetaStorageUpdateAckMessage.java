@@ -18,30 +18,42 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
+public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    private IgniteUuid id;
 
     /** Request ID. */
-    private final UUID reqId;
+    @Order(value = 1, method = "requestId")
+    private UUID reqId;
 
     /** */
-    private final String errorMsg;
+    @Order(value = 2, method = "errorMessage")
+    private String errorMsg;
+
+    /** Empty constructor of {@link DiscoveryMessageFactory}. */
+    public DistributedMetaStorageUpdateAckMessage() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageUpdateAckMessage(UUID reqId, String errorMsg) {
+        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.errorMsg = errorMsg;
     }
@@ -51,14 +63,29 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
         return id;
     }
 
-    /** */
+    /** @param id Message id. */
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /** @return Request ID. */
     public UUID requestId() {
         return reqId;
+    }
+
+    /** @param reqId Request ID. */
+    public void requestId(UUID reqId) {
+        this.reqId = reqId;
     }
 
     /** */
     public String errorMessage() {
         return errorMsg;
+    }
+
+    /** */
+    public void errorMessage(String errorMsg) {
+        this.errorMsg = errorMsg;
     }
 
     /** {@inheritDoc} */
@@ -78,6 +105,11 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
         DiscoCache discoCache
     ) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 20;
     }
 
     /** {@inheritDoc} */

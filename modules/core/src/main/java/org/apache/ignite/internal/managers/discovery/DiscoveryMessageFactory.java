@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.codegen.DiscoveryDataPacketSerializer;
+import org.apache.ignite.internal.codegen.DistributedMetaStorageCasAckMessageSerializer;
+import org.apache.ignite.internal.codegen.DistributedMetaStorageUpdateAckMessageSerializer;
 import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeSpecificDataSerializer;
-import org.apache.ignite.internal.codegen.TcpConnectionRequestDiscoveryMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryAuthFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCacheMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
@@ -46,9 +47,10 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryStatusCheckMessageSerializer;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
@@ -112,6 +114,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageSerializer());
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new, new TcpDiscoveryNodeAddFinishedMessageSerializer());
-        factory.register((short)20, TcpConnectionRequestDiscoveryMessage::new, new TcpConnectionRequestDiscoveryMessageSerializer());
+        factory.register((short)20, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
+        factory.register((short)21, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
     }
 }
