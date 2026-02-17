@@ -30,170 +30,49 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestMessage implements Message {
     @Order(0)
-    private int id;
+    int id;
 
     @Order(1)
-    private byte[] byteArr;
+    byte[] byteArr;
 
     @Order(2)
-    private String str;
+    String str;
 
     @Order(3)
-    private String[] strArr;
+    String[] strArr;
 
     @Order(4)
-    private int[][] intMatrix;
+    int[][] intMatrix;
 
     @Order(5)
-    private GridCacheVersion ver;
+    GridCacheVersion ver;
 
     @Order(6)
-    private GridCacheVersion[] verArr;
+    GridCacheVersion[] verArr;
 
     @Order(7)
-    private UUID uuid;
+    UUID uuid;
 
     @Order(8)
-    private IgniteUuid ignUuid;
+    IgniteUuid ignUuid;
 
     @Order(9)
-    private AffinityTopologyVersion topVer;
+    AffinityTopologyVersion topVer;
 
     @Order(10)
-    private BitSet bitSet;
+    BitSet bitSet;
 
     @Order(11)
-    private String field;
+    String field;
 
     @Order(12)
-    private KeyCacheObject keyCacheObject;
+    KeyCacheObject keyCacheObject;
 
     @Order(13)
-    private CacheObject cacheObject;
+    CacheObject cacheObject;
 
     @Order(14)
-    private GridLongList gridLongList;
-
-    public int id() {
-        return id;
-    }
-
-    public void id(int id) {
-        this.id = id;
-    }
-
-    public byte[] byteArr() {
-        return byteArr;
-    }
-
-    public void byteArr(byte[] byteArr) {
-        this.byteArr = byteArr;
-    }
-
-    public String str() {
-        return str;
-    }
-
-    public void str(String str) {
-        this.str = str;
-    }
-
-    public String[] strArr() {
-        return strArr;
-    }
-
-    public void strArr(String[] strArr) {
-        this.strArr = strArr;
-    }
-
-    public int[][] intMatrix() {
-        return intMatrix;
-    }
-
-    public void intMatrix(int[][] intMatrix) {
-        this.intMatrix = intMatrix;
-    }
-
-    public GridCacheVersion ver() {
-        return ver;
-    }
-
-    public void ver(GridCacheVersion ver) {
-        this.ver = ver;
-    }
-
-    public GridCacheVersion[] verArr() {
-        return verArr;
-    }
-
-    public void verArr(GridCacheVersion[] verArr) {
-        this.verArr = verArr;
-    }
-
-    public UUID uuid() {
-        return uuid;
-    }
-
-    public void uuid(UUID uuid) {
-        this.uuid = uuid;
-    }
-
-    public IgniteUuid ignUuid() {
-        return ignUuid;
-    }
-
-    public void ignUuid(IgniteUuid ignUuid) {
-        this.ignUuid = ignUuid;
-    }
-
-    public AffinityTopologyVersion topVer() {
-        return topVer;
-    }
-
-    public void topVer(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    public BitSet bitSet() {
-        return bitSet;
-    }
-
-    public void bitSet(BitSet bitSet) {
-        this.bitSet = bitSet;
-    }
-
-    public String overridenFieldMethod() {
-        return field;
-    }
-
-    public void overridenFieldMethod(String field) {
-        this.field = field;
-    }
-
-    public KeyCacheObject keyCacheObject() {
-        return keyCacheObject;
-    }
-
-    public void keyCacheObject(KeyCacheObject keyCacheObject) {
-        this.keyCacheObject = keyCacheObject;
-    }
-
-    public CacheObject cacheObject() {
-        return cacheObject;
-    }
-
-    public void cacheObject(CacheObject cacheObject) {
-        this.cacheObject = cacheObject;
-    }
-
-    public GridLongList gridLongList() {
-        return gridLongList;
-    }
-
-    public void gridLongList(GridLongList gridLongList) {
-        this.gridLongList = gridLongList;
-    }
-
+    GridLongList gridLongList;
 
     public short directType() {
         return 0;

@@ -234,34 +234,34 @@ public class MessageSerializerGenerator {
     private void start(TypeElement type, Collection<String> code, boolean write) {
         indent = 1;
 
-        code.add(line(METHOD_JAVADOC));
+        code.add(identedLine(METHOD_JAVADOC));
 
-        code.add(line("@Override public boolean %s(Message m, %s) {",
+        code.add(identedLine("@Override public boolean %s(Message m, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
-        code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
+        code.add(identedLine("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
         code.add(EMPTY);
 
         if (write) {
-            code.add(line("if (!writer.isHeaderWritten()) {"));
+            code.add(identedLine("if (!writer.isHeaderWritten()) {"));
 
             indent++;
 
             returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
             code.add(EMPTY);
-            code.add(line("writer.onHeaderWritten();"));
+            code.add(identedLine("writer.onHeaderWritten();"));
 
             indent--;
 
-            code.add(line("}"));
+            code.add(identedLine("}"));
             code.add(EMPTY);
         }
 
-        code.add(line("switch (%s.state()) {", write ? "writer" : "reader"));
+        code.add(identedLine("switch (%s.state()) {", write ? "writer" : "reader"));
     }
 
     /**
@@ -290,14 +290,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void writeField(VariableElement field, int opt) throws Exception {
-        write.add(line("case %d:", opt));
+        write.add(identedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfWriteFailed(field);
 
         write.add(EMPTY);
-        write.add(line("writer.incrementState();"));
+        write.add(identedLine("writer.incrementState();"));
         write.add(EMPTY);
 
         indent--;
@@ -318,14 +318,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void readField(VariableElement field, int opt) throws Exception {
-        read.add(line("case %d:", opt));
+        read.add(identedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfReadFailed(field);
 
         read.add(EMPTY);
-        read.add(line("reader.incrementState();"));
+        read.add(identedLine("reader.incrementState();"));
         read.add(EMPTY);
 
         indent--;
@@ -492,11 +492,11 @@ public class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+        code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
-        code.add(line(RETURN_FALSE_STMT));
+        code.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -510,13 +510,13 @@ public class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            code.add(line("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+            code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
         else
-            code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+            code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
-        code.add(line(RETURN_FALSE_STMT));
+        code.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -533,14 +533,14 @@ public class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            code.add(line("if (!%s(%s(((%s)msg).%s)))",
+            code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
                 writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
         else
-            code.add(line("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+            code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
 
         indent++;
 
-        code.add(line(RETURN_FALSE_STMT));
+        code.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -762,18 +762,18 @@ public class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            read.add(line("((%s)msg).%s = %s(%s);",
+            read.add(identedLine("((%s)msg).%s = %s(%s);",
                 field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
         else
-            read.add(line("msg.%s(%s(%s));", methodName, mtd, argsStr));
+            read.add(identedLine("msg.%s(%s(%s));", methodName, mtd, argsStr));
 
         read.add(EMPTY);
 
-        read.add(line("if (!reader.isLastRead())"));
+        read.add(identedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(line(RETURN_FALSE_STMT));
+        read.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -794,17 +794,17 @@ public class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
-            read.add(line("((%s)msg).%s = %s;", field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
+            read.add(identedLine("((%s)msg).%s = %s;", field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
         else
-            read.add(line("msg.%s(%s);", methodName, readOp));
+            read.add(identedLine("msg.%s(%s);", methodName, readOp));
 
         read.add(EMPTY);
 
-        read.add(line("if (!reader.isLastRead())"));
+        read.add(identedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(line(RETURN_FALSE_STMT));
+        read.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -816,10 +816,10 @@ public class MessageSerializerGenerator {
         if (EMPTY.equals(lastLine))
             code.remove(code.size() - 1);
 
-        code.add(line("}"));
+        code.add(identedLine("}"));
         code.add(EMPTY);
 
-        code.add(line("return true;"));
+        code.add(identedLine("return true;"));
     }
 
     /**
@@ -827,11 +827,24 @@ public class MessageSerializerGenerator {
      *
      * @return Line with current indent.
      */
-    private String line(String format, Object... args) {
+    private String identedLine(String format, Object... args) {
         SB sb = new SB();
 
         for (int i = 0; i < indent; i++)
             sb.a(TAB);
+
+        sb.a(String.format(format, args));
+
+        return sb.toString();
+    }
+
+    /**
+     * Creates line from given arguments.
+     *
+     * @return Line.
+     */
+    private String line(String format, Object... args) {
+        SB sb = new SB();
 
         sb.a(String.format(format, args));
 
@@ -846,9 +859,9 @@ public class MessageSerializerGenerator {
         indent = 1;
 
         for (String field: fields) {
-            writer.write(line(METHOD_JAVADOC));
+            writer.write(identedLine(METHOD_JAVADOC));
             writer.write(NL);
-            writer.write(line(field));
+            writer.write(identedLine(field));
             writer.write(NL);
         }
         writer.write(NL);

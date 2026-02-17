@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.codegen;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.ChildMessage;
+import org.apache.ignite.internal.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * This class is generated automatically.
  *
- * @see org.apache.ignite.codegen.MessageSerializerGenerator
+ * @see org.apache.ignite.internal.MessageProcessor
  */
 public class ChildMessageSerializer implements MessageSerializer {
     /** */
@@ -42,13 +42,13 @@ public class ChildMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(msg.id()))
+                if (!writer.writeInt(((AbstractMessage)msg).id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString(msg.str()))
+                if (!writer.writeString(((ChildMessage)msg).str))
                     return false;
 
                 writer.incrementState();
@@ -63,7 +63,7 @@ public class ChildMessageSerializer implements MessageSerializer {
 
         switch (reader.state()) {
             case 0:
-                msg.id(reader.readInt());
+                ((AbstractMessage)msg).id = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -71,7 +71,7 @@ public class ChildMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                msg.str(reader.readString());
+                ((ChildMessage)msg).str = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
