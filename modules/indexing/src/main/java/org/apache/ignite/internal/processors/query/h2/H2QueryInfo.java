@@ -314,10 +314,14 @@ public class H2QueryInfo implements TrackableQuery {
                 continue;
             }
 
-            if (l > 0 && plan.charAt(l - 1) != ' ') {
-                out.append(c);
-                ++l;
-                continue;
+            if (l > 0) {
+                char prev = plan.charAt(l - 1);
+
+                if (Character.isLetterOrDigit(prev) || prev == '_' || prev == '"') {
+                    out.append(c);
+                    ++l;
+                    continue;
+                }
             }
 
             int r = l + 1;
@@ -334,7 +338,7 @@ public class H2QueryInfo implements TrackableQuery {
             if (r < n) {
                 char next = plan.charAt(r);
 
-                if (next != '.' && next != ' ' && next != '\n') {
+                if (next != '.' && !Character.isWhitespace(next)) {
                     out.append(c);
                     ++l;
                     continue;

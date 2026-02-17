@@ -568,9 +568,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         for (int i = 0; i < planHistorySize; i++)
             cacheQuery(new SqlFieldsQuery(qry), "A");
 
-        List<SqlPlanHistoryView> plans = getSqlPlanHistory();
-
-        assertEquals("Expected 1 unique plan, got " + plans.size(), 1, plans.size());
+        checkSqlPlanHistory(1);
     }
 
     /**
