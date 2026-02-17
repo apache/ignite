@@ -89,28 +89,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         this.ver = ver;
     }
 
-    /**
-     * Constructor used in receiver hub where marshalled key and value are available and we do not want to
-     * unmarshal value.
-     *
-     * @param keyBytes Key.
-     * @param valBytes Value bytes.
-     * @param expireTime Expire time.
-     * @param ttl TTL.
-     * @param ver Version.
-     */
-    public GridCacheRawVersionedEntry(byte[] keyBytes,
-        byte[] valBytes,
-        long ttl,
-        long expireTime,
-        GridCacheVersion ver) {
-        this.keyBytes = keyBytes;
-        this.valBytes = valBytes;
-        this.ttl = ttl;
-        this.expireTime = expireTime;
-        this.ver = ver;
-    }
-
     /** {@inheritDoc} */
     @Override public K key() {
         assert key != null : "Entry is being improperly processed.";
