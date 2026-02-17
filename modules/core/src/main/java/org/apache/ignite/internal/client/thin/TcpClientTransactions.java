@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
@@ -95,8 +96,9 @@ class TcpClientTransactions implements ClientTransactions {
                 ProtocolContext protocolCtx = req.clientChannel().protocolCtx();
 
                 if (!protocolCtx.isFeatureSupported(TRANSACTIONS)) {
-                    throw new ClientProtocolError(String.format("Transactions are not supported by the server's " +
-                        "protocol version %s, required version %s", protocolCtx.version(), TRANSACTIONS.verIntroduced()));
+                    throw new ClientFeatureNotSupportedByServerException(String.format(
+                        "Transactions are not supported by the server's protocol version %s, required version %s",
+                        protocolCtx.version(), TRANSACTIONS.verIntroduced()));
                 }
 
                 try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), req.out(), null)) {
