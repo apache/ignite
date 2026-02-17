@@ -529,8 +529,7 @@ public class MessageSerializerGenerator {
         VariableElement field,
         String writerCall,
         String mapperCall,
-        String fieldGetterCall)
-    {
+        String fieldGetterCall) {
         String methodName = field.getAnnotation(Order.class).method();
 
         if (Objects.equals(methodName, ""))
