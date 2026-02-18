@@ -133,7 +133,8 @@ public class DumpReader implements Runnable {
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
                             if (grps != null && !grps.get(grp).add(part)) {
-                                log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
+                                log.info("Skip copy partition [node=" + node + ", grpName=" + grpsCfgs.grpIdToName.get(grp) +
+                                    ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
                             }
@@ -141,8 +142,8 @@ public class DumpReader implements Runnable {
                             Runnable consumePart = () -> {
                                 if (skip.get()) {
                                     if (log.isDebugEnabled()) {
-                                        log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
-                                            ", part=" + part + ']');
+                                        log.debug("Skip partition due to previous error [node=" + node +
+                                            ", grpName=" + grpsCfgs.grpIdToName.get(grp) + ", grp=" + grp + ", part=" + part + ']');
                                     }
 
                                     return;
@@ -150,8 +151,8 @@ public class DumpReader implements Runnable {
 
                                 try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, grpsCfgs.cacheIds)) {
                                     if (log.isDebugEnabled()) {
-                                        log.debug("Consuming partition [node=" + node + ", grp=" + grp +
-                                            ", part=" + part + ']');
+                                        log.debug("Consuming partition [node=" + node + ", grpName=" + grpsCfgs.grpIdToName.get(grp) +
+                                            ", grp=" + grp + ", part=" + part + ']');
                                     }
 
                                     cnsmr.onPartition(grp, part, iter);
@@ -159,8 +160,8 @@ public class DumpReader implements Runnable {
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
 
-                                    log.error("Error consuming partition [node=" + node + ", grp=" + grp +
-                                        ", part=" + part + ']', ex);
+                                    log.error("Error consuming partition [node=" + node + ", grpName=" + grpsCfgs.grpIdToName.get(grp) +
+                                        ", grp=" + grp + ", part=" + part + ']', ex);
 
                                     throw new IgniteException(ex);
                                 }
@@ -365,9 +366,19 @@ public class DumpReader implements Runnable {
     private GroupsConfigs groupsConfigs(Dump dump) {
         Map<Integer, List<String>> grpsToNodes = new HashMap<>();
         List<StoredCacheData> ccfgs = new ArrayList<>();
+        Map<Integer, String> grpIdToName = new HashMap<>();
 
         Set<Integer> grpIds = cfg.groupNames() != null
-            ? Arrays.stream(cfg.groupNames()).map(CU::cacheId).collect(Collectors.toSet())
+            ? Arrays.stream(cfg.groupNames())
+                .map(grpName -> {
+                    int grpId = CU.cacheId(grpName);
+
+                    if (!grpIdToName.containsKey(grpId))
+                        grpIdToName.put(grpId, grpName);
+
+                    return grpId;
+                })
+                .collect(Collectors.toSet())
             : null;
 
         Set<Integer> cacheIds = cfg.cacheNames() != null
@@ -392,11 +403,14 @@ public class DumpReader implements Runnable {
                 }
 
                 grpsToNodes.get(grp).add(meta.folderName());
+
+                if (!grpIdToName.containsKey(grp) && !grpCaches.isEmpty())
+                    grpIdToName.put(grp, grpCaches.get(0).configuration().getGroupName());
             }
         }
 
         // Optimize - skip whole cache if only one in group!
-        return new GroupsConfigs(grpsToNodes, ccfgs, cacheIds);
+        return new GroupsConfigs(grpsToNodes, ccfgs, cacheIds, grpIdToName);
     }
 
     /** */
@@ -410,11 +424,16 @@ public class DumpReader implements Runnable {
         /** Cache ids. */
         public final Set<Integer> cacheIds;
 
+        /** Mapping from group id to group name. */
+        public final Map<Integer, String> grpIdToName;
+
         /** */
-        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs, Set<Integer> cacheIds) {
+        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs, Set<Integer> cacheIds,
+            Map<Integer, String> grpIdToName) {
             this.grpToNodes = grpToNodes;
             this.cacheCfgs = cacheCfgs;
             this.cacheIds = cacheIds;
+            this.grpIdToName = grpIdToName;
         }
     }
 }

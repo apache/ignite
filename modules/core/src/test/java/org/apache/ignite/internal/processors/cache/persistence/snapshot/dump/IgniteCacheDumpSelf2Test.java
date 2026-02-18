@@ -121,6 +121,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.A
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.GRP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
@@ -1217,6 +1218,74 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         cnsmr.check();
 
         IntStream.range(0, KEYS_CNT).forEach(i -> assertEquals((Integer)i, dumpEntries.get(i)));
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderLogsGroupName() throws Exception {
+        String id = "test";
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        // Listen for the error log that includes the group name
+        LogListener grpNameLsnr = LogListener.matches("Error consuming partition .*grpName=" + GRP + ".*")
+                .build();
+        testLog.registerListener(grpNameLsnr);
+
+        try {
+            IgniteEx ign0 = startGrid(getConfiguration(id)
+                    .setConsistentId(id)
+                    .setGridLogger(testLog));   // optional, not strictly needed
+
+            ign0.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Integer, Integer> cache = ign0.createCache(new CacheConfiguration<Integer, Integer>()
+                    .setName(CACHE_0)
+                    .setGroupName(GRP)
+                    .setBackups(1)
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(16))
+            );
+
+            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+            ign0.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
+
+            // Consumer that throws an exception on the first partition
+            TestDumpConsumer cnsmr = new TestDumpConsumer() {
+                @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                    throw new RuntimeException("Intentional exception to trigger error log");
+                }
+            };
+
+            try {
+                new DumpReader(
+                        new DumpReaderConfiguration(
+                                DMP_NAME,
+                                null,
+                                ign0.configuration(),
+                                cnsmr,
+                                DFLT_THREAD_CNT,
+                                DFLT_TIMEOUT,
+                                true,           // keepBinary
+                                true,           // keepRaw
+                                false,          // skipCopies (not needed for this test)
+                                new String[]{GRP},
+                                null,           // cacheNames
+                                true,           // failFast
+                                null            // encryptionSpi
+                        ),
+                        testLog
+                ).run();
+                fail("Expected IgniteException");
+            }
+            catch (IgniteException e) {
+                assertTrue("exeptionZZZZZZZZZZZZZZZZZZZZZz", true);
+            }
+
+            assertTrue("Log with group name not found", grpNameLsnr.check());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** */
