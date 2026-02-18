@@ -82,7 +82,7 @@ public class GridEventStorageMessage implements Message {
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @Order(8)
+    @Order(value = 8, method = "loaderParticipants")
     Map<UUID, IgniteUuid> ldrParties;
 
     /** */
