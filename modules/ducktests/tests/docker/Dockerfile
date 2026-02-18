@@ -94,18 +94,27 @@ ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
-# Set up the ducker user.
-RUN userdel -r ubuntu \
-    && useradd -ms /bin/bash ducker \
+# Build-time arguments for host UID/GID
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+
+# Delete default ubuntu user if it exists
+RUN userdel -r ubuntu || true
+
+# Create ducker group and user matching host UID/GID
+RUN groupadd -g ${HOST_GID} ducker \
+    && useradd -ms /bin/bash -u ${HOST_UID} -g ${HOST_GID} -K UID_MIN=0 ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
-    && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \
+    && chown -R ${HOST_UID}:${HOST_GID} /home/ducker/ /mnt/ /var/log/ /opt \
     && cp /dev/null /etc/environment \
     && echo "LANG=C.UTF-8" >> /home/ducker/.ssh/environment \
     && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin:/opt/venv/bin" >> /home/ducker/.ssh/environment \
     && echo "JAVA_HOME=$JAVA_HOME" >> /home/ducker/.ssh/environment \
     && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \
     && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+# Switch to ducker user
 USER ducker
 
 CMD sudo service ssh start && tail -f /dev/null
