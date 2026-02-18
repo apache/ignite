@@ -151,7 +151,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     int part = -1;
 
     /** */
-    @Order(23)
+    @Order(value = 23, method = "topologyVersion")
     AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
