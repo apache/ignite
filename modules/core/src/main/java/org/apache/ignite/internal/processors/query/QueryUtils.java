@@ -97,6 +97,9 @@ public class QueryUtils {
     /** Value column. */
     public static final int VAL_COL = 1;
 
+    /** */
+    public static final int ROW_ID_COL = 2;
+
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
 
@@ -117,6 +120,9 @@ public class QueryUtils {
 
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** */
+    public static final String ROW_ID_FIELD_NAME = "ROWID";
 
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
@@ -1848,6 +1854,58 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public boolean key() {
             return isKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty parent() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean notNull() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object defaultValue() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int precision() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int scale() {
+            return -1;
+        }
+    }
+
+    public static class RowIdProperty implements GridQueryProperty {
+        /** {@inheritDoc} */
+        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            //No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return QueryUtils.ROW_ID_FIELD_NAME;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> type() {
+            return String.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return true;
         }
 
         /** {@inheritDoc} */
