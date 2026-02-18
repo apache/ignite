@@ -41,11 +41,11 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
-    @Order(0)
+    @Order(value = 0, method = "historicalMap")
     CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that require full rebalancing. */
-    @Order(1)
+    @Order(value = 1, method = "fullSet")
     @GridToStringInclude
     Set<Integer> full;
 
