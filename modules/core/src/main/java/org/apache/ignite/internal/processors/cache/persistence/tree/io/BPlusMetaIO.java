@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
 
 /**
  * IO routines for B+Tree meta pages.
@@ -303,7 +304,7 @@ public class BPlusMetaIO extends PageIO {
             PageUtils.getByte(pageAddr, CREATED_VER_OFFSET + 1),
             PageUtils.getByte(pageAddr, CREATED_VER_OFFSET + 2),
             PageUtils.getLong(pageAddr, CREATED_VER_OFFSET + 3),
-            PageUtils.getBytes(pageAddr, CREATED_VER_OFFSET + 11, IgniteProductVersion.REV_HASH_SIZE));
+            PageUtils.getBytes(pageAddr, CREATED_VER_OFFSET + 11, IgniteProductVersionMessage.REV_HASH_SIZE));
     }
 
     /**

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.codegen.ClusterNodeCollectionMessageSerializer;
+import org.apache.ignite.internal.codegen.ClusterNodeMessageSerializer;
 import org.apache.ignite.internal.codegen.DiscoveryDataPacketSerializer;
+import org.apache.ignite.internal.codegen.IgniteProductVersionMessageSerializer;
 import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeSpecificDataSerializer;
@@ -37,6 +40,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerialize
 import org.apache.ignite.internal.codegen.TcpDiscoveryLoopbackProblemMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryMetricsUpdateMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeAddFinishedMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryNodeAddedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeLeftMessageSerializer;
@@ -48,6 +52,9 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryStatusCheckMessageSerializ
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
+import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeCollectionMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
@@ -67,6 +74,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRespons
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
@@ -80,6 +88,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-110, ClusterNodeCollectionMessage::new, new ClusterNodeCollectionMessageSerializer());
+        factory.register((short)-109, ClusterNodeMessage::new, new ClusterNodeMessageSerializer());
+        factory.register((short)-108, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
         factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
         factory.register((short)-105, TcpDiscoveryNodeFullMetricsMessage::new,
@@ -110,5 +121,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageSerializer());
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new, new TcpDiscoveryNodeAddFinishedMessageSerializer());
+        factory.register((short)20, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageSerializer());
     }
 }

@@ -17,12 +17,24 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -31,35 +43,66 @@ import org.jetbrains.annotations.Nullable;
  * Message telling nodes that new node should be added to topology.
  * When newly added node receives the message it connects to its next and finishes
  * join process.
+ * <br>
+ * Requires pre- and post- marshalling.
+ * @see #prepareMarshal(Marshaller)
+ * @see #finishUnmarshal(Marshaller, ClassLoader)
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Added node. */
-    private final TcpDiscoveryNode node;
-
     /** */
+    @Order(value = 6, method = "gridDiscoveryData")
     private DiscoveryDataPacket dataPacket;
 
-    /** Pending messages from previous node. */
-    private Collection<TcpDiscoveryAbstractMessage> msgs;
+    /** Start time of the first grid node. */
+    @Order(7)
+    private long gridStartTime;
+
+    /** Topology snapshots history. */
+    @Order(value = 8, method = "topologyHistoryMessages")
+    private @Nullable Map<Long, ClusterNodeCollectionMessage> topHistMsgs;
+
+    /** {@link TcpDiscoveryAbstractMessage} pending messages from previous node which is a {@link Message}. */
+    @Order(value = 9, method = "pendingMessages")
+    private Map<Integer, Message> pendingMsgs;
+
+    /** Added node. */
+    private TcpDiscoveryNode node;
+
+    /** Marshalled {@link #node}. */
+    private byte[] nodeBytes;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private Collection<TcpDiscoveryNode> top;
 
+    /** Marshalled {@link #top}. */
+    private byte[] topBytes;
+
     /** */
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
 
-    /** Topology snapshots history. */
-    private Map<Long, Collection<ClusterNode>> topHist;
+    /** Marshalled {@link #clientTop}. */
+    private byte[] clientTopBytes;
 
-    /** Start time of the first grid node. */
-    private final long gridStartTime;
+    /**
+     * TODO: Remove after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
+     * Java-serializable pending messages from previous node.
+     */
+    private Map<Integer, TcpDiscoveryAbstractMessage> serializablePendingMsgs;
+
+    /** Marshalled {@link #serializablePendingMsgs}. */
+    private byte[] serializablePendingMsgsBytes;
+
+    /** Constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryNodeAddedMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -69,7 +112,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param dataPacket container for collecting discovery data across the cluster.
      * @param gridStartTime Start time of the first grid node.
      */
-    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
+    public TcpDiscoveryNodeAddedMessage(
+        UUID creatorNodeId,
         TcpDiscoveryNode node,
         DiscoveryDataPacket dataPacket,
         long gridStartTime
@@ -90,13 +134,113 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
         super(msg);
 
-        this.node = msg.node;
-        this.msgs = msg.msgs;
-        this.top = msg.top;
-        this.clientTop = msg.clientTop;
-        this.topHist = msg.topHist;
-        this.dataPacket = msg.dataPacket;
-        this.gridStartTime = msg.gridStartTime;
+        node = msg.node;
+        pendingMsgs = msg.pendingMsgs;
+        serializablePendingMsgs = msg.serializablePendingMsgs;
+        top = msg.top;
+        clientTop = msg.clientTop;
+        topHistMsgs = msg.topHistMsgs;
+        dataPacket = msg.dataPacket;
+        gridStartTime = msg.gridStartTime;
+    }
+
+    /**
+     * TODO: Revise after refactoring of TcpDiscoveryNode serialization https://issues.apache.org/jira/browse/IGNITE-27899
+     * @param marsh marshaller.
+     */
+    public void prepareMarshal(Marshaller marsh) {
+        if (!F.isEmpty(topHistMsgs))
+            topHistMsgs.values().forEach(m -> m.prepareMarshal(marsh));
+
+        if (node == null && nodeBytes == null) {
+            try {
+                nodeBytes = U.marshal(marsh, node);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal cluster node.", e);
+            }
+        }
+
+        if (top != null && topBytes == null) {
+            try {
+                topBytes = U.marshal(marsh, top);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal topology nodes.", e);
+            }
+        }
+
+        if (clientTop != null && clientTopBytes == null) {
+            try {
+                clientTopBytes = U.marshal(marsh, clientTop);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal client topology nodes.", e);
+            }
+        }
+
+        if (serializablePendingMsgs != null && serializablePendingMsgsBytes == null) {
+            try {
+                serializablePendingMsgsBytes = U.marshal(marsh, serializablePendingMsgs);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal serializable pending messages.", e);
+            }
+        }
+    }
+
+    /**
+     * TODO: Revise after refactoring of TcpDiscoveryNode serialization https://issues.apache.org/jira/browse/IGNITE-27899
+     * @param marsh Marshaller.
+     * @param clsLdr Class loader.
+     */
+    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        if (!F.isEmpty(topHistMsgs))
+            topHistMsgs.values().forEach(m -> m.finishUnmarshal(marsh, clsLdr));
+
+        if (nodeBytes != null && node == null) {
+            try {
+                node = U.unmarshal(marsh, nodeBytes, clsLdr);
+
+                nodeBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal cluster node.", e);
+            }
+        }
+
+        if (topBytes != null && top == null) {
+            try {
+                top = U.unmarshal(marsh, topBytes, clsLdr);
+
+                topBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal topology nodes.", e);
+            }
+        }
+
+        if (clientTopBytes != null && clientTop == null) {
+            try {
+                clientTop = U.unmarshal(marsh, clientTopBytes, clsLdr);
+
+                clientTopBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal client topology nodes.", e);
+            }
+        }
+
+        if (serializablePendingMsgsBytes != null && serializablePendingMsgs == null) {
+            try {
+                serializablePendingMsgs = U.unmarshal(marsh, serializablePendingMsgsBytes, clsLdr);
+
+                serializablePendingMsgsBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal serializable pending messages.", e);
+            }
+        }
     }
 
     /**
@@ -109,23 +253,89 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
+     * @return Pending messages.
+     * @see #messages()
+     */
+    public Map<Integer, Message> pendingMessages() {
+        return pendingMsgs;
+    }
+
+    /**
+     * @param pendingMsgs Pending messages.
+     * @see #messages(List)
+     */
+    public void pendingMessages(Map<Integer, Message> pendingMsgs) {
+        this.pendingMsgs = pendingMsgs;
+    }
+
+    /**
+     * TODO: revise after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
      * Gets pending messages sent to new node by its previous.
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
-        return msgs;
+    @Nullable public List<TcpDiscoveryAbstractMessage> messages() {
+        assert serializablePendingMsgs == null;
+
+        if (F.isEmpty(pendingMsgs) && F.isEmpty(serializablePendingMsgs))
+            return Collections.emptyList();
+
+        int totalSz = (F.isEmpty(pendingMsgs) ? 0 : pendingMsgs.size())
+            + (F.isEmpty(serializablePendingMsgs) ? 0 : serializablePendingMsgs.size());
+
+        List<TcpDiscoveryAbstractMessage> res = new ArrayList<>(totalSz);
+
+        for (int i = 0; i < totalSz; ++i) {
+            Message m = pendingMsgs.get(i);
+
+            if (m == null) {
+                TcpDiscoveryAbstractMessage sm = serializablePendingMsgs.get(i);
+                assert sm != null;
+
+                res.add(sm);
+            }
+            else {
+                assert serializablePendingMsgs.get(i) == null;
+                assert m instanceof TcpDiscoveryAbstractMessage;
+
+                res.add((TcpDiscoveryAbstractMessage)m);
+            }
+        }
+
+        return res;
     }
 
     /**
+     * TODO: revise after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
      */
-    public void messages(
-        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs
-    ) {
-        this.msgs = msgs;
+    public void messages(@Nullable List<TcpDiscoveryAbstractMessage> msgs) {
+        if (F.isEmpty(msgs)) {
+            serializablePendingMsgs = null;
+            pendingMsgs = null;
+
+            return;
+        }
+
+        int idx = 0;
+
+        for (TcpDiscoveryAbstractMessage m : msgs) {
+            if (m instanceof Message) {
+                if (pendingMsgs == null)
+                    pendingMsgs = U.newHashMap(msgs.size());
+
+                pendingMsgs.put(idx++, (Message)m);
+
+                continue;
+            }
+
+            if (serializablePendingMsgs == null)
+                serializablePendingMsgs = U.newHashMap(msgs.size());
+
+            serializablePendingMsgs.put(idx++, m);
+        }
     }
 
     /**
@@ -162,13 +372,35 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         return clientTop;
     }
 
+    /** @return Topology history messages. */
+    public @Nullable Map<Long, ClusterNodeCollectionMessage> topologyHistoryMessages() {
+        return topHistMsgs;
+    }
+
+    /** @param topHistMsgs Topology history messages. */
+    public void topologyHistoryMessages(@Nullable Map<Long, ClusterNodeCollectionMessage> topHistMsgs) {
+        this.topHistMsgs = topHistMsgs;
+    }
+
     /**
      * Gets topology snapshots history.
      *
      * @return Map with topology snapshots history.
      */
-    public Map<Long, Collection<ClusterNode>> topologyHistory() {
-        return topHist;
+    public @Nullable Map<Long, Collection<ClusterNode>> topologyHistory() {
+        if (topHistMsgs == null)
+            return null;
+
+        Map<Long, Collection<ClusterNode>> res = U.newHashMap(topHistMsgs.size());
+
+        topHistMsgs.forEach((nodeId, msgs) -> {
+            Collection<ClusterNode> clusterNodeImpls = msgs.clusterNodeMessages().stream().map(TcpDiscoveryNode::new)
+                .collect(Collectors.toList());
+
+            res.put(nodeId, clusterNodeImpls);
+        });
+
+        return res;
     }
 
     /**
@@ -177,7 +409,20 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param topHist Map with topology snapshots history.
      */
     public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
-        this.topHist = topHist;
+        if (topHist == null) {
+            topHistMsgs = null;
+
+            return;
+        }
+
+        topHistMsgs = U.newHashMap(topHist.size());
+
+        topHist.forEach((nodeId, clusterNodes) -> {
+            Collection<ClusterNodeMessage> clusterNodeImpls = clusterNodes.stream().map(ClusterNodeMessage::new)
+                .collect(Collectors.toList());
+
+            topHistMsgs.put(nodeId, new ClusterNodeCollectionMessage(clusterNodeImpls));
+        });
     }
 
     /**
@@ -185,6 +430,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
+    }
+
+    /** @param dataPacket Data packet data. */
+    public void gridDiscoveryData(DiscoveryDataPacket dataPacket) {
+        this.dataPacket = dataPacket;
     }
 
     /**
@@ -208,6 +458,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public long gridStartTime() {
         return gridStartTime;
+    }
+
+    /** @param gridStartTime First grid node start time. */
+    public void gridStartTime(long gridStartTime) {
+        this.gridStartTime = gridStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 20;
     }
 
     /** {@inheritDoc} */
