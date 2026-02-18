@@ -93,11 +93,11 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException(e.getMessage(), U.convertException(e));
         }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
         catch (Exception e) {
-            if (e instanceof IgniteSQLException)
-                throw e;
-            else
-                throw new IgniteSQLException(e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
         finally {
             qryMemoryTracker.reset();
