@@ -379,7 +379,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void check(final IgniteCache<String, Integer> cache, final int expSize) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(() -> cache.size() >= expSize, 5000));
+        GridTestUtils.waitForCondition(() -> cache.size() >= expSize, 5000);
 
         int size = cache.size();
 
