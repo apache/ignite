@@ -31,7 +31,7 @@ public class UserAuthenticateResponseMessage implements Message {
     IgniteUuid id;
 
     /** Error message. */
-    @Order(1)
+    @Order(value = 1, method = "errorMessage")
     String errMsg;
 
     /**
