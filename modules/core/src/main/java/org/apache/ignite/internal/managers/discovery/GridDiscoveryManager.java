@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DefaultCommunicationFailureResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -176,6 +177,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOA
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_WAL_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -483,6 +485,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
+
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (dsCfg != null)
+            ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg.getWalMode());
 
         DiscoverySpi spi = getSpi();
 
@@ -1279,6 +1286,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
+        WALMode locWalMode = locNode.attribute(ATTR_WAL_MODE);
+
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
@@ -1382,6 +1391,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
+            }
+
+            WALMode rmtWalMode = n.attribute(ATTR_WAL_MODE);
+
+            if (locWalMode != rmtWalMode) {
+                throw new IgniteCheckedException("Remote node has WAL mode different from local " +
+                    "[locId8=" + U.id8(locNode.id()) + ", locWalMode=" + locWalMode +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtWalMode=" + rmtWalMode +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
