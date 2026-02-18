@@ -55,7 +55,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
     /** Result. */
     @GridToStringInclude
-    @Order(7)
+    @Order(value = 7, method = "entries")
     Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */

@@ -57,7 +57,7 @@ public class GridJobExecuteResponse implements Message {
      * Serialization call holder for {@code gridEx}. Works with {@link #marshallUserData(Marshaller)}.
      * Wraps also possible serialization error.
      */
-    @Order(3)
+    @Order(value = 3, method = "exceptionMessage")
     @Nullable ErrorMessage gridExMsg;
 
     /** Job result serialization call holder. */
