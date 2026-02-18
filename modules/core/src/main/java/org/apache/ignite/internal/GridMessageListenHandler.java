@@ -113,7 +113,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public String cacheName() {
-        throw new IllegalStateException();
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -222,8 +222,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object orderedTopic() {
-        return null;
+    @Override public Object orderedTopic() {
+        return this.topic;
     }
 
     /** {@inheritDoc} */
