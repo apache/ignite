@@ -60,7 +60,8 @@ public class ClientTxStartRequest extends ClientRequest implements ClientTxSuppo
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        return new ClientIntResponse(requestId(), startClientTransaction(ctx, concurrency, isolation, timeout, lb));
+        // TODO IGNITE-23721: support application attributes for thin client.
+        return new ClientIntResponse(requestId(), startClientTransaction(ctx, concurrency, isolation, timeout, lb, null));
     }
 
     /** {@inheritDoc} */

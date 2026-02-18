@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
@@ -31,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,37 +38,39 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** */
+    @Order(value = 4, method = "futureId")
     private long futId;
 
     /** Topology version. */
+    @Order(value = 5, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /** */
-    @GridDirectTransient
     private List<List<UUID>> affAssignmentIds;
 
     /** */
+    @Order(value = 6, method = "affinityAssignmentIdsBytes")
     private byte[] affAssignmentIdsBytes;
 
     /** */
-    @GridDirectTransient
     private List<List<UUID>> idealAffAssignment;
 
     /** Affinity assignment bytes. */
+    @Order(value = 7, method = "idealAffinityAssignmentsBytes")
     private byte[] idealAffAssignmentBytes;
 
     /** */
-    @GridDirectTransient
     private GridDhtPartitionFullMap partMap;
 
     /** */
+    @Order(value = 8, method = "partitionBytes")
     private byte[] partBytes;
 
     /** Indicates that getting required affinity assignments has been failed. */
-    @GridDirectTransient
     private IgniteCheckedException affAssignmentErr;
 
     /** Serialized error. */
+    @Order(value = 9, method = "affinityAssignmentsErrorBytes")
     private byte[] affAssignmentErrBytes;
 
     /**
@@ -99,6 +98,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
         affAssignmentIds = ids(affAssignment);
     }
 
+    /** */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
     /**
      * @return Future ID.
      */
@@ -109,6 +113,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** {@inheritDoc} */
     @Override public boolean partitionExchangeMessage() {
         return true;
+    }
+
+    /** */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -186,6 +195,46 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
      */
     @Nullable public GridDhtPartitionFullMap partitionMap() {
         return partMap;
+    }
+
+    /** */
+    public byte[] affinityAssignmentIdsBytes() {
+        return affAssignmentIdsBytes;
+    }
+
+    /** */
+    public void affinityAssignmentIdsBytes(byte[] affAssignmentIdsBytes) {
+        this.affAssignmentIdsBytes = affAssignmentIdsBytes;
+    }
+
+    /** */
+    public byte[] idealAffinityAssignmentsBytes() {
+        return idealAffAssignmentBytes;
+    }
+
+    /** */
+    public void idealAffinityAssignmentsBytes(byte[] idealAffAssignmentBytes) {
+        this.idealAffAssignmentBytes = idealAffAssignmentBytes;
+    }
+
+    /** */
+    public byte[] partitionBytes() {
+        return partBytes;
+    }
+
+    /** */
+    public void partitionBytes(byte[] partBytes) {
+        this.partBytes = partBytes;
+    }
+
+    /** */
+    public byte[] affinityAssignmentsErrorBytes() {
+        return affAssignmentErrBytes;
+    }
+
+    /** */
+    public void affinityAssignmentsErrorBytes(byte[] affAssignmentErrBytes) {
+        this.affAssignmentErrBytes = affAssignmentErrBytes;
     }
 
     /**
@@ -278,123 +327,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeByteArray(affAssignmentErrBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByteArray(affAssignmentIdsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeByteArray(idealAffAssignmentBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeByteArray(partBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                affAssignmentErrBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                affAssignmentIdsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                idealAffAssignmentBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                partBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

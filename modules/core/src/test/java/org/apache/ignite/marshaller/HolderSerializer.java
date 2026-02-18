@@ -15,17 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.tracing;
+package org.apache.ignite.marshaller;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.ObjectInputStreamFilteringTest.Holder;
 
 /** */
-public class TracingConfigurationGetAllCommand extends AbstractTracingConfigurationCommand {
+public class HolderSerializer implements IgniteDataTransferObjectSerializer<Holder> {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Print tracing configuration";
+    @Override public void writeExternal(Holder instance, ObjectOutput out) throws IOException {
+        U.writeMap(out, instance.map);
     }
 
     /** {@inheritDoc} */
-    @Override public Class<TracingConfigurationGetAllCommandArg> argClass() {
-        return TracingConfigurationGetAllCommandArg.class;
+    @Override public void readExternal(Holder instance, ObjectInput in) throws IOException, ClassNotFoundException {
+        instance.map = U.readMap(in);
     }
 }
