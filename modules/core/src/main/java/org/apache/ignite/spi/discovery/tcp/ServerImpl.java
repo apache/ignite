@@ -2491,7 +2491,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
-                    addFinishMsg.prepareMarshal(spi.marshaller());`
+                    addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
