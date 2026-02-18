@@ -30,7 +30,6 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +56,7 @@ public final class PlanningContext implements Context {
     private IgnitePlanner planner;
 
     /** */
-    private final long startTs;
+    final long startNanos;
 
     /** */
     private final long plannerTimeout;
@@ -71,11 +70,12 @@ public final class PlanningContext implements Context {
         @Nullable Object[] parameters,
         long plannerTimeout
     ) {
+        startNanos = System.nanoTime();
+
         this.qry = qry;
         this.parameters = parameters;
 
         this.parentCtx = parentCtx;
-        startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
     }
 
@@ -99,13 +99,6 @@ public final class PlanningContext implements Context {
      */
     public String schemaName() {
         return schema().getName();
-    }
-
-    /**
-     * @return Start timestamp in millis.
-     */
-    public long startTs() {
-        return startTs;
     }
 
     /**
