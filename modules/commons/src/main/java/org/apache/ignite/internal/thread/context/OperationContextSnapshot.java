@@ -17,19 +17,19 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.internal.thread.context.function.ContextAwareCallable;
-import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
 /**
- * Represents snapshot of all Attributes and their corresponding values for a particular {@link Context} instance.
+ * Represents snapshot of all Attributes and their corresponding values for a particular {@link OperationContext} instance.
  * Its main purpose to save Context state and restore it later, possible for Context bound to another thread.
  *
- * @see Context
- * @see Context#createSnapshot()
- * @see Context#restoreSnapshot(ContextSnapshot)
- * @see ContextAwareCallable
- * @see ContextAwareRunnable
+ * @see OperationContext
+ * @see OperationContext#createSnapshot()
+ * @see OperationContext#restoreSnapshot(OperationContextSnapshot)
+ * @see OperationContextAwareCallable
+ * @see OperationContextAwareRunnable
  */
-public interface ContextSnapshot {
+public interface OperationContextSnapshot {
     // No-op.
 }

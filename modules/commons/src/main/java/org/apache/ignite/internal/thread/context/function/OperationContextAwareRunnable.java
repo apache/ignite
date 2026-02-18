@@ -17,41 +17,41 @@
 
 package org.apache.ignite.internal.thread.context.function;
 
-import org.apache.ignite.internal.thread.context.Context;
-import org.apache.ignite.internal.thread.context.ContextAwareWrapper;
-import org.apache.ignite.internal.thread.context.ContextSnapshot;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAwareWrapper;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.Scope;
 
 /** */
-public class ContextAwareRunnable extends ContextAwareWrapper<Runnable> implements Runnable {
+public class OperationContextAwareRunnable extends OperationContextAwareWrapper<Runnable> implements Runnable {
     /** */
-    public ContextAwareRunnable(Runnable delegate, ContextSnapshot snapshot) {
+    public OperationContextAwareRunnable(Runnable delegate, OperationContextSnapshot snapshot) {
         super(delegate, snapshot);
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (Scope ignored = Context.restoreSnapshot(snapshot)) {
+        try (Scope ignored = OperationContext.restoreSnapshot(snapshot)) {
             delegate.run();
         }
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link ContextSnapshot} of {@link Context}
-     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
+     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
      * {@link Runnable} execution, potentially in another thread.
      */
     public static Runnable wrap(Runnable delegate) {
-        return wrap(delegate, ContextAwareRunnable::new);
+        return wrap(delegate, OperationContextAwareRunnable::new);
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link ContextSnapshot} of {@link Context}
-     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
+     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
      * {@link Runnable} execution, potentially in another thread.
-     * If {@link Context} holds no data when this method is called, it does nothing and returns original {@link Runnable}.
+     * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original {@link Runnable}.
      */
     public static Runnable wrapIfContextNotEmpty(Runnable delegate) {
-        return wrap(delegate, ContextAwareRunnable::new, true);
+        return wrap(delegate, OperationContextAwareRunnable::new, true);
     }
 }

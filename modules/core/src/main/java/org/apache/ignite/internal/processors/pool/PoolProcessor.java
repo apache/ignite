@@ -45,10 +45,10 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.systemview.StripedExecutorTaskViewWalker;
-import org.apache.ignite.internal.thread.pool.ContextAwareIoPool;
-import org.apache.ignite.internal.thread.pool.ContextAwareStripedExecutor;
-import org.apache.ignite.internal.thread.pool.ContextAwareStripedThreadPoolExecutor;
-import org.apache.ignite.internal.thread.pool.ContextAwareThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.OperationContextAwareIoPool;
+import org.apache.ignite.internal.thread.pool.OperationContextAwareStripedExecutor;
+import org.apache.ignite.internal.thread.pool.OperationContextAwareStripedThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.OperationContextAwareThreadPoolExecutor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -280,7 +280,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Failed to register IO executor pool because its ID as " +
                             "already used: " + id);
 
-                    extPools[id] = ctx.security().enabled() ? ContextAwareIoPool.wrap(ex) : ex;
+                    extPools[id] = ctx.security().enabled() ? OperationContextAwareIoPool.wrap(ex) : ex;
                 }
             }
         }
@@ -1216,7 +1216,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         long keepAliveTime
     ) {
         return ctx.security().enabled()
-            ? new ContextAwareStripedThreadPoolExecutor(
+            ? new OperationContextAwareStripedThreadPoolExecutor(
                 concurrentLvl,
                 igniteInstanceName,
                 threadNamePrefix,
@@ -1244,7 +1244,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         long failureDetectionTimeout
     ) {
         return ctx.security().enabled()
-            ? new ContextAwareStripedExecutor(
+            ? new OperationContextAwareStripedExecutor(
                 cnt,
                 igniteInstanceName,
                 poolName,
@@ -1268,7 +1268,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         UncaughtExceptionHandler eHnd
     ) {
         return ctx.security().enabled()
-            ? new ContextAwareThreadPoolExecutor(
+            ? new OperationContextAwareThreadPoolExecutor(
                 threadNamePrefix,
                 igniteInstanceName,
                 corePoolSize,

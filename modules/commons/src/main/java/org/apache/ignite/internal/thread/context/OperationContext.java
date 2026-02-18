@@ -19,16 +19,16 @@ package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.thread.context.concurrent.ContextAwareExecutor;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
 
 /**
- * Represents a storage of {@link ContextAttribute}s and their corresponding values bound to the JVM thread.
+ * Represents a storage of {@link OperationContextAttribute}s and their corresponding values bound to the JVM thread.
  * The state of Context is determined by a sequence of {@link Update}s applied to it. Each Update stores the
- * updated or newly added {@link ContextAttribute} values and link to the previous Update.
+ * updated or newly added {@link OperationContextAttribute} values and link to the previous Update.
  * <pre>
  *         +-----------+   +-----------+
  *         |           |   | A1 -> V2  |
@@ -37,21 +37,21 @@ import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
  *         +-----------+   +-----------+
  *</pre>
  * Context Updates can be undone in the same order they were applied by closing the {@link Scope} associated with each
- * update (see {@link #set(ContextAttribute, Object)} and related methods).
+ * update (see {@link #set(OperationContextAttribute, Object)} and related methods).
  *<p>
  * Context bound to one JVM thread can be saved and restored in another thread using the snapshot mechanism
- * (see {@link #createSnapshot()} and {@link #restoreSnapshot(ContextSnapshot) methods}). This provides basic
+ * (see {@link #createSnapshot()} and {@link #restoreSnapshot(OperationContextSnapshot) methods}). This provides basic
  * functionality for implementing asynchronous executors that automatically propagate Context data between JVM threads.
  *</p>
  *
  * @see Scope
- * @see ContextSnapshot
- * @see ContextAwareWrapper
- * @see ContextAwareExecutor
+ * @see OperationContextSnapshot
+ * @see OperationContextAwareWrapper
+ * @see OperationContextAwareExecutor
  */
-public class Context {
+public class OperationContext {
     /** */
-    private static final ThreadLocal<Context> INSTANCE = ThreadLocal.withInitial(Context::new);
+    private static final ThreadLocal<OperationContext> INSTANCE = ThreadLocal.withInitial(OperationContext::new);
 
     /**
      * Sequence of updated applied to the Context. Each update holds a link to the previous Update, so we store only
@@ -60,19 +60,19 @@ public class Context {
     @Nullable private Update lastUpd;
 
     /** */
-    private Context() {
+    private OperationContext() {
         // No-op.
     }
 
     /**
      * Retrieves value associated with specified attribute by accessing Context bound to the thread this method is
-     * called from. If no value is explicitly associated with specified attribute, {@link ContextAttribute#initialValue()}
+     * called from. If no value is explicitly associated with specified attribute, {@link OperationContextAttribute#initialValue()}
      * is returned.
      *
      * @param attr Context Attribute.
      * @return Context Attribute Value.
      */
-    @Nullable public static <T> T get(ContextAttribute<T> attr) {
+    @Nullable public static <T> T get(OperationContextAttribute<T> attr) {
         return INSTANCE.get().getInternal(attr);
     }
 
@@ -85,8 +85,8 @@ public class Context {
      * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
      * same thread they were applied.
      */
-    public static <T> Scope set(ContextAttribute<T> attr, T val) {
-        Context ctx = INSTANCE.get();
+    public static <T> Scope set(OperationContextAttribute<T> attr, T val) {
+        OperationContext ctx = INSTANCE.get();
 
         return ctx.getInternal(attr) == val ? NOOP_SCOPE : ctx.applyAttributeUpdates(new AttributeValueHolder<>(attr, val));
     }
@@ -104,8 +104,8 @@ public class Context {
      * same thread they were applied.
      */
     public static <T1, T2> Scope set(
-        ContextAttribute<T1> attr1, T1 val1,
-        ContextAttribute<T2> attr2, T2 val2
+        OperationContextAttribute<T1> attr1, T1 val1,
+        OperationContextAttribute<T2> attr2, T2 val2
     ) {
         return ContextUpdater.create().set(attr1, val1).set(attr2, val2).apply();
     }
@@ -125,9 +125,9 @@ public class Context {
      * same thread they were applied.
      */
     public static <T1, T2, T3> Scope set(
-        ContextAttribute<T1> attr1, T1 val1,
-        ContextAttribute<T2> attr2, T2 val2,
-        ContextAttribute<T3> attr3, T3 val3
+        OperationContextAttribute<T1> attr1, T1 val1,
+        OperationContextAttribute<T2> attr2, T2 val2,
+        OperationContextAttribute<T3> attr3, T3 val3
     ) {
         return ContextUpdater.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
     }
@@ -138,7 +138,7 @@ public class Context {
      *
      * @return Context Snapshot.
      */
-    public static ContextSnapshot createSnapshot() {
+    public static OperationContextSnapshot createSnapshot() {
         return INSTANCE.get().createSnapshotInternal();
     }
 
@@ -151,15 +151,15 @@ public class Context {
      * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
      * same thread they were applied.
      */
-    public static Scope restoreSnapshot(ContextSnapshot snp) {
+    public static Scope restoreSnapshot(OperationContextSnapshot snp) {
         return INSTANCE.get().restoreSnapshotInternal(snp);
     }
 
     /**
      * Retrieves value for the specified attribute from the current Context. If no value is explicitly associated with
-     * specified attribute, {@link ContextAttribute#initialValue()} is returned.
+     * specified attribute, {@link OperationContextAttribute#initialValue()} is returned.
      */
-    @Nullable private <T> T getInternal(ContextAttribute<T> attr) {
+    @Nullable private <T> T getInternal(OperationContextAttribute<T> attr) {
         if (lastUpd == null || (lastUpd.storedAttrBits & attr.bitmask()) == 0)
             return attr.initialValue(); // Context does not store value for the specified attribute.
 
@@ -186,7 +186,7 @@ public class Context {
     }
 
     /** Iterates over the currently applied context updates and finds the latest value associated with the specified attribute. */
-    private <T> AttributeValueHolder<T> findAttributeValue(ContextAttribute<T> attr) {
+    private <T> AttributeValueHolder<T> findAttributeValue(OperationContextAttribute<T> attr) {
         for (Update upd = lastUpd; upd != null; upd = upd.prev) {
             if (!upd.holdsValueFor(attr))
                 continue;
@@ -198,15 +198,15 @@ public class Context {
     }
 
     /** */
-    private ContextSnapshot createSnapshotInternal() {
+    private OperationContextSnapshot createSnapshotInternal() {
         // The sequence of updates defines the state of the Context. Each update is linked to the previous one and immutable.
         // Therefore, to restore the context state elsewhere, we only need to share a reference to the most recent update.
         return lastUpd;
     }
 
     /** */
-    private Scope restoreSnapshotInternal(ContextSnapshot newSnp) {
-        ContextSnapshot prevSnp = createSnapshotInternal();
+    private Scope restoreSnapshotInternal(OperationContextSnapshot newSnp) {
+        OperationContextSnapshot prevSnp = createSnapshotInternal();
 
         if (newSnp == prevSnp)
             return NOOP_SCOPE;
@@ -217,21 +217,21 @@ public class Context {
     }
 
     /** */
-    private void changeState(ContextSnapshot expState, ContextSnapshot newState) {
+    private void changeState(OperationContextSnapshot expState, OperationContextSnapshot newState) {
         assert lastUpd == expState;
 
         lastUpd = (Update)newState;
     }
 
     /** Represents Update applied to the Context. */
-    private class Update implements Scope, ContextSnapshot {
+    private class Update implements Scope, OperationContextSnapshot {
         /** Updated attributes and their corresponding values. */
         private final AttributeValueHolder<?>[] attrVals;
 
         /**
          * Bits representing all attributes which values were changed by this update.
          *
-         * @see ContextAttribute#bitmask()
+         * @see OperationContextAttribute#bitmask()
          */
         private final int updAttrBits;
 
@@ -243,7 +243,7 @@ public class Context {
          * <li>do not recalculate state of all attributes when update is undone</li>
          * </ul>
          *
-         * @see ContextAttribute#bitmask()
+         * @see OperationContextAttribute#bitmask()
          */
         private final int storedAttrBits;
 
@@ -260,7 +260,7 @@ public class Context {
         }
 
         /** @return Whether current update contains value for the specified attribute. */
-        boolean holdsValueFor(ContextAttribute<?> attr) {
+        boolean holdsValueFor(OperationContextAttribute<?> attr) {
             return (updAttrBits & attr.bitmask()) != 0;
         }
 
@@ -268,7 +268,7 @@ public class Context {
          * @return Attribute value that was set by the current update for the specified attribute. {@code null} if
          * specified Attribute was not changed by this update.
          */
-        @Nullable <T> AttributeValueHolder<T> value(ContextAttribute<T> attr) {
+        @Nullable <T> AttributeValueHolder<T> value(OperationContextAttribute<T> attr) {
             // We iterate in reverse order to correctly handle the case when the value for the same attribute is
             // specified multiple times.
             for (int i = attrVals.length - 1; i >= 0; i--) {
@@ -303,18 +303,18 @@ public class Context {
         private static final int INIT_UPDATES_CAPACITY = 3;
 
         /** */
-        private final Context ctx;
+        private final OperationContext ctx;
 
         /** */
         private List<AttributeValueHolder<?>> updates;
 
         /** */
-        private ContextUpdater(Context ctx) {
+        private ContextUpdater(OperationContext ctx) {
             this.ctx = ctx;
         }
 
         /** */  
-        <T> ContextUpdater set(ContextAttribute<T> attr, T val) {
+        <T> ContextUpdater set(OperationContextAttribute<T> attr, T val) {
             if (ctx.getInternal(attr) == val)
                 return this;
 

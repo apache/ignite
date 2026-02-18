@@ -18,16 +18,16 @@
 package org.apache.ignite.internal.thread.pool;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class ContextAwareStripedExecutor extends StripedExecutor {
+public class OperationContextAwareStripedExecutor extends StripedExecutor {
     /** */
-    public ContextAwareStripedExecutor(
+    public OperationContextAwareStripedExecutor(
         int cnt,
         String igniteInstanceName,
         String poolName,
@@ -42,11 +42,11 @@ public class ContextAwareStripedExecutor extends StripedExecutor {
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(ContextAwareRunnable.wrapIfContextNotEmpty(cmd));
+        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(cmd));
     }
 
     /** {@inheritDoc} */
     @Override public void execute(int idx, Runnable cmd) {
-        super.execute(idx, ContextAwareRunnable.wrapIfContextNotEmpty(cmd));
+        super.execute(idx, OperationContextAwareRunnable.wrapIfContextNotEmpty(cmd));
     }
 }

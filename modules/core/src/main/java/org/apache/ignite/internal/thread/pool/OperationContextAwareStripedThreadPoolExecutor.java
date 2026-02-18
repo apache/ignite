@@ -17,36 +17,25 @@
 
 package org.apache.ignite.internal.thread.pool;
 
-import java.util.concurrent.Executor;
-import org.apache.ignite.internal.thread.context.concurrent.ContextAwareExecutor;
-import org.apache.ignite.plugin.extensions.communication.IoPool;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /** */
-public class ContextAwareIoPool implements IoPool {
+public class OperationContextAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
     /** */
-    private final IoPool delegate;
-
-    /** */
-    private final Executor executor;
-
-    /** */
-    private ContextAwareIoPool(IoPool delegate) {
-        this.delegate = delegate;
-        this.executor = ContextAwareExecutor.wrap(delegate.executor());
+    public OperationContextAwareStripedThreadPoolExecutor(
+        int concurrentLvl,
+        String igniteInstanceName,
+        String threadNamePrefix,
+        Thread.UncaughtExceptionHandler eHnd,
+        boolean allowCoreThreadTimeOut,
+        long keepAliveTime
+    ) {
+        super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
     }
 
     /** {@inheritDoc} */
-    @Override public byte id() {
-        return delegate.id();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Executor executor() {
-        return executor;
-    }
-
-    /** */
-    public static IoPool wrap(IoPool pool) {
-        return pool == null ? null : new ContextAwareIoPool(pool);
+    @Override public void execute(Runnable task, int idx) {
+        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(task), idx);
     }
 }

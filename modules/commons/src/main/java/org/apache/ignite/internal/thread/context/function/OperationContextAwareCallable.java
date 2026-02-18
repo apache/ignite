@@ -20,51 +20,51 @@ package org.apache.ignite.internal.thread.context.function;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.thread.context.Context;
-import org.apache.ignite.internal.thread.context.ContextAwareWrapper;
-import org.apache.ignite.internal.thread.context.ContextSnapshot;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAwareWrapper;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.Scope;
 
 /** */
-public class ContextAwareCallable<T> extends ContextAwareWrapper<Callable<T>> implements Callable<T> {
+public class OperationContextAwareCallable<T> extends OperationContextAwareWrapper<Callable<T>> implements Callable<T> {
     /** */
-    private ContextAwareCallable(Callable<T> delegate, ContextSnapshot snapshot) {
+    private OperationContextAwareCallable(Callable<T> delegate, OperationContextSnapshot snapshot) {
         super(delegate, snapshot);
     }
 
     /** {@inheritDoc} */
     @Override public T call() throws Exception {
-        try (Scope ignored = Context.restoreSnapshot(snapshot)) {
+        try (Scope ignored = OperationContext.restoreSnapshot(snapshot)) {
             return delegate.call();
         }
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Callable} along with the {@link ContextSnapshot} of {@link Context}
-     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * Creates a wrapper that stores a specified {@link Callable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
+     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
      * {@link Callable} execution, potentially in another thread.
      */
     public static <T> Callable<T> wrap(Callable<T> delegate) {
-        return wrap(delegate, ContextAwareCallable::new);
+        return wrap(delegate, OperationContextAwareCallable::new);
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Callable} along with the {@link ContextSnapshot} of {@link Context}
-     * bound to the thread when this method is called. Captured {@link ContextSnapshot} will be restored before
+     * Creates a wrapper that stores a specified {@link Callable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
+     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
      * {@link Callable} execution, potentially in another thread.
-     * If {@link Context} holds no data when this method is called, it does nothing and returns original {@link Callable}.
+     * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original {@link Callable}.
      */
     public static <T> Callable<T> wrapIfContextNotEmpty(Callable<T> delegate) {
-        return wrap(delegate, ContextAwareCallable::new, true);
+        return wrap(delegate, OperationContextAwareCallable::new, true);
     }
 
     /** The same as {@link #wrap(Callable)} but wraps each specified {@link Callable}. */
     public static <T> Collection<Callable<T>> wrap(Collection<? extends Callable<T>> tasks) {
-        return tasks == null ? null : tasks.stream().map(ContextAwareCallable::wrap).collect(Collectors.toList());
+        return tasks == null ? null : tasks.stream().map(OperationContextAwareCallable::wrap).collect(Collectors.toList());
     }
 
     /** The same as {@link #wrapIfContextNotEmpty(Callable)} but wraps each specified {@link Callable}. */
     public static <T> Collection<Callable<T>> wrapIfContextNotEmpty(Collection<? extends Callable<T>> tasks) {
-        return tasks == null ? null : tasks.stream().map(ContextAwareCallable::wrapIfContextNotEmpty).collect(Collectors.toList());
+        return tasks == null ? null : tasks.stream().map(OperationContextAwareCallable::wrapIfContextNotEmpty).collect(Collectors.toList());
     }
 }

@@ -23,11 +23,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents a key to access and modify Context records.
  *
- * @see Context
- * @see Context#get(ContextAttribute)
- * @see Context#set(ContextAttribute, Object)
+ * @see OperationContext
+ * @see OperationContext#get(OperationContextAttribute)
+ * @see OperationContext#set(OperationContextAttribute, Object)
  */
-public class ContextAttribute<T> {
+public class OperationContextAttribute<T> {
     /** */
     static final AtomicInteger ID_GEN = new AtomicInteger();
 
@@ -41,15 +41,15 @@ public class ContextAttribute<T> {
     @Nullable private final T initVal;
 
     /** */
-    private ContextAttribute(int bitmask, @Nullable T initVal) {
+    private OperationContextAttribute(int bitmask, @Nullable T initVal) {
         this.bitmask = bitmask;
         this.initVal = initVal;
     }
 
     /**
      * Initial Value associated with the current Attribute. Initial value will be automatically returned by the
-     * {@link Context#get} method if Attribute's value has not been previously set.
-     * @see Context#get(ContextAttribute)
+     * {@link OperationContext#get} method if Attribute's value has not been previously set.
+     * @see OperationContext#get(OperationContextAttribute)
      */
     @Nullable public T initialValue() {
         return initVal;
@@ -68,10 +68,10 @@ public class ContextAttribute<T> {
         if (this == other)
             return true;
 
-        if (!(other instanceof ContextAttribute))
+        if (!(other instanceof OperationContextAttribute))
             return false;
 
-        return bitmask == ((ContextAttribute<?>)other).bitmask;
+        return bitmask == ((OperationContextAttribute<?>)other).bitmask;
     }
 
     /** {@inheritDoc} */
@@ -86,23 +86,23 @@ public class ContextAttribute<T> {
      * {@link #MAX_ATTR_CNT} for implementation reasons.
      * </p>
      */
-    public static <T> ContextAttribute<T> newInstance() {
+    public static <T> OperationContextAttribute<T> newInstance() {
         return newInstance(null);
     }
 
     /**
      * Creates new instance of the Context Attribute with the specified Initial Value. The Initial Value is returned
-     * by {@link Context#get} method if the Attribute's value is not explicitly set in the Context.
+     * by {@link OperationContext#get} method if the Attribute's value is not explicitly set in the Context.
      * <p>
      * Note, that the maximum number of attribute instances that can be created is currently limited to
      * {@link #MAX_ATTR_CNT} for implementation reasons.
      * </p>
      */
-    public static <T> ContextAttribute<T> newInstance(T initVal) {
+    public static <T> OperationContextAttribute<T> newInstance(T initVal) {
         int id = ID_GEN.getAndIncrement();
 
         assert id < MAX_ATTR_CNT : "Exceeded maximum supported number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
 
-        return new ContextAttribute<>(1 << id, initVal);
+        return new OperationContextAttribute<>(1 << id, initVal);
     }
 }

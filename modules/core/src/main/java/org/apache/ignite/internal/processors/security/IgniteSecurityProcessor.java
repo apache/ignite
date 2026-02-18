@@ -32,8 +32,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
-import org.apache.ignite.internal.thread.context.Context;
-import org.apache.ignite.internal.thread.context.ContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,7 +89,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** Context attribute that holds Security Context. */
-    private static final ContextAttribute<SecurityContext> SEC_CTX = ContextAttribute.newInstance();
+    private static final OperationContextAttribute<SecurityContext> SEC_CTX = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -126,7 +126,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return Context.set(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
+        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
     }
 
     /** {@inheritDoc} */
@@ -172,12 +172,12 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean isDefaultContext() {
-        return Context.get(SEC_CTX) == null;
+        return OperationContext.get(SEC_CTX) == null;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = Context.get(SEC_CTX);
+        SecurityContext res = OperationContext.get(SEC_CTX);
 
         return res == null ? dfltSecCtx : res;
     }

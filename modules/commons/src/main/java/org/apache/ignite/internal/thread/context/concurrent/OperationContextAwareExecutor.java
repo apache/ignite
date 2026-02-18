@@ -18,32 +18,32 @@
 package org.apache.ignite.internal.thread.context.concurrent;
 
 import java.util.concurrent.Executor;
-import org.apache.ignite.internal.thread.context.Context;
-import org.apache.ignite.internal.thread.context.ContextSnapshot;
-import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class ContextAwareExecutor implements Executor {
+public class OperationContextAwareExecutor implements Executor {
     /** */
     private final Executor delegate;
 
     /** */
-    private ContextAwareExecutor(Executor delegate) {
+    private OperationContextAwareExecutor(Executor delegate) {
         this.delegate = delegate;
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable command) {
-        delegate.execute(ContextAwareRunnable.wrap(command));
+        delegate.execute(OperationContextAwareRunnable.wrap(command));
     }
 
     /**
-     * Creates executor wrapper that automatically captures {@link ContextSnapshot} of {@link Context} for the thread
-     * that invokes task execution. Captured {@link ContextSnapshot} will be restored before task execution, potentially
+     * Creates executor wrapper that automatically captures {@link OperationContextSnapshot} of {@link OperationContext} for the thread
+     * that invokes task execution. Captured {@link OperationContextSnapshot} will be restored before task execution, potentially
      * in another thread.
      */
     public static Executor wrap(Executor delegate) {
-        return delegate == null ? null : new ContextAwareExecutor(delegate);
+        return delegate == null ? null : new OperationContextAwareExecutor(delegate);
     }
 }

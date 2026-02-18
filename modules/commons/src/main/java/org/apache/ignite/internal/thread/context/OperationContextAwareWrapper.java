@@ -21,12 +21,12 @@ import java.util.function.BiFunction;
 import org.apache.ignite.internal.IgniteInternalWrapper;
 
 /** */
-public abstract class ContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
+public abstract class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
     /** */
     protected final T delegate;
 
     /** */
-    protected final ContextSnapshot snapshot;
+    protected final OperationContextSnapshot snapshot;
 
     /** */
     @Override public T delegate() {
@@ -34,22 +34,22 @@ public abstract class ContextAwareWrapper<T> implements IgniteInternalWrapper<T>
     }
 
     /** */
-    protected ContextAwareWrapper(T delegate, ContextSnapshot snapshot) {
+    protected OperationContextAwareWrapper(T delegate, OperationContextSnapshot snapshot) {
         this.delegate = delegate;
         this.snapshot = snapshot;
     }
 
     /** */
-    protected static <T> T wrap(T delegate, BiFunction<T, ContextSnapshot, T> wrapper) {
+    protected static <T> T wrap(T delegate, BiFunction<T, OperationContextSnapshot, T> wrapper) {
         return wrap(delegate, wrapper, false);
     }
 
     /** */
-    protected static <T> T wrap(T delegate, BiFunction<T, ContextSnapshot, T> wrapper, boolean ignoreEmptyContext) {
-        if (delegate == null || delegate instanceof ContextAwareWrapper)
+    protected static <T> T wrap(T delegate, BiFunction<T, OperationContextSnapshot, T> wrapper, boolean ignoreEmptyContext) {
+        if (delegate == null || delegate instanceof OperationContextAwareWrapper)
             return delegate;
 
-        ContextSnapshot snapshot = Context.createSnapshot();
+        OperationContextSnapshot snapshot = OperationContext.createSnapshot();
 
         if (ignoreEmptyContext && snapshot == null)
             return delegate;

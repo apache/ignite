@@ -25,15 +25,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.ignite.internal.thread.context.function.ContextAwareCallable;
-import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class ContextAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
+public class OperationContextAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
     /** */
-    public ContextAwareThreadPoolExecutor(
+    public OperationContextAwareThreadPoolExecutor(
         String threadNamePrefix,
         String igniteInstanceName,
         int corePoolSize,
@@ -48,22 +48,22 @@ public class ContextAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
-        return super.submit(ContextAwareCallable.wrapIfContextNotEmpty(task));
+        return super.submit(OperationContextAwareCallable.wrapIfContextNotEmpty(task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Runnable task, T res) {
-        return super.submit(ContextAwareRunnable.wrapIfContextNotEmpty(task), res);
+        return super.submit(OperationContextAwareRunnable.wrapIfContextNotEmpty(task), res);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
-        return super.submit(ContextAwareRunnable.wrapIfContextNotEmpty(task));
+        return super.submit(OperationContextAwareRunnable.wrapIfContextNotEmpty(task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return super.invokeAll(ContextAwareCallable.wrapIfContextNotEmpty(tasks));
+        return super.invokeAll(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks));
     }
 
     /** {@inheritDoc} */
@@ -72,23 +72,23 @@ public class ContextAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
         long timeout,
         @NotNull TimeUnit unit
     ) throws InterruptedException {
-        return super.invokeAll(ContextAwareCallable.wrapIfContextNotEmpty(tasks), timeout, unit);
+        return super.invokeAll(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
-        return super.invokeAny(ContextAwareCallable.wrapIfContextNotEmpty(tasks));
+        return super.invokeAny(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks));
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return super.invokeAny(ContextAwareCallable.wrapIfContextNotEmpty(tasks), timeout, unit);
+        return super.invokeAny(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(ContextAwareRunnable.wrapIfContextNotEmpty(cmd));
+        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(cmd));
     }
 }

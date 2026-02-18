@@ -20,19 +20,19 @@ package org.apache.ignite.internal.thread.context;
 /** Immutable container that stores an attribute and its corresponding value. */
 class AttributeValueHolder<T> {
     /** */
-    private final ContextAttribute<T> attr;
+    private final OperationContextAttribute<T> attr;
 
     /** */
     private final T val;
 
     /** */
-    AttributeValueHolder(ContextAttribute<T> attr, T val) {
+    AttributeValueHolder(OperationContextAttribute<T> attr, T val) {
         this.attr = attr;
         this.val = val;
     }
 
     /** */
-    ContextAttribute<T> attribute() {
+    OperationContextAttribute<T> attribute() {
         return attr;
     }
 
