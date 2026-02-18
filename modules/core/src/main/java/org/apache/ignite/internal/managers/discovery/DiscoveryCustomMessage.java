@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.discovery;
 import java.io.Serializable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.jetbrains.annotations.Nullable;
@@ -93,9 +92,13 @@ public interface DiscoveryCustomMessage extends Serializable {
     public boolean isMutable();
 
     /**
-     * See {@link DiscoverySpiCustomMessage#stopProcess()}.
+     * Called on discovery coordinator node after listener is notified. If returns {@code true}
+     * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
+     * message, it is sent to all nodes.
      *
-     * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.
+     * Note: this method is used then and only then the zookeeper discovery is configured.
+     *
+     * @return {@code True} if message should not be sent to all nodes.
      */
     public default boolean stopProcess() {
         return false;
