@@ -1390,20 +1390,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
-                    cctx.database().checkpointReadLock();
+                    cacheGroup.offheap().restorePartitionStates();
 
-                    try {
-                        cacheGroup.offheap().restorePartitionStates();
+                    if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
+                        cacheGroup.topology().afterStateRestored(fut.initialVersion());
 
-                        if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
-                            cacheGroup.topology().afterStateRestored(fut.initialVersion());
-
-                        fut.timeBag().finishLocalStage("Restore partition states " +
-                            "[grp=" + cacheGroup.cacheOrGroupName() + "]");
-                    }
-                    finally {
-                        cctx.database().checkpointReadUnlock();
-                    }
+                    fut.timeBag().finishLocalStage("Restore partition states " +
+                        "[grp=" + cacheGroup.cacheOrGroupName() + "]");
 
                     return null;
                 }
