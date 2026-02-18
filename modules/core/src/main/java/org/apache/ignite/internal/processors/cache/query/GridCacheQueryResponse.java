@@ -50,7 +50,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     long reqId;
 
     /** */
-    @Order(value = 6, method = "errorMessage")
+    @Order(6)
     @Nullable ErrorMessage errMsg;
 
     /** */

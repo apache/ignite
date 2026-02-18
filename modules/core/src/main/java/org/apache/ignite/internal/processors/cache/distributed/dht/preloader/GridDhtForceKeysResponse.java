@@ -48,7 +48,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     IgniteUuid miniId;
 
     /** Error message. */
-    @Order(value = 6, method = "errorMessage")
+    @Order(6)
     @Nullable volatile ErrorMessage errMsg;
 
     /** Missed (not found) keys. */

@@ -42,7 +42,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     public IgniteUuid futId;
 
     /** Error. */
-    @Order(value = 8, method = "errorMessage")
+    @Order(8)
     public ErrorMessage errMsg;
 
     /** Values. */

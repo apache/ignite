@@ -68,7 +68,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     int msgSize;
 
     /** Supplying process error message. */
-    @Order(value = 10, method = "errorMessage")
+    @Order(10)
     @Nullable ErrorMessage errMsg;
 
     /**

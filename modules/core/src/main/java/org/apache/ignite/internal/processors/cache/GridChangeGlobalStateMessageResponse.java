@@ -32,7 +32,7 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     UUID reqId;
 
     /** Activation error message. */
-    @Order(value = 4, method = "errorMessage")
+    @Order(4)
     ErrorMessage errMsg;
 
     /**

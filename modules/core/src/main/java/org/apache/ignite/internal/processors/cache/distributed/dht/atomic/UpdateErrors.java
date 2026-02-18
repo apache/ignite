@@ -41,7 +41,7 @@ public class UpdateErrors implements Message {
     List<KeyCacheObject> failedKeys;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
+    @Order(1)
     ErrorMessage errMsg;
 
     /**
