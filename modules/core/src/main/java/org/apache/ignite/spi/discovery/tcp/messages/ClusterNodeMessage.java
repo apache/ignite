@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -77,7 +78,7 @@ public class ClusterNodeMessage implements Message {
     private String dataCenterId;
 
     /** Consistent ID. */
-    private Object consistentId;
+    private Serializable consistentId;
 
     /** */
     private byte[] consistentIdBytes;
@@ -248,12 +249,12 @@ public class ClusterNodeMessage implements Message {
     }
 
     /** @return Node consistent id. */
-    public Object consistentId() {
+    public Serializable consistentId() {
         return consistentId;
     }
 
     /** @param consistentId Node consistent id. */
-    public void consistentId(Object consistentId) {
+    public void consistentId(Serializable consistentId) {
         this.consistentId = consistentId;
     }
 

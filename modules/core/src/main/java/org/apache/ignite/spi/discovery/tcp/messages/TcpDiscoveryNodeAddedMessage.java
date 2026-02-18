@@ -27,12 +27,15 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -78,7 +81,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    private Collection<TcpDiscoveryNode> top;
+    private @Nullable Collection<TcpDiscoveryNode> top;
 
     /** Marshalled {@link #top}. */
     private byte[] topBytes;
@@ -87,14 +90,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
 
-    /** Marshalled {@link #clientTop}. */
-    private byte[] clientTopBytes;
-
     /**
      * TODO: Remove after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
      * Java-serializable pending messages from previous node.
      */
-    private Map<Integer, TcpDiscoveryAbstractMessage> serializablePendingMsgs;
+    private @Nullable Map<Integer, TcpDiscoveryAbstractMessage> serializablePendingMsgs;
 
     /** Marshalled {@link #serializablePendingMsgs}. */
     private byte[] serializablePendingMsgsBytes;
@@ -152,7 +152,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         if (!F.isEmpty(topHistMsgs))
             topHistMsgs.values().forEach(m -> m.prepareMarshal(marsh));
 
-        if (node == null && nodeBytes == null) {
+        if (node != null && nodeBytes == null) {
             try {
                 nodeBytes = U.marshal(marsh, node);
             }
@@ -167,15 +167,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal topology nodes.", e);
-            }
-        }
-
-        if (clientTop != null && clientTopBytes == null) {
-            try {
-                clientTopBytes = U.marshal(marsh, clientTop);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal client topology nodes.", e);
             }
         }
 
@@ -217,17 +208,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to unmarshal topology nodes.", e);
-            }
-        }
-
-        if (clientTopBytes != null && clientTop == null) {
-            try {
-                clientTop = U.unmarshal(marsh, clientTopBytes, clsLdr);
-
-                clientTopBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal client topology nodes.", e);
             }
         }
 
@@ -394,8 +374,28 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         Map<Long, Collection<ClusterNode>> res = U.newHashMap(topHistMsgs.size());
 
         topHistMsgs.forEach((nodeId, msgs) -> {
-            Collection<ClusterNode> clusterNodeImpls = msgs.clusterNodeMessages().stream().map(TcpDiscoveryNode::new)
-                .collect(Collectors.toList());
+            Collection<ClusterNode> clusterNodeImpls = msgs.clusterNodeMessages().stream()
+                .map(m -> {
+                    TcpDiscoveryNode tcpDiscoNode = new TcpDiscoveryNode(
+                        m.id(),
+                        m.addresses(),
+                        m.hostNames(),
+                        0,
+                        null,
+                        new IgniteProductVersion(m.productVersionMessage()),
+                        m.consistentId()
+                    );
+
+                    tcpDiscoNode.order(m.order());
+                    tcpDiscoNode.local(m.local());
+                    tcpDiscoNode.setAttributes(m.attributes());
+                    tcpDiscoNode.getAttributes().put(IgniteNodeAttributes.ATTR_CLIENT_MODE, m.client());
+
+                    if (m.clusterMetricsMessage() != null)
+                        tcpDiscoNode.setMetrics(new ClusterMetricsSnapshot(m.clusterMetricsMessage()));
+
+                    return tcpDiscoNode;
+                }).collect(Collectors.toList());
 
             res.put(nodeId, clusterNodeImpls);
         });
