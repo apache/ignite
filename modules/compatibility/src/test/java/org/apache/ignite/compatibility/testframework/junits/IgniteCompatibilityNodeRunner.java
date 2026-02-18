@@ -79,6 +79,8 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
                     " [optional/path/to/closure/file]");
             }
 
+            startParentPipeWatcher();
+
             final Thread watchdog = delayedDumpClasspath();
 
             IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
@@ -96,7 +98,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             cfg.setIgniteInstanceName(args[1]);
             cfg.setNodeId(nodeId);
 
-            final Ignite ignite = Ignition.start(cfg);
+            ignite = Ignition.start(cfg);
 
             assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
 
@@ -105,8 +107,6 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
             GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
-
-            startParentPipeWatcher(ignite);
 
             if (args.length == 6) {
                 IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[5]);
@@ -130,11 +130,14 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     }
 
     /**
-     * Checks that parent is alive.
+     * Checks that parent process is alive.
      *
-     * @param ignite Started Ignite instance in child JVM.
+     * <p>We listen on {@code System.in} because this compatibility node is started by the parent JVM via
+     * {@link ProcessBuilder}, where {@code System.in} is a pipe from the parent. When the parent process exits,
+     * the write-end of the pipe is closed and {@code System.in.read()} returns EOF. We treat this as a signal
+     * to stop Ignite and terminate the process.</p>
      */
-    private static void startParentPipeWatcher(Ignite ignite) {
+    private static void startParentPipeWatcher() {
         Thread thread = new Thread(() -> {
             try {
                 while (System.in.read() != -1) {
@@ -147,9 +150,16 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             X.println("Parent JVM stdin pipe is closed, stopping compatibility node");
 
-            Ignition.stop(ignite.name(), true);
-
-            System.exit(0);
+            try {
+                if (ignite != null)
+                    Ignition.stop(ignite.name(), true);
+            }
+            catch (Throwable e) {
+                X.println("Failed to stop compatibility node after parent pipe closure: " + e);
+            }
+            finally {
+                System.exit(0);
+            }
         }, "compatibility-parent-pipe-watcher");
 
         thread.setDaemon(true);
