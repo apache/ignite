@@ -41,6 +41,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     private TcpDiscoveryNode node;
 
     /** Serialized {@link #node}. */
+    // TODO Remove the field after completing https://issues.apache.org/jira/browse/IGNITE-27899.
     @Order(6)
     private byte[] nodeBytes;
 
