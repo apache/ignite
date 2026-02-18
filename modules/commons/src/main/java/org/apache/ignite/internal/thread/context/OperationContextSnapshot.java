@@ -21,8 +21,9 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareC
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
 /**
- * Represents snapshot of all Attributes and their corresponding values for a particular {@link OperationContext} instance.
- * Its main purpose to save Context state and restore it later, possible for Context bound to another thread.
+ * Represents snapshot of all Attributes and their corresponding values for a particular {@link OperationContext}
+ * instance. Its main purpose to save {@link OperationContext} state and restore it later, possible for
+ * {@link OperationContext} bound to another thread.
  *
  * @see OperationContext
  * @see OperationContext#createSnapshot()

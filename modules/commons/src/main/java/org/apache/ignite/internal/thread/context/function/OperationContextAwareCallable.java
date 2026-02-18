@@ -40,19 +40,22 @@ public class OperationContextAwareCallable<T> extends OperationContextAwareWrapp
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Callable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
-     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
-     * {@link Callable} execution, potentially in another thread.
+     * Creates a wrapper that stores a specified {@link Callable} along with the {@link OperationContextSnapshot} of
+     * {@link OperationContext} bound to the thread when this method is called. Captured
+     * {@link OperationContextSnapshot} will be restored before {@link Callable} execution, potentially in another
+     * thread.
      */
     public static <T> Callable<T> wrap(Callable<T> delegate) {
         return wrap(delegate, OperationContextAwareCallable::new);
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Callable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
-     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
-     * {@link Callable} execution, potentially in another thread.
-     * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original {@link Callable}.
+     * Creates a wrapper that stores a specified {@link Callable} along with the {@link OperationContextSnapshot} of
+     * {@link OperationContext} bound to the thread when this method is called. Captured
+     * {@link OperationContextSnapshot} will be restored before {@link Callable} execution, potentially in another
+     * thread.
+     * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original
+     * {@link Callable}.
      */
     public static <T> Callable<T> wrapIfContextNotEmpty(Callable<T> delegate) {
         return wrap(delegate, OperationContextAwareCallable::new, true);

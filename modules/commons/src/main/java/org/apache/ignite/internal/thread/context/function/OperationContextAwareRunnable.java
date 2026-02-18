@@ -37,19 +37,22 @@ public class OperationContextAwareRunnable extends OperationContextAwareWrapper<
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
-     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
-     * {@link Runnable} execution, potentially in another thread.
+     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link OperationContextSnapshot} of
+     * {@link OperationContext} bound to the thread when this method is called. Captured
+     * {@link OperationContextSnapshot} will be restored before {@link Runnable} execution, potentially in another
+     * thread.
      */
     public static Runnable wrap(Runnable delegate) {
         return wrap(delegate, OperationContextAwareRunnable::new);
     }
 
     /**
-     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link OperationContextSnapshot} of {@link OperationContext}
-     * bound to the thread when this method is called. Captured {@link OperationContextSnapshot} will be restored before
-     * {@link Runnable} execution, potentially in another thread.
-     * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original {@link Runnable}.
+     * Creates a wrapper that stores a specified {@link Runnable} along with the {@link OperationContextSnapshot} of
+     * {@link OperationContext} bound to the thread when this method is called. Captured
+     * {@link OperationContextSnapshot} will be restored before {@link Runnable} execution, potentially in another
+     * thread.
+     * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original
+     * {@link Runnable}.
      */
     public static Runnable wrapIfContextNotEmpty(Runnable delegate) {
         return wrap(delegate, OperationContextAwareRunnable::new, true);

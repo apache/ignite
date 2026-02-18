@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a key to access and modify Context records.
+ * Represents a key to access and modify {@link OperationContext} records.
  *
  * @see OperationContext
  * @see OperationContext#get(OperationContextAttribute)
@@ -56,8 +56,8 @@ public class OperationContextAttribute<T> {
     }
 
     /**
-     * Unique attribute bitmask calculated by shifting one from 0 to {@link Integer#SIZE}.
-     * It provides an ability to use Context Attribute with bit fields.
+     * Unique attribute bitmask calculated by shifting one from 0 to {@link Integer#SIZE}. It provides an ability to
+     * use {@link OperationContext} Attribute with bit fields.
      */
     int bitmask() {
         return bitmask;
@@ -80,7 +80,7 @@ public class OperationContextAttribute<T> {
     }
 
     /**
-     * Creates new instance of the Context Attribute with Initial Value set to {@code null}.
+     * Creates new instance of the {@link OperationContext} Attribute with Initial Value set to {@code null}.
      * <p>
      * Note, that the maximum number of attribute instances that can be created is currently limited to
      * {@link #MAX_ATTR_CNT} for implementation reasons.
@@ -91,8 +91,9 @@ public class OperationContextAttribute<T> {
     }
 
     /**
-     * Creates new instance of the Context Attribute with the specified Initial Value. The Initial Value is returned
-     * by {@link OperationContext#get} method if the Attribute's value is not explicitly set in the Context.
+     * Creates new instance of the {@link OperationContext} Attribute with the specified Initial Value. The Initial
+     * Value is returned by {@link OperationContext#get} method if the Attribute's value is not explicitly set in the
+     * {@link OperationContext}.
      * <p>
      * Note, that the maximum number of attribute instances that can be created is currently limited to
      * {@link #MAX_ATTR_CNT} for implementation reasons.

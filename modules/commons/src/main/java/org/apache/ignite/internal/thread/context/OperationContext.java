@@ -27,8 +27,8 @@ import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
 
 /**
  * Represents a storage of {@link OperationContextAttribute}s and their corresponding values bound to the JVM thread.
- * The state of Context is determined by a sequence of {@link Update}s applied to it. Each Update stores the
- * updated or newly added {@link OperationContextAttribute} values and link to the previous Update.
+ * The state of {@link OperationContext} is determined by a sequence of {@link Update}s applied to it. Each Update
+ * stores the updated or newly added {@link OperationContextAttribute} values and link to the previous Update.
  * <pre>
  *         +-----------+   +-----------+
  *         |           |   | A1 -> V2  |
@@ -36,12 +36,13 @@ import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
  *         |           |   | A2 -> V3  |
  *         +-----------+   +-----------+
  *</pre>
- * Context Updates can be undone in the same order they were applied by closing the {@link Scope} associated with each
- * update (see {@link #set(OperationContextAttribute, Object)} and related methods).
+ * {@link OperationContext} Updates can be undone in the same order they were applied by closing the {@link Scope}
+ * associated with each update (see {@link #set(OperationContextAttribute, Object)} and related methods).
  *<p>
- * Context bound to one JVM thread can be saved and restored in another thread using the snapshot mechanism
- * (see {@link #createSnapshot()} and {@link #restoreSnapshot(OperationContextSnapshot) methods}). This provides basic
- * functionality for implementing asynchronous executors that automatically propagate Context data between JVM threads.
+ * {@link OperationContext} bound to one JVM thread can be saved and restored in another thread using the snapshot
+ * mechanism (see {@link #createSnapshot()} and {@link #restoreSnapshot(OperationContextSnapshot) methods}). This
+ * provides basic functionality for implementing asynchronous executors that automatically propagate
+ * {@link OperationContext} data between JVM threads.
  *</p>
  *
  * @see Scope
@@ -54,8 +55,8 @@ public class OperationContext {
     private static final ThreadLocal<OperationContext> INSTANCE = ThreadLocal.withInitial(OperationContext::new);
 
     /**
-     * Sequence of updated applied to the Context. Each update holds a link to the previous Update, so we store only
-     * the reference to the last one.
+     * Sequence of updated applied to the {@link OperationContext}. Each update holds a link to the previous Update,
+     * so we store only the reference to the last one.
      */
     @Nullable private Update lastUpd;
 
@@ -65,9 +66,9 @@ public class OperationContext {
     }
 
     /**
-     * Retrieves value associated with specified attribute by accessing Context bound to the thread this method is
-     * called from. If no value is explicitly associated with specified attribute, {@link OperationContextAttribute#initialValue()}
-     * is returned.
+     * Retrieves value associated with specified attribute by accessing {@link OperationContext} bound to the thread
+     * this method is called from. If no value is explicitly associated with specified attribute,
+     * {@link OperationContextAttribute#initialValue()} is returned.
      *
      * @param attr Context Attribute.
      * @return Context Attribute Value.
@@ -77,13 +78,14 @@ public class OperationContext {
     }
 
     /**
-     * Updates the value of the specified attribute for the Context bound to the thread this method is called from.
+     * Updates the value of the specified attribute for the {@link OperationContext} bound to the thread this method
+     * is called from.
      *
      * @param attr Context Attribute.
-     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
-     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
-     * same thread they were applied.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied
+     * {@link OperationContext} updates to free up thread-bound resources and avoid memory leaks, so it is highly
+     * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
+     * same order and in the same thread they were applied.
      */
     public static <T> Scope set(OperationContextAttribute<T> attr, T val) {
         OperationContext ctx = INSTANCE.get();
@@ -92,16 +94,17 @@ public class OperationContext {
     }
 
     /**
-     * Updates the values of the specified attributes for the Context bound to the thread this method is called from.
+     * Updates the values of the specified attributes for the {@link OperationContext} bound to the thread this method
+     * is called from.
      *
      * @param attr1 First Context Attribute.
      * @param val1 Values associated with first Context Attribute.
      * @param attr2 Second Context Attribute.
      * @param val2 Values associated with second Context Attribute.
-     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
-     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
-     * same thread they were applied.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied
+     * {@link OperationContext} updates to free up thread-bound resources and avoid memory leaks, so it is highly
+     * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
+     * same order and in the same thread they were applied.
      */
     public static <T1, T2> Scope set(
         OperationContextAttribute<T1> attr1, T1 val1,
@@ -111,7 +114,8 @@ public class OperationContext {
     }
 
     /**
-     * Updates the values of the specified attributes for the Context bound to the thread this method is called from.
+     * Updates the values of the specified attributes for the {@link OperationContext} bound to the thread this method
+     * is called from.
      *
      * @param attr1 First Context Attribute.
      * @param val1 Values associated with first Context Attribute.
@@ -119,10 +123,10 @@ public class OperationContext {
      * @param val2 Values associated with second Context Attribute.
      * @param attr3 Third Context Attribute.
      * @param val3 Values associated with third Context Attribute.
-     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
-     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
-     * same thread they were applied.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied
+     * {@link OperationContext} updates to free up thread-bound resources and avoid memory leaks, so it is highly
+     * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
+     * same order and in the same thread they were applied.
      */
     public static <T1, T2, T3> Scope set(
         OperationContextAttribute<T1> attr1, T1 val1,
@@ -133,8 +137,8 @@ public class OperationContext {
     }
 
     /**
-     * Creates Snapshot of all attributes and their corresponding values stored in the Context bound to the thread this
-     * method is called from.
+     * Creates Snapshot of all attributes and their corresponding values stored in the {@link OperationContext} bound
+     * the thread this method is called from.
      *
      * @return Context Snapshot.
      */
@@ -143,25 +147,25 @@ public class OperationContext {
     }
 
     /**
-     * Restores values of all attributes for Context bound to the thread this method is called from.
+     * Restores values of all attributes for {@link OperationContext} bound to the thread this method is called from.
      *
      * @param snp Context Snapshot.
-     * @return Scope instance that, when closed, undoes the applied operation. It is crucial to undo all applied Context
-     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
-     * same thread they were applied.
+     * @return Scope instance that, when closed, undoes the applied operation. It is crucial to undo all applied
+     * {@link OperationContext} updates to free up thread-bound resources and avoid memory leaks, so it is highly
+     * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
+     * same order and in the same thread they were applied.
      */
     public static Scope restoreSnapshot(OperationContextSnapshot snp) {
         return INSTANCE.get().restoreSnapshotInternal(snp);
     }
 
     /**
-     * Retrieves value for the specified attribute from the current Context. If no value is explicitly associated with
-     * specified attribute, {@link OperationContextAttribute#initialValue()} is returned.
+     * Retrieves value for the specified attribute from the current {@link OperationContext}. If no value is explicitly
+     * associated with specified attribute, {@link OperationContextAttribute#initialValue()} is returned.
      */
     @Nullable private <T> T getInternal(OperationContextAttribute<T> attr) {
         if (lastUpd == null || (lastUpd.storedAttrBits & attr.bitmask()) == 0)
-            return attr.initialValue(); // Context does not store value for the specified attribute.
+            return attr.initialValue(); // OperationContext does not store value for the specified attribute.
 
         AttributeValueHolder<T> valHolder = findAttributeValue(attr);
 
@@ -199,8 +203,9 @@ public class OperationContext {
 
     /** */
     private OperationContextSnapshot createSnapshotInternal() {
-        // The sequence of updates defines the state of the Context. Each update is linked to the previous one and immutable.
-        // Therefore, to restore the context state elsewhere, we only need to share a reference to the most recent update.
+        // The sequence of updates defines the state of the OperationContext. Each update is linked to the previous
+        // one and immutable. Therefore, to restore the context state elsewhere, we only need to share a reference to
+        // the most recent update.
         return lastUpd;
     }
 
@@ -223,7 +228,7 @@ public class OperationContext {
         lastUpd = (Update)newState;
     }
 
-    /** Represents Update applied to the Context. */
+    /** Represents Update applied to the {@link OperationContext}. */
     private class Update implements Scope, OperationContextSnapshot {
         /** Updated attributes and their corresponding values. */
         private final AttributeValueHolder<?>[] attrVals;
@@ -236,10 +241,11 @@ public class OperationContext {
         private final int updAttrBits;
 
         /**
-         * Bits representing all attributes stored in the current Context after this Update and all preceding are applied.
-         * We need this for two purposes:
+         * Bits representing all attributes stored in the current {@link OperationContext} after this Update and all
+         * preceding are applied. We need this for two purposes:
          * <ul>
-         * <li>fast check whether any of the currently applied Context Updates store value for the particular attribute</li>
+         * <li>fast check whether any of the currently applied {@link OperationContext} Updates store value for the
+         * particular attribute</li>
          * <li>do not recalculate state of all attributes when update is undone</li>
          * </ul>
          *

@@ -39,9 +39,9 @@ public class OperationContextAwareExecutor implements Executor {
     }
 
     /**
-     * Creates executor wrapper that automatically captures {@link OperationContextSnapshot} of {@link OperationContext} for the thread
-     * that invokes task execution. Captured {@link OperationContextSnapshot} will be restored before task execution, potentially
-     * in another thread.
+     * Creates executor wrapper that automatically captures {@link OperationContextSnapshot} of {@link OperationContext}
+     * for the thread that invokes task execution. Captured {@link OperationContextSnapshot} will be restored before
+     * task execution, potentially in another thread.
      */
     public static Executor wrap(Executor delegate) {
         return delegate == null ? null : new OperationContextAwareExecutor(delegate);
