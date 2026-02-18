@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context;
+package org.apache.ignite.internal.thread.context.function;
 
 import java.util.function.BiFunction;
 import org.apache.ignite.internal.IgniteInternalWrapper;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 
 /** */
-public abstract class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
+abstract class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
     /** */
     protected final T delegate;
 

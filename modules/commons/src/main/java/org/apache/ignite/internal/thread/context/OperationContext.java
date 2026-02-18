@@ -20,6 +20,8 @@ package org.apache.ignite.internal.thread.context;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutor;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +49,8 @@ import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
  *
  * @see Scope
  * @see OperationContextSnapshot
- * @see OperationContextAwareWrapper
+ * @see OperationContextAwareCallable
+ * @see OperationContextAwareRunnable
  * @see OperationContextAwareExecutor
  */
 public class OperationContext {
@@ -170,9 +173,9 @@ public class OperationContext {
         AttributeValueHolder<T> valHolder = findAttributeValue(attr);
 
         assert valHolder != null;
-        assert valHolder.attribute().equals(attr);
+        assert valHolder.attr.equals(attr);
 
-        return valHolder.value();
+        return valHolder.val;
     }
 
     /** Updates the current context with the specified attributes and their corresponding values. */
@@ -280,7 +283,7 @@ public class OperationContext {
             for (int i = attrVals.length - 1; i >= 0; i--) {
                 AttributeValueHolder<?> valHolder = attrVals[i];
 
-                if (valHolder.attribute().equals(attr))
+                if (valHolder.attr.equals(attr))
                     return ((AttributeValueHolder<T>)valHolder);
             }
 
@@ -291,8 +294,8 @@ public class OperationContext {
         private int mergeUpdatedAttributeBits(AttributeValueHolder<?>[] attrVals) {
             int res = 0;
 
-            for (AttributeValueHolder<?> attrVal : attrVals)
-                res |= attrVal.attribute().bitmask();
+            for (AttributeValueHolder<?> valHolder : attrVals)
+                res |= valHolder.attr.bitmask();
 
             return res;
         }
@@ -300,6 +303,21 @@ public class OperationContext {
         /** */
         @Override public void close() {
             undo(this);
+        }
+    }
+
+    /** Immutable container that stores an attribute and its corresponding value. */
+    private static class AttributeValueHolder<T> {
+        /** */
+        private final OperationContextAttribute<T> attr;
+
+        /** */
+        private final T val;
+
+        /** */
+        AttributeValueHolder(OperationContextAttribute<T> attr, T val) {
+            this.attr = attr;
+            this.val = val;
         }
     }
 

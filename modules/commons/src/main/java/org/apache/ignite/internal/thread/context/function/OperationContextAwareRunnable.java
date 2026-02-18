@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.thread.context.function;
 
 import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.OperationContextAwareWrapper;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.Scope;
 
