@@ -151,22 +151,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodeJoinsPersistenceNodeWithDefaultWalMode() throws Exception {
-        walMode = DataStorageConfiguration.DFLT_WAL_MODE;
-
-        IgniteEx ignite0 = startGrid(0);
-
-        IgniteEx cli = startClientGrid(1);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
-
-        walMode = null;
-        GridTestUtils.assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
-
-        assertEquals(2, ignite0.cluster().nodes().size());
+        doTestInMemoryNodeJoinsPersistenceNode(DataStorageConfiguration.DFLT_WAL_MODE);
     }
 
     /**
@@ -176,22 +161,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodeJoinsPersistenceNodeWithFsyncWalMode() throws Exception {
-        walMode = WALMode.FSYNC;
-
-        IgniteEx ignite0 = startGrid(0);
-
-        IgniteEx cli = startClientGrid(1);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
-
-        walMode = null;
-        GridTestUtils.assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
-
-        assertEquals(2, ignite0.cluster().nodes().size());
+        doTestInMemoryNodeJoinsPersistenceNode(WALMode.FSYNC);
     }
 
     /**
@@ -201,23 +171,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testPersistenceNodeWithDefaultWalModeJoinsSuccessfully() throws Exception {
-        walMode = DataStorageConfiguration.DFLT_WAL_MODE;
-
-        IgniteEx ignite0 = startGrid(0);
-
-        IgniteEx cli = startClientGrid(2);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
-
-        walMode = DataStorageConfiguration.DFLT_WAL_MODE;
-        IgniteEx ignite1 = startGrid(1);
-
-        assertEquals(3, ignite0.cluster().nodes().size());
-        assertEquals(3, ignite1.cluster().nodes().size());
+        doTestSameWalModeJoinsSuccesfully(DataStorageConfiguration.DFLT_WAL_MODE);
     }
 
     /**
@@ -227,23 +181,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodesJoinSuccessfully() throws Exception {
-        walMode = null;
-
-        IgniteEx ignite0 = startGrid(0);
-
-        IgniteEx cli = startClientGrid(2);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
-
-        walMode = null;
-        IgniteEx ignite1 = startGrid(1);
-
-        assertEquals(3, ignite0.cluster().nodes().size());
-        assertEquals(3, ignite1.cluster().nodes().size());
+        doTestSameWalModeJoinsSuccesfully(null);
     }
 
     /**
@@ -254,20 +192,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testMixedClusterInMemoryJoinsPersistentWithDefaultWalMode() throws Exception {
-        mixedConfig = true;
-        walMode = null;
-
-        IgniteEx inMemoryNode = startGrid("in-memory_instance");
-
-        IgniteEx cli = startClientGrid("client");
-
-        inMemoryNode.cluster().baselineAutoAdjustEnabled(false);
-
-        inMemoryNode.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
+        IgniteEx inMemoryNode = doCreateInMemoryClusterWithMixedConfig();
 
         startGrid("persistent_instance");
 
@@ -282,20 +207,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testMixedClusterInMemoryJoinsPersistentWithFsyncWalMode() throws Exception {
-        mixedConfig = true;
-        walMode = null;
-
-        IgniteEx inMemoryNode = startGrid("in-memory_instance");
-
-        IgniteEx cli = startClientGrid("client");
-
-        inMemoryNode.cluster().baselineAutoAdjustEnabled(false);
-
-        inMemoryNode.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
+        IgniteEx inMemoryNode = doCreateInMemoryClusterWithMixedConfig();
 
         walMode = WALMode.FSYNC;
         String errMsg = GridTestUtils.assertThrowsWithCause(() -> startGrid("persistent_instance"), IgniteCheckedException.class)
@@ -316,20 +228,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testMixedClusterInMemoryJoinsPersistentWithDfltWalMode() throws Exception {
-        mixedConfig = true;
-        walMode = null;
-
-        IgniteEx inMemoryNode = startGrid("in-memory_instance");
-
-        IgniteEx cli = startClientGrid("client");
-
-        inMemoryNode.cluster().baselineAutoAdjustEnabled(false);
-
-        inMemoryNode.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
+        IgniteEx inMemoryNode = doCreateInMemoryClusterWithMixedConfig();
 
         walMode = DataStorageConfiguration.DFLT_WAL_MODE;
         startGrid("persistent_instance");
@@ -367,5 +266,82 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
                 (errMsg.contains("locWalMode=" + DataStorageConfiguration.DFLT_WAL_MODE.name()) && errMsg.contains("rmtWalMode=FSYNC")));
 
         assertEquals(2, persistentNode0.cluster().nodes().size());
+    }
+
+    /**
+     * Creates cluster with given walMode and expect in-memory node can't join.
+     *
+     * @param wal walMode to use.
+     * @throws Exception If failed.
+     */
+    private void doTestInMemoryNodeJoinsPersistenceNode(WALMode wal) throws Exception {
+        walMode = wal;
+
+        IgniteEx ignite0 = startGrid(0);
+
+        IgniteEx cli = startClientGrid(1);
+
+        ignite0.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cacheCli.put(1, 1);
+
+        walMode = null;
+
+        GridTestUtils.assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
+
+        assertEquals(2, ignite0.cluster().nodes().size());
+    }
+
+    /**
+     * Creates cluster with given walMode and expect that node with te same walMode can join.
+     *
+     * @param wal walMode to use.
+     * @throws Exception If failed.
+     */
+    private void doTestSameWalModeJoinsSuccesfully(WALMode wal) throws Exception {
+        walMode = wal;
+
+        IgniteEx ignite0 = startGrid(0);
+
+        IgniteEx cli = startClientGrid(2);
+
+        ignite0.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cacheCli.put(1, 1);
+
+        walMode = wal; ////////////////////////////////////////////////////////////////////////////////////////////
+        IgniteEx ignite1 = startGrid(1);
+
+        assertEquals(3, ignite0.cluster().nodes().size());
+        assertEquals(3, ignite1.cluster().nodes().size());
+    }
+
+    /**
+     * Creates in-memory cluster with node "in-memory_instance" with mixed config.
+     *
+     * @return IgniteEx inMemoryNode with access to cluster.
+     * @throws Exception If failed.
+     */
+    private IgniteEx doCreateInMemoryClusterWithMixedConfig() throws Exception {
+        mixedConfig = true;
+        walMode = null;
+
+        IgniteEx inMemoryNode = startGrid("in-memory_instance");
+
+        IgniteEx cli = startClientGrid("client");
+
+        inMemoryNode.cluster().baselineAutoAdjustEnabled(false);
+
+        inMemoryNode.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cacheCli.put(1, 1);
+
+        return inMemoryNode;
     }
 }
