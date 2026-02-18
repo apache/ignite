@@ -1673,19 +1673,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param e Exception.
-     * @param exCls Ex class.
-     */
-    protected <T extends IgniteException> void assertCacheExceptionWithCause(RuntimeException e, Class<T> exCls) {
-        if (exCls.isAssignableFrom(e.getClass()))
-            return;
-
-        if (e.getClass() != CacheException.class
-            || e.getCause() == null || !exCls.isAssignableFrom(e.getCause().getClass()))
-            throw e;
-    }
-
-    /**
      * @param cache Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> cacheFromCtx(IgniteCache<K, V> cache) {

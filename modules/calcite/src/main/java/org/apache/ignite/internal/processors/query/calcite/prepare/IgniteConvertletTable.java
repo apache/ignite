@@ -27,6 +27,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -36,6 +37,7 @@ import org.apache.calcite.sql2rel.SqlRexContext;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -49,6 +51,8 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
     protected IgniteConvertletTable() {
         // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
+        registerOp(SqlLibraryOperators.REGEXP_SUBSTR, (cx, call) -> cx.getRexBuilder().makeCall(
+            SqlLibraryOperators.REGEXP_SUBSTR, Commons.transform(call.getOperandList(), cx::convertExpression)));
 
         addAlias(IgniteOwnSqlOperatorTable.LENGTH, SqlStdOperatorTable.CHAR_LENGTH);
     }
