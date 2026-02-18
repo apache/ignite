@@ -151,7 +151,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodeJoinsPersistenceNodeWithDefaultWalMode() throws Exception {
-        doTestInMemoryNodeJoinsPersistenceNode(DataStorageConfiguration.DFLT_WAL_MODE);
+        doTestInMemoryNodeJoinsPersistenceNode(DataStorageConfiguration.DFLT_WAL_MODE, null, true);
     }
 
     /**
@@ -161,7 +161,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodeJoinsPersistenceNodeWithFsyncWalMode() throws Exception {
-        doTestInMemoryNodeJoinsPersistenceNode(WALMode.FSYNC);
+        doTestInMemoryNodeJoinsPersistenceNode(WALMode.FSYNC, null, true);
     }
 
     /**
@@ -171,7 +171,8 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testPersistenceNodeWithDefaultWalModeJoinsSuccessfully() throws Exception {
-        doTestSameWalModeJoinsSuccesfully(DataStorageConfiguration.DFLT_WAL_MODE);
+        doTestInMemoryNodeJoinsPersistenceNode(DataStorageConfiguration.DFLT_WAL_MODE,
+            DataStorageConfiguration.DFLT_WAL_MODE, false);
     }
 
     /**
@@ -181,7 +182,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodesJoinSuccessfully() throws Exception {
-        doTestSameWalModeJoinsSuccesfully(null);
+        doTestInMemoryNodeJoinsPersistenceNode(null, null, false);
     }
 
     /**
@@ -271,11 +272,12 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
     /**
      * Creates cluster with given walMode and expect in-memory node can't join.
      *
-     * @param wal walMode to use.
+     * @param wal1 walMode to use in cluster.
+     * @param wal1 walMode to use for joining node.
      * @throws Exception If failed.
      */
-    private void doTestInMemoryNodeJoinsPersistenceNode(WALMode wal) throws Exception {
-        walMode = wal;
+    private void doTestInMemoryNodeJoinsPersistenceNode(WALMode wal1, WALMode wal2, boolean shouldFail) throws Exception {
+        walMode = wal1;
 
         IgniteEx ignite0 = startGrid(0);
 
@@ -287,37 +289,19 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
 
         cacheCli.put(1, 1);
 
-        walMode = null;
+        walMode = wal2;
 
-        GridTestUtils.assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
+        if (shouldFail) {
+            GridTestUtils.assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
 
-        assertEquals(2, ignite0.cluster().nodes().size());
-    }
+            assertEquals(2, ignite0.cluster().nodes().size());
+        }
+        else {
+            IgniteEx ignite1 = startGrid(2);
 
-    /**
-     * Creates cluster with given walMode and expect that node with te same walMode can join.
-     *
-     * @param wal walMode to use.
-     * @throws Exception If failed.
-     */
-    private void doTestSameWalModeJoinsSuccesfully(WALMode wal) throws Exception {
-        walMode = wal;
-
-        IgniteEx ignite0 = startGrid(0);
-
-        IgniteEx cli = startClientGrid(2);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
-
-        walMode = wal; ////////////////////////////////////////////////////////////////////////////////////////////
-        IgniteEx ignite1 = startGrid(1);
-
-        assertEquals(3, ignite0.cluster().nodes().size());
-        assertEquals(3, ignite1.cluster().nodes().size());
+            assertEquals(3, ignite0.cluster().nodes().size());
+            assertEquals(3, ignite1.cluster().nodes().size());
+        }
     }
 
     /**
