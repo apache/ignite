@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -90,7 +91,13 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
             });
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw new IgniteSQLException(e.getMessage(), U.convertException(e));
+        }
+        catch (Exception e) {
+            if (e instanceof IgniteSQLException)
+                throw e;
+            else
+                throw new IgniteSQLException(e.getMessage(), e);
         }
         finally {
             qryMemoryTracker.reset();
