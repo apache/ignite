@@ -161,10 +161,11 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoveryCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage custom = (TcpDiscoveryCustomEventMessage)msg;
 
-                            DiscoveryCustomMessage delegate = GridTestUtils.unwrap(custom);
+                            custom.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                            DiscoveryCustomMessage delegate = GridTestUtils.unwrap(custom.message());
 
                             if (delegate instanceof MappingAcceptedMessage) {
                                 MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
@@ -236,10 +237,11 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoveryCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage custom = (TcpDiscoveryCustomEventMessage)msg;
 
-                            DiscoveryCustomMessage delegate = GridTestUtils.unwrap(custom);
+                            custom.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                            DiscoveryCustomMessage delegate = GridTestUtils.unwrap(custom.message());
 
                             if (delegate instanceof MappingProposedMessage) {
                                 MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "mappingItem");

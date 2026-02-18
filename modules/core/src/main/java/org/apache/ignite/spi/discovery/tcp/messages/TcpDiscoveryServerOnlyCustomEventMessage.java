@@ -30,12 +30,22 @@ public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustom
     private static final long serialVersionUID = 0L;
 
     /**
+     * Default constructor.
+     */
+    public TcpDiscoveryServerOnlyCustomEventMessage() {
+        // No-op.
+    }
+
+    /**
      * @param creatorNodeId Creator node id.
      * @param msg Message.
-     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoveryCustomMessage msg,
-        @NotNull byte[] msgBytes) {
-        super(creatorNodeId, msg, msgBytes);
+    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoveryCustomMessage msg) {
+        super(creatorNodeId, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 21;
     }
 }

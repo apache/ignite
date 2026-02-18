@@ -2609,8 +2609,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     try {
                         TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                        DiscoveryCustomMessage custMsg = GridTestUtils.unwrap(evtMsg.message(marshaller(),
-                            U.gridClassLoader()));
+                        evtMsg.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                        DiscoveryCustomMessage custMsg = GridTestUtils.unwrap(evtMsg.message());
 
                         if (custMsg instanceof StartRoutineAckDiscoveryMessage) {
                             log.info("Skip message send and stop node: " + msg);

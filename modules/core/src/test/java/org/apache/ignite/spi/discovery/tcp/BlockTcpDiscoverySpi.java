@@ -54,19 +54,17 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
 
         TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-        DiscoveryCustomMessage custMsg;
-
         try {
-            custMsg = cm.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
+            cm.finishUnmarhal(marshaller(), U.gridClassLoader());
 
-            assertNotNull(custMsg);
+            assertNotNull(cm.message());
         }
         catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
 
         if (clo != null)
-            clo.apply(addr, GridTestUtils.unwrap(custMsg));
+            clo.apply(addr, GridTestUtils.unwrap(cm.message()));
     }
 
     /** {@inheritDoc} */
