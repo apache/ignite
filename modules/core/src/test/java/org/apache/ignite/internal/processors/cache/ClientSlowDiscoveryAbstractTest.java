@@ -23,13 +23,11 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -96,22 +94,17 @@ public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
 
             TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-            DiscoveryCustomMessage delegate;
-
             try {
-                DiscoverySpiCustomMessage custMsg = cm.message(marshaller(),
-                    U.resolveClassLoader(ignite().configuration()));
+                cm.finishUnmarhal(marshaller(), U.resolveClassLoader(ignite().configuration()));
 
-                assertNotNull(custMsg);
-
-                delegate = ((CustomMessageWrapper)custMsg).delegate();
+                assertNotNull(cm.message());
             }
             catch (Throwable throwable) {
                 throw new RuntimeException(throwable);
             }
 
             if (interceptor != null)
-                interceptor.apply(delegate);
+                interceptor.apply(cm.message());
         }
     }
 }
