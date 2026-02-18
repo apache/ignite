@@ -121,6 +121,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.LOG;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.MD5;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.MONTHNAME;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_REPLACE_3;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_SUBSTR;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
@@ -456,6 +457,10 @@ public class RexImpTable {
             BuiltInMethod.REGEXP_REPLACE4.method,
             BuiltInMethod.REGEXP_REPLACE5_OCCURRENCE.method,
             BuiltInMethod.REGEXP_REPLACE6.method);
+        defineReflective(REGEXP_SUBSTR,
+            BuiltInMethod.REGEXP_EXTRACT2.method,
+            BuiltInMethod.REGEXP_EXTRACT3.method,
+            BuiltInMethod.REGEXP_EXTRACT4.method);
 
         // Multisets & arrays
         defineMethod(CARDINALITY, BuiltInMethod.COLLECTION_SIZE.method,
