@@ -41,7 +41,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     private PredicateType type;
 
     /** Type value serialization holder. */
-    @Order(0)
+    @Order(value = 0, method = "code")
     protected transient byte code;
 
     /** */
