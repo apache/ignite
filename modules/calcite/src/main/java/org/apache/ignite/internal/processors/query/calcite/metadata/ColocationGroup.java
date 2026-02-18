@@ -60,7 +60,7 @@ public class ColocationGroup implements CalciteMessage {
     private boolean primaryAssignment;
 
     /** Marshalled assignments serialization call holder. */
-    @Order(2)
+    @Order(value = 2, method = "marshalledAssignments")
     int[] marshalledAssignments;
 
     /** */
