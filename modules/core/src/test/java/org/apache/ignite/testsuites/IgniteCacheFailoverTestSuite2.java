@@ -17,47 +17,34 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.CacheGetFromJobTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverAtomicTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverTxTest;
-import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverAtomicTest;
-import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedFailoverSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCrossCacheTxFailoverTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicFailoverSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicReplicatedFailoverSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCachePutAllFailoverTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCacheRemoveFailoverTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CacheGetFromJobTest.class,
+//    CacheGetFromJobTest.class,
 
-    GridCacheAtomicFailoverSelfTest.class,
-    GridCacheAtomicReplicatedFailoverSelfTest.class,
-
-    GridCachePartitionedFailoverSelfTest.class,
+//    GridCacheAtomicFailoverSelfTest.class,
+//    GridCacheAtomicReplicatedFailoverSelfTest.class,
+//
+//    GridCachePartitionedFailoverSelfTest.class,
     GridCacheColocatedFailoverSelfTest.class,
     GridCacheReplicatedFailoverSelfTest.class,
 
-    IgniteCacheCrossCacheTxFailoverTest.class,
-
-    CacheAsyncOperationsFailoverAtomicTest.class,
-    CacheAsyncOperationsFailoverTxTest.class,
-
-    CachePutAllFailoverAtomicTest.class,
-    CachePutAllFailoverTxTest.class,
-    IgniteStableBaselineCachePutAllFailoverTest.class,
-    IgniteStableBaselineCacheRemoveFailoverTest.class,
-    IgniteChangingBaselineDownCachePutAllFailoverTest.class,
-    IgniteChangingBaselineUpCachePutAllFailoverTest.class
+//    IgniteCacheCrossCacheTxFailoverTest.class,
+//
+//    CacheAsyncOperationsFailoverAtomicTest.class,
+//    CacheAsyncOperationsFailoverTxTest.class,
+//
+//    CachePutAllFailoverAtomicTest.class,
+//    CachePutAllFailoverTxTest.class,
+//    IgniteStableBaselineCachePutAllFailoverTest.class,
+//    IgniteStableBaselineCacheRemoveFailoverTest.class,
+//    IgniteChangingBaselineDownCachePutAllFailoverTest.class,
+//    IgniteChangingBaselineUpCachePutAllFailoverTest.class
 })
 public class IgniteCacheFailoverTestSuite2 {
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -40,12 +41,15 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Failover tests for cache.
  */
+@RunWith(Parameterized.class)
 public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
@@ -61,6 +65,16 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 3;
+
+    /** */
+    @Parameterized.Parameter
+    public int idx;
+
+    /** */
+    @Parameterized.Parameters(name = "idx={0}")
+    public static Object[] data() {
+        return IntStream.range(1, 50).boxed().toArray();
+    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
