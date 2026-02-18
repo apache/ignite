@@ -200,7 +200,7 @@ public final class ClientUtils {
 
     /** Serialize binary type metadata to stream. */
     void binaryMetadata(BinaryMetadata meta, BinaryOutputStream out) {
-        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
+        try (BinaryWriterEx w = BinaryUtils.writerWithoutSchemaHolder(marsh.context(), out)) {
             w.writeInt(meta.typeId());
             w.writeString(meta.typeName());
             w.writeString(meta.affinityKeyFieldName());
@@ -245,7 +245,7 @@ public final class ClientUtils {
 
     /** Serialize configuration to stream. */
     void cacheConfiguration(ClientCacheConfiguration cfg, boolean sql, BinaryOutputStream out, ProtocolContext protocolCtx) {
-        try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), out, null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writerWithoutSchemaHolder(marsh.context(), out)) {
             if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.SQL_CACHE_CREATION))
                 out.writeBoolean(sql);
 
