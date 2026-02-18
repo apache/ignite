@@ -1,0 +1,53 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+# -----------------------------
+# PostgreSQL configuration file
+# -----------------------------
+#
+
+data_directory = '{{ data_dir }}'                   # Use data in another directory.
+listen_addresses = '*'                              # What IP address(es) to listen on;
+                                                    # Comma-separated list of addresses;
+                                                    # Defaults to 'localhost'; use '*' for all.
+port = {{ settings.port }}
+max_connections = 100
+ssl = off
+shared_buffers = 128MB                              # min 128kB
+work_mem = 4MB                                      # min 64kB
+maintenance_work_mem = 64MB                         # min 1MB
+dynamic_shared_memory_type = posix                  # The default is usually the first option;
+                                                    # Supported by the operating system: posix, sysv, windows, mmap.
+wal_level = replica                                 # minimal, replica, or logical.
+synchronous_commit = on                             # Synchronization level; off, local, remote_write, remote_apply, on.
+checkpoint_completion_target = 0.9                  # Checkpoint target duration, 0.0 - 1.0.
+max_wal_size = 1GB
+min_wal_size = 80MB
+logging_collector = on                              # Enable capturing of stderr, jsonlog, and csvlog into log files.
+                                                    # Required to be on for csvlogs and jsonlogs.
+log_directory = '{{ log_dir }}'                     # Directory where log files are written,
+                                                    # can be absolute or relative to PGDATA.
+log_filename = '{{ LOG_FILENAME }}'                 # Log file name pattern, can include strftime() escapes.
+log_statement = 'all'                               # none, ddl, mod, all
+log_timezone = 'UTC'
+datestyle = 'iso, mdy'
+timezone = 'UTC'
+lc_messages = 'en_US.UTF-8'                         # Locale for system error message, strings
+lc_monetary = 'en_US.UTF-8'                         # Locale for monetary formatting
+lc_numeric = 'en_US.UTF-8'                          # Locale for number formatting
+lc_time = 'en_US.UTF-8'                             # Locale for time formatting
+default_text_search_config = 'pg_catalog.english'
