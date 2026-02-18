@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -104,9 +103,6 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             assert ignite.cluster().localNode().version().compareToIgnoreTimestamp(expNodeVer) == 0 : "Node is of unexpected " +
                 "version: [act=" + ignite.cluster().localNode().version() + ", exp=" + expNodeVer + ']';
-
-            // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
-            GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
 
             if (args.length == 6) {
                 IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[5]);
