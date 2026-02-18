@@ -46,7 +46,7 @@ public class CacheInvokeDirectResult implements Message {
 
     /** Error message. */
     @GridToStringInclude(sensitive = true)
-    @Order(2)
+    @Order(value = 2, method = "errorMessage")
     ErrorMessage errMsg;
 
     /**

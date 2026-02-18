@@ -38,7 +38,7 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     int miniId;
 
     /** Error message. */
-    @Order(7)
+    @Order(value = 7, method = "checkCommittedErrorMessage")
     @Nullable ErrorMessage checkCommittedErrMsg;
 
     /** Cache return value. */

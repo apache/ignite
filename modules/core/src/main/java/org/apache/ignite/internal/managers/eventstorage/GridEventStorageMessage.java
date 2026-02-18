@@ -61,7 +61,7 @@ public class GridEventStorageMessage implements Message {
     byte[] evtsBytes;
 
     /** */
-    @Order(3)
+    @Order(value = 3, method = "errorMessage")
     ErrorMessage errMsg;
 
     /** */

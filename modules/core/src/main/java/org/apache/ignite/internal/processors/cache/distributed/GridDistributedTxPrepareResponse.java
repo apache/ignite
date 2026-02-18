@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** Error message. */
     @GridToStringExclude
-    @Order(7)
+    @Order(value = 7, method = "errorMessage")
     @Nullable public ErrorMessage errMsg;
 
     /** TX state. */

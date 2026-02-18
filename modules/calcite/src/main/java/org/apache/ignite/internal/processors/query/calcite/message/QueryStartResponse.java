@@ -35,7 +35,7 @@ public class QueryStartResponse implements CalciteMessage {
     long fragmentId;
 
     /** */
-    @Order(2)
+    @Order(value = 2, method = "errorMessage")
     @Nullable ErrorMessage errMsg;
 
     /** */

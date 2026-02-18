@@ -34,7 +34,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
     UUID routineId;
 
     /** */
-    @Order(1)
+    @Order(value = 1, method = "errorMessage")
     @Nullable ErrorMessage errMsg;
 
     /** */

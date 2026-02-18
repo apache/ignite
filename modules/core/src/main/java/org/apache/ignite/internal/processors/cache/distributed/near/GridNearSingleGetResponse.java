@@ -54,7 +54,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     AffinityTopologyVersion topVer;
 
     /** Error message. */
-    @Order(7)
+    @Order(value = 7, method = "errorMessage")
     ErrorMessage errMsg;
 
     /** Flags. */

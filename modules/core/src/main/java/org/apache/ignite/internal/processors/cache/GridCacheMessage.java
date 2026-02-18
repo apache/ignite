@@ -69,7 +69,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     @GridToStringInclude
-    @Order(2)
+    @Order(value = 2, method = "lastAffinityChangedTopologyVersion")
     @Nullable public AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */

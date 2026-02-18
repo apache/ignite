@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Error message. */
-    @Order(6)
+    @Order(value = 6, method = "errorMessage")
     @Nullable ErrorMessage errMsg;
 
     /** Mini future ID. */

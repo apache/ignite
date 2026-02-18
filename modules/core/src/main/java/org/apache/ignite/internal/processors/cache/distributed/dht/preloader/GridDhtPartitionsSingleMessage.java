@@ -71,7 +71,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     Map<Integer, IntLongMap> partHistCntrs;
 
     /** Error message. */
-    @Order(11)
+    @Order(value = 11, method = "errorMessage")
     @GridToStringInclude
     ErrorMessage errMsg;
 
