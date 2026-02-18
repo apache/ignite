@@ -79,4 +79,17 @@ public class IntersectExecutionTest extends AbstractSetOpExecutionTest {
 
         checkSetOp(single, all, Arrays.asList(ds1, ds2, ds3), expectedResult);
     }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedResultSize(int[] totalRowsCnt, boolean all) {
+        int min = totalRowsCnt[0];
+
+        for (int i = 1; i < totalRowsCnt.length; i++)
+            min = Math.min(totalRowsCnt[i], min);
+
+        if (all)
+            return min;
+        else
+            return min > 0 ? 1 : 0;
+    }
 }
