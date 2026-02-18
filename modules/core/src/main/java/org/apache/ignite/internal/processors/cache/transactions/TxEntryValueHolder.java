@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class TxEntryValueHolder implements Message {
     /** Stored value. */
-    @Order(0)
+    @Order(value = 0, method = "storedValue")
     @GridToStringInclude(sensitive = true)
     @Nullable CacheObject val;
 
