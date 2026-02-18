@@ -177,30 +177,12 @@ public final class GridTestUtils {
      */
     public static class DiscoveryHook {
         /**
-         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void beforeDiscovery0(DiscoveryCustomMessage msg) {
-            beforeDiscovery(unwrap(msg));
-        }
-
-        /**
          * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
          *
          * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
          */
         public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
-        }
-
-        /**
-         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void afterDiscovery0(DiscoveryCustomMessage msg) {
-            afterDiscovery(unwrap(msg));
         }
 
         /**
@@ -251,11 +233,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery0(notification.getCustomMsgData());
+            hook.beforeDiscovery(unwrap(notification.getCustomMsgData()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery0(notification.getCustomMsgData()));
+            fut.listen(f -> hook.afterDiscovery(unwrap(notification.getCustomMsgData())));
 
             return fut;
         }
