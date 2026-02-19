@@ -64,22 +64,8 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public void allNodesMetrics(@Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics) {
-        assert allNodesMetrics == null || singleNodeMetricsMsg == null;
-
-        this.allNodesMetrics = allNodesMetrics;
-    }
-
-    /** */
     public @Nullable NodeFullMetricsMessage singleNodeMetricsMsg() {
         return singleNodeMetricsMsg;
-    }
-
-    /** */
-    public void singleNodeMetricsMsg(@Nullable NodeFullMetricsMessage singleNodeMetricsMsg) {
-        assert singleNodeMetricsMsg == null || allNodesMetrics == null;
-
-        this.singleNodeMetricsMsg = singleNodeMetricsMsg;
     }
 
     /** */

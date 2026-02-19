@@ -63,15 +63,6 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
         return metricsMsg;
     }
 
-    /**
-     * Sets the metrics message.
-     *
-     * @param metricsMsg Metrics holder message.
-     */
-    public void metricsMessage(TcpDiscoveryNodeMetricsMessage metricsMsg) {
-        this.metricsMsg = metricsMsg;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 13;

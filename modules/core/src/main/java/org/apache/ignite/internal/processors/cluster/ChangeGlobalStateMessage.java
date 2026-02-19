@@ -214,13 +214,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Timestamp.
-     */
-    public long timestamp() {
-        return timestamp;
-    }
-
-    /**
      * @return State change request ID.
      */
     public UUID requestId() {

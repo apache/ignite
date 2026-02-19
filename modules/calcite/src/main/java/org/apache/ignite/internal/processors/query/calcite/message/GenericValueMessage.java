@@ -48,20 +48,6 @@ public final class GenericValueMessage implements ValueMessage {
         return val;
     }
 
-    /**
-     * @return Serialized value.
-     */
-    public byte[] serialized() {
-        return serialized;
-    }
-
-    /**
-     * @param serialized Serialized value.
-     */
-    public void serialized(byte[] serialized) {
-        this.serialized = serialized;
-    }
-
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (val != null && serialized == null)

@@ -68,26 +68,12 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
     }
 
     /**
-     * @param msgId Message ID.
-     */
-    public void messageId(IgniteUuid msgId) {
-        this.msgId = msgId;
-    }
-
-    /**
      * Flag indicating whether the ID to discard is for a custom message or not.
      *
      * @return Custom message flag.
      */
     public boolean customMessageDiscard() {
         return customMsgDiscard;
-    }
-
-    /**
-     * @param customMsgDiscard Custom message flag.
-     */
-    public void customMessageDiscard(boolean customMsgDiscard) {
-        this.customMsgDiscard = customMsgDiscard;
     }
 
     /** {@inheritDoc} */

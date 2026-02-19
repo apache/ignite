@@ -48,16 +48,6 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
     }
 
     /** {@inheritDoc} */
-    @Override public boolean traceLogLevel() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 6;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryConnectionCheckMessage.class, this, "super", super.toString());
     }

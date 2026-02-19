@@ -67,24 +67,10 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
-     * @param addrs Remote node addresses.
-     */
-    public void addresses(Collection<String> addrs) {
-        this.addrs = addrs;
-    }
-
-    /**
      * @return Remote node host names.
      */
     public Collection<String> hostNames() {
         return hostNames;
-    }
-
-    /**
-     * @param hostNames Remote node host names.
-     */
-    public void hostNames(Collection<String> hostNames) {
-        this.hostNames = hostNames;
     }
 
     /** {@inheritDoc} */

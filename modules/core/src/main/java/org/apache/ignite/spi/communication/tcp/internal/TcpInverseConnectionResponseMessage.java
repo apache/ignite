@@ -32,32 +32,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     @Order(0)
     int connIdx;
 
-    /** */
-    public TcpInverseConnectionResponseMessage() {
-    }
-
-    /** */
-    public TcpInverseConnectionResponseMessage(int connIdx) {
-        this.connIdx = connIdx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int connectionIndex() {
-        return connIdx;
-    }
-
-    /**
-     * @param connIdx New connection index.
-     */
-    public void connectionIndex(int connIdx) {
-        this.connIdx = connIdx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 177;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpInverseConnectionResponseMessage.class, this);
