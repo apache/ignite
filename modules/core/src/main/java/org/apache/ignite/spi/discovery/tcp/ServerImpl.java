@@ -27,7 +27,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -155,7 +154,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.tracing.SpanStatus;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -200,8 +198,6 @@ import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.LOOPBACK_PROBLEM;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.RING_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.STOPPING;
-import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage.STATUS_OK;
-import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage.STATUS_RECON;
 
 /**
  *
@@ -459,6 +455,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         locNode = spi.locNode;
 
+        connCheckMsg = new TcpDiscoveryConnectionCheckMessage(locNode);
+
         // Start TCP server thread after local node is initialized.
         new TcpServerThread(tcpSrvr, log).start();
 
@@ -697,41 +695,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (log.isInfoEnabled())
             log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
 
-        if (!res && node.clientRouterNodeId() == null && nodeAlive(nodeId)) {
-            LT.warn(log, "Failed to ping node (status check will be initiated): " + nodeId);
-
-            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), node.id()));
-        }
-
         return res;
-    }
-
-    /**
-     * Creates new instance of {@link TcpDiscoveryStatusCheckMessage} trying to choose most optimal constructor.
-     *
-     * @param creatorNode Creator node. It can be null when message will be sent from coordinator to creator node,
-     * in this case it will not contain creator node addresses as it will be discarded by creator; otherwise,
-     * this parameter must not be null.
-     * @param creatorNodeId Creator node id.
-     * @param failedNodeId Failed node id.
-     * @return <code>null</code> if <code>creatorNode</code> is null and we cannot retrieve creator node from ring
-     * by <code>creatorNodeId</code>, and new instance of {@link TcpDiscoveryStatusCheckMessage} in other cases.
-     */
-    private @Nullable TcpDiscoveryStatusCheckMessage createTcpDiscoveryStatusCheckMessage(
-        @Nullable TcpDiscoveryNode creatorNode,
-        UUID creatorNodeId,
-        UUID failedNodeId
-    ) {
-        TcpDiscoveryNode crd = resolveCoordinator();
-
-        if (creatorNode == null)
-            return new TcpDiscoveryStatusCheckMessage(creatorNodeId, null, failedNodeId);
-
-        return new TcpDiscoveryStatusCheckMessage(
-            creatorNode.id(),
-            spi.getEffectiveNodeAddresses(creatorNode, crd != null && U.sameMacs(creatorNode, crd)),
-            failedNodeId
-        );
     }
 
     /**
@@ -1307,6 +1271,14 @@ class ServerImpl extends TcpDiscoveryImpl {
             Collection<Exception> errs = new ArrayList<>();
 
             for (InetSocketAddress addr : addrs) {
+                synchronized (mux) {
+                    // Join request was actually sent and reached the ring, was processed. But a significant error has
+                    // occured at the end of the joining. This is a special case like failure at the end of 2PC
+                    // transaction commit and can cause issues like IGNITE-13590 or IGNITE-23372. We should not try further.
+                    if (spiState == RING_FAILED)
+                        return true;
+                }
+
                 try {
                     IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
@@ -2186,7 +2158,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private boolean recordable(TcpDiscoveryAbstractMessage msg) {
         return !(msg instanceof TcpDiscoveryMetricsUpdateMessage) &&
-            !(msg instanceof TcpDiscoveryStatusCheckMessage) &&
             !(msg instanceof TcpDiscoveryDiscardMessage) &&
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
     }
@@ -2839,17 +2810,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** IO session. */
         private TcpDiscoveryIoSession ses;
 
-        /** Last time status message has been sent. */
-        private long lastTimeStatusMsgSentNanos;
-
-        /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
-
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
-
-        /** */
-        private long lastRingMsgTimeNanos;
 
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
@@ -2920,8 +2882,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority, boolean fromSocket) {
             DebugLogger log = messageLogger(msg);
 
-            if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
-                msg instanceof TcpDiscoveryJoinRequestMessage ||
+            if ((msg instanceof TcpDiscoveryJoinRequestMessage ||
                 msg instanceof TcpDiscoveryCustomEventMessage ||
                 msg instanceof TcpDiscoveryClientReconnectMessage) &&
                 queue.contains(msg)) {
@@ -3102,11 +3063,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (debugMode)
                 debugLog(msg, "Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
-            boolean ensured = spi.ensured(msg);
-
-            if (!locNode.id().equals(msg.senderNodeId()) && ensured)
-                lastRingMsgTimeNanos = System.nanoTime();
-
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
 
@@ -3155,9 +3111,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
                 processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
-
-            else if (msg instanceof TcpDiscoveryStatusCheckMessage)
-                processStatusCheckMessage((TcpDiscoveryStatusCheckMessage)msg);
 
             else if (msg instanceof TcpDiscoveryDiscardMessage)
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
@@ -3227,8 +3180,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             checkConnection();
 
             sendMetricsUpdateMessage();
-
-            checkMetricsReceiving();
 
             checkPendingCustomMessages();
 
@@ -3310,8 +3261,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (debugMode)
                         debugLog(msg, "No next node in topology.");
 
-                    if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage) &&
-                        !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId))) {
+                    if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
+                        // This is a special case like 2PC transaction failure at the commit phase where the ring and
+                        // the connection checks aren't stable, aren't consistent. Such node should stop and close its sockets,
+                        // connections asap. Or this may cause cases like IGNITE-13590 or IGNITE-23372.
+                        // Also, there is a related optimization suggestion IGNITE-11269.
+                        if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
+                            ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
+                            segmentLocalNodeOnSendFail(failedNodes);
+
+                            return;
+                        }
+
                         msg.senderNodeId(locNodeId);
 
                         addMessage(msg, true);
@@ -3411,8 +3372,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // We should take previousNodeAlive flag into account
                                 // only if we received the response from the correct node.
-                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    sndState.checkTimeout();
+                                if (res.creatorNodeId().equals(newNext.id()) && res.previousNodeAlive()) {
+                                    U.closeQuiet(sock);
+                                    sock = null;
+
+                                    if (sndState == null || sndState.checkTimeout()) {
+                                        // No recovery timeout.
+                                        segmentLocalNodeOnSendFail(failedNodes);
+
+                                        return; // Nothing to do here.
+                                    }
 
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
@@ -3423,16 +3392,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         newNextNode = false;
 
                                         newNextNode(ring.nextNode(failedNodes));
-                                    }
-
-                                    U.closeQuiet(sock);
-
-                                    sock = null;
-
-                                    if (sndState.isFailed()) {
-                                        segmentLocalNodeOnSendFail(failedNodes);
-
-                                        return; // Nothing to do here.
                                     }
 
                                     if (previousNode)
@@ -5662,164 +5621,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes status check message.
-         *
-         * @param msg Status check message.
-         */
-        private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
-            assert msg != null;
-
-            UUID locNodeId = getLocalNodeId();
-
-            if (msg.failedNodeId() != null) {
-                if (locNodeId.equals(msg.failedNodeId())) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (suspect node is local node).");
-
-                    return;
-                }
-
-                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (local node is the sender of the status message).");
-
-                    return;
-                }
-
-                if (isLocalNodeCoordinator() && ring.node(msg.creatorNodeId()) == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (creator node is not in topology).");
-
-                    return;
-                }
-            }
-            else {
-                if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
-                    // Local node is real coordinator, it should respond and discard message.
-                    if (ring.node(msg.creatorNodeId()) != null) {
-                        // Sender is in topology, send message via ring.
-                        msg.status(STATUS_OK);
-
-                        sendMessageAcrossRing(msg);
-                    }
-                    else {
-                        // Sender is not in topology, it should reconnect.
-                        msg.status(STATUS_RECON);
-
-                        utilityPool.execute(new Runnable() {
-                            @Override public void run() {
-                                synchronized (mux) {
-                                    if (spiState == DISCONNECTED) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Ignoring status check request, SPI is already disconnected: " + msg);
-
-                                        return;
-                                    }
-                                }
-
-                                TcpDiscoveryStatusCheckMessage msg0 = msg;
-
-                                if (F.contains(msg.failedNodes(), msg.creatorNodeId())) {
-                                    msg0 = createTcpDiscoveryStatusCheckMessage(
-                                        null,
-                                        msg.creatorNodeId(),
-                                        msg.failedNodeId());
-
-                                    if (msg0 == null) {
-                                        log.debug("Status check message discarded (creator node is not in topology).");
-
-                                        return;
-                                    }
-
-                                    msg0.failedNodes(null);
-
-                                    for (UUID failedNodeId : msg.failedNodes()) {
-                                        if (!failedNodeId.equals(msg.creatorNodeId()))
-                                            msg0.addFailedNode(failedNodeId);
-                                    }
-                                }
-
-                                try {
-                                    trySendMessageDirectly(msg0.creatorNodeAddresses(), msg0.creatorNodeId(), msg0);
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Responded to status check message " +
-                                            "[recipient=" + msg0.creatorNodeId() + ", status=" + msg0.status() + ']');
-                                }
-                                catch (IgniteSpiException e) {
-                                    if (e.hasCause(SocketException.class)) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Failed to respond to status check message (connection " +
-                                                "refused) [recipient=" + msg0.creatorNodeId() + ", status=" +
-                                                msg0.status() + ']');
-
-                                        onException("Failed to respond to status check message (connection refused) " +
-                                            "[recipient=" + msg0.creatorNodeId() + ", status=" + msg0.status() + ']', e);
-                                    }
-                                    else if (!spi.isNodeStopping0()) {
-                                        if (pingNode(msg0.creatorNodeId())) {
-                                            // Node exists and accepts incoming connections.
-                                            U.error(log, "Failed to respond to status check message [recipient=" +
-                                                msg0.creatorNodeId() + ", status=" + msg0.status() + ']', e);
-                                        }
-                                        else if (log.isDebugEnabled()) {
-                                            log.debug("Failed to respond to status check message (did the node stop?)" +
-                                                "[recipient=" + msg0.creatorNodeId() +
-                                                ", status=" + msg0.status() + ']');
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    return;
-                }
-
-                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
-                    U.millisSinceNanos(locNode.lastUpdateTimeNanos()) < spi.metricsUpdateFreq) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (local node receives updates).");
-
-                    return;
-                }
-
-                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
-                    spiStateCopy() != CONNECTED) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (local node is not connected to topology).");
-
-                    return;
-                }
-
-                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
-                    if (spiStateCopy() != CONNECTED)
-                        return;
-
-                    if (msg.status() == STATUS_OK) {
-                        if (log.isDebugEnabled())
-                            log.debug("Received OK status response from coordinator: " + msg);
-                    }
-                    else if (msg.status() == STATUS_RECON) {
-                        U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
-
-                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
-
-                        return;
-                    }
-                    else if (log.isDebugEnabled())
-                        log.debug("Status value was not updated in status response: " + msg);
-
-                    // Discard the message.
-                    return;
-                }
-            }
-
-            if (sendMessageToRemotes(msg))
-                sendMessageAcrossRing(msg);
-        }
-
-        /**
          * Processes regular metrics update message. If a more recent message of the same kind has been received,
          * then it will be processed instead of the one taken from the queue.
          *
@@ -6297,24 +6098,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
-         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
-         */
-        private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
-                lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
-
-            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
-
-            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
-                return;
-
-            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
-
-            lastTimeStatusMsgSentNanos = System.nanoTime();
-        }
-
-        /**
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
@@ -6324,7 +6107,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
 
             if (ring.hasRemoteServerNodes())
-                sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
+                sendMessageAcrossRing(connCheckMsg);
         }
 
         /** {@inheritDoc} */
@@ -6551,6 +6334,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private volatile UUID nodeId;
 
+        /** */
+        private volatile boolean client;
+
         /**
          * Constructor.
          *
@@ -6683,6 +6469,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     UUID nodeId = req.creatorNodeId();
 
                     this.nodeId = nodeId;
+                    this.client = req.client();
 
                     U.enhanceThreadName(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
                         + ":" + sock.getPort() + (req.client() ? " client" : ""));
@@ -7224,7 +7011,29 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Update last ring message received timestamp.
          */
         private void ringMessageReceived() {
-            lastRingMsgReceivedTime = System.nanoTime();
+            if (client) // Client messages aren't ring messages.
+                return;
+
+            long t = System.nanoTime();
+
+            // Node has lost the ring but still receives messages from another server node.
+            // The cases with no failureDetectionTimeout, reconnectCount > 1 several node addresses aren't considered.
+            // The current timing should be enough for such case.
+            if (!ring.hasRemoteServerNodes() && !spi.isNodeStopping0()
+                && t > lastRingMsgSentTime + U.millisToNanos(effectiveExchangeTimeout() + spi.getConnectionRecoveryTimeout())
+            ) {
+                synchronized (mux) {
+                    if (spiState == CONNECTED) {
+                        U.warn(log, "Current node keeps receiving messages from an empty ring. The ring state is invalid.");
+
+                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                        return;
+                    }
+                }
+            }
+
+            lastRingMsgReceivedTime = t;
         }
 
         /**

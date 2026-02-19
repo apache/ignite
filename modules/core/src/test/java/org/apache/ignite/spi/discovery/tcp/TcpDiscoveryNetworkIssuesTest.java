@@ -169,68 +169,59 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test scenario: some node (lets call it IllN) in the middle experience network issues: its previous cannot see it,
-     * and the node cannot see two nodes in front of it.
-     *
-     * IllN is considered failed by othen nodes in topology but IllN manages to connect to topology and
-     * sends StatusCheckMessage with non-empty failedNodes collection.
-     *
+     * Test scenario: some node (lets call it IllN) in the middle experience network issues, cannot see two nodes in front of it.
+     * IllN is considered failed by other nodes in topology but IllN manages to connect to topology.
      * Expected outcome: IllN eventually segments from topology, other healthy nodes work normally.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-11364">IGNITE-11364</a>
-     * for more details about actual bug.
+     * @see #testBackwardConnectionCheckWhenDiscoveryThreadsSuspended()
      */
     @Test
     public void testServerGetsSegmentedOnBecomeDangling() throws Exception {
         usePortFromNodeName = true;
         connectionRecoveryTimeout = 0;
 
+        IgniteEx ig0 = startGrid(NODE_0_NAME);
+        startGrid(NODE_1_NAME);
+
         AtomicBoolean netBroken = new AtomicBoolean(false);
 
-        IgniteEx ig0 = startGrid(NODE_0_NAME);
-
-        IgniteEx ig1 = startGrid(NODE_1_NAME);
-
         specialSpi = new TcpDiscoverySpi() {
-            @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
-                if (netBroken.get() && sock.getPort() == NODE_3_PORT)
+            @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+                long timeout) throws IOException, IgniteCheckedException {
+                if (netBroken.get() && (ses.socket().getPort() == NODE_3_PORT || ses.socket().getPort() == NODE_4_PORT))
                     throw new SocketTimeoutException("Read timed out");
 
-                return super.readReceipt(sock, timeout);
+                super.writeMessage(ses, msg, timeout);
             }
 
             @Override protected Socket openSocket(InetSocketAddress sockAddr,
                 IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-                if (netBroken.get() && sockAddr.getPort() == NODE_4_PORT)
+                if (netBroken.get() && (sockAddr.getPort() == NODE_3_PORT || sockAddr.getPort() == NODE_4_PORT))
                     throw new SocketTimeoutException("connect timed out");
 
                 return super.openSocket(sockAddr, timeoutHelper);
             }
         };
 
-        Ignite ig2 = startGrid(NODE_2_NAME);
+        Ignite ill2 = startGrid(NODE_2_NAME);
+
+        specialSpi = null;
 
         AtomicBoolean illNodeSegmented = new AtomicBoolean(false);
 
-        ig2.events().localListen((e) -> {
+        ill2.events().localListen((e) -> {
             illNodeSegmented.set(true);
 
             return false;
         }, EVT_NODE_SEGMENTED);
 
-        specialSpi = null;
-
         startGrid(NODE_3_NAME);
-
         startGrid(NODE_4_NAME);
-
         startGrid(NODE_5_NAME);
-
-        breakDiscoConnectionToNext(ig1);
 
         netBroken.set(true);
 
-        waitForCondition(illNodeSegmented::get, 10_000);
+        assertTrue(waitForCondition(illNodeSegmented::get, 10_000));
 
         assertTrue(illNodeSegmented.get());
 
@@ -261,6 +252,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /**
      * Tests backward ping when the discovery threads of the malfunction node is simulated to hang at GC.
      * But the JVM is able to accept socket connections.
+     *
+     * @see #testServerGetsSegmentedOnBecomeDangling()
      */
     @Test
     public void testBackwardConnectionCheckWhenDiscoveryThreadsSuspended() throws Exception {
@@ -384,7 +377,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         AtomicReference<Boolean> node1AliveStatus = new AtomicReference<>();
 
-        // Listener of handshake response from node2 to node1.
+        // Listener of handshake response from node2 to node0.
         testSpi(node2).hsRespLsnr.set(((socket1, response) -> {
             testSpi(node2).simulatedPrevNodeAddr.set(null);
 
@@ -393,7 +386,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             node1AliveStatus.set(response.previousNodeAlive());
         }));
 
-        // Simulate malfunction of connection node0 to mode1.
+        // Simulate malfunction of connection node0 to node1.
         testSpi(node0).addrsToBlock = spi(node1).locNodeAddrs;
         assertTrue(waitForCondition(() -> testSpi(node0).blocked, failureDetectionTimeout));
 
@@ -525,21 +518,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         Object spis = GridTestUtils.getFieldValue(disco, GridManagerAdapter.class, "spis");
 
         return GridTestUtils.getFieldValue(((Object[])spis)[0], "impl", "failedNodes");
-    }
-
-    /**
-     * Breaks connectivity of passed server node to its next to simulate network failure.
-     *
-     * @param ig Ignite instance which connection to next node has to be broken.
-     */
-    private void breakDiscoConnectionToNext(IgniteEx ig) throws Exception {
-        GridDiscoveryManager disco = ig.context().discovery();
-
-        Object spis = GridTestUtils.getFieldValue(disco, GridManagerAdapter.class, "spis");
-
-        TcpDiscoveryIoSession ses = GridTestUtils.getFieldValue(((Object[])spis)[0], "impl", "msgWorker", "ses");
-
-        ses.socket().getOutputStream().close();
     }
 
     /**
