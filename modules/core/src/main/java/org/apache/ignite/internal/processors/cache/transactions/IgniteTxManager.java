@@ -607,6 +607,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
             }
 
+            System.err.println("!!!salvage");
+
             tx.salvageTx();
 
             if (log.isInfoEnabled())

@@ -74,6 +74,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
+    /** */
+    @GridToStringInclude
+    private Boolean storeWriteThrough;
+
     /** Async future. */
     @GridToStringExclude
     private final GridCacheAdapter.FutureHolder lastAsyncFut = new GridCacheAdapter.FutureHolder();
@@ -293,6 +297,16 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean storeWriteThrough(GridCacheSharedContext sctx) {
+        if (storeWriteThrough != null)
+            return storeWriteThrough;
+
+        storeWriteThrough = checkStoreWriteThrough(sctx);
+
+        return storeWriteThrough;
+    }
+
+    /** */
+    private boolean checkStoreWriteThrough(GridCacheSharedContext sctx) {
         if (!activeCacheIds.isEmpty()) {
             for (int i = 0; i < activeCacheIds.size(); i++) {
                 int cacheId = activeCacheIds.get(i);

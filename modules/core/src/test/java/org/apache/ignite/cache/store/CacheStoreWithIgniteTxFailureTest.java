@@ -183,8 +183,6 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             updateKeysInTx(txCoordinator, keysOnFaultyNode);
 
         if (withFaulireHnd) {
-            // FH doesn't fail TX coordinator node now, this behavior is wrong and should be fixed here:
-            // TODO https://issues.apache.org/jira/browse/IGNITE-26060
             if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
                 waitForTopology(3);
 
@@ -194,6 +192,8 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
                         .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
                         .count() == 1);
             }
+            else
+                waitForTopology(2);
         }
         else
             checkKeysOnFaultyNode(keysOnFaultyNode);

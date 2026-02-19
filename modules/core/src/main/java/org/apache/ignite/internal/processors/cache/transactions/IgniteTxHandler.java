@@ -1351,6 +1351,8 @@ public class IgniteTxHandler {
             assert nodeId != null;
             assert req != null;
 
+            System.err.println("!!! processDhtTxFinishRequest " + req.checkCommitted());
+
             if (req.checkCommitted()) {
                 boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
