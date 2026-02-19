@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2616,9 +2617,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
-            throws IOException, IgniteCheckedException {
-            simulateTimeot(sock, msg, timeout);
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            simulateTimeot(ses.socket(), msg, timeout);
 
             super.writeMessage(ses, msg, timeout);
         }

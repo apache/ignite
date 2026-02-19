@@ -3348,9 +3348,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                                 // Topology treated as changes if next node is not available.
-                                boolean changeTop = sndState == null
-                                    ? newNextNode
-                                    : !sndState.isStartingPoint();
+                                boolean changeTop = sndState != null && !sndState.isStartingPoint();
 
                                 if (changeTop)
                                     hndMsg.previousNodeId(ring.previousNodeOf(next).id());
