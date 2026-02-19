@@ -30,90 +30,34 @@ public class ExternalRunnableWithExternalizableException implements IgniteRunnab
     /** */
     private static final String EX_MSG = "Message from Exception";
 
-    /** */
-    private static final int EX_CODE = 127;
-
-    /** */
-    private static final String EX_DETAILS = "Details from Exception";
-
     /** {@inheritDoc} */
     @Override public void run() {
-        throw new ExternalizableException(EX_MSG, EX_CODE, EX_DETAILS);
+        throw new ExternalizableException(EX_MSG);
     }
 
     /** Custom {@link Externalizable} Exception */
     public static class ExternalizableException extends IgniteException implements Externalizable {
-        /** */
-        protected int code;
-
-        /** */
-        protected String details;
-
         /** */
         public ExternalizableException() {
             // No-op.
         }
 
         /** */
-        public ExternalizableException(String msg, int code, String details) {
+        public ExternalizableException(String msg) {
             super(msg);
-
-            this.code = code;
-            this.details = details;
-        }
-
-        /** */
-        public int getCode() {
-            return code;
-        }
-
-        /** */
-        public void setCode(int code) {
-            this.code = code;
-        }
-
-        /** */
-        public String getDetails() {
-            return details;
-        }
-
-        /** */
-        public void setDetails(String details) {
-            this.details = details;
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(getMessage());
-            out.writeInt(code);
-            out.writeObject(details);
             out.writeObject(getStackTrace());
             out.writeObject(getCause());
-
-            Throwable[] suppressed = getSuppressed();
-
-            out.writeInt(suppressed.length);
-
-            for (Throwable t : suppressed)
-                out.writeObject(t);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             String msg = (String)in.readObject();
-
-            try {
-                Field detailMsg = Throwable.class.getDeclaredField("detailMessage");
-
-                detailMsg.setAccessible(true);
-                detailMsg.set(this, msg);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-
-            code = in.readInt();
-            details = (String)in.readObject();
+            setMessage(msg);
 
             setStackTrace((StackTraceElement[])in.readObject());
 
@@ -121,11 +65,19 @@ public class ExternalRunnableWithExternalizableException implements IgniteRunnab
 
             if (cause != null)
                 initCause(cause);
+        }
 
-            int suppressedLen = in.readInt();
+        /** */
+        private void setMessage(String msg) {
+            try {
+                Field detailMsg = Throwable.class.getDeclaredField("detailMessage");
 
-            for (int i = 0; i < suppressedLen; i++)
-                addSuppressed((Throwable)in.readObject());
+                detailMsg.setAccessible(true);
+                detailMsg.set(this, msg);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Deserialization for exception is broken!", e);
+            }
         }
     }
 }
