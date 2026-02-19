@@ -37,7 +37,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
     /** Master key digest that encrypted group encryption keys. */
     @Order(2)
-    private byte[] masterKeyDigest;
+    byte[] masterKeyDigest;
 
     /** */
     public GenerateEncryptionKeyResponse() {

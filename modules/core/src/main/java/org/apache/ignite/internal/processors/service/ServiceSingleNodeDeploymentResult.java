@@ -40,7 +40,7 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
 
     /** Serialized exceptions. */
     @Order(1)
-    private Collection<byte[]> errors;
+    Collection<byte[]> errors;
 
     /**
      * Empty constructor for marshalling purposes.

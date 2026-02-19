@@ -49,12 +49,12 @@ public class GridDeploymentRequest implements Message {
 
     /** Undeploy flag. */
     @Order(3)
-    private boolean isUndeploy;
+    boolean isUndeploy;
 
     /** Nodes participating in request (chain). */
     @Order(4)
     @GridToStringInclude
-    private Collection<UUID> nodeIds;
+    Collection<UUID> nodeIds;
 
     /**
      * Default constructor.
