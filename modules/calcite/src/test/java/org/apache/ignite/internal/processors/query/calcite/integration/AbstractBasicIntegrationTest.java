@@ -94,15 +94,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertTrue("Not finished queries found on client", waitForCondition(
             () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
 
-        waitForCondition(() -> {
-            for (Ignite ign : G.allGrids()) {
-                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
-                    return false;
-            }
-
-            return true;
-        }, INBOX_INITIALIZATION_TIMEOUT * 2);
-
         for (Ignite ign : G.allGrids()) {
             if (destroyCachesAfterTest()) {
                 for (String cacheName : ign.cacheNames())
@@ -118,8 +109,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
                 0, execSvc.memoryTracker().allocated());
 
-            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
-                0, qryProc.mailboxRegistry().inboxes().size());
+            assertTrue("Not closed inbox found [ignite=" + ign.name() + ']',
+                waitForCondition(() -> qryProc.mailboxRegistry().inboxes().isEmpty(), INBOX_INITIALIZATION_TIMEOUT * 2));
 
             assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
                 0, qryProc.mailboxRegistry().outboxes().size());
