@@ -18,12 +18,14 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.running.QueryHistory;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * SQL query history representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class SqlQueryHistoryView {
     /** Query history item. */
     private final QueryHistory qry;
@@ -53,32 +55,44 @@ public class SqlQueryHistoryView {
         return qry.local();
     }
 
-    /** @return Number of executions of the query. */
+    /** @return Latest initiator ID. */
     @Order(3)
+    public String initiatorId() {
+        return qry.initiatorId();
+    }
+
+    /** @return Number of executions of the query. */
+    @Order(4)
     public long executions() {
         return qry.executions();
     }
 
     /** @return Number of failed execution of the query. */
-    @Order(4)
+    @Order(5)
     public long failures() {
         return qry.failures();
     }
 
     /** @return Minimal query duration. */
-    @Order(5)
+    @Order(6)
     public long durationMin() {
         return qry.minimumTime();
     }
 
     /** @return Maximum query duration. */
-    @Order(6)
+    @Order(7)
     public long durationMax() {
         return qry.maximumTime();
     }
 
+    /** @return Total query duration. */
+    @Order(8)
+    public long durationTotal() {
+        return qry.totalTime();
+    }
+
     /** @return Last start time. */
-    @Order(7)
+    @Order(9)
     public Date lastStartTime() {
         return new Date(qry.lastStartTime());
     }

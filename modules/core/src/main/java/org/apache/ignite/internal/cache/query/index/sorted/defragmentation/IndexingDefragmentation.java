@@ -145,7 +145,7 @@ public class IndexingDefragmentation {
             for (InlineIndex oldIdx : indexes.idxs) {
                 InlineIndexRowHandler oldRowHnd = oldIdx.segment(0).rowHandler();
 
-                SortedIndexDefinition idxDef = (SortedIndexDefinition)indexing.indexDefinition(oldIdx.id());
+                SortedIndexDefinition idxDef = oldIdx.indexDefinition();
 
                 InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
@@ -224,7 +224,7 @@ public class IndexingDefragmentation {
             List<InlineIndex> indexes = indexing.treeIndexes(cctx.name(), false);
 
             for (InlineIndex idx: indexes) {
-                String table = indexing.indexDefinition(idx.id()).idxName().tableName();
+                String table = idx.indexDefinition().idxName().tableName();
 
                 idxs.putIfAbsent(table, new TableIndexes(cctx, table));
 

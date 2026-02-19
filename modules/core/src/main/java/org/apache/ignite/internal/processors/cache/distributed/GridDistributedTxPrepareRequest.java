@@ -80,20 +80,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private long threadId;
 
     /** Transaction concurrency. */
+    @Order(8)
     @GridToStringInclude
     private TransactionConcurrency concurrency;
 
-    /** Transaction concurrency ordinal. */
-    @Order(value = 8, method = "concurrencyOrdinal")
-    private byte concurrencyOrd;
-
     /** Transaction isolation. */
+    @Order(9)
     @GridToStringInclude
     private TransactionIsolation isolation;
-
-    /** Transaction isolation ordinal. */
-    @Order(value = 9, method = "isolationOrdinal")
-    private byte isolationOrd;
 
     /** Commit version for EC transactions. */
     @Order(value = 10, method = "writeVersion")
@@ -188,9 +182,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();
         concurrency = tx.concurrency();
-        concurrencyOrd = concurrency != null ? (byte)concurrency.ordinal() : -1;
         isolation = tx.isolation();
-        isolationOrd = isolation != null ? (byte)isolation.ordinal() : -1;
         txSize = tx.size();
         plc = tx.ioPolicy();
 
@@ -342,19 +334,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @return Concurrency ordinal.
+     * @param concurrency Concurrency.
      */
-    public byte concurrencyOrdinal() {
-        return concurrencyOrd;
-    }
-
-    /**
-     * @param concurrencyOrd Concurrency ordinal.
-     */
-    public void concurrencyOrdinal(byte concurrencyOrd) {
-        this.concurrencyOrd = concurrencyOrd;
-
-        concurrency = TransactionConcurrency.fromOrdinal(concurrencyOrd);
+    public void concurrency(TransactionConcurrency concurrency) {
+        this.concurrency = concurrency;
     }
 
     /**
@@ -365,19 +348,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @return Isolation level ordinal.
+     * @param isolation Isolation level.
      */
-    public byte isolationOrdinal() {
-        return isolationOrd;
-    }
-
-    /**
-     * @param isolationOrd Isolation level ordinal.
-     */
-    public void isolationOrdinal(byte isolationOrd) {
-        this.isolationOrd = isolationOrd;
-
-        isolation = TransactionIsolation.fromOrdinal(isolationOrd);
+    public void isolation(TransactionIsolation isolation) {
+        this.isolation = isolation;
     }
 
     /**

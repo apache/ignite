@@ -20,7 +20,6 @@ package org.apache.ignite.internal.binary;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -67,7 +65,7 @@ class BinaryClassDescriptor {
     private final Class<?> cls;
 
     /** Configured serializer. */
-    private final BinarySerializer serializer;
+    final BinarySerializer serializer;
 
     /** Serializer that is passed during BinaryClassDescriptor construction. Can differ from {@link #serializer}. */
     private final BinarySerializer initialSerializer;
@@ -76,7 +74,7 @@ class BinaryClassDescriptor {
     private final BinaryInternalMapper mapper;
 
     /** */
-    private final BinaryWriteMode mode;
+    final BinaryWriteMode mode;
 
     /** */
     private final boolean userType;
@@ -85,7 +83,7 @@ class BinaryClassDescriptor {
     private final int typeId;
 
     /** */
-    private final String typeName;
+    final String typeName;
 
     /** Affinity key field name. */
     private final String affKeyFieldName;
@@ -94,13 +92,13 @@ class BinaryClassDescriptor {
     private final Constructor<?> ctor;
 
     /** */
-    private final BinaryFieldAccessor[] fields;
+    final BinaryFieldDescriptor[] fields;
 
     /** Write replacer. */
     private final BinaryWriteReplacer writeReplacer;
 
     /** */
-    private final Method readResolveMtd;
+    final Method readResolveMtd;
 
     /** */
     private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
@@ -225,7 +223,7 @@ class BinaryClassDescriptor {
         else if (useOptMarshaller)
             mode = BinaryWriteMode.OPTIMIZED; // Will not be used anywhere.
         else {
-            if (cls == BinaryEnumObjectImpl.class)
+            if (cls == BinaryUtils.binariesFactory.binaryEnumClass())
                 mode = BinaryWriteMode.BINARY_ENUM;
             else
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
@@ -328,7 +326,7 @@ class BinaryClassDescriptor {
                     stableSchema = null;
                 }
                 else {
-                    Map<Object, BinaryFieldAccessor> fields0;
+                    Map<Object, BinaryFieldDescriptor> fields0;
 
                     if (BinaryUtils.FIELDS_SORTED_ORDER) {
                         fields0 = new TreeMap<>();
@@ -365,21 +363,21 @@ class BinaryClassDescriptor {
                                 if (!ids.add(fieldId))
                                     throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                                BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+                                BinaryFieldDescriptor fieldInfo = BinaryUtils.binariesFactory.create(f, fieldId);
 
                                 fields0.put(name, fieldInfo);
 
                                 if (metaDataEnabled)
-                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo.mode.typeId(), fieldInfo.id));
                             }
                         }
                     }
 
-                    fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+                    fields = fields0.values().toArray(new BinaryFieldDescriptor[fields0.size()]);
 
                     BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
-                    for (BinaryFieldAccessor field : fields)
+                    for (BinaryFieldDescriptor field : fields)
                         schemaBuilder.addField(field.id);
 
                     stableSchema = schemaBuilder.build();
@@ -602,13 +600,11 @@ class BinaryClassDescriptor {
      * @param writer Writer.
      * @throws BinaryObjectException In case of error.
      */
-    void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+    void write(Object obj, BinaryWriterEx writer) throws BinaryObjectException {
         try {
             assert obj != null;
             assert writer != null;
             assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
-
-            writer.typeId(typeId);
 
             switch (mode) {
                 case P_BYTE:
@@ -783,7 +779,7 @@ class BinaryClassDescriptor {
                     break;
 
                 case BINARY_ENUM:
-                    writer.writeBinaryEnum((BinaryEnumObjectImpl)obj);
+                    writer.writeBinaryEnum((BinaryObjectEx)obj);
 
                     break;
 
@@ -806,7 +802,7 @@ class BinaryClassDescriptor {
                     break;
 
                 case BINARY_OBJ:
-                    writer.writeBinaryObject((BinaryObjectImpl)obj);
+                    writer.writeBinaryObject((BinaryObjectEx)obj);
 
                     break;
 
@@ -872,8 +868,20 @@ class BinaryClassDescriptor {
 
                     if (preWrite(writer, obj)) {
                         try {
-                            for (BinaryFieldAccessor info : fields)
-                                info.write(obj, writer);
+                            for (BinaryFieldDescriptor info : fields) {
+                                try {
+                                    writer.writeField(obj, info);
+                                }
+                                catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
+                                    throw ex;
+                                }
+                                catch (Exception ex) {
+                                    if (S.includeSensitive() && !F.isEmpty(info.name))
+                                        throw new BinaryObjectException("Failed to write field [name=" + info.name + ']', ex);
+                                    else
+                                        throw new BinaryObjectException("Failed to write field [id=" + info.id + ']', ex);
+                                }
+                            }
 
                             writer.schemaId(stableSchema.schemaId());
 
@@ -901,80 +909,6 @@ class BinaryClassDescriptor {
                 msg = "Failed to serialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to serialize object [typeId=" + typeId + ']';
-
-            CommonUtils.error(ctx.log(), msg, e);
-
-            throw new BinaryObjectException(msg, e);
-        }
-    }
-
-    /**
-     * @param reader Reader.
-     * @return Object.
-     * @throws BinaryObjectException If failed.
-     */
-    Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
-        try {
-            assert reader != null;
-            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
-
-            Object res;
-
-            switch (mode) {
-                case BINARY:
-                    res = newInstance();
-
-                    reader.setHandle(res);
-
-                    if (serializer != null)
-                        serializer.readBinary(res, reader);
-                    else
-                        ((Binarylizable)res).readBinary(reader);
-
-                    break;
-
-                case OBJECT:
-                    res = newInstance();
-
-                    reader.setHandle(res);
-
-                    for (BinaryFieldAccessor info : fields)
-                        info.read(res, reader);
-
-                    break;
-
-                default:
-                    assert false : "Invalid mode: " + mode;
-
-                    return null;
-            }
-
-            if (readResolveMtd != null) {
-                try {
-                    res = readResolveMtd.invoke(res);
-
-                    reader.setHandle(res);
-                }
-                catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-                catch (InvocationTargetException e) {
-                    if (e.getTargetException() instanceof BinaryObjectException)
-                        throw (BinaryObjectException)e.getTargetException();
-
-                    throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
-                }
-            }
-
-            return res;
-        }
-        catch (Exception e) {
-            String msg;
-
-            if (S.includeSensitive() && !F.isEmpty(typeName))
-                msg = "Failed to deserialize object [typeName=" + typeName + ']';
-            else
-                msg = "Failed to deserialize object [typeId=" + typeId + ']';
 
             CommonUtils.error(ctx.log(), msg, e);
 
@@ -1039,7 +973,7 @@ class BinaryClassDescriptor {
      * @param obj Object.
      * @return Whether further write is needed.
      */
-    private boolean preWrite(BinaryWriterExImpl writer, Object obj) {
+    private boolean preWrite(BinaryWriterEx writer, Object obj) {
         if (writer.tryWriteAsHandle(obj))
             return false;
 
@@ -1053,7 +987,7 @@ class BinaryClassDescriptor {
      *
      * @param writer Writer.
      */
-    private void postWrite(BinaryWriterExImpl writer) {
+    private void postWrite(BinaryWriterEx writer) {
         writer.postWrite(userType, registered);
     }
 
@@ -1063,24 +997,11 @@ class BinaryClassDescriptor {
      * @param writer Writer.
      * @param obj Object.
      */
-    private void postWriteHashCode(BinaryWriterExImpl writer, Object obj) {
+    private void postWriteHashCode(BinaryWriterEx writer, Object obj) {
         boolean postWriteRequired = !(obj instanceof CacheObject) || ((CacheObject)obj).postWriteRequired();
         // No need to call "postWriteHashCode" here because we do not care about hash code.
         if (postWriteRequired)
             writer.postWriteHashCode(registered ? null : cls.getName());
-    }
-
-    /**
-     * @return Instance.
-     * @throws BinaryObjectException In case of error.
-     */
-    private Object newInstance() throws BinaryObjectException {
-        try {
-            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
-        }
-        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
-        }
     }
 
     /** */

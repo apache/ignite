@@ -69,11 +69,18 @@ class QueryTasksQueue {
     /** Set of blocked (currently running) queries. */
     private final Set<QueryKey> blockedQrys = new HashSet<>();
 
+    /** All tasks blocked by currently running queries. Can be false-negative. */
+    private boolean allTasksBlocked;
+
+    /** Count of not parked and not currently busy task processing threads. */
+    private int freeThreadsCnt;
+
     /**
      * Creates a {@code LinkedBlockingQueue}.
      */
-    QueryTasksQueue() {
+    QueryTasksQueue(int threadsCnt) {
         last = head = new Node(null);
+        freeThreadsCnt = threadsCnt;
     }
 
     /** Queue size. */
@@ -83,16 +90,22 @@ class QueryTasksQueue {
 
     /** Add a task to the queue. */
     public void addTask(QueryAwareTask task) {
+        Node node = new Node(task);
+
         lock.lock();
 
         try {
             assert last.next == null : "Unexpected last.next: " + last.next;
 
-            last = last.next = new Node(task);
+            last = last.next = node;
 
-            cnt.getAndIncrement();
+            int tasksCnt = cnt.incrementAndGet();
 
-            notEmpty.signal();
+            // Do not wake up new threads if it's enough free threads to process the new task.
+            if (tasksCnt > freeThreadsCnt && !(allTasksBlocked && freeThreadsCnt > 0))
+                notEmpty.signal();
+
+            allTasksBlocked = false;
         }
         finally {
             lock.unlock();
@@ -100,17 +113,20 @@ class QueryTasksQueue {
     }
 
     /** Poll task and block query. */
-    public QueryAwareTask pollTaskAndBlockQuery(long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable QueryAwareTask pollTaskAndBlockQuery(long nanos) throws InterruptedException {
         lock.lockInterruptibly();
 
         try {
+            freeThreadsCnt--;
+
             QueryAwareTask res;
 
-            long nanos = unit.toNanos(timeout);
+            while (cnt.get() == 0 || allTasksBlocked || (allTasksBlocked = (res = dequeue()) == null)) {
+                if (nanos <= 0L) {
+                    freeThreadsCnt++;
 
-            while (cnt.get() == 0 || (res = dequeue()) == null) {
-                if (nanos <= 0L)
                     return null;
+                }
 
                 nanos = notEmpty.awaitNanos(nanos);
             }
@@ -120,6 +136,11 @@ class QueryTasksQueue {
             assert added;
 
             return res;
+        }
+        catch (Throwable e) {
+            freeThreadsCnt++;
+
+            throw e;
         }
         finally {
             lock.unlock();
@@ -141,8 +162,7 @@ class QueryTasksQueue {
 
                 unlink(pred, cur);
 
-                if (cnt.decrementAndGet() > 0)
-                    notEmpty.signal();
+                cnt.getAndDecrement();
 
                 return res;
             }
@@ -160,8 +180,9 @@ class QueryTasksQueue {
 
             assert removed;
 
-            if (cnt.get() > 0)
-                notEmpty.signal();
+            allTasksBlocked = false;
+
+            freeThreadsCnt++;
         }
         finally {
             lock.unlock();
@@ -290,11 +311,11 @@ class QueryTasksQueue {
             }
 
             @Override public @NotNull Runnable take() throws InterruptedException {
-                return pollTaskAndBlockQuery(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                return pollTaskAndBlockQuery(Long.MAX_VALUE);
             }
 
             @Override public @Nullable Runnable poll(long timeout, @NotNull TimeUnit unit) throws InterruptedException {
-                return pollTaskAndBlockQuery(0, TimeUnit.NANOSECONDS);
+                return pollTaskAndBlockQuery(unit.toNanos(timeout));
             }
 
             @Override public Runnable remove() {

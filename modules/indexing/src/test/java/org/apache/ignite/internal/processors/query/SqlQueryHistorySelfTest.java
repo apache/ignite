@@ -41,6 +41,8 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.running.QueryHistory;
+import org.apache.ignite.internal.util.GridTestClockTimer;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -49,6 +51,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.util.lang.GridFunc.first;
 
 /**
  * Check query history metrics from server node.
@@ -219,6 +222,70 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from String");
 
         checkQueryMetrics(qry);
+    }
+
+    /**
+     * Test metrics for SQL fields queries with initiatot ID.
+     */
+    @Test
+    public void testSqlFieldsQueryHistoryWithInitiatorId() {
+        String testId0 = "testId0";
+        String testId1 = "testId1";
+
+        SqlFieldsQuery qry0 = new SqlFieldsQuery("select * from String").setQueryInitiatorId(testId0);
+
+        checkQueryMetrics(qry0, testId0);
+
+        SqlFieldsQuery qry1 = new SqlFieldsQuery("select * from String").setQueryInitiatorId(testId1);
+
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+
+        cache.query(qry1).getAll();
+
+        Collection<QueryHistory> historyCol = queryNode().context().query().runningQueryManager()
+            .queryHistoryMetrics().values();
+
+        assertFalse(F.isEmpty(historyCol));
+        assertEquals(1, historyCol.size());
+
+        QueryHistory history = first(historyCol);
+
+        assertNotNull(history);
+
+        assertEquals(testId1, history.initiatorId());
+    }
+
+    /**
+     * Test total duration of SQL queries.
+     */
+    @Test
+    public void testSqlFieldsQueryTotalDuration() {
+        int sleepTime = 500;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from A.String where _key=0 and sleep_func(?)").setArgs(sleepTime);
+
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+
+        long[] totalTimeArr = new long[2];
+
+        for (int i = 0; i < totalTimeArr.length; i++) {
+            cache.query(qry).getAll();
+
+            Collection<QueryHistory> historyCol = queryNode().context().query().runningQueryManager()
+                .queryHistoryMetrics().values();
+
+            assertFalse(F.isEmpty(historyCol));
+            assertEquals(1, historyCol.size());
+
+            QueryHistory history = first(historyCol);
+
+            assertNotNull(history);
+
+            totalTimeArr[i] = history.totalTime();
+        }
+
+        assertTrue(totalTimeArr[0] >= sleepTime);
+        assertTrue(totalTimeArr[1] >= totalTimeArr[0] + sleepTime);
     }
 
     /**
@@ -420,9 +487,21 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param failures Expected number of failures.
      * @param first {@code true} if metrics checked for first query only.
      */
-    private void checkMetrics(int sz, int idx, int execs, int failures,
-        boolean first) {
+    private void checkMetrics(int sz, int idx, int execs, int failures, boolean first) {
+        checkMetrics(sz, idx, execs, failures, first, null);
+    }
 
+    /**
+     * Check metrics.
+     *
+     * @param sz Expected size of metrics.
+     * @param idx Index of metrics to check.
+     * @param execs Expected number of executions.
+     * @param failures Expected number of failures.
+     * @param first {@code true} if metrics checked for first query only.
+     * @param initId Initiator ID.
+     */
+    private void checkMetrics(int sz, int idx, int execs, int failures, boolean first, String initId) {
         Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
             .queryHistoryMetrics().values();
 
@@ -444,6 +523,9 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         if (first)
             assertEquals("On first execution minTime == maxTime", m.minimumTime(), m.maximumTime());
+
+        if (initId != null)
+            assertEquals(initId, m.initiatorId());
     }
 
     /**
@@ -476,17 +558,25 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      */
     private void checkQueryMetrics(Query qry) {
+        checkQueryMetrics(qry, null);
+    }
+
+    /**
+     * @param qry Query.
+     * @param initId Initiator ID.
+     */
+    private void checkQueryMetrics(Query qry, String initId) {
         IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         // Execute query.
         cache.query(qry).getAll();
 
-        checkMetrics(1, 0, 1, 0, true);
+        checkMetrics(1, 0, 1, 0, true, initId);
 
         // Execute again with the same parameters.
         cache.query(qry).getAll();
 
-        checkMetrics(1, 0, 2, 0, false);
+        checkMetrics(1, 0, 2, 0, false, initId);
     }
 
     /**
@@ -613,6 +703,18 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         @QuerySqlFunction
         public static int fail() {
             throw new IgniteSQLException("SQL function fail for test purpuses");
+        }
+
+        /**
+         *
+         */
+        @QuerySqlFunction
+        public static boolean sleep_func(int sleep) {
+            doSleep(sleep);
+
+            GridTestClockTimer.update();
+
+            return true;
         }
     }
 

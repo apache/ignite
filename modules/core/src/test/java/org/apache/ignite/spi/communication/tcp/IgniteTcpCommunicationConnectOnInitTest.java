@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -37,6 +36,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -208,15 +208,14 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            OutputStream out,
+        @Override protected void writeMessage(
+            TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

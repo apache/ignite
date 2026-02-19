@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -103,7 +104,7 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
 
             nearNode.configuration().getCommunicationSpi().sendMessage(
                 incomingNode.localNode(),
-                UUIDCollectionMessage.of(UUID.randomUUID())
+                new UUIDCollectionMessage(Collections.singletonList(UUID.randomUUID()))
             );
 
             // Check

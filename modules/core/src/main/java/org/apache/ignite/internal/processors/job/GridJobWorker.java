@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -67,7 +66,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -115,9 +113,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** */
     private final Object taskTopic;
-
-    /** */
-    private byte[] jobBytes;
 
     /** Task originating node. */
     private final ClusterNode taskNode;
@@ -198,7 +193,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param createTime Create time.
      * @param ses Grid task session.
      * @param jobCtx Job context.
-     * @param jobBytes Grid job bytes.
      * @param job Job.
      * @param taskNode Grid task node.
      * @param internal Whether or not task was marked with {@link GridInternal}
@@ -216,7 +210,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         long createTime,
         GridJobSessionImpl ses,
         GridJobContextImpl jobCtx,
-        byte[] jobBytes,
         ComputeJob job,
         ClusterNode taskNode,
         boolean internal,
@@ -242,7 +235,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.dep = dep;
         this.ses = ses;
         this.jobCtx = jobCtx;
-        this.jobBytes = jobBytes;
         this.taskNode = taskNode;
         this.internal = internal;
         this.holdLsnr = holdLsnr;
@@ -250,9 +242,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.reqTopVer = reqTopVer;
         this.execName = execName;
         this.jobInterruptTimeoutSupplier = jobInterruptTimeoutSupplier;
-
-        if (job != null)
-            this.job = job;
+        this.job = job;
 
         log = U.logger(ctx, logRef, this);
 
@@ -481,20 +471,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         IgniteException ex = null;
 
         try {
-            if (job == null) {
-                MarshallerUtils.jobSenderVersion(taskNode.version());
-
-                try {
-                    job = U.unmarshal(marsh, jobBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                }
-                finally {
-                    MarshallerUtils.jobSenderVersion(null);
-                }
-
-                // No need to hold reference any more.
-                jobBytes = null;
-            }
-
             // Inject resources.
             ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 
@@ -898,63 +874,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     }
                     else {
                         try {
-                            byte[] resBytes = null;
-                            byte[] exBytes = null;
-                            byte[] attrBytes = null;
-
                             boolean loc = ctx.localNodeId().equals(sndNode.id()) && !ctx.config().isMarshalLocalJobs();
 
                             Map<Object, Object> attrs = jobCtx.getAttributes();
-
-                            // Try to serialize response, and if exception - return to client.
-                            if (!loc) {
-                                try {
-                                    resBytes = U.marshal(marsh, res);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    resBytes = U.marshal(marsh, null);
-
-                                    if (ex != null)
-                                        ex.addSuppressed(e);
-                                    else
-                                        ex = U.convertException(e);
-
-                                    logError("Failed to serialize job response [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                                        ", resCls=" + (res == null ? null : res.getClass()) + ']', e);
-                                }
-
-                                try {
-                                    attrBytes = U.marshal(marsh, attrs);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    attrBytes = U.marshal(marsh, Collections.emptyMap());
-
-                                    if (ex != null)
-                                        ex.addSuppressed(e);
-                                    else
-                                        ex = U.convertException(e);
-
-                                    logError("Failed to serialize job attributes [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                                        ", attrs=" + attrs + ']', e);
-                                }
-
-                                try {
-                                    exBytes = U.marshal(marsh, ex);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    String msg = "Failed to serialize job exception [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                                        ", msg=\"" + e.getMessage() + "\"]";
-
-                                    ex = new IgniteException(msg);
-
-                                    logError(msg, e);
-
-                                    exBytes = U.marshal(marsh, ex);
-                                }
-                            }
 
                             if (ex != null) {
                                 status = FAILED;
@@ -980,14 +902,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ctx.localNodeId(),
                                 ses.getId(),
                                 ses.getJobId(),
-                                exBytes,
-                                loc ? ex : null,
-                                resBytes,
-                                loc ? res : null,
-                                attrBytes,
-                                loc ? attrs : null,
+                                ex,
+                                res,
+                                attrs,
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
+
+                            if (!loc)
+                                jobRes.marshallUserData(marsh, log);
 
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 
@@ -1009,9 +931,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             }
                             else if (ctx.localNodeId().equals(sndNode.id()))
                                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
-                            else
+                            else {
                                 // Send response to common topic as unordered message.
                                 ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.

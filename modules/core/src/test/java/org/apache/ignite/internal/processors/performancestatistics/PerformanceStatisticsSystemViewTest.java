@@ -30,9 +30,9 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.systemview.MetastorageViewWalker;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -57,7 +57,13 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
         "metrics",
         "caches",
         "sql.queries",
-        "nodes");
+        "nodes",
+        "cacheGroupPageLists",
+        "dataRegionPageLists",
+        "partitionStates",
+        "statisticsPartitionData",
+        "metastorage",
+        "distributed.metastorage");
 
     /** */
     private static final int VALID_VIEWS_CNT = 10;

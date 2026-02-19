@@ -19,9 +19,9 @@ package org.apache.ignite.spi.systemview.view.datastructures;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSemaphore;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.datastructures.GridCacheRemovable;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSemaphoreImpl;
+import org.apache.ignite.internal.systemview.Order;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**

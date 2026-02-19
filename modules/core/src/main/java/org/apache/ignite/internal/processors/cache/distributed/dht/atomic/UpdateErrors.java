@@ -61,6 +61,20 @@ public class UpdateErrors implements Message {
     }
 
     /**
+     * @param err Error.
+     */
+    public void error(Throwable err) {
+        errMsg = new ErrorMessage(err);
+    }
+
+    /**
+     * @return Error.
+     */
+    public Throwable error() {
+        return ErrorMessage.error(errMsg);
+    }
+
+    /**
      * @param errMsg New error message.
      */
     public void errorMessage(ErrorMessage errMsg) {
@@ -103,7 +117,7 @@ public class UpdateErrors implements Message {
         if (errMsg == null)
             errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys."));
 
-        errMsg.toThrowable().addSuppressed(e);
+        errMsg.error().addSuppressed(e);
     }
 
     /**
@@ -119,7 +133,7 @@ public class UpdateErrors implements Message {
         if (errMsg == null)
             errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys on primary node."));
 
-        errMsg.toThrowable().addSuppressed(e);
+        errMsg.error().addSuppressed(e);
     }
 
     /** */

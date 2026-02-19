@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -85,7 +86,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -151,7 +154,14 @@ public class GridNioServer<T> {
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
     /** */
-    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Number of messages waiting to be sent";
+    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        = "Total number of messages waiting to be sent over all connections";
+
+    /** */
+    public static final String MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME = "maxOutboundMessagesQueueSize";
+
+    /** */
+    public static final String MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Maximum number of messages waiting to be sent";
 
     /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
@@ -288,6 +298,9 @@ public class GridNioServer<T> {
     /** Tracing processor. */
     private Tracing tracing;
 
+    /** Message factory. */
+    private final MessageFactory msgFactory;
+
     /**
      * @param addr Address.
      * @param port Port.
@@ -340,6 +353,7 @@ public class GridNioServer<T> {
         @Nullable GridWorkerListener workerLsnr,
         @Nullable MetricRegistryImpl mreg,
         Tracing tracing,
+        MessageFactory msgFactory,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -367,6 +381,7 @@ public class GridNioServer<T> {
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
         this.lsnr = lsnr;
         this.tracing = tracing == null ? new NoopTracing() : tracing;
+        this.msgFactory = msgFactory;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -540,6 +555,13 @@ public class GridNioServer<T> {
      */
     public InetSocketAddress localAddress() {
         return locAddr;
+    }
+
+    /**
+     * @return Message factory.
+     */
+    public MessageFactory messageFactory() {
+        return msgFactory;
     }
 
     /**
@@ -1592,7 +1614,18 @@ public class GridNioServer<T> {
 
                 int startPos = buf.position();
 
-                finished = msg.writeTo(buf, writer);
+                if (messageFactory() == null) {
+                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
+
+                    finished = ((ClientMessage)msg).writeTo(buf);
+                }
+                else {
+                    MessageSerializer msgSer = messageFactory().serializer(msg.directType());
+
+                    writer.setBuffer(buf);
+
+                    finished = msgSer.writeTo(msg, writer);
+                }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
@@ -1782,7 +1815,18 @@ public class GridNioServer<T> {
 
                 int startPos = buf.position();
 
-                finished = msg.writeTo(buf, writer);
+                if (msgFactory == null) {
+                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
+
+                    finished = ((ClientMessage)msg).writeTo(buf);
+                }
+                else {
+                    MessageSerializer msgSer = msgFactory.serializer(msg.directType());
+
+                    writer.setBuffer(buf);
+
+                    finished = msgSer.writeTo(msg, writer);
+                }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
@@ -2449,7 +2493,7 @@ public class GridNioServer<T> {
                         .append(", bytesRcvd0=").append(ses.bytesReceived0())
                         .append(", bytesSent=").append(ses.bytesSent())
                         .append(", bytesSent0=").append(ses.bytesSent0())
-                        .append(", opQueueSize=").append(ses.writeQueueSize());
+                        .append(", opQueueSize=").append(ses.messagesQueueSize());
 
                     if (!shortInfo) {
                         MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
@@ -3859,6 +3903,9 @@ public class GridNioServer<T> {
         /** Tracing processor */
         private Tracing tracing;
 
+        /** Message factory. */
+        private MessageFactory msgFactory;
+
         /**
          * Finishes building the instance.
          *
@@ -3890,6 +3937,7 @@ public class GridNioServer<T> {
                 workerLsnr,
                 mreg,
                 tracing,
+                msgFactory,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -4161,6 +4209,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> metricRegistry(MetricRegistryImpl mreg) {
             this.mreg = mreg;
+
+            return this;
+        }
+
+        /**
+         * @param msgFactory Message factory.
+         * @return This for chaining.
+         */
+        public Builder<T> messageFactory(MessageFactory msgFactory) {
+            this.msgFactory = msgFactory;
 
             return this;
         }

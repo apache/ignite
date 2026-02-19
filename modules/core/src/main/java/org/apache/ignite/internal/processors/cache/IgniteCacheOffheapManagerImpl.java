@@ -949,7 +949,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         Set<Integer> missing = new HashSet<>();
 
-        for (Integer p : parts.full()) {
+        for (Integer p : parts.fullSet()) {
             GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
 
             if (partIter == null) {

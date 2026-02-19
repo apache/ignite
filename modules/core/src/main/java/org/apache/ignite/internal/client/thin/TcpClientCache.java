@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -107,7 +109,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     private final int cacheId;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelEx ch;
 
     /** Cache name. */
     private final String name;
@@ -141,13 +143,15 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         "non-transactional ClientCache %s operation within a transaction.";
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
+    TcpClientCache(String name, ReliableChannelImpl ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
         ClientCacheEntryListenersRegistry lsnrsRegistry, IgniteLogger log) {
-        this(name, ch, marsh, transactions, lsnrsRegistry, false, null, log);
+        this(name, new ReliableChannelWrapper(ch, name), marsh, transactions, lsnrsRegistry, false, null, log);
+
+        ch.registerCacheIfCustomAffinity(name);
     }
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh,
+    private TcpClientCache(String name, ReliableChannelEx ch, ClientBinaryMarshaller marsh,
         TcpClientTransactions transactions, ClientCacheEntryListenersRegistry lsnrsRegistry, boolean keepBinary,
         ExpiryPolicy expiryPlc, IgniteLogger log) {
         this.name = name;
@@ -163,8 +167,6 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         this.expiryPlc = expiryPlc;
 
         jCacheAdapter = new ClientJCacheAdapter<>(this);
-
-        this.ch.registerCacheIfCustomAffinity(this.name);
 
         this.log = log;
     }
@@ -312,23 +314,35 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     @Override public int size(CachePeekMode... peekModes) throws ClientException {
         return ch.service(
             ClientOperation.CACHE_GET_SIZE,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
-            },
-            res -> (int)res.in().readLong()
+            req -> writePeekModes(peekModes, req),
+            this::readCacheSizeInt
         );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException {
         return ch.serviceAsync(
-                ClientOperation.CACHE_GET_SIZE,
-                req -> {
-                    writeCacheInfo(req);
-                    ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
-                },
-                res -> (int)res.in().readLong()
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            this::readCacheSizeInt
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws ClientException {
+        return ch.service(
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> res.in().readLong()
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws ClientException {
+        return ch.serviceAsync(
+            ClientOperation.CACHE_GET_SIZE,
+            req -> writePeekModes(peekModes, req),
+            res -> res.in().readLong()
         );
     }
 
@@ -1084,7 +1098,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                     ? transactions.tx()
                     : null
             );
-            serDes.write(qry, payloadCh.out());
+            serDes.write(qry, payloadCh.out(), payloadCh.clientChannel().protocolCtx());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
@@ -1387,7 +1401,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.QUERY_SQL_CURSOR_GET_PAGE,
             qryWriter,
             keepBinary,
-            marsh
+            marsh,
+            cacheId,
+            !F.isEmpty(qry.getPartitions()) ? qry.getPartitions()[0] : -1
         ));
     }
 
@@ -1412,6 +1428,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             catch (ClientConnectionException e) {
                 throw new ClientException("Transaction context has been lost due to connection errors. " +
                     "Cache operations are prohibited until current transaction closed.", e);
+            }
+            catch (Exception e) {
+                throw convertException(e, name);
             }
         }
         else if (affKey != null)
@@ -1444,7 +1463,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                             "Cache operations are prohibited until current transaction closed.", err));
                 }
                 else if (err != null)
-                    fut.completeExceptionally(err);
+                    fut.completeExceptionally(convertException((Exception)err, name));
                 else
                     fut.complete(res);
             });
@@ -1525,8 +1544,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ProtocolContext protocolCtx = payloadCh.clientChannel().protocolCtx();
 
             if (!protocolCtx.isFeatureSupported(EXPIRY_POLICY)) {
-                throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
-                    "version %s, required version %s", protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
+                throw new ClientFeatureNotSupportedByServerException(String.format(
+                    "Expire policies are not supported by the server version %s, required version %s",
+                    protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
             }
 
             flags |= WITH_EXPIRY_POLICY_FLAG_MASK;
@@ -1638,6 +1658,24 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             });
     }
 
+    /** */
+    private void writePeekModes(CachePeekMode[] peekModes, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
+    }
+
+    /** */
+    private int readCacheSizeInt(PayloadInputChannel res) {
+        long size = res.in().readLong();
+
+        if (size <= Integer.MAX_VALUE)
+            return (int)size;
+        else {
+            throw new ClientException("Cache size exceeded maximum value for int type, use " +
+                "sizeLong/sizeLongAsync methods to get correct value");
+        }
+    }
+
     /**
      * Check that data replication operations is supported by server.
      *
@@ -1720,5 +1758,137 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             return false;
 
         return true;
+    }
+
+    /** */
+    private static ClientException convertException(Exception e, String cacheName) {
+        String msg = "Failed to perform cache operation [cacheName=" + cacheName + "]: " + e.getMessage();
+
+        // Exception can be ClientProtocolError - it's an internal exception, can't be thrown to user.
+        if (!(e instanceof ClientException))
+            return new ClientException(msg, e);
+        else if (X.hasCause(e, ClientServerError.class)) // Wrap server errors.
+            return new ClientException(msg, e);
+        else // Don't wrap authentication, authorization, connection errors.
+            return (ClientException)e;
+    }
+
+    /** */
+    private static class ReliableChannelWrapper implements ReliableChannelEx {
+        /** */
+        private final ReliableChannelImpl delegate;
+
+        /** */
+        private final String cacheName;
+
+        /** */
+        public ReliableChannelWrapper(ReliableChannelImpl delegate, String cacheName) {
+            this.delegate = delegate;
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T service(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+        ) throws ClientException {
+            try {
+                return delegate.service(op, payloadWriter, payloadReader);
+            }
+            catch (Exception e) {
+                throw convertException(e, cacheName);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T service(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader,
+            List<UUID> targetNodes
+        ) throws ClientException {
+            try {
+                return delegate.service(op, payloadWriter, payloadReader, targetNodes);
+            }
+            catch (Exception e) {
+                throw convertException(e, cacheName);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> IgniteClientFuture<T> serviceAsync(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+        ) {
+            CompletableFuture<T> fut = new CompletableFuture<>();
+
+            delegate.serviceAsync(op, payloadWriter, payloadReader).whenComplete((res, err) -> {
+                if (err != null)
+                    fut.completeExceptionally(convertException((Exception)err, cacheName));
+                else
+                    fut.complete(res);
+            });
+
+            return new IgniteClientFutureImpl<>(fut);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T affinityService(
+            int cacheId,
+            Object key,
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+        ) throws ClientException {
+            try {
+                return delegate.affinityService(cacheId, key, op, payloadWriter, payloadReader);
+            }
+            catch (Exception e) {
+                throw convertException(e, cacheName);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T affinityService(
+            int cacheId,
+            int part,
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+        ) throws ClientException {
+            try {
+                return delegate.affinityService(cacheId, part, op, payloadWriter, payloadReader);
+            }
+            catch (Exception e) {
+                throw convertException(e, cacheName);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> IgniteClientFuture<T> affinityServiceAsync(
+            int cacheId,
+            Object key,
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+        ) {
+            CompletableFuture<T> fut = new CompletableFuture<>();
+
+            delegate.affinityServiceAsync(cacheId, key, op, payloadWriter, payloadReader).whenComplete((res, err) -> {
+                if (err != null)
+                    fut.completeExceptionally(convertException((Exception)err, cacheName));
+                else
+                    fut.complete(res);
+            });
+
+            return new IgniteClientFutureImpl<>(fut);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            delegate.close();
+        }
     }
 }

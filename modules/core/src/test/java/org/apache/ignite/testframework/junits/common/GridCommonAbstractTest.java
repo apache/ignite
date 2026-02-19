@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableCon
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
@@ -1672,19 +1673,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param e Exception.
-     * @param exCls Ex class.
-     */
-    protected <T extends IgniteException> void assertCacheExceptionWithCause(RuntimeException e, Class<T> exCls) {
-        if (exCls.isAssignableFrom(e.getClass()))
-            return;
-
-        if (e.getClass() != CacheException.class
-            || e.getCause() == null || !exCls.isAssignableFrom(e.getCause().getClass()))
-            throw e;
-    }
-
-    /**
      * @param cache Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> cacheFromCtx(IgniteCache<K, V> cache) {
@@ -2857,5 +2845,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /** @return Marshaller. */
     protected static Marshaller marshaller(Ignite ign) {
         return ((IgniteEx)ign).context().marshaller();
+    }
+
+    /**
+     * Wait for rebalance on current topology finished.
+     */
+    protected static void waitRebalanceFinished(IgniteEx ignite, String cacheName) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            IgniteInternalFuture<Boolean> fut = ignite.cachex(cacheName).context().preloader().rebalanceFuture();
+
+            GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture)fut;
+
+            return (!rebFut.isInitial() && rebFut.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion());
+        }, 1000));
+
+        assertTrue(ignite.cachex(cacheName).context().preloader().rebalanceFuture().get());
     }
 }

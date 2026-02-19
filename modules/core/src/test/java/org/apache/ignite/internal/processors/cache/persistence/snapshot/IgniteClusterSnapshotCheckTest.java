@@ -435,7 +435,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 new Random().nextBytes(bytes);
 
                 try {
-                    BinaryObject newVal = BinaryUtils.binaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
+                    BinaryObject newVal =
+                        BinaryUtils.binariesFactory.binaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
 
                     boolean success = cached.initialValue(
                         (CacheObject)newVal,
@@ -526,7 +527,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckNullInput() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
 
         StringBuilder b = new StringBuilder();
         res.idleVerifyResult().print(b::append, true);
@@ -540,7 +541,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckNotCorrupted() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
             OPTIONAL_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
@@ -597,7 +598,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckTwoCaches() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
             OPTIONAL_CACHE_NAME, DEFAULT_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
@@ -1318,7 +1319,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         snp(ignite).createSnapshot(SNAPSHOT_NAME).get(timeout);
 
-        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
+        SnapshotPartitionsVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
 
         assertFalse(res.idleVerifyResult().hasConflicts());
     }
@@ -1363,7 +1364,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @return Check result.
      * @throws Exception If fails.
      */
-    private SnapshotPartitionsVerifyTaskResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
+    private SnapshotPartitionsVerifyResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
         Collection<String> cachesToCheck
     ) throws Exception {
         Random rnd = new Random();

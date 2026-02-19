@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DefaultCommunicationFailureResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -76,9 +77,6 @@ import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.NodeMetricsViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
@@ -96,6 +94,9 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
+import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
+import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
+import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1279,6 +1280,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
+        WALMode locWalMode = nodeWalMode(locNode);
+
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
@@ -1382,6 +1385,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
+            }
+
+            WALMode rmtWalMode = nodeWalMode(n);
+
+            if (locWalMode != null && rmtWalMode != null && locWalMode != rmtWalMode) {
+                throw new IgniteCheckedException("Remote node has WAL mode different from local " +
+                    "[locId8=" + U.id8(locNode.id()) + ", locWalMode=" + locWalMode +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtWalMode=" + rmtWalMode +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
@@ -2171,6 +2183,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return cache;
+    }
+
+    /**
+     * Extracts WAL mode from marshalled {@link DataStorageConfiguration} of Cluster node.
+     * @param node Cluster node.
+     * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got {@code null} dsCfg.
+     */
+    private WALMode nodeWalMode(ClusterNode node) {
+        try {
+            DataStorageConfiguration dsCfg = CU.extractDataStorage(
+                node,
+                ctx.marshallerContext().jdkMarshaller(),
+                U.resolveClassLoader(ctx.config())
+            );
+
+            if (dsCfg != null)
+                return dsCfg.getWalMode();
+        }
+        catch (IgniteException e) {
+            U.error(log, "Failed to unmarshal data storage configuration [remoteNode=" + node + "]", e);
+        }
+
+        return null;
     }
 
     /**

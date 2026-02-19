@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Collections;
@@ -168,6 +167,8 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 2, grid(3).cluster().localNode().order());
         }
         finally {
+            stallSpi.stopStall();
+
             stopAllGrids();
         }
     }
@@ -302,9 +303,8 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            OutputStream out,
+        @Override protected void writeMessage(
+            TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
@@ -314,7 +314,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
             }
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

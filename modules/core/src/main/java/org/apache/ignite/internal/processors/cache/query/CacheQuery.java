@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -79,7 +78,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /**
@@ -336,7 +334,7 @@ public class CacheQuery<T> {
     }
 
     /**
-     * Cache query adapter for SET, SPI, TEXT queries.
+     * Cache query adapter for SET, TEXT queries.
      *
      * @param cctx Context.
      * @param type Query type.
@@ -653,7 +651,7 @@ public class CacheQuery<T> {
 
     /** @throws IgniteCheckedException If query is invalid. */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET && type != SPI && type != INDEX)
+        if ((type != SCAN && type != SET && type != INDEX)
             && !QueryUtils.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
@@ -733,7 +731,7 @@ public class CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        if (type == SQL_FIELDS || type == SPI)
+        if (type == SQL_FIELDS)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else
@@ -841,9 +839,12 @@ public class CacheQuery<T> {
     }
 
     /**
+     * Collects query data nodes matching specified {@code prj} and {@code part}.
+     *
      * @param cctx Cache context.
      * @param prj Projection (optional).
-     * @return Collection of data nodes in provided projection (if any).
+     * @param part Partition (optional).
+     * @return Collection of data nodes matching specified {@code prj} and {@code part}.
      * @throws IgniteCheckedException If partition number is invalid.
      */
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
@@ -857,19 +858,14 @@ public class CacheQuery<T> {
         if (prj == null && part == null)
             return affNodes;
 
-        if (part != null && part >= cctx.affinity().partitions())
-            throw new IgniteCheckedException("Invalid partition number: " + part);
+        if (part != null) {
+            if (part >= cctx.affinity().partitions())
+                throw new IgniteCheckedException("Invalid partition number: " + part);
 
-        final Set<ClusterNode> owners =
-            part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
+            affNodes = cctx.topology().nodes(part, topVer);
+        }
 
-        return F.view(affNodes, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || owners.contains(n));
-            }
-        });
+        return prj == null ? affNodes : F.view(affNodes, n -> prj.node(n.id()) != null);
     }
 
     /** */

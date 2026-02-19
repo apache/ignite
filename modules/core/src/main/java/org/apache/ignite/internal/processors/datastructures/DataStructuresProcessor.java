@@ -56,15 +56,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.AtomicLongViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.AtomicReferenceViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.AtomicSequenceViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.AtomicStampedViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.CountDownLatchViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.QueueViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.ReentrantLockViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SemaphoreViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SetViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -75,6 +66,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.systemview.AtomicLongViewWalker;
+import org.apache.ignite.internal.systemview.AtomicReferenceViewWalker;
+import org.apache.ignite.internal.systemview.AtomicSequenceViewWalker;
+import org.apache.ignite.internal.systemview.AtomicStampedViewWalker;
+import org.apache.ignite.internal.systemview.CountDownLatchViewWalker;
+import org.apache.ignite.internal.systemview.QueueViewWalker;
+import org.apache.ignite.internal.systemview.ReentrantLockViewWalker;
+import org.apache.ignite.internal.systemview.SemaphoreViewWalker;
+import org.apache.ignite.internal.systemview.SetViewWalker;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -132,6 +132,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** */
     public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
+
+    /** */
+    public static final String VOLATILE_GRP_NAME = DEFAULT_VOLATILE_DS_GROUP_NAME + "@" + VOLATILE_DATA_REGION_NAME;
 
     /** */
     public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
@@ -687,13 +690,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final String grpName;
 
         if (type.isVolatile()) {
-            String volatileGrpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
-
             dataRegionName = VOLATILE_DATA_REGION_NAME;
-
-            volatileGrpName += "@" + dataRegionName;
-
-            grpName = volatileGrpName;
+            grpName = VOLATILE_GRP_NAME;
         }
         else if (cfg.getGroupName() != null)
             grpName = cfg.getGroupName();

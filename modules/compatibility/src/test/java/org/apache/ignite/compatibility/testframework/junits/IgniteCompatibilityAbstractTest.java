@@ -292,7 +292,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         excluded.addAll(Set.of("ignite-binary-api", "ignite-binary-impl", "ignite-commons", "ignite-grid-unsafe"));
         // During local development, classes from the target directory (for example, ignite/modules/commons/target/classes)
         // are included in the classpath.
-        excluded.addAll(Set.of("modules/binary/api", "modules/binary/impl", "modules/commons", "modules/unsafe"));
+        excluded.addAll(Set.of("modules/core", "modules/binary/api", "modules/binary/impl", "modules/commons", "modules/unsafe"));
 
         return excluded;
     }
