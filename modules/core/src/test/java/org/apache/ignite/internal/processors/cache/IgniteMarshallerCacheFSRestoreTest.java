@@ -246,8 +246,8 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> onDiscovery(
                 DiscoveryNotification notification
             ) {
-                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                    : U.unwrapCustomMessage(notification.getCustomMsgData());
+                DiscoveryCustomMessage customMsg = notification.customMessage() == null ? null
+                    : U.unwrapCustomMessage(notification.customMessage());
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator

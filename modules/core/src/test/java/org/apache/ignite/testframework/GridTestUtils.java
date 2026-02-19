@@ -222,11 +222,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery(U.unwrapCustomMessage(notification.getCustomMsgData()));
+            hook.beforeDiscovery(U.unwrapCustomMessage(notification.customMessage()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.getCustomMsgData())));
+            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.customMessage())));
 
             return fut;
         }

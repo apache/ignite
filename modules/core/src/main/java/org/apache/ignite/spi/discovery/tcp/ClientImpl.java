@@ -2687,14 +2687,14 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param topVer Topology version.
          * @param node Node.
          * @param top Topology snapshot.
-         * @param data Optional custom message data.
+         * @param customMsg Optional custom message.
          */
         private void notifyDiscovery(
             int type,
             long topVer,
             ClusterNode node,
             Collection<ClusterNode> top,
-            @Nullable DiscoveryCustomMessage data,
+            @Nullable DiscoveryCustomMessage customMsg,
             SpanContainer spanContainer
         ) {
             DiscoverySpiListener lsnr = spi.lsnr;
@@ -2707,7 +2707,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ", topVer=" + topVer + ']');
 
                 lsnr.onDiscovery(
-                    new DiscoveryNotification(type, topVer, node, top, new TreeMap<>(topHist), data, spanContainer)
+                    new DiscoveryNotification(type, topVer, node, top, new TreeMap<>(topHist), customMsg, spanContainer)
                 ).get();
             }
             else if (debugLog.isDebugEnabled())
