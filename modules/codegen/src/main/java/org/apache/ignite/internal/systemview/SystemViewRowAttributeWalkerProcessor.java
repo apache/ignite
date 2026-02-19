@@ -83,7 +83,7 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
      * @return Stream of all superclasses including the starting element. Goes up the inheritance chain
      * until {@link Object} (excluded).
      */
-    static Stream<TypeElement> superclasses(ProcessingEnvironment env, TypeElement e) {
+    public static Stream<TypeElement> superclasses(ProcessingEnvironment env, TypeElement e) {
         return Stream.iterate(e,
             Objects::nonNull,
             c -> (TypeElement)env.getTypeUtils().asElement(c.getSuperclass())

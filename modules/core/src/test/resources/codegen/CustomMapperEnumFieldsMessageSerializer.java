@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;

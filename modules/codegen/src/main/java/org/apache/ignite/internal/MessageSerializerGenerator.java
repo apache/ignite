@@ -47,11 +47,11 @@ import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -115,8 +115,7 @@ public class MessageSerializerGenerator {
     void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         generateMethods(type, fields);
 
-        for (TypeMirror typeMirror : getAllSuperclasses(env.getTypeUtils(), type.asType()))
-            imports.add(typeMirror.toString());
+        SystemViewRowAttributeWalkerProcessor.superclasses(env, type).forEach(el -> imports.add(el.toString()));
 
         String serClsName = type.getSimpleName() + "Serializer";
         String serFqnClsName = env.getElementUtils().getPackageOf(type) + "." + serClsName;
@@ -145,28 +144,6 @@ public class MessageSerializerGenerator {
                 throw e;
             }
         }
-    }
-
-    /** */
-    private static List<TypeMirror> getAllSuperclasses(Types typeUtils, TypeMirror typeMirror) {
-        List<TypeMirror> superclasses = new ArrayList<>();
-        TypeMirror curMirror = typeMirror;
-
-        while (curMirror != null && curMirror.getKind() == TypeKind.DECLARED) {
-            TypeElement typeElement = (TypeElement)typeUtils.asElement(curMirror);
-            TypeMirror directSuperclass = typeElement.getSuperclass();
-
-            if (directSuperclass == null ||
-                directSuperclass.getKind() == TypeKind.NONE ||
-                directSuperclass.toString().equals(Object.class.getCanonicalName())) {
-                break;
-            }
-
-            superclasses.add(directSuperclass);
-            curMirror = directSuperclass;
-        }
-
-        return superclasses;
     }
 
     /** Generates full code for a serializer class. */
