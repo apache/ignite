@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -123,14 +121,14 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
         /** */
         class TestDiscoverySpi extends TcpDiscoverySpi {
             /** {@inheritDoc} */
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+            @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
                 long timeout) throws IOException, IgniteCheckedException {
                 U.sleep(50);
 
                 if (netLost.get())
                     throw new IOException("Text error");
 
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
             }
         }
 

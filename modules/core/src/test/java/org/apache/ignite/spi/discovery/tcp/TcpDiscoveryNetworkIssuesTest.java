@@ -17,7 +17,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -187,12 +186,12 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         AtomicBoolean netBroken = new AtomicBoolean(false);
 
         specialSpi = new TcpDiscoverySpi() {
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+            @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
                 long timeout) throws IOException, IgniteCheckedException {
-                if (netBroken.get() && (sock.getPort() == NODE_3_PORT || sock.getPort() == NODE_4_PORT))
+                if (netBroken.get() && (ses.socket().getPort() == NODE_3_PORT || ses.socket().getPort() == NODE_4_PORT))
                     throw new SocketTimeoutException("Read timed out");
 
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
             }
 
             @Override protected Socket openSocket(InetSocketAddress sockAddr,
