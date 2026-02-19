@@ -26,15 +26,16 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_MODE;
+import static org.apache.ignite.configuration.WALMode.FSYNC;
+import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+
 /** Tests for WAL mode consistency validation when nodes join cluster. */
 public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstractTest {
-    /** */
-    private static final String PERSISTENT_REGION_NAME = "pds-reg";
-
     /** */
     private WALMode walMode;
 
@@ -50,19 +51,20 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
         storageCfg.setWalMode(walMode);
 
         if (mixedConfig) {
-            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region")
+            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setName("inmem")
                 .setPersistenceEnabled(false));
 
             if (igniteInstanceName.contains("persistent_instance")) {
-                DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration().setName(PERSISTENT_REGION_NAME)
+                DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration()
+                    .setName("pds")
                     .setPersistenceEnabled(true);
 
                 storageCfg.setDataRegionConfigurations(persistentRegionCfg);
             }
         }
-        else {
+        else
             storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(walMode != null);
-        }
 
         cfg.setDataStorageConfiguration(storageCfg);
 
@@ -95,19 +97,16 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testSameWalModeJoinsSuccessfully() throws Exception {
-        walMode = WALMode.LOG_ONLY;
+        walMode = LOG_ONLY;
 
         IgniteEx ignite0 = startGrid(0);
-
         IgniteEx ignite1 = startGrid(1);
 
         IgniteEx cli = startClientGrid(2);
 
         ignite0.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
+        cli.getOrCreateCache(DEFAULT_CACHE_NAME).put(1, 1);
 
         assertEquals(3, ignite0.cluster().nodes().size());
         assertEquals(3, ignite1.cluster().nodes().size());
@@ -120,7 +119,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testDifferentWalModesCannotJoin() throws Exception {
-        walMode = WALMode.LOG_ONLY;
+        walMode = LOG_ONLY;
 
         IgniteEx ignite0 = startGrid(0);
 
@@ -128,18 +127,13 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
 
         ignite0.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+        cli.getOrCreateCache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        cacheCli.put(1, 1);
+        walMode = FSYNC;
 
-        walMode = WALMode.FSYNC;
+        String errMsg = assertThrowsWithCause(() -> startGrid(1), IgniteCheckedException.class).getCause().getMessage();
 
-        String errMsg = GridTestUtils.assertThrowsWithCause(() -> startGrid(1), IgniteCheckedException.class)
-            .getCause().getMessage();
-
-        assertTrue(errMsg.startsWith("Remote node has WAL mode different from local") &&
-            (errMsg.contains("locWalMode=FSYNC") && errMsg.contains("rmtWalMode=LOG_ONLY")) ||
-            (errMsg.contains("locWalMode=LOG_ONLY") && errMsg.contains("rmtWalMode=FSYNC")));
+        checkErrMsg(errMsg, FSYNC, LOG_ONLY);
 
         assertEquals(2, ignite0.cluster().nodes().size());
     }
@@ -151,7 +145,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodeJoinsPersistenceNodeWithDefaultWalMode() throws Exception {
-        doTestInMemoryNodeJoinsPersistenceNode(DataStorageConfiguration.DFLT_WAL_MODE, null, true);
+        doTestInMemoryNodeJoinsPersistenceNode(DFLT_WAL_MODE, null, true);
     }
 
     /**
@@ -161,7 +155,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testInMemoryNodeJoinsPersistenceNodeWithFsyncWalMode() throws Exception {
-        doTestInMemoryNodeJoinsPersistenceNode(WALMode.FSYNC, null, true);
+        doTestInMemoryNodeJoinsPersistenceNode(FSYNC, null, true);
     }
 
     /**
@@ -171,8 +165,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testPersistenceNodeWithDefaultWalModeJoinsSuccessfully() throws Exception {
-        doTestInMemoryNodeJoinsPersistenceNode(DataStorageConfiguration.DFLT_WAL_MODE,
-            DataStorageConfiguration.DFLT_WAL_MODE, false);
+        doTestInMemoryNodeJoinsPersistenceNode(DFLT_WAL_MODE, DFLT_WAL_MODE, false);
     }
 
     /**
@@ -210,13 +203,11 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
     public void testMixedClusterInMemoryJoinsPersistentWithFsyncWalMode() throws Exception {
         IgniteEx inMemoryNode = doCreateInMemoryClusterWithMixedConfig();
 
-        walMode = WALMode.FSYNC;
-        String errMsg = GridTestUtils.assertThrowsWithCause(() -> startGrid("persistent_instance"), IgniteCheckedException.class)
-            .getCause().getMessage();
+        walMode = FSYNC;
 
-        assertTrue(errMsg.startsWith("Remote node has WAL mode different from local") &&
-            (errMsg.contains("locWalMode=FSYNC") && errMsg.contains("rmtWalMode=LOG_ONLY")) ||
-            (errMsg.contains("locWalMode=LOG_ONLY") && errMsg.contains("rmtWalMode=FSYNC")));
+        Throwable err = assertThrowsWithCause(() -> startGrid("persistent_instance"), IgniteCheckedException.class);
+
+        checkErrMsg(err.getCause().getMessage(), FSYNC, LOG_ONLY);
 
         assertEquals(2, inMemoryNode.cluster().nodes().size());
     }
@@ -231,7 +222,8 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
     public void testMixedClusterInMemoryJoinsPersistentWithDfltWalMode() throws Exception {
         IgniteEx inMemoryNode = doCreateInMemoryClusterWithMixedConfig();
 
-        walMode = DataStorageConfiguration.DFLT_WAL_MODE;
+        walMode = DFLT_WAL_MODE;
+
         startGrid("persistent_instance");
 
         assertEquals(3, inMemoryNode.cluster().nodes().size());
@@ -245,7 +237,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
      */
     @Test
     public void testMixedClusterDifferentWalModesCannotJoin() throws Exception {
-        walMode = WALMode.FSYNC;
+        walMode = FSYNC;
 
         IgniteEx persistentNode0 = startGrid("persistent_instance0");
 
@@ -253,18 +245,13 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
 
         IgniteEx cli = startClientGrid("client");
 
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+        cli.getOrCreateCache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        cacheCli.put(1, 1);
+        walMode = DFLT_WAL_MODE;
 
-        walMode = DataStorageConfiguration.DFLT_WAL_MODE;
+        Throwable err = assertThrowsWithCause(() -> startGrid("persistent_instance1"), IgniteCheckedException.class);
 
-        String errMsg = GridTestUtils.assertThrowsWithCause(() -> startGrid("persistent_instance1"), IgniteCheckedException.class)
-            .getCause().getMessage();
-
-        assertTrue(errMsg.startsWith("Remote node has WAL mode different from local") &&
-                (errMsg.contains("locWalMode=FSYNC") && errMsg.contains("rmtWalMode=" + DataStorageConfiguration.DFLT_WAL_MODE.name())) ||
-                (errMsg.contains("locWalMode=" + DataStorageConfiguration.DFLT_WAL_MODE.name()) && errMsg.contains("rmtWalMode=FSYNC")));
+        checkErrMsg(err.getCause().getMessage(), DFLT_WAL_MODE, FSYNC);
 
         assertEquals(2, persistentNode0.cluster().nodes().size());
     }
@@ -292,7 +279,7 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
         walMode = wal2;
 
         if (shouldFail) {
-            GridTestUtils.assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
+            assertThrowsWithCause(() -> startGrid(2), IgniteCheckedException.class);
 
             assertEquals(2, ignite0.cluster().nodes().size());
         }
@@ -322,10 +309,15 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
 
         inMemoryNode.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        cacheCli.put(1, 1);
+        cli.getOrCreateCache(DEFAULT_CACHE_NAME).put(1, 1);
 
         return inMemoryNode;
+    }
+
+    /** */
+    private static void checkErrMsg(String msg, WALMode loc, WALMode rmt) {
+        assertTrue(msg.startsWith("Remote node has WAL mode different from local"));
+        assertTrue(msg.contains("locWalMode=" + loc));
+        assertTrue(msg.contains("rmtWalMode=" + rmt));
     }
 }
