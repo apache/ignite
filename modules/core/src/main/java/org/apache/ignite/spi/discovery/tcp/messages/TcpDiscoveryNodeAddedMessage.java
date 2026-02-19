@@ -42,7 +42,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO: Revise serialization of the {@link TcpDiscoveryNode} fields after https://issues.apache.org/jira/browse/IGNITE-27899
  * Message telling nodes that new node should be added to topology.
  * When newly added node receives the message it connects to its next and finishes
  * join process.
@@ -53,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,13 +92,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private transient Collection<TcpDiscoveryNode> clientTop;
 
     /**
-     * TODO: Remove/revise after https://issues.apache.org/jira/browse/IGNITE-25883
+     * TODO: Remove after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
      * Java-serializable pending messages from previous node.
      */
     private @Nullable Map<Integer, TcpDiscoveryAbstractMessage> serializablePendingMsgs;
 
     /** Marshalled {@link #serializablePendingMsgs}. */
-    @Order(value = 12, method = "serializablePendingMessagesBytes")
     private byte[] serializablePendingMsgsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -139,16 +137,21 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         node = msg.node;
         nodeBytes = msg.nodeBytes;
-        pendingMessages(msg.pendingMsgs);
-        topology(msg.top);
+        pendingMsgs = msg.pendingMsgs;
+        serializablePendingMsgs = msg.serializablePendingMsgs;
+        top = msg.top;
+        topBytes = msg.topBytes;
         clientTop = msg.clientTop;
         topHistMsgs = msg.topHistMsgs;
         dataPacket = msg.dataPacket;
         gridStartTime = msg.gridStartTime;
     }
 
-    /** @param marsh marshaller. */
-    @Override public void prepareMarshal(Marshaller marsh) {
+    /**
+     * TODO: Revise after refactoring of TcpDiscoveryNode serialization https://issues.apache.org/jira/browse/IGNITE-27899
+     * @param marsh marshaller.
+     */
+    public void prepareMarshal(Marshaller marsh) {
         if (!F.isEmpty(topHistMsgs))
             topHistMsgs.values().forEach(m -> m.prepareMarshal(marsh));
 
@@ -181,10 +184,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
+     * TODO: Revise after refactoring of TcpDiscoveryNode serialization https://issues.apache.org/jira/browse/IGNITE-27899
      * @param marsh Marshaller.
      * @param clsLdr Class loader.
      */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (!F.isEmpty(topHistMsgs))
             topHistMsgs.values().forEach(m -> m.finishUnmarshal(marsh, clsLdr));
 
@@ -255,20 +259,10 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public void pendingMessages(Map<Integer, Message> pendingMsgs) {
         this.pendingMsgs = pendingMsgs;
-        this.serializablePendingMsgsBytes = null;
-    }
-
-    /** @return Bytes of {@link #serializablePendingMsgs}. */
-    public @Nullable byte[] serializablePendingMessagesBytes() {
-        return serializablePendingMsgsBytes;
-    }
-
-    /** @param serializablePendingMsgsBytes Bytes of {@link #serializablePendingMsgs}. */
-    public void serializablePendingMessagesBytes(@Nullable byte[] serializablePendingMsgsBytes) {
-        this.serializablePendingMsgsBytes = serializablePendingMsgsBytes;
     }
 
     /**
+     * TODO: revise after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
      * Gets pending messages sent to new node by its previous.
      *
      * @return Pending messages from previous node.
@@ -305,6 +299,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
+     * TODO: revise after refactoring of discovery messages serialization https://issues.apache.org/jira/browse/IGNITE-25883
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.

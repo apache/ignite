@@ -40,7 +40,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -141,9 +140,6 @@ public class TcpDiscoveryIoSession {
         }
 
         try {
-            if (msg instanceof TcpDiscoveryMarshallableMessage)
-                ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
-
             out.write(MESSAGE_SERIALIZATION);
 
             serializeMessage((Message)msg, out);
@@ -215,11 +211,6 @@ public class TcpDiscoveryIoSession {
                 }
             }
             while (!finished);
-
-            if (msg instanceof TcpDiscoveryMarshallableMessage) {
-                ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(spi.marshaller(),
-                    U.resolveClassLoader(spi.ignite().configuration()));
-            }
 
             return (T)msg;
         }

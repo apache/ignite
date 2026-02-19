@@ -2160,8 +2160,12 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (msg instanceof TraceableMessage)
                 tracing.messages().beforeSend((TraceableMessage)msg);
 
-            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                ((TcpDiscoveryNodeAddedMessage)msg)
+                    .finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
+            }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
                 processNodeAddFinishedMessage((TcpDiscoveryNodeAddFinishedMessage)msg);
             else if (msg instanceof TcpDiscoveryNodeLeftMessage)
@@ -2306,6 +2310,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         delayDiscoData.clear();
                     }
+
+                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
 
