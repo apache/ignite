@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.thread.pool;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -58,11 +59,12 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMIN
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_HISTOGRAM_BUCKETS;
+import static org.apache.ignite.internal.thread.context.function.ContextAwareRunnable.wrapIfContextNotEmpty;
 
 /**
  * Striped executor.
  */
-public class StripedExecutor implements ExecutorService, MetricsAwareExecutorService {
+public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecutorService {
     /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
     public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
 
@@ -87,7 +89,7 @@ public class StripedExecutor implements ExecutorService, MetricsAwareExecutorSer
      * @param errHnd Critical failure handler.
      * @param gridWorkerLsnr Listener to link with every stripe worker.
      */
-    public StripedExecutor(
+    public IgniteStripedExecutor(
         int cnt,
         String igniteInstanceName,
         String poolName,
@@ -108,7 +110,7 @@ public class StripedExecutor implements ExecutorService, MetricsAwareExecutorSer
      * @param stealTasks {@code True} to steal tasks.
      * @param gridWorkerLsnr listener to link with every stripe worker.
      */
-    public StripedExecutor(
+    public IgniteStripedExecutor(
         int cnt,
         String igniteInstanceName,
         String poolName,
@@ -535,7 +537,7 @@ public class StripedExecutor implements ExecutorService, MetricsAwareExecutorSer
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StripedExecutor.class, this);
+        return S.toString(IgniteStripedExecutor.class, this);
     }
 
     /**
@@ -829,7 +831,7 @@ public class StripedExecutor implements ExecutorService, MetricsAwareExecutorSer
 
         /** {@inheritDoc} */
         @Override void execute(Runnable cmd) {
-            queue.add(cmd);
+            queue.add(wrapIfContextNotEmpty(cmd));
 
             if (parked)
                 LockSupport.unpark(thread);

@@ -15,9 +15,29 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains threads-related utility classes.
- */
+package org.apache.ignite.internal.thread.context;
 
-package org.apache.ignite.thread;
+/** Immutable container that stores an attribute and its corresponding value. */
+class AttributeValueHolder<T> {
+    /** */
+    private final ContextAttribute<T> attr;
+
+    /** */
+    private final T val;
+
+    /** */
+    AttributeValueHolder(ContextAttribute<T> attr, T val) {
+        this.attr = attr;
+        this.val = val;
+    }
+
+    /** */
+    ContextAttribute<T> attribute() {
+        return attr;
+    }
+
+    /** */
+    T value() {
+        return val;
+    }
+}

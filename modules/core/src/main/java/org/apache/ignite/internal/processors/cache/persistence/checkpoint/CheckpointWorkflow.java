@@ -62,17 +62,18 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -495,7 +496,7 @@ public class CheckpointWorkflow {
             Comparator<FullPageId> cmp = Comparator.comparingInt(FullPageId::groupId)
                 .thenComparingLong(FullPageId::effectivePageId);
 
-            ForkJoinPool pool = null;
+            IgniteForkJoinPool pool = null;
 
             for (T2<PageMemoryEx, FullPageId[]> pagesPerReg : cpPagesPerRegion) {
                 if (pagesPerReg.getValue().length >= parallelSortThreshold)
@@ -518,10 +519,10 @@ public class CheckpointWorkflow {
      * @param cmp Cmp.
      * @return ForkJoinPool instance, check {@link ForkJoinTask#fork()} realization.
      */
-    private static ForkJoinPool parallelSortInIsolatedPool(
+    private static IgniteForkJoinPool parallelSortInIsolatedPool(
         FullPageId[] pagesArr,
         Comparator<FullPageId> cmp,
-        ForkJoinPool pool
+        IgniteForkJoinPool pool
     ) throws IgniteCheckedException {
         ForkJoinPool.ForkJoinWorkerThreadFactory factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
             @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
@@ -533,8 +534,9 @@ public class CheckpointWorkflow {
             }
         };
 
-        ForkJoinPool execPool = pool == null ?
-            new ForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false) : pool;
+        IgniteForkJoinPool execPool = pool == null
+            ? new IgniteForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false)
+            : pool;
 
         Future<?> sortTask = execPool.submit(() -> Arrays.parallelSort(pagesArr, cmp));
 
@@ -619,7 +621,7 @@ public class CheckpointWorkflow {
         long cpTs,
         UUID cpId,
         WALPointer walPtr,
-        StripedExecutor exec,
+        IgniteStripedExecutor exec,
         CheckpointPagesWriterFactory checkpointPagesWriterFactory
     ) throws IgniteCheckedException {
         assert cpTs != 0;
@@ -682,7 +684,7 @@ public class CheckpointWorkflow {
      * @param applyError Check error reference.
      */
     private void awaitApplyComplete(
-        StripedExecutor exec,
+        IgniteStripedExecutor exec,
         AtomicReference<Throwable> applyError
     ) throws IgniteCheckedException {
         try {

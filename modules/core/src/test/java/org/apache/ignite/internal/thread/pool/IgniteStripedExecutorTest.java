@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.thread.pool;
 
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
@@ -26,13 +26,13 @@ import org.junit.Test;
 /**
  *
  */
-public class StripedExecutorTest extends GridCommonAbstractTest {
+public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
     /** */
-    private StripedExecutor stripedExecSvc;
+    private IgniteStripedExecutor stripedExecSvc;
 
     /** {@inheritDoc} */
     @Override public void beforeTest() {
-        stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(),
+        stripedExecSvc = new IgniteStripedExecutor(3, "foo name", "pool name", new JavaLogger(),
             new IgniteInClosure<Throwable>() {
                 @Override public void apply(Throwable throwable) {}
             }, null, 2000);

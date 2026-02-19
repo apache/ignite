@@ -91,12 +91,13 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
+import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -145,7 +146,6 @@ import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -938,7 +938,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
                         UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
 
-                        try (OperationSecurityContext ignored = ctx.security().withContext(secSubjId)) {
+                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
                             super.run();
                         }
                     }
@@ -949,7 +949,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             notification.getNode()
                         );
 
-                        try (OperationSecurityContext ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
+                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
                             super.run();
                         }
                     }
@@ -3119,7 +3119,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            try (OperationSecurityContext ignored = withRemoteSecurityContext(ctx, evt.secCtx)) {
+            try (Scope ignored = withRemoteSecurityContext(ctx, evt.secCtx)) {
                 int type = evt.type;
 
                 AffinityTopologyVersion topVer = evt.topVer;

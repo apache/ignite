@@ -19,13 +19,13 @@ package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.systemview.Order;
 import org.apache.ignite.internal.systemview.SystemViewDescriptor;
-import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.internal.util.StripedExecutor.Stripe;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.Stripe;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
- * {@link StripedExecutor} task representation for a {@link SystemView}.
+ * {@link IgniteStripedExecutor} task representation for a {@link SystemView}.
  */
 @SystemViewDescriptor
 public class StripedExecutorTaskView {

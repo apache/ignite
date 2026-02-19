@@ -101,10 +101,9 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
@@ -300,9 +299,7 @@ public class GridNioServerWrapper {
         };
         this.tcpHandshakeExecutor = tcpHandshakeExecutor;
 
-        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
-            new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-nio")
-        );
+        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor("handshake-timeout-nio", igniteInstanceName);
     }
 
     /**

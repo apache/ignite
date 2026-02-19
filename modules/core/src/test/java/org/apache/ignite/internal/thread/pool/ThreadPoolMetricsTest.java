@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread.pool;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -211,7 +210,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             ExecutorService execSvc = entry.getValue().apply(poolProc);
             MetricRegistry mreg = ignite.context().metric().registry(metricsName);
             HistogramMetric execTimeMetric = mreg.findMetric(PoolProcessor.TASK_EXEC_TIME);
-            boolean stripedExecutor = execSvc instanceof StripedExecutor;
+            boolean stripedExecutor = execSvc instanceof IgniteStripedExecutor;
 
             // Ensure that the execution time histogram can be reset.
             execTimeMetric.reset();

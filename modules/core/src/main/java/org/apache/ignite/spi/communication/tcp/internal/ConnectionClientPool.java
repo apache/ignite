@@ -55,12 +55,11 @@ import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
@@ -222,9 +221,7 @@ public class ConnectionClientPool {
             }
         };
 
-        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
-            new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-client")
-        );
+        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor("handshake-timeout-client", igniteInstanceName);
 
         if (metricsMgr != null) {
             MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);

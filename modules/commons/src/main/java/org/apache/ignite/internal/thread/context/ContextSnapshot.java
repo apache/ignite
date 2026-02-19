@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread.context;
 
-import java.util.concurrent.Executor;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.thread.context.function.ContextAwareCallable;
+import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
 
 /**
+ * Represents snapshot of all Attributes and their corresponding values for a particular {@link Context} instance.
+ * Its main purpose to save Context state and restore it later, possible for Context bound to another thread.
  *
+ * @see Context
+ * @see Context#createSnapshot()
+ * @see Context#restoreSnapshot(ContextSnapshot)
+ * @see ContextAwareCallable
+ * @see ContextAwareRunnable
  */
-public class SameThreadExecutor implements Executor {
-    /** */
-    public static final Executor INSTANCE = new SameThreadExecutor();
-
-    /** */
-    private SameThreadExecutor() {}
-
-    /** {@inheritDoc} */
-    @Override public void execute(@NotNull Runnable command) {
-        command.run();
-    }
+public interface ContextSnapshot {
+    // No-op.
 }
