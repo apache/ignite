@@ -19,18 +19,23 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics clear discovery message.
  */
-public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsClearMessage implements DiscoveryCustomMessage, Message {
+    /** */
+    public static final short DIRECT_TYPE = 501;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,13 +46,23 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Request id. */
-    private final UUID reqId;
+    @Order(value = 0, method = "requestId")
+    private UUID reqId;
 
     /** Cache names. */
-    private final Collection<String> caches;
+    @Order(1)
+    private Collection<String> caches;
 
     /** Flags. */
-    private final byte flags;
+    @Order(2)
+    private byte flags;
+
+    /**
+     * Default constructor.
+     */
+    public CacheStatisticsClearMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor for request.
@@ -92,11 +107,23 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
         return initial() ? new CacheStatisticsClearMessage(this) : null;
     }
 
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
+    }
+
     /**
      * @return Cache names.
      */
     public Collection<String> caches() {
         return this.caches;
+    }
+
+    /**
+     * @param caches Cache names.
+     */
+    public void caches(Collection<String> caches) {
+        this.caches = caches;
     }
 
     /**
@@ -111,6 +138,27 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
      */
     public UUID requestId() {
         return this.reqId;
+    }
+
+    /**
+     * @param reqId Request id.
+     */
+    public void requestId(UUID reqId) {
+        this.reqId = reqId;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /** {@inheritDoc} */
