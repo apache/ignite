@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterR
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToHashIndexSpoolRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToSortedIndexSpoolRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.HashJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.IndexCountRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.IndexMinMaxRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
@@ -64,7 +65,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRu
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyDistributedConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableModifySingleNodeConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
@@ -106,6 +108,7 @@ public enum PlannerPhase {
         @Override public RuleSet getRules(PlanningContext ctx) {
             return ctx.rules(
                 RuleSets.ofList(
+                    CoreRules.FILTER_REDUCE_EXPRESSIONS,
                     FilterScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
 
                     CoreRules.FILTER_MERGE,
@@ -274,6 +277,7 @@ public enum PlannerPhase {
                     CorrelatedNestedLoopJoinRule.INSTANCE,
                     CorrelateToNestedLoopRule.INSTANCE,
                     NestedLoopJoinConverterRule.INSTANCE,
+                    HashJoinConverterRule.INSTANCE,
 
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
@@ -292,7 +296,8 @@ public enum PlannerPhase {
                     SetOpConverterRule.MAP_REDUCE_INTERSECT,
                     ProjectConverterRule.INSTANCE,
                     FilterConverterRule.INSTANCE,
-                    TableModifyConverterRule.INSTANCE,
+                    TableModifySingleNodeConverterRule.INSTANCE,
+                    TableModifyDistributedConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
                     TableFunctionScanConverterRule.INSTANCE

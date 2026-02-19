@@ -105,6 +105,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Skip store flag. */
     protected final boolean skipStore;
 
+    /** Skip read-through cache store flag. */
+    protected final boolean skipReadThrough;
+
     /** Keep binary flag. */
     protected final boolean keepBinary;
 
@@ -176,6 +179,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
@@ -196,6 +200,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.filter = filter;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
+        this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
         deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
@@ -446,7 +451,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
                 " (the binary objects will be used instead).");
         }
 
-        IgniteCheckedException error = res.error();
+        Throwable error = res.error();
 
         if (suppressedErr != null)
             error.addSuppressed(suppressedErr);

@@ -29,6 +29,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
+import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML;
 
 /**
  *
@@ -217,8 +219,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         List<ModifyTuple> tuples,
         GridCacheProxyImpl<Object, Object> cache
     ) throws IgniteCheckedException {
+        SessionContextImpl sesCtx = context().unwrap(SessionContextImpl.class);
+        Map<String, String> sesAttrs = sesCtx == null ? null : sesCtx.attributes();
+
+        if (sesAttrs != null)
+            cache = cache.withApplicationAttributes(sesAttrs);
+
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cache.invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cacheForDML(cache).invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 

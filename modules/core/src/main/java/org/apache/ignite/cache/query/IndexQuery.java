@@ -25,7 +25,6 @@ import javax.cache.Cache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * Conjuction of items in {@link #criteria} has to represent a valid range to traverse the index tree.
  */
-@IgniteExperimental
 public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -138,7 +136,7 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @return List of criteria for this index query.
      */
-    public List<IndexQueryCriterion> getCriteria() {
+    @Nullable public List<IndexQueryCriterion> getCriteria() {
         return criteria;
     }
 

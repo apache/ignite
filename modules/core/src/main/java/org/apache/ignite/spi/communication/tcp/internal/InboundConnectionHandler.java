@@ -353,7 +353,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
                     assert fut != null : msg;
 
-                    fut.onConnected(U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes(), 0));
+                    fut.onConnected(((NodeIdMessage)msg).nodeId());
 
                     nioSrvWrapper.nio().closeFromWorkerThread(ses);
 
@@ -468,7 +468,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         ConnectionKey connKey;
 
         if (msg instanceof NodeIdMessage) {
-            sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes(), 0);
+            sndId = ((NodeIdMessage)msg).nodeId();
             connKey = new ConnectionKey(sndId, 0, -1);
         }
         else {

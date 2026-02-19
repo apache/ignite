@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -31,9 +32,9 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -392,15 +393,84 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableOnExistingCache() {
-        IgniteCache<Object, Object> cache = client.getOrCreateCache("my_cache");
+        // Cache without SQL configuration.
+        IgniteCache<Object, Object> cache = client.getOrCreateCache("my_cache0");
 
-        sql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache\"");
+        // DDL with explicit schema.
+        sql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache0\"");
 
-        sql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
+        insertAndCheckSize(cache, "my_schema");
 
-        assertThat(sql("select * from my_schema.my_table"), hasSize(2));
+        // Cache without SQL configuration.
+        cache = client.getOrCreateCache("my_cache1");
 
-        assertEquals(2, cache.size(CachePeekMode.PRIMARY));
+        // DDL with implicit PUBLIC schema.
+        sql("create table my_table (f1 int, f2 varchar) with cache_name=\"my_cache1\"");
+
+        insertAndCheckSize(cache, "public");
+
+        // Cache with defined schema.
+        cache = client.getOrCreateCache(new CacheConfiguration<>("my_cache2").setSqlSchema("my_schema2"));
+
+        // DDL with explicit correct schema.
+        sql("create table my_schema2.my_table (f1 int, f2 varchar) with cache_name=\"my_cache2\"");
+
+        insertAndCheckSize(cache, "my_schema2");
+
+        // Cache with defined schema.
+        cache = client.getOrCreateCache(new CacheConfiguration<>("my_cache3").setSqlSchema("my_schema3"));
+
+        // DDL with explicit wrong schema.
+        assertThrows("create table my_schema.my_table2 (f1 int, f2 varchar) with cache_name=\"my_cache3\"",
+            IgniteSQLException.class, "Invalid schema: MY_SCHEMA");
+
+        // DDL with explicit wrong schema.
+        assertThrows("create table public.my_table2 (f1 int, f2 varchar) with cache_name=\"my_cache3\"",
+            IgniteSQLException.class, "Invalid schema: PUBLIC");
+
+        // DDL with implicit wrong schema.
+        assertThrows("create table my_table2 (f1 int, f2 varchar) with cache_name=\"my_cache3\"",
+            IgniteSQLException.class, "Invalid schema: PUBLIC");
+
+        // DDL with implicit cache schema.
+        cache.query(new SqlFieldsQuery("create table my_table (f1 int, f2 varchar) with cache_name=\"my_cache3\""));
+
+        insertAndCheckSize(cache, "my_schema3");
+
+        // Cache with defined SQL functions, schema is defined by cache name.
+        cache = client.getOrCreateCache(new CacheConfiguration<>("my_cache4").setSqlFunctionClasses(getClass()));
+
+        // DDL with explicit wrong schema.
+        assertThrows("create table public.my_table2 (f1 int, f2 varchar) with cache_name=\"my_cache4\"",
+            IgniteSQLException.class, "Invalid schema: PUBLIC");
+
+        // DDL with explicit correct schema.
+        sql("create table \"my_cache4\".my_table (f1 int, f2 varchar) with cache_name=\"my_cache4\"");
+
+        insertAndCheckSize(cache, "\"my_cache4\"");
+
+        // Cache with defined query entities.
+        client.getOrCreateCache(new CacheConfiguration<>("my_cache5")
+            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class))));
+
+        assertThrows("create table \"my_cache5\".my_table (f1 int, f2 varchar) with cache_name=\"my_cache5\"",
+            IgniteSQLException.class, "Cache is already indexed");
+
+        // Cache with indexed types.
+        client.getOrCreateCache(new CacheConfiguration<>("my_cache6")
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        assertThrows("create table \"my_cache6\".my_table (f1 int, f2 varchar) with cache_name=\"my_cache6\"",
+            IgniteSQLException.class, "Cache is already indexed");
+    }
+
+    /** */
+    private void insertAndCheckSize(IgniteCache<?, ?> cache, String schema) {
+        sql("insert into " + schema + ".my_table(f1, f2) values (1, '1'),(2, '2')");
+
+        assertThat(sql("select * from " + schema + ".my_table"), hasSize(2));
+
+        assertEquals(2, cache.size());
     }
 
     /**

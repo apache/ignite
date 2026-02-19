@@ -24,10 +24,9 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.CacheObjectUnsafeUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -83,24 +82,24 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
         assert val != null : "Value is not initialized";
 
-        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(val.length));
+        return putValue(buf, 0, CacheObjectUtils.objectPutSize(val.length));
     }
 
     /** {@inheritDoc} */
     @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), val);
+        return CacheObjectUnsafeUtils.putValue(addr, cacheObjectType(), val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
         assert val != null : "Value is not initialized";
 
-        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, val, 0);
+        return CacheObjectUtils.putValue(cacheObjectType(), buf, off, len, val, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.objectPutSize(val.length);
+    @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        return CacheObjectUtils.objectPutSize(val.length);
     }
 
     /** {@inheritDoc} */
@@ -114,59 +113,13 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                val = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -177,11 +130,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeByteArray(out, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 105;
     }
 
     /** {@inheritDoc} */

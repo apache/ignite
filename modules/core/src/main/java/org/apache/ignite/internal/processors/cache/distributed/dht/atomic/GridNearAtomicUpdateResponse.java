@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -36,9 +34,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,35 +44,39 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Node ID this reply should be sent to. */
-    @GridDirectTransient
     private UUID nodeId;
 
     /** Future ID. */
+    @Order(value = 4, method = "futureId")
     private long futId;
 
     /** */
+    @Order(value = 5, method = "errors")
     private UpdateErrors errs;
 
     /** Return value. */
     @GridToStringInclude
+    @Order(value = 6, method = "returnValue")
     private GridCacheReturn ret;
 
     /** */
+    @Order(value = 7, method = "remapTopologyVersion")
     private AffinityTopologyVersion remapTopVer;
 
     /** Data for near cache update. */
+    @Order(8)
     private NearCacheUpdates nearUpdates;
 
     /** Partition ID. */
-    private int partId = -1;
+    @Order(value = 9, method = "partition")
+    private int partId;
 
     /** */
-    @GridDirectCollection(UUID.class)
     @GridToStringInclude
+    @Order(10)
     private List<UUID> mapping;
 
     /** */
-    @GridDirectTransient
     private boolean nodeLeft;
 
     /**
@@ -107,6 +106,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         this.partId = partId;
         this.nodeLeft = nodeLeft;
         this.addDepInfo = addDepInfo;
+
+        assert partId >= 0;
     }
 
     /**
@@ -157,6 +158,27 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     }
 
     /**
+     * @param futId New future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /**
+     * @return Errs.
+     */
+    public UpdateErrors errors() {
+        return errs;
+    }
+
+    /**
+     * @param errs New errs.
+     */
+    public void errors(UpdateErrors errs) {
+        this.errs = errs;
+    }
+
+    /**
      * Sets update error.
      *
      * @param err Error.
@@ -165,11 +187,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.onError(err);
+        errs.error(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
+    @Override public Throwable error() {
         return errs != null ? errs.error() : null;
     }
 
@@ -197,14 +219,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @param remapTopVer Topology version to remap update.
      */
-    void remapTopologyVersion(AffinityTopologyVersion remapTopVer) {
+    public void remapTopologyVersion(AffinityTopologyVersion remapTopVer) {
         this.remapTopVer = remapTopVer;
     }
 
     /**
      * @return Topology version if update should be remapped.
      */
-    @Nullable AffinityTopologyVersion remapTopologyVersion() {
+    @Nullable public AffinityTopologyVersion remapTopologyVersion() {
         return remapTopVer;
     }
 
@@ -369,9 +391,30 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
             ret.finishUnmarshal(cctx, ldr);
     }
 
+    /**
+     * @return Data for near cache update.
+     */
+    public NearCacheUpdates nearUpdates() {
+        return nearUpdates;
+    }
+
+    /**
+     * @param nearUpdates New data for near cache update.
+     */
+    public void nearUpdates(NearCacheUpdates nearUpdates) {
+        this.nearUpdates = nearUpdates;
+    }
+
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId New partition ID.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
@@ -382,137 +425,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeMessage(errs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCollection(mapping, MessageCollectionItemType.UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeMessage(nearUpdates))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(partId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeAffinityTopologyVersion(remapTopVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMessage(ret))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errs = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                mapping = reader.readCollection(MessageCollectionItemType.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                nearUpdates = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                partId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                remapTopVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                ret = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

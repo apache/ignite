@@ -34,6 +34,9 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * These properties and variables can be used to affect the behavior of Ignite.
  */
 public class IgniteCommonsSystemProperties {
+    /** Default value of {@link IgniteCommonsSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
+
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
@@ -112,6 +115,43 @@ public class IgniteCommonsSystemProperties {
     /** Defines Ignite installation folder. */
     @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
     public static final String IGNITE_HOME = "IGNITE_HOME";
+
+    /**
+     * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
+     * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
+     * in algorithms that encrypts data in String format.
+     */
+    @SystemProperty("Manages type of serialization mechanism for String that is " +
+        "marshalled/unmarshalled by BinaryMarshaller. Should be used for cases when a String contains a surrogate " +
+        "symbol without its pair one. This is frequently used in algorithms that encrypts data in String format")
+    public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
+        "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+    /**
+     * Enables storage of typed arrays.
+     * The default value is {@code BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     */
+    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
+        defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
+    public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
+
+    /**
+     * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
+     * the natural order is used.
+     * <p>
+     * NOTICE: Should be the default in Apache Ignite 3.0
+     */
+    @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
+        "By default, the natural order is used")
+    public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
+
+    /**
+     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
+     * this memory block is released. This will help to recognize cases when already released memory is accessed.
+     */
+    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
+        "memory block is released. This will help to recognize cases when already released memory is accessed")
+    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
 
     /**
      * @param enumCls Enum type.

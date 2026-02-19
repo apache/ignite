@@ -21,6 +21,7 @@ import java.util.HashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.Marshallers;
@@ -60,12 +61,12 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
      * @return Test metrics.
      */
     private CacheMetricsSnapshot createMetricsWithBorderMarker() {
-        CacheMetricsSnapshot metrics = new CacheMetricsSnapshot();
+        CacheMetricsMessage metrics = new CacheMetricsMessage();
 
         GridTestUtils.setFieldValue(metrics, "rebalancingKeysRate", 1234);
-        GridTestUtils.setFieldValue(metrics, "reads", 3232);
+        GridTestUtils.setFieldValue(metrics, "cacheGets", 3232);
 
-        return metrics;
+        return new CacheMetricsSnapshot(metrics);
     }
 
     /**

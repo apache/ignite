@@ -78,6 +78,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Maximum number of retries.
@@ -95,6 +96,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         final CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
@@ -110,6 +112,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             filter,
             taskNameHash,
             skipStore,
+            skipReadThrough,
             keepBinary,
             recovery,
             remapCnt,
@@ -542,14 +545,15 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         GridNearAtomicAbstractUpdateRequest req;
 
-        byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+        short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
             topLocked,
             retval,
             mappingKnown,
             needPrimaryRes,
             skipStore,
             keepBinary,
-            recovery);
+            recovery,
+            skipReadThrough);
 
         if (canUseSingleRequest()) {
             if (op == TRANSFORM) {

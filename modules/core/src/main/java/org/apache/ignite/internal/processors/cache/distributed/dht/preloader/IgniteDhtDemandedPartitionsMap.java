@@ -23,22 +23,29 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Map of partitions demanded during rebalancing.
  */
-public class IgniteDhtDemandedPartitionsMap implements Serializable {
+public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
+    /** */
+    public static final short TYPE_CODE = 501;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
+    @Order(value = 0, method = "historicalMap")
     private CachePartitionPartialCountersMap historical;
 
-    /** Set of partitions that will be preloaded from all it's current data. */
+    /** Set of partitions that require full rebalancing. */
+    @Order(value = 1, method = "fullSet")
     @GridToStringInclude
     private Set<Integer> full;
 
@@ -153,11 +160,21 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     }
 
     /** */
+    public void historicalMap(CachePartitionPartialCountersMap historical) {
+        this.historical = historical;
+    }
+
+    /** */
     public Set<Integer> fullSet() {
         if (full == null)
             return Collections.emptySet();
 
         return Collections.unmodifiableSet(full);
+    }
+
+    /** */
+    public void fullSet(Set<Integer> full) {
+        this.full = full;
     }
 
     /** */
@@ -185,5 +202,10 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDhtDemandedPartitionsMap.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

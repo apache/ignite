@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyT
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeDoesNotBreakSqlSelectTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
+import org.apache.ignite.internal.processors.cache.ComputeCacheCollectionsP2PTest;
 import org.apache.ignite.internal.processors.cache.EnumClassImplementingIndexedInterfaceTest;
 import org.apache.ignite.internal.processors.cache.FieldsPrecisionTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
@@ -105,6 +106,7 @@ import org.junit.runners.Suite;
 
     ClusterReadOnlyModeSqlTest.class,
     GridCacheSqlDdlClusterReadOnlyModeTest.class,
+    ComputeCacheCollectionsP2PTest.class,
 
     ClusterReadOnlyModeDoesNotBreakSqlSelectTest.class,
 

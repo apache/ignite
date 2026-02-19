@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
@@ -37,12 +38,13 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         RelTraitSet traits,
         RelOptTable tbl,
         @Nullable List<RelHint> hints,
+        @Nullable RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return new IgniteLogicalTableScan(cluster, traits, tbl, hints == null ? ImmutableList.of() : hints, proj, cond,
-            requiredColumns);
+        return new IgniteLogicalTableScan(cluster, traits, tbl, hints == null ? ImmutableList.of() : hints,
+            rowType, proj, cond, requiredColumns);
     }
 
     /**
@@ -51,6 +53,7 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
      * @param traits Traits of this relational expression.
      * @param tbl Table definition.
      * @param hints Hints.
+     * @param rowType Row type.
      * @param proj Projects.
      * @param cond Filters.
      * @param requiredColunms Participating colunms.
@@ -60,16 +63,17 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         RelTraitSet traits,
         RelOptTable tbl,
         List<RelHint> hints,
+        @Nullable RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, hints, tbl, proj, cond, requiredColunms);
+        super(cluster, traits, hints, tbl, rowType, proj, cond, requiredColunms);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteLogicalTableScan withHints(List<RelHint> hints) {
-        return new IgniteLogicalTableScan(getCluster(), getTraitSet(), getTable(), hints, projects(), condition(),
-            requiredColumns());
+        return new IgniteLogicalTableScan(getCluster(), getTraitSet(), getTable(), hints,
+            rowType, projects(), condition(), requiredColumns());
     }
 }
