@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -29,19 +30,23 @@ public class CacheDistributionCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "nodeId|null")
     String nodeIdOrNull;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
     String[] caches;
 
     /** */
+    @Order(2)
     UUID nodeId;
 
     /** */
+    @Order(3)
     @Argument(optional = true, example = "attrName1,...,attrNameN")
     String[] userAttributes;
 

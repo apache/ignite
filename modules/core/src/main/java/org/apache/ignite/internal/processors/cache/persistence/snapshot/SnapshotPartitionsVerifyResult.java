@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +24,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -43,10 +41,12 @@ public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map of snapshot metadata information found on each cluster node. */
-    private Map<ClusterNode, List<SnapshotMetadata>> metas;
+    @Order(0)
+    Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
-    @Nullable private IdleVerifyResult idleRes;
+    @Order(1)
+    @Nullable IdleVerifyResult idleRes;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyResult() {
@@ -112,17 +112,5 @@ public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
      */
     public Map<ClusterNode, Exception> exceptions() {
         return idleRes == null ? Collections.emptyMap() : idleRes.exceptions();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, metas);
-        out.writeObject(idleRes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        metas = U.readMap(in);
-        idleRes = (IdleVerifyResult)in.readObject();
     }
 }

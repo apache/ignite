@@ -57,7 +57,7 @@ class ClientServicesImpl implements ClientServices {
     static final int SRV_TOP_UPDATE_PERIOD = 60_000;
 
     /** Channel. */
-    private final ReliableChannel ch;
+    private final ReliableChannelImpl ch;
 
     /** Binary marshaller. */
     private final ClientBinaryMarshaller marsh;
@@ -75,7 +75,7 @@ class ClientServicesImpl implements ClientServices {
     private final Map<String, ServiceTopology> servicesTopologies;
 
     /** Constructor. */
-    ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
+    ClientServicesImpl(ReliableChannelImpl ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
         this.ch = ch;
         this.marsh = marsh;
         this.grp = grp;

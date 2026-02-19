@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlocki
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -89,8 +88,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_I
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -127,9 +124,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private ListeningTestLogger log;
 
-    /** */
-    private SecurityContext secCtxDflt;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -164,8 +158,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         client = startClientGrid();
 
         client.cluster().state(ClusterState.ACTIVE);
-
-        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
     }
 
     /** {@inheritDoc} */
@@ -223,8 +215,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testBatchParserMetrics() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-
         MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
@@ -335,7 +325,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testThreadPoolMetrics() {
+    public void testThreadPoolMetrics() throws Exception {
         String regName = metricName(PoolProcessor.THREAD_POOLS, AbstractQueryTaskExecutor.THREAD_POOL_NAME);
         MetricRegistry mreg = client.context().metric().registry(regName);
 
@@ -347,7 +337,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         sql("SELECT 'test'");
 
-        assertTrue(tasksCnt.value() > 0);
+        assertTrue(waitForCondition(() -> tasksCnt.value() > 0, 1000));
     }
 
     /** */
@@ -644,8 +634,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSensitiveInformationHiding() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-
         cleanPerformanceStatisticsDir();
         startCollectStatistics();
 
@@ -697,8 +685,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             sql(grid(0), "CREATE TABLE test_sens1 (val) WITH CACHE_NAME=\"test_sens1\" AS SELECT 'sensitive' AS val");
 
             // Test CREATE/ALTER USER commands rewrite.
-            sql(grid(0), "CREATE USER test WITH PASSWORD 'sensitive'");
-            sql(grid(0), "ALTER USER test WITH PASSWORD 'sensitive'");
+            sqlAsRoot(grid(0), "CREATE USER test WITH PASSWORD 'sensitive'");
+            sqlAsRoot(grid(0), "ALTER USER test WITH PASSWORD 'sensitive'");
 
             // Test JOIN.
             sql(grid(0),
@@ -1035,7 +1023,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         log.registerListener(logLsnr);
 
-        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT).setQueryInitiatorId(initiatorId))
+        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT + 1).setQueryInitiatorId(initiatorId))
             .getAll();
 
         assertTrue(logLsnr.check(1000));
@@ -1056,18 +1044,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         int sleepTime = 500;
 
         for (int i = 0; i < 2; i++) {
-            FunctionsLibrary.latch = new CountDownLatch(1);
-
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(
-                () -> cache.query(new SqlFieldsQuery("select * from test where waitLatch(10000)")).getAll());
-
-            U.sleep(sleepTime);
-
-            GridTestClockTimer.update();
-
-            FunctionsLibrary.latch.countDown();
-
-            fut.get();
+            cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(sleepTime)).getAll();
 
             assertTrue(waitForCondition(() -> {
                 SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);

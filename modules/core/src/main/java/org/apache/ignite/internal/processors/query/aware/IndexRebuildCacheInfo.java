@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.query.aware;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Information about the cache for which index rebuilding was started.
@@ -35,13 +32,15 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private String cacheName;
+    @Order(0)
+    String cacheName;
 
     /**
      * {@code True} if index.bin recreating, {@code false} otherwise.
      * @see IndexesRebuildTask
      */
-    private boolean recreate;
+    @Order(1)
+    boolean recreate;
 
     /**
      * Default constructor for {@link Externalizable}.
@@ -58,18 +57,6 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     public IndexRebuildCacheInfo(String cacheName, boolean recreate) {
         this.cacheName = cacheName;
         this.recreate = recreate;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeLongString(out, cacheName);
-        out.writeBoolean(recreate);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readLongString(in);
-        recreate = in.readBoolean();
     }
 
     /**

@@ -21,7 +21,7 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 
 <p align="center">
     <a href="https://ignite.apache.org">
-        <img src="https://github.com/apache/ignite-website/blob/master/docs/2.9.0/images/ignite_clustering.png" width="400px"/>
+        <img src="https://github.com/apache/ignite-website/blob/master/docs/ignite2/2.9.0/images/ignite_clustering.png" width="400px"/>
     </a>
 </p>
 

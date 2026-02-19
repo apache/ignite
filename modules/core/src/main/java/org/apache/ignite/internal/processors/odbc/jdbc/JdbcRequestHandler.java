@@ -855,7 +855,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             cliCtx.concurrency(),
             cliCtx.isolation(),
             cliCtx.transactionTimeout(),
-            cliCtx.transactionLabel()
+            cliCtx.transactionLabel(),
+            cliCtx.applicationAttributes()
         );
     }
 

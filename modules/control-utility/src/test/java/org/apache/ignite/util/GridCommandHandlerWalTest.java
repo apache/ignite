@@ -184,22 +184,78 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         srv.cluster().state(ClusterState.ACTIVE);
 
         srv.createCache(new CacheConfiguration<>("cache1")
-            .setGroupName("testGroup"));
+            .setGroupName("group1"));
         srv.createCache(new CacheConfiguration<>("cache2")
-            .setGroupName("testGroup"));
+            .setGroupName("group1"));
+        srv.createCache(new CacheConfiguration<>("cache3")
+            .setGroupName("group2"));
+        srv.createCache("cache4");
 
-        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
-        outputContains(".*testGroup.*true.*true.*true.*true.*false");
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "group1,group2,cache4"));
+        outputContains(".*group1.*true.*true.*true.*true.*false");
+        outputContains(".*group2.*true.*true.*true.*true.*false");
+        outputContains(".*cache4.*true.*true.*true.*true.*false");
 
-        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "testGroup"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "group1"));
+        outputContains("Successfully disabled WAL for groups:");
+        outputContains("group1");
 
-        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
-        outputContains(".*testGroup.*true.*false.*true.*true.*false");
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "group1"));
+        outputContains(".*group1.*true.*false.*true.*true.*false");
 
-        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "testGroup"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "group1,group2"));
+        outputContains("Successfully disabled WAL for groups:");
+        outputContains("group1");
+        outputContains("group2");
 
-        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
-        outputContains(".*testGroup.*true.*true.*true.*true.*false");
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "group1,group2"));
+        outputContains(".*group1.*true.*false.*true.*true.*false");
+        outputContains(".*group2.*true.*false.*true.*true.*false");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "cache4,nonExistentGroup"));
+        outputContains("Successfully disabled WAL for groups:");
+        outputContains("cache4");
+        outputContains("Failed to disable WAL for groups:");
+        outputContains("nonExistentGroup - Cache group not found");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache4"));
+        outputContains(".*cache4.*true.*false.*true.*true.*false");
+
+        // Error when using cache name instead of group name.
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache3"));
+        outputContains("Failed to enable WAL for groups:");
+        outputContains("cache3 - Cache group not found");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "group2,cache4"));
+        outputContains("Successfully enabled WAL for groups:");
+        outputContains("group2");
+        outputContains("cache4");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "group2,cache4"));
+        outputContains(".*group2.*true.*true.*true.*true.*false");
+        outputContains(".*cache4.*true.*true.*true.*true.*false");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable"));
+        outputContains("Successfully disabled WAL for groups:");
+        outputContains("group1");
+        outputContains("group2");
+        outputContains("cache4");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
+        outputContains(".*group1.*true.*false.*true.*true.*false");
+        outputContains(".*group2.*true.*false.*true.*true.*false");
+        outputContains(".*cache4.*true.*false.*true.*true.*false");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable"));
+        outputContains("Successfully enabled WAL for groups:");
+        outputContains("group1");
+        outputContains("group2");
+        outputContains("cache4");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
+        outputContains(".*group1.*true.*true.*true.*true.*false");
+        outputContains(".*group2.*true.*true.*true.*true.*false");
+        outputContains(".*cache4.*true.*true.*true.*true.*false");
     }
 
     /** */

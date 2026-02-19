@@ -99,7 +99,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2451,6 +2450,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
+                    addFinishMsg.prepareMarshal(spi.marshaller());
+
                     msg = addFinishMsg;
 
                     DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
@@ -3183,46 +3184,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (spi.ensured(msg))
                     msgHist.add(msg);
 
-                byte[] msgBytes = null;
-
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
-                    if (msgBytes == null) {
-                        try {
-                            msgBytes = clientMsgWorker.ses.serializeMessage(msg);
-                        }
-                        catch (IgniteCheckedException | IOException e) {
-                            U.error(log, "Failed to serialize message to a client: " + msg + ", recepient " +
-                                "client id: " + clientMsgWorker.clientNodeId, e);
-
-                            break;
-                        }
-                    }
-
-                    TcpDiscoveryAbstractMessage msg0 = msg;
-                    byte[] msgBytes0 = msgBytes;
-
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                        TcpDiscoveryNode node = nodeAddedMsg.node();
+                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
+                            msg = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
-                        if (clientMsgWorker.clientNodeId.equals(node.id())) {
-                            try {
-                                // TODO: https://issues.apache.org/jira/browse/IGNITE-27556 refactor serialization.
-                                msg0 = U.unmarshal(spi.marshaller(), msgBytes,
-                                    U.resolveClassLoader(spi.ignite().configuration()));
-
-                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
-
-                                msgBytes0 = null;
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to create message copy: " + msg, e);
-                            }
+                            prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes0);
+                    // TODO Investigate possible optimizations: https://issues.apache.org/jira/browse/IGNITE-27722
+                    clientMsgWorker.addMessage(msg);
                 }
             }
         }
@@ -4801,6 +4775,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
+
+                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -5626,6 +5602,164 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Processes status check message.
+         *
+         * @param msg Status check message.
+         */
+        private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
+            assert msg != null;
+
+            UUID locNodeId = getLocalNodeId();
+
+            if (msg.failedNodeId() != null) {
+                if (locNodeId.equals(msg.failedNodeId())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (suspect node is local node).");
+
+                    return;
+                }
+
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (local node is the sender of the status message).");
+
+                    return;
+                }
+
+                if (isLocalNodeCoordinator() && ring.node(msg.creatorNodeId()) == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (creator node is not in topology).");
+
+                    return;
+                }
+            }
+            else {
+                if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
+                    // Local node is real coordinator, it should respond and discard message.
+                    if (ring.node(msg.creatorNodeId()) != null) {
+                        // Sender is in topology, send message via ring.
+                        msg.status(STATUS_OK);
+
+                        sendMessageAcrossRing(msg);
+                    }
+                    else {
+                        // Sender is not in topology, it should reconnect.
+                        msg.status(STATUS_RECON);
+
+                        utilityPool.execute(new Runnable() {
+                            @Override public void run() {
+                                synchronized (mux) {
+                                    if (spiState == DISCONNECTED) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Ignoring status check request, SPI is already disconnected: " + msg);
+
+                                        return;
+                                    }
+                                }
+
+                                TcpDiscoveryStatusCheckMessage msg0 = msg;
+
+                                if (F.contains(msg.failedNodes(), msg.creatorNodeId())) {
+                                    msg0 = createTcpDiscoveryStatusCheckMessage(
+                                        null,
+                                        msg.creatorNodeId(),
+                                        msg.failedNodeId());
+
+                                    if (msg0 == null) {
+                                        log.debug("Status check message discarded (creator node is not in topology).");
+
+                                        return;
+                                    }
+
+                                    msg0.failedNodes(null);
+
+                                    for (UUID failedNodeId : msg.failedNodes()) {
+                                        if (!failedNodeId.equals(msg.creatorNodeId()))
+                                            msg0.addFailedNode(failedNodeId);
+                                    }
+                                }
+
+                                try {
+                                    trySendMessageDirectly(msg0.creatorNodeAddresses(), msg0.creatorNodeId(), msg0);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Responded to status check message " +
+                                            "[recipient=" + msg0.creatorNodeId() + ", status=" + msg0.status() + ']');
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (e.hasCause(SocketException.class)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to respond to status check message (connection " +
+                                                "refused) [recipient=" + msg0.creatorNodeId() + ", status=" +
+                                                msg0.status() + ']');
+
+                                        onException("Failed to respond to status check message (connection refused) " +
+                                            "[recipient=" + msg0.creatorNodeId() + ", status=" + msg0.status() + ']', e);
+                                    }
+                                    else if (!spi.isNodeStopping0()) {
+                                        if (pingNode(msg0.creatorNodeId())) {
+                                            // Node exists and accepts incoming connections.
+                                            U.error(log, "Failed to respond to status check message [recipient=" +
+                                                msg0.creatorNodeId() + ", status=" + msg0.status() + ']', e);
+                                        }
+                                        else if (log.isDebugEnabled()) {
+                                            log.debug("Failed to respond to status check message (did the node stop?)" +
+                                                "[recipient=" + msg0.creatorNodeId() +
+                                                ", status=" + msg0.status() + ']');
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    return;
+                }
+
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
+                    U.millisSinceNanos(locNode.lastUpdateTimeNanos()) < spi.metricsUpdateFreq) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (local node receives updates).");
+
+                    return;
+                }
+
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
+                    spiStateCopy() != CONNECTED) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (local node is not connected to topology).");
+
+                    return;
+                }
+
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
+                    if (spiStateCopy() != CONNECTED)
+                        return;
+
+                    if (msg.status() == STATUS_OK) {
+                        if (log.isDebugEnabled())
+                            log.debug("Received OK status response from coordinator: " + msg);
+                    }
+                    else if (msg.status() == STATUS_RECON) {
+                        U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
+
+                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                        return;
+                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Status value was not updated in status response: " + msg);
+
+                    // Discard the message.
+                    return;
+                }
+            }
+
+            if (sendMessageToRemotes(msg))
+                sendMessageAcrossRing(msg);
+        }
+
+        /**
          * Processes regular metrics update message. If a more recent message of the same kind has been received,
          * then it will be processed instead of the one taken from the queue.
          *
@@ -6405,14 +6539,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this Ignite port?" +
+                                "this Ignite port, or is this an incompatible Ignite node?" +
                                 (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
-                                ") [rmtAddr=" + rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                                ") [rmtAddr=" + rmtAddr +
+                                ", locAddr=" + sock.getLocalSocketAddress() +
+                                ", rcvdHdr=" + U.byteArray2HexString(buf) + ']');
 
                         LT.warn(log, "Unknown connection detected (is some other software connecting to " +
-                            "this Ignite port?" +
+                            "this Ignite port, or is this an incompatible Ignite node?" +
                             (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
-                            ") [rmtAddr=" + sock.getInetAddress() + ']', true);
+                            ") [rmtAddr=" + sock.getInetAddress() + ", rcvdHdr=" + U.byteArray2HexString(buf) + ']', true);
 
                         return;
                     }
@@ -7374,7 +7510,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class ClientMessageWorker extends MessageWorker<T2<TcpDiscoveryAbstractMessage, byte[]>> {
+    private class ClientMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -7441,20 +7577,10 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
-            addMessage(msg, null);
-        }
-
-        /**
-         * @param msg Message.
-         * @param msgBytes Optional message bytes.
-         */
-        void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
-            T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
-
             if (msg.highPriority())
-                queue.addFirst(t);
+                queue.addFirst(msg);
             else
-                queue.add(t);
+                queue.add(msg);
 
             DebugLogger log = messageLogger(msg);
 
@@ -7463,18 +7589,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void processMessage(T2<TcpDiscoveryAbstractMessage, byte[]> msgT) {
+        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
             boolean success = false;
-
-            TcpDiscoveryAbstractMessage msg = msgT.get1();
 
             try {
                 assert msg.verified() : msg;
 
-                byte[] msgBytes = msgT.get2();
-
-                if (msgBytes == null)
-                    msgBytes = ses.serializeMessage(msg);
+                byte[] msgBytes = ses.serializeMessage(msg);
 
                 DebugLogger msgLog = messageLogger(msg);
 
