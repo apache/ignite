@@ -1,0 +1,114 @@
+# name: test/sql/aggregate/window/test_window_unbounded_over.test
+# description: Test window aggregates with unbounded frame
+# group: [window]
+
+statement ok
+CREATE TABLE win_emp(emp_id INTEGER, dept_id INTEGER, salary INTEGER);
+
+statement ok
+INSERT INTO win_emp VALUES (1, 10, 100), (2, 10, 200), (3, 20,  50), (4, 20, 150), (5, 20, NULL);
+
+# OVER() - full partition (no PARTITION BY)
+query II
+SELECT emp_id, SUM(salary) OVER () AS total_sum FROM win_emp ORDER BY emp_id;
+----
+1	500
+2	500
+3	500
+4	500
+5	500
+
+# OVER(PARTITION BY) - unbounded frame per department
+query III
+SELECT emp_id, dept_id, COUNT(*) OVER (PARTITION BY dept_id) AS cnt_by_dept FROM win_emp ORDER BY emp_id;
+----
+1	10	2
+2	10	2
+3	20	3
+4	20	3
+5	20	3
+
+# multiple aggregates with the same partition
+query III
+SELECT emp_id,
+       SUM(salary) OVER (PARTITION BY dept_id) AS sum_by_dept,
+       MAX(salary) OVER (PARTITION BY dept_id) AS max_by_dept
+FROM win_emp
+ORDER BY emp_id;
+----
+1	300	200
+2	300	200
+3	200	150
+4	200	150
+5	200	150
+
+# NULL handling in partition keys
+statement ok
+INSERT INTO win_emp VALUES (6, NULL, 500), (7, NULL, NULL);
+
+query III
+SELECT emp_id,
+       COUNT(*) OVER (PARTITION BY dept_id) AS cnt_by_dept,
+       SUM(salary) OVER (PARTITION BY dept_id) AS sum_by_dept
+FROM win_emp
+WHERE dept_id IS NULL OR emp_id IN (1,2)
+ORDER BY emp_id;
+----
+1	2	300
+2	2	300
+6	2	500
+7	2	500
+
+# multiple window groups in one SELECT (different partitions)
+query IIII
+SELECT emp_id,
+       dept_id,
+       SUM(salary) OVER (PARTITION BY dept_id) AS sum_by_dept,
+       COUNT(*) OVER () AS total_cnt
+FROM win_emp
+ORDER BY emp_id;
+----
+1	10	300	7
+2	10	300	7
+3	20	200	7
+4	20	200	7
+5	20	200	7
+6	NULL	500	7
+7	NULL	500	7
+
+# Update to getting a fractional average value for average salary
+statement ok
+UPDATE win_emp SET salary = 60 WHERE emp_id = 7;
+
+# another multiple-group example (partition + no partition)
+query III
+SELECT emp_id,
+       COUNT(*) OVER (PARTITION BY dept_id) AS cnt_by_dept,
+       AVG(salary) OVER () AS avg_salary_all
+FROM win_emp
+ORDER BY emp_id;
+----
+1	2	176
+2	2	176
+3	3	176
+4	3	176
+5	3	176
+6	2	176
+7	2	176
+
+# multiple window groups with different PARTITION BY
+query IIII
+SELECT emp_id,
+       dept_id,
+       SUM(salary) OVER (PARTITION BY dept_id) AS sum_by_dept,
+       COUNT(*) OVER (PARTITION BY emp_id % 2) AS cnt_by_parity
+FROM win_emp
+ORDER BY emp_id;
+----
+1	10	300	4
+2	10	300	3
+3	20	200	4
+4	20	200	3
+5	20	200	4
+6	NULL	560	3
+7	NULL	560	4
