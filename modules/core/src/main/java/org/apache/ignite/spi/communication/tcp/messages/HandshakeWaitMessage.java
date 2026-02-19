@@ -20,12 +20,26 @@ package org.apache.ignite.spi.communication.tcp.messages;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
+
 /**
  * Message requesting to wait until node's SPI context initialize.
  */
 public class HandshakeWaitMessage implements Message {
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
+
+    /**
+     * Default constructor.
+     */
+    public HandshakeWaitMessage() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return HANDSHAKE_WAIT_MSG_TYPE;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
