@@ -167,6 +167,8 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 2, grid(3).cluster().localNode().order());
         }
         finally {
+            stallSpi.stopStall();
+
             stopAllGrids();
         }
     }
