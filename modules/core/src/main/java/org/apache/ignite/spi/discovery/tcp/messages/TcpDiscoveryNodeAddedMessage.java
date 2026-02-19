@@ -98,6 +98,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private @Nullable Map<Integer, TcpDiscoveryAbstractMessage> serializablePendingMsgs;
 
     /** Marshalled {@link #serializablePendingMsgs}. */
+    @Order(value = 12, method = "serializablePendingMessagesBytes")
     private byte[] serializablePendingMsgsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -137,10 +138,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         node = msg.node;
         nodeBytes = msg.nodeBytes;
+
         pendingMsgs = msg.pendingMsgs;
         serializablePendingMsgs = msg.serializablePendingMsgs;
-        top = msg.top;
-        topBytes = msg.topBytes;
+        serializablePendingMsgsBytes = msg.serializablePendingMsgsBytes;
+
+        topology(msg.topology());
+
         clientTop = msg.clientTop;
         topHistMsgs = msg.topHistMsgs;
         dataPacket = msg.dataPacket;
@@ -180,6 +184,14 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal serializable pending messages.", e);
             }
+        }
+
+        if (F.isEmpty(pendingMsgs))
+            return;
+
+        for (Message msg : pendingMsgs.values()) {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                ((TcpDiscoveryNodeAddedMessage)msg).prepareMarshal(marsh);
         }
     }
 
@@ -223,6 +235,14 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to unmarshal serializable pending messages.", e);
             }
+        }
+
+        if (F.isEmpty(pendingMsgs))
+            return;
+
+        for (Message msg : pendingMsgs.values()) {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                ((TcpDiscoveryNodeAddedMessage)msg).finishUnmarshal(marsh, clsLdr);
         }
     }
 
@@ -279,7 +299,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         List<TcpDiscoveryAbstractMessage> res = new ArrayList<>(totalSz);
 
         for (int i = 0; i < totalSz; ++i) {
-            Message m = pendingMsgs.get(i);
+            Message m = F.isEmpty(pendingMsgs) ? null : pendingMsgs.get(i);
 
             if (m == null) {
                 TcpDiscoveryAbstractMessage sm = serializablePendingMsgs.get(i);
@@ -288,7 +308,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
                 res.add(sm);
             }
             else {
-                assert serializablePendingMsgs.get(i) == null;
+                assert serializablePendingMsgs == null || serializablePendingMsgs.get(i) == null;
                 assert m instanceof TcpDiscoveryAbstractMessage;
 
                 res.add((TcpDiscoveryAbstractMessage)m);
@@ -308,6 +328,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         if (F.isEmpty(msgs)) {
             serializablePendingMsgs = null;
             pendingMsgs = null;
+            serializablePendingMsgsBytes = null;
 
             return;
         }
@@ -329,6 +350,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
             serializablePendingMsgs.put(idx++, m);
         }
+    }
+
+    /** @return Bytes of {@link #serializablePendingMsgs}. */
+    public @Nullable byte[] serializablePendingMessagesBytes() {
+        return serializablePendingMsgsBytes;
+    }
+
+    /** @param serializablePendingMsgsBytes Bytes of {@link #serializablePendingMsgs}. */
+    public void serializablePendingMessagesBytes(@Nullable byte[] serializablePendingMsgsBytes) {
+        this.serializablePendingMsgsBytes = serializablePendingMsgsBytes;
     }
 
     /**

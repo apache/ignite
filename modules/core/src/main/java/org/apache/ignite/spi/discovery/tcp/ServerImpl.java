@@ -2485,6 +2485,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addedMsg.gridDiscoveryData() != null)
                     addedMsg.clearDiscoveryData();
 
+                // Update the marshallable data.
                 addedMsg.prepareMarshal(spi.marshaller());
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
@@ -3262,8 +3263,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
                         }
                     }
-
-                    ((TcpDiscoveryNodeAddedMessage)msg).prepareMarshal(spi.marshaller());
 
                     // TODO Investigate possible optimizations: https://issues.apache.org/jira/browse/IGNITE-27722
                     clientMsgWorker.addMessage(msg);
