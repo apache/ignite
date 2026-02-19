@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /**
  * Tests for Rex simplification.
@@ -192,5 +196,52 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 .and(s -> "OR(AND(=($t0, 0), =($t1, 1)), AND(=($t0, 0), =($t2, 2)), AND(=($t0, 1), =($t1, $t2)))"
                     .equals(s.condition().toString()))
         );
+    }
+
+    /** */
+    @Test
+    public void testFunctionFilterReduction() throws Exception {
+        IgniteSchema publicSchema = createSchema(createTable("T", single(), "ID", INTEGER));
+
+        // Deterministic echo.
+        publicSchema.addFunction("ECHO", IgniteScalarFunction.create(
+            Types.lookupMethod(RexSimplificationPlannerTest.class, "echo", int.class), true));
+
+        // Non-deterministic echo.
+        publicSchema.addFunction("ECHO_ND", IgniteScalarFunction.create(
+            Types.lookupMethod(RexSimplificationPlannerTest.class, "echo", int.class), false));
+
+        // Deterministic function with literal reduced (always-true).
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(1) = 1", publicSchema, isTableScan("T")
+            .and(s -> "=($t0, 0)".equals(s.condition().toString())));
+
+        // Deterministic function with literal reduced (always-false).
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(0) = 1", publicSchema, isInstanceOf(IgniteValues.class)
+            .and(v -> v.getTuples().isEmpty()));
+
+        // Deterministic function with another deterministic function reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(echo(1)) = 1", publicSchema, isTableScan("T")
+            .and(s -> "=($t0, 0)".equals(s.condition().toString())));
+
+        // Deterministic function with column not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(id) = 1", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO($t0), 1))".equals(s.condition().toString())));
+
+        // Deterministic function with dynamic param not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(?::int) = ?", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO(CAST(?0):INTEGER), ?1))".equals(s.condition().toString())));
+
+        // Non-deterministic function not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo_nd(1) = 1", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO_ND(1), 1))".equals(s.condition().toString())));
+
+        // Deterministic function with non-deterministic function not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(echo_nd(1)) = 1", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO(ECHO_ND(1)), 1))".equals(s.condition().toString())));
+    }
+
+    /** */
+    public static int echo(int val) {
+        return val;
     }
 }

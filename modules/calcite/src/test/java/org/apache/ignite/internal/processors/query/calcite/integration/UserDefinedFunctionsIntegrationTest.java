@@ -231,6 +231,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testUdfAnotherSchema() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
+            .setSqlSchema("EMP")
+            .setIndexedTypes(Integer.class, Employer.class));
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("udf")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(MulFunctionsLibrary.class));
+
+        for (int i = 0; i < 3; i++)
+            client.cache("emp").put(i, new Employer("emp" + i, (double)i));
+
+        assertQuery("SELECT udf.mul(_key, _key) FROM emp.Employer")
+            .returns(0).returns(1).returns(4).check();
+    }
+
+    /** */
+    @Test
     public void testTableFunctions() throws Exception {
         IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
             .setSqlSchema("PUBLIC")

@@ -108,10 +108,10 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
      *
      * @param holders List of channel holders.
      */
-    private void assertNoDuplicates(List<ReliableChannel.ClientChannelHolder> holders) {
+    private void assertNoDuplicates(List<ReliableChannelImpl.ClientChannelHolder> holders) {
         Set<InetSocketAddress> addrs = new HashSet<>();
 
-        for (ReliableChannel.ClientChannelHolder holder : holders) {
+        for (ReliableChannelImpl.ClientChannelHolder holder : holders) {
             holder.getAddresses().forEach(addr -> {
                 if (!addrs.add(addr))
                     throw new AssertionError("Duplicate remote address found: " + addr);

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -42,15 +41,18 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -92,15 +94,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertTrue("Not finished queries found on client", waitForCondition(
             () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
 
-        waitForCondition(() -> {
-            for (Ignite ign : G.allGrids()) {
-                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
-                    return false;
-            }
-
-            return true;
-        }, INBOX_INITIALIZATION_TIMEOUT * 2);
-
         for (Ignite ign : G.allGrids()) {
             if (destroyCachesAfterTest()) {
                 for (String cacheName : ign.cacheNames())
@@ -116,8 +109,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
                 0, execSvc.memoryTracker().allocated());
 
-            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
-                0, qryProc.mailboxRegistry().inboxes().size());
+            assertTrue("Not closed inbox found [ignite=" + ign.name() + ']',
+                waitForCondition(() -> qryProc.mailboxRegistry().inboxes().isEmpty(), INBOX_INITIALIZATION_TIMEOUT * 2));
 
             assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
                 0, qryProc.mailboxRegistry().outboxes().size());
@@ -240,6 +233,15 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected List<List<?>> sqlAsRoot(IgniteEx ignite, String sql) throws Exception {
+        SecurityContext secCtx = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+
+        try (OperationSecurityContext ignored = ignite.context().security().withContext(secCtx)) {
+            return sql(ignite, sql);
+        }
+    }
+
+    /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
         // {@code sql} can contain more than one query.
         List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
@@ -306,17 +308,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteTable table() {
             return delegate.table();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(
-            RelOptCluster cluster,
-            RelOptTable relOptTbl,
-            @Nullable List<RexNode> proj,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.toRel(cluster, relOptTbl, proj, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */

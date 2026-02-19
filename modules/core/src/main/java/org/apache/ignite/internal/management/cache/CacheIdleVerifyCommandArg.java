@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
@@ -33,24 +34,29 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
     String[] caches;
 
     /** */
+    @Order(1)
     @Argument(optional = true)
     boolean skipZeros;
 
     /** */
+    @Order(2)
     @Argument(description = "check the CRC-sum of pages stored on disk before verifying data consistency " +
         "in partitions between primary and backup nodes", optional = true)
     boolean checkCrc;
 
     /** */
+    @Order(3)
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
     String[] excludeCaches;
 
     /** */
+    @Order(4)
     @Argument(optional = true, description = "Type of cache(s)")
     @EnumDescription(
         names = {

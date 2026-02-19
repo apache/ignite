@@ -21,12 +21,14 @@ import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -270,6 +272,11 @@ public class MessageProcessorTest {
 
     /** */
     private Compilation compile(String... srcFiles) {
+        return compile(new MessageProcessor(), srcFiles);
+    }
+
+    /** */
+    static Compilation compile(Processor proc, String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 
         for (String srcFile: srcFiles)
@@ -278,20 +285,21 @@ public class MessageProcessorTest {
         File igniteCoreJar = jarForClass(Message.class);
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
+        File igniteCommonsJar = jarForClass(CommonUtils.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar))
-            .withProcessors(new MessageProcessor())
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
+            .withProcessors(proc)
             .compile(input);
     }
 
     /** */
-    private JavaFileObject javaFile(String srcName) {
+    static JavaFileObject javaFile(String srcName) {
         return JavaFileObjects.forResource("codegen/" + srcName);
     }
 
     /** */
-    private File jarForClass(Class<?> clazz) {
+    private static File jarForClass(Class<?> clazz) {
         try {
             URI jar = clazz
                 .getProtectionDomain()

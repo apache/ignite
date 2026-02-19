@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -33,17 +30,21 @@ public class IndexValidationIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    private String key;
+    @Order(0)
+    String key;
 
     /** Cache name. */
-    private String cacheName;
+    @Order(1)
+    String cacheName;
 
     /** Index name. */
-    private String idxName;
+    @Order(2)
+    String idxName;
 
     /** T. */
+    @Order(3)
     @GridToStringExclude
-    private Throwable t;
+    Throwable t;
 
     /**
      *
@@ -63,22 +64,6 @@ public class IndexValidationIssue extends IgniteDataTransferObject {
         this.cacheName = cacheName;
         this.idxName = idxName;
         this.t = t;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, key);
-        U.writeString(out, cacheName);
-        U.writeString(out, idxName);
-        out.writeObject(t);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        key = U.readString(in);
-        cacheName = U.readString(in);
-        idxName = U.readString(in);
-        t = (Throwable)in.readObject();
     }
 
     /** {@inheritDoc} */

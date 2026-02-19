@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -38,13 +35,16 @@ public class CacheEvictionConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Eviction policy. */
-    private String plc;
+    @Order(0)
+    String plc;
 
     /** Cache eviction policy max size. */
-    private Integer plcMaxSize;
+    @Order(1)
+    Integer plcMaxSize;
 
     /** Eviction filter to specify which entries should not be evicted. */
-    private String filter;
+    @Order(2)
+    String filter;
 
     /**
      * Default constructor.
@@ -84,20 +84,6 @@ public class CacheEvictionConfiguration extends IgniteDataTransferObject {
      */
     @Nullable public String getFilter() {
         return filter;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, plc);
-        out.writeObject(plcMaxSize);
-        U.writeString(out, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        plc = U.readString(in);
-        plcMaxSize = (Integer)in.readObject();
-        filter = U.readString(in);
     }
 
     /** {@inheritDoc} */
