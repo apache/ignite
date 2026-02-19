@@ -36,16 +36,16 @@ public class GridDeploymentRequest implements Message {
     private Object resTopic;
 
     /** Serialized topic. */
-    @Order(value = 0, method = "responseTopicBytes")
-    private byte[] resTopicBytes;
+    @Order(0)
+    byte[] resTopicBytes;
 
     /** Requested class name. */
-    @Order(value = 1, method = "resourceName")
-    private String rsrcName;
+    @Order(1)
+    String rsrcName;
 
     /** Class loader ID. */
-    @Order(value = 2, method = "classLoaderId")
-    private IgniteUuid ldrId;
+    @Order(2)
+    IgniteUuid ldrId;
 
     /** Undeploy flag. */
     @Order(3)
