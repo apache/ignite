@@ -116,7 +116,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             sql("INSERT INTO tbl3 VALUES (?, ?)", i, new byte[1000]);
 
         assertQuery("SELECT /*+ DISABLE_RULE('ColocatedMinusConverterRule') */ * FROM " +
-            "(SELECT id, b FROM tbl2 EXCEPT SELECT id, b FROM tbl3 WHERE id < 800)")
+            "(SELECT id, b FROM tbl2 WHERE id < 800 EXCEPT SELECT id, b FROM tbl3 WHERE id < 600)")
             .matches(QueryChecker.containsSubPlan("IgniteMapMinus"))
             .resultSize(200)
             .check();
