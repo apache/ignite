@@ -366,7 +366,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)8, GridIoMessage::new, new GridIoMessageSerializer());
         factory.register((short)9, GridIoUserMessage::new);
         factory.register((short)10, GridDeploymentInfoBean::new);
-        factory.register((short)11, GridDeploymentRequest::new);
+        factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
         factory.register((short)13, GridEventStorageMessage::new, new GridEventStorageMessageSerializer());
         factory.register((short)16, GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer());
@@ -414,7 +414,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
         factory.register((short)61, GridContinuousMessage::new);
         factory.register((short)62, DataStreamerRequest::new);
-        factory.register((short)63, DataStreamerResponse::new);
+        factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
         factory.register((short)77, GridTaskResultResponse::new, new GridTaskResultResponseSerializer());
         factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());
@@ -469,10 +469,10 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(NodeFullMetricsMessage.TYPE_CODE, NodeFullMetricsMessage::new, new NodeFullMetricsMessageSerializer());
         factory.register((short)157, PartitionUpdateCountersMessage::new, new PartitionUpdateCountersMessageSerializer());
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
-        factory.register((short)163, GenerateEncryptionKeyResponse::new);
+        factory.register((short)163, GenerateEncryptionKeyResponse::new, new GenerateEncryptionKeyResponseSerializer());
         factory.register((short)167, ServiceDeploymentProcessId::new, new ServiceDeploymentProcessIdSerializer());
         factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new, new ServiceSingleNodeDeploymentResultBatchSerializer());
-        factory.register((short)169, ServiceSingleNodeDeploymentResult::new);
+        factory.register((short)169, ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer());
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new, new GridQueryKillRequestSerializer());
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new, new GridQueryKillResponseSerializer());
         factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new, new GridIoSecurityAwareMessageSerializer());
