@@ -46,20 +46,19 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Order(value = 1, method = "deployMode")
     private DeploymentMode depMode;
 
+    /** */
+    @Order(value = 2, method = "userVersion")
+    private String userVer;
 
     /** */
-    @Order(value = 2, method = "localDeploymentOwner")
     @Deprecated // Left for backward compatibility only.
+    @Order(value = 3, method = "localDeploymentOwner")
     private boolean locDepOwner;
 
     /** Node class loader participant map. */
     @GridToStringInclude
-    @Order(3)
+    @Order(4)
     private Map<UUID, IgniteUuid> participants;
-
-    /** */
-    @Order(value = 4, method = "userVersion")
-    private String userVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -101,9 +100,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return clsLdrId;
     }
 
-    /**
-     * @param clsLdrId Class loader ID.
-     */
+    /** */
     public void classLoaderId(IgniteUuid clsLdrId) {
         this.clsLdrId = clsLdrId;
     }
@@ -113,9 +110,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return depMode;
     }
 
-    /**
-     * @param depMode Deployment mode.
-     */
+    /** */
     public void deployMode(DeploymentMode depMode) {
         this.depMode = depMode;
     }
@@ -125,9 +120,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return userVer;
     }
 
-    /**
-     * @param userVer User version.
-     */
+    /** */
     public void userVersion(String userVer) {
         this.userVer = userVer;
     }
@@ -142,9 +135,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return locDepOwner;
     }
 
-    /**
-     * @param locDepOwner Local deployment owner flag.
-     */
+    /** */
     public void localDeploymentOwner(boolean locDepOwner) {
         this.locDepOwner = locDepOwner;
     }
@@ -154,9 +145,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return participants;
     }
 
-    /**
-     * @param participants Node class loader participant map.
-     */
+    /** */
     public void participants(Map<UUID, IgniteUuid> participants) {
         this.participants = participants;
     }
