@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.GridAtomicLong;
 
 /** */
-public class TestCacheConrinuousQueryUtils {
+public class TestCacheContinuousQueryUtils {
     /** */
     public static Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers(
         CacheContinuousQueryHandler<?, ?> hnd
