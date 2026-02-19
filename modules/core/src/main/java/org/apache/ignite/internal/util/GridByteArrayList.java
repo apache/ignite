@@ -43,7 +43,7 @@ public class GridByteArrayList implements Message, Externalizable {
 
     /** List's size. */
     @Order(1)
-    private int size;
+    int size;
 
     /**
      * No-op constructor that creates uninitialized list. This method is meant

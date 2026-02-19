@@ -309,6 +309,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatchSerializer;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultSerializer;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridByteArrayListSerializer;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
