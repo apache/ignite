@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * H2 Decimal.
@@ -37,9 +35,11 @@ public class StatisticsDecimalMessage implements Message, Serializable {
     public static final short TYPE_CODE = 184;
 
     /** */
+    @Order(0)
     private int scale;
 
     /** */
+    @Order(value = 1, method = "bytes")
     private byte[] b;
 
     /**
@@ -73,57 +73,24 @@ public class StatisticsDecimalMessage implements Message, Serializable {
         return new BigDecimal(new BigInteger(b), scale);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(b))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(scale))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
+    /** */
+    public int scale() {
+        return scale;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
+    /** */
+    public void scale(int scale) {
+        this.scale = scale;
+    }
 
-        switch (reader.state()) {
-            case 0:
-                b = reader.readByteArray();
+    /** */
+    public byte[] bytes() {
+        return b;
+    }
 
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                scale = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
+    /** */
+    public void bytes(byte[] b) {
+        this.b = b;
     }
 
     /** {@inheritDoc} */
