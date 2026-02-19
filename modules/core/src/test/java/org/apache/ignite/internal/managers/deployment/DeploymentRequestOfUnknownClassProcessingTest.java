@@ -25,7 +25,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -128,7 +127,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
         GridDeploymentRequest req = new GridDeploymentRequest(TEST_TOPIC_NAME, locDep.classLoaderId(),
             UNKNOWN_CLASS_NAME, false);
 
-        req.responseTopicBytes(U.marshal(locNode.context(), req.responseTopic()));
+        req.prepareMarshal(locNode.context().marshaller());
 
         locNode.context().io().sendToGridTopic(remNode.localNode(), TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 
