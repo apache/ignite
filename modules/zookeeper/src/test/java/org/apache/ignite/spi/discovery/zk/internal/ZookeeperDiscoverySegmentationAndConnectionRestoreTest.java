@@ -256,7 +256,8 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
 
             InstanceSpec spec = srvs.get(2).getInstanceSpec();
 
-            // Conservative upper bound: (tickTime * 10) is a typical initLimit default in ZK quorum configs + 15 seconds for additional logic
+            // Conservative upper bound: (tickTime * 10) is a typical initLimit default in ZK quorum configs
+            // + 15 seconds for additional logic
             assertTrue(l.await((long)spec.getTickTime() * 10 + 15000, TimeUnit.MILLISECONDS));
 
         }
