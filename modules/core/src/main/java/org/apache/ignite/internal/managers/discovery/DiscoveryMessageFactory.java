@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.discovery;
 import org.apache.ignite.internal.codegen.DiscoveryDataPacketSerializer;
 import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
+import org.apache.ignite.internal.codegen.MetadataUpdateAcceptedMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeSpecificDataSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryAuthFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCacheMetricsMessageSerializer;
@@ -45,6 +46,8 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryStatusCheckMessageSerializer;
+import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -110,5 +113,9 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageSerializer());
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new, new TcpDiscoveryNodeAddFinishedMessageSerializer());
+
+        // DiscoveryCustomMessages (500+)
+        factory.register(MetadataUpdateAcceptedMessage.DIRECT_TYPE, MetadataUpdateAcceptedMessage::new,
+            new MetadataUpdateAcceptedMessageSerializer());
     }
 }
