@@ -23,9 +23,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -44,15 +46,23 @@ import org.jetbrains.annotations.Nullable;
  * Message writer implementation.
  */
 public class DirectMessageWriter implements MessageWriter {
+    /** */
+    private static final int TMP_BUF_CAPACITY = 1024 * 10;
+
     /** State. */
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
+
+    /** */
+    private final MessageFactory msgFactory;
 
     /** Buffer for writing. */
     private ByteBuffer buf;
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
+
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory);
@@ -293,10 +303,17 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(@Nullable Message msg) {
+    @Override public boolean writeMessage(@Nullable Message msg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMessage(msg, this);
+        if (compress)
+            writeCompressedMessage(
+                tmpWriter -> tmpWriter.state.item().stream.writeMessage(msg, tmpWriter),
+                msg == null,
+                stream
+            );
+        else
+            stream.writeMessage(msg, this);
 
         return stream.lastFinished();
     }
@@ -353,10 +370,17 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType) {
+        MessageCollectionItemType valType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMap(map, keyType, valType, this);
+        if (compress)
+            writeCompressedMessage(
+                tmpWriter -> tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter),
+                map == null,
+                stream
+            );
+        else
+            stream.writeMap(map, keyType, valType, this);
 
         return stream.lastFinished();
     }
@@ -382,6 +406,11 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public void decrementState() {
+        state.item().state--;
+    }
+
+    /** {@inheritDoc} */
     @Override public void beforeInnerMessageWrite() {
         state.forward();
 
@@ -401,6 +430,57 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DirectMessageWriter.class, this);
+    }
+
+    /** */
+    private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean isNull, DirectByteBufferStream stream) {
+        if (isNull) {
+            stream.writeShort(Short.MIN_VALUE);
+
+            return;
+        }
+
+        if (!stream.serializeFinished()) {
+            ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
+
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
+
+            tmpWriter.setBuffer(tmpBuf);
+
+            boolean finished;
+
+            do {
+                if (tmpBuf.remaining() <= tmpBuf.capacity() / 10) {
+                    byte[] bytes = new byte[tmpBuf.position()];
+
+                    tmpBuf.flip();
+                    tmpBuf.get(bytes);
+
+                    tmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
+
+                    tmpBuf.put(bytes);
+
+                    tmpWriter.setBuffer(tmpBuf);
+                }
+
+                consumer.accept(tmpWriter);
+
+                finished = tmpWriter.state.item().stream.lastFinished();
+            }
+            while (!finished);
+
+            tmpBuf.flip();
+
+            stream.compressedMessage(new CompressedMessage(tmpBuf));
+            stream.serializeFinished(true);
+        }
+
+        stream.writeMessage(stream.compressedMessage(), this);
+
+        if (stream.lastFinished()) {
+            stream.compressedMessage(null);
+            stream.serializeFinished(false);
+        }
     }
 
     /**

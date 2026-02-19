@@ -270,6 +270,29 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
     }
 
+    /**
+     * Negative test that verifies the compilation failed if the CompressedMessage type is used in Message.
+     */
+    @Test
+    public void testCompressedMessageFailed() {
+        String errMsg = "CompressedMessage should not be used explicitly. To compress the required field use the @Compress annotation.";
+
+        Compilation compilation = compile("TestCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestCollectionsCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestMapCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

@@ -199,7 +199,18 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage();
+    public default <T extends Message> T readMessage() {
+        return readMessage(false);
+    }
+
+    /**
+     * Reads nested message.
+     *
+     * @param compress Whether message should be decompressed.
+     * @param <T> Type of the message.
+     * @return Message.
+     */
+    public <T extends Message> T readMessage(boolean compress);
 
     /**
      * Reads {@link CacheObject}.
@@ -259,9 +270,25 @@ public interface MessageReader {
      * @param <M> Type of the read map.
      * @return Map.
      */
-    // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter
+    // TODO: IGNITE-26329 — switch to the new readMap method without the linked flag parameter
+    public default <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
+        MessageCollectionItemType valType, boolean linked) {
+        return readMap(keyType, valType, linked, false);
+    }
+
+    /**
+     * Reads map.
+     *
+     * @param keyType Map key type.
+     * @param valType Map value type.
+     * @param linked Whether {@link LinkedHashMap} should be created.
+     * @param compress Whether map should be compressed.
+     * @param <M> Type of the read map.
+     * @return Map.
+     */
+    // TODO: IGNITE-26329 — switch to the new readMap method without the linked flag parameter
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean linked);
+        MessageCollectionItemType valType, boolean linked, boolean compress);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}
@@ -283,6 +310,11 @@ public interface MessageReader {
      * Increments read state.
      */
     public void incrementState();
+
+    /**
+     * Decrements read state.
+     */
+    public void decrementState();
 
     /**
      * Callback called before inner message is read.

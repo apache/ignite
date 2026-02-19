@@ -286,7 +286,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(Message val) {
+        @Override public boolean writeMessage(Message val, boolean compress) {
             return writeField(Message.class);
         }
 
@@ -307,7 +307,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-            MessageCollectionItemType valType) {
+            MessageCollectionItemType valType, boolean compress) {
             return writeField(Map.class);
         }
 
@@ -327,6 +327,11 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public void incrementState() {
             ++state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void decrementState() {
+            --state;
         }
 
         /** {@inheritDoc} */
@@ -518,7 +523,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage() {
+        @Override public <T extends Message> T readMessage(boolean compress) {
             readField(Message.class);
 
             return null;
@@ -568,7 +573,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-            MessageCollectionItemType valType, boolean linked) {
+            MessageCollectionItemType valType, boolean linked, boolean compress) {
             readField(Map.class);
 
             return null;
@@ -592,6 +597,11 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public void incrementState() {
             ++state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void decrementState() {
+            --state;
         }
 
         /** {@inheritDoc} */

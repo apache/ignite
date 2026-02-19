@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -29,21 +27,19 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,13 +56,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @GridToStringInclude
     private Map<Integer, GridDhtPartitionFullMap> parts;
 
-    /**
-     * Serialized local partitions.
-     * <p>
-     * TODO Remove this field after completing task IGNITE-26976.
-     */
-    @Order(value = 6, method = "partitionBytes")
-    private byte[] partsBytes;
+    /** Partitions without duplicated data. */
+    @Order(value = 6, method = "localPartitions")
+    @Compress
+    private Map<Integer, GridDhtPartitionFullMap> locParts;
 
     /** */
     @Order(value = 7, method = "duplicatedPartitionsData")
@@ -74,16 +67,19 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partitions update counters. */
     @Order(value = 8, method = "partitionCounters")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
     @Order(value = 9, method = "partitionHistorySuppliers")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
     @Order(value = 10, method = "partitionsToReload")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionsToReloadMap partsToReload;
 
@@ -104,6 +100,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * All logic resides within getter and setter.
      */
     @Order(value = 13, method = "errorMessages")
+    @Compress
     @SuppressWarnings("unused")
     private Map<UUID, ErrorMessage> errMsgs;
 
@@ -162,25 +159,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         GridDhtPartitionsFullMessage cp = (GridDhtPartitionsFullMessage)msg;
 
-        if (parts != null) {
-            cp.parts = new HashMap<>(parts.size());
-
-            for (Map.Entry<Integer, GridDhtPartitionFullMap> e : parts.entrySet()) {
-                GridDhtPartitionFullMap val = e.getValue();
-
-                cp.parts.put(e.getKey(), new GridDhtPartitionFullMap(
-                    val.nodeId(),
-                    val.nodeOrder(),
-                    val.updateSequence(),
-                    val,
-                    false));
-            }
-        }
-        else
-            cp.parts = null;
-
+        cp.parts = parts != null ? copyPartitionsMap(parts) : null;
         cp.dupPartsData = dupPartsData;
-        cp.partsBytes = partsBytes;
+        cp.locParts = locParts;
         cp.partCntrs = partCntrs;
         cp.partHistSuppliers = partHistSuppliers;
         cp.partsToReload = partsToReload;
@@ -258,17 +239,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Serialized local partitions.
+     * @return Local partitions.
      */
-    public byte[] partitionBytes() {
-        return partsBytes;
+    public Map<Integer, GridDhtPartitionFullMap> localPartitions() {
+        return locParts;
     }
 
     /**
-     * @param partsBytes Serialized local partitions.
+     * @param locParts Local partitions.
      */
-    public void partitionBytes(byte[] partsBytes) {
-        this.partsBytes = partsBytes;
+    public void localPartitions(Map<Integer, GridDhtPartitionFullMap> locParts) {
+        this.locParts = locParts;
     }
 
     /**
@@ -294,7 +275,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parts.put(grpId, fullMap);
 
             if (dupDataCache != null) {
-                assert compressed();
                 assert parts.containsKey(dupDataCache);
 
                 if (dupPartsData == null)
@@ -510,37 +490,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        boolean marshal = !F.isEmpty(parts) && partsBytes == null;
-
-        if (marshal) {
-            // Reserve at least 2 threads for system operations.
-            int parallelismLvl = U.availableThreadCount(ctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
-
-            Collection<Object> objectsToMarshall = new ArrayList<>();
-
-            if (!F.isEmpty(parts) && partsBytes == null)
-                objectsToMarshall.add(parts);
-
-            Collection<byte[]> marshalled = U.doInParallel(
-                parallelismLvl,
-                ctx.kernalContext().pools().getSystemExecutorService(),
-                objectsToMarshall,
-                new IgniteThrowableFunction<Object, byte[]>() {
-                    @Override public byte[] apply(Object payload) throws IgniteCheckedException {
-                        byte[] marshalled = U.marshal(ctx, payload);
-
-                        if (compressed())
-                            marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
-
-                        return marshalled;
-                    }
-                });
-
-            Iterator<byte[]> iter = marshalled.iterator();
-
-            if (!F.isEmpty(parts) && partsBytes == null)
-                partsBytes = iter.next();
-        }
+        if (!F.isEmpty(parts) && locParts == null)
+            locParts = copyPartitionsMap(parts);
     }
 
     /**
@@ -561,37 +512,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
-
-        Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
-
-        // Reserve at least 2 threads for system operations.
-        int parallelismLvl = U.availableThreadCount(ctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
-
-        if (partsBytes != null && parts == null)
-            objectsToUnmarshall.add(partsBytes);
-
-        Collection<Object> unmarshalled = U.doInParallel(
-            parallelismLvl,
-            ctx.kernalContext().pools().getSystemExecutorService(),
-            objectsToUnmarshall,
-            new IgniteThrowableFunction<byte[], Object>() {
-                @Override public Object apply(byte[] binary) throws IgniteCheckedException {
-                    return compressed()
-                        ? U.unmarshalZip(ctx.marshaller(), binary, clsLdr)
-                        : U.unmarshal(ctx, binary, clsLdr);
-                }
-            }
-        );
-
-        Iterator<Object> iter = unmarshalled.iterator();
-
-        if (partsBytes != null && parts == null) {
-            parts = (Map<Integer, GridDhtPartitionFullMap>)iter.next();
+        if (locParts != null && parts == null) {
+            parts = copyPartitionsMap(locParts);
 
             if (dupPartsData != null) {
-                assert parts != null;
-
                 for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
                     GridDhtPartitionFullMap map1 = parts.get(e.getKey());
                     GridDhtPartitionFullMap map2 = parts.get(e.getValue());
@@ -679,7 +603,23 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        partsBytes = null;
+        locParts = null;
         partCntrs = null;
+    }
+
+    /** */
+    private Map<Integer, GridDhtPartitionFullMap> copyPartitionsMap(Map<Integer, GridDhtPartitionFullMap> src) {
+        Map<Integer, GridDhtPartitionFullMap> map = new HashMap<>(src.size());
+
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : src.entrySet()) {
+            GridDhtPartitionFullMap val = entry.getValue();
+
+            map.put(
+                entry.getKey(),
+                new GridDhtPartitionFullMap(val.nodeId(), val.nodeOrder(), val.updateSequence(), val, false)
+            );
+        }
+
+        return map;
     }
 }
