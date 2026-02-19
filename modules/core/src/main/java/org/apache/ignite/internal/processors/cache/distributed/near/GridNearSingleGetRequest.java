@@ -151,34 +151,10 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets the key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
      * @return Key.
      */
     public KeyCacheObject key() {
         return key;
-    }
-
-    /** Sets the flags. */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /** @return Flags. */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * Sets future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /**
@@ -186,13 +162,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * Sets task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -205,13 +174,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -219,24 +181,10 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets TTL to set after entry is created, -1 to leave unchanged.
-     */
-    public void createTtl(long createTtl) {
-        this.createTtl = createTtl;
-    }
-
-    /**
      * @return New TTL to set after entry is created, -1 to leave unchanged.
      */
     public long createTtl() {
         return createTtl;
-    }
-
-    /**
-     * Sets new TTL to set after entry is accessed, -1 to leave unchanged.
-     */
-    public void accessTtl(long accessTtl) {
-        this.accessTtl = accessTtl;
     }
 
     /**
@@ -251,13 +199,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         assert key != null;
 
         return key.partition();
-    }
-
-    /**
-     * Sets the transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
     }
 
     /**

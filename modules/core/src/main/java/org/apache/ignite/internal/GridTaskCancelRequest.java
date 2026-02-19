@@ -54,13 +54,6 @@ public class GridTaskCancelRequest implements Message {
         return sesId;
     }
 
-    /**
-     * @param sesId New session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 5;

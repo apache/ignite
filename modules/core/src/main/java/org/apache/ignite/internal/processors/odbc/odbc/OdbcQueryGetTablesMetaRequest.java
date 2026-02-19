@@ -51,13 +51,6 @@ public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
     }
 
     /**
-     * @return catalog search pattern.
-     */
-    public String catalog() {
-        return catalog;
-    }
-
-    /**
      * @return Schema search pattern.
      */
     public String schema() {

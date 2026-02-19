@@ -51,13 +51,6 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     }
 
     /**
-     * Sets the near.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
-    }
-
-    /**
      * @return Near keys.
      */
     public List<KeyCacheObject> nearKeys() {
