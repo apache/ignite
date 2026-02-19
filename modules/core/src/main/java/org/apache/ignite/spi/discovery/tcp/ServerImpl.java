@@ -2837,13 +2837,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Socket. */
         private Socket sock;
 
+        // This serializer is used exclusively for serializing messages sent to clients,
+        // as it represents a special case within the RingMessageWorker workflow.
+        // Generally, both serialization and deserialization of messages should be handled by TcpDiscoveryIoSession.
+        // However, there are scenarios where the session is not available, yet messages still need to be sent to clients.
+        // A typical example is a single server with one or more connected clients.
+        // To address this, we use TcpDiscoveryMessageSerializer, which includes some code copied from TcpDiscoveryIoSession
+        // and can be instantiated independently of any active session.
         /** */
-        // This serializer is only used to serialize messages sent to clients as it is a special case in RingMessageWorker workflow.
-        // In general both serialization and deserialization of messages should be done using TcpDiscoveryIoSession,
-        // but there could be situations when session is not available but we still have to send messages to clients.
-        // One such example is a single server with one or more clients connected to it.
-        // To handle this case we use a TcpDiscoveryMessageSerializer with some copy-pasted code from TcpDiscoveryIoSession which
-        // can be created completely independently of TcpDiscoveryIoSession.
         private final TcpDiscoveryMessageSerializer clientMsgSer = new TcpDiscoveryMessageSerializer(spi);
 
         /** IO session. */
@@ -7619,14 +7620,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Node ID. */
         private final UUID clientNodeId;
 
-        // Code sending and receiving messages to/from client nodes is a special case in ServerImpl
-        // as it is split into two parts.
-        // One part is ClientMessageWorker which is only sending messages to clients and isn't handling responses.
-        // And the part actually reading messages from clients is implemented in SocketReader.
-        // Because of that we don't need a full-fledged TcpDiscoveryIoSession here and can extract only "message writing"
-        // part of it.
-        // At the same time we want to keep both reading and writing logic in TcpDiscoveryIoSession and have to copy-paste some code
-        // from it to new class - TcpDiscoveryMessageSerializer.
+        // The code responsible for sending and receiving messages to and from client nodes represents a special case in ServerImpl,
+        // as it is split into two separate components.
+        // One part, ClientMessageWorker, handles only message sending to clients and does not process responses.
+        // The other part, which reads messages from clients, is implemented in SocketReader.
+        // Due to this separation, we don't require a full TcpDiscoveryIoSession here
+        // and can instead extract just the message-writing functionality.
+        // At the same time, we aim to keep both reading and writing logic encapsulated within TcpDiscoveryIoSession.
+        // As a result, we need to copy some code from TcpDiscoveryIoSession into the new class, TcpDiscoveryMessageSerializer.
         /** */
         private final TcpDiscoveryMessageSerializer clientMsgSer;
 
