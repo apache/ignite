@@ -3279,6 +3279,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg instanceof TraceableMessage)
                 tracing.messages().beforeSend((TraceableMessage)msg);
 
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                ((TcpDiscoveryJoinRequestMessage)msg).prepareMarshal(spi.marshaller());
+
             sendMessageToClients(msg);
 
             List<TcpDiscoveryNode> failedNodes;
@@ -3984,8 +3987,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
-
-            msg.prepareMarshal(spi.marshaller());
 
             final TcpDiscoveryNode node = msg.node();
 
