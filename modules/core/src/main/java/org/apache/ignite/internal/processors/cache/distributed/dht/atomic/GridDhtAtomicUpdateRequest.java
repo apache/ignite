@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -701,8 +702,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
 
-            if (invokeArgsBytes == null)
-                invokeArgsBytes = F.asList(marshalInvokeArguments(invokeArgs, cctx));
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
 
             if (entryProcessorsBytes == null)
                 entryProcessorsBytes = marshalCollection(entryProcessors, cctx);

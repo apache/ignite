@@ -21,17 +21,19 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
@@ -39,30 +41,39 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Carries discovery data in marshalled form
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
-public class DiscoveryDataPacket implements Serializable {
-    /** Local file header signature(read as a little-endian number). */
-    private static int ZIP_HEADER_SIGNATURE = 0x04034b50;
+public class DiscoveryDataPacket implements Serializable, Message {
+    /** Local file header signature (read as a little-endian number). */
+    private static final int ZIP_HEADER_SIGNATURE = 0x04034b50;
 
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final UUID joiningNodeId;
+    @Order(0)
+    private UUID joiningNodeId;
 
     /** */
+    @Order(1)
     private Map<Integer, byte[]> joiningNodeData = new HashMap<>();
 
     /** */
     private transient Map<Integer, Serializable> unmarshalledJoiningNodeData;
 
     /** */
+    @Order(2)
     private Map<Integer, byte[]> commonData = new HashMap<>();
 
     /** */
-    private Map<UUID, Map<Integer, byte[]>> nodeSpecificData = new LinkedHashMap<>();
+    @Order(3)
+    private Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
 
     /** */
     private transient boolean joiningNodeClient;
+
+    /** Constructor. */
+    public DiscoveryDataPacket() {
+        // No-op.
+    }
 
     /**
      * @param joiningNodeId Joining node id.
@@ -76,6 +87,55 @@ public class DiscoveryDataPacket implements Serializable {
      */
     public UUID joiningNodeId() {
         return joiningNodeId;
+    }
+
+    /**
+     * @param joiningNodeId Joining node ID.
+     */
+    public void joiningNodeId(UUID joiningNodeId) {
+        this.joiningNodeId = joiningNodeId;
+    }
+
+    /**
+     * @return Joining node data.
+     */
+    public Map<Integer, byte[]> joiningNodeData() {
+        return joiningNodeData;
+    }
+
+    /**
+     * @param joiningNodeData Joining node data.
+     */
+    public void joiningNodeData(Map<Integer, byte[]> joiningNodeData) {
+        this.joiningNodeData = joiningNodeData;
+    }
+
+    /**
+     * @return Common data.
+     */
+    public Map<Integer, byte[]> commonData() {
+        return commonData;
+    }
+
+    /**
+     * @param commonData Common data.
+     */
+    public void commonData(Map<Integer, byte[]> commonData) {
+        this.commonData = commonData;
+    }
+
+    /**
+     * @return Node specific data.
+     */
+    public Map<UUID, NodeSpecificData> nodeSpecificData() {
+        return nodeSpecificData;
+    }
+
+    /**
+     * @param nodeSpecificData New node specific data.
+     */
+    public void nodeSpecificData(Map<UUID, NodeSpecificData> nodeSpecificData) {
+        this.nodeSpecificData = nodeSpecificData;
     }
 
     /**
@@ -98,7 +158,7 @@ public class DiscoveryDataPacket implements Serializable {
             filterDuplicatedData(marshLocNodeSpecificData);
 
             if (!marshLocNodeSpecificData.isEmpty())
-                nodeSpecificData.put(nodeId, marshLocNodeSpecificData);
+                nodeSpecificData.put(nodeId, new NodeSpecificData(marshLocNodeSpecificData));
         }
     }
 
@@ -132,8 +192,11 @@ public class DiscoveryDataPacket implements Serializable {
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
 
-            for (Map.Entry<UUID, Map<Integer, byte[]>> nodeBinEntry : nodeSpecificData.entrySet()) {
-                Map<Integer, byte[]> nodeBinData = nodeBinEntry.getValue();
+            for (Map.Entry<UUID, NodeSpecificData> nodeBinEntry : nodeSpecificData.entrySet()) {
+                if (nodeBinEntry.getValue() == null)
+                    continue;
+
+                Map<Integer, byte[]> nodeBinData = nodeBinEntry.getValue().nodeSpecificData();
 
                 if (nodeBinData == null || nodeBinData.isEmpty())
                     continue;
@@ -260,12 +323,17 @@ public class DiscoveryDataPacket implements Serializable {
         }
 
         if (nodeSpecificData.size() != mrgdSpecifDataKeys.size()) {
-            for (Map.Entry<UUID, Map<Integer, byte[]>> e : nodeSpecificData.entrySet()) {
+            for (Map.Entry<UUID, NodeSpecificData> e : nodeSpecificData.entrySet()) {
                 if (!mrgdSpecifDataKeys.contains(e.getKey())) {
-                    Map<Integer, byte[]> data = existingDataPacket.nodeSpecificData.get(e.getKey());
+                    NodeSpecificData dataMsg = existingDataPacket.nodeSpecificData.get(e.getKey());
 
-                    if (data != null && mapsEqual(e.getValue(), data)) {
-                        e.setValue(data);
+                    if (dataMsg == null)
+                        continue;
+
+                    Map<Integer, byte[]> data = dataMsg.nodeSpecificData();
+
+                    if (data != null && mapsEqual(e.getValue().nodeSpecificData(), data)) {
+                        e.setValue(new NodeSpecificData(data));
 
                         boolean add = mrgdSpecifDataKeys.add(e.getKey());
 
@@ -310,7 +378,7 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clientNode Client node.
      * @param log Logger.
      * @param panic Throw unmarshalling if {@code true}.
-     * @throws IgniteCheckedException If {@code panic} is {@true} and unmarshalling failed.
+     * @throws IgniteCheckedException If {@code panic} is {@code True} and unmarshalling failed.
      */
     private Map<Integer, Serializable> unmarshalData(
         Map<Integer, byte[]> src,
@@ -358,11 +426,11 @@ public class DiscoveryDataPacket implements Serializable {
     }
 
     /**
-     * @param value Value to check.
+     * @param val Value to check.
      * @return {@code true} if value is zipped.
      */
-    private boolean isZipped(byte[] value) {
-        return value != null && value.length > 3 && makeInt(value) == ZIP_HEADER_SIGNATURE;
+    private boolean isZipped(byte[] val) {
+        return val != null && val.length > 3 && makeInt(val) == ZIP_HEADER_SIGNATURE;
     }
 
     /**
@@ -391,7 +459,7 @@ public class DiscoveryDataPacket implements Serializable {
             int compressionLevel,
             IgniteLogger log
     ) {
-        //may happen if nothing was collected from components,
+        // may happen if nothing was collected from components,
         // corresponding map (for common data or for node specific data) left null
         if (src == null)
             return;
@@ -407,17 +475,17 @@ public class DiscoveryDataPacket implements Serializable {
         }
     }
 
-    /**
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4435
-     */
+    /** */
     private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
-        for (Map<Integer, byte[]> existingData : nodeSpecificData.values()) {
+        for (NodeSpecificData existingData : nodeSpecificData.values()) {
             Iterator<Map.Entry<Integer, byte[]>> it = discoData.entrySet().iterator();
 
             while (it.hasNext()) {
                 Map.Entry<Integer, byte[]> discoDataEntry = it.next();
 
-                byte[] curData = existingData.get(discoDataEntry.getKey());
+                byte[] curData = (existingData == null || existingData.nodeSpecificData() == null)
+                    ? null
+                    : existingData.nodeSpecificData().get(discoDataEntry.getKey());
 
                 if (Arrays.equals(curData, discoDataEntry.getValue()))
                     it.remove();
@@ -453,5 +521,10 @@ public class DiscoveryDataPacket implements Serializable {
      */
     public void clearUnmarshalledJoiningNodeData() {
         unmarshalledJoiningNodeData = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -106;
     }
 }

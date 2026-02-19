@@ -350,7 +350,7 @@ public abstract class IgniteUtils extends CommonUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x00004747);
+    public static final byte[] IGNITE_HEADER = intToBytes(0x0049474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -3621,6 +3621,41 @@ public abstract class IgniteUtils extends CommonUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readLong();
+
+        return res;
+    }
+
+    /**
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeCharArray(DataOutput out, char[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int c : arr)
+                out.writeChar(c);
+        }
+    }
+
+    /**
+     * @param in Stream to read from.
+     * @return Read char array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    public static char[] readCharArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        char[] res = new char[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readChar();
 
         return res;
     }
