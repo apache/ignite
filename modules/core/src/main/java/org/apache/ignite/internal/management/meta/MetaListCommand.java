@@ -22,10 +22,8 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
-@IgniteExperimental
 public class MetaListCommand implements ComputeCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
     @Override public String description() {

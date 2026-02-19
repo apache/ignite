@@ -1121,11 +1121,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             int[] parts = null;
 
             if (part != null) {
-                final GridDhtLocalPartition locPart = cctx.dht().topology().localPartition(part);
+                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-                if (locPart == null || locPart.state() != OWNING) {
+                if (cctx.isPartitioned() && !cctx.affinity().primaryByPartition(cctx.localNode(), part, topVer)) {
                     throw new CacheInvalidStateException("Failed to execute index query because required partition " +
-                        "has not been found on local node [cacheName=" + cctx.name() + ", part=" + part + "]");
+                        "is not primary on local node [cacheName=" + cctx.name() + ", part=" + part + ", topVer=" + topVer + ']');
                 }
 
                 parts = new int[] {part};

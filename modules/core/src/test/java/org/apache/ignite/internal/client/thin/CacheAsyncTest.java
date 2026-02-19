@@ -393,6 +393,11 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals(0, strCache.sizeAsync(CachePeekMode.BACKUP).get().intValue());
         assertEquals(3, strCache.sizeAsync(CachePeekMode.PRIMARY).get().intValue());
 
+        // SizeLong.
+        assertEquals(3L, strCache.sizeLongAsync().get().longValue());
+        assertEquals(0L, strCache.sizeLongAsync(CachePeekMode.BACKUP).get().longValue());
+        assertEquals(3L, strCache.sizeLongAsync(CachePeekMode.PRIMARY).get().longValue());
+
         // GetAll.
         strCache.put(3, "3");
         Map<Integer, String> getAllRes = strCache.getAllAsync(ImmutableSet.of(2, 3, 4, 5)).get();
