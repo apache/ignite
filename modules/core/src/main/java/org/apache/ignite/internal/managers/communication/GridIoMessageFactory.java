@@ -53,6 +53,7 @@ import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.ExchangeInfoSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyResponseSerializer;
+import org.apache.ignite.internal.codegen.GridByteArrayListSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridCacheQueryRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheQueryResponseSerializer;
@@ -430,7 +431,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)80, MetadataRequestMessage::new, new MetadataRequestMessageSerializer());
         factory.register((short)81, MetadataResponseMessage::new, new MetadataResponseMessageSerializer());
         factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
-        factory.register((short)84, GridByteArrayList::new);
+        factory.register((short)84, GridByteArrayList::new, new GridByteArrayListSerializer());
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
         factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register((short)88, GridCacheReturn::new, new GridCacheReturnSerializer());
