@@ -20,12 +20,10 @@ package org.apache.ignite.calcite;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Query engine configuration for Calcite-based query engine.
  */
-@IgniteExperimental
 public class CalciteQueryEngineConfiguration implements QueryEngineConfigurationEx {
     /** Query engine name. */
     public static final String ENGINE_NAME = "calcite";

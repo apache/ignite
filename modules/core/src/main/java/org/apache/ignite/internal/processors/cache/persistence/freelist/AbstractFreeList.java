@@ -135,6 +135,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
+                statHolder.trackPageRemoveData(rowSize);
+                statHolder.trackPageInsertData(rowSize);
+
                 wal.log(new DataPageUpdateRecord(
                     cacheId,
                     pageId,
@@ -164,9 +167,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             T row,
             int written,
-            IoStatisticsHolder statHolder)
-            throws IgniteCheckedException {
-            written = addRow(pageId, page, pageAddr, iox, row, written);
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
+            written = addRow(pageId, page, pageAddr, iox, row, written, statHolder);
 
             putPage(((AbstractDataPageIO)iox).getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
@@ -180,6 +183,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @param iox IO.
          * @param row Row to write.
          * @param written Written size.
+         * @param statHolder IO statistics holder.
          * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
          * @throws IgniteCheckedException If failed.
          */
@@ -189,8 +193,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageAddr,
             PageIO iox,
             T row,
-            int written)
-            throws IgniteCheckedException {
+            int written,
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             long lastLink = row.link();
@@ -208,6 +213,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 evictionTracker.touchPage(pageId);
 
             evictionTracker.trackFragmentPage(pageId, lastLink, written == rowSize);
+
+            statHolder.trackPageInsertData(oldFreeSpace - io.getFreeSpace(pageAddr));
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -324,8 +331,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             GridCursor<T> cur,
             int written,
-            IoStatisticsHolder statHolder)
-            throws IgniteCheckedException {
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             // Fill the page up to the end.
@@ -341,7 +348,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         break;
                 }
 
-                written = writeRowHnd.addRow(pageId, page, pageAddr, io, row, written);
+                written = writeRowHnd.addRow(pageId, page, pageAddr, io, row, written, statHolder);
 
                 assert written == COMPLETE;
             }
@@ -377,8 +384,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             ReuseBag reuseBag,
             int itemId,
-            IoStatisticsHolder statHolder)
-            throws IgniteCheckedException {
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
@@ -417,6 +424,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 else if (putIsNeeded)
                     put(null, pageId, page, pageAddr, newBucket, statHolder);
             }
+
+            statHolder.trackPageRemoveData(newFreeSpace - oldFreeSpace);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;

@@ -71,7 +71,6 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Gets or sets service call interceptors.
         /// </summary>
-        [IgniteExperimental]
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IServiceCallInterceptor> Interceptors { get; set; }
 
