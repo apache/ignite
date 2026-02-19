@@ -242,19 +242,21 @@ public class TcpDiscoveryIoSession {
      * Serializes a discovery message into a byte array.
      *
      * @param msg Discovery message to serialize.
-     * @return Serialized byte array containing the message data.
      * @throws IgniteCheckedException If serialization fails.
      * @throws IOException If serialization fails.
      */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    void serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+        if (msg.serializedData() != null)
+            return;
+
         if (!(msg instanceof Message))
-            return U.marshal(spi.marshaller(), msg);
+            msg.serializedData(U.marshal(spi.marshaller(), msg));
+        else
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                serializeMessage((Message)msg, out);
 
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            serializeMessage((Message)msg, out);
-
-            return out.toByteArray();
-        }
+                msg.serializedData(out.toByteArray());
+            }
     }
 
     /** @return Socket. */
