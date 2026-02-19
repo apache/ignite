@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /** */
@@ -68,7 +68,7 @@ public class GridTestBinaryMarshaller {
             )
             .setClientMode(false)
             .setDiscoverySpi(new TcpDiscoverySpi() {
-                @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
                     //No-op.
                 }
             });

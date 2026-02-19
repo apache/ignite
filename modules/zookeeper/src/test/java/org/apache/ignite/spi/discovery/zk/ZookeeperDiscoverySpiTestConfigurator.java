@@ -22,9 +22,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -96,7 +96,7 @@ public class ZookeeperDiscoverySpiTestConfigurator {
         private volatile IgniteDiscoverySpiInternalListener internalLsnr;
 
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) {
             IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
             if (internalLsnr != null && !internalLsnr.beforeSendCustomEvent(this, log, msg))

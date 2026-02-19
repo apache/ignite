@@ -26,11 +26,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Snapshot restore operation handling task.
  */
-public class SnapshotHandlerRestoreTask implements Supplier<Map<String, SnapshotHandlerResult<Object>>> {
+public class SnapshotHandlerRestoreTask implements Supplier<Map<String, SnapshotHandlerResult<Message>>> {
     /** */
     private final IgniteEx ignite;
 
@@ -58,7 +59,7 @@ public class SnapshotHandlerRestoreTask implements Supplier<Map<String, Snapshot
     }
 
     /** */
-    @Override public Map<String, SnapshotHandlerResult<Object>> get() {
+    @Override public Map<String, SnapshotHandlerResult<Message>> get() {
         try {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());

@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Single node result message.
@@ -34,23 +33,27 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * @see FullMessage
  * @see InitMessage
  */
-public class SingleNodeMessage<R extends Serializable> implements Message {
+public class SingleNodeMessage<R extends Message> implements Message {
     /** Initial channel message type (value is {@code 176}). */
     public static final short TYPE_CODE = 176;
 
     /** Process id. */
+    @Order(0)
     private UUID processId;
 
     /** Process type. */
+    @Order(1)
     private int type;
 
     /** Single node response. */
-    private R resp;
+    @Order(value = 2, method = "response")
+    private Message resp;
 
     /** Error. */
-    private Throwable err;
+    @Order(value = 3, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
-    /** Empty constructor for marshalling purposes. */
+    /** Default constructor for {@link GridIoMessageFactory}. */
     public SingleNodeMessage() {
     }
 
@@ -64,92 +67,9 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
         this.processId = processId;
         this.type = type.ordinal();
         this.resp = resp;
-        this.err = err;
-    }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid(processId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(type))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(U.toBytes(resp)))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray(U.toBytes(err)))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                processId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                type = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                byte[] dataBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                resp = U.fromBytes(dataBytes);
-
-                reader.incrementState();
-
-            case 3:
-                byte[] errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                err = U.fromBytes(errBytes);
-
-                reader.incrementState();
-        }
-
-        return true;
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
@@ -162,23 +82,48 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
         return processId;
     }
 
+    /** @param processId Process id. */
+    public void processId(UUID processId) {
+        this.processId = processId;
+    }
+
     /** @return Process type. */
     public int type() {
         return type;
     }
 
+    /** @param type Process type. */
+    public void type(int type) {
+        this.type = type;
+    }
+
     /** @return Response. */
     public R response() {
-        return resp;
+        return (R)resp;
+    }
+
+    /** @param resp Response. */
+    public void response(R resp) {
+        this.resp = resp;
     }
 
     /** @return {@code True} if finished with error. */
     public boolean hasError() {
-        return err != null;
+        return errMsg != null;
     }
 
     /** @return Error. */
-    public Throwable error() {
-        return err;
+    @Nullable public Throwable error() {
+        return ErrorMessage.error(errMsg);
+    }
+
+    /** */
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /** */
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 }
