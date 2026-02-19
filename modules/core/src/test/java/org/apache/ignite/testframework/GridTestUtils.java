@@ -95,7 +95,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -203,16 +202,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Unwraps messsage if it is wrapped by {@link SecurityAwareCustomMessageWrapper}.
-     *
-     * @param msg Message.
-     */
-    public static DiscoveryCustomMessage unwrap(DiscoveryCustomMessage msg) {
-        return msg instanceof SecurityAwareCustomMessageWrapper ?
-            ((SecurityAwareCustomMessageWrapper)msg).delegate() : msg;
-    }
-
-    /**
      * Injects {@link DiscoveryHook} into handling logic.
      */
     public static final class DiscoverySpiListenerWrapper implements DiscoverySpiListener {
@@ -233,11 +222,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery(unwrap(notification.getCustomMsgData()));
+            hook.beforeDiscovery(U.unwrapCustomMessage(notification.getCustomMsgData()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(unwrap(notification.getCustomMsgData())));
+            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.getCustomMsgData())));
 
             return fut;
         }

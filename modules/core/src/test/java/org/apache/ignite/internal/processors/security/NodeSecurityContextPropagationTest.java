@@ -49,7 +49,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -204,7 +203,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 
-                unwrappedMsg = GridTestUtils.unwrap(customMsg);
+                unwrappedMsg = U.unwrapCustomMessage(customMsg);
             }
 
             if (predicate.test(unwrappedMsg))

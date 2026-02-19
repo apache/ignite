@@ -592,11 +592,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ClusterNode node = notification.getNode();
                 long topVer = notification.getTopVer();
 
-                DiscoveryCustomMessage customData = notification.getCustomMsgData() == null ? null :
-                    notification.getCustomMsgData();
-
-                DiscoveryCustomMessage customMsg = customData instanceof SecurityAwareCustomMessageWrapper ?
-                    ((SecurityAwareCustomMessageWrapper)customData).delegate() : customData;
+                DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(notification.getCustomMsgData() == null ?
+                    null : notification.getCustomMsgData());
 
                 if (skipMessage(notification.type(), customMsg))
                     return;

@@ -67,7 +67,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
@@ -504,8 +503,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         try {
             TcpDiscoveryCustomEventMessage msg;
 
-            DiscoveryCustomMessage customMsg = evt instanceof SecurityAwareCustomMessageWrapper ?
-                ((SecurityAwareCustomMessageWrapper)evt).delegate() : evt;
+            DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
             if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
                 msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,

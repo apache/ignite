@@ -41,7 +41,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -248,7 +247,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
                 DiscoveryNotification notification
             ) {
                 DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                    : GridTestUtils.unwrap(notification.getCustomMsgData());
+                    : U.unwrapCustomMessage(notification.getCustomMsgData());
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator

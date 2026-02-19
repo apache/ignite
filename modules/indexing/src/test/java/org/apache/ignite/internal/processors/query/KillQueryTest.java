@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -194,7 +195,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
-                DiscoveryCustomMessage delegate = GridTestUtils.unwrap(msg);
+                DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
                 if (delegate instanceof DynamicCacheChangeBatch) {
                     try {

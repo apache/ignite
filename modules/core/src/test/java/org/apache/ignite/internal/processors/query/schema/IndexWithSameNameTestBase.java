@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -314,7 +313,7 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
                 try {
                     TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                    DiscoveryCustomMessage discoCustomMsg = GridTestUtils.unwrap(evtMsg.message(marshaller(),
+                    DiscoveryCustomMessage discoCustomMsg = U.unwrapCustomMessage(evtMsg.message(marshaller(),
                         U.gridClassLoader()));
 
                     if (discoCustomMsg instanceof SchemaFinishDiscoveryMessage) {

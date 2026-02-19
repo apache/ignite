@@ -915,7 +915,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
-            DiscoveryCustomMessage msg0 = GridTestUtils.unwrap(msg);
+            DiscoveryCustomMessage msg0 = U.unwrapCustomMessage(msg);
 
             if (blockPred != null && blockPred.apply(msg0)) {
                 blocked.add(msg);

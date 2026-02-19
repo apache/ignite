@@ -80,7 +80,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -1021,8 +1020,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         try {
             TcpDiscoveryCustomEventMessage msg;
 
-            DiscoveryCustomMessage customMsg = evt instanceof SecurityAwareCustomMessageWrapper ?
-                ((SecurityAwareCustomMessageWrapper)evt).delegate() : evt;
+            DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
             if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
                 msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,

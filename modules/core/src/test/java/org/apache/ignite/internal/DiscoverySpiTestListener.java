@@ -30,7 +30,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test callback for discovery SPI.
@@ -126,7 +125,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
 
         synchronized (mux) {
             if (blockCustomEvtCls != null) {
-                DiscoveryCustomMessage msg0 = GridTestUtils.unwrap(msg);
+                DiscoveryCustomMessage msg0 = U.unwrapCustomMessage(msg);
 
                 if (blockCustomEvtCls.contains(msg0.getClass())) {
                     log.info("Block custom message: " + msg0);

@@ -29,8 +29,8 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -49,8 +49,8 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
-                if (GridTestUtils.unwrap(msg) instanceof MetadataUpdateProposedMessage)
-                    metadataUpdateProposedMessages.add(GridTestUtils.unwrap(msg));
+                if (U.unwrapCustomMessage(msg) instanceof MetadataUpdateProposedMessage)
+                    metadataUpdateProposedMessages.add(U.unwrapCustomMessage(msg));
 
                 super.sendCustomEvent(msg);
             }

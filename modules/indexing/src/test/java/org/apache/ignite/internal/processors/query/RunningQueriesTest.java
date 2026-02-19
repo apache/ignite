@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -167,7 +168,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
 
             @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
-                DiscoveryCustomMessage delegate = GridTestUtils.unwrap(msg);
+                DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
                 if (DynamicCacheChangeBatch.class.isAssignableFrom(delegate.getClass())) {
                     ((DynamicCacheChangeBatch)delegate).requests().stream()

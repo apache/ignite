@@ -164,7 +164,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                             DiscoveryCustomMessage custom =
                                 ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
 
-                            DiscoveryCustomMessage delegate = GridTestUtils.unwrap(custom);
+                            DiscoveryCustomMessage delegate = U.unwrapCustomMessage(custom);
 
                             if (delegate instanceof MappingAcceptedMessage) {
                                 MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
@@ -239,7 +239,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                             DiscoveryCustomMessage custom =
                                 ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
 
-                            DiscoveryCustomMessage delegate = GridTestUtils.unwrap(custom);
+                            DiscoveryCustomMessage delegate = U.unwrapCustomMessage(custom);
 
                             if (delegate instanceof MappingProposedMessage) {
                                 MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "mappingItem");

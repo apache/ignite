@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -66,7 +65,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         }
 
         if (clo != null)
-            clo.apply(addr, GridTestUtils.unwrap(custMsg));
+            clo.apply(addr, U.unwrapCustomMessage(custMsg));
     }
 
     /** {@inheritDoc} */
