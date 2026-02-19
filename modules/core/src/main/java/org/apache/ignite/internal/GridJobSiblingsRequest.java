@@ -59,10 +59,24 @@ public class GridJobSiblingsRequest implements Message {
     }
 
     /**
+     * @param sesId New session ID.
+     */
+    public void sessionId(IgniteUuid sesId) {
+        this.sesId = sesId;
+    }
+
+    /**
      * @return Topic ID.
      */
     public long topicId() {
         return topicId;
+    }
+
+    /**
+     * @param topicId New topic ID.
+     */
+    public void topicId(long topicId) {
+        this.topicId = topicId;
     }
 
     /** {@inheritDoc} */

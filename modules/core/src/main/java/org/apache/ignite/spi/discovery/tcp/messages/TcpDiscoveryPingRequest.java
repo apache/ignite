@@ -56,6 +56,13 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage impleme
         return clientNodeId;
     }
 
+    /**
+     * @param clientNodeId New pinged client node ID.
+     */
+    public void clientNodeId(@Nullable UUID clientNodeId) {
+        this.clientNodeId = clientNodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryPingRequest.class, this, "super", super.toString());

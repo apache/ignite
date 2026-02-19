@@ -92,12 +92,33 @@ public class GridDeploymentRequest implements Message {
     }
 
     /**
+     * @return Serialized topic.
+     */
+    public byte[] responseTopicBytes() {
+        return resTopicBytes;
+    }
+
+    /**
+     * @param resTopicBytes Serialized topic.
+     */
+    public void responseTopicBytes(byte[] resTopicBytes) {
+        this.resTopicBytes = resTopicBytes;
+    }
+
+    /**
      * Class name/resource name that is being requested.
      *
      * @return Resource or class name.
      */
     public String resourceName() {
         return rsrcName;
+    }
+
+    /**
+     * @param rsrcName Resource or class name.
+     */
+    public void resourceName(String rsrcName) {
+        this.rsrcName = rsrcName;
     }
 
     /**
@@ -110,12 +131,26 @@ public class GridDeploymentRequest implements Message {
     }
 
     /**
+     * @param ldrId Property class loader ID.
+     */
+    public void classLoaderId(IgniteUuid ldrId) {
+        this.ldrId = ldrId;
+    }
+
+    /**
      * Gets property undeploy.
      *
      * @return Property undeploy.
      */
     public boolean isUndeploy() {
         return isUndeploy;
+    }
+
+    /**
+     * @param isUndeploy Property undeploy.
+     */
+    public void isUndeploy(boolean isUndeploy) {
+        this.isUndeploy = isUndeploy;
     }
 
     /**

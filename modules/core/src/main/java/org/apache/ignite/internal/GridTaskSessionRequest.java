@@ -66,6 +66,20 @@ public class GridTaskSessionRequest implements Message {
     }
 
     /**
+     * @return Changed attributes (serialized).
+     */
+    public byte[] attributesBytes() {
+        return attrsBytes;
+    }
+
+    /**
+     * @param attrsBytes Changed attributes (serialized).
+     */
+    public void attributesBytes(byte[] attrsBytes) {
+        this.attrsBytes = attrsBytes;
+    }
+
+    /**
      * @return Changed attributes.
      */
     public Map<?, ?> attributes() {
@@ -80,10 +94,24 @@ public class GridTaskSessionRequest implements Message {
     }
 
     /**
+     * @param sesId Task session ID.
+     */
+    public void sessionId(IgniteUuid sesId) {
+        this.sesId = sesId;
+    }
+
+    /**
      * @return Job ID.
      */
     public IgniteUuid jobId() {
         return jobId;
+    }
+
+    /**
+     * @param jobId Job ID.
+     */
+    public void jobId(IgniteUuid jobId) {
+        this.jobId = jobId;
     }
 
     /** {@inheritDoc} */

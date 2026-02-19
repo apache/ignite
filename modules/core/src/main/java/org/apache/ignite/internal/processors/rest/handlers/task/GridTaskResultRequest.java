@@ -57,10 +57,26 @@ public class GridTaskResultRequest implements Message {
     }
 
     /**
+     * @param taskId Task ID.
+     */
+    public void taskId(IgniteUuid taskId) {
+        assert taskId != null;
+
+        this.taskId = taskId;
+    }
+
+    /**
      * @return Topic ID.
      */
     public long topicId() {
         return topicId;
+    }
+
+    /**
+     * @param topicId New topic ID.
+     */
+    public void topicId(long topicId) {
+        this.topicId = topicId;
     }
 
     /** {@inheritDoc} */

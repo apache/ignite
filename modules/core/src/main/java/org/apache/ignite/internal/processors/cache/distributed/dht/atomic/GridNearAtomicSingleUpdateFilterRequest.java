@@ -89,6 +89,16 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         this.filter = filter;
     }
 
+    /** */
+    public void filter(CacheEntryPredicate[] filter) {
+        this.filter = filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public CacheEntryPredicate[] filter() {
+        return filter;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);

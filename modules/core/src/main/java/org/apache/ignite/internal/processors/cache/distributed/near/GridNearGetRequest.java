@@ -194,10 +194,24 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
+     * @param futId Future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
+    /**
      * @return Sub ID.
      */
     public IgniteUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @param miniId Sub ID.
+     */
+    public void miniId(IgniteUuid miniId) {
+        this.miniId = miniId;
     }
 
     /**
@@ -209,9 +223,23 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         return taskNameHash;
     }
 
+    /**
+     * @param taskNameHash Task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
+    }
+
+    /**
+     * @param ver Version.
+     */
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
     }
 
     /**
@@ -219,6 +247,48 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     public LinkedHashMap<KeyCacheObject, Boolean> keyMap() {
         return keyMap;
+    }
+
+    /**
+     * @return Keys.
+     */
+    public List<KeyCacheObject> keys() {
+        return keys;
+    }
+
+    /**
+     * @param keys Keys.
+     */
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
+    }
+
+    /**
+     * @return Readers flags.
+     */
+    public List<Boolean> readersFlags() {
+        return readersFlags;
+    }
+
+    /**
+     * @param readersFlags Readers flags.
+     */
+    public void readersFlags(List<Boolean> readersFlags) {
+        this.readersFlags = readersFlags;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /**
@@ -256,6 +326,13 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * @return New TTL to set after entry is created, -1 to leave unchanged.
      */
     public long createTtl() {
@@ -263,10 +340,24 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
+     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public void createTtl(long createTtl) {
+        this.createTtl = createTtl;
+    }
+
+    /**
      * @return New TTL to set after entry is accessed, -1 to leave unchanged.
      */
     public long accessTtl() {
         return accessTtl;
+    }
+
+    /**
+     * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
+     */
+    public void accessTtl(long accessTtl) {
+        this.accessTtl = accessTtl;
     }
 
     /** {@inheritDoc} */
@@ -281,6 +372,13 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     @Nullable public String txLabel() {
         return txLbl;
+    }
+
+    /**
+     * @param txLbl Possible transaction label.
+     */
+    public void txLabel(String txLbl) {
+        this.txLbl = txLbl;
     }
 
     /**

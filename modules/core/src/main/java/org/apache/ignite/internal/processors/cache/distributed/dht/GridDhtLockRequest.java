@@ -179,10 +179,80 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param taskNameHash Task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
+     * @return Invalidate reader flags.
+     */
+    public BitSet invalidateEntries() {
+        return invalidateEntries;
+    }
+
+    /**
+     * @param invalidateEntries Invalidate reader flags.
+     */
+    public void invalidateEntries(BitSet invalidateEntries) {
+        this.invalidateEntries = invalidateEntries;
+    }
+
+    /**
+     * @return Array of keys from {@link #owned}. Used during marshalling and unmarshalling.
+     */
+    public KeyCacheObject[] ownedKeys() {
+        return ownedKeys;
+    }
+
+    /**
+     * @param ownedKeys Array of keys from {@link #owned}. Used during marshalling and unmarshalling.
+     */
+    public void ownedKeys(KeyCacheObject[] ownedKeys) {
+        this.ownedKeys = ownedKeys;
+    }
+
+    /**
+     * @return Array of values from {@link #owned}. Used during marshalling and unmarshalling.
+     */
+    public GridCacheVersion[] ownedValues() {
+        return ownedValues;
+    }
+
+    /**
+     * @param ownedValues Array of values from {@link #owned}. Used during marshalling and unmarshalling.
+     */
+    public void ownedValues(GridCacheVersion[] ownedValues) {
+        this.ownedValues = ownedValues;
+    }
+
+    /**
+     * @return Indexes of keys needed to be preloaded.
+     */
+    public BitSet preloadKeys() {
+        return preloadKeys;
+    }
+
+    /**
+     * @param preloadKeys Indexes of keys needed to be preloaded.
+     */
+    public void preloadKeys(BitSet preloadKeys) {
+        this.preloadKeys = preloadKeys;
     }
 
     /**
@@ -246,6 +316,13 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param miniId Mini ID.
+     */
+    public void miniId(IgniteUuid miniId) {
+        this.miniId = miniId;
+    }
+
+    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
@@ -253,10 +330,24 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param accessTtl TTL for read operation.
+     */
+    public void accessTtl(long accessTtl) {
+        this.accessTtl = accessTtl;
+    }
+
+    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
+    }
+
+    /**
+     * @param txLbl Transaction label.
+     */
+    public void txLabel(String txLbl) {
+        this.txLbl = txLbl;
     }
 
     /** {@inheritDoc} */

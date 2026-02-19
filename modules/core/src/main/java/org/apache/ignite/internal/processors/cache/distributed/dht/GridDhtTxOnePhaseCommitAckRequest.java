@@ -55,6 +55,13 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
         return vers;
     }
 
+    /**
+     * @param vers Lock or transaction versions.
+     */
+    public void versions(Collection<GridCacheVersion> vers) {
+        this.vers = vers;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxOnePhaseCommitAckRequest.class, this, super.toString());

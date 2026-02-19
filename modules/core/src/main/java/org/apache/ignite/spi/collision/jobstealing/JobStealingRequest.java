@@ -50,6 +50,13 @@ public class JobStealingRequest implements Message {
         return delta;
     }
 
+    /**
+     * @param delta New delta.
+     */
+    public void delta(int delta) {
+        this.delta = delta;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return 82;

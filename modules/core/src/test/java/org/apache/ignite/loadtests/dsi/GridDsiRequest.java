@@ -18,6 +18,7 @@
 package org.apache.ignite.loadtests.dsi;
 
 import java.io.Serializable;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /**
  *
@@ -25,6 +26,13 @@ import java.io.Serializable;
 public class GridDsiRequest implements Serializable {
     /** */
     private Long id;
+
+    /** */
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private long msgId;
+
+    /** */
+    private long txId;
 
     /**
      * @param id ID.
@@ -37,6 +45,7 @@ public class GridDsiRequest implements Serializable {
      * @param msgId Message ID.
      */
     public void setMessageId(long msgId) {
+        this.msgId = msgId;
     }
 
     /**
@@ -55,12 +64,17 @@ public class GridDsiRequest implements Serializable {
         /** */
         private Long key;
 
+        /** */
+        @AffinityKeyMapped
+        private String terminalId;
+
         /**
          * @param key Key.
          * @param terminalId Terminal ID.
          */
         RequestKey(long key, String terminalId) {
             this.key = key;
+            this.terminalId = terminalId;
         }
 
         /** {@inheritDoc} */

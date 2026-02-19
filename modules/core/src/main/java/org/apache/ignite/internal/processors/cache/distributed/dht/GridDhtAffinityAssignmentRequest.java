@@ -70,6 +70,20 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     }
 
     /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return {@code True} if need send in response cache partitions state.
      */
     public boolean sendPartitionsState() {
@@ -81,6 +95,13 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
      */
     public long futureId() {
         return futId;
+    }
+
+    /**
+     * @param futId Future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
     }
 
     /** {@inheritDoc} */
@@ -98,6 +119,13 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @param topVer Requested topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

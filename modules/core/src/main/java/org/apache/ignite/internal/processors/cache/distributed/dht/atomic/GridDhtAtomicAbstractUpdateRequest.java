@@ -143,6 +143,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
+     * @param topVer New topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * @param nearNodeId Near node ID.
      * @param nearFutId Future ID on near node.
      */
@@ -174,6 +181,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return nearNodeId;
     }
 
+    /**
+     * @param nearNodeId New near node id.
+     */
+    public void nearNodeId(UUID nearNodeId) {
+        this.nearNodeId = nearNodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -191,6 +205,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public final byte flags() {
         return flags;
+    }
+
+    /**
+     * @param flags New additional flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /**
@@ -299,10 +320,24 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
+     * @param taskNameHash New task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
+    /**
      * @return Future ID on primary node.
      */
     public final long futureId() {
         return futId;
+    }
+
+    /**
+     * @param futId New future ID on primary node.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
     }
 
     /**
@@ -313,10 +348,24 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
+     * @param nearFutId New near future id.
+     */
+    public void nearFutureId(long nearFutId) {
+        this.nearFutId = nearFutId;
+    }
+
+    /**
      * @return Write version.
      */
     public final GridCacheVersion writeVersion() {
         return writeVer;
+    }
+
+    /**
+     * @param writeVer New write version.
+     */
+    public void writeVersion(GridCacheVersion writeVer) {
+        this.writeVer = writeVer;
     }
 
     /**

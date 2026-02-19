@@ -229,6 +229,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param taskNameHash Task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
+    /**
      * @return Sync commit flag.
      */
     public boolean syncCommit() {
@@ -271,6 +278,20 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @return Array of mapped DHT versions for this entry.
+     */
+    public GridCacheVersion[] dhtVersions() {
+        return dhtVers;
+    }
+
+    /**
+     * @param dhtVers Array of mapped DHT versions for this entry.
+     */
+    public void dhtVersions(GridCacheVersion[] dhtVers) {
+        this.dhtVers = dhtVers;
+    }
+
+    /**
      * @param idx Index of the key.
      * @return DHT version for key at given index.
      */
@@ -286,6 +307,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public void createTtl(long createTtl) {
+        this.createTtl = createTtl;
+    }
+
+    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
@@ -293,10 +321,38 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param accessTtl TTL for read operation.
+     */
+    public void accessTtl(long accessTtl) {
+        this.accessTtl = accessTtl;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte nearFlags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void nearFlags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
+    }
+
+    /**
+     * @param txLbl Transaction label.
+     */
+    public void txLabel(String txLbl) {
+        this.txLbl = txLbl;
     }
 
     /** {@inheritDoc} */

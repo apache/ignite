@@ -75,10 +75,24 @@ public class GridQueryNextPageRequest implements Message {
     }
 
     /**
+     * @param flags New flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return Query request ID.
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @param qryReqId New query request ID.
+     */
+    public void queryRequestId(long qryReqId) {
+        this.qryReqId = qryReqId;
     }
 
     /**
@@ -88,9 +102,23 @@ public class GridQueryNextPageRequest implements Message {
         return qry;
     }
 
+    /**
+     * @param qry New query.
+     */
+    public void query(int qry) {
+        this.qry = qry;
+    }
+
     /** @return Index segment ID */
     public int segmentId() {
         return segmentId;
+    }
+
+    /**
+     * @param segmentId New index segment ID.
+     */
+    public void segmentId(int segmentId) {
+        this.segmentId = segmentId;
     }
 
     /**
@@ -98,6 +126,13 @@ public class GridQueryNextPageRequest implements Message {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @param pageSize New page size.
+     */
+    public void pageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
     /** {@inheritDoc} */

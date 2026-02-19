@@ -251,6 +251,13 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
+     * @param plc IO policy.
+     */
+    public void policy(byte plc) {
+        this.plc = plc;
+    }
+
+    /**
      * Adds version to be verified on remote node.
      *
      * @param key Key for which version is verified.
@@ -278,10 +285,24 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
+     * @param threadId Thread ID.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    /**
      * @return Commit version.
      */
     public GridCacheVersion writeVersion() {
         return writeVer;
+    }
+
+    /**
+     * @param writeVer Commit version.
+     */
+    public void writeVersion(GridCacheVersion writeVer) {
+        this.writeVer = writeVer;
     }
 
     /**
@@ -299,6 +320,13 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
+     * @param timeout Transaction timeout.
+     */
+    public void timeout(long timeout) {
+        this.timeout = timeout;
+    }
+
+    /**
      * @return Concurrency.
      */
     public TransactionConcurrency concurrency() {
@@ -306,10 +334,24 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
+     * @param concurrency Concurrency.
+     */
+    public void concurrency(TransactionConcurrency concurrency) {
+        this.concurrency = concurrency;
+    }
+
+    /**
      * @return Isolation level.
      */
     public TransactionIsolation isolation() {
         return isolation;
+    }
+
+    /**
+     * @param isolation Isolation level.
+     */
+    public void isolation(TransactionIsolation isolation) {
+        this.isolation = isolation;
     }
 
     /**
@@ -341,10 +383,73 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
+     * @return DHT version keys.
+     */
+    public Collection<IgniteTxKey> dhtVersionKeys() {
+        return dhtVerKeys;
+    }
+
+    /**
+     * @param dhtVerKeys DHT version keys.
+     */
+    public void dhtVersionKeys(Collection<IgniteTxKey> dhtVerKeys) {
+        this.dhtVerKeys = dhtVerKeys;
+    }
+
+    /**
+     * @return DHT version values.
+     */
+    public Collection<GridCacheVersion> dhtVersionValues() {
+        return dhtVerVals;
+    }
+
+    /**
+     * @param dhtVerVals DHT version values.
+     */
+    public void dhtVersionValues(Collection<GridCacheVersion> dhtVerVals) {
+        this.dhtVerVals = dhtVerVals;
+    }
+
+    /**
      * @return Expected transaction size.
      */
     public int txSize() {
         return txSize;
+    }
+
+    /**
+     * @param txSize Expected transaction size.
+     */
+    public void txSize(int txSize) {
+        this.txSize = txSize;
+    }
+
+    /**
+     * @return Tx nodes direct marshallable message.
+     */
+    public Map<UUID, UUIDCollectionMessage> txNodesMessages() {
+        return txNodesMsg;
+    }
+
+    /**
+     * @param txNodesMsg Tx nodes direct marshallable message.
+     */
+    public void txNodesMessages(Map<UUID, UUIDCollectionMessage> txNodesMsg) {
+        this.txNodesMsg = txNodesMsg;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /**
