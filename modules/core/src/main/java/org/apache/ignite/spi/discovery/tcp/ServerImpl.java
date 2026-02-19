@@ -2838,7 +2838,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         private Socket sock;
 
         /** */
-        private TcpDiscoveryMessageMarshaller msgMarsh = new TcpDiscoveryMessageMarshaller(spi);
+        // This serializer is only used to serialize messages sent to clients as it is a special case in RingMessageWorker workflow.
+        // In general both serialization and deserialization of messages should be done using TcpDiscoveryIoSession,
+        // but there could be situations when session is not available but we still have to send messages to clients.
+        // One such example is a single server with one or more clients connected to it.
+        // To handle this case we use a TcpDiscoveryMessageSerializer with some copy-pasted code from TcpDiscoveryIoSession which
+        // can be created completely independently of TcpDiscoveryIoSession.
+        private final TcpDiscoveryMessageSerializer clientMsgSer = new TcpDiscoveryMessageSerializer(spi);
 
         /** IO session. */
         private TcpDiscoveryIoSession ses;
@@ -3254,7 +3260,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!(msg instanceof TcpDiscoveryNodeAddedMessage)) {
                     try {
-                        msgBytes = msgMarsh.marshal(msg);
+                        msgBytes = clientMsgSer.serializeMessage(msg);
                     }
                     catch (IgniteCheckedException | IOException e) {
                         U.error(log, "Failed to serialize message: " + msg, e);
@@ -3400,7 +3406,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             try {
                                 sock = spi.openSocket(addr, timeoutHelper);
 
-                                ses = createSession(sock, msgMarsh);
+                                ses = createSession(sock);
 
                                 openSock = true;
 
@@ -7613,8 +7619,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Node ID. */
         private final UUID clientNodeId;
 
+        // Code sending and receiving messages to/from client nodes is a special case in ServerImpl
+        // as it is split into two parts.
+        // One part is ClientMessageWorker which is only sending messages to clients and isn't handling responses.
+        // And the part actually reading messages from clients is implemented in SocketReader.
+        // Because of that we don't need a full-fledged TcpDiscoveryIoSession here and can extract only "message writing"
+        // part of it.
+        // At the same time we want to keep both reading and writing logic in TcpDiscoveryIoSession and have to copy-paste some code
+        // from it to new class - TcpDiscoveryMessageSerializer.
         /** */
-        private final TcpDiscoveryMessageMarshaller msgMarsh;
+        private final TcpDiscoveryMessageSerializer clientMsgSer;
 
         /** Socket. */
         private final Socket sock;
@@ -7644,7 +7658,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.sock = sock;
             this.clientNodeId = clientNodeId;
 
-            msgMarsh = new TcpDiscoveryMessageMarshaller(spi);
+            clientMsgSer = new TcpDiscoveryMessageSerializer(spi);
 
             lastMetricsUpdateMsgTimeNanos = System.nanoTime();
         }
@@ -7774,7 +7788,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void writeToSocket(T2<TcpDiscoveryAbstractMessage, byte[]> msgT, long timeout)
             throws IgniteCheckedException, IOException {
-            byte[] msgBytes = msgT.get2() == null ? msgMarsh.marshal(msgT.get1()) : msgT.get2();
+            byte[] msgBytes = msgT.get2() == null ? clientMsgSer.serializeMessage(msgT.get1()) : msgT.get2();
 
             spi.writeToSocket(sock, msgT.get1(), msgBytes, timeout);
         }

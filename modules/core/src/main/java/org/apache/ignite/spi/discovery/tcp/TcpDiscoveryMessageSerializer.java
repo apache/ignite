@@ -28,9 +28,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 
 /**
- * Class is responsible for marshalling discovery messages using RU-ready {@link MessageSerializer} mechanism.
+ * Class is responsible for serializing discovery messages using RU-ready {@link MessageSerializer} mechanism.
+ * <p>
+ * It is used in a special case: when server wants to send discovery messages to clients, it may not have a {@link TcpDiscoveryIoSession}
+ * to serialize the messages.
+ * This class enables server to serialize discovery messages anyway, diplicating serialization code from {@link TcpDiscoveryIoSession}.
  */
-public class TcpDiscoveryMessageMarshaller {
+public class TcpDiscoveryMessageSerializer {
     /** Size for an intermediate buffer for serializing discovery messages. */
     static final int MSG_BUFFER_SIZE = 100;
 
@@ -46,7 +50,7 @@ public class TcpDiscoveryMessageMarshaller {
     /**
      * @param spi Discovery SPI instance.
      */
-    public TcpDiscoveryMessageMarshaller(TcpDiscoverySpi spi) {
+    public TcpDiscoveryMessageSerializer(TcpDiscoverySpi spi) {
         this.spi = spi;
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
@@ -62,12 +66,12 @@ public class TcpDiscoveryMessageMarshaller {
      * @throws IgniteCheckedException If serialization fails.
      * @throws IOException If serialization fails.
      */
-    byte[] marshal(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         if (!(msg instanceof Message))
             return U.marshal(spi.marshaller(), msg);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            marshal((Message)msg, out);
+            serializeMessage((Message)msg, out);
 
             return out.toByteArray();
         }
@@ -81,7 +85,7 @@ public class TcpDiscoveryMessageMarshaller {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    void marshal(Message m, OutputStream out) throws IOException {
+    void serializeMessage(Message m, OutputStream out) throws IOException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();
