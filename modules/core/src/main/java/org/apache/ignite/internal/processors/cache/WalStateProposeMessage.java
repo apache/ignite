@@ -62,6 +62,13 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     }
 
     /**
+     * @return Node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
      * @return Caches.
      */
     public Map<String, IgniteUuid> caches() {

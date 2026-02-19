@@ -56,6 +56,13 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
         return errMsg;
     }
 
+    /**
+     * @param errMsg Response error message.
+     */
+    public void errorMessage(String errMsg) {
+        this.errMsg = errMsg;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;

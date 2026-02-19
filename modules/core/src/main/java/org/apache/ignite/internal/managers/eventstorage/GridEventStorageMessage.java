@@ -143,6 +143,34 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
+     * @return Serialized response topic.
+     */
+    public byte[] responseTopicBytes() {
+        return resTopicBytes;
+    }
+
+    /**
+     * @param resTopicBytes Serialized response topic.
+     */
+    public void responseTopicBytes(byte[] resTopicBytes) {
+        this.resTopicBytes = resTopicBytes;
+    }
+
+    /**
+     * @return Filter.
+     */
+    public byte[] filterBytes() {
+        return filterBytes;
+    }
+
+    /**
+     * @param filterBytes Filter bytes.
+     */
+    public void filterBytes(byte[] filterBytes) {
+        this.filterBytes = filterBytes;
+    }
+
+    /**
      * @return Filter.
      */
     public IgnitePredicate<?> filter() {
@@ -157,10 +185,31 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
+     * @return Serialized events.
+     */
+    public byte[] eventsBytes() {
+        return evtsBytes;
+    }
+
+    /**
+     * @param evtsBytes Serialized events.
+     */
+    public void eventsBytes(byte[] evtsBytes) {
+        this.evtsBytes = evtsBytes;
+    }
+
+    /**
      * @return the Class loader ID.
      */
     public IgniteUuid classLoaderId() {
         return clsLdrId;
+    }
+
+    /**
+     * @param clsLdrId the Class loader ID.
+     */
+    public void classLoaderId(IgniteUuid clsLdrId) {
+        this.clsLdrId = clsLdrId;
     }
 
     /**
@@ -171,6 +220,13 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
+     * @param depMode Deployment mode.
+     */
+    public void deploymentMode(DeploymentMode depMode) {
+        this.depMode = depMode;
+    }
+
+    /**
      * @return Filter class name.
      */
     public String filterClassName() {
@@ -178,10 +234,24 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
+     * @param filterClsName Filter class name.
+     */
+    public void filterClassName(String filterClsName) {
+        this.filterClsName = filterClsName;
+    }
+
+    /**
      * @return User version.
      */
     public String userVersion() {
         return userVer;
+    }
+
+    /**
+     * @param userVer User version.
+     */
+    public void userVersion(String userVer) {
+        this.userVer = userVer;
     }
 
     /**
@@ -203,6 +273,20 @@ public class GridEventStorageMessage implements Message {
      */
     @Nullable Throwable exception() {
         return ErrorMessage.error(errMsg);
+    }
+
+    /**
+     * @return Error message.
+     */
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg Error message.
+     */
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**

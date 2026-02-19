@@ -40,6 +40,13 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
         return grpId;
     }
 
+    /**
+     * @param grpId Cache group ID.
+     */
+    public void groupId(int grpId) {
+        this.grpId = grpId;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).

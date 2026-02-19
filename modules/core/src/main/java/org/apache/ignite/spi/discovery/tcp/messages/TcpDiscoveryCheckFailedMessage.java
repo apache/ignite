@@ -56,6 +56,13 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
         return err;
     }
 
+    /**
+     * @param err message from coordinator.
+     */
+    public void error(String err) {
+        this.err = err;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return 0;

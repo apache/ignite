@@ -99,12 +99,39 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
+     * Gets creator node addresses.
+     *
+     * @return Creator node addresses.
+     */
+    public @Nullable Collection<InetSocketAddressMessage> creatorNodeAddressesMessages() {
+        return creatorNodeAddrsMsgs;
+    }
+
+    /**
+     * Sets creator node addresses.
+     *
+     * @param creatorNodeAddrsMsgs Creator node addresses.
+     */
+    public void creatorNodeAddressesMessages(@Nullable Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs) {
+        this.creatorNodeAddrsMsgs = creatorNodeAddrsMsgs;
+    }
+
+    /**
      * Gets failed node id.
      *
      * @return Failed node id.
      */
     public @Nullable UUID failedNodeId() {
         return failedNodeId;
+    }
+
+    /**
+     * Sets failed node id.
+     *
+     * @param failedNodeId Failed node id.
+     */
+    public void failedNodeId(@Nullable UUID failedNodeId) {
+        this.failedNodeId = failedNodeId;
     }
 
     /**

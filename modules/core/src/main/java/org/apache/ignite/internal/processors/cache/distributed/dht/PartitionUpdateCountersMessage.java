@@ -84,6 +84,13 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
+     * @param cacheId New cache id.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /**
      * @return Size.
      */
     public int size() {

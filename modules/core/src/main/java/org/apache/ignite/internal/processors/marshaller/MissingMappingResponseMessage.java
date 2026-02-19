@@ -67,6 +67,11 @@ public class MissingMappingResponseMessage implements Message {
         return platformId;
     }
 
+    /** */
+    public void platformId(byte platformId) {
+        this.platformId = platformId;
+    }
+
     /**
      *
      */
@@ -74,11 +79,21 @@ public class MissingMappingResponseMessage implements Message {
         return typeId;
     }
 
+    /** */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
+    }
+
     /**
      *
      */
     public String className() {
         return clsName;
+    }
+
+    /** */
+    public void className(String clsName) {
+        this.clsName = clsName;
     }
 
     /** {@inheritDoc} */

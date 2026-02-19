@@ -52,6 +52,13 @@ public class UUIDCollectionMessage implements Message {
         return uuids;
     }
 
+    /**
+     * @param uuids The collection of UUIDs that was wrapped.
+     */
+    public void uuids(Collection<UUID> uuids) {
+        this.uuids = uuids;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return 115;

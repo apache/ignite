@@ -58,6 +58,13 @@ public class NodeIdMessage implements Message {
         return nodeId;
     }
 
+    /**
+     * @param nodeId Node ID bytes.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return TcpCommunicationSpi.NODE_ID_MSG_TYPE;

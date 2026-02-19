@@ -63,6 +63,21 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
         return targetNodeId;
     }
 
+    /** @param targetNodeId Node for which authentication was failed. */
+    public void targetNodeId(UUID targetNodeId) {
+        this.targetNodeId = targetNodeId;
+    }
+
+    /** @return Creator address message. */
+    public InetAddressMessage creatorAddressMessage() {
+        return creatorAddrMsg;
+    }
+
+    /** @param addr Creator address message. */
+    public void creatorAddressMessage(InetAddressMessage addr) {
+        this.creatorAddrMsg = addr;
+    }
+
     /** @return Creator address. */
     public InetAddress creatorAddress() {
         return creatorAddrMsg.address();

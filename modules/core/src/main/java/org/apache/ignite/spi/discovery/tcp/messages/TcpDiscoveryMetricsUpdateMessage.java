@@ -182,9 +182,19 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         return serversFullMetricsMsgs;
     }
 
+    /** @param serversFullMetricsMsgs Map of server full metrics messages. */
+    public void serversFullMetricsMessages(Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs) {
+        this.serversFullMetricsMsgs = serversFullMetricsMsgs;
+    }
+
     /** @return Map of nodes metrics messages. */
     public @Nullable Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMessages() {
         return connectedClientsMetricsMsgs;
+    }
+
+    /** @param connectedClientsMetricsMsgs Map of nodes metrics messages. */
+    public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs) {
+        this.connectedClientsMetricsMsgs = connectedClientsMetricsMsgs;
     }
 
     /**
@@ -194,6 +204,15 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
      */
     public @Nullable Set<UUID> clientNodeIds() {
         return clientNodeIds;
+    }
+
+    /**
+     * Sets client node IDs.
+     *
+     * @param clientNodeIds Client node IDs.
+     */
+    public void clientNodeIds(@Nullable Set<UUID> clientNodeIds) {
+        this.clientNodeIds = clientNodeIds;
     }
 
     /**

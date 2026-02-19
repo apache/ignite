@@ -60,6 +60,13 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
         return nodeId;
     }
 
+    /**
+     * @param nodeId Node with duplicate ID.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());

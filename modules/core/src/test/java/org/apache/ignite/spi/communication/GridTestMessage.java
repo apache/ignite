@@ -87,6 +87,13 @@ public class GridTestMessage implements Message {
         this.payload = payload;
     }
 
+    /**
+     * @return Network payload.
+     */
+    public byte[] payload() {
+        return payload;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);

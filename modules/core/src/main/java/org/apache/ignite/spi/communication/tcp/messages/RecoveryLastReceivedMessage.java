@@ -74,6 +74,13 @@ public class RecoveryLastReceivedMessage implements Message {
         return rcvCnt;
     }
 
+    /**
+     * @param rcvCnt Number of received messages.
+     */
+    public void received(long rcvCnt) {
+        this.rcvCnt = rcvCnt;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE;

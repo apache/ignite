@@ -76,10 +76,24 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
+     * @param opId New operation ID.
+     */
+    public void operationId(UUID opId) {
+        this.opId = opId;
+    }
+
+    /**
      * @return Affinity node flag.
      */
     public boolean affNode() {
         return affNode;
+    }
+
+    /**
+     * @param affNode New affinity node flag.
+     */
+    public void affNode(boolean affNode) {
+        this.affNode = affNode;
     }
 
     /**
@@ -90,10 +104,24 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
+     * @param changed New operation result.
+     */
+    public void changed(boolean changed) {
+        this.changed = changed;
+    }
+
+    /**
      * @return Error message.
      */
     @Nullable public String errorMessage() {
         return errMsg;
+    }
+
+    /**
+     * @param errMsg New error message.
+     */
+    public void errorMessage(String errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**

@@ -52,6 +52,11 @@ public class InetSocketAddressMessage extends InetAddressMessage {
         return port;
     }
 
+    /** @param port Port. */
+    public void port(int port) {
+        this.port = port;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return -101;

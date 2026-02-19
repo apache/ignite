@@ -55,11 +55,21 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
         return qryId;
     }
 
+    /** */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
+    }
+
     /**
      * @return Fragment ID.
      */
     public long fragmentId() {
         return fragmentId;
+    }
+
+    /** */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
     }
 
     /** {@inheritDoc} */

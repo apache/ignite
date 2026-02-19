@@ -56,6 +56,13 @@ public class InboxCloseMessage implements CalciteMessage {
     }
 
     /**
+     * @param queryId New query ID.
+     */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
+    }
+
+    /**
      * @return Fragment ID.
      */
     public long fragmentId() {
@@ -63,10 +70,24 @@ public class InboxCloseMessage implements CalciteMessage {
     }
 
     /**
+     * @param fragmentId New fragment ID.
+     */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
+    }
+
+    /**
      * @return Exchange ID.
      */
     public long exchangeId() {
         return exchangeId;
+    }
+
+    /**
+     * @param exchangeId New exchange ID.
+     */
+    public void exchangeId(long exchangeId) {
+        this.exchangeId = exchangeId;
     }
 
     /** {@inheritDoc} */

@@ -68,8 +68,18 @@ public class MissingMappingRequestMessage implements Message {
     }
 
     /** */
+    public void platformId(byte platformId) {
+        this.platformId = platformId;
+    }
+
+    /** */
     public int typeId() {
         return typeId;
+    }
+
+    /** */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */

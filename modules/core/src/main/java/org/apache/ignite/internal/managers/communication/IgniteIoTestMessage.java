@@ -209,6 +209,13 @@ public class IgniteIoTestMessage implements Message {
     }
 
     /**
+     * @return Response process timestamp.
+     */
+    public long responseProcessTs() {
+        return resProcTs;
+    }
+
+    /**
      * @return Request send timestamp (millis).
      */
     public long requestSendTsMillis() {
@@ -220,6 +227,13 @@ public class IgniteIoTestMessage implements Message {
      */
     public long requestReceivedTsMillis() {
         return reqRcvTsMillis;
+    }
+
+    /**
+     * @return Response send timestamp (millis).
+     */
+    public long responseSendTsMillis() {
+        return resSndTsMillis;
     }
 
     /**

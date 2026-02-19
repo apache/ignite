@@ -61,6 +61,13 @@ public class MetadataRequestMessage implements Message {
         return typeId;
     }
 
+    /**
+     * @param typeId Type ID.
+     */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MetadataRequestMessage.class, this);

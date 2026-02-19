@@ -54,6 +54,13 @@ abstract class AbstractSnapshotMessage implements Message {
         return id;
     }
 
+    /**
+     * @param id Unique message ID.
+     */
+    public void id(String id) {
+        this.id = id;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AbstractSnapshotMessage.class, this);

@@ -91,10 +91,24 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
     }
 
     /**
+     * @param failedNodeId ID of the failed node.
+     */
+    public void failedNodeId(UUID failedNodeId) {
+        this.failedNodeId = failedNodeId;
+    }
+
+    /**
      * @return Internal order of the failed node.
      */
     public long internalOrder() {
         return order;
+    }
+
+    /**
+     * @param order Internal order of the failed node.
+     */
+    public void internalOrder(long order) {
+        this.order = order;
     }
 
     /** {@inheritDoc} */
