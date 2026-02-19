@@ -188,6 +188,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 19;
+        return 18;
     }
 }
