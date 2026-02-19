@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.Extension;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> Type of the local processing result.
  */
-public interface SnapshotHandler<T> extends Extension {
+public interface SnapshotHandler<T extends Message> extends Extension {
     /** Snapshot handler type. */
     public SnapshotHandlerType type();
 

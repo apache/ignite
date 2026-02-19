@@ -31,10 +31,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -156,7 +155,7 @@ public class SnapshotChecker {
      *
      * @see IgniteSnapshotManager#handlers()
      */
-    public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
+    public CompletableFuture<Map<String, SnapshotHandlerResult<Message>>> invokeCustomHandlers(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
@@ -170,7 +169,7 @@ public class SnapshotChecker {
     }
 
     /** Launches local partitions checking. */
-    public CompletableFuture<Map<PartitionKey, PartitionHashRecord>> checkPartitions(
+    public CompletableFuture<SnapshotPartitionsVerifyHandlerResponse> checkPartitions(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,

@@ -18,10 +18,23 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.codegen.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.codegen.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.codegen.DiscoveryDataPacketSerializer;
+import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
+import org.apache.ignite.internal.codegen.FullMessageSerializer;
+import org.apache.ignite.internal.codegen.IncrementalSnapshotVerifyResultSerializer;
 import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeSpecificDataSerializer;
+import org.apache.ignite.internal.codegen.SnapshotCheckHandlersNodeResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotCheckHandlersResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotCheckPartitionHashesResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotCheckResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotHandlerResultSerializer;
+import org.apache.ignite.internal.codegen.SnapshotMetadataResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotOperationResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotPartitionsVerifyHandlerResponseSerializer;
+import org.apache.ignite.internal.codegen.SnapshotRestorePrepareResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryAuthFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCacheMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
@@ -48,7 +61,20 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryStatusCheckMessageSerializer;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestorePrepareResponse;
+import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -95,6 +121,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
 
         // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
@@ -120,8 +147,21 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)20, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
         factory.register((short)21, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
+        factory.register((short)22, FullMessage::new, new FullMessageSerializer());
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
+
+        factory.register((short)517, SnapshotOperationResponse::new, new SnapshotOperationResponseSerializer());
+        factory.register((short)518, SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer());
+        factory.register((short)519, DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
+        factory.register((short)520, SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
+        factory.register((short)521, IncrementalSnapshotVerifyResult::new, new IncrementalSnapshotVerifyResultSerializer());
+        factory.register((short)522, SnapshotRestorePrepareResponse::new, new SnapshotRestorePrepareResponseSerializer());
+        factory.register((short)523, SnapshotMetadataResponse::new, new SnapshotMetadataResponseSerializer());
+        factory.register((short)524, SnapshotCheckPartitionHashesResponse::new, new SnapshotCheckPartitionHashesResponseSerializer());
+        factory.register((short)525, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
+        factory.register((short)526, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
+        factory.register((short)527, SnapshotPartitionsVerifyHandlerResponse::new, new SnapshotPartitionsVerifyHandlerResponseSerializer());
     }
 }

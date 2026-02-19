@@ -24,14 +24,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
 /**
  * A snapshot haldler that monitors and warns of inconsistent by nature updates from DataStreamer which can issue
  * data inconsistency in snapshot.
  */
-public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
+public class DataStreamerUpdatesHandler implements SnapshotHandler<DataStreamerUpdatesHandlerResult> {
     /** */
     public static final String WRN_MSG = "DataStreamer with property 'allowOverwrite' set to `false` was working " +
         "during the snapshot creation. Such streaming updates are inconsistent by nature and should be successfully " +
@@ -44,14 +43,14 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean invoke(SnapshotHandlerContext ctx) {
-        return ctx.streamerWarning();
+    @Override public DataStreamerUpdatesHandlerResult invoke(SnapshotHandlerContext ctx) {
+        return new DataStreamerUpdatesHandlerResult(ctx.streamerWarning());
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name, Map<UUID, SnapshotHandlerResult<Boolean>> results)
+    @Override public void complete(String name, Map<UUID, SnapshotHandlerResult<DataStreamerUpdatesHandlerResult>> results)
         throws SnapshotWarningException {
-        Collection<UUID> nodes = F.viewReadOnly(results.entrySet(), Entry::getKey, e -> TRUE.equals(e.getValue().data()));
+        Collection<UUID> nodes = F.viewReadOnly(results.entrySet(), Entry::getKey, e -> e.getValue().data().streamerWarning());
 
         if (!F.isEmpty(nodes)) {
             throw new SnapshotWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +

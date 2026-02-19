@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -75,7 +76,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
     /** Rotate performance statistics process. */
-    private DistributedProcess<Serializable, Serializable> rotateProc;
+    private DistributedProcess<Serializable, Message> rotateProc;
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {

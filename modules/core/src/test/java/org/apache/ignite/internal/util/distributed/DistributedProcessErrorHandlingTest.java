@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,7 +83,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
                 req -> runAsync(() -> {
                     failOnNode(ign);  // Fails processing request in a spawned thread.
 
-                    return 0;
+                    return null;
                 }),
                 (id, res, err) -> {
                     if (failClient)
@@ -107,7 +106,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
                 req -> {
                     failOnNode(ign);  // Fails processing request in the discovery thread.
 
-                    return new GridFinishedFuture<>(0);
+                    return new GridFinishedFuture<>();
                 },
                 (id, res, err) -> {
                     if (failClient)
@@ -127,7 +126,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     public void testFinishFailureHandled() throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
-                req -> new GridFinishedFuture<>(0),
+                req -> new GridFinishedFuture<>(),
                 (uuid, res, err) -> {
                     assertEquals(SRV_NODES, res.values().size());
                     latch.countDown();
@@ -138,9 +137,9 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
 
     /** */
     private void checkDistributedProcess(
-        BiFunction<IgniteEx, CountDownLatch, DistributedProcess<Integer, Integer>> processFactory
+        BiFunction<IgniteEx, CountDownLatch, DistributedProcess<Integer, Message>> processFactory
     ) throws Exception {
-        DistributedProcess<Integer, Integer> proc = null;
+        DistributedProcess<Integer, Message> proc = null;
 
         CountDownLatch latch = new CountDownLatch(SRV_NODES + 1);
 

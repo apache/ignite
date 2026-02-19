@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
@@ -177,7 +176,7 @@ public class SnapshotCheckProcess {
         for (Map.Entry<UUID, SnapshotCheckResponse> resEntry : results.entrySet()) {
             UUID nodeId = resEntry.getKey();
 
-            SnapshotCheckResponse incResp = resEntry.getValue();
+            SnapshotCheckResponse<IncrementalSnapshotVerifyResult> incResp = resEntry.getValue();
 
             if (incResp == null || !requiredNodes.contains(nodeId))
                 continue;
@@ -210,7 +209,7 @@ public class SnapshotCheckProcess {
             Map<UUID, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>(results.size(), 1.0f);
 
             for (Map.Entry<UUID, SnapshotCheckResponse> respEntry : results.entrySet()) {
-                SnapshotCheckResponse nodeResp = respEntry.getValue();
+                SnapshotCheckResponse<SnapshotCheckHandlersResponse> nodeResp = respEntry.getValue();
 
                 if (nodeResp == null)
                     continue;
@@ -220,7 +219,7 @@ public class SnapshotCheckProcess {
 
                 UUID nodeId = respEntry.getKey();
 
-                Map<String, Map<String, SnapshotHandlerResult<Object>>> cstHndRes = nodeResp.result();
+                Map<String, Map<String, SnapshotHandlerResult<Message>>> cstHndRes = nodeResp.result().handlerResults();
 
                 cstHndRes.forEach((consId, respPerConsIdMap) -> {
                     // Reduced map of the handlers results per snapshot part's consistent id for certain node.
@@ -280,7 +279,7 @@ public class SnapshotCheckProcess {
                 bldr.exceptions(errors0);
 
             for (Map.Entry<UUID, SnapshotCheckResponse> respEntry : results.entrySet()) {
-                SnapshotCheckResponse resp = respEntry.getValue();
+                SnapshotCheckResponse<SnapshotCheckPartitionHashesResponse> resp = respEntry.getValue();
 
                 if (resp == null)
                     continue;
@@ -291,7 +290,7 @@ public class SnapshotCheckProcess {
                     bldr.addException(node, asException(F.firstValue(resp.exceptions())));
                 }
 
-                Map<String, Map<PartitionKey, PartitionHashRecord>> partsHashesRes = resp.result();
+                Map<String, Map<PartitionKey, PartitionHashRecord>> partsHashesRes = resp.result().perMetaResults();
 
                 partsHashesRes.forEach((consId, partsPerConsId) -> bldr.addPartitionHashes(partsPerConsId));
             }
@@ -368,7 +367,7 @@ public class SnapshotCheckProcess {
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
+            CompletableFuture<SnapshotPartitionsVerifyHandlerResponse> metaFut = snpChecker.checkPartitions(
                 meta,
                 ctx.locFileTree.get(meta.consistentId()),
                 ctx.req.groups(),
@@ -379,11 +378,11 @@ public class SnapshotCheckProcess {
             metaFut.whenComplete((res, err) -> {
                 if (err != null)
                     exceptions.put(meta.consistentId(), err);
-                else if (!F.isEmpty(res))
-                    perMetaResults.put(meta.consistentId(), res);
+                else if (!F.isEmpty(res.res()))
+                    perMetaResults.put(meta.consistentId(), res.res());
 
                 if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                    composedFut.complete(new SnapshotCheckResponse(new SnapshotCheckPartitionHashesResponse(perMetaResults), exceptions));
             });
         }
 
@@ -396,14 +395,14 @@ public class SnapshotCheckProcess {
      */
     private CompletableFuture<SnapshotCheckResponse> allHandlersFuture(SnapshotCheckContext ctx) {
         // Per metas result: snapshot part's consistent id -> check result per handler name.
-        Map<String, Map<String, SnapshotHandlerResult<Object>>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        Map<String, Map<String, SnapshotHandlerResult<Message>>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         // Per consistent id.
         Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
+            CompletableFuture<Map<String, SnapshotHandlerResult<Message>>> metaFut = snpChecker.invokeCustomHandlers(meta,
                 ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), ctx.req.fullCheck());
 
             metaFut.whenComplete((res, err) -> {
@@ -413,7 +412,7 @@ public class SnapshotCheckProcess {
                     perMetaResults.put(meta.consistentId(), res);
 
                 if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                    composedFut.complete(new SnapshotCheckResponse(new SnapshotCheckHandlersResponse(perMetaResults), exceptions));
             });
         }
 
@@ -477,7 +476,7 @@ public class SnapshotCheckProcess {
             if (err != null)
                 phaseFut.onDone(err);
             else
-                phaseFut.onDone(new SnapshotCheckResponse(locMetas, null));
+                phaseFut.onDone(new SnapshotCheckResponse(new SnapshotMetadataResponse(locMetas), null));
         });
 
         return phaseFut;
@@ -514,10 +513,11 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !F.isEmpty((Collection<?>)nodeRes.result())) {
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)
+                    && !F.isEmpty(((SnapshotMetadataResponse)nodeRes.result()).metadata())) {
                     assert nodeRes != null;
 
-                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.result());
+                    metas.put(kctx.cluster().get().node(nodeId), ((SnapshotMetadataResponse)nodeRes.result()).metadata());
                 }
             });
 
@@ -708,37 +708,6 @@ public class SnapshotCheckProcess {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SnapshotCheckContext.class, this);
-        }
-    }
-
-    /** A DTO to transfer node's results for the both phases. */
-    private static final class SnapshotCheckResponse implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** The result. Is usually a collection or a map of hashes, metas, etc. */
-        private final Object result;
-
-        /** Exceptions per consistent id. */
-        @Nullable private final Map<String, Throwable> exceptions;
-
-        /** */
-        private SnapshotCheckResponse(Object result, @Nullable Map<String, Throwable> exceptions) {
-            assert result instanceof Serializable : "Snapshot check result is not serializable.";
-            assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";
-
-            this.result = result;
-            this.exceptions = exceptions == null ? null : Collections.unmodifiableMap(exceptions);
-        }
-
-        /** @return Exceptions per snapshot part's consistent id. */
-        private @Nullable Map<String, Throwable> exceptions() {
-            return exceptions;
-        }
-
-        /** @return Certain phase's and process' result. */
-        private <T> T result() {
-            return (T)result;
         }
     }
 }

@@ -83,6 +83,9 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * Clear deserialized form of wrapped message.
      */
     public void clearMessage() {
+        if (msgBytes == null)
+            return;
+
         msg = null;
         serMsg = null;
     }

@@ -87,7 +87,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
-public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKey, PartitionHashRecord>> {
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<SnapshotPartitionsVerifyHandlerResponse> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -107,7 +107,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public SnapshotPartitionsVerifyHandlerResponse invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         if (!opCtx.snapshotFileTree().root().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotFileTree().root());
 
@@ -177,12 +177,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         if (!opCtx.check()) {
             log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
-            return Collections.emptyMap();
+            return new SnapshotPartitionsVerifyHandlerResponse(Collections.emptyMap());
         }
 
-        return meta.dump()
-            ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+        return new SnapshotPartitionsVerifyHandlerResponse(
+            meta.dump()
+                ? checkDumpFiles(opCtx, partFiles)
+                : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()))
+        );
     }
 
     /** */
@@ -442,13 +444,13 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public void complete(
         String name,
-        Map<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
+        Map<UUID, SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse>> results
     ) throws IgniteCheckedException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (Map.Entry<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> e : results.entrySet()) {
+        for (Map.Entry<UUID, SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse>> e : results.entrySet()) {
             UUID nodeId = e.getKey();
-            SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res = e.getValue();
+            SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse> res = e.getValue();
 
             if (res.error() != null) {
                 bldr.addException(cctx.discovery().historicalNode(nodeId), res.error());
@@ -456,7 +458,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 continue;
             }
 
-            Map<PartitionKey, PartitionHashRecord> data = res.data();
+            Map<PartitionKey, PartitionHashRecord> data = res.data().res();
 
             bldr.addPartitionHashes(data);
         }

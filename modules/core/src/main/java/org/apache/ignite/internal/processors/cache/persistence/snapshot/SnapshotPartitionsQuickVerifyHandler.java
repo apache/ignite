@@ -53,15 +53,15 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx)
+    @Override public SnapshotPartitionsVerifyHandlerResponse invoke(SnapshotHandlerContext opCtx)
         throws IgniteCheckedException {
         // Return null not to check partitions at all if the streamer warning is detected.
         if (opCtx.streamerWarning())
             return null;
 
-        Map<PartitionKey, PartitionHashRecord> res = super.invoke(opCtx);
+        SnapshotPartitionsVerifyHandlerResponse res = super.invoke(opCtx);
 
-        assert res != null;
+        assert res.res() != null;
 
         return res;
     }
@@ -69,7 +69,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     /** {@inheritDoc} */
     @Override public void complete(
         String name,
-        Map<UUID, SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
+        Map<UUID, SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse>> results
     ) throws IgniteCheckedException {
         Exception err = results.values().stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().orElse(null);
 
@@ -83,8 +83,8 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         Set<Integer> wrnGrps = new HashSet<>();
         Map<PartitionKey, PartitionHashRecord> total = new HashMap<>();
 
-        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> result : results.values()) {
-            result.data().forEach((part, val) -> {
+        for (SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse> result : results.values()) {
+            result.data().res().forEach((part, val) -> {
                 PartitionHashRecord other = total.putIfAbsent(part, val);
 
                 if ((other != null && !wrnGrps.contains(part.groupId()))
