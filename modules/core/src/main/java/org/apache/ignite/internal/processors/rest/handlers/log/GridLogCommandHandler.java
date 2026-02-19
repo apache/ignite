@@ -112,6 +112,9 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
 
             try {
                 if (req0.path() != null) {
+                    // SECURITY NOTE: This endpoint returns server-side file contents over REST.
+                    // Be careful with user-supplied paths: if additional authorization is not enforced at a higher level,
+                    // this may become an information disclosure primitive (e.g., reading sensitive files).
                     if (log.fileName() != null) {
                         if (!req0.path().equals(log.fileName())) {
                             return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
@@ -138,6 +141,8 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
             }
 
             try {
+                // SECURITY NOTE: Consider restricting this operation to administrators only (or similar high-privilege role),
+                // because log and filesystem contents can reveal internal configuration, topology details, and secrets.
                 String content = readLog(from, to, logFile);
 
                 return new GridFinishedFuture<>(new GridRestResponse(content));

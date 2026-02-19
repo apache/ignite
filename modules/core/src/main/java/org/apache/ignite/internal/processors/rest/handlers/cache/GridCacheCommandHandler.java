@@ -1659,6 +1659,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            // SECURITY NOTE: Cache metrics are operational/diagnostic data.
+            // If this REST command is accessible to untrusted users, it may disclose cluster activity patterns.
+            // This handler does not perform explicit authorization checks here, so access control should be enforced
+            // at a higher layer if stricter restrictions are required.
             CacheMetrics metrics = c.cache().localMetrics();
 
             assert metrics != null;
