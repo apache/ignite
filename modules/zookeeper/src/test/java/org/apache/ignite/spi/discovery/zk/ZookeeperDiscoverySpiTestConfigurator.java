@@ -117,5 +117,18 @@ public class ZookeeperDiscoverySpiTestConfigurator {
         @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
             internalLsnr = lsnr;
         }
+
+        /** */
+        public ZookeeperDiscoverySpi cloneSpiConfiguration() {
+            ZookeeperDiscoverySpi spi = new TestZookeeperDiscoverySpi();
+
+            spi.setZkRootPath(getZkRootPath());
+            spi.setZkConnectionString(getZkConnectionString());
+            spi.setSessionTimeout(getSessionTimeout());
+            spi.setJoinTimeout(getJoinTimeout());
+            spi.setClientReconnectDisabled(isClientReconnectDisabled());
+
+            return spi;
+        }
     }
 }
