@@ -26,56 +26,17 @@ public class ExternalRunnableWithSerializableException implements IgniteRunnable
     /** */
     private static final String EX_MSG = "Message from Exception";
 
-    /** */
-    private static final int EX_CODE = 127;
-
-    /** */
-    private static final String EX_DETAILS = "Details from Exception";
 
     /** {@inheritDoc} */
     @Override public void run() {
-        throw new SerializableException(EX_MSG, EX_CODE, EX_DETAILS);
+        throw new SerializableException(EX_MSG);
     }
 
     /** Custom {@link Externalizable} Exception */
     public static class SerializableException extends IgniteException {
         /** */
-        protected int code;
-
-        /** */
-        protected String details;
-
-        /** */
-        public SerializableException() {
-            // No-op.
-        }
-
-        /** */
-        public SerializableException(String msg, int code, String details) {
+        public SerializableException(String msg) {
             super(msg);
-
-            this.code = code;
-            this.details = details;
-        }
-
-        /** */
-        public int getCode() {
-            return code;
-        }
-
-        /** */
-        public void setCode(int code) {
-            this.code = code;
-        }
-
-        /** */
-        public String getDetails() {
-            return details;
-        }
-
-        /** */
-        public void setDetails(String details) {
-            this.details = details;
         }
     }
 }

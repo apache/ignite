@@ -40,14 +40,14 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
     private static final String EX_MSG = "Message from Exception";
 
     /** */
-    private static final String EX_BROKEN_SER_MSG = "Exception occurred on serialization step";
+    private static final String BROKEN_EX_MSG = "Exception occurred on serialization step";
 
     /** */
-    private final boolean isSerializationBroken;
+    private final boolean isWriteBroken;
 
     /** */
-    public ExternalTaskWithBrokenExceptionSerialization(boolean isSerializationBroken) {
-        this.isSerializationBroken = isSerializationBroken;
+    public ExternalTaskWithBrokenExceptionSerialization(boolean isWriteBroken) {
+        this.isWriteBroken = isWriteBroken;
     }
 
     /** {@inheritDoc} */
@@ -64,7 +64,7 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
     private ComputeJobAdapter job() {
         return new ComputeJobAdapter() {
             @Override public Object execute() throws IgniteException {
-                throw new ExternalizableExceptionWithBrokenSerialization(EX_MSG, true, isSerializationBroken);
+                throw new ExternalizableExceptionWithBrokenSerialization(EX_MSG, isWriteBroken);
             }
         };
     }
@@ -72,10 +72,7 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
     /** Custom {@link Externalizable} Exception */
     public static class ExternalizableExceptionWithBrokenSerialization extends IgniteException implements Externalizable {
         /** */
-        private boolean isBroken;
-
-        /** */
-        private boolean isSerializationBroken;
+        private boolean isWriteBroken;
 
         /** */
         public ExternalizableExceptionWithBrokenSerialization() {
@@ -83,40 +80,18 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
         }
 
         /** */
-        public ExternalizableExceptionWithBrokenSerialization(String msg, boolean isBroken, boolean isSerializationBroken) {
+        public ExternalizableExceptionWithBrokenSerialization(String msg, boolean isWriteBroken) {
             super(msg);
 
-            this.isBroken = isBroken;
-            this.isSerializationBroken = isSerializationBroken;
-        }
-
-        /** */
-        public boolean isBroken() {
-            return isBroken;
-        }
-
-        /** */
-        public void setBroken(boolean broken) {
-            isBroken = broken;
-        }
-
-        /** */
-        public boolean isSerializationBroken() {
-            return isSerializationBroken;
-        }
-
-        /** */
-        public void setSerializationBroken(boolean serializationBroken) {
-            isSerializationBroken = serializationBroken;
+            this.isWriteBroken = isWriteBroken;
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            if (isBroken() && isSerializationBroken())
-                throw new ExternalizableExceptionWithBrokenSerialization(EX_BROKEN_SER_MSG, false, false);
+            if (isWriteBroken)
+                throw new IgniteException(BROKEN_EX_MSG);
 
-            out.writeBoolean(isBroken());
-            out.writeBoolean(isSerializationBroken());
+            out.writeBoolean(false);
             out.writeObject(getMessage());
             out.writeObject(getStackTrace());
             out.writeObject(getCause());
@@ -124,23 +99,14 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            setBroken(in.readBoolean());
-            setSerializationBroken(in.readBoolean());
+            isWriteBroken = in.readBoolean();
 
-            if (isBroken() && !isSerializationBroken())
-                throw new ExternalizableExceptionWithBrokenSerialization(EX_BROKEN_SER_MSG, false, false);
+            if (!isWriteBroken)
+                throw new IgniteException(BROKEN_EX_MSG);
 
             String msg = (String)in.readObject();
 
-            try {
-                Field detailMsg = Throwable.class.getDeclaredField("detailMessage");
-
-                detailMsg.setAccessible(true);
-                detailMsg.set(this, msg);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
+            setMessage(msg);
 
             setStackTrace((StackTraceElement[])in.readObject());
 
@@ -148,6 +114,19 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
 
             if (cause != null)
                 initCause(cause);
+        }
+
+        /** */
+        private void setMessage(String msg) {
+            try {
+                Field detailMsg = Throwable.class.getDeclaredField("detailMessage");
+
+                detailMsg.setAccessible(true);
+                detailMsg.set(this, msg);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Unexpected deserialization exception is caught!", e);
+            }
         }
     }
 }
