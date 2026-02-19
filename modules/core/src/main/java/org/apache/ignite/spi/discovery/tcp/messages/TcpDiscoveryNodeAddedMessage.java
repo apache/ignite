@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -77,6 +76,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private TcpDiscoveryNode node;
 
     /** Marshalled {@link #node}. */
+    @Order(10)
     private byte[] nodeBytes;
 
     /** Current topology. Initialized by coordinator. */
@@ -84,7 +84,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private @Nullable Collection<TcpDiscoveryNode> top;
 
     /** Marshalled {@link #top}. */
-    private byte[] topBytes;
+    @Order(value = 11, method = "topologyBytes")
+    private @Nullable byte[] topBytes;
 
     /** */
     @GridToStringInclude
@@ -135,9 +136,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         super(msg);
 
         node = msg.node;
+        nodeBytes = msg.nodeBytes;
         pendingMsgs = msg.pendingMsgs;
         serializablePendingMsgs = msg.serializablePendingMsgs;
         top = msg.top;
+        topBytes = msg.topBytes;
         clientTop = msg.clientTop;
         topHistMsgs = msg.topHistMsgs;
         dataPacket = msg.dataPacket;
@@ -230,6 +233,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public TcpDiscoveryNode node() {
         return node;
+    }
+
+    /** @return Serialized {@link #node}. */
+    public byte[] nodeBytes() {
+        return nodeBytes;
+    }
+
+    /** @param nodeBytes Serialized {@link #node}. */
+    public void nodeBytes(byte[] nodeBytes) {
+        this.nodeBytes = nodeBytes;
     }
 
     /**
@@ -334,6 +347,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
         this.top = top;
+        topBytes = null;
+    }
+
+    /** @return Serialized {@link #top}. */
+    public @Nullable byte[] topologyBytes() {
+        return topBytes;
+    }
+
+    /** @param topBytes Serialized {@link #top}. */
+    public void topologyBytes(@Nullable byte[] topBytes) {
+        this.topBytes = topBytes;
     }
 
     /**
@@ -342,7 +366,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public void clientTopology(Collection<TcpDiscoveryNode> top) {
         assert top != null && !top.isEmpty() : top;
 
-        this.clientTop = top;
+        clientTop = top;
     }
 
     /**
@@ -376,23 +400,20 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         topHistMsgs.forEach((nodeId, msgs) -> {
             Collection<ClusterNode> clusterNodeImpls = msgs.clusterNodeMessages().stream()
                 .map(m -> {
+                    assert m.clusterMetricsMessage() != null;
+
                     TcpDiscoveryNode tcpDiscoNode = new TcpDiscoveryNode(
                         m.id(),
+                        m.consistentId(),
+                        m.order(),
+                        m.local(),
+                        m.client(),
                         m.addresses(),
                         m.hostNames(),
-                        0,
-                        null,
+                        m.attributes(),
                         new IgniteProductVersion(m.productVersionMessage()),
-                        m.consistentId()
+                        new ClusterMetricsSnapshot(m.clusterMetricsMessage())
                     );
-
-                    tcpDiscoNode.order(m.order());
-                    tcpDiscoNode.local(m.local());
-                    tcpDiscoNode.setAttributes(m.attributes());
-                    tcpDiscoNode.getAttributes().put(IgniteNodeAttributes.ATTR_CLIENT_MODE, m.client());
-
-                    if (m.clusterMetricsMessage() != null)
-                        tcpDiscoNode.setMetrics(new ClusterMetricsSnapshot(m.clusterMetricsMessage()));
 
                     return tcpDiscoNode;
                 }).collect(Collectors.toList());
@@ -409,7 +430,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param topHist Map with topology snapshots history.
      */
     public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
-        if (topHist == null) {
+        if (F.isEmpty(topHist)) {
             topHistMsgs = null;
 
             return;

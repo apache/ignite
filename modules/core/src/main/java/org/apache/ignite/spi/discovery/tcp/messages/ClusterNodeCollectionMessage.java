@@ -72,6 +72,6 @@ public class ClusterNodeCollectionMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 115;
+        return -110;
     }
 }

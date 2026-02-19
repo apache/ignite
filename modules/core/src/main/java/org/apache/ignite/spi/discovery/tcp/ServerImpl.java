@@ -1897,6 +1897,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 nodeAddedMsg.topologyHistory(hist);
+
+                nodeAddedMsg.prepareMarshal(spi.marshaller());
             }
         }
     }
@@ -2646,8 +2648,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     msg0.topology(addedMsg.clientTopology());
 
-                    msg0.prepareMarshal(spi.marshaller());
-
                     return msg0;
                 }
             }
@@ -3111,6 +3111,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (!locNode.id().equals(msg.senderNodeId()) && ensured)
                 lastRingMsgTimeNanos = System.nanoTime();
 
+            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                ((TcpDiscoveryNodeAddedMessage)msg).finishUnmarshal(spi.marshaller(),
+                    U.resolveClassLoader(spi.ignite().configuration()));
+            }
+
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
 
@@ -3145,12 +3150,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     sendMessageAcrossRing(msg);
             }
 
-            else if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                ((TcpDiscoveryNodeAddedMessage)msg).finishUnmarshal(spi.marshaller(),
-                    U.resolveClassLoader(spi.ignite().configuration()));
-
+            else if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
-            }
 
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
                 processNodeAddFinishedMessage((TcpDiscoveryNodeAddFinishedMessage)msg);

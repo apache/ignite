@@ -55,7 +55,7 @@ public class ClusterNodeMessage implements Message {
 
     /** */
     @Order(value = 3, method = "clusterMetricsMessage")
-    private NodeMetricsMessage clusterMetricsMsg;
+    private TcpDiscoveryNodeMetricsMessage clusterMetricsMsg;
 
     /** */
     @Order(value = 4)
@@ -100,7 +100,7 @@ public class ClusterNodeMessage implements Message {
         addrs = clusterNode.addresses();
         hostNames = clusterNode.hostNames();
         if (clusterNode.metrics() != null)
-            clusterMetricsMsg = new NodeMetricsMessage(clusterNode.metrics());
+            clusterMetricsMsg = new TcpDiscoveryNodeMetricsMessage(clusterNode.metrics());
         order = clusterNode.order();
         productVerMsg = new IgniteProductVersionMessage(clusterNode.version());
         loc = clusterNode.isLocal();
@@ -111,7 +111,7 @@ public class ClusterNodeMessage implements Message {
 
     /** @param marsh Marshalled. */
     public void prepareMarshal(Marshaller marsh) {
-        if (F.isEmpty(attrs) && attrsBytes == null) {
+        if (!F.isEmpty(attrs) && attrsBytes == null) {
             try {
                 attrsBytes = U.marshal(marsh, attrs);
             }
@@ -174,7 +174,7 @@ public class ClusterNodeMessage implements Message {
     }
 
     /** @param clusterMetricsMsg Node metrics message. */
-    public void clusterMetricsMessage(NodeMetricsMessage clusterMetricsMsg) {
+    public void clusterMetricsMessage(TcpDiscoveryNodeMetricsMessage clusterMetricsMsg) {
         this.clusterMetricsMsg = clusterMetricsMsg;
     }
 
