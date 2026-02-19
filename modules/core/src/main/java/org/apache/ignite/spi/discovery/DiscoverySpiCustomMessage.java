@@ -29,7 +29,7 @@ import org.apache.ignite.lang.IgniteUuid;
  * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
  * TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27778
  */
-@Deprecated
+@Deprecated(forRemoval = true)
 public abstract class DiscoverySpiCustomMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
