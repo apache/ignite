@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Request for statistics.
@@ -37,19 +33,23 @@ public class StatisticsRequest implements Message {
     public static final short TYPE_CODE = 187;
 
     /** Gathering id. */
+    @Order(0)
     private UUID reqId;
 
     /** Key to supply statistics by. */
+    @Order(1)
     private StatisticsKeyMessage key;
 
     /** Type of required statistcs. */
+    @Order(2)
     private StatisticsType type;
 
     /** For local statistics request - column config versions map: name to version. */
-    @GridDirectMap(keyType = String.class, valueType = Long.class)
+    @Order(3)
     private Map<String, Long> versions;
 
     /** For local statistics request - version to gather statistics by. */
+    @Order(4)
     private AffinityTopologyVersion topVer;
 
     /**
@@ -117,107 +117,6 @@ public class StatisticsRequest implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StatisticsRequest.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeUuid(reqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByte(type != null ? (byte)type.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMap(versions, MessageCollectionItemType.STRING, MessageCollectionItemType.LONG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                key = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                reqId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                byte typeOrd;
-
-                typeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                type = StatisticsType.fromOrdinal(typeOrd);
-
-                reader.incrementState();
-
-            case 4:
-                versions = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.LONG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
