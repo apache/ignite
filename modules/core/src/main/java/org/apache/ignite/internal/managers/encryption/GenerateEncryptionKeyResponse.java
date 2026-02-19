@@ -17,28 +17,26 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Generate encryption key response.
  */
 public class GenerateEncryptionKeyResponse implements Message {
     /** Request message ID. */
+    @Order(value = 0, method = "requestId")
     private IgniteUuid id;
 
     /** */
-    @GridDirectCollection(byte[].class)
+    @Order(value = 1, method = "encryptionKeys")
     private Collection<byte[]> encKeys;
 
     /** Master key digest that encrypted group encryption keys. */
+    @Order(2)
     private byte[] masterKeyDigest;
 
     /** */
@@ -64,10 +62,24 @@ public class GenerateEncryptionKeyResponse implements Message {
     }
 
     /**
+     * @param id Request id.
+     */
+    public void requestId(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /**
      * @return Encryption keys.
      */
     public Collection<byte[]> encryptionKeys() {
         return encKeys;
+    }
+
+    /**
+     * @param encKeys Encryption keys.
+     */
+    public void encryptionKeys(Collection<byte[]> encKeys) {
+        this.encKeys = encKeys;
     }
 
     /** @return Master key digest that encrypted group encryption keys. */
@@ -75,71 +87,11 @@ public class GenerateEncryptionKeyResponse implements Message {
         return masterKeyDigest;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(encKeys, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(masterKeyDigest))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                encKeys = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                id = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                masterKeyDigest = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
+    /**
+     * @param masterKeyDigest Master key digest that encrypted group encryption keys.
+     */
+    public void masterKeyDigest(byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest;
     }
 
     /** {@inheritDoc} */
