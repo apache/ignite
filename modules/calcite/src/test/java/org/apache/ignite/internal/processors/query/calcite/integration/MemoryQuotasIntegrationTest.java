@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,7 +72,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .resultSize(800)
             .check();
 
-        assertThrows("SELECT id, b FROM tbl ORDER BY id", IgniteException.class, "Query quota exceeded");
+        assertThrows("SELECT id, b FROM tbl ORDER BY id", IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -83,14 +83,14 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .resultSize(1)
             .check();
 
-        assertThrows("SELECT MAP(SELECT id, b FROM tbl)", IgniteException.class, "Query quota exceeded");
+        assertThrows("SELECT MAP(SELECT id, b FROM tbl)", IgniteSQLException.class, "Query quota exceeded");
 
         assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)")
             .matches(QueryChecker.containsSubPlan("IgniteCollect"))
             .resultSize(1)
             .check();
 
-        assertThrows("SELECT ARRAY(SELECT b FROM tbl)", IgniteException.class, "Query quota exceeded");
+        assertThrows("SELECT ARRAY(SELECT b FROM tbl)", IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -103,7 +103,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT id, b FROM tbl EXCEPT (SELECT 0, x'00')",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
 
@@ -124,12 +124,12 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         // On map phase.
         assertThrows("SELECT /*+ DISABLE_RULE('ColocatedMinusConverterRule') */ * FROM " +
             "(SELECT id, b FROM tbl2 EXCEPT SELECT id+1000, b FROM tbl3)",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // On reduce phase.
         assertThrows("SELECT /*+ DISABLE_RULE('ColocatedMinusConverterRule') */ * FROM " +
                 "(SELECT id, b FROM tbl2 EXCEPT SELECT 0, x'00')",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -142,7 +142,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT /*+ DISABLE_RULE('IntersectReorderRule') */ id, b FROM tbl INTERSECT (SELECT 0, x'00')",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
 
@@ -163,12 +163,12 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         // On map phase.
         assertThrows("SELECT /*+ DISABLE_RULE('ColocatedIntersectConverterRule') */ * FROM " +
                 "(SELECT id, b FROM tbl2 INTERSECT SELECT 0, x'00')",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // On reduce phase.
         assertThrows("SELECT /*+ DISABLE_RULE('ColocatedIntersectConverterRule') */ * FROM " +
                 "(SELECT id, b FROM tbl2 WHERE id < 1000 INTERSECT SELECT 0, x'00')",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -190,7 +190,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertThrows("SELECT /*+ DISABLE_RULE('FilterSpoolMergeToSortedIndexSpoolRule') */ " +
                 "(SELECT b FROM tbl2 WHERE tbl2.id = tbl.id) FROM tbl",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -212,7 +212,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertThrows("SELECT /*+ DISABLE_RULE('FilterSpoolMergeToHashIndexSpoolRule') */ " +
                 "(SELECT b FROM tbl2 WHERE tbl2.id = tbl.id) FROM tbl",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -232,7 +232,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
         assertThrows("SELECT (SELECT b FROM tbl2 WHERE tbl2.id = tbl.id) FROM tbl",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -258,7 +258,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
         for (List<String> paramSet : params) {
             assertThrows("SELECT /*+ " + paramSet.get(0) + " */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
-                IgniteException.class, "Query quota exceeded");
+                IgniteSQLException.class, "Query quota exceeded");
         }
     }
 
@@ -282,7 +282,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             sql("INSERT INTO tbl2 VALUES (?, ?)", 0, new byte[1000]);
 
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl2 GROUP BY id",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Map-reduce.
         sql("CREATE TABLE tbl3 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
@@ -302,14 +302,14 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
         // Reduce phase.
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl3 GROUP BY id",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         for (int i = 1000; i < 2000; i++)
             sql("INSERT INTO tbl3 VALUES (?, ?)", 0, new byte[1000]);
 
         // Map phase.
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl3 GROUP BY id",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
     }
 
     /** */
@@ -322,7 +322,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT ANY_VALUE(b) FROM tbl GROUP BY id",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Colocated AggAccumulator.
         assertQuery("SELECT ARRAY_AGG(b) FROM tbl WHERE id < 800")
@@ -331,7 +331,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Colocated AggAccumulator with ordering.
         assertQuery("SELECT ARRAY_AGG(b ORDER BY id) FROM tbl WHERE id < 800")
@@ -340,7 +340,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT ARRAY_AGG(b ORDER BY id) FROM tbl",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Map-reduce.
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
@@ -355,7 +355,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT ANY_VALUE(b) FROM tbl2 GROUP BY id",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Reduce phase AggAccumulator.
         assertQuery("SELECT ARRAY_AGG(b) FROM tbl2 WHERE id < 800")
@@ -364,17 +364,31 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl2",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Map phase.
         for (int i = 1000; i < 2000; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
         assertThrows("SELECT ANY_VALUE(b) FROM tbl2 GROUP BY id",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl2",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
+    }
+
+    /** */
+    @Test
+    public void testMassiveSequentialCheck() {
+        sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
+
+        for (int i = 0; i < 2000; i++)
+            sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
+
+        for (int i = 0; i < 1000; i++) {
+            assertThrows("SELECT ANY_VALUE(b) FROM tbl2 GROUP BY id",
+                IgniteSQLException.class, "Query quota exceeded");
+        }
     }
 
     /** */
@@ -401,7 +415,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
                     curs[i].iterator().next();
                 }
                 return null;
-            }, IgniteException.class, "Global memory quota for SQL queries exceeded");
+            }, IgniteSQLException.class, "Global memory quota for SQL queries exceeded");
         }
         finally {
             for (int i = 0; i < 20; i++) {
@@ -422,7 +436,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
         // getAll + collect for 1000 rows.
         assertThrows("SELECT id, b FROM tbl",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // Collect for 800 rows.
         assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)")
@@ -437,7 +451,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
         // getAll + collect for 800 rows.
         assertThrows("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)",
-            IgniteException.class, "Query quota exceeded");
+            IgniteSQLException.class, "Query quota exceeded");
 
         // getAll + sort for 800 rows (sort node release memory after passing rows to iterator).
         assertQuery("SELECT id, b FROM tbl WHERE id < 800 ORDER BY id")
