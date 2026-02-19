@@ -28,12 +28,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GenerateEncryptionKeyResponse implements Message {
     /** Request message ID. */
-    @Order(value = 0, method = "requestId")
-    private IgniteUuid id;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    @Order(value = 1, method = "encryptionKeys")
-    private Collection<byte[]> encKeys;
+    @Order(1)
+    Collection<byte[]> encKeys;
 
     /** Master key digest that encrypted group encryption keys. */
     @Order(2)
