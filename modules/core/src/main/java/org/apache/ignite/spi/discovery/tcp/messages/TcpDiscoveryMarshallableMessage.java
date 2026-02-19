@@ -27,11 +27,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public interface TcpDiscoveryMarshallableMessage extends Message {
     /** @param marsh Marshaller. */
-    void prepareMarshal(Marshaller marsh);
+    default void prepareMarshal(Marshaller marsh) {
+        throw new UnsupportedOperationException("Marshalling is not required for discovery message " + getClass().getSimpleName());
+    }
 
     /**
      * @param marsh Marshaller.
      * @param clsLdr Class loader.
      */
-    void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr);
+    default void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        throw new UnsupportedOperationException("Marshalling is not required for discovery message " + getClass().getSimpleName());
+    }
 }
