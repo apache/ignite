@@ -83,13 +83,6 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     }
 
     /**
-     * @return Propose message.
-     */
-    public SchemaProposeDiscoveryMessage proposeMessage() {
-        return proposeMsg;
-    }
-
-    /**
      * @param proposeMsg Propose message.
      */
     public void proposeMessage(SchemaProposeDiscoveryMessage proposeMsg) {

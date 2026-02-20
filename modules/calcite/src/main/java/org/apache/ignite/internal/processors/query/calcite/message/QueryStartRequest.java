@@ -119,19 +119,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return schema;
     }
 
-    /** */
-    public void schema(String schema) {
-        this.schema = schema;
-    }
-
     /** {@inheritDoc} */
     @Override public UUID queryId() {
         return qryId;
-    }
-
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
     }
 
     /**
@@ -139,21 +129,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
      */
     public long originatingQueryId() {
         return originatingQryId;
-    }
-
-    /** */
-    public void originatingQueryId(long originatingQryId) {
-        this.originatingQryId = originatingQryId;
-    }
-
-    /** */
-    public @Nullable byte[] parametersBytes() {
-        return paramsBytes;
-    }
-
-    /** */
-    public void parametersBytes(@Nullable byte[] paramsBytes) {
-        this.paramsBytes = paramsBytes;
     }
 
     /** {@inheritDoc} */
@@ -168,21 +143,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return fragmentDesc;
     }
 
-    /** */
-    public void fragmentDescription(FragmentDescription fragmentDesc) {
-        this.fragmentDesc = fragmentDesc;
-    }
-
     /**
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion() {
         return ver;
-    }
-
-    /** */
-    public void topologyVersion(AffinityTopologyVersion ver) {
-        this.ver = ver;
     }
 
     /**
@@ -192,21 +157,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return root;
     }
 
-    /** */
-    public void root(String root) {
-        this.root = root;
-    }
-
     /**
      * @return Total count of fragments in query for this node.
      */
     public int totalFragmentsCount() {
         return totalFragmentsCnt;
-    }
-
-    /** */
-    public void totalFragmentsCount(int totalFragmentsCnt) {
-        this.totalFragmentsCnt = totalFragmentsCnt;
     }
 
     /**
@@ -232,16 +187,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
-    /** */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /** */
-    public void parametersBytes(long timeout) {
-        this.timeout = timeout;
-    }
-
     /**
      * @return Transaction entries to mixin on query processing.
      */
@@ -250,18 +195,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /** */
-    public void queryTransactionEntries(@Nullable Collection<QueryTxEntry> qryTxEntries) {
-        this.qryTxEntries = qryTxEntries;
-    }
-
-    /** */
     public @Nullable Map<String, String> applicationAttributes() {
         return appAttrs;
-    }
-
-    /** */
-    public void applicationAttributes(@Nullable Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */

@@ -29,18 +29,10 @@ public class HandshakeWaitMessage implements Message {
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
 
-    /**
-     * Default constructor.
-     */
-    public HandshakeWaitMessage() {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return HANDSHAKE_WAIT_MSG_TYPE;
     }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HandshakeWaitMessage.class, this);

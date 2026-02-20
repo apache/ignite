@@ -95,13 +95,6 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     }
 
     /**
-     * @return Last page flag.
-     */
-    public boolean last() {
-        return last;
-    }
-
-    /**
      * @return Timeout in seconds.
      */
     public int timeout() {

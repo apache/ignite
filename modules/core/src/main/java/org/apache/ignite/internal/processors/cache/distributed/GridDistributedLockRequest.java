@@ -181,24 +181,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param nodeId Node ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
      * @return Near transaction ID.
      */
     public GridCacheVersion nearXidVersion() {
         return nearXidVer;
-    }
-
-    /**
-     * @param nearXidVer Near transaction ID.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
     }
 
     /**
@@ -209,24 +195,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param threadId Owner node thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
      * @return Future ID.
      */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**
@@ -237,24 +209,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param isInTx {@code True} if implicit transaction lock.
-     */
-    public void inTx(boolean isInTx) {
-        this.isInTx = isInTx;
-    }
-
-    /**
      * @return Invalidate flag.
      */
     public boolean isInvalidate() {
         return isInvalidate;
-    }
-
-    /**
-     * @param isInvalidate Invalidate flag.
-     */
-    public void isInvalidate(boolean isInvalidate) {
-        this.isInvalidate = isInvalidate;
     }
 
     /**
@@ -265,32 +223,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param isRead {@code True} if lock is implicit and for a read operation.
-     */
-    public void txRead(boolean isRead) {
-        this.isRead = isRead;
-    }
-
-    /**
      * @param idx Key index.
      * @return Flag indicating whether a value should be returned.
      */
     public boolean returnValue(int idx) {
         return retVals[idx];
-    }
-
-    /**
-     * @return Array indicating whether value should be returned for a key.
-     */
-    public boolean[] returnValues() {
-        return retVals;
-    }
-
-    /**
-     * @param retVals Array indicating whether value should be returned for a key.
-     */
-    public void returnValues(boolean[] retVals) {
-        this.retVals = retVals;
     }
 
     /**
@@ -364,24 +301,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param isolation Transaction isolation level.
-     */
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
-    }
-
-    /**
      * @return Tx size.
      */
     public int txSize() {
         return txSize;
-    }
-
-    /**
-     * @param txSize Tx size.
-     */
-    public void txSize(int txSize) {
-        this.txSize = txSize;
     }
 
     /**
@@ -408,13 +331,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return keys;
     }
 
-    /**
-     * @param keys Unmarshalled keys.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
     /** {@inheritDoc} */
     @Override public int partition() {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
@@ -425,27 +341,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout Max lock wait time.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /** {@inheritDoc} */

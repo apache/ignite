@@ -49,13 +49,6 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /**
      *
      */
-    public boolean isReqCurrentState() {
-        return reqCurrentState;
-    }
-
-    /**
-     *
-     */
     public void reqCurrentState() {
         reqCurrentState = true;
     }

@@ -66,20 +66,6 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         this.arg = arg;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
-    public boolean keepBinaries() {
-        return keepBinaries;
-    }
-
-    /**
-     * @param keepBinaries Keep binary flag.
-     */
-    public void keepBinaries(boolean keepBinaries) {
-        this.keepBinaries = keepBinaries;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)

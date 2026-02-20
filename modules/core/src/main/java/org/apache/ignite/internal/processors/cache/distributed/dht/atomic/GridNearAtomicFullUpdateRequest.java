@@ -238,13 +238,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return keys;
     }
 
-    /**
-     * @param keys Keys to update.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
     /** {@inheritDoc} */
     @Override public int size() {
         assert keys != null;
@@ -289,13 +282,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return conflictVers;
     }
 
-    /**
-     * @param conflictVers Conflict versions.
-     */
-    public void conflictVersions(@Nullable List<GridCacheVersion> conflictVers) {
-        this.conflictVers = conflictVers;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
@@ -337,13 +323,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override @Nullable public CacheEntryPredicate[] filter() {
         return filter;
-    }
-
-    /**
-     * @param filter Filter.
-     */
-    public void filter(@Nullable CacheEntryPredicate[] filter) {
-        this.filter = filter;
     }
 
     /** {@inheritDoc} */
@@ -426,90 +405,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         assert !F.isEmpty(keys);
 
         return keys.get(0).partition();
-    }
-
-    /**
-     * @return Values to update.
-     */
-    public List<CacheObject> valuesToUpdate() {
-        return vals;
-    }
-
-    /**
-     * @param vals Values to update.
-     */
-    public void valuesToUpdate(List<CacheObject> vals) {
-        this.vals = vals;
-    }
-
-    /**
-     * @return Entry processors bytes.
-     */
-    public @Nullable List<byte[]> entryProcessorsBytes() {
-        return entryProcessorsBytes;
-    }
-
-    /**
-     * @param entryProcessorsBytes Entry processors bytes.
-     */
-    public void entryProcessorsBytes(@Nullable List<byte[]> entryProcessorsBytes) {
-        this.entryProcessorsBytes = entryProcessorsBytes;
-    }
-
-    /**
-     * @return Conflict TTLs.
-     */
-    public GridLongList conflictTtls() {
-        return conflictTtls;
-    }
-
-    /**
-     * @param conflictTtls Conflict TTLs.
-     */
-    public void conflictTtls(GridLongList conflictTtls) {
-        this.conflictTtls = conflictTtls;
-    }
-
-    /**
-     * @return Conflict expire times.
-     */
-    public GridLongList conflictExpireTimes() {
-        return conflictExpireTimes;
-    }
-
-    /**
-     * @param conflictExpireTimes Conflict expire times.
-     */
-    public void conflictExpireTimes(GridLongList conflictExpireTimes) {
-        this.conflictExpireTimes = conflictExpireTimes;
-    }
-
-    /**
-     * @return Entry processor arguments bytes.
-     */
-    public @Nullable List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /**
-     * @param invokeArgsBytes Entry processor arguments bytes.
-     */
-    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
-    }
-
-    /**
-     * @return Expiry policy bytes.
-     */
-    public @Nullable byte[] expiryPolicyBytes() {
-        return expiryPlcBytes;
-    }
-
-    /**
-     * @param expiryPlcBytes Expiry policy bytes.
-     */
-    public void expiryPolicyBytes(@Nullable byte[] expiryPlcBytes) {
-        this.expiryPlcBytes = expiryPlcBytes;
     }
 
     /** {@inheritDoc} */
