@@ -46,6 +46,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -678,6 +679,19 @@ public class SchemaManager {
         tbl.addIndex(proxyName, proxyDesc);
 
         lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), proxyName, proxyDesc);
+
+        IndexDescriptor rowIdIndexDesc = new IndexDescriptor(
+                idxDesc.name() + "_rowid",
+                new LinkedHashMap<>(Map.of(
+                        QueryUtils.ROW_ID_FIELD_NAME,
+                        new IndexKeyDefinition(IndexKeyType.forClass(String.class).code(), -1, true)
+                )),
+                idxDesc
+        );
+
+        tbl.addIndex(rowIdIndexDesc.name(), rowIdIndexDesc);
+
+        lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), rowIdIndexDesc.name(), rowIdIndexDesc);
     }
 
     /** */
