@@ -169,6 +169,7 @@ import org.apache.ignite.internal.codegen.ServiceSingleNodeDeploymentResultSeria
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.SnapshotFilesFailureMessageSerializer;
 import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
+import org.apache.ignite.internal.codegen.StatisticsDecimalMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TransactionAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.TxEntriesInfoSerializer;
@@ -501,7 +502,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
-        factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new);
+        factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new, new StatisticsDecimalMessageSerializer());
         factory.register(StatisticsObjectData.TYPE_CODE, StatisticsObjectData::new);
         factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
