@@ -43,11 +43,11 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     /** Serialized {@link #node}. */
     // TODO Remove the field after completing https://issues.apache.org/jira/browse/IGNITE-27899.
     @Order(6)
-    private byte[] nodeBytes;
+    byte[] nodeBytes;
 
     /** Discovery data container. */
-    @Order(value = 7, method = "gridDiscoveryData")
-    private DiscoveryDataPacket dataPacket;
+    @Order(7)
+    DiscoveryDataPacket dataPacket;
 
     /** Constructor. */
     public TcpDiscoveryJoinRequestMessage() {
@@ -76,30 +76,9 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         return node;
     }
 
-    /**
-     * @return Serialized node.
-     */
-    public byte[] nodeBytes() {
-        return nodeBytes;
-    }
-
-    /**
-     * @param nodeBytes Serialized node.
-     */
-    public void nodeBytes(byte[] nodeBytes) {
-        this.nodeBytes = nodeBytes;
-    }
-
     /** @return Discovery data container that collects data from all cluster nodes. */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
-    }
-
-    /**
-     * @param dataPacket Discovery data container that collects data from all cluster nodes.
-     */
-    public void gridDiscoveryData(DiscoveryDataPacket dataPacket) {
-        this.dataPacket = dataPacket;
     }
 
     /**
