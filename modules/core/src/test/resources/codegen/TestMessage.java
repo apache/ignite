@@ -62,8 +62,8 @@ public class TestMessage implements Message {
     @Order(10)
     BitSet bitSet;
 
-    @Order(11)
-    String field;
+    @Order(value = 11, method = "overridenFieldMethod")
+    private String field;
 
     @Order(12)
     KeyCacheObject keyCacheObject;
@@ -73,6 +73,14 @@ public class TestMessage implements Message {
 
     @Order(14)
     GridLongList gridLongList;
+
+    public String overridenFieldMethod() {
+        return field;
+    }
+
+    public void overridenFieldMethod(String field) {
+        this.field = field;
+    }
 
     public short directType() {
         return 0;
