@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -41,7 +42,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -159,7 +159,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+    @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
         exec.execute(() -> {
             IgniteFuture<?> fut = lsnr.onDiscovery(new DiscoveryNotification(
                 EVT_DISCOVERY_CUSTOM_EVT,
@@ -172,7 +172,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
             // Acknowledge message must be send after initial message processed.
             fut.listen((f) -> {
-                DiscoverySpiCustomMessage ack = msg.ackMessage();
+                DiscoveryCustomMessage ack = msg.ackMessage();
 
                 if (ack != null) {
                     exec.execute(() -> lsnr.onDiscovery(new DiscoveryNotification(

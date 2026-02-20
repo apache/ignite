@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -238,7 +237,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      * @param id Message id.
      */
     private void sendDummyCustomMessage(TcpDiscoverySpi disco, IgniteUuid id) {
-        disco.sendCustomEvent(new CustomMessageWrapper(new DummyCustomDiscoveryMessage(id)));
+        disco.sendCustomEvent(new DummyCustomDiscoveryMessage(id));
     }
 
     /**

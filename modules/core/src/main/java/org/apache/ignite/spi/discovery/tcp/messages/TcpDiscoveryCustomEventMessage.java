@@ -20,12 +20,11 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +38,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private transient volatile DiscoverySpiCustomMessage msg;
+    private transient volatile DiscoveryCustomMessage msg;
 
     /** */
     private byte[] msgBytes;
@@ -49,7 +48,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param msg Message.
      * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoveryCustomMessage msg,
         @NotNull byte[] msgBytes) {
         super(creatorNodeId);
 
@@ -64,7 +63,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     public TcpDiscoveryCustomEventMessage(TcpDiscoveryCustomEventMessage msg) {
         super(msg);
 
-        this.msgBytes = msg.msgBytes;
+        msgBytes = msg.msgBytes;
         this.msg = msg.msg;
     }
 
@@ -86,7 +85,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param msg Message.
      * @param msgBytes Serialized message.
      */
-    public void message(@Nullable DiscoverySpiCustomMessage msg, @NotNull byte[] msgBytes) {
+    public void message(@Nullable DiscoveryCustomMessage msg, @NotNull byte[] msgBytes) {
         this.msg = msg;
         this.msgBytes = msgBytes;
     }
@@ -97,7 +96,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @return Deserialized message,
      * @throws java.lang.Throwable if unmarshal failed.
      */
-    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
+    @Nullable public DiscoveryCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
         if (msg == null) {
             try {
                 msg = U.unmarshal(marsh, msgBytes, ldr);
@@ -105,7 +104,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
             catch (IgniteCheckedException e) {
                 // Try to resurrect a message in a case of deserialization failure
                 if (e.getCause() instanceof IncompleteDeserializationException)
-                    return new CustomMessageWrapper(((IncompleteDeserializationException)e.getCause()).message());
+                    return ((IncompleteDeserializationException)e.getCause()).message();
 
                 throw e;
             }
