@@ -270,8 +270,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         topic,
                         req.requestId(),
                         new IgniteCheckedException("Failed to get deployment for request [sndId=" + nodeId +
-                            ", req=" + req + ']'),
-                        false);
+                            ", req=" + req + ']'));
 
                     return;
                 }
@@ -290,7 +289,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal message [nodeId=" + nodeId + ", req=" + req + ']', e);
 
-                sendResponse(nodeId, topic, req.requestId(), e, false);
+                sendResponse(nodeId, topic, req.requestId(), e);
 
                 return;
             }
@@ -356,7 +355,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 }
 
                 if (remapErr != null) {
-                    sendResponse(nodeId, topic, req.requestId(), remapErr, req.forceLocalDeployment());
+                    sendResponse(nodeId, topic, req.requestId(), remapErr);
 
                     return;
                 }
@@ -392,7 +391,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             try {
                 job.call();
 
-                sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
+                sendResponse(nodeId, topic, req.requestId(), null);
             }
             finally {
                 if (waitFut != null)
@@ -400,7 +399,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             }
         }
         catch (Throwable e) {
-            sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
+            sendResponse(nodeId, topic, req.requestId(), e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -412,22 +411,11 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
      * @param resTopic Response topic.
      * @param reqId Request ID.
      * @param err Error.
-     * @param forceLocDep Force local deployment.
      */
-    private void sendResponse(UUID nodeId, Object resTopic, long reqId, @Nullable Throwable err,
-        boolean forceLocDep) {
-        byte[] errBytes;
+    private void sendResponse(UUID nodeId, Object resTopic, long reqId, @Nullable Throwable err) {
+        DataStreamerResponse res = new DataStreamerResponse(reqId, err);
 
-        try {
-            errBytes = err != null ? U.marshal(marsh, err) : null;
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);
-
-            errBytes = marshErrBytes;
-        }
-
-        DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
+        res.prepareMarshal(marsh, log, marshErrBytes);
 
         try {
             ctx.io().sendToCustomTopic(nodeId, resTopic, res, threadIoPolicy());
