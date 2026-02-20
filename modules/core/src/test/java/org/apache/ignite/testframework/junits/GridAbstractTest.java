@@ -1474,8 +1474,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
                     resetDiscovery = false;
                 }
-                catch (NoSuchMethodException ignore) {
-                    // Ignore.
+                catch (NoSuchMethodException e) {
+                    log.warning("Failed to clone Discovery SPI. cloneSpiConfiguration method was not found", e);
                 }
             }
         }
