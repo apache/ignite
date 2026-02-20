@@ -33,6 +33,7 @@ public class HandshakeWaitMessage implements Message {
     @Override public short directType() {
         return HANDSHAKE_WAIT_MSG_TYPE;
     }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HandshakeWaitMessage.class, this);
