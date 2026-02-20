@@ -127,7 +127,7 @@ import static org.junit.Assume.assumeFalse;
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** The default cache partitions number. */
-    protected static final int CACHE_PARTS_CNT = 16;
+    protected static final int CACHE_PARTS_CNT = 64;
 
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
     private final Map<Class<?>, Map<PartitionKey, List<PartitionHashRecord>>> jobResults = new ConcurrentHashMap<>();
@@ -601,19 +601,19 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testSnapshotMetricsEntireTopology() throws Exception {
+    public void testSnapshotCheckMetricsEntireTopology() throws Exception {
         doTestSnapshotMetricsAllRuns(true, false);
     }
 
     /** */
     @Test
-    public void testSnapshotMetricsLesserTopology() throws Exception {
+    public void testSnapshotCheckMetricsLesserTopology() throws Exception {
         doTestSnapshotMetricsAllRuns(false, false);
     }
 
     /** */
     @Test
-    public void testIncrementalSnapshotMetrics() throws Exception {
+    public void testIncrementalSnapshotCheckMetrics() throws Exception {
         assumeFalse(encryption);
 
         doTestSnapshotMetricsAllRuns(true, true);
@@ -666,9 +666,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         }
 
                         if (entireTop)
-                            doTestSnapshotMetricsCertainRun(initiator, incremental, fullCheck, allHandlers, restore);
+                            doTestSnapshotCheckMetricsCertainRun(initiator, incremental, fullCheck, allHandlers, restore);
                         else
-                            doTestSnapshotMetricsCertainRun(initiator, incremental, fullCheck, allHandlers, restore, 0);
+                            doTestSnapshotCheckMetricsCertainRun(initiator, incremental, fullCheck, allHandlers, restore, 0);
 
                         if (restore) {
                             grid(1).destroyCache(DEFAULT_CACHE_NAME);
@@ -682,7 +682,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private void doTestSnapshotMetricsCertainRun(
+    private void doTestSnapshotCheckMetricsCertainRun(
         int initiator,
         boolean incremental,
         boolean fullCheck,
@@ -827,8 +827,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         moreThatOneSnpPartProcessed = true;
 
                     // Partitions + metastorage.
-                    assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("processedPartitions").value());
                     assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("totalPartitions").value());
+                    assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("processedPartitions").value());
                 }
             }
 
@@ -1386,7 +1386,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
 
         try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 100; ++i)
+            // Ensure all the partitions are created: several records per partition.
+            for (int i = 0; i < CACHE_PARTS_CNT * 4; ++i)
                 ds.addData(i, i);
         }
 
