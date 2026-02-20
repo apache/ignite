@@ -1898,6 +1898,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.topologyHistory(hist);
 
+                // Re-marshall the changed data.
                 nodeAddedMsg.prepareMarshal(spi.marshaller());
             }
         }
@@ -2485,7 +2486,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addedMsg.gridDiscoveryData() != null)
                     addedMsg.clearDiscoveryData();
 
-                // Update the marshallable data.
+                // Ensure that the required data is marshalled after the message creation.
                 addedMsg.prepareMarshal(spi.marshaller());
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
@@ -2648,6 +2649,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     prepareNodeAddedMessage(msg0, destNodeId, null);
 
                     msg0.topology(addedMsg.clientTopology());
+
+                    // Ensure that the chnaged data is remarshalled.
+                    msg0.prepareMarshal(spi.marshaller());
 
                     return msg0;
                 }

@@ -185,14 +185,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
                 throw new IgniteException("Failed to marshal serializable pending messages.", e);
             }
         }
-
-        if (F.isEmpty(pendingMsgs))
-            return;
-
-        for (Message msg : pendingMsgs.values()) {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage)
-                ((TcpDiscoveryNodeAddedMessage)msg).prepareMarshal(marsh);
-        }
     }
 
     /**
@@ -325,14 +317,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable List<TcpDiscoveryAbstractMessage> msgs) {
+        serializablePendingMsgsBytes = null;
+
         if (F.isEmpty(msgs)) {
             serializablePendingMsgs = null;
             pendingMsgs = null;
-            serializablePendingMsgsBytes = null;
 
             return;
         }
 
+        // Keeps the original message order as in a list.
         int idx = 0;
 
         for (TcpDiscoveryAbstractMessage m : msgs) {
