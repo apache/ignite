@@ -40,8 +40,14 @@
 
         <property name="authenticationEnabled" value="true"/>
 
-        <property name="persistentStoreConfiguration">
-            <bean class="org.apache.ignite.configuration.PersistentStoreConfiguration"/>
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persitenceEnabled" value="true"/>
+                    </bean>
+                </property>
+            </bean>
         </property>
 
         <property name="clientConnectorConfiguration">
