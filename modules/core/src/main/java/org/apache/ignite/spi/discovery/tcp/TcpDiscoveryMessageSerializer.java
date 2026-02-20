@@ -32,9 +32,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
  * <p>
  * It is used in a special case: when server wants to send discovery messages to clients, it may not have a {@link TcpDiscoveryIoSession}
  * to serialize the messages.
- * This class enables server to serialize discovery messages anyway, diplicating serialization code from {@link TcpDiscoveryIoSession}.
+ * This class enables server to serialize discovery messages anyway, duplicating serialization code from {@link TcpDiscoveryIoSession}.
  */
-public class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
+class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
     /**
      * @param spi Discovery SPI instance.
      */
@@ -67,32 +67,5 @@ public class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
 
             return out.toByteArray();
         }
-    }
-
-
-    /**
-     * Serializes a discovery message into given output stream.
-     *
-     * @param m Discovery message to serialize.
-     * @param out Output stream to write serialized message.
-     * @throws IOException If serialization fails.
-     */
-    void serializeMessage(Message m, OutputStream out) throws IOException {
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
-
-        msgWriter.reset();
-        msgWriter.setBuffer(msgBuf);
-
-        boolean finished;
-
-        do {
-            // Should be cleared before first operation.
-            msgBuf.clear();
-
-            finished = msgSer.writeTo(m, msgWriter);
-
-            out.write(msgBuf.array(), 0, msgBuf.position());
-        }
-        while (!finished);
     }
 }

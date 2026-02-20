@@ -249,7 +249,7 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    private void serializeMessage(Message m, OutputStream out) throws IOException {
+    void serializeMessage(Message m, OutputStream out) throws IOException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();
