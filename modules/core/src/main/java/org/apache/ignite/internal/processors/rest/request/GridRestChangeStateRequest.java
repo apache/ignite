@@ -26,9 +26,6 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /** Active. */
     private boolean active;
 
-    /** Request current state. */
-    private boolean reqCurrentState;
-
     /** If {@code true}, cluster deactivation will be forced. */
     private boolean forceDeactivation;
 
@@ -50,7 +47,6 @@ public class GridRestChangeStateRequest extends GridRestRequest {
      *
      */
     public void reqCurrentState() {
-        reqCurrentState = true;
     }
 
     /**

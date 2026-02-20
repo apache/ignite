@@ -35,9 +35,6 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** Task parameter. */
     private Object arg;
 
-    /** Keep binary flag. */
-    private boolean keepBinaries;
-
     /**
      * @return Task name.
      */

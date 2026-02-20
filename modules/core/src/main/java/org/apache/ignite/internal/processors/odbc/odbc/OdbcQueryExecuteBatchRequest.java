@@ -34,9 +34,6 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     @GridToStringInclude(sensitive = true)
     private final String sqlQry;
 
-    /** Last param page flag. */
-    private final boolean last;
-
     /** Sql query arguments. */
     @GridToStringExclude
     private final Object[][] args;
@@ -66,7 +63,6 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
 
         this.schema = schema;
         this.sqlQry = sqlQry;
-        this.last = last;
         this.args = args;
         this.timeout = timeout;
         this.autoCommit = autoCommit;

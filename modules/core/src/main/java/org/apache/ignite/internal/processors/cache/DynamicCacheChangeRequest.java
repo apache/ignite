@@ -89,9 +89,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Template configuration flag. */
     private boolean template;
 
-    /** */
-    private UUID rcvdFrom;
-
     /** Reset lost partitions flag. */
     private boolean resetLostPartitions;
 
