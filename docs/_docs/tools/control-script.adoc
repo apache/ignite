@@ -1255,6 +1255,214 @@ TASKS                          SYS       Running compute tasks
 Command [SYSTEM-VIEW] finished with code: 0
 
 
+== Working With Persistence Data
+
+[WARNING]
+====
+All `--persistence` commands below function exclusively in link:maintenance-mode[Maintenance Mode]
+====
+
+=== Displaying Information About Damaged Caches
+
+Use the `--persistence info` option to display information about potentially damaged caches in the local node:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence info
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence info
+----
+--
+
+=== Cleaning Up Damaged Caches
+
+Use the `--persistence clean corrupted` option to clear directories containing caches with corrupted data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence clean corrupted
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence clean corrupted
+----
+--
+
+=== Clearing All Caches
+
+Use the `--persistence clean all` option to delete all cache directories:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence clean all
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence clean all
+----
+--
+
+=== Clearing Specific Caches
+
+Use the `--persistence clean caches` option to delete specific listed caches:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence clean caches cache1,cache2,cache3
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence clean caches cache1,cache2,cache3
+----
+--
+
+where `cache1,cache2,cache3` are comma-separated cache names.
+
+=== Backing Up Damaged Files
+
+Use the `--persistence backup corrupted` option to back up corrupted data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence backup corrupted
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence backup corrupted
+----
+--
+
+=== Backing Up All Cache Files
+
+Use the `--persistence backup all` option to back up all cache data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence backup all
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence backup all
+----
+--
+
+=== Backing Up Specific Cache Files
+
+Use the `--persistence backup caches` option to back up specified cache data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence backup caches cache1,cache2,cache3
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence backup caches cache1,cache2,cache3
+----
+--
+
+where `cache1,cache2,cache3` are comma-separated cache names.
+
+
+== Defragmentation
+
+=== Scheduling Defragmentation
+
+Use the `--defragmentation schedule` option to schedule Persistent Data Store (PDS) defragmentation:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --defragmentation schedule --nodes consistentId0,consistentId1 [--caches cache1,cache2,cache3]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --defragmentation schedule --nodes consistentId0,consistentId1 [--caches cache1,cache2,cache3]
+----
+--
+
+As a result, the next node start-up will occur in Maintenance Mode, during which the defragmentation will be performed automatically.
+To exit Maintenance Mode afterward, simply restart the node.
+
+=== Checking Defragmentation Status
+
+[WARNING]
+====
+Available Exclusively in link:maintenance-mode[Maintenance Mode]
+====
+
+Use the `--defragmentation status` option to retrieve the status of ongoing defragmentation processes:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --defragmentation status
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --defragmentation status
+----
+--
+
+=== Canceling Defragmentation
+
+[WARNING]
+====
+Available Exclusively in link:maintenance-mode[Maintenance Mode]
+====
+
+Use the `--defragmentation cancel` option to cancel either a scheduled or active Persistent Data Store (PDS) defragmentation:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --defragmentation cancel
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --defragmentation cancel
+----
+--
+
+
 == Performance Statistics
 
 Ignite provides a built-in tool for cluster profiling. Read link:monitoring-metrics/performance-statistics[Performance Statistics] for more information.
@@ -1405,7 +1613,7 @@ control.sh|bat --cache metrics enable --caches cache-2,cache-1
 
 == Rebuild index
 
-The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for specified caches or cache groups. Target caches or cache groups must be in Maintenance Mode.
+The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for specified caches or cache groups. Target caches or cache groups must be in link:maintenance-mode[Maintenance Mode].
 
 [source, shell]
 ----
