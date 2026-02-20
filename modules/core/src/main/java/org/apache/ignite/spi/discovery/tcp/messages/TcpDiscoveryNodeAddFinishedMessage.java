@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -148,10 +147,8 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         this.clientNodeAttrsBytes = clientNodeAttrsBytes;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         if (clientNodeAttrs != null && clientNodeAttrsBytes == null) {
             try {
                 clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
@@ -162,11 +159,8 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         }
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (F.isEmpty(clientNodeAttrsBytes))
             clientNodeAttrs = null;
         else {

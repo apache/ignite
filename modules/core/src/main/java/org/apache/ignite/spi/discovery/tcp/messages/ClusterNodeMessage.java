@@ -30,17 +30,11 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Message for {@link ClusterNode}. Requites pre- and post- serialization with the class loader.
- * <br>
- * Requires pre- and -post marshalling.
- *
- * @see #prepareMarshal(Marshaller)
- * @see #finishUnmarshal(Marshaller, ClassLoader)
+ * Message for {@link ClusterNode}.
  */
-public class ClusterNodeMessage implements Message {
+public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     /** Node ID. */
     @Order(0)
     private UUID id;
@@ -109,8 +103,8 @@ public class ClusterNodeMessage implements Message {
         attrs = clusterNode.attributes();
     }
 
-    /** @param marsh Marshalled. */
-    public void prepareMarshal(Marshaller marsh) {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         if (!F.isEmpty(attrs) && attrsBytes == null) {
             try {
                 attrsBytes = U.marshal(marsh, attrs);
@@ -130,11 +124,8 @@ public class ClusterNodeMessage implements Message {
         }
     }
 
-    /**
-     * @param marsh Marshalled.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (attrsBytes != null && F.isEmpty(attrs)) {
             try {
                 attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
@@ -256,6 +247,7 @@ public class ClusterNodeMessage implements Message {
     /** @param consistentId Node consistent id. */
     public void consistentId(Serializable consistentId) {
         this.consistentId = consistentId;
+        consistentIdBytes = null;
     }
 
     /** @return Node's attributes. */
@@ -266,6 +258,7 @@ public class ClusterNodeMessage implements Message {
     /** @param attrs Node's attributes. */
     public void attributes(Map<String, Object> attrs) {
         this.attrs = attrs;
+        attrsBytes = null;
     }
 
     /** {@inheritDoc} */

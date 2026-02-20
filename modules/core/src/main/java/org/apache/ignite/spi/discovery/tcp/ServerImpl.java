@@ -261,7 +261,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Metric for max message queue size. */
     private MaxValueMetric maxMsgQueueSizeMetric;
 
-    /** Failed nodes (but still in topology). */
+    /** Failed nodes (but still in topology): Node -> Id of the failure issuer node. */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
 
     /** */
@@ -1897,9 +1897,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 nodeAddedMsg.topologyHistory(hist);
-
-                // Re-marshall the changed data.
-                nodeAddedMsg.prepareMarshal(spi.marshaller());
             }
         }
     }
@@ -2485,17 +2482,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Do not need this data for client reconnect.
                 if (addedMsg.gridDiscoveryData() != null)
                     addedMsg.clearDiscoveryData();
-
-                // Ensure that the required data is marshalled after the message creation.
-                addedMsg.prepareMarshal(spi.marshaller());
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
@@ -2649,9 +2641,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     prepareNodeAddedMessage(msg0, destNodeId, null);
 
                     msg0.topology(addedMsg.clientTopology());
-
-                    // Ensure that the chnaged data is remarshalled.
-                    msg0.prepareMarshal(spi.marshaller());
 
                     return msg0;
                 }
@@ -3115,11 +3104,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (!locNode.id().equals(msg.senderNodeId()) && ensured)
                 lastRingMsgTimeNanos = System.nanoTime();
-
-            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                ((TcpDiscoveryNodeAddedMessage)msg).finishUnmarshal(spi.marshaller(),
-                    U.resolveClassLoader(spi.ignite().configuration()));
-            }
 
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
@@ -3819,13 +3803,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    for (TcpDiscoveryNode failedNode : failedNodes) {
-                        if (!ServerImpl.this.failedNodes.containsKey(failedNode))
-                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
-                    }
+                    failedNodes.forEach(failedNode -> {
+                        ServerImpl.this.failedNodes.putIfAbsent(failedNode, locNodeId);
 
-                    for (TcpDiscoveryNode failedNode : failedNodes)
                         failedNodesMsgSent.add(failedNode.id());
+                    });
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
@@ -4849,8 +4831,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
-
-                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -4877,11 +4857,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
                 // Local node already has node from message in local topology.
                 // Just pass it to coordinator via the ring.
-                if (sendMessageToRemotes(msg)) {
-                    msg.prepareMarshal(spi.marshaller());
-
+                if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
-                }
 
                 if (log.isDebugEnabled()) {
                     log.debug("Local node already has node being added. Passing TcpDiscoveryNodeAddedMessage to " +
@@ -5104,11 +5081,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processMessageFailedNodes(msg);
             }
 
-            if (sendMessageToRemotes(msg)) {
-                msg.prepareMarshal(spi.marshaller());
-
+            if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
-            }
         }
 
         /**

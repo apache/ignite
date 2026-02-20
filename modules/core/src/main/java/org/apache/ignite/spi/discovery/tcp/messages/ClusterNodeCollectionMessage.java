@@ -21,17 +21,9 @@ import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Container message for a collection of {@link ClusterNodeMessage}.
- * <br>
- * Requires pre- and post- marshalling.
- *
- * @see #prepareMarshal(Marshaller)
- * @see #prepareMarshal(Marshaller)
- */
+/** A container message for a collection of {@link ClusterNodeMessage}. */
 public class ClusterNodeCollectionMessage implements Message {
     /** The collection of wrapped {@link ClusterNodeMessage}. */
     @Order(value = 0, method = "clusterNodeMessages")
@@ -45,19 +37,6 @@ public class ClusterNodeCollectionMessage implements Message {
     /** @param clusterNodeMsgs Holder messages of {@link ClusterNode}. */
     public ClusterNodeCollectionMessage(Collection<ClusterNodeMessage> clusterNodeMsgs) {
         this.clusterNodeMsgs = clusterNodeMsgs;
-    }
-
-    /** @param marsh Marshalled. */
-    public void prepareMarshal(Marshaller marsh) {
-        clusterNodeMsgs.forEach(msg -> msg.prepareMarshal(marsh));
-    }
-
-    /**
-     * @param marsh Marshalled.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        clusterNodeMsgs.forEach(msg -> msg.finishUnmarshal(marsh, clsLdr));
     }
 
     /** @return Holder messages of {@link ClusterNode}. */
