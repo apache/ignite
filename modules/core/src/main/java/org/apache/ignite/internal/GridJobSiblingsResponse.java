@@ -35,7 +35,7 @@ public class GridJobSiblingsResponse implements Message {
 
     /** */
     @Order(0)
-    private byte[] siblingsBytes;
+    byte[] siblingsBytes;
 
     /**
      * Empty constructor.

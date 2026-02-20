@@ -49,11 +49,8 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
                     .setCdcEnabled(true)
                     .setPersistenceEnabled(false)));
         }
-        else {
-            cfg.getDataStorageConfiguration().setWalMode(getTestIgniteInstanceName(0).equals(igniteInstanceName)
-                ? WALMode.BACKGROUND
-                : WALMode.LOG_ONLY);
-        }
+        else
+            cfg.getDataStorageConfiguration().setWalMode(WALMode.LOG_ONLY);
 
         return cfg;
     }
@@ -86,7 +83,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         assertFalse(out.contains(cli.localNode().id().toString()));
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
 
-        outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*" + WALMode.BACKGROUND);
+        outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*" + WALMode.LOG_ONLY);
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*" + WALMode.LOG_ONLY);
         outputContains(CU.UTILITY_CACHE_NAME + ".*true.*true.*true.*true.*false");
 

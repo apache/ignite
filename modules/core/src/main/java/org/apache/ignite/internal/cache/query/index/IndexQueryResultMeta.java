@@ -38,15 +38,15 @@ import org.jetbrains.annotations.Nullable;
 public class IndexQueryResultMeta implements Message {
     /** Index key settings. */
     @Order(0)
-    private IndexKeyTypeSettings keyTypeSettings;
+    IndexKeyTypeSettings keyTypeSettings;
 
     /** Index names order holder. Should be serialized together with  the definitions. */
-    @Order(value = 1, method = "orderedIndexNames")
-    private @Nullable String[] idxNames;
+    @Order(1)
+    @Nullable String[] idxNames;
 
     /** Index definitions serialization holder. Should be serialized together with the names. */
-    @Order(value = 2, method = "orderedIndexDefinitions")
-    private @Nullable IndexKeyDefinition[] idxDefs;
+    @Order(2)
+    @Nullable IndexKeyDefinition[] idxDefs;
 
     /** */
     public IndexQueryResultMeta() {

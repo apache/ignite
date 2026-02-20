@@ -31,15 +31,15 @@ import org.jetbrains.annotations.Nullable;
 public class ContinuousRoutineStartResultMessage implements Message {
     /** */
     @Order(0)
-    private UUID routineId;
+    UUID routineId;
 
     /** */
-    @Order(value = 1, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(1)
+    @Nullable ErrorMessage errMsg;
 
     /** */
-    @Order(value = 2, method = "countersMap")
-    private CachePartitionPartialCountersMap cntrsMap;
+    @Order(2)
+    CachePartitionPartialCountersMap cntrsMap;
 
     /**
      *

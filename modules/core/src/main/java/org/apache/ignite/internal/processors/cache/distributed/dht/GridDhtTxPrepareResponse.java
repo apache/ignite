@@ -41,23 +41,23 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Evicted readers. */
     @GridToStringInclude
     @Order(9)
-    private @Nullable Collection<IgniteTxKey> nearEvicted;
+    @Nullable Collection<IgniteTxKey> nearEvicted;
 
     /** Future ID.  */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(10)
+    IgniteUuid futId;
 
     /** Mini future ID. */
     @Order(11)
-    private int miniId;
+    int miniId;
 
     /** Invalid partitions by cache ID. */
-    @Order(value = 12, method = "invalidPartitions")
-    private @Nullable Map<Integer, int[]> invalidParts;
+    @Order(12)
+    @Nullable Map<Integer, int[]> invalidParts;
 
     /** Preload entries found on backup node. */
     @Order(13)
-    private @Nullable List<GridCacheEntryInfo> preloadEntries;
+    @Nullable List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor.

@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
@@ -116,6 +117,24 @@ public class ZookeeperDiscoverySpiTestConfigurator {
         /** */
         @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
             internalLsnr = lsnr;
+        }
+
+        /**
+         * Creates copy of current SPI instance. Is called by test framework using reflection
+         * (see {@link GridAbstractTest#startRemoteGrid}).
+         *
+         * @return Copy of current SPI instance.
+         */
+        public ZookeeperDiscoverySpi cloneSpiConfiguration() {
+            ZookeeperDiscoverySpi spi = new TestZookeeperDiscoverySpi();
+
+            spi.setZkRootPath(getZkRootPath());
+            spi.setZkConnectionString(getZkConnectionString());
+            spi.setSessionTimeout(getSessionTimeout());
+            spi.setJoinTimeout(getJoinTimeout());
+            spi.setClientReconnectDisabled(isClientReconnectDisabled());
+
+            return spi;
         }
     }
 }
