@@ -65,24 +65,10 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
     }
 
     /**
-     * @param results Services deployments results.
-     */
-    public void results(Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results) {
-        this.results = results;
-    }
-
-    /**
      * @return Deployment process id.
      */
     public ServiceDeploymentProcessId deploymentId() {
         return depId;
-    }
-
-    /**
-     * @param depId Deployment process id.
-     */
-    public void deploymentId(ServiceDeploymentProcessId depId) {
-        this.depId = depId;
     }
 
     /** {@inheritDoc} */

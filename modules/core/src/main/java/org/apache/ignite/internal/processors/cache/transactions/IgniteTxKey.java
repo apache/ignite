@@ -63,24 +63,10 @@ public class IgniteTxKey implements Message {
     }
 
     /**
-     * @param key New key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
      * @return Cache ID.
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @param cacheId New cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
     }
 
     /**

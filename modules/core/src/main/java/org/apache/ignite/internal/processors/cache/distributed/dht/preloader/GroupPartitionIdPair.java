@@ -56,24 +56,10 @@ public class GroupPartitionIdPair implements Message {
     }
 
     /**
-     * @param grpId Group ID.
-     */
-    public void groupId(int grpId) {
-        this.grpId = grpId;
-    }
-
-    /**
      * @return Partition ID.
      */
     public int partitionId() {
         return partId;
-    }
-
-    /**
-     * @param partId Partition ID.
-     */
-    public void partitionId(int partId) {
-        this.partId = partId;
     }
 
     /** {@inheritDoc} */

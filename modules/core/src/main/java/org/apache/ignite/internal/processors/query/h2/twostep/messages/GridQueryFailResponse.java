@@ -79,13 +79,6 @@ public class GridQueryFailResponse implements Message {
     }
 
     /**
-     * @param qryReqId Query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
-    }
-
-    /**
      * @return Error.
      */
     public String error() {
@@ -93,24 +86,10 @@ public class GridQueryFailResponse implements Message {
     }
 
     /**
-     * @param errMsg Error.
-     */
-    public void error(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @return Fail code.
      */
     public byte failCode() {
         return failCode;
-    }
-
-    /**
-     * @param failCode Fail code.
-     */
-    public void failCode(byte failCode) {
-        this.failCode = failCode;
     }
 
     /** {@inheritDoc} */

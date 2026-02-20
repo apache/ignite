@@ -114,20 +114,6 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
         map = that.map;
     }
 
-    /**
-     * @return Partition history suppliers map.
-     */
-    public Map<UUID, PartitionReservationsMap> historySuppliers() {
-        return map;
-    }
-
-    /**
-     * @param map Partition history suppliers map.
-     */
-    public void historySuppliers(Map<UUID, PartitionReservationsMap> map) {
-        this.map = map;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDhtPartitionHistorySuppliersMap.class, this);

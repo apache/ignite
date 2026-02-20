@@ -40,13 +40,6 @@ public class PartitionReservationsMap implements Message {
     }
 
     /**
-     * @param map Partition reservations map.
-     */
-    public void reservations(Map<GroupPartitionIdPair, Long> map) {
-        this.map = map;
-    }
-
-    /**
      * @param pair Pair of group ID and partition ID.
      * @return History counter for this pair or null.
      */

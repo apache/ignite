@@ -59,20 +59,6 @@ public class GridJobSiblingsResponse implements Message {
     }
 
     /**
-     * @return Serialized siblings.
-     */
-    public byte[] siblingsBytes() {
-        return siblingsBytes;
-    }
-
-    /**
-     * @param siblingsBytes Serialized siblings.
-     */
-    public void siblingsBytes(byte[] siblingsBytes) {
-        this.siblingsBytes = siblingsBytes;
-    }
-
-    /**
      * Marshals siblings to byte array.
      *
      * @param marsh Marshaller.
