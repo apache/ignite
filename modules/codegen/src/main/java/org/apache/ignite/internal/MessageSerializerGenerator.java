@@ -728,7 +728,7 @@ public class MessageSerializerGenerator {
     }
 
     /**
-     * Generate code of reading single field:
+     * Generate code of reading single field.
      *
      * @param field Field.
      * @param mtd Method name.
