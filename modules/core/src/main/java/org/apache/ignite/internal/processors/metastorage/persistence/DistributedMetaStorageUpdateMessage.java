@@ -47,6 +47,9 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     private final byte[] valBytes;
 
     /** */
+    private String errorMsg;
+
+    /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
         this.reqId = reqId;
         this.key = key;
