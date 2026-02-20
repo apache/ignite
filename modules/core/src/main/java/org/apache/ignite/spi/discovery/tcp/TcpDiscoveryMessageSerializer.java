@@ -18,10 +18,10 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
+import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -34,28 +34,20 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
  * to serialize the messages.
  * This class enables server to serialize discovery messages anyway, diplicating serialization code from {@link TcpDiscoveryIoSession}.
  */
-public class TcpDiscoveryMessageSerializer {
-    /** Size for an intermediate buffer for serializing discovery messages. */
-    static final int MSG_BUFFER_SIZE = 100;
-
-    /** */
-    private final TcpDiscoverySpi spi;
-
-    /** */
-    private final DirectMessageWriter msgWriter;
-
-    /** Intermediate buffer for serializing discovery messages. */
-    final ByteBuffer msgBuf;
-
+public class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
     /**
      * @param spi Discovery SPI instance.
      */
     public TcpDiscoveryMessageSerializer(TcpDiscoverySpi spi) {
-        this.spi = spi;
+        super(new Socket() {
+            @Override public OutputStream getOutputStream() throws IOException {
+                return null;
+            }
 
-        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-
-        msgWriter = new DirectMessageWriter(spi.messageFactory());
+            @Override public InputStream getInputStream() throws IOException {
+                return null;
+            }
+        }, spi);
     }
 
     /**
