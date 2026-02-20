@@ -14,8 +14,6 @@
 // limitations under the License.
 = System Views
 
-WARNING: The system views are an experimental feature and can be changed in future releases.
-
 Ignite provides a number of built-in SQL views that contain information about cluster nodes and node metrics.
 The views are available in the SYS schema.
 See the link:SQL/schemas[Understanding Schemas] page for the information on how to access a non-default schema.
@@ -787,6 +785,21 @@ This view exposes information about the distribution of cache group partitions a
 |NODE_ID | UUID | Node ID
 |STATE | string | Partition state. Possible states: MOVING - partition is being loaded from another node to this node; OWNING - this node is either a primary or backup owner; RENTING - this node is neither primary nor back up owner (is being currently evicted); EVICTED - partition has been evicted; LOST - partition state is invalid, the partition should not be used.
 |IS_PRIMARY | boolean  | Primary partition flag
+|===
+
+== LOCAL_CACHE_GROUPS_IO
+
+This view exposes information about local node IO statistics for cache groups.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|CACHE_GROUP_ID | int| Cache group ID
+|CACHE_GROUP_NAME | string| Cache group name
+|PHYSICAL_READS | long | Count of logical page reads
+|LOGICAL_READS | long | Count of physical page reads
+|INSERTED_BYTES | long | Count of inserted to store bytes
+|REMOVED_BYTES | long | Count of removed from store bytes
 |===
 
 == BINARY_METADATA

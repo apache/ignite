@@ -958,7 +958,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets platform cache configuration.
         /// More details: <see cref="PlatformCacheConfiguration"/>. 
         /// </summary>
-        [IgniteExperimental]
         public PlatformCacheConfiguration PlatformCacheConfiguration { get; set; }
 
         /// <summary>

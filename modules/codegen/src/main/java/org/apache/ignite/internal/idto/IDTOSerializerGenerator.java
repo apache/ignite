@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -84,11 +85,11 @@ public class IDTOSerializerGenerator {
 
     /** */
     private static final IgniteBiTuple<String, String> OBJECT_SERDES =
-        F.t("out.writeObject(${var});", "(${Type})in.readObject()");
+        F.t("out.writeObject(${var})", "(${Type})in.readObject()");
 
     /** */
     private static final IgniteBiTuple<String, String> STR_STR_MAP =
-        F.t("U.writeStringMap(out, ${var});", "U.readStringMap(in)");
+        F.t("U.writeStringMap(out, ${var})", "U.readStringMap(in)");
 
     /** Type name to write/read code for the type. */
     private static final Map<String, IgniteBiTuple<String, String>> TYPE_SERDES = new HashMap<>();
@@ -124,13 +125,6 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put("org.apache.ignite.cluster.ClusterNode", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.cache.CacheMode",
             F.t("out.writeByte(CacheMode.toCode(${var}));", "CacheMode.fromCode(in.readByte())"));
-
-        TYPE_SERDES.put(TreeMap.class.getName(), F.t("U.writeMap(out, ${var})", "U.readTreeMap(in)"));
-        TYPE_SERDES.put(LinkedHashMap.class.getName(), F.t("U.writeMap(out, ${var})", "U.readLinkedMap(in)"));
-        TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, ${var})", "U.readMap(in)"));
-        TYPE_SERDES.put(Collection.class.getName(), F.t("U.writeCollection(out, ${var})", "U.readCollection(in)"));
-        TYPE_SERDES.put(List.class.getName(), F.t("U.writeCollection(out, ${var})", "U.readList(in)"));
-        TYPE_SERDES.put(Set.class.getName(), F.t("U.writeCollection(out, ${var})", "U.readSet(in)"));
     }
 
     /** Write/Read code for enum. */
@@ -163,6 +157,21 @@ public class IDTOSerializerGenerator {
     /** Environment. */
     private final ProcessingEnvironment env;
 
+    /** Serializable type. */
+    private final TypeMirror serializableCls;
+
+    /** Dto type. */
+    private final TypeMirror dtoCls;
+
+    /** Want to generate specialized code for collections. */
+    private final TypeMirror coll;
+
+    /** Want to generate specialized code for maps. */
+    private final TypeMirror map;
+
+    /** IgniteBiTuple extends Map (sic!) and placed in public API (sic!) so want to generate specialized code for it. */
+    private final TypeMirror biTuple;
+
     /** Type to generated serializer for. */
     private final TypeElement type;
 
@@ -182,6 +191,12 @@ public class IDTOSerializerGenerator {
     public IDTOSerializerGenerator(ProcessingEnvironment env, TypeElement type) {
         this.env = env;
         this.type = type;
+
+        serializableCls = env.getElementUtils().getTypeElement(Serializable.class.getName()).asType();
+        dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
+        coll = env.getElementUtils().getTypeElement(Collection.class.getName()).asType();
+        map = env.getElementUtils().getTypeElement(Map.class.getName()).asType();
+        biTuple = env.getTypeUtils().erasure(env.getElementUtils().getTypeElement(IgniteBiTuple.class.getName()).asType());
     }
 
     /** @return Fully qualified name for generated class. */
@@ -298,7 +313,7 @@ public class IDTOSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
         writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) +
-            "<" + typeWithGeneric() + "> {" + NL);
+            "<" + typeWithGeneric(type.asType()) + "> {" + NL);
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
@@ -308,7 +323,7 @@ public class IDTOSerializerGenerator {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void writeExternal(" + typeWithGeneric() + " obj, ObjectOutput out) throws IOException {");
+        code.add("@Override public void writeExternal(" + typeWithGeneric(type.asType()) + " obj, ObjectOutput out) throws IOException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
@@ -324,7 +339,7 @@ public class IDTOSerializerGenerator {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void readExternal(" + typeWithGeneric() + " obj, ObjectInput in) " +
+        code.add("@Override public void readExternal(" + typeWithGeneric(type.asType()) + " obj, ObjectInput in) " +
             "throws IOException, ClassNotFoundException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
@@ -352,75 +367,214 @@ public class IDTOSerializerGenerator {
         TypeMirror type,
         String var
     ) {
-        TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
-        TypeMirror coll = env.getElementUtils().getTypeElement(Collection.class.getName()).asType();
+        IgniteBiTuple<String, String> serDes;
 
-        IgniteBiTuple<String, String> serDes = null;
-
-        if (type.getKind() == TypeKind.ARRAY)
+        if (isArray(type))
             return arrayCode(type, var);
-        else if (env.getTypeUtils().isAssignable(env.getTypeUtils().erasure(type), coll))
+        else if (isCollection(type))
             return collectionCode(type, var);
-        else if (env.getTypeUtils().isAssignable(type, dtoCls))
+        else if (isBiTuple(type))
+            return biTupleCode(type, var);
+        else if (isMap(type))
+            return mapCode(type, var);
+        else if (isDto(type))
             serDes = OBJECT_SERDES;
         else if (type.getKind() == TypeKind.TYPEVAR)
             serDes = F.t("out.writeObject(${var})", "in.readObject()");
         else {
-            if (className(type).equals(Map.class.getName())) {
-                TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
-
-                DeclaredType dt = (DeclaredType)type;
-
-                List<? extends TypeMirror> ta = dt.getTypeArguments();
-
-                if (ta.size() == 2
-                    && env.getTypeUtils().isAssignable(ta.get(0), strCls)
-                    && env.getTypeUtils().isAssignable(ta.get(1), strCls)) {
-                    serDes = STR_STR_MAP;
-                }
-            }
+            serDes = TYPE_SERDES.get(className(type));
 
             if (serDes == null) {
-                serDes = TYPE_SERDES.get(className(type));
-
-                if (serDes == null && enumType(env, type))
+                if (enumType(env, type))
                     serDes = ENUM_SERDES;
+                else if (isSerializable(type))
+                    serDes = OBJECT_SERDES;
             }
         }
 
         throwIfNull(type, serDes);
 
-        boolean notNull = type.toString().startsWith("@" + NotNull.class.getName());
+        boolean nullable = !type.toString().startsWith("@" + NotNull.class.getName());
 
-        Stream<String> code;
+        if (nullable || write)
+            return simpleSerdes(serDes, var, type);
 
-        if (notNull && !write) {
-            /**
-             * Intention here to change `obj.field = U.readSomething();` line to:
-             * ```
-             * {
-             *    Type maybeNull = U.readSomething();
-             *    if (maybeNull != null)
-             *        obj.field = maybeNull;
-             * }
-             * ```
-             * We want to respect @NotNull annotation and keep default value.
-             */
-
-            code = Stream.of("{",
-                TAB + "${Type} maybeNull = " + serDes.get2() + ";",
-                TAB + "if (maybeNull != null)",
-                TAB + TAB + "${var} = maybeNull;",
-                "}");
-        }
-        else
-            code = Stream.of((write ? serDes.get1() : simpleRead(serDes)) + ";");
-
-        return code.map(line -> replacePlaceholders(line, var, type));
+        /**
+         * Intention here to change `obj.field = U.readSomething();` line to:
+         * ```
+         * {
+         *    Type maybeNull = U.readSomething();
+         *    if (maybeNull != null)
+         *        obj.field = maybeNull;
+         * }
+         * ```
+         * We want to respect @NotNull annotation and keep default value.
+         */
+        return Stream.of("{",
+            TAB + "${Type} maybeNull = " + serDes.get2() + ";",
+            TAB + "if (maybeNull != null)",
+            TAB + TAB + "${var} = maybeNull;",
+            "}"
+        ).map(line -> replacePlaceholders(line, var, type));
     }
 
     /**
-     * @param type Collection type
+     * @param type IgniteBiTuple type.
+     * @param var Variable to read(write) from(to).
+     * @return Serdes code for IgniteBiTuple.
+     */
+    private Stream<String> biTupleCode(TypeMirror type, String var) {
+        DeclaredType dt = (DeclaredType)type;
+
+        List<? extends TypeMirror> ta = dt.getTypeArguments();
+
+        assert ta.size() == 2;
+
+        TypeMirror keyType = ta.get(0);
+        TypeMirror valType = ta.get(1);
+
+        Stream<String> res;
+
+        String k = withLevel("k");
+        String v = withLevel("v");
+
+        Map<String, String> params = Map.of(
+            "${var}", var,
+            "${KeyType}", typeWithGeneric(keyType),
+            "${ValType}", typeWithGeneric(valType),
+            "${k}", k,
+            "${v}", v
+        );
+
+        level++;
+
+        if (write) {
+            res = Stream.of("{",
+                TAB + "${KeyType} ${k} = ${var}.get1();",
+                TAB + "${ValType} ${v} = ${var}.get2();");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + line));
+            res = Stream.concat(res, Stream.of("}"));
+        }
+        else {
+            imports.add(IgniteBiTuple.class.getName());
+
+            res = Stream.of("{",
+                TAB + "${KeyType} ${k} = null;",
+                TAB + "${ValType} ${v} = null;");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + "${var} = new IgniteBiTuple<>(${k}, ${v});", "}"));
+        }
+
+        level--;
+
+        return res.map(line -> replacePlaceholders(line, params));
+    }
+
+    /**
+     * @param type Map type.
+     * @param var Variable to read(write) from(to).
+     * @return Serdes code for map.
+     */
+    private Stream<String> mapCode(TypeMirror type, String var) {
+        IgniteBiTuple<String, String> serDes = null;
+
+        DeclaredType dt = (DeclaredType)type;
+
+        List<? extends TypeMirror> ta = dt.getTypeArguments();
+
+        assert ta.size() == 2;
+
+        TypeMirror keyType = ta.get(0);
+        TypeMirror valType = ta.get(1);
+        TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
+
+        if (className(type).equals(Map.class.getName()) && assignableFrom(keyType, strCls) && assignableFrom(valType, strCls))
+            serDes = STR_STR_MAP;
+
+        if (serDes == null && !hasCustomSerdes(keyType) && !hasCustomSerdes(valType)) {
+            if (className(type).equals(TreeMap.class.getName()))
+                serDes = F.t("U.writeMap(out, ${var})", "U.readTreeMap(in)");
+            else if (className(type).equals(LinkedHashMap.class.getName()))
+                serDes = F.t("U.writeMap(out, ${var})", "U.readLinkedMap(in)");
+            else
+                serDes = F.t("U.writeMap(out, ${var})", "U.readMap(in)");
+        }
+
+        // Map special case or Ignite can't serialize map entries efficiently.
+        if (serDes != null)
+            return simpleSerdes(serDes, var, type);
+
+        Stream<String> res;
+
+        String el = withLevel("el");
+        String k = withLevel("k");
+        String v = withLevel("v");
+        String mapImpl = className(type).equals(TreeMap.class.getName())
+            ? TreeMap.class.getName()
+            : className(type).equals(LinkedHashMap.class.getName())
+                ? LinkedHashMap.class.getName()
+                : HashMap.class.getName();
+
+        imports.add(mapImpl);
+
+        Map<String, String> params = Map.of(
+            "${var}", var,
+            "${KeyType}", typeWithGeneric(keyType),
+            "${ValType}", typeWithGeneric(valType),
+            "${MapImpl}", simpleName(mapImpl),
+            "${len}", withLevel("len"),
+            "${i}", withLevel("i"),
+            "${k}", k,
+            "${v}", v,
+            "${el}", el
+        );
+
+        level++;
+
+        if (write) {
+            imports.add(Map.class.getName());
+            imports.add(Map.Entry.class.getName().replace('$', '.'));
+
+            res = Stream.of("{",
+                TAB + "int ${len} = ${var} == null ? -1 : ${var}.size();",
+                TAB + "out.writeInt(${len});",
+                TAB + "if (${len} > 0) {",
+                TAB + TAB + "for (Map.Entry<${KeyType}, ${ValType}> ${el} : ${var}.entrySet()) {",
+                TAB + TAB + TAB + "${KeyType} ${k} = ${el}.getKey();",
+                TAB + TAB + TAB + "${ValType} ${v} = ${el}.getValue();");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
+        }
+        else {
+            imports.add(HashMap.class.getName());
+
+            res = Stream.of("{",
+                TAB + "int ${len} = in.readInt();",
+                TAB + "if (${len} >= 0) {",
+                TAB + TAB + "${var} = new ${MapImpl}<>();",
+                TAB + TAB + "for (int ${i} = 0; ${i} < ${len}; ${i}++) {",
+                TAB + TAB + TAB + "${KeyType} ${k} = null;",
+                TAB + TAB + TAB + "${ValType} ${v} = null;");
+
+            res = Stream.concat(res, variableCode(keyType, k).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, variableCode(valType, v).map(line -> TAB + TAB + TAB + line));
+            res = Stream.concat(res, Stream.of(TAB + TAB + TAB + "${var}.put(${k}, ${v});"));
+            res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
+        }
+
+        level--;
+
+        return res.map(line -> replacePlaceholders(line, params));
+    }
+
+    /**
+     * @param type Collection type.
      * @param var Variable to read(write) from(to).
      * @return Serdes code for collection.
      */
@@ -431,27 +585,32 @@ public class IDTOSerializerGenerator {
 
         TypeMirror colEl = dt.getTypeArguments().get(0);
 
-        if (!TYPE_SERDES.containsKey(className(colEl)) && !enumType(env, colEl)) {
+        if (!hasCustomSerdes(colEl)) {
             // Ignite can't serialize collections elements efficiently.
-            IgniteBiTuple<String, String> serDes = TYPE_SERDES.get(className(type));
+            IgniteBiTuple<String, String> serDes = null;
+
+            if (Collection.class.getName().equals(className(type)))
+                serDes = F.t("U.writeCollection(out, ${var})", "U.readCollection(in)");
+            else if (List.class.getName().equals(className(type)))
+                serDes = F.t("U.writeCollection(out, ${var})", "U.readList(in)");
+            else if (Set.class.getName().equals(className(type)))
+                serDes = F.t("U.writeCollection(out, ${var})", "U.readSet(in)");
 
             throwIfNull(type, serDes);
 
-            return Stream.of((write ? serDes.get1() : simpleRead(serDes)) + ";")
-                .map(line -> replacePlaceholders(line, var, type));
+            return simpleSerdes(serDes, var, type);
         }
 
         Stream<String> res;
 
-        String el = "el" + (level == 0 ? "" : level);
+        String el = withLevel("el");
 
         Map<String, String> params = Map.of(
             "${var}", var,
             "${Type}", colEl.toString(),
             "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
-            "${len}", "len" + (level == 0 ? "" : level),
-            "${i}", "i" + (level == 0 ? "" : level),
-            "${iter}", "iter" + (level == 0 ? "" : level),
+            "${len}", withLevel("len"),
+            "${i}", withLevel("i"),
             "${el}", el
         );
 
@@ -501,15 +660,13 @@ public class IDTOSerializerGenerator {
 
         IgniteBiTuple<String, String> arrSerdes = ARRAY_TYPE_SERDES.get(className(comp));
 
-        if (arrSerdes == null && !TYPE_SERDES.containsKey(className(comp)) && !enumType(env, comp)) {
+        if (arrSerdes == null && !hasCustomSerdes(comp)) {
             // Ignite can't serialize array element efficiently.
             arrSerdes = OBJ_ARRAY_SERDES;
         }
 
-        if (arrSerdes != null) {
-            return Stream.of((write ? arrSerdes.get1() : simpleRead(arrSerdes)) + ";")
-                .map(line -> replacePlaceholders(line, var, comp));
-        }
+        if (arrSerdes != null)
+            return simpleSerdes(arrSerdes, var, comp);
 
         Stream<String> res;
 
@@ -537,8 +694,8 @@ public class IDTOSerializerGenerator {
         return res.map(line -> replacePlaceholders(line, Map.of(
             "${var}", var,
             "${Type}", simpleClassName(comp),
-            "${len}", "len" + (level == 0 ? "" : level),
-            "${i}", "i" + (level == 0 ? "" : level)
+            "${len}", withLevel("len"),
+            "${i}", withLevel("i")
         )));
     }
 
@@ -619,8 +776,9 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return Simple class name. */
-    private String typeWithGeneric() {
-        TypeMirror tp = type.asType();
+    private String typeWithGeneric(TypeMirror tp) {
+        if (tp.getKind() == TypeKind.TYPEVAR || tp.getKind() == TypeKind.WILDCARD)
+            return "Object";
 
         if (!(tp instanceof DeclaredType))
             return simpleClassName(tp);
@@ -630,14 +788,20 @@ public class IDTOSerializerGenerator {
         if (F.size(dt.getTypeArguments()) == 0)
             return simpleClassName(tp);
 
-        StringBuilder generic = new StringBuilder("<Object");
+        StringBuilder generic = new StringBuilder("<");
 
-        for (int i = 1; i < F.size(dt.getTypeArguments()); i++)
-            generic.append(", Object");
+        for (int i = 0; i < F.size(dt.getTypeArguments()); i++) {
+            TypeMirror gt = dt.getTypeArguments().get(i);
 
-        generic.append(">");
+            if (i > 0)
+                generic.append(", ");
 
-        return simpleClassName(tp) + generic;
+            generic.append((gt.getKind() == TypeKind.TYPEVAR || gt.getKind() == TypeKind.WILDCARD)
+                ? "Object"
+                : gt.toString());
+        }
+
+        return simpleClassName(tp) + generic.append(">");
     }
 
     /** @return Simple class name. */
@@ -664,13 +828,65 @@ public class IDTOSerializerGenerator {
     }
 
     /** */
-    private static String simpleRead(IgniteBiTuple<String, String> serDes) {
-        return "${var} = " + serDes.get2();
+    private boolean hasCustomSerdes(TypeMirror type) {
+        return TYPE_SERDES.containsKey(className(type))
+            || enumType(env, type)
+            || isCollection(type)
+            || isBiTuple(type)
+            || isMap(type)
+            || isArray(type)
+            || isDto(type);
+    }
+
+    /** */
+    private boolean isCollection(TypeMirror type) {
+        return assignableFrom(env.getTypeUtils().erasure(type), coll);
+    }
+
+    /** */
+    private boolean isMap(TypeMirror type) {
+        return assignableFrom(env.getTypeUtils().erasure(type), map);
+    }
+
+    /** */
+    private boolean isDto(TypeMirror type) {
+        return assignableFrom(type, dtoCls);
+    }
+
+    /** */
+    private boolean isSerializable(TypeMirror type) {
+        return assignableFrom(type, serializableCls);
+    }
+
+    /** */
+    private static boolean isArray(TypeMirror type) {
+        return type.getKind() == TypeKind.ARRAY;
+    }
+
+    /** */
+    private boolean isBiTuple(TypeMirror type) {
+        return env.getTypeUtils().isSameType(env.getTypeUtils().erasure(type), biTuple);
+    }
+
+    /** */
+    private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
+        return env.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    private Stream<String> simpleSerdes(IgniteBiTuple<String, String> serDes, String var, TypeMirror type) {
+        return Stream.of((write ? serDes.get1() : ("${var} = " + serDes.get2())) + ";")
+            .map(line -> replacePlaceholders(line, var, type));
     }
 
     /** */
     private static void throwIfNull(TypeMirror type, IgniteBiTuple<String, String> serDes) {
         if (serDes == null)
             throw new IllegalStateException("Unsupported type: " + type);
+    }
+
+    /** */
+    private @NotNull String withLevel(String name) {
+        return name + (level == 0 ? "" : level);
     }
 }
