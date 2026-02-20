@@ -48,15 +48,12 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * <p>
  * The generated serializer follows the naming convention: {@code [MessageClassName]Serializer}.
  * <p>
- * Only fields annotated with {@link Order} and accessed through matching accessor methods
- * (i.e., {@code fieldName()} and {@code fieldName(value)}) are included in the serialization logic.
+ * Only fields annotated with {@link Order} are included in the serialization logic.
  * <p>
  * <strong>Usage Requirements:</strong>
  * <ul>
  *   <li>The target class must implement the {@code Message} interface.</li>
  *   <li>Each field to be serialized must be annotated with {@code @Order}.</li>
- *   <li>By default, each serializing field must have a getter named {@code fieldName()} and
- *   a setter named {@code fieldName(value)}.</li>
  *   <li>If {@link Order#method()} attribute was set, then each serializing field
  *   must have a getter named {@code method()} and a setter named {@code method(value)}.</li>
  * </ul>
