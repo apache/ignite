@@ -18,8 +18,22 @@
 package org.apache.ignite.internal.thread.context;
 
 /**
- * Represents an arbitrary Scope. A Scope is active from the moment it is created until the {@link #close()} method is
- * called on the {@link Scope} instance. It is strongly encouraged to use a try-with-resources block to close a Scope.
+ * Represents the Scope of {@link OperationContext} attributes update. Explicitly calling {@link #close()} method undoes
+ * the applied changes and restores previous attribute values, if any. Note that every Scope relating to a specific
+ * {@link OperationContext} update must be closed to free up thread-bound resources and avoid memory leaks, so it is
+ * highly encouraged to use a try-with-resource block with Scope instances.
+ * <p>
+ * Scope is result of the following {@link OperationContext} update operations:
+ * <ul>
+ *     <li>{@link OperationContext#set(OperationContextAttribute, Object)} - creates a new or update an existing mapping
+ *     between specified {@link OperationContextAttribute} and its value</li>
+ *     <li>{@link OperationContext#restoreSnapshot(OperationContextSnapshot)} - updates {@link OperationContextAttribute}
+ *     values to match the values stored in {@link OperationContextSnapshot}</li>
+ * </ul>
+ * </p>
+ *
+ * @see OperationContext#set(OperationContextAttribute, Object)
+ * @see OperationContext#restoreSnapshot(OperationContextSnapshot)
  */
 public interface Scope extends AutoCloseable {
     /** Scope instance that does nothing when closed. */
