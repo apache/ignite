@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
@@ -34,21 +36,31 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 
 /**
  *
  */
 public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbstractTest {
+    /** Message factory. */
+    protected final MessageFactory msgFactory =
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory()});
+
     /** Keys count. */
     private static final int KEYS_COUNT = 10;
 
@@ -133,7 +145,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      */
     @Test
     public void testCacheContinuousQueryEntrySerialization() {
-        CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
+        var srcMsg = new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
             new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}, 1),
@@ -145,36 +157,30 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new AffinityTopologyVersion(1L),
             (byte)0);
 
-        e0.markFiltered();
+        srcMsg.markFiltered();
 
-        IgniteMessageFactoryImpl msgFactory =
-            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
+        srcMsg.prepare(new GridDeploymentInfoBean(
+            IgniteUuid.randomUuid(), "", CONTINUOUS, Map.of()
+        ));
 
-        ByteBuffer buf = ByteBuffer.allocate(4096);
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        var resMsg = doMarshalUnmarshal(srcMsg);
 
-        // Skip write class header.
-        writer.onHeaderWritten();
-        e0.writeTo(buf, writer);
-
-        CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
-        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory, null));
-
-        assertEquals(e0.cacheId(), e1.cacheId());
-        assertEquals(e0.eventType(), e1.eventType());
-        assertEquals(e0.isFiltered(), e1.isFiltered());
-        assertEquals(e0.isBackup(), e1.isBackup());
-        assertEquals(e0.isKeepBinary(), e1.isKeepBinary());
-        assertEquals(e0.partition(), e1.partition());
-        assertEquals(e0.updateCounter(), e1.updateCounter());
+        assertEquals(srcMsg.cacheId(), resMsg.cacheId());
+        assertEquals(srcMsg.eventType(), resMsg.eventType());
+        assertEquals(srcMsg.isFiltered(), resMsg.isFiltered());
+        assertEquals(srcMsg.isBackup(), resMsg.isBackup());
+        assertEquals(srcMsg.isKeepBinary(), resMsg.isKeepBinary());
+        assertEquals(srcMsg.partition(), resMsg.partition());
+        assertEquals(srcMsg.updateCounter(), resMsg.updateCounter());
 
         // Key and value shouldn't be serialized in case an event is filtered.
-        assertNull(e1.key());
-        assertNotNull(e0.key());
-        assertNull(e1.oldValue());
-        assertNotNull(e0.oldValue());
-        assertNull(e1.newValue());
-        assertNotNull(e0.newValue());
+        assertNull(resMsg.key());
+        assertNotNull(srcMsg.key());
+        assertNull(resMsg.oldValue());
+        assertNotNull(srcMsg.oldValue());
+        assertNull(resMsg.newValue());
+        assertNotNull(srcMsg.newValue());
+        assertNull(resMsg.deployInfo()); // Transient
     }
 
     /**
@@ -208,4 +214,75 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             // No-op
         }
     }
+
+    /**
+     * Performs a full marshal-unmarshal round trip on a message using {@link MessageSerializer}.
+     * This method simulates incremental writes/reads that can occur in network communication
+     * by gradually increasing buffer size until the operation succeeds.
+     *
+     * @param srcMsg Source message to serialize.
+     * @param <T> Message type.
+     * @return Deserialized message.
+     */
+    protected <T extends Message> T doMarshalUnmarshal(T srcMsg) {
+        var buf = ByteBuffer.allocate(8 * 1024);
+
+        MessageSerializer serializer = msgFactory.serializer(srcMsg.directType());
+        assertNotNull("Serializer not found for message type " + srcMsg.directType(), serializer);
+
+        // Write phase
+        var fullyWritten = loopBuffer(buf, 0, wBuf -> {
+            var writer = new DirectMessageWriter(msgFactory);
+            writer.setBuffer(wBuf);
+            return serializer.writeTo(srcMsg, writer);
+        });
+        assertTrue("The message was not written completely.", fullyWritten);
+
+        // Read type code (little-endian) and create message
+        buf.flip();
+
+        byte b0 = buf.get();
+        byte b1 = buf.get();
+
+        var type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
+        assertEquals("Message type mismatch", srcMsg.directType(), type);
+
+        var resMsg = (T)msgFactory.create(type);
+        assertNotNull("Failed to create message for type " + type, resMsg);
+
+        // Read phase
+        var fullyRead = loopBuffer(buf, buf.position(), rBuf -> {
+            var reader = new DirectMessageReader(msgFactory, null);
+            reader.setBuffer(rBuf);
+            return serializer.readFrom(resMsg, reader);
+        });
+        assertTrue("The message was not read completely.", fullyRead);
+
+        return resMsg;
+    }
+
+    /**
+     * Loops over incrementally larger buffer sizes until the function succeeds.
+     * This simulates partial writes/reads that can occur in network communication.
+     *
+     * @param buf Byte buffer.
+     * @param start Start position.
+     * @param func Function that is sequentially executed on a different-sized part of the buffer.
+     * @return {@code True} if the function returns {@code True} at least once, {@code False} otherwise.
+     */
+    private boolean loopBuffer(ByteBuffer buf, int start, Function<ByteBuffer, Boolean> func) {
+        int pos = start;
+
+        do {
+            buf.position(start);
+            buf.limit(++pos);
+
+            if (func.apply(buf))
+                return true;
+        }
+        while (pos < buf.capacity());
+
+        return false;
+    }
+
 }
