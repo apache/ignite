@@ -29,8 +29,8 @@ class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAc
     private final boolean updated;
 
     /** */
-    public DistributedMetaStorageCasAckMessage(UUID reqId, String errorMsg, boolean updated) {
-        super(reqId, errorMsg);
+    public DistributedMetaStorageCasAckMessage(UUID reqId, boolean updated) {
+        super(reqId);
 
         this.updated = updated;
     }

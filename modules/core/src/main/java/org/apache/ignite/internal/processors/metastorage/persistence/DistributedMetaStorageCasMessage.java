@@ -18,26 +18,36 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
+public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte[] expectedVal;
+    @Order(value = 4, method = "expectedValue")
+    private byte[] expectedVal;
 
     /** */
-    private boolean matches = true;
+    @Order(5)
+    private boolean matches;
+
+    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    public DistributedMetaStorageCasMessage() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageCasMessage(UUID reqId, String key, byte[] expValBytes, byte[] valBytes) {
         super(reqId, key, valBytes);
 
         expectedVal = expValBytes;
+        matches = true;
     }
 
     /** */
@@ -46,7 +56,12 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
     }
 
     /** */
-    public void setMatches(boolean matches) {
+    public void expectedValue(byte[] expectedVal) {
+        this.expectedVal = expectedVal;
+    }
+
+    /** */
+    public void matches(boolean matches) {
         this.matches = matches;
     }
 
@@ -57,7 +72,12 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), errorMessage(), matches);
+        return new DistributedMetaStorageCasAckMessage(requestId(), matches);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 21;
     }
 
     /** {@inheritDoc} */
