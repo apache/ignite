@@ -25,16 +25,16 @@ import org.apache.ignite.internal.Order;
  */
 public class InboxCloseMessage implements CalciteMessage {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(2)
-    private long exchangeId;
+    long exchangeId;
 
     /** */
     public InboxCloseMessage() {

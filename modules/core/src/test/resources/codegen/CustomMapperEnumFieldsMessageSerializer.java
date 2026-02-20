@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.codegen;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
@@ -48,7 +48,7 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte(transactionIsolationMapper.encode(msg.txMode())))
+                if (!writer.writeByte(transactionIsolationMapper.encode(((CustomMapperEnumFieldsMessage)msg).txMode)))
                     return false;
 
                 writer.incrementState();
@@ -63,7 +63,7 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
 
         switch (reader.state()) {
             case 0:
-                msg.txMode(transactionIsolationMapper.decode(reader.readByte()));
+                ((CustomMapperEnumFieldsMessage)msg).txMode = transactionIsolationMapper.decode(reader.readByte());
 
                 if (!reader.isLastRead())
                     return false;

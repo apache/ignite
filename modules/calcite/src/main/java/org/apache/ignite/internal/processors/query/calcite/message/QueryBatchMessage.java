@@ -29,31 +29,31 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
  */
 public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(2)
-    private long exchangeId;
+    long exchangeId;
 
     /** */
     @Order(3)
-    private int batchId;
+    int batchId;
 
     /** */
     @Order(4)
-    private boolean last;
+    boolean last;
 
     /** */
     private List<Object> rows;
 
     /** */
-    @Order(value = 5, method = "messageRows")
-    private List<ValueMessage> mRows;
+    @Order(5)
+    List<ValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {

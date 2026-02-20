@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class CacheEntryInfoCollection implements Message {
     /** */
     @Order(0)
-    private List<GridCacheEntryInfo> infos = new ArrayList<>();
+    List<GridCacheEntryInfo> infos = new ArrayList<>();
 
     /**
      * Sets entries.

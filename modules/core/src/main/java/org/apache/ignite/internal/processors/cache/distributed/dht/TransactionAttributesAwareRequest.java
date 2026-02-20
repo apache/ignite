@@ -31,11 +31,11 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
 
     /** Original transaction prepare message. */
     @Order(3)
-    private GridDistributedTxPrepareRequest payload;
+    GridDistributedTxPrepareRequest payload;
 
     /** Application attributes. */
-    @Order(value = 4, method = "applicationAttributes")
-    private Map<String, String> appAttrs;
+    @Order(4)
+    Map<String, String> appAttrs;
 
     /** */
     public TransactionAttributesAwareRequest() {

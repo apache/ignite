@@ -35,11 +35,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class MissingMappingRequestMessage implements Message {
     /** */
     @Order(0)
-    private byte platformId;
+    byte platformId;
 
     /** */
     @Order(1)
-    private int typeId;
+    int typeId;
 
     /**
      * Default constructor.

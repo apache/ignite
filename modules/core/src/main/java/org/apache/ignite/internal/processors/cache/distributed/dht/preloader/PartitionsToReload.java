@@ -28,8 +28,8 @@ public class PartitionsToReload implements Message {
     public static final short TYPE_CODE = 511;
 
     /** Set of partitions to reload. */
-    @Order(value = 0, method = "partitions")
-    private Set<Integer> parts;
+    @Order(0)
+    Set<Integer> parts;
 
     /**
      * @return Set of partitions to reload.

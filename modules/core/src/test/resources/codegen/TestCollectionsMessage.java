@@ -29,279 +29,79 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestCollectionsMessage implements Message {
     @Order(0)
-    private List<boolean[]> booleanArrayList;
+    List<boolean[]> booleanArrayList;
 
     @Order(1)
-    private List<byte[]> byteArrayList;
+    List<byte[]> byteArrayList;
 
     @Order(2)
-    private List<short[]> shortArrayList;
+    List<short[]> shortArrayList;
 
     @Order(3)
-    private List<int[]> intArrayList;
+    List<int[]> intArrayList;
 
     @Order(4)
-    private List<long[]> longArrayList;
+    List<long[]> longArrayList;
 
     @Order(5)
-    private List<char[]> charArrayList;
+    List<char[]> charArrayList;
 
     @Order(6)
-    private List<float[]> floatArrayList;
+    List<float[]> floatArrayList;
 
     @Order(7)
-    private List<double[]> doubleArrayList;
+    List<double[]> doubleArrayList;
 
     @Order(8)
-    private List<String> stringList;
+    List<String> stringList;
 
     @Order(9)
-    private List<UUID> uuidList;
+    List<UUID> uuidList;
 
     @Order(10)
-    private List<BitSet> bitSetList;
+    List<BitSet> bitSetList;
 
     @Order(11)
-    private List<IgniteUuid> igniteUuidList;
+    List<IgniteUuid> igniteUuidList;
 
     @Order(12)
-    private List<AffinityTopologyVersion> affTopVersionList;
+    List<AffinityTopologyVersion> affTopVersionList;
 
     @Order(13)
-    private List<Boolean> boxedBooleanList;
+    List<Boolean> boxedBooleanList;
 
     @Order(14)
-    private List<Byte> boxedByteList;
+    List<Byte> boxedByteList;
 
     @Order(15)
-    private List<Short> boxedShortList;
+    List<Short> boxedShortList;
 
     @Order(16)
-    private List<Integer> boxedIntList;
+    List<Integer> boxedIntList;
 
     @Order(17)
-    private List<Long> boxedLongList;
+    List<Long> boxedLongList;
 
     @Order(18)
-    private List<Character> boxedCharList;
+    List<Character> boxedCharList;
 
     @Order(19)
-    private List<Float> boxedFloatList;
+    List<Float> boxedFloatList;
 
     @Order(20)
-    private List<Double> boxedDoubleList;
+    List<Double> boxedDoubleList;
 
     @Order(21)
-    private List<GridCacheVersion> messageList;
+    List<GridCacheVersion> messageList;
 
     @Order(22)
-    private List<GridLongList> gridLongListList;
+    List<GridLongList> gridLongListList;
 
     @Order(23)
-    private Set<Integer> boxedIntegerSet;
+    Set<Integer> boxedIntegerSet;
 
     @Order(24)
-    private Set<BitSet> bitSetSet;
-
-    public List<boolean[]> booleanArrayList() {
-        return booleanArrayList;
-    }
-
-    public void booleanArrayList(List<boolean[]> booleanArrayList) {
-        this.booleanArrayList = booleanArrayList;
-    }
-
-    public List<byte[]> byteArrayList() {
-        return byteArrayList;
-    }
-
-    public void byteArrayList(List<byte[]> byteArrayList) {
-        this.byteArrayList = byteArrayList;
-    }
-
-    public List<short[]> shortArrayList() {
-        return shortArrayList;
-    }
-
-    public void shortArrayList(List<short[]> shortArrayList) {
-        this.shortArrayList = shortArrayList;
-    }
-
-    public List<int[]> intArrayList() {
-        return intArrayList;
-    }
-
-    public void intArrayList(List<int[]> intArrayList) {
-        this.intArrayList = intArrayList;
-    }
-
-    public List<long[]> longArrayList() {
-        return longArrayList;
-    }
-
-    public void longArrayList(List<long[]> longArrayList) {
-        this.longArrayList = longArrayList;
-    }
-
-    public List<char[]> charArrayList() {
-        return charArrayList;
-    }
-
-    public void charArrayList(List<char[]> charArrayList) {
-        this.charArrayList = charArrayList;
-    }
-
-    public List<float[]> floatArrayList() {
-        return floatArrayList;
-    }
-
-    public void floatArrayList(List<float[]> floatArrayList) {
-        this.floatArrayList = floatArrayList;
-    }
-
-    public List<double[]> doubleArrayList() {
-        return doubleArrayList;
-    }
-
-    public void doubleArrayList(List<double[]> doubleArrayList) {
-        this.doubleArrayList = doubleArrayList;
-    }
-
-    public List<String> stringList() {
-        return stringList;
-    }
-
-    public void stringList(List<String> stringList) {
-        this.stringList = stringList;
-    }
-
-    public List<UUID> uuidList() {
-        return uuidList;
-    }
-
-    public void uuidList(List<UUID> uuidList) {
-        this.uuidList = uuidList;
-    }
-
-    public List<BitSet> bitSetList() {
-        return bitSetList;
-    }
-
-    public void bitSetList(List<BitSet> bitSetList) {
-        this.bitSetList = bitSetList;
-    }
-
-    public List<IgniteUuid> igniteUuidList() {
-        return igniteUuidList;
-    }
-
-    public void igniteUuidList(List<IgniteUuid> igniteUuidList) {
-        this.igniteUuidList = igniteUuidList;
-    }
-
-    public List<AffinityTopologyVersion> affTopVersionList() {
-        return affTopVersionList;
-    }
-
-    public void affTopVersionList(List<AffinityTopologyVersion> affTopVerList) {
-        affTopVersionList = affTopVerList;
-    }
-
-    public List<Boolean> boxedBooleanList() {
-        return boxedBooleanList;
-    }
-
-    public void boxedBooleanList(List<Boolean> boxedBooleanList) {
-        this.boxedBooleanList = boxedBooleanList;
-    }
-
-    public List<Byte> boxedByteList() {
-        return boxedByteList;
-    }
-
-    public void boxedByteList(List<Byte> boxedByteList) {
-        this.boxedByteList = boxedByteList;
-    }
-
-    public List<Short> boxedShortList() {
-        return boxedShortList;
-    }
-
-    public void boxedShortList(List<Short> boxedShortList) {
-        this.boxedShortList = boxedShortList;
-    }
-
-    public List<Integer> boxedIntList() {
-        return boxedIntList;
-    }
-
-    public void boxedIntList(List<Integer> boxedIntList) {
-        this.boxedIntList = boxedIntList;
-    }
-
-    public List<Long> boxedLongList() {
-        return boxedLongList;
-    }
-
-    public void boxedLongList(List<Long> boxedLongList) {
-        this.boxedLongList = boxedLongList;
-    }
-
-    public List<Character> boxedCharList() {
-        return boxedCharList;
-    }
-
-    public void boxedCharList(List<Character> boxedCharList) {
-        this.boxedCharList = boxedCharList;
-    }
-
-    public List<Float> boxedFloatList() {
-        return boxedFloatList;
-    }
-
-    public void boxedFloatList(List<Float> boxedFloatList) {
-        this.boxedFloatList = boxedFloatList;
-    }
-
-    public List<Double> boxedDoubleList() {
-        return boxedDoubleList;
-    }
-
-    public void boxedDoubleList(List<Double> boxedDoubleList) {
-        this.boxedDoubleList = boxedDoubleList;
-    }
-
-    public List<GridCacheVersion> messageList() {
-        return messageList;
-    }
-
-    public void messageList(List<GridCacheVersion> messageList) {
-        this.messageList = messageList;
-    }
-
-    public List<GridLongList> gridLongListList() {
-        return gridLongListList;
-    }
-
-    public void gridLongListList(List<GridLongList> gridLongListList) {
-        this.gridLongListList = gridLongListList;
-    }
-
-    public Set<Integer> boxedIntegerSet() {
-        return boxedIntegerSet;
-    }
-
-    public void boxedIntegerSet(Set<Integer> boxedIntegerSet) {
-        this.boxedIntegerSet = boxedIntegerSet;
-    }
-
-    public Set<BitSet> bitSetSet() {
-        return bitSetSet;
-    }
-
-    public void bitSetSet(Set<BitSet> bitSetSet) {
-        this.bitSetSet = bitSetSet;
-    }
+    Set<BitSet> bitSetSet;
 
     public short directType() {
         return 0;

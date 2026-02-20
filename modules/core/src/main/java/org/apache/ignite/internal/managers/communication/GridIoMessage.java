@@ -38,8 +38,8 @@ public class GridIoMessage implements Message, SpanTransport {
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
     /** Policy. */
-    @Order(value = 0, method = "policy")
-    private byte plc;
+    @Order(0)
+    byte plc;
 
     /** Message topic. */
     @GridToStringInclude
@@ -47,31 +47,31 @@ public class GridIoMessage implements Message, SpanTransport {
 
     /** Topic bytes. */
     @Order(1)
-    private byte[] topicBytes;
+    byte[] topicBytes;
 
     /** Topic ordinal. */
-    @Order(value = 2, method = "topicOrdinal")
-    private int topicOrd = -1;
+    @Order(2)
+    int topicOrd = -1;
 
     /** Message ordered flag. */
-    @Order(value = 3, method = "isOrdered")
-    private boolean ordered;
+    @Order(3)
+    boolean ordered;
 
     /** Message timeout. */
     @Order(4)
-    private long timeout;
+    long timeout;
 
     /** Whether message can be skipped on timeout. */
     @Order(5)
-    private boolean skipOnTimeout;
+    boolean skipOnTimeout;
 
     /** Message. */
-    @Order(value = 6, method = "message")
-    private Message msg;
+    @Order(6)
+    Message msg;
 
     /** Serialized span */
     @Order(7)
-    private byte[] span;
+    byte[] span;
 
     /**
      * Default constructor.

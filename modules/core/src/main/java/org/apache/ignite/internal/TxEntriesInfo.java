@@ -31,11 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)
-    private int cacheId;
+    int cacheId;
 
     /** */
     @Order(1)
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.

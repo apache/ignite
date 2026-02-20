@@ -30,16 +30,16 @@ public class CacheEvictionEntry implements Message {
     /** */
     @Order(0)
     @GridToStringInclude
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** */
-    @Order(value = 1, method = "version")
+    @Order(1)
     @GridToStringInclude
-    private GridCacheVersion ver;
+    GridCacheVersion ver;
 
     /** */
     @Order(2)
-    private boolean near;
+    boolean near;
 
     /**
      * Default constructor.

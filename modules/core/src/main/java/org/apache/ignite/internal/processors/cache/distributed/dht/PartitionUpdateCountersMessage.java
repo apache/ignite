@@ -32,12 +32,12 @@ public class PartitionUpdateCountersMessage implements Message {
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
     /** Byte representation of partition counters. */
-    @Order(0)
-    private byte[] data;
+    @Order(value = 0, method = "data")
+    byte[] data;
 
     /** */
     @Order(1)
-    private int cacheId;
+    int cacheId;
 
     /** */
     private int size;

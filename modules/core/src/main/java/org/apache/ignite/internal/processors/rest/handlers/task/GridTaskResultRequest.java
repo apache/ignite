@@ -27,11 +27,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class GridTaskResultRequest implements Message {
     /** Task ID. */
     @Order(0)
-    private IgniteUuid taskId;
+    IgniteUuid taskId;
 
     /** Topic ID. */
     @Order(1)
-    private long topicId;
+    long topicId;
 
     /**
      * Empty constructor.

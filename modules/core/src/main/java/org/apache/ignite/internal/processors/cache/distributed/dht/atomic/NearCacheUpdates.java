@@ -33,29 +33,29 @@ import org.jetbrains.annotations.Nullable;
  */
 public class NearCacheUpdates implements Message {
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
-    @Order(value = 0, method = "nearValuesIndexes")
-    private List<Integer> nearValsIdxs;
+    @Order(0)
+    List<Integer> nearValsIdxs;
 
     /** Indexes of keys for which update was skipped (used if originating node has near cache). */
-    @Order(value = 1, method = "skippedIndexes")
-    private List<Integer> nearSkipIdxs;
+    @Order(1)
+    List<Integer> nearSkipIdxs;
 
     /** Values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
-    @Order(value = 2, method = "nearValues")
-    private List<CacheObject> nearVals;
+    @Order(2)
+    List<CacheObject> nearVals;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
-    @Order(value = 3, method = "nearVersion")
-    private GridCacheVersion nearVer;
+    @Order(3)
+    GridCacheVersion nearVer;
 
     /** Near TTLs. */
     @Order(4)
-    private GridLongList nearTtls;
+    GridLongList nearTtls;
 
     /** Near expire times. */
     @Order(5)
-    private GridLongList nearExpireTimes;
+    GridLongList nearExpireTimes;
 
     /**
      * @return Values.
