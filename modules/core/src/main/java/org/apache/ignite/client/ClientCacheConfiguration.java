@@ -131,6 +131,9 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** @serial Partitions count. */
+    private int partitions = -1;
+
     /**
      * Root directories where partition files are stored.
      * @see DataStorageConfiguration#setStoragePath(String)
@@ -193,6 +196,7 @@ public final class ClientCacheConfiguration implements Serializable {
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         storagePaths = ccfg.getStoragePaths();
         idxPath = ccfg.getIndexPath();
+        partitions = ccfg.getPartitions();
     }
 
     /**
@@ -789,6 +793,27 @@ public final class ClientCacheConfiguration implements Serializable {
      */
     public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
         this.expiryPlc = expiryPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets partitions count.
+     *
+     * @return Partitions count.
+     */
+    public int getPartitions() {
+        return partitions;
+    }
+
+    /**
+     * Sets partitions count.
+     *
+     * @param partitions Partitions count.
+     * @return {@code this} for chaining.
+     */
+    public ClientCacheConfiguration setPartitions(int partitions) {
+        this.partitions = partitions;
 
         return this;
     }
