@@ -125,7 +125,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
                 nodeBytes = U.marshal(marsh, node);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal node", e);
+                throw new IgniteException("Failed to marshal TcpDiscoveryNode object", e);
             }
         }
     }
@@ -142,7 +142,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
                 nodeBytes = null;
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal node", e);
+                throw new IgniteException("Failed to unmarshal TcpDiscoveryNode object", e);
             }
         }
     }
