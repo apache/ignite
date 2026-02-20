@@ -187,6 +187,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         listeningLog.registerAllListeners(logLsnr0, logLsnr10, logLsnr11, logLsnr2);
 
+        if (log.isInfoEnabled())
+            log.info("Splitting the datacenters...");
+
         // Check the DCs and break connections between them.
         for (ClusterNode n : grid(0).cluster().nodes()) {
             assertTrue(n.dataCenterId().equals(n.order() <= srvrsPerDc ? DC_ID_0 : DC_ID_1));
@@ -201,6 +204,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         // The connection recovery should take <= failureDetectionTimeout * 2.
         long testTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
 
+        if (log.isInfoEnabled())
+            log.info("Waiting for the ping log...");
+
         // Now we check the logs.
         assertTrue(logLsnr0.check(testTimeout));
 
@@ -214,6 +220,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
             if (logLsnr2.check(testTimeout))
                 logCntr.incrementAndGet();
         });
+
+        if (log.isInfoEnabled())
+            log.info("Waiting for the rest of the logs...");
 
         Thread.sleep(testTimeout);
 
@@ -245,6 +254,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
     /** */
     private void checkDcSplited(int nodeIdxFrom, int nodeIdxTo, String dcId) throws IgniteInterruptedCheckedException {
+        if (log.isInfoEnabled())
+            log.info("Awaiting for DC is splitted. Begin node order: " + nodeIdxFrom + ", end node order: " + nodeIdxTo);
+
         assertTrue(waitForCondition(() -> {
             for (int i = nodeIdxFrom; i < nodeIdxTo; ++i) {
                 if (!grid(i).cluster().localNode().dataCenterId().equals(dcId))
