@@ -261,7 +261,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
@@ -8113,7 +8112,7 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static String validateRamUsage(GridKernalContext ctx) {
-        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+        long ram = getTotalMemoryAvailable();
 
         if (ram != -1) {
             String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
