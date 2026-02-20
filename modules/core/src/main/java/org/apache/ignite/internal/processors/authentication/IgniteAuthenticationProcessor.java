@@ -763,6 +763,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         catch (IgniteCheckedException e) {
             respMsg = new UserAuthenticateResponseMessage(msg.id(), e.toString());
 
+            // NOTE: Avoid printing stack traces directly to STDERR in production code.
+            // It bypasses Ignite logging configuration/handlers and may leak sensitive internal details.
+            // Prefer using the Ignite logger (e.g. U.error(log, ...)) with a properly sanitized message.
             e.printStackTrace();
         }
 

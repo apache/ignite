@@ -99,6 +99,12 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         boolean attr = req0.includeAttributes();
         boolean caches = req0.includeCaches();
 
+        // SECURITY NOTE: Topology responses may include sensitive operational information.
+        // When includeMetrics/includeAttributes/includeCaches flags are enabled, the response may reveal
+        // node metrics, configuration/attributes, cache names and other details useful for reconnaissance.
+        // This handler does not perform explicit authorization checks itself, so access control must be
+        // enforced at a higher layer (e.g., REST processor) if stricter restrictions are required.
+
         switch (req.command()) {
             case TOPOLOGY: {
                 Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
@@ -287,6 +293,8 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         if (attr) {
+            // SECURITY NOTE: Even though some well-known sensitive attributes are removed below,
+            // exposing node attributes over REST can still leak environment or configuration details.
             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
             attrs.remove(ATTR_CACHE);
