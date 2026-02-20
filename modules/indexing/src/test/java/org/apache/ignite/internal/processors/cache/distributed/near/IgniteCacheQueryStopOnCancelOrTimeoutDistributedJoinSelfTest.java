@@ -25,15 +25,19 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test for cancel of query containing distributed joins.
@@ -90,7 +94,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
     /** */
     private void testQueryCancel(Ignite ignite, String cacheName, String sql, int timeoutUnits, TimeUnit timeUnit,
                            boolean timeout, boolean checkCanceled) throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);;
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
 
         IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
@@ -107,22 +111,16 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            int resSize = 0;
-            for (List<?> ignored1 : cursor) {
-                ++resSize;
-            }
+            int resSize = F.size(cursor.iterator());
 
             if (checkCanceled)
                 fail("Query not canceled, result size=" + resSize);
         }
-        catch (CacheException ex) {
-            log().error("Got expected exception", ex);
+        catch (CacheException | IgniteException ex) {
+            log().error("Got exception", ex);
 
             assertNotNull("Must throw correct exception", X.cause(ex, QueryCancelledException.class));
         }
-
-        // Give some time to clean up.
-        Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 1_000);
 
         checkCleanState();
     }
@@ -130,21 +128,19 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
     /**
      * Validates clean state on all participating nodes after query cancellation.
      */
-    private void checkCleanState() {
+    private void checkCleanState() throws IgniteInterruptedCheckedException {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx grid = grid(i);
 
             // Validate everything was cleaned up.
-            ConcurrentMap<UUID, ?> map = U.field(((IgniteH2Indexing)U.field((GridProcessor)U.field(
-                    grid.context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
-
-            String msg = "Map executor state is not cleared";
+            ConcurrentMap<UUID, ?> map = U.field(
+                ((IgniteH2Indexing)grid.context().query().getIndexing()).mapQueryExecutor(), "qryRess");
 
             // TODO FIXME Current implementation leaves map entry for each node that's ever executed a query.
             for (Object result : map.values()) {
                 Map<Long, ?> m = U.field(result, "res");
 
-                assertEquals(msg, 0, m.size());
+                assertTrue("Map executor state is not cleared", waitForCondition(m::isEmpty, 1_000L));
             }
         }
     }
