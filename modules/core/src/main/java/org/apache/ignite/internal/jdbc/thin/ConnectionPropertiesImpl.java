@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import org.apache.ignite.IgniteCheckedException;
@@ -316,6 +318,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             HostAndPortRange[] addrs = getAddresses();
 
+            List<HostAndPortRange> ranges = Arrays.asList(addrs);
+            Collections.shuffle(ranges);
+            addrs = ranges.toArray(new HostAndPortRange[ranges.size()]);
+
             for (int i = 0; i < addrs.length; i++) {
                 if (i > 0)
                     sbUrl.append(',');
@@ -599,11 +605,17 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** {@inheritDoc} */
     @Override public boolean isPartitionAwareness() {
+        // TODO: for testing purposes.
+        assert !partitionAwareness.value();
+
         return partitionAwareness.value();
     }
 
     /** {@inheritDoc} */
     @Override public void setPartitionAwareness(boolean partitionAwareness) {
+        // TODO: for testing purposes.
+        assert !partitionAwareness;
+
         this.partitionAwareness.setValue(partitionAwareness);
     }
 
