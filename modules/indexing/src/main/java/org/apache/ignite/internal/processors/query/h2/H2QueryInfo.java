@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -129,8 +131,18 @@ public class H2QueryInfo implements TrackableQuery {
         if (plan == null) {
             String plan0 = stmt.getPlanSQL();
 
-            plan = (plan0 != null) ? planWithoutScanCount(plan0) : "";
+            plan = (plan0 != null) ? normalizePlan(plan0) : "";
         }
+
+        return plan;
+    }
+
+    /**
+     * @param plan Plan.
+     */
+    private String normalizePlan(String plan) {
+        plan = planWithoutScanCount(plan);
+        plan = planWithoutSystemAliases(plan);
 
         return plan;
     }
@@ -242,13 +254,13 @@ public class H2QueryInfo implements TrackableQuery {
      * @return SQL plan without the scanCount suffix.
      */
     public String planWithoutScanCount(String plan) {
-        if (plan == null || !plan.contains("scanCount:"))
+        if (!plan.contains("scanCount:"))
             return plan;
 
         StringBuilder res = new StringBuilder(plan);
 
-        removePattern(res, "\n    /* scanCount:", "*/");
-        removePattern(res, "\n    /++ scanCount:", "++/");
+        removeLineWithPattern(res, "/* scanCount:", "*/");
+        removeLineWithPattern(res, "/++ scanCount:", "++/");
 
         return res.toString();
     }
@@ -258,10 +270,16 @@ public class H2QueryInfo implements TrackableQuery {
      * @param startPattern Start pattern.
      * @param endMarker End marker.
      */
-    private void removePattern(StringBuilder sb, String startPattern, String endMarker) {
-        int start = sb.lastIndexOf(startPattern);
+    private void removeLineWithPattern(StringBuilder sb, String startPattern, String endMarker) {
+        int start = sb.indexOf(startPattern, 0);
 
         while (start != -1) {
+            while (start > 0 && sb.charAt(start - 1) == ' ')
+                --start;
+
+            if (start > 0 && sb.charAt(start - 1) == '\n')
+                --start;
+
             int end = sb.indexOf(endMarker, start);
 
             if (end == -1)
@@ -269,8 +287,74 @@ public class H2QueryInfo implements TrackableQuery {
 
             sb.delete(start, end + endMarker.length());
 
-            start = sb.lastIndexOf(startPattern);
+            start = sb.indexOf(startPattern, start);
         }
+    }
+
+    /**
+     * Normalizes H2 auto-generated numeric aliases (e.g. "_1", "_4") in a plan to make plan history stable
+     * across repeated executions of the same logical query.
+     */
+    private String planWithoutSystemAliases(String plan) {
+        if (plan.indexOf('_') < 0)
+            return plan;
+
+        int n = plan.length();
+
+        Map<String, String> aliasMap = new HashMap<>();
+
+        StringBuilder out = new StringBuilder(n);
+
+        for (int l = 0; l < n; ) {
+            char c = plan.charAt(l);
+
+            if (c != '_') {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            if (l > 0) {
+                char prev = plan.charAt(l - 1);
+
+                if (Character.isLetterOrDigit(prev) || prev == '_' || prev == '"') {
+                    out.append(c);
+                    ++l;
+                    continue;
+                }
+            }
+
+            int r = l + 1;
+
+            if (r >= n || !Character.isDigit(plan.charAt(r))) {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            while (r < n && Character.isDigit(plan.charAt(r)))
+                ++r;
+
+            if (r < n) {
+                char next = plan.charAt(r);
+
+                if (next != '.' && !Character.isWhitespace(next)) {
+                    out.append(c);
+                    ++l;
+                    continue;
+                }
+            }
+
+            String token = plan.substring(l, r);
+
+            String repl = aliasMap.computeIfAbsent(token, k -> "__IGNITE_H2_ALIAS_" + aliasMap.size());
+
+            out.append(repl);
+
+            l = r;
+        }
+
+        return out.toString();
     }
 
     /**

@@ -552,6 +552,28 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Ensures H2 auto-generated numeric aliases (e.g. "_1", "_4") are normalized so that repeated executions of the same
+     * query produce a single unique plan in SQL plan history.
+     */
+    @Test
+    public void testH2AutoAliasInPlanHistory() throws Exception {
+        assumeTrue(IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine));
+
+        startTestGrid();
+
+        queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
+
+        String qry = "SELECT _key, _val FROM (SELECT _key, _val FROM String) WHERE _key = 0";
+
+        for (int i = 0; i < planHistorySize; i++)
+            cacheQuery(new SqlFieldsQuery(qry), "A");
+
+        List<SqlPlanHistoryView> plans = getSqlPlanHistory();
+
+        assertEquals("Expected 1 unique plan, got " + plans.size(), 1, plans.size());
+    }
+
+    /**
      * @param qry Query.
      */
     public void runSuccessfulQuery(Query qry) throws Exception {
