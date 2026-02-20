@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.HashJoinPlann
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexSearchBoundsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.InlineIndexScanPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.InnerJoinRowsEstimationTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinCommutePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinWithUsingPlannerTest;
@@ -75,6 +76,7 @@ import org.junit.runners.Suite;
     UnionPlannerTest.class,
     DataTypesPlannerTest.class,
     JoinCommutePlannerTest.class,
+    InnerJoinRowsEstimationTest.class,
     LimitOffsetPlannerTest.class,
     MergeJoinPlannerTest.class,
     HashJoinPlannerTest.class,
