@@ -53,15 +53,8 @@ public class GridJobExecuteResponse implements Message {
     /** */
     private IgniteException gridEx;
 
-    /**
-     * Serialization call holder for {@code gridEx}. Works with {@link #marshallUserData(Marshaller)}.
-     * Wraps also possible serialization error.
-     */
-    @Order(value = 3, method = "exceptionMessage")
-    @Nullable ErrorMessage gridExMsg;
-
     /** Job result serialization call holder. */
-    @Order(4)
+    @Order(3)
     @Nullable byte[] resBytes;
 
     /** */
@@ -69,14 +62,14 @@ public class GridJobExecuteResponse implements Message {
 
     /** */
     /** Job attributes serialization call holder. */
-    @Order(5)
+    @Order(4)
     byte[] jobAttrsBytes;
 
     /** */
     private Map<Object, Object> jobAttrs;
 
     /** */
-    @Order(6)
+    @Order(5)
     boolean isCancelled;
 
     /** */
@@ -84,7 +77,7 @@ public class GridJobExecuteResponse implements Message {
     private IgniteException fakeEx;
 
     /** Retry topology version. */
-    @Order(7)
+    @Order(6)
     AffinityTopologyVersion retry;
 
     /**
