@@ -460,7 +460,7 @@ public class MessageSerializerGenerator {
     }
 
     /**
-     * Generate code of writing header:
+     * Generate code of writing header.
      * <pre>
      * if (!writer.writeHeader(msg.directType()))
      *     return false;
