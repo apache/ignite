@@ -316,7 +316,7 @@ public class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
         String methodName = field.getAnnotation(Order.class).method();
 
-        String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName + "()");
+        String getExpr = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName + "()";
 
         TypeMirror type = field.asType();
 
