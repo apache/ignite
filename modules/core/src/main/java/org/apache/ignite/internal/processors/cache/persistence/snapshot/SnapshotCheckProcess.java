@@ -390,8 +390,8 @@ public class SnapshotCheckProcess {
                     ctx.req.groups(),
                     false,
                     ctx.req.fullCheck(),
-                    ctx.totalCounter::addAndGet,
-                    checkedPart -> ctx.checkedCounter.incrementAndGet()
+                    unitsToWork -> ctx.totalCounter.addAndGet(unitsToWork),
+                    checkedPartId -> ctx.checkedCounter.incrementAndGet()
                 );
 
                 metaFut.whenComplete((res, err) -> {

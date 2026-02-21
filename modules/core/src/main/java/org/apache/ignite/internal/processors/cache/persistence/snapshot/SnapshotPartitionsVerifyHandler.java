@@ -160,7 +160,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 partFiles.add(part);
 
-                // Makes smoother setting of the total work units number.
                 if (opCtx.totalConsumer() != null)
                     opCtx.totalConsumer().accept(getClass(), 1);
 

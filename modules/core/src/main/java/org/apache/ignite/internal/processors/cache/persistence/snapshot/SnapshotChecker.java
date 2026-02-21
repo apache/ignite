@@ -209,7 +209,7 @@ public class SnapshotChecker {
                 sft,
                 false,
                 checkParts,
-                totalCnsmr == null ? null : (hndCls, totalCnt) -> totalCnsmr.accept(totalCnt),
+                totalCnsmr == null ? null : (hndCls, unitsToWork) -> totalCnsmr.accept(unitsToWork),
                 checkedPartCnsmr == null ? null : (hndCls, partId) -> checkedPartCnsmr.accept(partId)
             );
 

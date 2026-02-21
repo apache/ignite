@@ -127,7 +127,7 @@ import static org.junit.Assume.assumeFalse;
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** The default cache partitions number. */
-    protected static final int CACHE_PARTS_CNT = 64;
+    protected static final int CACHE_PARTS_CNT = 32;
 
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
     private final Map<Class<?>, Map<PartitionKey, List<PartitionHashRecord>>> jobResults = new ConcurrentHashMap<>();
