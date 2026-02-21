@@ -22,10 +22,8 @@ import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeSpecificDataSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryAuthFailedMessageSerializer;
-import org.apache.ignite.internal.codegen.TcpDiscoveryCacheMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientAckResponseSerializer;
-import org.apache.ignite.internal.codegen.TcpDiscoveryClientNodesMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryConnectionCheckMessageSerializer;
@@ -36,9 +34,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerialize
 import org.apache.ignite.internal.codegen.TcpDiscoveryLoopbackProblemMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeAddFinishedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeFailedMessageSerializer;
-import org.apache.ignite.internal.codegen.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeLeftMessageSerializer;
-import org.apache.ignite.internal.codegen.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
@@ -50,10 +46,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCacheMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
@@ -64,9 +58,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRespons
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
@@ -78,11 +70,10 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
     @Override public void registerAll(MessageFactory factory) {
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
         factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
-        factory.register((short)-105, TcpDiscoveryNodeFullMetricsMessage::new,
-            new TcpDiscoveryNodeFullMetricsMessageSerializer());
-        factory.register((short)-104, TcpDiscoveryClientNodesMetricsMessage::new, new TcpDiscoveryClientNodesMetricsMessageSerializer());
-        factory.register((short)-103, TcpDiscoveryCacheMetricsMessage::new, new TcpDiscoveryCacheMetricsMessageSerializer());
-        factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
+        // -105 is vacant. Former TcpDiscoveryNodeFullMetricsMessage.
+        // -104 is vacant. Former TcpDiscoveryClientNodesMetricsMessage.
+        // -103 is vacant. Former TcpDiscoveryCacheMetricsMessage.
+        // -102 is vacant. Former TcpDiscoveryNodeMetricsMessage.
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
 
