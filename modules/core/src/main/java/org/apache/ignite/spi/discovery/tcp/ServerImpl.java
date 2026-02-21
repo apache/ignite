@@ -1878,7 +1878,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.topology(topToSnd);
 
-                List<TcpDiscoveryAbstractMessage> msgs0 = null;
+                Collection<TcpDiscoveryAbstractMessage> msgs0 = null;
 
                 if (msgs != null) {
                     msgs0 = new ArrayList<>(msgs.size());
@@ -2489,6 +2489,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
+
+                    addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
@@ -3831,11 +3833,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    failedNodes.forEach(failedNode -> {
-                        ServerImpl.this.failedNodes.putIfAbsent(failedNode, locNodeId);
+                    for (TcpDiscoveryNode failedNode : failedNodes) {
+                        if (!ServerImpl.this.failedNodes.containsKey(failedNode))
+                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
+                    }
 
+                    for (TcpDiscoveryNode failedNode : failedNodes)
                         failedNodesMsgSent.add(failedNode.id());
-                    });
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
@@ -4859,6 +4863,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
+
+                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -5074,7 +5080,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
-                            topHist.putAll(msg.topologyHistory());
+
+                            if(!F.isEmpty(msg.topologyHistory()))
+                                topHist.putAll(msg.topologyHistory());
 
                             pendingMsgs.reset(msg.pendingMessages());
                         }

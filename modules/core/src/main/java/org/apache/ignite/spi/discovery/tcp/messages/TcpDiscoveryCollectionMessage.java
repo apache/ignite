@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -76,6 +75,8 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        assert marshallableMsgsBytes != null || marshallableMsgs != null || writableMsgs != null;
+
         if (marshallableMsgsBytes != null && marshallableMsgs == null) {
             try {
                 marshallableMsgs = U.unmarshal(marsh, marshallableMsgsBytes, clsLdr);
@@ -117,8 +118,7 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
      * @return Pending messages from previous node.
      */
     public Collection<TcpDiscoveryAbstractMessage> messages() {
-        if (F.isEmpty(writableMsgs) && F.isEmpty(marshallableMsgs))
-            return Collections.emptyList();
+        assert !F.isEmpty(writableMsgs) || !F.isEmpty(marshallableMsgs);
 
         int totalSz = (F.isEmpty(writableMsgs) ? 0 : writableMsgs.size())
             + (F.isEmpty(marshallableMsgs) ? 0 : marshallableMsgs.size());

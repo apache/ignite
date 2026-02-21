@@ -52,7 +52,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    private TcpDiscoveryNode node;
+    private volatile TcpDiscoveryNode node;
 
     /** Marshalled {@link #node}. */
     @Order(value = 6, method = "nodeBytes")
@@ -86,7 +86,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Start time of the first grid node. */
     @Order(value = 11, method = "gridStartTime")
-    private long gridStartTime;
+    private volatile long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeAddedMessage() {
@@ -126,10 +126,10 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         node = msg.node;
         nodeBytes = msg.nodeBytes;
 
+        pendingMsgsMsg = msg.pendingMsgsMsg;
+
         top = msg.top;
         topBytes = msg.topBytes;
-
-        pendingMsgsMsg = msg.pendingMsgsMsg;
 
         clientTop = msg.clientTop;
         topHistMsgs = msg.topHistMsgs;

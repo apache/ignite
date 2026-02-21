@@ -210,25 +210,27 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         assert metrics != null;
 
         this.id = id;
-        this.order = order;
-        this.loc = loc;
-        this.hostNames = hostNames;
-        this.ver = ver;
-        this.metrics = metrics;
 
         List<String> sortedAddrs = new ArrayList<>(addrs);
+
         Collections.sort(sortedAddrs);
 
         this.addrs = sortedAddrs;
+        this.hostNames = hostNames;
+        this.order = order;
+        this.loc = loc;
+        this.ver = ver;
+        this.metrics = metrics;
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        if (attrs == null)
-            attrs = Collections.emptyMap();
+        if (attrs != null) {
+            this.attrs = new HashMap<>(attrs);
 
-        this.attrs = new HashMap<>(attrs);
-
-        this.attrs.put(IgniteNodeAttributes.ATTR_CLIENT_MODE, client != null && client);
+            this.attrs.put(IgniteNodeAttributes.ATTR_CLIENT_MODE, client != null && client);
+        }
+        else
+            this.attrs = Collections.emptyMap();
     }
 
     /**
@@ -639,7 +641,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         // Legacy: Cache metrics
         int size = in.readInt();
 
-        assert size == 0;
+        for (int i = 0; i < size; i++) {
+            in.readInt();
+            in.readObject();
+        }
 
         order = in.readLong();
         intOrder = in.readLong();

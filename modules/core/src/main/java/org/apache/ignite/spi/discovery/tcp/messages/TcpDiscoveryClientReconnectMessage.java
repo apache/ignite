@@ -38,15 +38,15 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
     /** New router nodeID. */
     @Order(value = 5, method = "routerNodeId")
-    private UUID routerNodeId;
+    private volatile UUID routerNodeId;
 
     /** Last message ID. */
     @Order(value = 6, method = "lastMessageId")
-    private IgniteUuid lastMsgId;
+    private volatile IgniteUuid lastMsgId;
 
     /** Pending messages. */
     @Order(value = 7, method = "pendingMessagesTransferMessage")
-    @Nullable private TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    @Nullable private volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientReconnectMessage() {
