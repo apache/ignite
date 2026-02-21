@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Set;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Single cache entry from dump.
@@ -31,7 +30,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see DumpConsumer#onPartition(int, int, Iterator)
  * @see org.apache.ignite.IgniteSnapshot#createDump(String, Collection)
  */
-@IgniteExperimental
 public interface DumpEntry {
     /** @return Cache id. */
     public int cacheId();

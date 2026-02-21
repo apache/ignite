@@ -435,7 +435,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     H2Utils.bindParameters(stmt, F.asList(params));
 
                     qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
-                        ctx.localNodeId(), qryId);
+                        ctx.localNodeId(), qryId, qryDesc.queryInitiatorId());
 
                     heavyQryTracker.startTracking(qryInfo);
 
@@ -1064,6 +1064,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryId,
                 ctx.localNodeId(),
                 qryDesc.schemaName(),
+                qryDesc.queryInitiatorId(),
                 qryDesc.sql()
             );
 
@@ -1436,6 +1437,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         return IgniteH2Indexing.this.rdcQryExec.query(
                             qryId,
                             qryDesc.schemaName(),
+                            qryDesc.queryInitiatorId(),
                             twoStepQry,
                             keepBinary,
                             qryDesc.enforceJoinOrder(),

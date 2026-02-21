@@ -95,6 +95,9 @@ public final class IgniteQueryErrorCode {
     /** View does not exist. */
     public static final int VIEW_NOT_FOUND = 3018;
 
+    /** Schema is invalid. */
+    public static final int INVALID_SCHEMA = 3019;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */

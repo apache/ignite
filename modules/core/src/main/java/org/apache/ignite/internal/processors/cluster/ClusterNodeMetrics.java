@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 
 /**
  *
@@ -32,25 +33,34 @@ public class ClusterNodeMetrics implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte[] metrics;
+    private final ClusterMetrics nodeMetrics;
 
     /** */
     private final Map<Integer, CacheMetrics> cacheMetrics;
 
     /**
-     * @param metrics Metrics.
+     * @param nodeMetrics Node metrics.
      * @param cacheMetrics Cache metrics.
      */
-    ClusterNodeMetrics(ClusterMetrics metrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
+    ClusterNodeMetrics(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
+        this.nodeMetrics = nodeMetrics;
         this.cacheMetrics = cacheMetrics;
     }
 
+    /** */
+    public ClusterNodeMetrics(NodeFullMetricsMessage msg) {
+        nodeMetrics = new ClusterMetricsSnapshot(msg.nodeMetricsMessage());
+
+        cacheMetrics = new HashMap<>(msg.cachesMetricsMessages().size(), 1.0f);
+
+        msg.cachesMetricsMessages().forEach((key, value) -> cacheMetrics.put(key, new CacheMetricsSnapshot(value)));
+    }
+
     /**
-     * @return Metrics.
+     * @return Node metrics.
      */
-    byte[] metrics() {
-        return metrics;
+    ClusterMetrics nodeMetrics() {
+        return nodeMetrics;
     }
 
     /**

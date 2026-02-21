@@ -26,13 +26,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
@@ -41,9 +41,6 @@ import static org.apache.ignite.internal.processors.authentication.User.DFAULT_U
 public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 3;
-
-    /** Security context for default user. */
-    private SecurityContext secCtxDflt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -73,10 +70,6 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
         startClientGrid(NODES_COUNT - 1);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
-
-        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
-
-        assertNotNull(secCtxDflt);
     }
 
     /** {@inheritDoc} */
@@ -91,24 +84,22 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateUpdateDropUser() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-
         for (int i = 0; i < NODES_COUNT; ++i) {
-            userSql(i, "CREATE USER test WITH PASSWORD 'test'");
+            doSqlAsRoot(i, "CREATE USER test WITH PASSWORD 'test'");
 
             SecurityContext secCtx = authenticate(grid(i), "TEST", "test");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
-            userSql(i, "ALTER USER test WITH PASSWORD 'newpasswd'");
+            doSqlAsRoot(i, "ALTER USER test WITH PASSWORD 'newpasswd'");
 
             secCtx = authenticate(grid(i), "TEST", "newpasswd");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
-            userSql(i, "DROP USER test");
+            doSqlAsRoot(i, "DROP USER test");
         }
     }
 
@@ -117,15 +108,14 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateWithAlreadyExistUser() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-        userSql(0, "CREATE USER test WITH PASSWORD 'test'");
+        doSqlAsRoot(0, "CREATE USER test WITH PASSWORD 'test'");
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+                    doSqlAsRoot(idx, "CREATE USER test WITH PASSWORD 'test'");
 
                     return null;
                 }
@@ -138,14 +128,12 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAlterDropNotExistUser() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+                    doSqlAsRoot(idx, "ALTER USER test WITH PASSWORD 'test'");
 
                     return null;
                 }
@@ -153,7 +141,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "DROP USER test");
+                    doSqlAsRoot(idx, "DROP USER test");
 
                     return null;
                 }
@@ -171,7 +159,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+                    doSql(idx, "CREATE USER test WITH PASSWORD 'test'");
 
                     return null;
                 }
@@ -180,7 +168,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+                    doSql(idx, "ALTER USER test WITH PASSWORD 'test'");
 
                     return null;
                 }
@@ -189,7 +177,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "DROP USER test");
+                    doSql(idx, "DROP USER test");
 
                     return null;
                 }
@@ -203,20 +191,17 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotAuthorizedOperation() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
+        String login = "USER0";
+        String pwd = "user0";
 
-        userSql(0, "CREATE USER user0 WITH PASSWORD 'user0'");
-
-        SecurityContext secCtx = authenticate(grid(0), "USER0", "user0");
-
-        withSecurityContextOnAllNodes(secCtx);
+        doSqlAsRoot(0, "CREATE USER " + login + " WITH PASSWORD '" + pwd + "'");
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+                    doSqlAs(idx, "CREATE USER test WITH PASSWORD 'test'", login, pwd);
 
                     return null;
                 }
@@ -224,7 +209,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+                    doSqlAs(idx, "ALTER USER test WITH PASSWORD 'test'", login, pwd);
 
                     return null;
                 }
@@ -232,7 +217,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "DROP USER test");
+                    doSqlAs(idx, "DROP USER test", login, pwd);
 
                     return null;
                 }
@@ -245,14 +230,12 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDropDefaultUser() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
-
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "DROP USER \"ignite\"");
+                    doSqlAsRoot(idx, "DROP USER \"ignite\"");
 
                     return null;
                 }
@@ -265,26 +248,34 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQuotedUsername() throws Exception {
-        withSecurityContextOnAllNodes(secCtxDflt);
+        doSqlAsRoot(0, "CREATE USER \"test\" with password 'test'");
 
-        userSql(0, "CREATE USER \"test\" with password 'test'");
+        doSqlAsRoot(0, "CREATE USER \" test\" with password 'test'");
 
-        userSql(0, "CREATE USER \" test\" with password 'test'");
+        doSqlAsRoot(0, "CREATE USER \" test \" with password 'test'");
 
-        userSql(0, "CREATE USER \" test \" with password 'test'");
+        doSqlAsRoot(0, "CREATE USER \"test \" with password 'test'");
 
-        userSql(0, "CREATE USER \"test \" with password 'test'");
-
-        userSql(0, "CREATE USER \"111\" with password 'test'");
+        doSqlAsRoot(0, "CREATE USER \"111\" with password 'test'");
     }
 
-    /**
-     * @param nodeIdx Node index.
-     * @param sql Sql query.
-     */
-    private void userSql(int nodeIdx, String sql) {
-        List<List<?>> res = grid(nodeIdx).context().query().querySqlFields(
-            new SqlFieldsQuery(sql), false).getAll();
+    /** */
+    private void doSqlAsRoot(int nodeIdx, String sql) throws Exception {
+        doSqlAs(nodeIdx, sql, DFAULT_USER_NAME, "ignite");
+    }
+
+    /** */
+    private void doSqlAs(int nodeIdx, String sql, String login, String pwd) throws Exception {
+        SecurityContext secCtx = authenticate(grid(0), login, pwd);
+
+        try (OperationSecurityContext ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
+            doSql(nodeIdx, sql);
+        }
+    }
+
+    /** */
+    private void doSql(int nodeIdx, String sql) {
+        List<List<?>> res = grid(nodeIdx).context().query().querySqlFields(new SqlFieldsQuery(sql), false).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());

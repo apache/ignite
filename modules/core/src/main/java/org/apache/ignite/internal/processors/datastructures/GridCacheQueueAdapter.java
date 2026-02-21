@@ -435,6 +435,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         opCtx = opCtx == null ? new CacheOperationContext(
             false,
+            false,
             true,
             null,
             false,

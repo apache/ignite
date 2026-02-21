@@ -17,24 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import java.util.UUID;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterNodeMetrics;
 import org.apache.ignite.marshaller.Marshaller;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.direct.DirectMessageReader;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -113,7 +124,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         ClusterMetricsUpdateMessage msg2 = msg1.get();
 
-        Marshaller marshaller = marshaller(grid(0));
+        DirectMessageWriter msgWritter = new DirectMessageWriter(msgFactory) {
+            @Override public void onHeaderWritten() {
+                super.onHeaderWritten();
 
         Object readObj = marshaller.unmarshal(msg2.nodeMetrics(), getClass().getClassLoader());
 
@@ -123,7 +136,8 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         Map<Integer, CacheMetrics> cacheMetrics2 = metrics.cacheMetrics();
 
-        CacheMetrics cacheMetric2 = cacheMetrics2.values().iterator().next();
+        msgWritter.getBuffer().rewind();
+        msgWritter.getBuffer().position(initHdrSize.get());
 
         assertEquals("ClusterMetricsUpdateMessage serialization error, cacheSize is different", size, cacheMetric2.getCacheSize());
 

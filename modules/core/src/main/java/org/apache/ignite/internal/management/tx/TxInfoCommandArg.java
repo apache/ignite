@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /** */
@@ -34,31 +31,20 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(
         example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|" +
             "<TX identifier as UUID (can be retrieved via --tx command)>")
-    private String value;
+    String value;
 
     /** */
-    private IgniteUuid uuid;
+    @Order(1)
+    IgniteUuid uuid;
 
     /** */
-    private GridCacheVersion gridCacheVersion;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, value);
-        U.writeIgniteUuid(out, uuid);
-        out.writeObject(gridCacheVersion);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        value = U.readString(in);
-        uuid = U.readIgniteUuid(in);
-        gridCacheVersion = (GridCacheVersion)in.readObject();
-    }
+    @Order(2)
+    GridCacheVersion gridCacheVersion;
 
     /** */
     public void uuid(IgniteUuid uuid) {

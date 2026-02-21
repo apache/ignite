@@ -20,8 +20,6 @@ Apache Calcite is a dynamic data management framework, which mainly serves for m
 
 The current H2-based SQL engine has a number of fundamental limitations of query execution in a distributed environment. To address these limitations, a new SQL engine was implemented. The new engine uses tools provided by Apache Calcite for parsing and planning queries. It also has a new query execution flow.
 
-CAUTION: The Calcite-based query engine is currently in beta status.
-
 == Calcite Module Libraries
 
 To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.
@@ -147,7 +145,7 @@ The Calcite-based SQL engine currently supports:
 |`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ANY_VALUE`, `LISTAGG`, `GROUP_CONCAT`, `STRING_AGG`, `ARRAY_AGG`, `ARRAY_CONCAT_AGG`, `EVERY`, `SOME`, `BIT_AND`, `BIT_OR`, `BIT_XOR`
 
 |String functions
-|`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`
+|`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`, `REGEXP_SUBSTR`
 
 |Math functions
 |`MOD`, `EXP`, `POWER`, `LN`, `LOG10`, `ABS`, `RAND`, `RAND_INTEGER`, `ACOS`, `ACOSH`, `ASIN`, `ASINH`, `ATAN`, `ATANH`, `ATAN2`, `SQRT`, `CBRT`, `COS`, `COSH`, `COT`, `COTH`, `DEGREES`, `RADIANS`, `ROUND`, `SIGN`, `SIN`, `SINH`, `TAN`, `TANH`, `SEC`, `SECH`, `CSC`, `CSCH`, `TRUNCATE`, `PI`, `BITAND`, `BITOR`, `BITXOR`
@@ -371,10 +369,10 @@ SELECT /*+ ENFORCE_JOIN_ORDER */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM T
 SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ENFORCE_JOIN_ORDER */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
 ----
 
-==== MERGE_JOIN, NL_JOIN, CNL_JOIN
-Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respectively.
+==== MERGE_JOIN, NL_JOIN, CNL_JOIN, HASH_JOIN
+Forces certain join type: Merge, Nested Loop, Correlated Nested Loop and Hash Join respectively.
 
-Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
+Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN, NO_HASH_JOIN. The negation hint disables certain join type.
 
 ===== Parameters:
 * Empty. To force or disable certain join type for every join.
@@ -389,7 +387,7 @@ SELECT /*+ NL_JOIN(TBL3,TBL1) */ t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3
 
 SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 WHERE t2.v3 in (SELECT /*+ NO_CNL_JOIN(TBL4) */ t3.v3 FROM TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)
 
-SELECT t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 /*+ NL_JOIN */ t4 on t3.v2=t4.v2)
+SELECT t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 /*+ HASH_JOIN */ t4 on t3.v2=t4.v2)
 ----
 
 ==== EXPAND_DISTINCT_AGG

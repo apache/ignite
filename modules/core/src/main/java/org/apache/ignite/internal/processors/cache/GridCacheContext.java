@@ -260,6 +260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    // TODO: IGNITE-26571, is always false.
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 
@@ -1204,8 +1205,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             return false;
 
         for (CacheEntryPredicate p0 : p) {
-            if ((p0 instanceof CacheEntrySerializablePredicate) &&
-                ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
+            if ((p0 instanceof CacheEntryPredicateAdapter) &&
+                ((CacheEntryPredicateAdapter)p0).type() == CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE)
                 return true;
         }
 
@@ -1216,14 +1217,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return No value filter.
      */
     public CacheEntryPredicate noVal() {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE);
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate hasVal() {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_VALUE);
     }
 
     /**
@@ -1231,7 +1232,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate that checks for value.
      */
     public CacheEntryPredicate equalsVal(V val) {
-        return new CacheEntryPredicateContainsValue(toCacheObject(val));
+        return new CacheEntryPredicateAdapter(toCacheObject(val));
     }
 
     /**
@@ -1375,6 +1376,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         return (opCtx != null && opCtx.skipStore());
     }
 
+    /** @return {@code true} if the skip read-through cache store flag is set. */
+    public boolean skipReadThrough() {
+        if (nearContext())
+            return dht().near().context().skipReadThrough();
+
+        CacheOperationContext opCtx = opCtxPerCall.get();
+
+        return (opCtx != null && opCtx.skipReadThrough());
+    }
+
     /**
      * @return {@code True} if need check near cache context.
      */
@@ -1428,7 +1439,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
-        return config().isReadThrough() && !skipStore();
+        return config().isReadThrough() && !skipStore() && !skipReadThrough();
     }
 
     /**
@@ -2215,6 +2226,10 @@ public class GridCacheContext<K, V> implements Externalizable {
             if ((canRemap || discovery().alive(node)) && !invalidNodes.contains(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
+                else if (localNode().dataCenterId() != null) {
+                    if (localNode().dataCenterId().equals(node.dataCenterId()))
+                        return node;
+                }
 
                 if (r >= 0 || n0 == null)
                     n0 = node;
@@ -2291,7 +2306,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
         assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
-        assert cacheType == CacheType.USER;
+        assert cacheType == CacheType.USER || cacheType == CacheType.DATA_STRUCTURES;
 
         this.dumpLsnr = dumpEntryChangeLsnr;
     }

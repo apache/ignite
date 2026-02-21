@@ -21,31 +21,23 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.IntConsumer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Cross check queries on experimental and non-experimental SQL engines.
+ * Cross check queries on SQL engines.
  */
-public class JdbcCrossEngineTest extends GridCommonAbstractTest {
-    /** URL. */
-    private static final String url = "jdbc:ignite:thin://127.0.0.1";
-
+public class JdbcCrossEngineTest extends AbstractJdbcTest {
     /** Nodes count. */
     private static final int nodesCnt = 3;
 
@@ -76,7 +68,7 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
         startGrids(nodesCnt);
 
         for (int i = 0; i < engineNames.length; i++) {
-            conns[i] = DriverManager.getConnection(url + "?queryEngine=" + engineNames[i]);
+            conns[i] = DriverManager.getConnection(URL + "?queryEngine=" + engineNames[i]);
             conns[i].setSchema("PUBLIC");
             stmts[i] = conns[i].createStatement();
 
@@ -201,36 +193,6 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
                 }
             }
         );
-    }
-
-    /** */
-    private void execute(Statement stmt, String sql) {
-        try {
-            stmt.execute(sql);
-        }
-        catch (SQLException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-    }
-
-    /** */
-    private List<List<Object>> executeQuery(Statement stmt, String sql) {
-        try (ResultSet rs = stmt.executeQuery(sql)) {
-            List<List<Object>> res = new ArrayList<>();
-            while (rs.next()) {
-                List<Object> row = new ArrayList<>();
-
-                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++)
-                    row.add(rs.getObject(i));
-
-                res.add(row);
-            }
-
-            return res;
-        }
-        catch (SQLException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
     }
 
     /** */

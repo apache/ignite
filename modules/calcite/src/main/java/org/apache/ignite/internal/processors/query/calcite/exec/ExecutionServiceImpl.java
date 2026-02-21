@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -74,7 +73,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
@@ -85,7 +84,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
@@ -114,6 +112,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosab
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -202,6 +201,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private InjectResourcesService injectSvc;
+
+    /** */
+    private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /**
      * @param ctx Kernal.
@@ -441,9 +443,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         performanceStatisticsProcessor(ctx.performanceStatistics());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(
-            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
+        CalciteQueryProcessor proc = queryProcessor(ctx);
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
         taskExecutor(proc.taskExecutor());
@@ -472,7 +472,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), MessageType.QUERY_START_REQUEST);
         messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n, m) -> onMessage(n, (ErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -502,7 +502,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
+    private FragmentPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
         return new FragmentPlan(jsonFragment, fromJson(ctx, jsonFragment));
     }
 
@@ -854,7 +854,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         if (!qry.isExchangeWithInitNodeStarted(ectx.fragmentId())) {
             try {
-                messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId()));
+                messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId(), null));
             }
             catch (IgniteCheckedException e) {
                 IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
@@ -882,15 +882,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
 
             final BaseQueryContext qctx = createQueryContext(
-                msg.appAttrs() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.appAttrs())),
+                msg.applicationAttributes() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.applicationAttributes())),
                 msg.schema());
 
-            QueryPlan qryPlan = queryPlanCache().queryPlan(
-                new CacheKey(msg.schema(), msg.root()),
-                () -> prepareFragment(qctx, msg.root())
-            );
-
-            assert qryPlan.type() == QueryPlan.Type.FRAGMENT;
+            FragmentPlan fragmentPlan = fragmentPlanCache.computeIfAbsent(msg.root(), k -> prepareFragment(qctx, k));
 
             ExecutionContext<Row> ectx = new ExecutionContext<>(
                 qctx,
@@ -903,13 +898,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.fragmentDescription(),
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
-                createIoTracker(nodeId, msg.originatingQryId()),
+                createIoTracker(nodeId, msg.originatingQueryId()),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters()),
                 msg.queryTransactionEntries()
             );
 
-            executeFragment(qry, (FragmentPlan)qryPlan, ectx);
+            executeFragment(qry, fragmentPlan, ectx);
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);
@@ -945,7 +940,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void onMessage(UUID nodeId, ErrorMessage msg) {
+    private void onMessage(UUID nodeId, CalciteErrorMessage msg) {
         assert nodeId != null && msg != null;
 
         Query<?> qry = qryReg.query(msg.queryId());

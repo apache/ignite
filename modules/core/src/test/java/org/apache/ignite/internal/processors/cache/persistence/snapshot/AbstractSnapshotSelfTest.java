@@ -792,7 +792,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(srvs);
 
         IgniteFuture<Void> fut = snp(startCli).createSnapshot(SNAPSHOT_NAME, null, null, false,
-            false, dump, false, false);
+            false, dump, false, false, false, false);
 
         for (BlockingExecutor exec : execs)
             exec.waitForBlocked(30_000L);
@@ -827,6 +827,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             null,
             parts,
             withMetaStorage,
+            false,
             false,
             false,
             false,

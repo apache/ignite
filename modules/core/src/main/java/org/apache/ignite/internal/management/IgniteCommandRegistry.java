@@ -24,6 +24,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.checkpoint.CheckpointCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
@@ -57,6 +59,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new TxCommand(),
             new CacheCommand(),
             new WalCommand(),
+            new CheckpointCommand(),
             new DiagnosticCommand(),
             new EncryptionCommand(),
             new KillCommand(),
@@ -67,6 +70,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new TracingConfigurationCommand(),
             new WarmUpCommand(),
             new PropertyCommand(),
+            new RollingUpgradeCommand(),
             new SystemViewCommand(),
             new MetricCommand(),
             new PersistenceCommand(),

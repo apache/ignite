@@ -21,15 +21,18 @@ import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
@@ -171,17 +174,109 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("You should use ErrorMessage for serialization of throwables.");
     }
 
-    /** */
+    /**
+     * Positive test for default enum mapper for enum fields.
+     */
     @Test
-    public void testEnumFieldFailed() {
-        Compilation compilation = compile("UnwrappedEnumFieldMessage.java");
+    public void testDefaultMapperEnumFields() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.DefaultMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a field of a primitive type.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnPrimitiveField() {
+        Compilation compilation = compile("CustomEnumMapperOnPrimitiveFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Unsupported enum type: " + TransactionIsolation.class.getName());
+        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a field of an array type.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnArrayField() {
+        Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+    }
+
+    /**
+     * Positive test for custom EnumMapper implementation for enum field: codegeneration tool
+     * generates a serializer using provided EnumMapper implementation.
+     * Generated serializer compiles successfully.
+     */
+    @Test
+    public void testCustomMapperEnumFieldsMessage() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.CustomMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /**
+     * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
+     */
+    @Test
+    public void testDifferentMappersForTheSameEnumAreProhibited() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java",
+            "CustomMapperEnumFieldsMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).failed();
+
+        String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
+            DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumFieldsMessage" +
+            " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
+
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Positive test verifies that codegeneration is successful when two messages use DefaultEnumMapper for the same enum type.
+     */
+    @Test
+    public void testDefaultMapperForSameEnumTypeInDifferentMessagesIsAllowed() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java",
+            "DefaultMapperEnumFieldsSecondMessage.java");
+
+        assertThat(compilation).succeeded();
+    }
+
+    /**
+     * Positive test verifies that codegeneration is successful when two messages use
+     * the same custom EnumMapper for the same enum type.
+     */
+    @Test
+    public void testSameCustomMapperForSameEnumTypeInDifferentMessagesIsAllowed() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java",
+            "CustomMapperEnumFieldsSecondMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
     }
 
     /** */
     private Compilation compile(String... srcFiles) {
+        return compile(new MessageProcessor(), srcFiles);
+    }
+
+    /** */
+    static Compilation compile(Processor proc, String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 
         for (String srcFile: srcFiles)
@@ -190,20 +285,21 @@ public class MessageProcessorTest {
         File igniteCoreJar = jarForClass(Message.class);
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
+        File igniteCommonsJar = jarForClass(CommonUtils.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar))
-            .withProcessors(new MessageProcessor())
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
+            .withProcessors(proc)
             .compile(input);
     }
 
     /** */
-    private JavaFileObject javaFile(String srcName) {
+    static JavaFileObject javaFile(String srcName) {
         return JavaFileObjects.forResource("codegen/" + srcName);
     }
 
     /** */
-    private File jarForClass(Class<?> clazz) {
+    private static File jarForClass(Class<?> clazz) {
         try {
             URI jar = clazz
                 .getProtectionDomain()

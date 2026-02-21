@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.codegen;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.TestCollectionsMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -32,10 +31,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestCollectionsMessageSerializer implements MessageSerializer {
     /** */
-    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, MessageWriter writer) {
         TestCollectionsMessage msg = (TestCollectionsMessage)m;
-
-        writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -182,16 +179,26 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                     return false;
 
                 writer.incrementState();
+
+            case 23:
+                if (!writer.writeSet(msg.boxedIntegerSet(), MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeSet(msg.bitSetSet(), MessageCollectionItemType.BIT_SET))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
     }
 
     /** */
-    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, MessageReader reader) {
         TestCollectionsMessage msg = (TestCollectionsMessage)m;
-
-        reader.setBuffer(buf);
 
         switch (reader.state()) {
             case 0:
@@ -372,6 +379,22 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
 
             case 22:
                 msg.gridLongListList(reader.readCollection(MessageCollectionItemType.GRID_LONG_LIST));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
+                msg.boxedIntegerSet(reader.readSet(MessageCollectionItemType.INT));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                msg.bitSetSet(reader.readSet(MessageCollectionItemType.BIT_SET));
 
                 if (!reader.isLastRead())
                     return false;

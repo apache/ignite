@@ -472,8 +472,8 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             afterStart.apply(g0, g1);
 
-            g0.close();
-            g1.close();
+            stopGrid("persistent-0", false);
+            stopGrid("persistent-1", false);
 
             g0 = startGrid("persistent-0");
             g1 = startGrid("persistent-1");

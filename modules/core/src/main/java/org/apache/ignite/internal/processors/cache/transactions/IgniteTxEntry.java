@@ -98,6 +98,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Flag indicating that 'invoke' operation was no-op on primary. */
     private static final int TX_ENTRY_NOOP_ON_PRIMARY = 1 << 4;
 
+    /** Skip read-through cache store flag bit mask. */
+    private static final int TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK = 1 << 5;
+
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
@@ -243,6 +246,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param entry Cache entry.
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
@@ -253,6 +257,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheEntryEx entry,
         @Nullable GridCacheVersion conflictVer,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary
     ) {
         assert ctx != null;
@@ -269,6 +274,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.conflictVer = conflictVer;
 
         skipStore(skipStore);
+        skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
 
         key = entry.key();
@@ -290,6 +296,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param filters Put filters.
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @param addReader Add reader flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
@@ -303,6 +310,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -320,6 +328,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.conflictVer = conflictVer;
 
         skipStore(skipStore);
+        skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
         addReader(addReader);
 
@@ -373,7 +382,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.val = new TxEntryValueHolder();
 
         cp.filters = filters;
-        cp.val.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+        cp.val.value(val.operation(), val.value(), val.hasWriteValue(), val.hasReadValue());
         cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
         cp.conflictExpireTime = conflictExpireTime;
@@ -476,7 +485,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * to further peek operations.
      */
     public void markValid() {
-        prevVal.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+        prevVal.value(val.operation(), val.value(), val.hasWriteValue(), val.hasReadValue());
     }
 
     /**
@@ -516,6 +525,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public boolean skipStore() {
         return isFlag(TX_ENTRY_SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * Sets skip store flag value.
+     *
+     * @param skipReadThrough Skip read-through cache store flag.
+     */
+    public void skipReadThrough(boolean skipReadThrough) {
+        setFlag(skipReadThrough, TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipReadThrough() {
+        return isFlag(TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK);
     }
 
     /**
@@ -695,7 +720,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Previous operation to revert entry in case of filter failure.
      */
     @Nullable public GridCacheOperation previousOperation() {
-        return prevVal.op();
+        return prevVal.operation();
     }
 
     /**
@@ -732,7 +757,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param readVal Read value flag.
      */
     public void value(@Nullable CacheObject val, boolean writeVal, boolean readVal) {
-        this.val.value(this.val.op(), val, writeVal, readVal);
+        this.val.value(this.val.operation(), val, writeVal, readVal);
     }
 
     /**
@@ -741,7 +766,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param val Read value to set.
      */
     public void readValue(@Nullable CacheObject val) {
-        this.val.value(this.val.op(), val, false, true);
+        this.val.value(this.val.operation(), val, false, true);
     }
 
     /**
@@ -757,7 +782,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
 
-        val.op(TRANSFORM);
+        val.operation(TRANSFORM);
     }
 
     /**
@@ -828,14 +853,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Cache operation.
      */
     public GridCacheOperation op() {
-        return val.op();
+        return val.operation();
     }
 
     /**
      * @param op Cache operation.
      */
     public void op(GridCacheOperation op) {
-        val.op(op);
+        val.operation(op);
     }
 
     /**

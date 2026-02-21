@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -520,15 +521,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         initAddresses();
 
+        IgniteConfiguration cfg = ignite.configuration();
+
         ZookeeperClusterNode locNode = new ZookeeperClusterNode(
-            ignite.configuration().getNodeId(),
+            cfg.getNodeId(),
             addrs.get1(),
             addrs.get2(),
             locNodeVer,
             locNodeAttrs,
             consistentId(),
             sesTimeout,
-            ignite.configuration().isClientMode(),
+            cfg.isClientMode(),
             metricsProvider);
 
         locNode.local(true);
@@ -547,23 +550,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         }
 
         return locNode;
-    }
-
-    /**
-     * Used in tests (called via reflection).
-     *
-     * @return Copy of SPI.
-     */
-    private ZookeeperDiscoverySpi cloneSpiConfiguration() {
-        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
-
-        spi.setZkRootPath(zkRootPath);
-        spi.setZkConnectionString(zkConnectionString);
-        spi.setSessionTimeout(sesTimeout);
-        spi.setJoinTimeout(joinTimeout);
-        spi.setClientReconnectDisabled(clientReconnectDisabled);
-
-        return spi;
     }
 
     /** {@inheritDoc} */

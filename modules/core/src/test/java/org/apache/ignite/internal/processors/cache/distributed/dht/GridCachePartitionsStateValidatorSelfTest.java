@@ -34,8 +34,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 
 /**
  * Test correct behaviour of {@link GridDhtPartitionsStateValidator} class.
@@ -57,7 +59,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(cctxMock.localNodeId()).thenReturn(localNodeId);
 
         topologyMock = Mockito.mock(GridDhtPartitionTopology.class);
-        Mockito.when(topologyMock.partitionState(Matchers.any(), Matchers.anyInt())).thenReturn(GridDhtPartitionState.OWNING);
+        Mockito.when(topologyMock.partitionState(any(), anyInt())).thenReturn(GridDhtPartitionState.OWNING);
         Mockito.when(topologyMock.groupId()).thenReturn(0);
         Mockito.when(topologyMock.partitions()).thenReturn(3);
 

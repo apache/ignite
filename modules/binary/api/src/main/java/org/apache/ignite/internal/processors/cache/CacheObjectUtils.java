@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -97,16 +96,22 @@ public class CacheObjectUtils {
      * @param col Collection to unwrap.
      * @param keepBinary Keep binary flag.
      * @param cpy Copy flag.
+     * @param ldr Optional classloader.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<?> col,
-        boolean keepBinary, boolean cpy) {
+    private static Collection<Object> unwrapKnownCollection(
+        CacheObjectValueContext ctx,
+        Collection<?> col,
+        boolean keepBinary,
+        boolean cpy,
+        @Nullable ClassLoader ldr
+    ) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         assert col0 != null;
 
         for (Object obj : col)
-            col0.add(unwrapBinary(ctx, obj, keepBinary, cpy, null));
+            col0.add(unwrapBinary(ctx, obj, keepBinary, cpy, ldr));
 
         return (col0 instanceof MutableSingletonList) ? CommonUtils.convertToSingletonList(col0) : col0;
     }
@@ -116,10 +121,16 @@ public class CacheObjectUtils {
      *
      * @param map Map to unwrap.
      * @param keepBinary Keep binary flag.
+     * @param ldr Optional class loader.
      * @return Unwrapped collection.
      */
-    private static Map<Object, Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Map<Object, Object> map,
-        boolean keepBinary, boolean cpy) {
+    private static Map<Object, Object> unwrapBinariesIfNeeded(
+        CacheObjectValueContext ctx,
+        Map<Object, Object> map,
+        boolean keepBinary,
+        boolean cpy,
+        @Nullable ClassLoader ldr
+    ) {
         if (keepBinary)
             return map;
 
@@ -128,8 +139,8 @@ public class CacheObjectUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             // TODO why don't we use keepBinary parameter here?
             map0.put(
-                unwrapBinary(ctx, e.getKey(), false, cpy, null),
-                unwrapBinary(ctx, e.getValue(), false, cpy, null));
+                unwrapBinary(ctx, e.getKey(), false, cpy, ldr),
+                unwrapBinary(ctx, e.getValue(), false, cpy, ldr));
 
         return map0;
     }
@@ -205,9 +216,9 @@ public class CacheObjectUtils {
         }
 
         if (BinaryUtils.knownCollection(o))
-            return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
+            return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy, ldr);
         else if (BinaryUtils.knownMap(o))
-            return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
+            return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy, ldr);
         else if (o instanceof Object[] && !BinaryUtils.useBinaryArrays())
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
         else if (BinaryUtils.isBinaryArray(o) && !keepBinary)
@@ -223,39 +234,6 @@ public class CacheObjectUtils {
      */
     public static int objectPutSize(int dataLen) {
         return dataLen + HEAD_SIZE;
-    }
-
-    /**
-     * @param addr Write address.
-     * @param type Object type.
-     * @param valBytes Value bytes array.
-     * @return Offset shift compared to initial address.
-     */
-    public static int putValue(long addr, byte type, byte[] valBytes) {
-        return putValue(addr, type, valBytes, 0, valBytes.length);
-    }
-
-    /**
-     * @param addr Write address.
-     * @param type Object type.
-     * @param srcBytes Source value bytes array.
-     * @param srcOff Start position in sourceBytes.
-     * @param len Number of bytes for write.
-     * @return Offset shift compared to initial address.
-     */
-    public static int putValue(long addr, byte type, byte[] srcBytes, int srcOff, int len) {
-        int off = 0;
-
-        PageUtils.putInt(addr, off, len);
-        off += 4;
-
-        PageUtils.putByte(addr, off, type);
-        off++;
-
-        PageUtils.putBytes(addr, off, srcBytes, srcOff, len);
-        off += len;
-
-        return off;
     }
 
     /**

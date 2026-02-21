@@ -180,6 +180,8 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -222,8 +224,6 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -350,7 +350,7 @@ public abstract class IgniteUtils extends CommonUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x00004747);
+    public static final byte[] IGNITE_HEADER = intToBytes(0x0049474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -3626,6 +3626,41 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeCharArray(DataOutput out, char[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int c : arr)
+                out.writeChar(c);
+        }
+    }
+
+    /**
+     * @param in Stream to read from.
+     * @return Read char array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    public static char[] readCharArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        char[] res = new char[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readChar();
+
+        return res;
+    }
+
+    /**
      * @param out Output.
      * @param map Map to write.
      * @throws IOException If write failed.
@@ -6614,39 +6649,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Fully writes communication message to provided stream.
-     *
-     * @param msg Message.
-     * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link Message#writeTo(ByteBuffer, MessageWriter)} method.
-     * @param writer Message writer.
-     * @return Number of written bytes.
-     * @throws IOException In case of error.
-     */
-    public static int writeMessageFully(Message msg, OutputStream out, ByteBuffer buf,
-        MessageWriter writer) throws IOException {
-        assert msg != null;
-        assert out != null;
-        assert buf != null;
-        assert buf.hasArray();
-
-        boolean finished = false;
-        int cnt = 0;
-
-        while (!finished) {
-            finished = msg.writeTo(buf, writer);
-
-            out.write(buf.array(), 0, buf.position());
-
-            cnt += buf.position();
-
-            buf.clear();
-        }
-
-        return cnt;
-    }
-
-    /**
      * Throws exception with uniform error message if given parameter's assertion condition
      * is {@code false}.
      *
@@ -8274,6 +8276,33 @@ public abstract class IgniteUtils extends CommonUtils {
         public void clearAllListener() {
             if (listeners != null)
                 listeners.clear();
+        }
+    }
+
+    /** */
+    public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
+        /** {@inheritDoc} */
+        @Override public void writeExternal(Object instance, ObjectOutput out) {
+            throw new IllegalStateException("Can't find serializer for: " + instance.getClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(Object instance, ObjectInput in) {
+            throw new IllegalStateException("Can't find serializer for: " + instance.getClass());
+        }
+    };
+
+    /** */
+    public static <T extends IgniteDataTransferObject> IgniteDataTransferObjectSerializer<T> loadSerializer(Class<T> cls) {
+        try {
+            Class cls0 = IgniteUtils.class.getClassLoader()
+                .loadClass(cls.getPackage().getName() + "." + cls.getSimpleName() + "Serializer");
+
+            return (IgniteDataTransferObjectSerializer<T>)cls0.getDeclaredConstructor().newInstance();
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+               InvocationTargetException e) {
+            return (IgniteDataTransferObjectSerializer<T>)EMPTY_DTO_SERIALIZER;
         }
     }
 }

@@ -17,8 +17,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,6 +34,7 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -58,19 +63,21 @@ public class SnapshotChecker {
         int incIdx,
         @Nullable Collection<Integer> grpIds
     ) {
-        return CompletableFuture.supplyAsync(() ->
-            new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, incIdx, grpIds).execute(), executor);
+        return CompletableFuture.supplyAsync(
+            new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, incIdx, grpIds),
+            executor
+        );
     }
 
     /** */
-    public CompletableFuture<IncrementalSnapshotVerificationTaskResult> checkIncrementalSnapshot(
+    public CompletableFuture<IncrementalSnapshotVerifyResult> checkIncrementalSnapshot(
         SnapshotFileTree sft,
         int incIdx
     ) {
         assert incIdx > 0;
 
         return CompletableFuture.supplyAsync(
-            () -> new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).execute(),
+            new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx),
             executor
         );
     }
@@ -79,18 +86,69 @@ public class SnapshotChecker {
     public IdleVerifyResult reduceIncrementalResults(
         SnapshotFileTree sft,
         int incIdx,
-        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results,
+        Map<ClusterNode, IncrementalSnapshotVerifyResult> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
             return IdleVerifyResult.builder().exceptions(operationErrors).build();
 
-        return new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).reduce(results);
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
+
+        for (Map.Entry<ClusterNode, IncrementalSnapshotVerifyResult> nodeRes: results.entrySet()) {
+            IncrementalSnapshotVerifyResult res = nodeRes.getValue();
+
+            if (!F.isEmpty(res.partiallyCommittedTxs()))
+                bldr.addPartiallyCommited(nodeRes.getKey(), res.partiallyCommittedTxs());
+
+            bldr.addPartitionHashes(res.partHashRes());
+
+            if (log.isDebugEnabled())
+                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getKey() + ", taskRes=" + res + ']');
+
+            bldr.addIncrementalHashRecords(nodeRes.getKey(), res.txHashRes());
+        }
+
+        return bldr.build();
     }
 
     /** */
-    public Map<ClusterNode, Exception> reduceMetasResults(SnapshotFileTree sft, Map<ClusterNode, List<SnapshotMetadata>> metas) {
-        return new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, 0, null).reduce(metas);
+    public Map<ClusterNode, Exception> reduceMetasResults(SnapshotFileTree sft, Map<ClusterNode, List<SnapshotMetadata>> results) {
+        Map<ClusterNode, Exception> exs = new HashMap<>();
+
+        SnapshotMetadata first = null;
+        Set<String> baselineMetasLeft = Collections.emptySet();
+
+        for (Map.Entry<ClusterNode, List<SnapshotMetadata>> res : results.entrySet()) {
+            List<SnapshotMetadata> metas = res.getValue();
+
+            for (SnapshotMetadata meta : metas) {
+                if (first == null) {
+                    first = meta;
+
+                    baselineMetasLeft = new HashSet<>(meta.baselineNodes());
+                }
+
+                baselineMetasLeft.remove(meta.consistentId());
+
+                if (!first.sameSnapshot(meta)) {
+                    exs.put(res.getKey(),
+                        new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
+                            "[first=" + first + ", meta=" + meta + ", nodeId=" + res.getKey().id() + ']'));
+                }
+            }
+        }
+
+        if (first == null && exs.isEmpty()) {
+            throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + sft.name()
+                + ", baseDir=" + sft.root() + ", consistentId=" + sft.consistentId() + ']');
+        }
+
+        if (!F.isEmpty(baselineMetasLeft) && F.isEmpty(exs)) {
+            throw new IgniteException("No snapshot metadatas found for the baseline nodes " +
+                "with consistent ids: " + String.join(", ", baselineMetasLeft));
+        }
+
+        return exs;
     }
 
     /**
@@ -106,8 +164,8 @@ public class SnapshotChecker {
     ) {
         // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
-        return CompletableFuture.supplyAsync(() ->
-            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check).execute()
+        return CompletableFuture.supplyAsync(
+            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check)
         );
     }
 
@@ -131,18 +189,5 @@ public class SnapshotChecker {
                 throw new IgniteException(e);
             }
         }, executor);
-    }
-
-    /**
-     * Checks results of all the snapshot validation handlres.
-     * @param snpName Snapshot name.
-     * @param results Results: checking node -> snapshot part's consistend id -> custom handler name -> handler result.
-     * @see #invokeCustomHandlers(SnapshotMetadata, SnapshotFileTree, Collection, boolean)
-     */
-    public void checkCustomHandlersResults(
-        String snpName,
-        Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
-    ) {
-        new SnapshotHandlerRestoreTask(kctx.grid(), log, null, null, true).reduce(snpName, results);
     }
 }

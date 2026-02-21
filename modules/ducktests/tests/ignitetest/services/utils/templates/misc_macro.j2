@@ -79,7 +79,7 @@
                     </property>
                 {% elif value.ref | length > 0 %}
                     <property name="{{ name  | snake_to_camel }}" ref="{{ value.ref }}"/>
-                {% else %}
+                {% elif value != None %}
                     <property name="{{ name | snake_to_camel }}">
                         {{ bean(value) }}
                     </property>

@@ -1183,6 +1183,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         checkNodesResult(F.viewReadOnly(G.allGrids(), node -> (IgniteEx)node), ALL_NODES);
     }
 
+    /** Checks the situation when a view (metastorage, snapshot, etc.) is missing on some nodes, i.e., thick clients. */
+    @Test
+    public void testViewParticularlyRegistered() {
+        Map<UUID, List<List<String>>> views = systemView(F.viewReadOnly(G.allGrids(), n -> (IgniteEx)n), SNAPSHOT_SYS_VIEW, ALL_NODES);
+
+        assertNotNull(views);
+        assertEquals(2, views.size());
+        assertNotNull(views.get(ignite0.localNode().id()));
+        assertNotNull(views.get(ignite1.localNode().id()));
+        assertNull(views.get(client.localNode().id()));
+    }
+
     /** */
     private void checkNodesResult(Collection<IgniteEx> nodes, String nodesArg) {
         Map<UUID, List<List<String>>> map = systemView(nodes, NODES_SYS_VIEW, nodesArg);

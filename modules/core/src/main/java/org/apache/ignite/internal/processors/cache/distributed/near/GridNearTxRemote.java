@@ -256,6 +256,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param val Value.
      * @param drVer Data center replication version.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry has been enlisted.
      */
@@ -266,6 +267,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         CacheObject val,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary
     ) throws IgniteCheckedException {
         checkInternal(key);
@@ -300,6 +302,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         cached,
                         drVer,
                         skipStore,
+                        skipReadThrough,
                         keepBinary);
 
                     txState.addWriteEntry(key, txEntry);

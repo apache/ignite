@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,8 +25,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -43,9 +41,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,51 +53,52 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Keys to update. */
+    @Order(10)
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
     /** Values to update. */
-    @GridDirectCollection(CacheObject.class)
+    @Order(value = 11, method = "valuesToUpdate")
     private List<CacheObject> vals;
 
     /** Entry processors. */
-    @GridDirectTransient
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> entryProcessorsBytes;
+    @Order(12)
+    private @Nullable List<byte[]> entryProcessorsBytes;
 
     /** Conflict versions. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private List<GridCacheVersion> conflictVers;
+    @Order(value = 13, method = "conflictVersions")
+    private @Nullable List<GridCacheVersion> conflictVers;
 
     /** Conflict TTLs. */
+    @Order(14)
     private GridLongList conflictTtls;
 
     /** Conflict expire times. */
+    @Order(15)
     private GridLongList conflictExpireTimes;
 
     /** Optional arguments for entry processor. */
-    @GridDirectTransient
-    private Object[] invokeArgs;
+    private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    private byte[][] invokeArgsBytes;
+    @Order(value = 16, method = "invokeArgumentsBytes")
+    private @Nullable List<byte[]> invokeArgsBytes;
 
     /** Expiry policy. */
-    @GridDirectTransient
-    private ExpiryPolicy expiryPlc;
+    private @Nullable ExpiryPolicy expiryPlc;
 
     /** Expiry policy bytes. */
-    private byte[] expiryPlcBytes;
+    @Order(value = 17, method = "expiryPolicyBytes")
+    private @Nullable byte[] expiryPlcBytes;
 
     /** Filter. */
-    private CacheEntryPredicate[] filter;
+    @Order(18)
+    private @Nullable CacheEntryPredicate[] filter;
 
     /** Maximum possible size of inner collections. */
-    @GridDirectTransient
     private int initSize;
 
     /**
@@ -140,7 +136,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo,
         int maxEntryCnt
     ) {
@@ -158,7 +154,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         this.invokeArgs = invokeArgs;
         this.filter = filter;
 
-        // By default ArrayList expands to array of 10 elements on first add. We cannot guess how many entries
+        // By default, ArrayList expands to array of 10 elements on first add. We cannot guess how many entries
         // will be added to request because of unknown affinity distribution. However, we DO KNOW how many keys
         // participate in request. As such, we know upper bound of all collections in request. If this bound is lower
         // than 10, we use it.
@@ -175,13 +171,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable GridCacheVersion conflictVer) {
         EntryProcessor<Object, Object, Object> entryProc = null;
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
             entryProc = (EntryProcessor<Object, Object, Object>)val;
         }
 
-        assert val != null || op == DELETE;
+        assert val != null || operation() == DELETE;
 
         keys.add(key);
 
@@ -242,6 +238,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return keys;
     }
 
+    /**
+     * @param keys Keys to update.
+     */
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
+    }
+
     /** {@inheritDoc} */
     @Override public int size() {
         assert keys != null;
@@ -256,19 +259,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public List<?> values() {
-        return op == TRANSFORM ? entryProcessors : vals;
+        return operation() == TRANSFORM ? entryProcessors : vals;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value(int idx) {
-        assert op == UPDATE : op;
+        assert operation() == UPDATE : operation();
 
         return vals.get(idx);
     }
 
     /** {@inheritDoc} */
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
-        assert op == TRANSFORM : op;
+        assert operation() == TRANSFORM : operation();
 
         return entryProcessors.get(idx);
     }
@@ -284,6 +287,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override @Nullable public List<GridCacheVersion> conflictVersions() {
         return conflictVers;
+    }
+
+    /**
+     * @param conflictVers Conflict versions.
+     */
+    public void conflictVersions(@Nullable List<GridCacheVersion> conflictVers) {
+        this.conflictVers = conflictVers;
     }
 
     /** {@inheritDoc} */
@@ -329,16 +339,23 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return filter;
     }
 
+    /**
+     * @param filter Filter.
+     */
+    public void filter(@Nullable CacheEntryPredicate[] filter) {
+        this.filter = filter;
+    }
+
     /** {@inheritDoc} */
     @Override public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
@@ -360,7 +377,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 filter = null;
         }
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
@@ -368,18 +385,18 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             if (entryProcessorsBytes == null)
                 entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
 
-            if (invokeArgsBytes == null)
-                invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
         }
         else
             prepareMarshalCacheObjects(vals, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
@@ -393,12 +410,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             }
         }
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 
-            if (invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+            if (invokeArgsBytes != null && invokeArgs == null)
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
         }
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
@@ -411,163 +428,88 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return keys.get(0).partition();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 10:
-                if (!writer.writeGridLongList(conflictExpireTimes))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeGridLongList(conflictTtls))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeCollection(conflictVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCollection(entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeByteArray(expiryPlcBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeObjectArray(filter, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeCollection(vals, MessageCollectionItemType.CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @return Values to update.
+     */
+    public List<CacheObject> valuesToUpdate() {
+        return vals;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
+    /**
+     * @param vals Values to update.
+     */
+    public void valuesToUpdate(List<CacheObject> vals) {
+        this.vals = vals;
+    }
 
-        if (!super.readFrom(buf, reader))
-            return false;
+    /**
+     * @return Entry processors bytes.
+     */
+    public @Nullable List<byte[]> entryProcessorsBytes() {
+        return entryProcessorsBytes;
+    }
 
-        switch (reader.state()) {
-            case 10:
-                conflictExpireTimes = reader.readGridLongList();
+    /**
+     * @param entryProcessorsBytes Entry processors bytes.
+     */
+    public void entryProcessorsBytes(@Nullable List<byte[]> entryProcessorsBytes) {
+        this.entryProcessorsBytes = entryProcessorsBytes;
+    }
 
-                if (!reader.isLastRead())
-                    return false;
+    /**
+     * @return Conflict TTLs.
+     */
+    public GridLongList conflictTtls() {
+        return conflictTtls;
+    }
 
-                reader.incrementState();
+    /**
+     * @param conflictTtls Conflict TTLs.
+     */
+    public void conflictTtls(GridLongList conflictTtls) {
+        this.conflictTtls = conflictTtls;
+    }
 
-            case 11:
-                conflictTtls = reader.readGridLongList();
+    /**
+     * @return Conflict expire times.
+     */
+    public GridLongList conflictExpireTimes() {
+        return conflictExpireTimes;
+    }
 
-                if (!reader.isLastRead())
-                    return false;
+    /**
+     * @param conflictExpireTimes Conflict expire times.
+     */
+    public void conflictExpireTimes(GridLongList conflictExpireTimes) {
+        this.conflictExpireTimes = conflictExpireTimes;
+    }
 
-                reader.incrementState();
+    /**
+     * @return Entry processor arguments bytes.
+     */
+    public @Nullable List<byte[]> invokeArgumentsBytes() {
+        return invokeArgsBytes;
+    }
 
-            case 12:
-                conflictVers = reader.readCollection(MessageCollectionItemType.MSG);
+    /**
+     * @param invokeArgsBytes Entry processor arguments bytes.
+     */
+    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
+        this.invokeArgsBytes = invokeArgsBytes;
+    }
 
-                if (!reader.isLastRead())
-                    return false;
+    /**
+     * @return Expiry policy bytes.
+     */
+    public @Nullable byte[] expiryPolicyBytes() {
+        return expiryPlcBytes;
+    }
 
-                reader.incrementState();
-
-            case 13:
-                entryProcessorsBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                expiryPlcBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                filter = reader.readObjectArray(MessageCollectionItemType.MSG, CacheEntryPredicate.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                invokeArgsBytes = reader.readObjectArray(MessageCollectionItemType.BYTE_ARR, byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                vals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param expiryPlcBytes Expiry policy bytes.
+     */
+    public void expiryPolicyBytes(@Nullable byte[] expiryPlcBytes) {
+        this.expiryPlcBytes = expiryPlcBytes;
     }
 
     /** {@inheritDoc} */

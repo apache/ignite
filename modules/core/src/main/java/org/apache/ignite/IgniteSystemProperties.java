@@ -753,6 +753,12 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
+    /** Human-readable ID of a data center where the node is running. */
+    @IgniteExperimental
+    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
+        type = String.class)
+    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
+
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
         type = Integer.class, defaults = "" + DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE)
@@ -1798,7 +1804,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @deprecated Use {@link ShutdownPolicy} instead.
      */
     @Deprecated
-    @IgniteExperimental
     @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
         "caches exist that have backups configured")
@@ -1809,7 +1814,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * If enabled, subquery will be rewritten to JOIN where possible.
      * Default is {@code true}.
      */
-    @IgniteExperimental
     @SystemProperty("Enables subquery rewriting optimization. " +
         "If enabled, subquery will be rewritten to JOIN where possible")
     public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
@@ -1823,6 +1827,15 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty("Enables setting attribute value of TcpCommunicationSpi#ATTR_HOST_NAMES " +
         "when value IgniteConfiguration#getLocalHost is ip, for backward compatibility")
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
+
+    /**
+     * When set to positive number warning will be produced when outgoing message queue size of TCP communication SPI
+     * exeeds provided value.
+     * Default is {@code 0} (do not print warning).
+     */
+    @SystemProperty(value = "When set to positive number warning will be produced when outgoing message queue size of " +
+        "TCP communication SPI exeeds provided value. Default is 0 (do not print warning)", type = Integer.class)
+    public static final String IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE = "IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE";
 
     /**
      * When above zero, prints tx key collisions once per interval.
@@ -1952,7 +1965,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      */
     @SystemProperty(value = "Flag to indicate that disk writes during snapshot process should be in a sequential " +
         "manner when possible. This generates extra disk space usage", defaults = "" + DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE)
-    @IgniteExperimental
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
 
     /**
@@ -1962,7 +1974,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @see org.apache.ignite.spi.systemview.view.ConfigurationView
      */
     @SystemProperty(value = "Packages list to expose in configuration view")
-    @IgniteExperimental
     public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
 
     /**

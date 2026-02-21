@@ -45,8 +45,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.PagesTimestampHistogramViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -61,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
@@ -79,9 +78,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.systemview.PagesListViewWalker;
+import org.apache.ignite.internal.systemview.PagesTimestampHistogramViewWalker;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1153,7 +1153,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param reservationMap Map contains of counters for partitions of groups.
      * @return True if successfully reserved.
      */
-    public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
+    public boolean reserveHistoryForPreloading(Map<GroupPartitionIdPair, Long> reservationMap) {
         return false;
     }
 

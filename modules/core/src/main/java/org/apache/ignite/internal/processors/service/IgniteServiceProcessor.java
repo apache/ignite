@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -73,6 +72,7 @@ import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.systemview.ServiceViewWalker;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1641,11 +1641,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             });
 
-            depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
-                ServiceInfo rmv = removeFromServicesMap(deployedServices, deployedServicesByName, srvcId);
-
-                assert rmv == desc : "Concurrent map modification.";
-            });
+            depActions.servicesToUndeploy().forEach((srvcId, desc) ->
+                removeFromServicesMap(deployedServices, deployedServicesByName, srvcId));
         }
         finally {
             leaveBusy();
@@ -1873,9 +1870,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             else if (req instanceof ServiceUndeploymentRequest) {
                 ServiceInfo rmv = removeFromServicesMap(registeredServices, registeredServicesByName, reqSrvcId);
 
-                assert oldDesc == rmv : "Concurrent map modification.";
-
-                toUndeploy.put(reqSrvcId, rmv);
+                if (oldDesc == rmv && rmv != null)
+                    toUndeploy.put(reqSrvcId, rmv);
             }
         }
 
@@ -2038,7 +2034,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     ) {
         ServiceInfo desc = srvcsMap.remove(srvcId);
 
-        assert desc != null : "Concurrent map modification.";
+        if (desc == null)
+            return null;
 
         srvcsByNameMap.remove(desc.name());
 

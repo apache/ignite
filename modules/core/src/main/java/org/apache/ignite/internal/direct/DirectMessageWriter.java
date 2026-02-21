@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
@@ -47,6 +48,9 @@ public class DirectMessageWriter implements MessageWriter {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
+    /** Buffer for writing. */
+    private ByteBuffer buf;
+
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
@@ -58,7 +62,18 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
+        this.buf = buf;
+
         state.item().stream.setBuffer(buf);
+    }
+
+    /**
+     * Gets buffer to write to.
+     *
+     * @return Byte buffer.
+     */
+    public ByteBuffer getBuffer() {
+        return buf;
     }
 
     /** {@inheritDoc} */
@@ -332,6 +347,11 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
+        return writeCollection(set, itemType);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType) {
         DirectByteBufferStream stream = state.item().stream;
@@ -364,6 +384,8 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public void beforeInnerMessageWrite() {
         state.forward();
+
+        state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */

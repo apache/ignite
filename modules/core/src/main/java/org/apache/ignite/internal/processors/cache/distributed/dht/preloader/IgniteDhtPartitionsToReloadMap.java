@@ -18,45 +18,47 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Partition reload map.
  */
-public class IgniteDhtPartitionsToReloadMap implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class IgniteDhtPartitionsToReloadMap implements Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 513;
 
     /** */
-    private Map<UUID, Map<Integer, Set<Integer>>> map;
+    @Order(value = 0, method = "partitionsToReload")
+    private Map<UUID, CachePartitionsToReloadMap> map;
 
     /**
      * @param nodeId Node ID.
      * @param cacheId Cache ID.
-     * @return Collection of partitions to reload.
+     * @return Set of partitions to reload.
      */
     public synchronized Set<Integer> get(UUID nodeId, int cacheId) {
         if (map == null)
             return Collections.emptySet();
 
-        Map<Integer, Set<Integer>> nodeMap = map.get(nodeId);
+        CachePartitionsToReloadMap nodeMap = map.get(nodeId);
 
         if (nodeMap == null)
             return Collections.emptySet();
 
-        Set<Integer> parts = nodeMap.get(cacheId);
+        PartitionsToReload partsToReload = nodeMap.get(cacheId);
 
-        if (parts == null)
+        if (partsToReload == null)
             return Collections.emptySet();
 
-        return parts;
+        return (Set<Integer>)F.emptyIfNull(partsToReload.partitions());
     }
 
     /**
@@ -68,18 +70,12 @@ public class IgniteDhtPartitionsToReloadMap implements Serializable {
         if (map == null)
             map = new HashMap<>();
 
-        Map<Integer, Set<Integer>> nodeMap = map.get(nodeId);
+        CachePartitionsToReloadMap nodeMap = map.computeIfAbsent(nodeId, k -> new CachePartitionsToReloadMap());
 
-        if (nodeMap == null) {
-            nodeMap = new HashMap<>();
-
-            map.put(nodeId, nodeMap);
-        }
-
-        Set<Integer> parts = nodeMap.get(cacheId);
+        PartitionsToReload parts = nodeMap.get(cacheId);
 
         if (parts == null) {
-            parts = new HashSet<>();
+            parts = new PartitionsToReload();
 
             nodeMap.put(cacheId, parts);
         }
@@ -97,5 +93,24 @@ public class IgniteDhtPartitionsToReloadMap implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDhtPartitionsToReloadMap.class, this);
+    }
+
+    /**
+     * @return Partition reload map.
+     */
+    public Map<UUID, CachePartitionsToReloadMap> partitionsToReload() {
+        return map;
+    }
+
+    /**
+     * @param map Partition reload map.
+     */
+    public void partitionsToReload(Map<UUID, CachePartitionsToReloadMap> map) {
+        this.map = map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }
