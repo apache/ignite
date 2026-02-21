@@ -41,7 +41,7 @@
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="persitenceEnabled" value="true"/>
+                        <property name="persistenceEnabled" value="true"/>
                     </bean>
                 </property>
             </bean>
