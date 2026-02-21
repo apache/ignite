@@ -84,7 +84,7 @@ import org.junit.runners.Suite;
     P2PUnsupportedClassVersionTest.class,
     P2PClassLoadingFailureHandlingTest.class,
     P2PClassLoadingIssuesTest.class,
-    GridDeploymentLocalStoreReuseTest.class
+    GridDeploymentLocalStoreReuseTest.class,
 })
 public class IgniteP2PSelfTestSuite {
 }

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,7 +65,10 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     private final ConcurrentMap<String, Deque<GridDeployment>> cache = new ConcurrentHashMap<>();
 
     /** Deployment cache by classloader. */
-    private final ConcurrentMap<ClassLoader, Deque<GridDeployment>> cacheByLdr = new ConcurrentHashMap<>();
+    private final Map<ClassLoader, Deque<GridDeployment>> cacheByLdr = new IdentityHashMap<>();
+
+    /** 1-to-1 classloader-deployment map */
+    private final Map<ClassLoader, GridDeployment> depsByLdr = new IdentityHashMap<>();
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -266,6 +270,20 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
                     return dep;
                 }
+                else {
+                    ClassLoader ldr = Thread.currentThread().getContextClassLoader();
+
+                    if (ldr == null)
+                        ldr = U.resolveClassLoader(ctx.config());
+
+                    if (ldr != null && !(ldr instanceof GridDeploymentClassLoader) && ldr == dep.classLoader()) {
+                        if (log.isTraceEnabled())
+                            log.trace("Deployment was found for class with the local app class loader [alias="
+                                + meta.alias() + "]");
+
+                        return dep;
+                    }
+                }
             }
         }
 
@@ -299,49 +317,14 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             try {
                 Deque<GridDeployment> cachedDeps = null;
 
-                Deque<GridDeployment> depsByLdr = cacheByLdr.get(ldr);
+                GridDeployment depByLdr = depsByLdr.get(ldr);
 
-                if (depsByLdr != null) {
-                    GridDeployment candidate = null;
+                if (depByLdr != null) {
+                    fireEvt = depByLdr.addDeployedClass(cls, alias);
 
-                    for (GridDeployment d : depsByLdr) {
-                        if (!d.undeployed() && d.classLoader() == ldr) {
-                            candidate = d;
+                    cachedDeps = cacheByLdr.get(ldr);
 
-                            break;
-                        }
-                    }
-
-                    if (candidate != null) {
-                        fireEvt = candidate.addDeployedClass(cls, alias);
-
-                        cachedDeps = depsByLdr;
-
-                        dep = candidate;
-                    }
-                }
-                else {
-                    // Find existing class loader info.
-                    for (Deque<GridDeployment> deps : cache.values()) {
-                        for (GridDeployment d : deps) {
-                            if (d.classLoader() == ldr) {
-                                // Cache class and alias.
-                                fireEvt = d.addDeployedClass(cls, alias);
-
-                                cachedDeps = deps;
-
-                                dep = d;
-
-                                break;
-                            }
-                        }
-
-                        if (cachedDeps != null) {
-                            cacheByLdr.put(ldr, cachedDeps);
-
-                            break;
-                        }
-                    }
+                    dep = depByLdr;
                 }
 
                 if (cachedDeps != null) {
@@ -382,6 +365,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     cache.put(cls.getName(), deps);
                 }
 
+                depsByLdr.put(ldr, dep);
                 cacheByLdr.put(ldr, deps);
 
                 if (log.isDebugEnabled())
@@ -599,6 +583,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     i1.remove();
             }
 
+            depsByLdr.remove(ldr);
             cacheByLdr.remove(ldr);
         }
 

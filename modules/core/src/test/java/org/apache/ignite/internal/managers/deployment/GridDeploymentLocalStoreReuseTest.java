@@ -17,52 +17,36 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.TestTask;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForAllFutures;
 
 /** */
 public class GridDeploymentLocalStoreReuseTest extends AbstractThinClientTest {
     /** */
-    private static final int NODE_CNT = 3;
+    private static final String LOG_NAME = "org.apache.ignite";
 
     /** */
-    private static final int CLIENT_CNT = 3;
+    private static final int EXEC_CNT = 3;
 
     /** */
-    protected static final int EXEC_CNT = 10;
+    private static Level initLogLevel;
 
     /** */
-    private List<DeploymentListeningLogger> logs;
-
-    /** */
-    private List<IgniteClient> clients;
+    private static ListeningTestLogger testLog;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        DeploymentListeningLogger testLog = new DeploymentListeningLogger(log);
-        logs.add(testLog);
-
         return super.getConfiguration(igniteInstanceName)
             .setClientConnectorConfiguration(
                 new ClientConnectorConfiguration().setThinClientConfiguration(
@@ -75,103 +59,56 @@ public class GridDeploymentLocalStoreReuseTest extends AbstractThinClientTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        logs = new ArrayList<>(NODE_CNT);
+        LoggerConfig logCfg = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(LOG_NAME);
 
-        clients = new ArrayList<>(CLIENT_CNT);
+        initLogLevel = logCfg.getLevel();
 
-        setLoggerDebugLevel();
+        Configurator.setLevel(LOG_NAME, Level.TRACE);
 
-        startGrids(NODE_CNT);
+        testLog = new ListeningTestLogger(log);
+
+        startGrids(2);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        clients.clear();
+        Configurator.setLevel(LOG_NAME, initLogLevel);
+
+        initLogLevel = null;
 
         super.afterTest();
     }
 
     /**
      * Verifies that multiple task executions do not cause excessive local deployment cache misses. The "deployment not
-     * found ... clsLdrId=null" message is allowed only once per thin client (initial task execution).
+     * found ... clsLdrId=null" message is allowed only once upon initial task execution. The trace-level "deployment
+     * was found for class with the local app class loader" messages must be present in the output marking the subsequent
+     * task executions without cache misses.
      */
     @Test
-    public void testNoExcessiveLocalDeployment() {
-        try {
-            ClusterNode[] allServerNodes = grid(0).cluster().forServers().nodes().toArray(new ClusterNode[0]);
+    public void testNoExcessiveLocalDeploymentCacheMisses() throws Exception {
+        String taskClsName = TestTask.class.getName();
 
-            for (int i = 0; i < CLIENT_CNT; i++)
-                clients.add(startClient(allServerNodes));
+        String notFoundMsg = String.format(
+            "Deployment was not found for class with specific class loader [alias=%s, clsLdrId=null]", taskClsName);
 
-            List<IgniteInternalFuture<Void>> futs = new ArrayList<>(CLIENT_CNT);
+        String foundLocLdrMsg = String.format(
+            "Deployment was found for class with the local app class loader [alias=%s]", taskClsName);
 
-            for (IgniteClient client : clients)
-                futs.add(runAsync(() -> executeTasksOnClient(client, EXEC_CNT, 5_000L)));
+        LogListener lsnr0 = LogListener.matches(notFoundMsg).times(1).build();
+        LogListener lsnr1 = LogListener.matches(foundLocLdrMsg).atLeast(EXEC_CNT - 1).build();
 
-            waitForAllFutures(futs.toArray(new IgniteInternalFuture[0]));
+        testLog.registerListener(lsnr0);
+        testLog.registerListener(lsnr1);
 
-            List<String> allNotFound = new ArrayList<>();
-
-            for (DeploymentListeningLogger log : logs)
-                allNotFound.addAll(log.depNotFound());
-
-            String taskClsName = TestTask.class.getName();
-
-            String notFoundMsg = String.format(
-                "Deployment was not found for class with specific class loader [alias=%s, clsLdrId=null]", taskClsName);
-
-            assertEquals(CLIENT_CNT, Collections.frequency(allNotFound, notFoundMsg));
-        }
-        finally {
-            clients.forEach(IgniteClient::close);
-        }
-    }
-
-    /** */
-    private static void executeTasksOnClient(IgniteClient client, int cnt, long timeout) {
-        for (int i = 0; i < cnt; i++) {
-            CompletableFuture<T2<UUID, Set<UUID>>> fut = client.compute()
-                .withTimeout(timeout).
-                    <T2<UUID, Set<UUID>>, T2<UUID, Set<UUID>>>executeAsync2(TestTask.class.getName(), null)
-                .toCompletableFuture();
-
-            try {
-                fut.get();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /** */
-    private static class DeploymentListeningLogger extends ListeningTestLogger {
-        /** */
-        private final ConcurrentLinkedQueue<String> depNotFound = new ConcurrentLinkedQueue<>();
-
-        /** */
-        public DeploymentListeningLogger(IgniteLogger log) {
-            super(log);
+        try (IgniteClient client = startClient(0)) {
+            for (int i = 0; i < EXEC_CNT; i++)
+                client.compute().execute(TestTask.class.getName(), null);
         }
 
-        /** {@inheritDoc} */
-        @Override public void debug(String msg) {
-            if (msg.contains("Deployment was not found for class with specific class loader"))
-                depNotFound.add(msg);
-
-            super.debug(msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ListeningTestLogger getLogger(Object ctgr) {
-            return this;
-        }
-
-        /** */
-        public List<String> depNotFound() {
-            return depNotFound.stream().collect(Collectors.toUnmodifiableList());
-        }
+        assertTrue(lsnr0.check(5_000));
+        assertTrue(lsnr1.check(5_000));
     }
 }
