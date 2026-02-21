@@ -32,6 +32,8 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryClientMetricsUpdateMessage
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientNodesMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryClientReconnectMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryCollectionMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryConnectionCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDiscardMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDuplicateIdMessageSerializer;
@@ -66,6 +68,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpd
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
@@ -88,6 +92,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-111, TcpDiscoveryCollectionMessage::new, new TcpDiscoveryCollectionMessageSerializer());
         factory.register((short)-110, ClusterNodeCollectionMessage::new, new ClusterNodeCollectionMessageSerializer());
         factory.register((short)-109, ClusterNodeMessage::new, new ClusterNodeMessageSerializer());
         factory.register((short)-108, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
@@ -121,6 +126,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageSerializer());
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new, new TcpDiscoveryNodeAddFinishedMessageSerializer());
-        factory.register((short)20, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageSerializer());
+        factory.register((short)20, TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
+        factory.register((short)21, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageSerializer());
     }
 }

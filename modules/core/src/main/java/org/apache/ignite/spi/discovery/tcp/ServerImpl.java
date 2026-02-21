@@ -1888,7 +1888,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                nodeAddedMsg.messages(msgs0);
+                nodeAddedMsg.pendingMessages(msgs0);
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -1911,7 +1911,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
-            nodeAddedMsg.messages(null);
+            nodeAddedMsg.pendingMessages(null);
             nodeAddedMsg.clearUnmarshalledDiscoveryData();
         }
     }
@@ -5048,7 +5048,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
 
-                            pendingMsgs.reset(msg.messages());
+                            pendingMsgs.reset(msg.pendingMessages());
                         }
                         else {
                             if (log.isDebugEnabled())

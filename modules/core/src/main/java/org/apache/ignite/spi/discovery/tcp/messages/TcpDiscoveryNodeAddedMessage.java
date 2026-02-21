@@ -17,10 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,13 +28,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -65,15 +63,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     @Order(value = 8, method = "topologyHistoryMessages")
     private @Nullable Map<Long, ClusterNodeCollectionMessage> topHistMsgs;
 
-    /** {@link TcpDiscoveryAbstractMessage} pending messages from previous node which is a {@link Message}. */
-    @Order(value = 9, method = "pendingMessages")
-    private Map<Integer, Message> pendingMsgs;
+    /** Message to hold collection of pending {@link TcpDiscoveryAbstractMessage}. */
+    @Order(value = 9, method = "pendingMessagesTransferMessage")
+    private TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Added node. */
     private TcpDiscoveryNode node;
 
     /** Marshalled {@link #node}. */
     @Order(10)
+    @GridToStringExclude
     private byte[] nodeBytes;
 
     /** Current topology. Initialized by coordinator. */
@@ -82,21 +81,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Marshalled {@link #top}. */
     @Order(value = 11, method = "topologyBytes")
+    @GridToStringExclude
     private @Nullable byte[] topBytes;
 
     /** */
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
-
-    /**
-     * TODO: Remove/revise after https://issues.apache.org/jira/browse/IGNITE-25883
-     * Java-serializable pending messages from previous node.
-     */
-    private @Nullable Map<Integer, TcpDiscoveryAbstractMessage> serializablePendingMsgs;
-
-    /** Marshalled {@link #serializablePendingMsgs}. */
-    @Order(value = 12, method = "serializablePendingMessagesBytes")
-    private byte[] serializablePendingMsgsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeAddedMessage() {
@@ -139,9 +129,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         top = msg.top;
         topBytes = msg.topBytes;
 
-        pendingMsgs = msg.pendingMsgs;
-        serializablePendingMsgs = msg.serializablePendingMsgs;
-        serializablePendingMsgsBytes = msg.serializablePendingMsgsBytes;
+        pendingMsgsMsg = msg.pendingMsgsMsg;
 
         clientTop = msg.clientTop;
         topHistMsgs = msg.topHistMsgs;
@@ -166,15 +154,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal topology nodes.", e);
-            }
-        }
-
-        if (serializablePendingMsgs != null && serializablePendingMsgsBytes == null) {
-            try {
-                serializablePendingMsgsBytes = U.marshal(marsh, serializablePendingMsgs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal serializable pending messages.", e);
             }
         }
     }
@@ -202,17 +181,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
                 throw new IgniteException("Failed to unmarshal topology nodes.", e);
             }
         }
-
-        if (serializablePendingMsgsBytes != null && serializablePendingMsgs == null) {
-            try {
-                serializablePendingMsgs = U.unmarshal(marsh, serializablePendingMsgsBytes, clsLdr);
-
-                serializablePendingMsgsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal serializable pending messages.", e);
-            }
-        }
     }
 
     /**
@@ -235,99 +203,31 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
-     * @return Pending messages by their order.
-     * @see #messages()
-     */
-    public Map<Integer, Message> pendingMessages() {
-        return pendingMsgs;
-    }
-
-    /**
-     * @param pendingMsgs Pending messages by their order.
-     * @see #messages(List)
-     */
-    public void pendingMessages(Map<Integer, Message> pendingMsgs) {
-        this.pendingMsgs = pendingMsgs;
-    }
-
-    /** @return Bytes of {@link #serializablePendingMsgs}. */
-    public @Nullable byte[] serializablePendingMessagesBytes() {
-        return serializablePendingMsgsBytes;
-    }
-
-    /** @param serializablePendingMsgsBytes Bytes of {@link #serializablePendingMsgs}. */
-    public void serializablePendingMessagesBytes(@Nullable byte[] serializablePendingMsgsBytes) {
-        this.serializablePendingMsgsBytes = serializablePendingMsgsBytes;
-    }
-
-    /**
      * Gets pending messages sent to new node by its previous.
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public List<TcpDiscoveryAbstractMessage> messages() {
-        if (F.isEmpty(pendingMsgs) && F.isEmpty(serializablePendingMsgs))
-            return Collections.emptyList();
-
-        int totalSz = (F.isEmpty(pendingMsgs) ? 0 : pendingMsgs.size())
-            + (F.isEmpty(serializablePendingMsgs) ? 0 : serializablePendingMsgs.size());
-
-        List<TcpDiscoveryAbstractMessage> res = new ArrayList<>(totalSz);
-
-        for (int i = 0; i < totalSz; ++i) {
-            Message m = F.isEmpty(pendingMsgs) ? null : pendingMsgs.get(i);
-
-            if (m == null) {
-                TcpDiscoveryAbstractMessage sm = serializablePendingMsgs.get(i);
-
-                assert sm != null;
-
-                res.add(sm);
-            }
-            else {
-                assert serializablePendingMsgs == null || serializablePendingMsgs.get(i) == null;
-                assert m instanceof TcpDiscoveryAbstractMessage;
-
-                res.add((TcpDiscoveryAbstractMessage)m);
-            }
-        }
-
-        return res;
+    public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
+        return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
     }
 
     /**
-     * Sets pending messages to send to new node.
+     * Sets pending messages.
      *
-     * @param msgs Pending messages to send to new node.
+     * @param msgs Pending messages.
      */
-    public void messages(@Nullable List<TcpDiscoveryAbstractMessage> msgs) {
-        serializablePendingMsgsBytes = null;
+    public void pendingMessages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
+    }
 
-        if (F.isEmpty(msgs)) {
-            serializablePendingMsgs = null;
-            pendingMsgs = null;
+    /** @return Message to transfer the pending messages. */
+    public @Nullable TcpDiscoveryCollectionMessage pendingMessagesTransferMessage() {
+        return pendingMsgsMsg;
+    }
 
-            return;
-        }
-
-        // Keeps the original message order as in a list.
-        int idx = 0;
-
-        for (TcpDiscoveryAbstractMessage m : msgs) {
-            if (m instanceof Message) {
-                if (pendingMsgs == null)
-                    pendingMsgs = U.newHashMap(msgs.size());
-
-                pendingMsgs.put(idx++, (Message)m);
-
-                continue;
-            }
-
-            if (serializablePendingMsgs == null)
-                serializablePendingMsgs = U.newHashMap(msgs.size());
-
-            serializablePendingMsgs.put(idx++, m);
-        }
+    /** @param pendingMsgsMsg Message to transfer the pending messages. */
+    public void pendingMessagesTransferMessage(@Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg) {
+        this.pendingMsgsMsg = pendingMsgsMsg;
     }
 
     /**
@@ -487,7 +387,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 20;
+        return 21;
     }
 
     /** {@inheritDoc} */
