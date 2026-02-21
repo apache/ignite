@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     /** Node ID. */
-    @Order(0)
+    @Order(value = 0, method = "id")
     private UUID id;
 
     /** Internal discovery addresses as strings. */
@@ -44,7 +44,7 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     private Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    @Order(2)
+    @Order(value = 2, method = "hostNames")
     private Collection<String> hostNames;
 
     /** */
@@ -52,7 +52,7 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     private TcpDiscoveryNodeMetricsMessage clusterMetricsMsg;
 
     /** */
-    @Order(value = 4)
+    @Order(value = 4, method = "order")
     private long order;
 
     /** */
@@ -64,18 +64,18 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     private boolean loc;
 
     /** */
-    @Order(7)
+    @Order(value = 7, method = "client")
     private boolean client;
 
     /** */
-    @Order(8)
+    @Order(value = 8, method = "dataCenterId")
     private String dataCenterId;
 
     /** Consistent ID. */
     private Object consistentId;
 
     /** */
-    @Order(9)
+    @Order(value = 9, method = "consistentIdBytes")
     private byte[] consistentIdBytes;
 
     /** Node attributes. */

@@ -37,7 +37,7 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    @Order(5)
+    @Order(value = 5, method = "routerNodeId")
     private UUID routerNodeId;
 
     /** Last message ID. */

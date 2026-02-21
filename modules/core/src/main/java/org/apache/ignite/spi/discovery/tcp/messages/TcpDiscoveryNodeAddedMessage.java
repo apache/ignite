@@ -56,7 +56,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private DiscoveryDataPacket dataPacket;
 
     /** Start time of the first grid node. */
-    @Order(7)
+    @Order(value = 7, method = "gridStartTime")
     private long gridStartTime;
 
     /** Topology snapshots history. */
@@ -71,7 +71,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private TcpDiscoveryNode node;
 
     /** Marshalled {@link #node}. */
-    @Order(10)
+    @Order(value = 10, method = "nodeBytes")
     @GridToStringExclude
     private byte[] nodeBytes;
 

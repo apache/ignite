@@ -28,19 +28,19 @@ public class IgniteProductVersionMessage implements Message {
     public static final int REV_HASH_SIZE = 20;
 
     /** Major version number. */
-    @Order(0)
+    @Order(value = 0, method = "major")
     private byte major;
 
     /** Minor version number. */
-    @Order(1)
+    @Order(value = 1, method = "minor")
     private byte minor;
 
     /** Maintenance version number. */
-    @Order(2)
+    @Order(value = 2, method = "maintenance")
     private byte maintenance;
 
     /** Stage of development. */
-    @Order(3)
+    @Order(value = 3, method = "stage")
     private String stage;
 
     /** Revision timestamp. */
