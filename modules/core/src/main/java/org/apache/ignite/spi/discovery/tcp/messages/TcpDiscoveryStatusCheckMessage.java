@@ -47,16 +47,16 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     public static final int STATUS_RECON = 2;
 
     /** Creator node addresses. */
-    @Order(value = 5, method = "creatorNodeAddressesMessages")
-    @Nullable private Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs;
+    @Order(5)
+    @Nullable Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs;
 
     /** Failed node id. */
     @Order(6)
-    @Nullable private UUID failedNodeId;
+    @Nullable UUID failedNodeId;
 
     /** Creator node status (initialized by coordinator). */
     @Order(7)
-    private int status;
+    int status;
 
     /** Empty constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryStatusCheckMessage() {

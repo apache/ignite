@@ -41,19 +41,19 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 public class QueryTxEntry implements CalciteMessage {
     /** Cache id. */
     @Order(0)
-    private int cacheId;
+    int cacheId;
 
     /** Entry key. */
     @Order(1)
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** Entry value. */
-    @Order(value = 2, method = "value")
-    private CacheObject val;
+    @Order(2)
+    CacheObject val;
 
     /** Entry version. */
-    @Order(value = 3, method = "version")
-    private GridCacheVersion ver;
+    @Order(3)
+    GridCacheVersion ver;
 
     /**
      * Empty constructor.

@@ -25,20 +25,20 @@ import org.apache.ignite.internal.Order;
  */
 public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(2)
-    private long exchangeId;
+    long exchangeId;
 
     /** */
     @Order(3)
-    private int batchId;
+    int batchId;
 
     /** */
     public QueryBatchAcknowledgeMessage() {

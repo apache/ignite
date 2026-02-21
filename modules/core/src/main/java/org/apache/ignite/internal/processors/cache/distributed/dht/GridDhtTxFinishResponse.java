@@ -35,19 +35,19 @@ import org.jetbrains.annotations.Nullable;
 public final class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Mini future ID. */
     @Order(6)
-    private int miniId;
+    int miniId;
 
     /** Error message. */
-    @Order(value = 7, method = "checkCommittedErrorMessage")
-    private @Nullable ErrorMessage checkCommittedErrMsg;
+    @Order(7)
+    @Nullable ErrorMessage checkCommittedErrMsg;
 
     /** Cache return value. */
-    @Order(value = 8, method = "returnValue")
-    private GridCacheReturn retVal;
+    @Order(8)
+    GridCacheReturn retVal;
 
     /** Flag indicating if this is a check-committed response. */
     @Order(9)
-    private boolean checkCommitted;
+    boolean checkCommitted;
 
     /**
      * Empty constructor.

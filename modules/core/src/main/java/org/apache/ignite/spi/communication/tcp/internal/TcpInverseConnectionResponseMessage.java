@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAwareMessage {
     /** */
-    @Order(value = 0, method = "connectionIndex")
-    private int connIdx;
+    @Order(0)
+    int connIdx;
 
     /** */
     public TcpInverseConnectionResponseMessage() {

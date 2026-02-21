@@ -43,27 +43,27 @@ public class GridCacheReturn implements Message {
     private volatile Object v;
 
     /** Cache object. */
-    @Order(value = 0, method = "cacheObject")
-    private @Nullable CacheObject cacheObj;
+    @Order(0)
+    @Nullable CacheObject cacheObj;
 
     /** Invoke direct results. */
-    @Order(value = 1, method = "invokeDirectResults")
-    private @Nullable Collection<CacheInvokeDirectResult> invokeResCol;
+    @Order(1)
+    @Nullable Collection<CacheInvokeDirectResult> invokeResCol;
 
     /** Success flag. */
     @Order(2)
-    private volatile boolean success;
+    volatile boolean success;
 
     /** Invoke result flag. */
-    @Order(value = 3, method = "invokeResult")
-    private volatile boolean invokeRes;
+    @Order(3)
+    volatile boolean invokeRes;
 
     /** Local result flag, if non local then do not need unwrap cache objects. */
     private boolean loc;
 
     /** Cache Id. */
     @Order(4)
-    private int cacheId;
+    int cacheId;
 
     /**
      * Empty constructor.

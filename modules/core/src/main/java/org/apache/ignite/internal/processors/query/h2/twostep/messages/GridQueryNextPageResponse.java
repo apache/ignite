@@ -28,32 +28,32 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridQueryNextPageResponse implements Message {
     /** */
-    @Order(value = 0, method = "queryRequestId")
-    private long qryReqId;
+    @Order(0)
+    long qryReqId;
 
     /** */
     @Order(1)
-    private int segmentId;
+    int segmentId;
 
     /** */
-    @Order(value = 2, method = "query")
-    private int qry;
+    @Order(2)
+    int qry;
 
     /** */
     @Order(3)
-    private int page;
+    int page;
 
     /** */
     @Order(4)
-    private int allRows;
+    int allRows;
 
     /** */
-    @Order(value = 5, method = "columns")
-    private int cols;
+    @Order(5)
+    int cols;
 
     /** */
-    @Order(value = 6, method = "values")
-    private Collection<Message> vals;
+    @Order(6)
+    Collection<Message> vals;
 
     /**
      * Note, columns count in plain row can differ from {@link #cols}.
@@ -64,15 +64,15 @@ public class GridQueryNextPageResponse implements Message {
 
     /** */
     @Order(7)
-    private AffinityTopologyVersion retry;
+    AffinityTopologyVersion retry;
 
     /** Retry cause description. */
     @Order(8)
-    private String retryCause;
+    String retryCause;
 
     /** Last page flag. */
     @Order(9)
-    private boolean last;
+    boolean last;
 
     /**
      * Empty constructor.

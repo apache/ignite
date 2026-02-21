@@ -29,11 +29,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class InetAddressMessage implements Message {
     /** */
     @Order(0)
-    private String hostName;
+    String hostName;
 
     /** */
-    @Order(value = 1, method = "addressBytes")
-    private byte[] addrBytes;
+    @Order(1)
+    byte[] addrBytes;
 
     /** Default constructor for {@link DiscoveryMessageFactory}. */
     public InetAddressMessage() {

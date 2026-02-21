@@ -34,7 +34,7 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
     @Order(7)
-    private List<KeyCacheObject> keys;
+    public List<KeyCacheObject> keys;
 
     /**
      * Empty constructor.

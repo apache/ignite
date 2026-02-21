@@ -30,16 +30,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridTaskSessionRequest implements Message {
     /** Task session ID. */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** ID of job within a task. */
     @Order(1)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** Changed attributes bytes. */
-    @Order(value = 2, method = "attributesBytes")
-    private byte[] attrsBytes;
+    @Order(2)
+    byte[] attrsBytes;
 
     /** Changed attributes. */
     private Map<?, ?> attrs;
