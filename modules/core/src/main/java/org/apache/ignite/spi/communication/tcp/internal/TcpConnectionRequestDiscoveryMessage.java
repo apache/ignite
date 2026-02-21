@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,23 +37,33 @@ import org.jetbrains.annotations.Nullable;
  * node B receives request and opens communication connection to node A
  * thus allowing both nodes to communicate to each other.
  */
-public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage {
+public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    public static final short DIRECT_TYPE = 502;
+
+    /** */
+    @Order(0)
+    IgniteUuid id;
 
     /** */
     @GridToStringInclude
-    private final UUID receiverNodeId;
+    @Order(1)
+    UUID receiverNodeId;
 
     /** */
     @GridToStringInclude
-    private final int connIdx;
+    @Order(2)
+    int connIdx;
+
+    /** */
+    public TcpConnectionRequestDiscoveryMessage() {}
 
     /** */
     public TcpConnectionRequestDiscoveryMessage(UUID receiverNodeId, int connIdx) {
+        this.id = IgniteUuid.randomUuid();
         this.receiverNodeId = receiverNodeId;
         this.connIdx = connIdx;
     }
@@ -69,6 +81,11 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     /** */
     public int connectionIndex() {
         return connIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
