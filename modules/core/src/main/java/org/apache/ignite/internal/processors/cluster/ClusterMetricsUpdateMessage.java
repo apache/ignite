@@ -35,11 +35,11 @@ public final class ClusterMetricsUpdateMessage implements Message {
 
     /** Single node metrics message. */
     @Order(0)
-    @Nullable private NodeFullMetricsMessage singleNodeMetricsMsg;
+    @Nullable NodeFullMetricsMessage singleNodeMetricsMsg;
 
     /** All-nodes cache metrics messages. */
     @Order(1)
-    @Nullable private Map<UUID, NodeFullMetricsMessage> allNodesMetrics;
+    @Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics;
 
     /** Default constructor. Required for {@link GridIoMessageFactory}. */
     public ClusterMetricsUpdateMessage() {

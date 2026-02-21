@@ -62,15 +62,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future ID on primary. */
-    @Order(value = 4, method = "futureId")
+    @Order(4)
     protected long futId;
 
     /** Write version. */
-    @Order(value = 5, method = "writeVersion")
+    @Order(5)
     protected GridCacheVersion writeVer;
 
     /** Topology version. */
-    @Order(value = 6, method = "topologyVersion")
+    @Order(6)
     protected AffinityTopologyVersion topVer;
 
     /** Task name hash. */
@@ -85,11 +85,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** */
     @Order(8)
-    private UUID nearNodeId;
+    UUID nearNodeId;
 
     /** */
-    @Order(value = 9, method = "nearFutureId")
-    private long nearFutId;
+    @Order(9)
+    long nearFutId;
 
     /** Additional flags. */
     @Order(10)

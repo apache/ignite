@@ -41,19 +41,19 @@ public class TxLock implements Message {
 
     /** Near node ID. */
     @Order(0)
-    private UUID nearNodeId;
+    UUID nearNodeId;
 
     /** Tx ID. */
     @Order(1)
-    private GridCacheVersion txId;
+    GridCacheVersion txId;
 
     /** Thread ID. */
     @Order(2)
-    private long threadId;
+    long threadId;
 
     /** Ownership. */
     @Order(3)
-    private byte ownership;
+    byte ownership;
 
     /**
      * Default constructor.

@@ -32,12 +32,12 @@ public class CachePartitionFullCountersMap implements Message {
     public static final short TYPE_CODE = 506;
 
     /** */
-    @Order(value = 0, method = "initialUpdateCounters")
-    private long[] initUpdCntrs;
+    @Order(0)
+    long[] initUpdCntrs;
 
     /** */
-    @Order(value = 1, method = "updateCounters")
-    private long[] updCntrs;
+    @Order(1)
+    long[] updCntrs;
 
     /**
      * Default constructor.

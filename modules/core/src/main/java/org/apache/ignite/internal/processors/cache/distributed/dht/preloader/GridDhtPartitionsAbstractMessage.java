@@ -35,12 +35,12 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** Exchange ID. */
-    @Order(value = 3, method = "exchangeId")
-    private GridDhtPartitionExchangeId exchId;
+    @Order(3)
+    GridDhtPartitionExchangeId exchId;
 
     /** Last used cache version. */
-    @Order(value = 4, method = "lastVersion")
-    private GridCacheVersion lastVer;
+    @Order(4)
+    GridCacheVersion lastVer;
 
     /** */
     @Order(5)

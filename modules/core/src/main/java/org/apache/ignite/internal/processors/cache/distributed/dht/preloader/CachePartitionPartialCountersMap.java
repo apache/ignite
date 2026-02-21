@@ -40,20 +40,20 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
 
     /** */
-    @Order(value = 0, method = "partitionIds")
-    private int[] partIds;
+    @Order(0)
+    int[] partIds;
 
     /** */
-    @Order(value = 1, method = "initialUpdateCounters")
-    private long[] initialUpdCntrs;
+    @Order(1)
+    long[] initialUpdCntrs;
 
     /** */
-    @Order(value = 2, method = "updateCounters")
-    private long[] updCntrs;
+    @Order(2)
+    long[] updCntrs;
 
     /** */
-    @Order(value = 3, method = "currentIndex")
-    private int curIdx;
+    @Order(3)
+    int curIdx;
 
     /** */
     public CachePartitionPartialCountersMap() {

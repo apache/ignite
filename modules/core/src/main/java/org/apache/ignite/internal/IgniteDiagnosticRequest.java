@@ -34,16 +34,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDiagnosticRequest implements Message {
     /** */
-    @Order(value = 0, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** Originator node id. */
     @Order(1)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private @Nullable Set<DiagnosticBaseInfo> infos;
+    @Nullable Set<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();

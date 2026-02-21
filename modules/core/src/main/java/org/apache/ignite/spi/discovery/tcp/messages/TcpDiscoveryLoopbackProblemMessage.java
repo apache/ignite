@@ -32,12 +32,12 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** Remote node addresses. */
-    @Order(value = 5, method = "addresses")
-    private Collection<String> addrs;
+    @Order(5)
+    Collection<String> addrs;
 
     /** Remote node host names. */
     @Order(6)
-    private Collection<String> hostNames;
+    Collection<String> hostNames;
 
     /** */
     public TcpDiscoveryLoopbackProblemMessage() {

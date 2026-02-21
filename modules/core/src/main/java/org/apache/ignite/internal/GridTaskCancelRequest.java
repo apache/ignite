@@ -26,8 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridTaskCancelRequest implements Message {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /**
      * Default constructor.

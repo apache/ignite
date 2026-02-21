@@ -31,16 +31,16 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    @Order(value = 3, method = "xid")
-    private GridCacheVersion txId;
+    @Order(3)
+    public GridCacheVersion txId;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(4)
+    public IgniteUuid futId;
 
     /** Partition ID this message is targeted to. */
-    @Order(value = 5, method = "partition")
-    private int part;
+    @Order(5)
+    public int part;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.

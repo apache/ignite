@@ -50,8 +50,8 @@ public class RecoveryLastReceivedMessage implements Message {
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
-    @Order(value = 0, method = "received")
-    private long rcvCnt;
+    @Order(0)
+    long rcvCnt;
 
     /**
      * Default constructor.

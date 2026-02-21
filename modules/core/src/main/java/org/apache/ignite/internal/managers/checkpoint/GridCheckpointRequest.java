@@ -28,17 +28,17 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridCheckpointRequest implements Message {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
     @Order(1)
     @GridToStringInclude(sensitive = true)
-    private String key;
+    String key;
 
     /** */
-    @Order(value = 2, method = "checkpointSpi")
-    private String cpSpi;
+    @Order(2)
+    String cpSpi;
 
     /**
      * Empty constructor.

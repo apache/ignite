@@ -38,40 +38,40 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** */
-    @Order(value = 4, method = "futureId")
-    private long futId;
+    @Order(4)
+    long futId;
 
     /** Topology version. */
-    @Order(value = 5, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(5)
+    AffinityTopologyVersion topVer;
 
     /** */
     private List<List<UUID>> affAssignmentIds;
 
     /** */
-    @Order(value = 6, method = "affinityAssignmentIdsBytes")
-    private byte[] affAssignmentIdsBytes;
+    @Order(6)
+    byte[] affAssignmentIdsBytes;
 
     /** */
     private List<List<UUID>> idealAffAssignment;
 
     /** Affinity assignment bytes. */
-    @Order(value = 7, method = "idealAffinityAssignmentsBytes")
-    private byte[] idealAffAssignmentBytes;
+    @Order(7)
+    byte[] idealAffAssignmentBytes;
 
     /** */
     private GridDhtPartitionFullMap partMap;
 
     /** */
-    @Order(value = 8, method = "partitionBytes")
-    private byte[] partBytes;
+    @Order(8)
+    byte[] partBytes;
 
     /** Indicates that getting required affinity assignments has been failed. */
     private IgniteCheckedException affAssignmentErr;
 
     /** Serialized error. */
-    @Order(value = 9, method = "affinityAssignmentsErrorBytes")
-    private byte[] affAssignmentErrBytes;
+    @Order(9)
+    byte[] affAssignmentErrBytes;
 
     /**
      * Empty constructor.
