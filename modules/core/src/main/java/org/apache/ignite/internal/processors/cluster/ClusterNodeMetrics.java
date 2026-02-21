@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
