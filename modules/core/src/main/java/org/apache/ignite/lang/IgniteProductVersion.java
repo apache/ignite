@@ -50,7 +50,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
     /** The values holding message. */
-    private IgniteProductVersionMessage productVerMsg;
+    private final IgniteProductVersionMessage productVerMsg;
 
     /**
      * Empty constructor required by {@link Externalizable}.

@@ -51,42 +51,42 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    @Order(value = 6, method = "gridDiscoveryData")
-    private DiscoveryDataPacket dataPacket;
-
-    /** Start time of the first grid node. */
-    @Order(value = 7, method = "gridStartTime")
-    private long gridStartTime;
-
-    /** Topology snapshots history. */
-    @Order(value = 8, method = "topologyHistoryMessages")
-    private @Nullable Map<Long, ClusterNodeCollectionMessage> topHistMsgs;
-
-    /** Message to hold collection of pending {@link TcpDiscoveryAbstractMessage}. */
-    @Order(value = 9, method = "pendingMessagesTransferMessage")
-    private TcpDiscoveryCollectionMessage pendingMsgsMsg;
-
     /** Added node. */
     private TcpDiscoveryNode node;
 
     /** Marshalled {@link #node}. */
-    @Order(value = 10, method = "nodeBytes")
+    @Order(value = 6, method = "nodeBytes")
     @GridToStringExclude
     private byte[] nodeBytes;
+
+    /** */
+    @Order(value = 7, method = "gridDiscoveryData")
+    private DiscoveryDataPacket dataPacket;
+
+    /** Message to hold collection of pending {@link TcpDiscoveryAbstractMessage}. */
+    @Order(value = 8, method = "pendingMessagesTransferMessage")
+    private TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private @Nullable Collection<TcpDiscoveryNode> top;
 
     /** Marshalled {@link #top}. */
-    @Order(value = 11, method = "topologyBytes")
+    @Order(value = 9, method = "topologyBytes")
     @GridToStringExclude
     private @Nullable byte[] topBytes;
 
     /** */
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
+
+    /** Topology snapshots history. */
+    @Order(value = 10, method = "topologyHistoryMessages")
+    private @Nullable Map<Long, ClusterNodeCollectionMessage> topHistMsgs;
+
+    /** Start time of the first grid node. */
+    @Order(value = 11, method = "gridStartTime")
+    private long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeAddedMessage() {
