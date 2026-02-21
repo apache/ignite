@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message for {@link ClusterNode}.
@@ -72,15 +72,17 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     private String dataCenterId;
 
     /** Consistent ID. */
-    private Serializable consistentId;
+    private Object consistentId;
 
     /** */
+    @Order(9)
     private byte[] consistentIdBytes;
 
     /** Node attributes. */
     private Map<String, Object> attrs;
 
     /** */
+    @Order(value = 10, method = "attributesBytes")
     private byte[] attrsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -91,16 +93,19 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     /** @param clusterNode Cluster node. */
     public ClusterNodeMessage(ClusterNode clusterNode) {
         id = clusterNode.id();
-        addrs = clusterNode.addresses();
-        hostNames = clusterNode.hostNames();
-        if (clusterNode.metrics() != null)
-            clusterMetricsMsg = new TcpDiscoveryNodeMetricsMessage(clusterNode.metrics());
+        consistentId = clusterNode.consistentId();
+        dataCenterId = clusterNode.dataCenterId();
         order = clusterNode.order();
-        productVerMsg = new IgniteProductVersionMessage(clusterNode.version());
+        addrs = clusterNode.addresses();
         loc = clusterNode.isLocal();
         client = clusterNode.isClient();
-        dataCenterId = clusterNode.dataCenterId();
+        hostNames = clusterNode.hostNames();
+        productVerMsg = new IgniteProductVersionMessage(clusterNode.version());
+
         attrs = clusterNode.attributes();
+
+        if (clusterNode.metrics() != null)
+            clusterMetricsMsg = new TcpDiscoveryNodeMetricsMessage(clusterNode.metrics());
     }
 
     /** {@inheritDoc} */
@@ -240,14 +245,18 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
     }
 
     /** @return Node consistent id. */
-    public Serializable consistentId() {
+    public Object consistentId() {
         return consistentId;
     }
 
-    /** @param consistentId Node consistent id. */
-    public void consistentId(Serializable consistentId) {
-        this.consistentId = consistentId;
-        consistentIdBytes = null;
+    /** @return Marshalled bytes of {@link #consistentId}. */
+    public byte[] consistentIdBytes() {
+        return consistentIdBytes;
+    }
+
+    /** @param consistentIdBytes Marshalled bytes of {@link #consistentId}. */
+    public void consistentIdBytes(byte[] consistentIdBytes) {
+        this.consistentIdBytes = consistentIdBytes;
     }
 
     /** @return Node's attributes. */
@@ -255,10 +264,14 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage {
         return attrs;
     }
 
-    /** @param attrs Node's attributes. */
-    public void attributes(Map<String, Object> attrs) {
-        this.attrs = attrs;
-        attrsBytes = null;
+    /** @return Marshalled bytes of {@link #attrs}. */
+    public @Nullable byte[] attributesBytes() {
+        return attrsBytes;
+    }
+
+    /** @param attrsBytes Marshalled bytes of {@link #attrs}. */
+    public void attributesBytes(@Nullable byte[] attrsBytes) {
+        this.attrsBytes = attrsBytes;
     }
 
     /** {@inheritDoc} */

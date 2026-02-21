@@ -195,7 +195,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public TcpDiscoveryNode(
         UUID id,
-        @Nullable Serializable consistentId,
+        @Nullable Object consistentId,
         long order,
         boolean loc,
         @Nullable Boolean client,
