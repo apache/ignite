@@ -47,34 +47,34 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     private UUID nodeId;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private long futId;
+    @Order(4)
+    long futId;
 
     /** */
-    @Order(value = 5, method = "errors")
-    private UpdateErrors errs;
+    @Order(5)
+    UpdateErrors errs;
 
     /** Return value. */
     @GridToStringInclude
-    @Order(value = 6, method = "returnValue")
-    private GridCacheReturn ret;
+    @Order(6)
+    GridCacheReturn ret;
 
     /** */
-    @Order(value = 7, method = "remapTopologyVersion")
-    private AffinityTopologyVersion remapTopVer;
+    @Order(7)
+    AffinityTopologyVersion remapTopVer;
 
     /** Data for near cache update. */
     @Order(8)
-    private NearCacheUpdates nearUpdates;
+    NearCacheUpdates nearUpdates;
 
     /** Partition ID. */
-    @Order(value = 9, method = "partition")
-    private int partId;
+    @Order(9)
+    int partId;
 
     /** */
     @GridToStringInclude
     @Order(10)
-    private List<UUID> mapping;
+    List<UUID> mapping;
 
     /** */
     private boolean nodeLeft;

@@ -32,8 +32,8 @@ public class GridCacheVersionEx extends GridCacheVersion {
     private static final long serialVersionUID = 0L;
 
     /** DR version. */
-    @Order(value = 3, method = "conflictVersion")
-    private GridCacheVersion drVer;
+    @Order(3)
+    GridCacheVersion drVer;
 
     /**
      * {@link Externalizable} support.

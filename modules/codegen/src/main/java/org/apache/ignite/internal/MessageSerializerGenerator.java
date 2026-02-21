@@ -30,6 +30,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -50,6 +51,7 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -69,9 +71,6 @@ public class MessageSerializerGenerator {
 
     /** */
     public static final String NL = System.lineSeparator();
-
-    /** */
-    private static final String PKG_NAME = "org.apache.ignite.internal.codegen";
 
     /** */
     private static final String CLS_JAVADOC = "/** " + NL +
@@ -116,11 +115,11 @@ public class MessageSerializerGenerator {
     void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         generateMethods(type, fields);
 
-        imports.add(type.getQualifiedName().toString());
+        SystemViewRowAttributeWalkerProcessor.superclasses(env, type).forEach(el -> imports.add(el.toString()));
 
         String serClsName = type.getSimpleName() + "Serializer";
-        String serFqnClsName = PKG_NAME + "." + serClsName;
-        String serCode = generateSerializerCode(serClsName);
+        String serFqnClsName = env.getElementUtils().getPackageOf(type) + "." + serClsName;
+        String serCode = generateSerializerCode(type);
 
         try {
             JavaFileObject file = env.getFiler().createSourceFile(serFqnClsName);
@@ -148,9 +147,9 @@ public class MessageSerializerGenerator {
     }
 
     /** Generates full code for a serializer class. */
-    private String generateSerializerCode(String serClsName) throws IOException {
+    private String generateSerializerCode(TypeElement type) throws IOException {
         try (Writer writer = new StringWriter()) {
-            writeClassHeader(writer, PKG_NAME, serClsName);
+            writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), type.getSimpleName() + "Serializer");
 
             writeClassFields(writer);
 
@@ -212,34 +211,34 @@ public class MessageSerializerGenerator {
     private void start(TypeElement type, Collection<String> code, boolean write) {
         indent = 1;
 
-        code.add(line(METHOD_JAVADOC));
+        code.add(identedLine(METHOD_JAVADOC));
 
-        code.add(line("@Override public boolean %s(Message m, %s) {",
+        code.add(identedLine("@Override public boolean %s(Message m, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
-        code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
+        code.add(identedLine("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
         code.add(EMPTY);
 
         if (write) {
-            code.add(line("if (!writer.isHeaderWritten()) {"));
+            code.add(identedLine("if (!writer.isHeaderWritten()) {"));
 
             indent++;
 
             returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
             code.add(EMPTY);
-            code.add(line("writer.onHeaderWritten();"));
+            code.add(identedLine("writer.onHeaderWritten();"));
 
             indent--;
 
-            code.add(line("}"));
+            code.add(identedLine("}"));
             code.add(EMPTY);
         }
 
-        code.add(line("switch (%s.state()) {", write ? "writer" : "reader"));
+        code.add(identedLine("switch (%s.state()) {", write ? "writer" : "reader"));
     }
 
     /**
@@ -268,14 +267,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void writeField(VariableElement field, int opt) throws Exception {
-        write.add(line("case %d:", opt));
+        write.add(identedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfWriteFailed(field);
 
         write.add(EMPTY);
-        write.add(line("writer.incrementState();"));
+        write.add(identedLine("writer.incrementState();"));
         write.add(EMPTY);
 
         indent--;
@@ -296,14 +295,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void readField(VariableElement field, int opt) throws Exception {
-        read.add(line("case %d:", opt));
+        read.add(identedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfReadFailed(field);
 
         read.add(EMPTY);
-        read.add(line("reader.incrementState();"));
+        read.add(identedLine("reader.incrementState();"));
         read.add(EMPTY);
 
         indent--;
@@ -317,14 +316,14 @@ public class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
         String methodName = field.getAnnotation(Order.class).method();
 
-        String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
+        String getExpr = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName + "()";
 
         TypeMirror type = field.asType();
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
-            returnFalseIfWriteFailed(write, "writer.write" + typeName, getExpr);
+            returnFalseIfWriteFailed(write, field, "writer.write" + typeName, getExpr);
 
             return;
         }
@@ -336,14 +335,14 @@ public class MessageSerializerGenerator {
             if (componentType.getKind().isPrimitive()) {
                 String typeName = capitalizeOnlyFirst(componentType.getKind().name());
 
-                returnFalseIfWriteFailed(write, "writer.write" + typeName + "Array", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.write" + typeName + "Array", getExpr);
 
                 return;
             }
 
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-            returnFalseIfWriteFailed(write, "writer.writeObjectArray", getExpr,
+            returnFalseIfWriteFailed(write, field, "writer.writeObjectArray", getExpr,
                 "MessageCollectionItemType." + messageCollectionItemType(componentType));
 
             return;
@@ -351,19 +350,19 @@ public class MessageSerializerGenerator {
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (sameType(type, String.class))
-                returnFalseIfWriteFailed(write, "writer.writeString", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeString", getExpr);
 
             else if (sameType(type, BitSet.class))
-                returnFalseIfWriteFailed(write, "writer.writeBitSet", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeBitSet", getExpr);
 
             else if (sameType(type, UUID.class))
-                returnFalseIfWriteFailed(write, "writer.writeUuid", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeUuid", getExpr);
 
             else if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
-                returnFalseIfWriteFailed(write, "writer.writeIgniteUuid", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeIgniteUuid", getExpr);
 
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
-                returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeAffinityTopologyVersion", getExpr);
 
             else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -372,22 +371,22 @@ public class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeMap", getExpr,
+                returnFalseIfWriteFailed(write, field, "writer.writeMap", getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
-                returnFalseIfWriteFailed(write, "writer.writeKeyCacheObject", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeKeyCacheObject", getExpr);
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
-                returnFalseIfWriteFailed(write, "writer.writeCacheObject", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeCacheObject", getExpr);
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
-                returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeGridLongList", getExpr);
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeMessage", getExpr);
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -400,7 +399,7 @@ public class MessageSerializerGenerator {
                     ? "writer.writeSet"
                     : "writer.writeCollection";
 
-                returnFalseIfWriteFailed(write, collectionWriter, getExpr,
+                returnFalseIfWriteFailed(write, field, collectionWriter, getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
@@ -440,9 +439,8 @@ public class MessageSerializerGenerator {
                     mapperCallStmnt = "DefaultEnumMapper.INSTANCE.encode";
                 }
 
-                returnFalseIfEnumWriteFailed(write, "writer.writeByte", mapperCallStmnt, getExpr);
+                returnFalseIfEnumWriteFailed(write, field, "writer.writeByte", mapperCallStmnt, getExpr);
             }
-
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -462,37 +460,64 @@ public class MessageSerializerGenerator {
     }
 
     /**
-     * Generate code of writing single field:
+     * Generate code of writing header.
      * <pre>
-     * if (!writer.writeInt(msg.id()))
+     * if (!writer.writeHeader(msg.directType()))
      *     return false;
      * </pre>
      */
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+        code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
-        code.add(line(RETURN_FALSE_STMT));
+        code.add(identedLine(RETURN_FALSE_STMT));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of writing single field:
+     */
+    private void returnFalseIfWriteFailed(Collection<String> code, VariableElement field, String accessor, @Nullable String... args) {
+        String argsStr = String.join(", ", args);
+
+        String methodName = field.getAnnotation(Order.class).method();
+
+        if (Objects.equals(methodName, ""))
+            code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+        else
+            code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+
+        indent++;
+
+        code.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
 
     /**
      * Generate code of writing single enum field mapped with EnumMapper:
-     * <pre>
-     * if (!writer.writeByte(myEnumMapper.encode(msg.myEnum()))
-     *     return false;
-     * </pre>
      */
-    private void returnFalseIfEnumWriteFailed(Collection<String> code, String writerCall, String mapperCall, String fieldGetterCall) {
-        code.add(line("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+    private void returnFalseIfEnumWriteFailed(
+        Collection<String> code,
+        VariableElement field,
+        String writerCall,
+        String mapperCall,
+        String fieldGetterCall) {
+        String methodName = field.getAnnotation(Order.class).method();
+
+        if (Objects.equals(methodName, ""))
+            code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
+                writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
+        else
+            code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
 
         indent++;
 
-        code.add(line(RETURN_FALSE_STMT));
+        code.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -505,14 +530,10 @@ public class MessageSerializerGenerator {
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
         TypeMirror type = field.asType();
 
-        String methodName = field.getAnnotation(Order.class).method();
-
-        String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
-
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
-            returnFalseIfReadFailed(name, "reader.read" + typeName);
+            returnFalseIfReadFailed(field, "reader.read" + typeName);
 
             return;
         }
@@ -524,7 +545,7 @@ public class MessageSerializerGenerator {
             if (componentType.getKind().isPrimitive()) {
                 String typeName = capitalizeOnlyFirst(componentType.getKind().name());
 
-                returnFalseIfReadFailed(name, "reader.read" + typeName + "Array");
+                returnFalseIfReadFailed(field, "reader.read" + typeName + "Array");
 
                 return;
             }
@@ -534,7 +555,7 @@ public class MessageSerializerGenerator {
 
                 assert ctype.getKind().isPrimitive();
 
-                returnFalseIfReadFailed(name, "reader.readObjectArray",
+                returnFalseIfReadFailed(field, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(ctype),
                     ctype.getKind().name().toLowerCase() + "[].class");
 
@@ -546,7 +567,7 @@ public class MessageSerializerGenerator {
 
                 String cls = componentElement.getSimpleName().toString();
 
-                returnFalseIfReadFailed(name, "reader.readObjectArray",
+                returnFalseIfReadFailed(field, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
                     cls + ".class");
 
@@ -562,41 +583,41 @@ public class MessageSerializerGenerator {
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (sameType(type, String.class))
-                returnFalseIfReadFailed(name, "reader.readString");
+                returnFalseIfReadFailed(field, "reader.readString");
 
             else if (sameType(type, BitSet.class))
-                returnFalseIfReadFailed(name, "reader.readBitSet");
+                returnFalseIfReadFailed(field, "reader.readBitSet");
 
             else if (sameType(type, UUID.class))
-                returnFalseIfReadFailed(name, "reader.readUuid");
+                returnFalseIfReadFailed(field, "reader.readUuid");
 
             else if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
-                returnFalseIfReadFailed(name, "reader.readIgniteUuid");
+                returnFalseIfReadFailed(field, "reader.readIgniteUuid");
 
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
-                returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion");
+                returnFalseIfReadFailed(field, "reader.readAffinityTopologyVersion");
 
             else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 2;
 
-                returnFalseIfReadFailed(name, "reader.readMap",
+                returnFalseIfReadFailed(field, "reader.readMap",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
-                returnFalseIfReadFailed(name, "reader.readKeyCacheObject");
+                returnFalseIfReadFailed(field, "reader.readKeyCacheObject");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
-                returnFalseIfReadFailed(name, "reader.readCacheObject");
+                returnFalseIfReadFailed(field, "reader.readCacheObject");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
-                returnFalseIfReadFailed(name, "reader.readGridLongList");
+                returnFalseIfReadFailed(field, "reader.readGridLongList");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfReadFailed(name, "reader.readMessage");
+                returnFalseIfReadFailed(field, "reader.readMessage");
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -607,7 +628,7 @@ public class MessageSerializerGenerator {
                     ? "reader.readSet"
                     : "reader.readCollection";
 
-                returnFalseIfReadFailed(name, collectionReader,
+                returnFalseIfReadFailed(field, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
             else if (enumType(env, type)) {
@@ -618,7 +639,7 @@ public class MessageSerializerGenerator {
                 String mapperCallStmnt = hasCustMapperAnn ? fieldPrefix + "Mapper.decode" : "DefaultEnumMapper.INSTANCE.decode";
                 String enumValsFieldName = hasCustMapperAnn ? null : fieldPrefix + "Vals";
 
-                returnFalseIfEnumReadFailed(name, mapperCallStmnt, enumValsFieldName);
+                returnFalseIfEnumReadFailed(field, mapperCallStmnt, enumValsFieldName);
             }
 
             else
@@ -707,58 +728,61 @@ public class MessageSerializerGenerator {
     }
 
     /**
-     * Generate code of reading single field:
-     * <pre>
-     * msg.id(reader.readInt());
+     * Generate code of reading single field.
      *
-     * if (!reader.isLastRead())
-     *     return false;
-     * </pre>
-     *
-     * @param var Variable name.
+     * @param field Field.
      * @param mtd Method name.
      */
-    private void returnFalseIfReadFailed(String var, String mtd, String... args) {
+    private void returnFalseIfReadFailed(VariableElement field, String mtd, String... args) {
         String argsStr = String.join(", ", args);
 
-        read.add(line("msg.%s(%s(%s));", var, mtd, argsStr));
+        String methodName = field.getAnnotation(Order.class).method();
+
+        if (Objects.equals(methodName, ""))
+            read.add(identedLine("((%s)msg).%s = %s(%s);",
+                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
+        else
+            read.add(identedLine("msg.%s(%s(%s));", methodName, mtd, argsStr));
 
         read.add(EMPTY);
 
-        read.add(line("if (!reader.isLastRead())"));
+        read.add(identedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(line(RETURN_FALSE_STMT));
+        read.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
 
     /**
      * Generate code of reading single field:
-     * <pre>
-     * msg.id(reader.readInt());
      *
-     * if (!reader.isLastRead())
-     *     return false;
-     * </pre>
-     *
-     * @param msgSetterName Variable name.
      * @param mapperDecodeCallStmnt Method name.
      */
-    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCallStmnt, String enumValuesFieldName) {
+    private void returnFalseIfEnumReadFailed(VariableElement field, String mapperDecodeCallStmnt, String enumValuesFieldName) {
+        String readOp;
+
         if (enumValuesFieldName == null)
-            read.add(line("msg.%s(%s(reader.readByte()));", msgSetterName, mapperDecodeCallStmnt));
+            readOp = line("%s(reader.readByte())", mapperDecodeCallStmnt);
         else
-            read.add(line("msg.%s(%s(%s, reader.readByte()));", msgSetterName, mapperDecodeCallStmnt, enumValuesFieldName));
+            readOp = line("%s(%s, reader.readByte())", mapperDecodeCallStmnt, enumValuesFieldName);
+
+        String methodName = field.getAnnotation(Order.class).method();
+
+        if (Objects.equals(methodName, ""))
+            read.add(identedLine("((%s)msg).%s = %s;",
+                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
+        else
+            read.add(identedLine("msg.%s(%s);", methodName, readOp));
 
         read.add(EMPTY);
 
-        read.add(line("if (!reader.isLastRead())"));
+        read.add(identedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(line(RETURN_FALSE_STMT));
+        read.add(identedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -770,10 +794,10 @@ public class MessageSerializerGenerator {
         if (EMPTY.equals(lastLine))
             code.remove(code.size() - 1);
 
-        code.add(line("}"));
+        code.add(identedLine("}"));
         code.add(EMPTY);
 
-        code.add(line("return true;"));
+        code.add(identedLine("return true;"));
     }
 
     /**
@@ -781,11 +805,24 @@ public class MessageSerializerGenerator {
      *
      * @return Line with current indent.
      */
-    private String line(String format, Object... args) {
+    private String identedLine(String format, Object... args) {
         SB sb = new SB();
 
         for (int i = 0; i < indent; i++)
             sb.a(TAB);
+
+        sb.a(String.format(format, args));
+
+        return sb.toString();
+    }
+
+    /**
+     * Creates line from given arguments.
+     *
+     * @return Line.
+     */
+    private String line(String format, Object... args) {
+        SB sb = new SB();
 
         sb.a(String.format(format, args));
 
@@ -800,9 +837,9 @@ public class MessageSerializerGenerator {
         indent = 1;
 
         for (String field: fields) {
-            writer.write(line(METHOD_JAVADOC));
+            writer.write(identedLine(METHOD_JAVADOC));
             writer.write(NL);
-            writer.write(line(field));
+            writer.write(identedLine(field));
             writer.write(NL);
         }
         writer.write(NL);

@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** */
 public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
-    @Order(value = 0, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(0)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.

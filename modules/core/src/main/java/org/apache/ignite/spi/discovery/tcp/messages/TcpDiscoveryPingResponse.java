@@ -31,7 +31,7 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage implem
 
     /** Whether pinged client exists. */
     @Order(5)
-    private boolean clientExists;
+    boolean clientExists;
 
     /** */
     public TcpDiscoveryPingResponse() {

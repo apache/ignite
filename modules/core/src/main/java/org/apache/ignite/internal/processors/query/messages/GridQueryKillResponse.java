@@ -30,12 +30,12 @@ public class GridQueryKillResponse implements Message {
     public static final short TYPE_CODE = 173;
 
     /** Error text. */
-    @Order(value = 0, method = "error")
-    private String errMsg;
+    @Order(0)
+    String errMsg;
 
     /** Request id.*/
-    @Order(value = 1, method = "requestId")
-    private long reqId;
+    @Order(1)
+    long reqId;
 
     /**
      * Default constructor.

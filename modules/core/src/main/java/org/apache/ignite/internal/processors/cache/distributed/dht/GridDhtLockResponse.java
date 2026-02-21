@@ -39,16 +39,16 @@ import org.apache.ignite.lang.IgniteUuid;
 public class GridDhtLockResponse extends GridDistributedLockResponse {
     /** Mini future ID. */
     @Order(10)
-    private IgniteUuid miniId;
+    IgniteUuid miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
-    @Order(value = 11, method = "invalidPartitions")
-    private Collection<Integer> invalidParts;
+    @Order(11)
+    Collection<Integer> invalidParts;
 
     /** Preload entries returned from backup. */
     @Order(12)
-    private List<GridCacheEntryInfo> preloadEntries;
+    List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor.

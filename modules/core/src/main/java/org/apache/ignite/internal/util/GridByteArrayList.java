@@ -37,13 +37,13 @@ public class GridByteArrayList implements Message, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** List byte data. */
-    @Order(value = 0, method = "internalArray")
+    @Order(0)
     @GridToStringExclude
-    private byte[] data;
+    byte[] data;
 
     /** List's size. */
     @Order(1)
-    private int size;
+    int size;
 
     /**
      * No-op constructor that creates uninitialized list. This method is meant

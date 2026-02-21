@@ -47,16 +47,16 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** Value to update. */
     @GridToStringInclude
-    @Order(value = 12, method = "value")
+    @Order(12)
     protected CacheObject val;
 
     /** Previous value. */
     @GridToStringInclude
-    @Order(value = 13, method = "previousValue")
+    @Order(13)
     protected CacheObject prevVal;
 
     /** Partition. */
-    @Order(value = 14, method = "updateCounter")
+    @Order(14)
     protected long updateCntr;
 
     /**

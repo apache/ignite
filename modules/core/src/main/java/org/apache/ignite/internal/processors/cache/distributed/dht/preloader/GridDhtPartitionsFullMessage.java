@@ -65,35 +65,35 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * <p>
      * TODO Remove this field after completing task IGNITE-26976.
      */
-    @Order(value = 6, method = "partitionBytes")
-    private byte[] partsBytes;
+    @Order(6)
+    byte[] partsBytes;
 
     /** */
-    @Order(value = 7, method = "duplicatedPartitionsData")
-    private Map<Integer, Integer> dupPartsData;
+    @Order(7)
+    Map<Integer, Integer> dupPartsData;
 
     /** Partitions update counters. */
-    @Order(value = 8, method = "partitionCounters")
+    @Order(8)
     @GridToStringInclude
-    private IgniteDhtPartitionCountersMap partCntrs;
+    IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
-    @Order(value = 9, method = "partitionHistorySuppliers")
+    @Order(9)
     @GridToStringInclude
-    private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
+    IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
-    @Order(value = 10, method = "partitionsToReload")
+    @Order(10)
     @GridToStringInclude
-    private IgniteDhtPartitionsToReloadMap partsToReload;
+    IgniteDhtPartitionsToReloadMap partsToReload;
 
     /** Partition sizes. */
-    @Order(value = 11, method = "partitionSizes")
-    private Map<Integer, IntLongMap> partsSizes;
+    @Order(11)
+    Map<Integer, IntLongMap> partsSizes;
 
     /** Topology version. */
-    @Order(value = 12, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(12)
+    AffinityTopologyVersion topVer;
 
     /** Exceptions. */
     @GridToStringInclude
@@ -105,28 +105,28 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     @Order(value = 13, method = "errorMessages")
     @SuppressWarnings("unused")
-    private Map<UUID, ErrorMessage> errMsgs;
+    Map<UUID, ErrorMessage> errMsgs;
 
     /** */
-    @Order(value = 14, method = "resultTopologyVersion")
-    private AffinityTopologyVersion resTopVer;
+    @Order(14)
+    AffinityTopologyVersion resTopVer;
 
     /** */
-    @Order(value = 15, method = "joinedNodeAffinity")
-    private Map<Integer, CacheGroupAffinityMessage> joinedNodeAff;
+    @Order(15)
+    Map<Integer, CacheGroupAffinityMessage> joinedNodeAff;
 
     /** */
-    @Order(value = 16, method = "idealAffinityDiff")
-    private Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
+    @Order(16)
+    Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
 
     /** */
-    @Order(value = 17, method = "rebalancedFlags")
-    private byte flags;
+    @Order(17)
+    byte flags;
 
     /** */
-    @Order(value = 18, method = "lostPartitions")
+    @Order(18)
     @GridToStringExclude
-    private Map<Integer, int[]> lostParts;
+    Map<Integer, int[]> lostParts;
 
     /**
      * Empty constructor.
