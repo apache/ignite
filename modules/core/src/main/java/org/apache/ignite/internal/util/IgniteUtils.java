@@ -5484,6 +5484,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 for (Field field : cls.getDeclaredFields()) {
                     if (field.getName().equals(fieldName)) {
                         field.setAccessible(true);
+                        System.err.println("HERE!!! Successfully set field value [fieldName=" + fieldName + " obj=" + obj);
 
                         return (T)field.get(obj);
                     }
@@ -5491,6 +5492,7 @@ public abstract class IgniteUtils extends CommonUtils {
             }
         }
         catch (Exception e) {
+            System.err.println("HERE!!! Field: " + fieldName + " Object: " + obj + " " + e);
             throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']', e);
         }
 
