@@ -25,20 +25,20 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class IndexKeyTypeSettings implements Message {
     /** Whether inlining POJO keys as hash is supported. */
-    @Order(value = 0, method = "inlineObjectHash")
-    private boolean inlineObjHash = true;
+    @Order(0)
+    boolean inlineObjHash = true;
 
     /** Whether inlining of POJO keys is supported. */
-    @Order(value = 1, method = "inlineObjectSupported")
-    private boolean inlineObjSupported = true;
+    @Order(1)
+    boolean inlineObjSupported = true;
 
     /** Whether optimized algorithm of String comparison is used. */
-    @Order(value = 2, method = "stringOptimizedCompare")
-    private boolean strOptimizedCompare = true;
+    @Order(2)
+    boolean strOptimizedCompare = true;
 
     /** Whether use unsigned bytes for storing byte arrays. */
     @Order(3)
-    private boolean binaryUnsigned = true;
+    boolean binaryUnsigned = true;
 
     /** {@inheritDoc} */
     @Override public short directType() {

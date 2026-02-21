@@ -35,7 +35,7 @@ public class NodeIdMessage implements Message {
 
     /** */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public NodeIdMessage() {

@@ -35,14 +35,14 @@ public class GridCacheSqlQuery implements Message {
     public static final Object[] EMPTY_PARAMS = {};
 
     /** */
-    @Order(value = 0, method = "query")
+    @Order(0)
     @GridToStringInclude(sensitive = true)
-    private String qry;
+    String qry;
 
     /** */
-    @Order(value = 1, method = "parameterIndexes")
+    @Order(1)
     @GridToStringInclude
-    private int[] paramIdxs;
+    int[] paramIdxs;
 
     /** */
     @GridToStringInclude
@@ -58,7 +58,7 @@ public class GridCacheSqlQuery implements Message {
 
     /** Single node to execute the query on. */
     @Order(2)
-    private UUID node;
+    UUID node;
 
     /** Derived partition info. */
     @GridToStringInclude

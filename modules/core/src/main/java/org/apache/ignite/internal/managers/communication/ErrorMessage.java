@@ -44,7 +44,7 @@ public class ErrorMessage implements Message {
     /** Serialization and deserealization call holder. */
     @Order(value = 0, method = "errorBytes")
     @GridToStringExclude
-    private @Nullable byte[] errBytes;
+    @Nullable public byte[] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
     private @Nullable Throwable err;

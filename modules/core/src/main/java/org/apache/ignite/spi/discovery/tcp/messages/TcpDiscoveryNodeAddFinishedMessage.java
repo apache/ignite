@@ -41,23 +41,22 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** Added node ID. */
     @Order(6)
-    private UUID nodeId;
+    UUID nodeId;
 
     /**
      * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
      * TcpDiscoveryNodeAddFinishedMessage.
      */
     @Order(7)
-    @GridToStringExclude
-    private DiscoveryDataPacket clientDiscoData;
+    @GridToStringExclude DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude
     private Map<String, Object> clientNodeAttrs;
 
     /** Serialized client node attributes. */
-    @Order(value = 8, method = "clientNodeAttributesBytes")
-    private @Nullable byte[] clientNodeAttrsBytes;
+    @Order(8)
+    @Nullable byte[] clientNodeAttrsBytes;
 
     /** Constructor. */
     public TcpDiscoveryNodeAddFinishedMessage() {

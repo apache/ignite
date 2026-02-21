@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +39,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +72,7 @@ public class TcpDiscoveryIoSession {
     static final byte MESSAGE_SERIALIZATION = (byte)2;
 
     /** */
-    private final TcpDiscoverySpi spi;
+    final TcpDiscoverySpi spi;
 
     /** Loads discovery messages classes during java deserialization. */
     private final ClassLoader clsLdr;
@@ -81,7 +81,7 @@ public class TcpDiscoveryIoSession {
     private final Socket sock;
 
     /** */
-    private final DirectMessageWriter msgWriter;
+    final DirectMessageWriter msgWriter;
 
     /** */
     private final DirectMessageReader msgReader;
@@ -93,7 +93,7 @@ public class TcpDiscoveryIoSession {
     private final CompositeInputStream in;
 
     /** Intermediate buffer for serializing discovery messages. */
-    private final ByteBuffer msgBuf;
+    final ByteBuffer msgBuf;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -250,25 +250,6 @@ public class TcpDiscoveryIoSession {
         }
     }
 
-    /**
-     * Serializes a discovery message into a byte array.
-     *
-     * @param msg Discovery message to serialize.
-     * @return Serialized byte array containing the message data.
-     * @throws IgniteCheckedException If serialization fails.
-     * @throws IOException If serialization fails.
-     */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message))
-            return U.marshal(spi.marshaller(), msg);
-
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            serializeMessage((Message)msg, out);
-
-            return out.toByteArray();
-        }
-    }
-
     /** @return Socket. */
     public Socket socket() {
         return sock;
@@ -281,7 +262,7 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    private void serializeMessage(Message m, OutputStream out) throws IOException {
+    void serializeMessage(Message m, OutputStream out) throws IOException {
         if (m instanceof TcpDiscoveryMarshallableMessage)
             ((TcpDiscoveryMarshallableMessage)m).prepareMarshal(spi.marshaller());
 

@@ -36,8 +36,8 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
     public static final short TYPE_CODE = 513;
 
     /** */
-    @Order(value = 0, method = "partitionsToReload")
-    private Map<UUID, CachePartitionsToReloadMap> map;
+    @Order(0)
+    Map<UUID, CachePartitionsToReloadMap> map;
 
     /**
      * @param nodeId Node ID.

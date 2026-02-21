@@ -55,48 +55,48 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** Keys to update. */
     @Order(10)
     @GridToStringInclude
-    private List<KeyCacheObject> keys;
+    List<KeyCacheObject> keys;
 
     /** Values to update. */
-    @Order(value = 11, method = "valuesToUpdate")
-    private List<CacheObject> vals;
+    @Order(11)
+    List<CacheObject> vals;
 
     /** Entry processors. */
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(12)
-    private @Nullable List<byte[]> entryProcessorsBytes;
+    @Nullable List<byte[]> entryProcessorsBytes;
 
     /** Conflict versions. */
-    @Order(value = 13, method = "conflictVersions")
-    private @Nullable List<GridCacheVersion> conflictVers;
+    @Order(13)
+    @Nullable List<GridCacheVersion> conflictVers;
 
     /** Conflict TTLs. */
     @Order(14)
-    private GridLongList conflictTtls;
+    GridLongList conflictTtls;
 
     /** Conflict expire times. */
     @Order(15)
-    private GridLongList conflictExpireTimes;
+    GridLongList conflictExpireTimes;
 
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(value = 16, method = "invokeArgumentsBytes")
-    private @Nullable List<byte[]> invokeArgsBytes;
+    @Order(16)
+    @Nullable List<byte[]> invokeArgsBytes;
 
     /** Expiry policy. */
     private @Nullable ExpiryPolicy expiryPlc;
 
     /** Expiry policy bytes. */
-    @Order(value = 17, method = "expiryPolicyBytes")
-    private @Nullable byte[] expiryPlcBytes;
+    @Order(17)
+    @Nullable byte[] expiryPlcBytes;
 
     /** Filter. */
     @Order(18)
-    private @Nullable CacheEntryPredicate[] filter;
+    @Nullable CacheEntryPredicate[] filter;
 
     /** Maximum possible size of inner collections. */
     private int initSize;

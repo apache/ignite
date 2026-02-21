@@ -40,16 +40,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupAffinityMessage implements Message {
     /** */
-    @Order(value = 0, method = "assignments")
-    private List<GridLongList> assigns;
+    @Order(0)
+    List<GridLongList> assigns;
 
     /** */
-    @Order(value = 1, method = "idealAssignments")
-    private List<GridLongList> idealAssigns;
+    @Order(1)
+    List<GridLongList> idealAssigns;
 
     /** */
-    @Order(value = 2, method = "assignmentsDiff")
-    private Map<Integer, GridLongList> assignsDiff;
+    @Order(2)
+    Map<Integer, GridLongList> assignsDiff;
 
     /**
      *

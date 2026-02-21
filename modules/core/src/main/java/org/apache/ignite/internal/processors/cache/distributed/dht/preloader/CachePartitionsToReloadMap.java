@@ -29,8 +29,8 @@ public class CachePartitionsToReloadMap implements Message {
     public static final short TYPE_CODE = 512;
 
     /** Partition reload map for cache. */
-    @Order(value = 0, method = "cachePartitions")
-    private Map<Integer, PartitionsToReload> map;
+    @Order(0)
+    Map<Integer, PartitionsToReload> map;
 
     /**
      * @return Partition reload map for cache.
