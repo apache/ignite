@@ -500,6 +500,7 @@ public class TcpDiscoveryNodesRing {
      */
     @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         assert locNode.internalOrder() > 0 : locNode;
+        // TODO: May fire, https://issues.apache.org/jira/browse/IGNITE-27933
         assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
 
         rwLock.readLock().lock();
