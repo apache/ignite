@@ -210,7 +210,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SystemProperty(value = "Enables log checkpoint read lock holders")
     public static final String IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS = "IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS";
 
-    /** MemoryPolicyConfiguration name reserved for meta store. */
+    /** {@link DataRegionConfiguration} name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** Name of the system view for a system {@link MetaStorage}. */

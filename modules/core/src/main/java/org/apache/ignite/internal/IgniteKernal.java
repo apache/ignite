@@ -84,7 +84,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -254,7 +253,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
@@ -1602,7 +1600,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
         // Save data storage configuration.
-        addDataStorageConfigurationAttributes();
+        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
 
         // Save transactions configuration.
         add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
@@ -1634,25 +1632,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 ctx.addNodeAttribute(e.getKey(), e.getValue());
             }
         }
-    }
-
-    /**
-     * @throws IgniteCheckedException If duplicated SPI name found.
-     */
-    private void addDataStorageConfigurationAttributes() throws IgniteCheckedException {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
-
-        // Save legacy memory configuration if it's present.
-        if (memCfg != null) {
-            // Page size initialization is suspended, see IgniteCacheDatabaseSharedManager#checkPageSize.
-            // We should copy initialized value from new configuration.
-            memCfg.setPageSize(cfg.getDataStorageConfiguration().getPageSize());
-
-            add(ATTR_MEMORY_CONFIG, memCfg);
-        }
-
-        // Save data storage configuration.
-        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
     }
 
     /**
