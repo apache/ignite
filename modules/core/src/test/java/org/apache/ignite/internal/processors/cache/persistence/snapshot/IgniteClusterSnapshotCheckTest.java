@@ -140,7 +140,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+    private ListeningTestLogger listeningLog;
 
     /** */
     @Parameterized.Parameter(2)
@@ -173,7 +173,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(snpThrdPoolSz).setGridLogger(listeningLog);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(snpThrdPoolSz);
+
+        if (listeningLog != null)
+            cfg.setGridLogger(listeningLog);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -626,6 +631,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     private void doTestSnapshotMetricsAllRuns(boolean entireTop, boolean incremental) throws Exception {
         assert entireTop || !incremental : "Incremental snapshot supports only entire topology";
+
+        listeningLog = new ListeningTestLogger(log);
 
         prepareGridsAndSnapshot(3, 2, 1, false);
 
