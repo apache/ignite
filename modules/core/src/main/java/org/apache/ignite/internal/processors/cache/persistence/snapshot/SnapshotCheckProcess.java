@@ -44,9 +44,12 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -60,6 +63,9 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /** Distributed process of snapshot checking. */
 public class SnapshotCheckProcess {
+    /** */
+    public static final String SNAPSHOT_CHECK_METRIC = "snapshot-check";
+
     /** */
     private final IgniteLogger log;
 
@@ -157,6 +163,8 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
         }
         finally {
+            unregisterMetrics(ctx.req.snapshotName());
+
             if (log.isInfoEnabled())
                 log.info("Finished snapshot validation [req=" + ctx.req + ']');
         }
@@ -314,6 +322,8 @@ public class SnapshotCheckProcess {
         if (F.isEmpty(ctx.metas))
             return new GridFinishedFuture<>();
 
+        ctx.totalCounter.set(0);
+
         GridFutureAdapter<SnapshotCheckResponse> phaseFut = new GridFutureAdapter<>();
 
         CompletableFuture<SnapshotCheckResponse> workingFut;
@@ -346,7 +356,11 @@ public class SnapshotCheckProcess {
         CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
         CompletableFuture<IncrementalSnapshotVerifyResult> workingFut = snpChecker.checkIncrementalSnapshot(
-            ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
+            ctx.locFileTree.get(meta.consistentId()),
+            ctx.req.incrementalIndex(),
+            ctx.totalCounter::addAndGet,
+            ctx.checkedCounter::addAndGet
+        );
 
         workingFut.whenComplete((res, err) -> {
             if (err != null)
@@ -368,22 +382,29 @@ public class SnapshotCheckProcess {
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
-                meta,
-                ctx.locFileTree.get(meta.consistentId()),
-                ctx.req.groups(),
-                false,
-                ctx.req.fullCheck()
-            );
+            // Run asynchronously to calculate the metric 'total partitions' faster.
+            kctx.pools().getSnapshotExecutorService().submit(() -> {
+                CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
+                    meta,
+                    ctx.locFileTree.get(meta.consistentId()),
+                    ctx.req.groups(),
+                    false,
+                    ctx.req.fullCheck(),
+                    ctx.totalCounter::addAndGet,
+                    checkedPartId -> ctx.checkedCounter.incrementAndGet()
+                );
 
-            metaFut.whenComplete((res, err) -> {
-                if (err != null)
-                    exceptions.put(meta.consistentId(), err);
-                else if (!F.isEmpty(res))
-                    perMetaResults.put(meta.consistentId(), res);
+                metaFut.whenComplete((res, err) -> {
+                    ctx.checkedSnapshotParts.incrementAndGet();
 
-                if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                    if (err != null)
+                        exceptions.put(meta.consistentId(), err);
+                    else if (!F.isEmpty(res))
+                        perMetaResults.put(meta.consistentId(), res);
+
+                    if (metasProcessed.decrementAndGet() == 0)
+                        composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                });
             });
         }
 
@@ -403,17 +424,28 @@ public class SnapshotCheckProcess {
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
-                ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), ctx.req.fullCheck());
+            // Run asynchronously to calculate the metric 'total partitions' faster.
+            kctx.pools().getSnapshotExecutorService().submit(() -> {
+                CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(
+                    meta,
+                    ctx.locFileTree.get(meta.consistentId()),
+                    ctx.req.groups(),
+                    ctx.req.fullCheck(),
+                    ctx.totalCounter::addAndGet,
+                    processedPart -> ctx.checkedCounter.incrementAndGet()
+                );
 
-            metaFut.whenComplete((res, err) -> {
-                if (err != null)
-                    exceptions.put(meta.consistentId(), err);
-                else if (!F.isEmpty(res))
-                    perMetaResults.put(meta.consistentId(), res);
+                metaFut.whenComplete((res, err) -> {
+                    ctx.checkedSnapshotParts.incrementAndGet();
 
-                if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                    if (err != null)
+                        exceptions.put(meta.consistentId(), err);
+                    else if (!F.isEmpty(res))
+                        perMetaResults.put(meta.consistentId(), res);
+
+                    if (metasProcessed.decrementAndGet() == 0)
+                        composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                });
             });
         }
 
@@ -464,6 +496,8 @@ public class SnapshotCheckProcess {
         // Excludes non-baseline initiator.
         if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
+
+        registerMetrics(ctx);
 
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 
@@ -548,8 +582,11 @@ public class SnapshotCheckProcess {
                 phase2PartsHashes.start(reqId, ctx.req);
         }
         catch (Throwable th) {
-            if (ctx != null)
+            if (ctx != null) {
+                unregisterMetrics(ctx.req.snapshotName());
+
                 contexts.remove(ctx.req.snapshotName());
+            }
 
             if (clusterOpFut != null)
                 clusterOpFut.onDone(th);
@@ -562,12 +599,13 @@ public class SnapshotCheckProcess {
      *
      * @return Metadatas to process on current node.
      */
-    private @Nullable List<SnapshotMetadata> assingMetas(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+    private List<SnapshotMetadata> assingMetas(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
         ClusterNode locNode = kctx.cluster().get().localNode();
         List<SnapshotMetadata> locMetas = clusterMetas.get(locNode);
 
+        // Might be empty due to a cache's node filter.
         if (F.isEmpty(locMetas))
-            return null;
+            return Collections.emptyList();
 
         Set<String> onlineNodesConstIdsStr = new HashSet<>(clusterMetas.size());
         // The nodes are sorted with lesser order.
@@ -681,6 +719,42 @@ public class SnapshotCheckProcess {
         return null;
     }
 
+    /** */
+    private void registerMetrics(SnapshotCheckContext ctx) {
+        MetricRegistryImpl mreg = kctx.metric().registry(MetricUtils.metricName(SNAPSHOT_CHECK_METRIC, ctx.req.snapshotName()));
+
+        assert !mreg.iterator().hasNext();
+        assert ctx.req.requestId() != null;
+
+        mreg.register("startTime", U::currentTimeMillis,
+            "The system time of the start of the cluster snapshot check operation on current node.");
+        mreg.register("incrementIndex", ctx.req::incrementalIndex,
+            "The index of incremental snapshot of the snapshot check operation.");
+
+        if (ctx.req.incrementalIndex() > 0) {
+            mreg.register("totalWalSegments", ctx.totalCounter::get,
+                "The total number of WAL segments in the incremental snapshot to check on current node.");
+            mreg.register("processedWalSegments", ctx.checkedCounter::get,
+                "The number of checked WAL segments in the incremental snapshot on current node.");
+        }
+        else {
+            mreg.register("checkPartitions", ctx.req::fullCheck, "Shows whether full validation of snapshot partitions is enabled.");
+            mreg.register("totalPartitions", ctx.totalCounter::get, "The total number of partitions to check on current node.");
+            mreg.register("processedPartitions", ctx.checkedCounter::get, "The number of checked partitions on current node.");
+
+            // Node can hold and process another nodes' snapshot data.
+            mreg.register("snapshotPartsToProcess", () -> ctx.metas == null ? -1 : ctx.metas.size(),
+                "Number of parts (nodes data) of snapshot to check on current node.");
+            mreg.register("processedSnapshotParts", ctx.checkedSnapshotParts::get,
+                "Number of checked snapshot parts (nodes data) on current node.");
+        }
+    }
+
+    /** */
+    private void unregisterMetrics(String snpName) {
+        kctx.metric().remove(MetricUtils.metricName(SNAPSHOT_CHECK_METRIC, snpName));
+    }
+
     /** Operation context. */
     private static final class SnapshotCheckContext {
         /** Request. */
@@ -691,7 +765,7 @@ public class SnapshotCheckProcess {
          * Metadatas to process on this node. Also indicates the snapshot parts to check on this node.
          * @see #partitionsHashesFuture(SnapshotCheckContext)
          */
-        @Nullable private List<SnapshotMetadata> metas;
+        @Nullable private volatile List<SnapshotMetadata> metas;
 
         /** Map of snapshot pathes per consistent id for {@link #metas}. */
         @GridToStringInclude
@@ -700,9 +774,23 @@ public class SnapshotCheckProcess {
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
+        /** Common counter of total work units to process on current node. */
+        @GridToStringExclude
+        private final AtomicInteger totalCounter = new AtomicInteger(-1);
+
+        /** Common counter of checked work units on current node. */
+        @GridToStringExclude
+        private final AtomicInteger checkedCounter = new AtomicInteger(0);
+
+        /** Number of checked snapshot parts (nodes data/consistent ids) on current node. {@code Null} for incremental snapshots. */
+        @GridToStringExclude
+        @Nullable private final AtomicInteger checkedSnapshotParts;
+
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {
             this.req = req;
+
+            checkedSnapshotParts = req.incrementalIndex() > 0 ? null : new AtomicInteger(0);
         }
 
         /** {@inheritDoc} */
