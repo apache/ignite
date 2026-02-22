@@ -390,7 +390,7 @@ public class SnapshotCheckProcess {
                     ctx.req.groups(),
                     false,
                     ctx.req.fullCheck(),
-                    unitsToWork -> ctx.totalCounter.addAndGet(unitsToWork),
+                    ctx.totalCounter::addAndGet,
                     checkedPartId -> ctx.checkedCounter.incrementAndGet()
                 );
 
