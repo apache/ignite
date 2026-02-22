@@ -100,6 +100,7 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -139,6 +140,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
     /** */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** */
     @Parameterized.Parameter(2)
     public int snpThrdPoolSz;
 
@@ -169,7 +173,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(snpThrdPoolSz);
+        return super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(snpThrdPoolSz).setGridLogger(listeningLog);
     }
 
     /** {@inheritDoc} */
