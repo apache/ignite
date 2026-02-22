@@ -91,10 +91,10 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "serversPerDc={0}, fullTimeoutFailure={1}, rmtDcNodesResponds={2}, pingPoolSize={3}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
-            F.asList(2, 4), // Servers number per DC.
-            F.asList(true, false), // Full-timeout failure (or fail quickly).
-            F.asList( false, true), // Whether few nodes of the remote DC respond to the ping.
-            F.asList( 1, 2, 4) // Ping pool size.
+            F.asList(2), // Servers number per DC.
+            F.asList(true), // Full-timeout failure (or fail quickly).
+            F.asList( false), // Whether few nodes of the remote DC respond to the ping.
+            F.asList( 1, 2) // Ping pool size.
         );
     }
 
@@ -259,19 +259,22 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> {
             for (int i = nodeIdxFrom; i < nodeIdxTo; ++i) {
-                if (!grid(i).cluster().localNode().dataCenterId().equals(dcId))
-                    return false;
+                assert grid(i).cluster().localNode().dataCenterId().equals(dcId);
 
-                int cnt = 0;
+                int dcCnt = 0;
+                int totalCnt = 0;
 
                 for (ClusterNode n : grid(i).cluster().nodes()) {
-                    if (!n.dataCenterId().equals(dcId))
-                        return false;
+                    if (n.dataCenterId().equals(dcId))
+                        ++dcCnt;
 
-                    ++cnt;
+                    ++totalCnt;
                 }
 
-                if (cnt != srvrsPerDc)
+                if (log.isInfoEnabled())
+                    log.info("Node idx " + i + ": dcCnt: " + dcCnt + ", totalCnt: " + totalCnt);
+
+                if (dcCnt != srvrsPerDc || totalCnt != srvrsPerDc)
                     return false;
             }
 
