@@ -198,8 +198,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         }
 
         // We expect 2 separated rings.
-        checkDcSplited(0, srvrsPerDc, DC_ID_0);
-        checkDcSplited(srvrsPerDc, srvrsPerDc * 2, DC_ID_1);
+        checkDcSplited(DC_ID_0);
+        checkDcSplited(DC_ID_1);
 
         // The connection recovery should take <= failureDetectionTimeout * 2.
         long testTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
@@ -253,18 +253,19 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkDcSplited(int nodeIdxFrom, int nodeIdxTo, String dcId) throws IgniteInterruptedCheckedException {
+    private void checkDcSplited(String dcId) throws IgniteInterruptedCheckedException {
         if (log.isInfoEnabled())
-            log.info("Awaiting for DC is splitted. Begin node order: " + nodeIdxFrom + ", end node order: " + nodeIdxTo);
+            log.info("Awaiting for DC is splitted for DC id: " + dcId);
 
         assertTrue(waitForCondition(() -> {
-            for (int i = nodeIdxFrom; i < nodeIdxTo; ++i) {
-                assert grid(i).cluster().localNode().dataCenterId().equals(dcId);
+            for (Ignite grid : G.allGrids()) {
+                if (!grid.cluster().localNode().dataCenterId().equals(dcId))
+                    continue;
 
                 int dcCnt = 0;
                 int totalCnt = 0;
 
-                for (ClusterNode n : grid(i).cluster().nodes()) {
+                for (ClusterNode n : grid.cluster().nodes()) {
                     if (n.dataCenterId().equals(dcId))
                         ++dcCnt;
 
@@ -272,7 +273,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
                 }
 
                 if (log.isInfoEnabled())
-                    log.info("Node idx " + i + ": dcCnt: " + dcCnt + ", totalCnt: " + totalCnt);
+                    log.info("Grid: " + grid.name() + ". DC node cnt: " + dcCnt + ", total nodes cnt: " + totalCnt);
 
                 if (dcCnt != srvrsPerDc || totalCnt != srvrsPerDc)
                     return false;
