@@ -100,31 +100,10 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @return The demanded cache group partitions per each cache group.
-     */
-    public Map<Integer, int[]> partitions() {
-        return parts;
-    }
-
-    /**
-     * @param parts The demanded cache group partitions per each cache group.
-     */
-    public void partitions(Map<Integer, int[]> parts) {
-        this.parts = parts;
-    }
-
-    /**
      * @return Requested snapshot name.
      */
     public String snapshotName() {
         return snpName;
-    }
-
-    /**
-     * @param snpName Requested snapshot name.
-     */
-    public void snapshotName(String snpName) {
-        this.snpName = snpName;
     }
 
     /**
@@ -135,24 +114,10 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param snpPath Snapshot directory path.
-     */
-    public void snapshotPath(String snpPath) {
-        this.snpPath = snpPath;
-    }
-
-    /**
      * @return Snapshot operation request ID.
      */
     public UUID requestId() {
         return reqId;
-    }
-
-    /**
-     * @param reqId Snapshot operation request ID.
-     */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
     }
 
     /** {@inheritDoc} */

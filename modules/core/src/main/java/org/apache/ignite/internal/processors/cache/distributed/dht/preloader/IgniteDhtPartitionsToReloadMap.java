@@ -95,20 +95,6 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         return S.toString(IgniteDhtPartitionsToReloadMap.class, this);
     }
 
-    /**
-     * @return Partition reload map.
-     */
-    public Map<UUID, CachePartitionsToReloadMap> partitionsToReload() {
-        return map;
-    }
-
-    /**
-     * @param map Partition reload map.
-     */
-    public void partitionsToReload(Map<UUID, CachePartitionsToReloadMap> map) {
-        this.map = map;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;

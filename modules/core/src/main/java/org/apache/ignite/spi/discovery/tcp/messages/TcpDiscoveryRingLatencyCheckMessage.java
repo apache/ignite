@@ -62,26 +62,11 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
         curHops++;
     }
 
-    /** @return Current hops reached. */
-    public int currentHops() {
-        return curHops;
-    }
-
-    /** @param curHop Current hops reached. */
-    public void currentHops(int curHop) {
-        curHops = curHop;
-    }
-
     /**
      * @return Maximal hops number.
      */
     public int maximalHops() {
         return maxHops;
-    }
-
-    /** @param maxHops Maximal hops. */
-    public void maximalHops(int maxHops) {
-        this.maxHops = maxHops;
     }
 
     /**

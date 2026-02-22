@@ -46,16 +46,6 @@ public class InetAddressMessage implements Message {
         addrBytes = addr.getAddress();
     }
 
-    /** @return {@link InetAddress#getAddress()} */
-    public byte[] addressBytes() {
-        return addrBytes;
-    }
-
-    /** @param addrBytes {@link InetAddress#getAddress()} */
-    public void addressBytes(byte[] addrBytes) {
-        this.addrBytes = addrBytes;
-    }
-
     /** @return {@link InetAddress#getByAddress(String, byte[])} */
     public InetAddress address() {
         try {
@@ -64,16 +54,6 @@ public class InetAddressMessage implements Message {
         catch (UnknownHostException e) {
             throw new IgniteException("Failed to read host address.", e);
         }
-    }
-
-    /** @return Host name. */
-    public String hostName() {
-        return hostName;
-    }
-
-    /** @param hostName Host name. */
-    public void hostName(String hostName) {
-        this.hostName = hostName;
     }
 
     /** {@inheritDoc} */

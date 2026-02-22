@@ -89,9 +89,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Template configuration flag. */
     private boolean template;
 
-    /** */
-    private UUID rcvdFrom;
-
     /** Reset lost partitions flag. */
     private boolean resetLostPartitions;
 
@@ -332,13 +329,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @param cacheName Cache name.
-     */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
-    }
-
-    /**
      * @return Near node ID.
      */
     public UUID initiatingNodeId() {
@@ -432,20 +422,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void sql(boolean sql) {
         this.sql = sql;
-    }
-
-    /**
-     * @param nodeId ID of node provided cache configuration in discovery data.
-     */
-    public void receivedFrom(UUID nodeId) {
-        rcvdFrom = nodeId;
-    }
-
-    /**
-     * @return ID of node provided cache configuration in discovery data.
-     */
-    @Nullable public UUID receivedFrom() {
-        return rcvdFrom;
     }
 
     /**

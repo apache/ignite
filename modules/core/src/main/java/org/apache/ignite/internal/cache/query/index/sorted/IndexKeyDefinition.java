@@ -66,11 +66,6 @@ public class IndexKeyDefinition implements Message {
     }
 
     /** */
-    public void ascending(boolean asc) {
-        this.asc = asc;
-    }
-
-    /** */
     public IndexKeyType indexKeyType() {
         return idxTypeMsg.value();
     }
@@ -80,18 +75,4 @@ public class IndexKeyDefinition implements Message {
         return precision;
     }
 
-    /** */
-    public void precision(int precision) {
-        this.precision = precision;
-    }
-
-    /** */
-    public IndexKeyTypeMessage indexKeyTypeMessage() {
-        return idxTypeMsg;
-    }
-
-    /** */
-    public void indexKeyTypeMessage(IndexKeyTypeMessage idxTypeMsg) {
-        this.idxTypeMsg = idxTypeMsg;
-    }
 }

@@ -71,13 +71,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         return secSubjId;
     }
 
-    /**
-     * @param secSubjId Security subject ID.
-     */
-    public void securitySubjectId(UUID secSubjId) {
-        this.secSubjId = secSubjId;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;

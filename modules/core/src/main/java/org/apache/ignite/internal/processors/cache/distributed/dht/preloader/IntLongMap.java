@@ -53,13 +53,6 @@ public class IntLongMap implements Message {
         return map;
     }
 
-    /**
-     * @param map Map.
-     */
-    public void map(Map<Integer, Long> map) {
-        this.map = map;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;

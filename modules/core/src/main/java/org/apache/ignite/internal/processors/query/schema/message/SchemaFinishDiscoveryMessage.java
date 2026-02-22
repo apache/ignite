@@ -33,9 +33,6 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     /** Error. */
     private final SchemaOperationException err;
 
-    /** Original propose message. */
-    private transient SchemaProposeDiscoveryMessage proposeMsg;
-
     /** No-op flag. */
     private final boolean nop;
 
@@ -83,17 +80,9 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     }
 
     /**
-     * @return Propose message.
-     */
-    public SchemaProposeDiscoveryMessage proposeMessage() {
-        return proposeMsg;
-    }
-
-    /**
      * @param proposeMsg Propose message.
      */
     public void proposeMessage(SchemaProposeDiscoveryMessage proposeMsg) {
-        this.proposeMsg = proposeMsg;
     }
 
     /**

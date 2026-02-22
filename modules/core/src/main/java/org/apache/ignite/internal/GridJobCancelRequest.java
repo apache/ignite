@@ -105,27 +105,6 @@ public class GridJobCancelRequest implements Message {
         return system;
     }
 
-    /**
-     * Gets execution ID of task to be cancelled.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sessionId = sesId;
-    }
-
-    /**
-     * Gets session ID of job to be cancelled. If {@code null}, then
-     * all jobs for the specified task execution ID will be cancelled.
-     */
-    public void jobId(IgniteUuid jobId) {
-        this.jobId = jobId;
-    }
-
-    /**
-     */
-    public void system(boolean system) {
-        this.system = system;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 0;

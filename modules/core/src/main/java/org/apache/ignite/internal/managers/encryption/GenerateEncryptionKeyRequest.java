@@ -54,24 +54,10 @@ public class GenerateEncryptionKeyRequest implements Message {
     }
 
     /**
-     * @param id New request ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /**
      * @return Count of encryption key to generate.
      */
     public int keyCount() {
         return keyCnt;
-    }
-
-    /**
-     * @param keyCnt New key count.
-     */
-    public void keyCount(int keyCnt) {
-        this.keyCnt = keyCnt;
     }
 
     /** {@inheritDoc} */

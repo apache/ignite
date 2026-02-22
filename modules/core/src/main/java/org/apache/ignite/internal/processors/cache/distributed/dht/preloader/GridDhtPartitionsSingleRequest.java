@@ -65,13 +65,6 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         return restoreExchId;
     }
 
-    /**
-     * @param restoreExchId ID of current exchange on new coordinator.
-     */
-    public void restoreExchangeId(GridDhtPartitionExchangeId restoreExchId) {
-        this.restoreExchId = restoreExchId;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 48;

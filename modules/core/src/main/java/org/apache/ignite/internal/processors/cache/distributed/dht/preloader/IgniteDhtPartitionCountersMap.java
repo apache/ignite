@@ -35,13 +35,6 @@ public class IgniteDhtPartitionCountersMap implements Message {
     Map<Integer, CachePartitionFullCountersMap> map;
 
     /**
-     * @return {@code True} if map is empty.
-     */
-    public synchronized boolean empty() {
-        return map == null || map.isEmpty();
-    }
-
-    /**
      * @param cacheId Cache ID.
      * @param cntrMap Counters map.
      */
@@ -67,20 +60,6 @@ public class IgniteDhtPartitionCountersMap implements Message {
             return null;
 
         return cntrMap;
-    }
-
-    /**
-     * @return Partition counters map.
-     */
-    public Map<Integer, CachePartitionFullCountersMap> partitionCounters() {
-        return map;
-    }
-
-    /**
-     * @param map Partition counters map.
-     */
-    public void partitionCounters(Map<Integer, CachePartitionFullCountersMap> map) {
-        this.map = map;
     }
 
     /** {@inheritDoc} */

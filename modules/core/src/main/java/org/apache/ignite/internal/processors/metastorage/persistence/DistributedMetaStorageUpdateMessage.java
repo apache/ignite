@@ -77,16 +77,6 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public boolean isAckMessage() {
-        return false;
-    }
-
-    /** */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
-
-    /** */
     protected String errorMessage() {
         return errorMsg;
     }

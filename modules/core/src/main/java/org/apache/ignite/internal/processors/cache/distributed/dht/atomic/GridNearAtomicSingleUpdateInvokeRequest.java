@@ -162,26 +162,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         return invokeArgs;
     }
 
-    /** */
-    public @Nullable byte[] entryProcessorBytes() {
-        return entryProcBytes;
-    }
-
-    /** */
-    public void entryProcessorBytes(@Nullable byte[] entryProcBytes) {
-        this.entryProcBytes = entryProcBytes;
-    }
-
-    /** */
-    public @Nullable List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /** */
-    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
-    }
-
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
