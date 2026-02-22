@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,18 +56,23 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private byte[] nodeBytes;
 
     /** */
+    @Order(value = 7, method = "gridDiscoveryData")
     private DiscoveryDataPacket dataPacket;
 
     /** Pending messages containner. */
-    @Order(value = 7, method = "pendingMessagesTransferMessage")
-    @Nullable private TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    private Collection<TcpDiscoveryAbstractMessage> msgs;
+
+    /** Marshalled {@link #msgs}. */
+    @Order(value = 8, method = "messagesBytes")
+    @GridToStringExclude
+    private @Nullable byte[] msgsBytes;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private @Nullable Collection<TcpDiscoveryNode> top;
 
     /** Marshalled {@link #top}. */
-    @Order(value = 8, method = "topologyBytes")
+    @Order(value = 9, method = "topologyBytes")
     @GridToStringExclude
     private @Nullable byte[] topBytes;
 
@@ -79,12 +84,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Marshalled {@link #topHist}. */
-    @Order(value = 9, method = "topologyHistoryBytes")
+    @Order(value = 10, method = "topologyHistoryBytes")
     @GridToStringExclude
     private @Nullable byte[] topHistBytes;
 
     /** Start time of the first grid node. */
-    @Order(value = 10, method = "gridStartTime")
+    @Order(value = 11, method = "gridStartTime")
     private long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -123,7 +128,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         this.node = msg.node;
         this.nodeBytes = msg.nodeBytes;
-        this.pendingMsgsMsg = msg.pendingMsgsMsg;
+        this.msgs = msg.msgs;
+        this.msgsBytes = msg.msgsBytes;
         this.top = msg.top;
         this.topBytes = msg.topBytes;
         this.clientTop = msg.clientTop;
@@ -158,7 +164,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Pending messages from previous node.
      */
     @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
-        return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
+        return msgs;
     }
 
     /**
@@ -166,18 +172,21 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @param msgs Pending messages to send to new node.
      */
-    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = msgs == null ? null : new TcpDiscoveryCollectionMessage(msgs);
+    public void messages(
+        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs
+    ) {
+        this.msgs = msgs;
+        msgsBytes = null;
     }
 
-    /** @return Pending messages containner. */
-    public @Nullable TcpDiscoveryCollectionMessage pendingMessagesTransferMessage() {
-        return pendingMsgsMsg;
+    /** @return Marshalled {@link #msgs}. */
+    public byte[] messagesBytes() {
+        return msgsBytes;
     }
 
-    /** @param pendingMsgsMsg Pending messages containner. */
-    public void pendingMessagesTransferMessage(@Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg) {
-        this.pendingMsgsMsg = pendingMsgsMsg;
+    /** @param msgsBytes Marshalled {@link #msgs}. */
+    public void messagesBytes(byte[] msgsBytes) {
+        this.msgsBytes = msgsBytes;
     }
 
     /**
@@ -261,6 +270,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         return dataPacket;
     }
 
+    /** @param dataPacket {@link DiscoveryDataPacket} carried by this message. */
+    public void gridDiscoveryData(DiscoveryDataPacket dataPacket) {
+        this.dataPacket = dataPacket;
+    }
+
     /**
      * Clears discovery data to minimize message size.
      */
@@ -289,14 +303,27 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         this.gridStartTime = gridStartTime;
     }
 
-    /** @param marsh marshaller. */
-    @Override public void prepareMarshal(Marshaller marsh) {
+    /**
+     * Pre-marshalling call. Should be idempotent.
+     *
+     * @param marsh marshaller.
+     */
+    public void prepareMarshal(Marshaller marsh) {
         if (node != null && nodeBytes == null) {
             try {
                 nodeBytes = U.marshal(marsh, node);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal cluster node.", e);
+            }
+        }
+
+        if (msgs != null && msgsBytes == null) {
+            try {
+                msgsBytes = U.marshal(marsh, msgs);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal pending messages.", e);
             }
         }
 
@@ -319,8 +346,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    /**
+     * Post-unmarshalling call. Should be idempotent.
+     *
+     * @param marsh  Marshaller.
+     * @param clsLdr Class loader.
+     */
+    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (nodeBytes != null && node == null) {
             try {
                 node = U.unmarshal(marsh, nodeBytes, clsLdr);
@@ -329,6 +361,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to unmarshal cluster node.", e);
+            }
+        }
+
+        if (msgsBytes != null && msgs == null) {
+            try {
+                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+
+                msgsBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal pending messages.", e);
             }
         }
 
@@ -358,7 +401,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 21;
+        return 20;
     }
 
     /** {@inheritDoc} */

@@ -18,40 +18,29 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Message telling that client node is reconnecting to topology.
  */
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    @Order(value = 5, method = "routerNodeId")
-    private UUID routerNodeId;
+    private final UUID routerNodeId;
 
     /** Last message ID. */
-    @Order(value = 6, method = "lastMessageId")
-    private IgniteUuid lastMsgId;
+    private final IgniteUuid lastMsgId;
 
-    /** Pending messages holder. */
-    @Order(value = 7, method = "pendingMessagesTransferMessage")
-    @Nullable private volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
-
-    /** Constructor for {@link DiscoveryMessageFactory}. */
-    public TcpDiscoveryClientReconnectMessage() {
-        // No-op.
-    }
+    /** Pending messages. */
+    @GridToStringExclude
+    private Collection<TcpDiscoveryAbstractMessage> msgs;
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -72,11 +61,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         return routerNodeId;
     }
 
-    /** @param routerNodeId New router node ID. */
-    public void routerNodeId(UUID routerNodeId) {
-        this.routerNodeId = routerNodeId;
-    }
-
     /**
      * @return Last message ID.
      */
@@ -84,33 +68,18 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         return lastMsgId;
     }
 
-    /** @param lastMsgId Last message ID. */
-    public void lastMessageId(IgniteUuid lastMsgId) {
-        this.lastMsgId = lastMsgId;
-    }
-
     /**
      * @param msgs Pending messages.
      */
-    public void pendingMessages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = msgs == null ? null : new TcpDiscoveryCollectionMessage(msgs);
+    public void pendingMessages(Collection<TcpDiscoveryAbstractMessage> msgs) {
+        this.msgs = msgs;
     }
 
     /**
      * @return Pending messages.
      */
     public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
-        return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
-    }
-
-    /** @return Message to transfer the pending messages. */
-    public @Nullable TcpDiscoveryCollectionMessage pendingMessagesTransferMessage() {
-        return pendingMsgsMsg;
-    }
-
-    /** @param pendingMsgsMsg Message to transfer the pending messages. */
-    public void pendingMessagesTransferMessage(@Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg) {
-        this.pendingMsgsMsg = pendingMsgsMsg;
+        return msgs;
     }
 
     /**
@@ -140,11 +109,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         return Objects.equals(creatorNodeId(), other.creatorNodeId()) &&
             Objects.equals(routerNodeId, other.routerNodeId) &&
             Objects.equals(lastMsgId, other.lastMsgId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 20;
     }
 
     /** {@inheritDoc} */
