@@ -120,7 +120,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -851,7 +850,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 long flags = in.readLong();
 
-                byte[] revHash = new byte[IgniteProductVersionMessage.REV_HASH_SIZE];
+                byte[] revHash = new byte[IgniteProductVersion.REV_HASH_SIZE];
                 byte maj = in.readByte();
                 byte min = in.readByte();
                 byte maint = in.readByte();

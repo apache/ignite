@@ -359,7 +359,7 @@ public class DirectByteBufferStream {
      * Constructror for stream used for reading messages.
      *
      * @param msgFactory Message factory.
-     * @param cacheObjProc Cache object processor.
+     * @param cacheObjProc Optional cache object processor.
      * @param msgPostReader Optional message post-reader.
      * @param msgPreWriter Optional message pre-writer.
      */

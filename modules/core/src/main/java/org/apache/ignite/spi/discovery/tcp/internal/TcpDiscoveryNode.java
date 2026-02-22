@@ -94,7 +94,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Node cache metrics. */
     @GridToStringExclude
-    private volatile @Nullable Map<Integer, CacheMetrics> cacheMetrics;
+    private volatile Map<Integer, CacheMetrics> cacheMetrics;
 
     /** Node order in the topology. */
     private volatile long order;
@@ -162,52 +162,17 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param ver Version.
      * @param consistentId Node consistent ID.
      */
-    public TcpDiscoveryNode(
-        UUID id,
+    public TcpDiscoveryNode(UUID id,
         Collection<String> addrs,
         Collection<String> hostNames,
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        @Nullable Serializable consistentId
-    ) {
-        this(id, consistentId, 0, false, null, addrs, hostNames, null, ver, metricsProvider.metrics());
-
-        this.discPort = discPort;
-        this.metricsProvider = metricsProvider;
-        cacheMetrics = metricsProvider.cacheMetrics();
-        sockAddrs = U.toSocketAddresses(this, discPort);
-    }
-
-    /**
-     * Constructor to implement {@link ClusterNode}.
-     *
-     * @param id Node id.
-     * @param consistentId Consistent id.
-     * @param order Node order.
-     * @param loc Local node flag.
-     * @param client Client node flag.
-     * @param addrs Node addresses.
-     * @param hostNames Node host names.
-     * @param attrs Node attributes.
-     * @param ver Version.
-     * @param metrics Node metrics.
-     */
-    public TcpDiscoveryNode(
-        UUID id,
-        @Nullable Object consistentId,
-        long order,
-        boolean loc,
-        @Nullable Boolean client,
-        Collection<String> addrs,
-        Collection<String> hostNames,
-        @Nullable Map<String, Object> attrs,
-        IgniteProductVersion ver,
-        ClusterMetrics metrics
+        Serializable consistentId
     ) {
         assert id != null;
+        assert metricsProvider != null;
         assert ver != null;
-        assert metrics != null;
 
         this.id = id;
 
@@ -217,20 +182,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         this.addrs = sortedAddrs;
         this.hostNames = hostNames;
-        this.order = order;
-        this.loc = loc;
+        this.discPort = discPort;
+        this.metricsProvider = metricsProvider;
         this.ver = ver;
-        this.metrics = metrics;
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        if (attrs != null) {
-            this.attrs = new HashMap<>(attrs);
-
-            this.attrs.put(IgniteNodeAttributes.ATTR_CLIENT_MODE, client != null && client);
-        }
-        else
-            this.attrs = Collections.emptyMap();
+        metrics = metricsProvider.metrics();
+        cacheMetrics = metricsProvider.cacheMetrics();
+        sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
     /**
@@ -330,7 +290,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Map<Integer, CacheMetrics> cacheMetrics() {
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
             Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
 
@@ -503,7 +463,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         if (!cacheCliInit) {
-            Boolean clientModeAttr = attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+            Boolean clientModeAttr = ((ClusterNode)this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
             cacheCli = clientModeAttr != null && clientModeAttr;
 

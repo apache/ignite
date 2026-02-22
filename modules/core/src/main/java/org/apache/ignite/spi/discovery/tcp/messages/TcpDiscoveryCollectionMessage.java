@@ -129,11 +129,11 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
             Message m = F.isEmpty(writableMsgs) ? null : writableMsgs.get(i);
 
             if (m == null) {
-                TcpDiscoveryAbstractMessage sm = marshallableMsgs.get(i);
+                TcpDiscoveryAbstractMessage adm = marshallableMsgs.get(i);
 
-                assert sm != null;
+                assert adm != null;
 
-                res.add(sm);
+                res.add(adm);
             }
             else {
                 assert marshallableMsgs == null || marshallableMsgs.get(i) == null;
@@ -183,7 +183,7 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -111;
+        return -108;
     }
 
     /** {@inheritDoc} */

@@ -21,12 +21,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeCollectionMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeCollectionMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
@@ -92,10 +86,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-111, TcpDiscoveryCollectionMessage::new, new TcpDiscoveryCollectionMessageSerializer());
-        factory.register((short)-110, ClusterNodeCollectionMessage::new, new ClusterNodeCollectionMessageSerializer());
-        factory.register((short)-109, ClusterNodeMessage::new, new ClusterNodeMessageSerializer());
-        factory.register((short)-108, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
+        factory.register((short)-108, TcpDiscoveryCollectionMessage::new, new TcpDiscoveryCollectionMessageSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
         factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
         factory.register((short)-105, TcpDiscoveryNodeFullMetricsMessage::new,
