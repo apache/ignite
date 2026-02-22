@@ -108,11 +108,11 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -3065,7 +3065,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    try (OperationSecurityContext c = withRemoteSecurityContext(cctx.kernalContext(), task.securityContext())) {
+                    try (Scope ignored = withRemoteSecurityContext(cctx.kernalContext(), task.securityContext())) {
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
 
@@ -3191,7 +3191,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     break;
                                 }
-                                catch (IgniteFutureTimeoutCheckedException ignored) {
+                                catch (IgniteFutureTimeoutCheckedException ignoredEx) {
                                     updateHeartbeat();
 
                                     if (nextDumpTime <= U.currentTimeMillis()) {

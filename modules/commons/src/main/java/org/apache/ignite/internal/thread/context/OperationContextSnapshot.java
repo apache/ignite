@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.thread.context;
+
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
 /**
+ * Represents snapshot of all Attributes and their corresponding values for a particular {@link OperationContext}
+ * instance. Its main purpose to save {@link OperationContext} state and restore it later, possible for
+ * {@link OperationContext} bound to another thread.
  *
+ * @see OperationContext
+ * @see OperationContext#createSnapshot()
+ * @see OperationContext#restoreSnapshot(OperationContextSnapshot)
+ * @see OperationContextAwareCallable
+ * @see OperationContextAwareRunnable
  */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
-
-    /** Security context. */
-    private final SecurityContext secCtx;
-
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
-    }
+public interface OperationContextSnapshot {
+    // No-op.
 }

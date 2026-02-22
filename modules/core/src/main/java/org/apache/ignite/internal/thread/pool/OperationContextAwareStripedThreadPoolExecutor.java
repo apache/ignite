@@ -15,35 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.thread;
+package org.apache.ignite.internal.thread.pool;
 
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
-/**
- * Extends {@link IgniteStripedThreadPoolExecutor} with the ability to execute tasks in security context that was actual
- * when task was added to executor's queue.
- */
-public class SecurityAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
+/** */
+public class OperationContextAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
     /** */
-    private final IgniteSecurity security;
-
-    /** */
-    public SecurityAwareStripedThreadPoolExecutor(
-        IgniteSecurity security,
-        int concurrentLvl, 
-        String igniteInstanceName, 
+    public OperationContextAwareStripedThreadPoolExecutor(
+        int concurrentLvl,
+        String igniteInstanceName,
         String threadNamePrefix,
-        Thread.UncaughtExceptionHandler eHnd, 
-        boolean allowCoreThreadTimeOut, 
+        Thread.UncaughtExceptionHandler eHnd,
+        boolean allowCoreThreadTimeOut,
         long keepAliveTime
     ) {
         super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
-        this.security = security;
     }
 
     /** {@inheritDoc} */
     @Override public void execute(Runnable task, int idx) {
-        super.execute(SecurityAwareRunnable.of(security, task), idx);
+        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(task), idx);
     }
 }
