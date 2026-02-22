@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -130,6 +129,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
      */
     public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
         this.clientNodeAttrs = clientNodeAttrs;
+        clientNodeAttrsBytes = null;
     }
 
     /**
@@ -160,9 +160,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (F.isEmpty(clientNodeAttrsBytes))
-            clientNodeAttrs = null;
-        else {
+        if (clientNodeAttrsBytes != null && clientNodeAttrs == null) {
             try {
                 clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
 
