@@ -56,10 +56,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private byte[] nodeBytes;
 
     /** */
+    @Order(value = 7, method = "gridDiscoveryData")
     private DiscoveryDataPacket dataPacket;
 
     /** Pending messages containner. */
-    @Order(value = 7, method = "pendingMessagesTransferMessage")
+    @Order(value = 8, method = "pendingMessagesTransferMessage")
     @Nullable private TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Current topology. Initialized by coordinator. */
@@ -67,7 +68,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private @Nullable Collection<TcpDiscoveryNode> top;
 
     /** Marshalled {@link #top}. */
-    @Order(value = 8, method = "topologyBytes")
+    @Order(value = 9, method = "topologyBytes")
     @GridToStringExclude
     private @Nullable byte[] topBytes;
 
@@ -79,12 +80,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Marshalled {@link #topHist}. */
-    @Order(value = 9, method = "topologyHistoryBytes")
+    @Order(value = 10, method = "topologyHistoryBytes")
     @GridToStringExclude
     private @Nullable byte[] topHistBytes;
 
     /** Start time of the first grid node. */
-    @Order(value = 10, method = "gridStartTime")
+    @Order(value = 11, method = "gridStartTime")
     private long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -259,6 +260,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
+    }
+
+    /** @param dataPacket {@link DiscoveryDataPacket} carried by this message. */
+    public void gridDiscoveryData(DiscoveryDataPacket dataPacket) {
+        this.dataPacket = dataPacket;
     }
 
     /**
