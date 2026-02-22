@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -143,11 +144,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Set<File> partFiles = new HashSet<>();
 
         Map<Integer, List<File>> grpDirs = new HashMap<>();
+        AtomicInteger remove = new AtomicInteger();
 
         for (File dir : opCtx.snapshotFileTree().existingCacheDirs()) {
             int grpId = CU.cacheId(cacheName(dir));
 
             Set<Integer> parts = grps.get(grpId);
+
+            log.error("TEST | dir: " + dir + ", grpId: " + grpId + ", parts: " + parts);
 
             if (parts == null)
                 continue;
@@ -157,6 +161,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 if (!parts.remove(partId))
                     continue;
+
+                remove.incrementAndGet();
+                log.error("TEST | Part id to check: " + partId + ", total detected: " + remove.get());
 
                 partFiles.add(part);
 
