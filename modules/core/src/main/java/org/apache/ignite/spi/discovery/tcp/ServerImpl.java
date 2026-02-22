@@ -262,7 +262,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Metric for max message queue size. */
     private MaxValueMetric maxMsgQueueSizeMetric;
 
-    /** Failed nodes (but still in topology). */
+    /** Failed nodes (but still in topology): Node -> Id of the failure issuer node. */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
 
     /** */
@@ -1878,7 +1878,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.topology(topToSnd);
 
-                Collection<TcpDiscoveryAbstractMessage> msgs0 = null;
+                List<TcpDiscoveryAbstractMessage> msgs0 = null;
 
                 if (msgs != null) {
                     msgs0 = new ArrayList<>(msgs.size());
@@ -1889,7 +1889,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                nodeAddedMsg.messages(msgs0);
+                nodeAddedMsg.pendingMessages(msgs0);
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -1912,7 +1912,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
-            nodeAddedMsg.messages(null);
+            nodeAddedMsg.pendingMessages(null);
             nodeAddedMsg.clearUnmarshalledDiscoveryData();
         }
     }
@@ -2489,8 +2489,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
@@ -3833,13 +3831,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    for (TcpDiscoveryNode failedNode : failedNodes) {
-                        if (!ServerImpl.this.failedNodes.containsKey(failedNode))
-                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
-                    }
+                    failedNodes.forEach(failedNode -> {
+                        ServerImpl.this.failedNodes.putIfAbsent(failedNode, locNodeId);
 
-                    for (TcpDiscoveryNode failedNode : failedNodes)
                         failedNodesMsgSent.add(failedNode.id());
+                    });
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
@@ -4863,8 +4859,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
-
-                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -5082,7 +5076,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
 
-                            pendingMsgs.reset(msg.messages());
+                            pendingMsgs.reset(msg.pendingMessages());
                         }
                         else {
                             if (log.isDebugEnabled())

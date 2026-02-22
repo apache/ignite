@@ -2238,8 +2238,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        if (msg.topologyHistory() != null)
-                            topHist.putAll(msg.topologyHistory());
+                        topHist.putAll(msg.topologyHistory());
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -2306,8 +2305,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         delayDiscoData.clear();
                     }
-
-                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
 
