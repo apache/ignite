@@ -152,6 +152,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = grps.get(grpId);
 
             log.error("TEST | dir: " + dir + ", grpId: " + grpId + ", parts: " + parts);
+            System.err.println("TEST | dir: " + dir + ", grpId: " + grpId + ", parts: " + parts);
 
             if (parts == null)
                 continue;
@@ -164,6 +165,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 remove.incrementAndGet();
                 log.error("TEST | Part id to check: " + partId + ", total detected: " + remove.get());
+                System.err.println("TEST | Part id to check: " + partId + ", total detected: " + remove.get());
 
                 partFiles.add(part);
 
