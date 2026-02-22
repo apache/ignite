@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -362,13 +361,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     ServerImpl(TcpDiscoverySpi adapter, int utilityPoolSize, int pingRmtDcPoolSize) {
         super(adapter);
 
-        // Using a size changing pool with a non-limited task queue is useless because it prefers to put task in a queue
-        // instead of creating a new thread.
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
-            utilityPoolSize,
-            utilityPoolSize,
             0,
+            utilityPoolSize,
+            2000,
             new LinkedBlockingQueue<>());
 
         List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
@@ -3342,13 +3339,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMessageToClients(msg);
 
-            // Must sequential, a list or a LinkedHashSet, etc.
-            Collection<TcpDiscoveryNode> failedNodes;
+            List<TcpDiscoveryNode> failedNodes;
 
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = new LinkedHashSet<>(ServerImpl.this.failedNodes.keySet());
+                failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
 
                 state = spiState;
             }
@@ -3487,7 +3483,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
                                     if (previousNode)
-                                        failedNodes.remove(F.last(failedNodes));
+                                        failedNodes.remove(failedNodes.size() - 1);
                                     else {
                                         newNextNode = false;
 
@@ -3849,7 +3845,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", next=" + next + ']');
 
                         if (prev)
-                            failedNodes.remove(F.last(failedNodes));
+                            failedNodes.remove(failedNodes.size() - 1);
                         else {
                             newNextNode = false;
 
@@ -3938,7 +3934,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** @return {@code True} if current node fails to recover the ring connection. */
         private boolean checkConnectionRecoveryFailed(
             CrossRingMessageSendState connRecoverState,
-            Collection<TcpDiscoveryNode> failedNodes
+            List<TcpDiscoveryNode> failedNodes
         ) {
             if (connRecoverState.timeout()) {
                 // Ensure of the ping pool release.
@@ -4016,7 +4012,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Segment local node on failed message send.
          */
-        private void segmentLocalNodeOnSendFail(Collection<TcpDiscoveryNode> failedNodes) {
+        private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
             String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
 
             synchronized (mux) {
@@ -8311,7 +8307,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private class CrossRingMessageSendState {
         /** */
-        private volatile RingMessageSendState state = RingMessageSendState.STARTING_POINT;
+        private RingMessageSendState state = RingMessageSendState.STARTING_POINT;
 
         /** */
         private int failedNodes;
@@ -8346,22 +8342,28 @@ class ServerImpl extends TcpDiscoveryImpl {
         private volatile long rmtDcPingMaxTimeNs;
 
         /** */
-        private CrossRingMessageSendState() {
+        CrossRingMessageSendState() {
             failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
         }
 
-        /** @return {@code True} if state is {@link RingMessageSendState#STARTING_POINT}. */
-        private boolean isStartingPoint() {
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#STARTING_POINT}.
+         */
+        boolean isStartingPoint() {
             return state == RingMessageSendState.STARTING_POINT;
         }
 
-        /** @return {@code True} if state is {@link RingMessageSendState#BACKWARD_PASS}. */
-        private boolean isBackward() {
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#BACKWARD_PASS}.
+         */
+        boolean isBackward() {
             return state == RingMessageSendState.BACKWARD_PASS;
         }
 
-        /** @return {@code True} if state timeout expired. */
-        private boolean timeout() {
+        /**
+         * @return {@code True} if state timeout expired.
+         */
+        boolean timeout() {
             return System.nanoTime() >= failTimeNanos;
         }
 
@@ -8370,7 +8372,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return {@code True} node marked as failed.
          */
-        private boolean markNextNodeFailed() {
+        boolean markNextNodeFailed() {
             if (state == RingMessageSendState.STARTING_POINT || state == RingMessageSendState.FORWARD_PASS) {
                 state = RingMessageSendState.FORWARD_PASS;
 
@@ -8387,7 +8389,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return {@code False} if all failed nodes marked as alive or incorrect state.
          */
-        private boolean markLastFailedNodeAlive() {
+        boolean markLastFailedNodeAlive() {
             if (state == RingMessageSendState.FORWARD_PASS || state == RingMessageSendState.BACKWARD_PASS) {
                 state = RingMessageSendState.BACKWARD_PASS;
 
