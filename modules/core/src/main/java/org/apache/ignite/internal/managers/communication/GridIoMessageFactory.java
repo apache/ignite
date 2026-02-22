@@ -270,6 +270,7 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessageSerialize
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
+import org.apache.ignite.internal.processors.continuous.GridContinuousMessageSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
@@ -417,7 +418,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)57, GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer());
         factory.register((short)58, GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer());
         factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
-        factory.register((short)61, GridContinuousMessage::new);
+        factory.register((short)61, GridContinuousMessage::new, new GridContinuousMessageSerializer());
         factory.register((short)62, DataStreamerRequest::new);
         factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
