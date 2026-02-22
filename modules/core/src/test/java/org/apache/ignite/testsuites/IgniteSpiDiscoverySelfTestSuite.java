@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownS
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteMetricsOverflowTest;
 import org.apache.ignite.spi.discovery.tcp.MultiDataCenterRingTest;
+import org.apache.ignite.spi.discovery.tcp.MultiDataCenterSplitTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiCoordinatorChangeTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
@@ -199,6 +200,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryPendingMessageDeliveryMdcReversedTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRingTest.class,
+    MultiDataCenterSplitTest.class,
     MultiDataCenterClientRoutingTest.class,
 
     IgniteDiscoveryMessageSerializationTest.class
