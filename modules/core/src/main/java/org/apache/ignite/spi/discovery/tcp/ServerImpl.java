@@ -262,7 +262,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Metric for max message queue size. */
     private MaxValueMetric maxMsgQueueSizeMetric;
 
-    /** Failed nodes (but still in topology). */
+    /** Failed nodes (but still in topology): Node -> Id of the failure issuer node. */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
 
     /** */
@@ -2489,8 +2489,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
@@ -4863,8 +4861,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
-
-                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -5080,7 +5076,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
-                            topHist.putAll(msg.topologyHistory());
+
+                            if (!F.isEmpty(msg.topologyHistory()))
+                                topHist.putAll(msg.topologyHistory());
 
                             pendingMsgs.reset(msg.messages());
                         }

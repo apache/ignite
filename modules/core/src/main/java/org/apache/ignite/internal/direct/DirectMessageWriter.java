@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -52,10 +53,18 @@ public class DirectMessageWriter implements MessageWriter {
     private ByteBuffer buf;
 
     /** */
-    public DirectMessageWriter(final MessageFactory msgFactory) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
+    public DirectMessageWriter(MessageFactory msgFactory) {
+        this(msgFactory, null);
+    }
+
+    /**
+     * @param msgFactory Message factory.
+     * @param msgPreSerializer Optional message pre-writer.
+     */
+    public DirectMessageWriter(MessageFactory msgFactory, @Nullable Consumer<Message> msgPreSerializer) {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory);
+                return new StateItem(msgFactory, msgPreSerializer);
             }
         });
     }
@@ -415,9 +424,12 @@ public class DirectMessageWriter implements MessageWriter {
         /** */
         private boolean hdrWritten;
 
-        /** */
-        public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStream(msgFactory);
+        /**
+         * @param msgFactory Message Factory.
+         * @param msgPreWriter Optional message pre-writer.
+         */
+        public StateItem(MessageFactory msgFactory, @Nullable Consumer<Message> msgPreWriter) {
+            stream = new DirectByteBufferStream(msgFactory, null, null, msgPreWriter);
         }
 
         /** {@inheritDoc} */

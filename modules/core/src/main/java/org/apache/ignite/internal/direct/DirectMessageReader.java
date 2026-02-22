@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -59,10 +60,23 @@ public class DirectMessageReader implements MessageReader {
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
+    public DirectMessageReader(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+        this(msgFactory, cacheObjProc, null);
+    }
+
+    /**
+     * @param msgFactory Message factory.
+     * @param cacheObjProc Cache object processor.
+     * @param msgPostSerializer Optional message processor to call after the serialization.
+     */
+    public DirectMessageReader(
+        final MessageFactory msgFactory,
+        IgniteCacheObjectProcessor cacheObjProc,
+        @Nullable Consumer<Message> msgPostSerializer
+    ) {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, cacheObjProc);
+                return new StateItem(msgFactory, cacheObjProc, msgPostSerializer);
             }
         });
     }
@@ -452,9 +466,14 @@ public class DirectMessageReader implements MessageReader {
         /**
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
+         * @param msgPostReader Optional message post-reader.
          */
-        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-            stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
+        public StateItem(
+            MessageFactory msgFactory,
+            IgniteCacheObjectProcessor cacheObjProc,
+            @Nullable Consumer<Message> msgPostReader
+        ) {
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc, msgPostReader, null);
         }
 
         /** {@inheritDoc} */
