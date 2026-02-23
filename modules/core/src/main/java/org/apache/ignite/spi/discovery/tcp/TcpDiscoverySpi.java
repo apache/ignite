@@ -303,7 +303,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     public static final int DFLT_DISCOVERY_METRICS_QNT_WARN = 500;
 
     /** */
-    public static final int DFLT_UTLITY_POOL_SIZE = 2;
+    public static final int DFLT_UTLITY_POOL_SIZE = 4;
 
     /** Pool size to ping remote DC at the connection recovery. */
     public static final int DFLT_RMT_DC_PING_POOL_SIZE = Math.max(8, Runtime.getRuntime().availableProcessors() / 2);

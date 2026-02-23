@@ -255,7 +255,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     /** */
     private void checkDcSplited(String dcId) throws IgniteInterruptedCheckedException {
         if (log.isInfoEnabled())
-            log.info("Awaiting for DC is splitted for DC id: " + dcId);
+            log.info("Awaiting for DC is splitted, DC id: " + dcId + '.');
 
         assertTrue(waitForCondition(() -> {
             for (Ignite grid : G.allGrids()) {
@@ -269,18 +269,21 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
                     if (n.dataCenterId().equals(dcId))
                         ++dcCnt;
 
-                    ++totalCnt;
+                    if (++totalCnt > srvrsPerDc)
+                        return false;
                 }
 
-                if (log.isInfoEnabled())
-                    log.info("Grid: " + grid.name() + ". DC node cnt: " + dcCnt + ", total nodes cnt: " + totalCnt);
+                if (log.isDebugEnabled()) {
+                    log.debug("Awaiting for DC is splitted, grid: " + grid.name() + ". DC's '" + dcId + "' node cnt: "
+                        + dcCnt + ", total nodes cnt: " + totalCnt + '.');
+                }
 
                 if (dcCnt != srvrsPerDc || totalCnt != srvrsPerDc)
                     return false;
             }
 
             return true;
-        }, getTestTimeout()));
+        }, getTestTimeout(), 500));
     }
 
     /** */

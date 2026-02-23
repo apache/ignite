@@ -466,7 +466,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         fromAddrs.clear();
         noResAddrs.clear();
 
-        msgWorker = new RingMessageWorker(log);
+        msgWorker = createMessageWorker();
 
         msgWorkerThread = new MessageWorkerDiscoveryThread(msgWorker, log);
         msgWorkerThread.start();
@@ -524,6 +524,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         spi.printStartInfo();
+    }
+
+    /** */
+    protected RingMessageWorker createMessageWorker() {
+        return new RingMessageWorker(log);
     }
 
     /** {@inheritDoc} */
@@ -2847,7 +2852,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Message worker for discovery messages processing.
      */
-    private class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
+    protected class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** Next node. */
         private TcpDiscoveryNode next;
 
@@ -2909,7 +2914,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param log Logger.
          */
-        private RingMessageWorker(IgniteLogger log) {
+        protected RingMessageWorker(IgniteLogger log) {
             super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi));
 
             setBeforeEachPollAction(() -> {
@@ -3822,8 +3827,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             closeRingToLocalDC(sndState, failedNodes);
-
-                            sndState.stopRemoteDcPing();
                         }
 
                         if (state == CONNECTED) {
@@ -3907,7 +3910,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        private CrossRingMessageSendState createConnectionRecoveryState(TcpDiscoveryNode newNextNode) {
+        protected CrossRingMessageSendState createConnectionRecoveryState(TcpDiscoveryNode newNextNode) {
             CrossRingMessageSendState recoveryState = new CrossRingMessageSendState();
 
             // The corner node case. Next node is from neighbour DC. Another DC might be entierly unavailable.
@@ -4070,8 +4073,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** Tries to close the ring to local datacenter. */
-        private void closeRingToLocalDC(CrossRingMessageSendState connRecoverState, Collection<TcpDiscoveryNode> failedNodes) {
+        protected void closeRingToLocalDC(CrossRingMessageSendState connRecoverState, Collection<TcpDiscoveryNode> failedNodes) {
             assert connRecoverState.closeRingToLocDc == null : "Forced ring closing to local DC should not be requested yet.";
+
+            connRecoverState.stopRemoteDcPing();
 
             connRecoverState.closeRingToLocDc = true;
             markOthersDcNodesFailed(failedNodes);
@@ -6497,7 +6502,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     ) {
         String locDcId = locNode.dataCenterId();
 
-        if (connRecoverState == null || locDcId == null || locDcId.equals(nextTried.dataCenterId()))
+        if (connRecoverState == null || !connRecoverState.remoteDcPingStarted() || locDcId == null
+            || locDcId.equals(nextTried.dataCenterId()))
             return false;
 
         assert failedNodes.contains(nextTried);
@@ -8305,7 +8311,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#STARTING_POINT} when local node came back
      * to initial next node and no topology changes should be performed.<br>
      */
-    private class CrossRingMessageSendState {
+    protected class CrossRingMessageSendState {
         /** */
         private RingMessageSendState state = RingMessageSendState.STARTING_POINT;
 
@@ -8411,11 +8417,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        private void pingRemoteDC(List<TcpDiscoveryNode> nodesToPing) {
+        void pingRemoteDC(List<TcpDiscoveryNode> nodesToPing) {
+            assert !remoteDcPingStarted();
+
             rmtDcPingMaxTimeNs = System.nanoTime() + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO);
 
             assert !remoteDcPingStarted();
-            assert !stopRmtDcPing;
             assert !F.isEmpty(nodesToPing);
 
             AtomicInteger thrdIdx = new AtomicInteger();
@@ -8443,30 +8450,31 @@ class ServerImpl extends TcpDiscoveryImpl {
             int steps = nodesToPing.size() / rmtDcPingPool.getMaximumPoolSize()
                 + (nodesToPing.size() % rmtDcPingPool.getMaximumPoolSize() == 0 ? 0 : 1);
 
-            for (TcpDiscoveryNode node : nodesToPing) {
-                if (remoteDcPingStopped())
-                    return;
-
+            for (TcpDiscoveryNode node : nodesToPing)
                 scheduleNodePingJob(node, steps);
-            }
         }
 
         /** */
-        private synchronized void scheduleNodePingJob(TcpDiscoveryNode node, int steps) {
+        void scheduleNodePingJob(TcpDiscoveryNode node, int steps) {
             if (stopRmtDcPing)
                 return;
 
-            try {
-                rmtDcPingPool.execute(() -> pingNodeJob(node, steps));
-            }
-            catch (Throwable t) {
-                log.warning("During the connection recovery, attempt to ping " + node + " of DC '"
-                    + node.dataCenterId() + "' failed.", t);
+            synchronized (this) {
+                if (stopRmtDcPing)
+                    return;
+
+                try {
+                    rmtDcPingPool.execute(() -> pingNodeJob(node, steps));
+                }
+                catch (Throwable t) {
+                    log.warning("During the connection recovery, attempt to ping " + node + " of DC '"
+                        + node.dataCenterId() + "' failed.", t);
+                }
             }
         }
 
         /** */
-        private void pingNodeJob(TcpDiscoveryNode node, int steps) {
+        void pingNodeJob(TcpDiscoveryNode node, int steps) {
             // Total allowed ping timeout per step.
             double stepTimeoutNs = ((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO) / steps;
 
@@ -8538,11 +8546,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        private void stopRemoteDcPing() {
+        void stopRemoteDcPing() {
             if (stopRmtDcPing)
                 return;
 
             synchronized (this) {
+                if (stopRmtDcPing)
+                    return;
+
                 stopRmtDcPing = true;
 
                 if (rmtDcPingPool != null) {
