@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -837,9 +838,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     if (snpPartsDetected > 1)
                         moreThatOneSnpPartProcessed = true;
 
+                    SnapshotFileTree sft = snapshotFileTree(grid(i), SNAPSHOT_NAME);
+
+                    long partsFilesCnt = Stream.of(new File(sft.nodeStorage(), "cache-" + DEFAULT_CACHE_NAME).list())
+                        .filter(fn -> fn.endsWith(".bin")).count();
+
                     // Partitions + metastorage.
-                    assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("totalPartitions").value());
-                    assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("processedPartitions").value());
+                    assertEquals(mreg.<IntMetric>findMetric("totalPartitions").value(), snpPartsDetected * (partsFilesCnt + 1));
+
+                    assertEquals(mreg.<IntMetric>findMetric("totalPartitions").value(),
+                        mreg.<IntMetric>findMetric("processedPartitions").value());
                 }
             }
 
