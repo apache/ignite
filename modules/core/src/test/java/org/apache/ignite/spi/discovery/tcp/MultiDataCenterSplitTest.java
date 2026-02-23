@@ -91,10 +91,10 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "serversPerDc={0}, fullTimeoutFailure={1}, rmtDcNodesResponds={2}, pingPoolSize={3}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
-            F.asList(2), // Servers number per DC.
-            F.asList(true), // Full-timeout failure (or fail quickly).
-            F.asList( false), // Whether few nodes of the remote DC respond to the ping.
-            F.asList( 1, 2) // Ping pool size.
+            F.asList(2, 3, 4), // Servers number per DC.
+            F.asList(true, false), // Full-timeout failure (or fail quickly).
+            F.asList( false, true), // Whether few nodes of the remote DC respond to the ping.
+            F.asList( 1, 2, 4) // Ping pool size.
         );
     }
 
@@ -128,7 +128,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         assert ((TcpDiscoverySpi)cfg.getDiscoverySpi()).locPort == TcpDiscoverySpi.DFLT_PORT;
 
         // Fastens the tests.
-        cfg.setFailureDetectionTimeout((long)((float)srvrsPerDc / pingPoolSize * 3000));
+        cfg.setFailureDetectionTimeout(5000);
 
         cfg.setGridLogger(listeningLog);
 
