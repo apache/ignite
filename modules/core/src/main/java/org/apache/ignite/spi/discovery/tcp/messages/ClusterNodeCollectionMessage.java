@@ -18,16 +18,17 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** A container message for a collection of {@link ClusterNodeMessage}. */
+/** A container message for a collection of {@link TcpDiscoveryNodeMessage}. */
 public class ClusterNodeCollectionMessage implements Message {
-    /** The collection of wrapped {@link ClusterNodeMessage}. */
+    /** The collection of wrapped {@link TcpDiscoveryNodeMessage}. */
     @Order(value = 0, method = "clusterNodeMessages")
-    private Collection<ClusterNodeMessage> clusterNodeMsgs;
+    private Collection<TcpDiscoveryNodeMessage> clusterNodeMsgs;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public ClusterNodeCollectionMessage() {
@@ -35,17 +36,22 @@ public class ClusterNodeCollectionMessage implements Message {
     }
 
     /** @param clusterNodeMsgs Holder messages of {@link ClusterNode}. */
-    public ClusterNodeCollectionMessage(Collection<ClusterNodeMessage> clusterNodeMsgs) {
+    public ClusterNodeCollectionMessage(Collection<TcpDiscoveryNodeMessage> clusterNodeMsgs) {
         this.clusterNodeMsgs = clusterNodeMsgs;
     }
 
     /** @return Holder messages of {@link ClusterNode}. */
-    public Collection<ClusterNodeMessage> clusterNodeMessages() {
+    public Collection<TcpDiscoveryNodeMessage> clusterNodeMessages() {
         return clusterNodeMsgs;
     }
 
+    /** @return Collection of {@link ClusterNode}. */
+    public Collection<ClusterNode> clusterNodes() {
+        return clusterNodeMsgs.stream().map(msg -> (ClusterNode)msg).collect(Collectors.toList());
+    }
+
     /** @param clusterNodeMsgs Holder messages of {@link ClusterNode}. */
-    public void clusterNodeMessages(Collection<ClusterNodeMessage> clusterNodeMsgs) {
+    public void clusterNodeMessages(Collection<TcpDiscoveryNodeMessage> clusterNodeMsgs) {
         this.clusterNodeMsgs = clusterNodeMsgs;
     }
 

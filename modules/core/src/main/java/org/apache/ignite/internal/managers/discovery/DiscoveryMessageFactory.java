@@ -23,8 +23,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeCollectionMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -77,6 +75,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
@@ -94,7 +94,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
     @Override public void registerAll(MessageFactory factory) {
         factory.register((short)-111, TcpDiscoveryCollectionMessage::new, new TcpDiscoveryCollectionMessageSerializer());
         factory.register((short)-110, ClusterNodeCollectionMessage::new, new ClusterNodeCollectionMessageSerializer());
-        factory.register((short)-109, ClusterNodeMessage::new, new ClusterNodeMessageSerializer());
+        factory.register((short)-109, TcpDiscoveryNodeMessage::new, new TcpDiscoveryNodeMessageSerializer());
         factory.register((short)-108, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
         factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());

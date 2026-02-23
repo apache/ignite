@@ -1741,7 +1741,10 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
+    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(
+        long topVer,
+        Collection<ClusterNode> top
+    ) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -1878,7 +1881,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.topology(topToSnd);
 
-                List<TcpDiscoveryAbstractMessage> msgs0 = null;
+                Collection<TcpDiscoveryAbstractMessage> msgs0 = null;
 
                 if (msgs != null) {
                     msgs0 = new ArrayList<>(msgs.size());
@@ -1889,7 +1892,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                nodeAddedMsg.pendingMessages(msgs0);
+                nodeAddedMsg.messages(msgs0);
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -1912,7 +1915,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
-            nodeAddedMsg.pendingMessages(null);
+            nodeAddedMsg.messages(null);
             nodeAddedMsg.clearUnmarshalledDiscoveryData();
         }
     }
@@ -3831,11 +3834,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    failedNodes.forEach(failedNode -> {
-                        ServerImpl.this.failedNodes.putIfAbsent(failedNode, locNodeId);
+                    for (TcpDiscoveryNode failedNode : failedNodes) {
+                        if (!ServerImpl.this.failedNodes.containsKey(failedNode))
+                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
+                    }
 
+                    for (TcpDiscoveryNode failedNode : failedNodes)
                         failedNodesMsgSent.add(failedNode.id());
-                    });
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
@@ -5076,7 +5081,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
 
-                            pendingMsgs.reset(msg.pendingMessages());
+                            pendingMsgs.reset(msg.messages());
                         }
                         else {
                             if (log.isDebugEnabled())

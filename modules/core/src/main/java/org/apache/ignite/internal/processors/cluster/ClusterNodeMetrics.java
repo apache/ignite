@@ -24,7 +24,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -34,13 +33,13 @@ class ClusterNodeMetrics {
     private final ClusterMetrics nodeMetrics;
 
     /** */
-    private final @Nullable Map<Integer, CacheMetrics> cacheMetrics;
+    private final Map<Integer, CacheMetrics> cacheMetrics;
 
     /**
      * @param nodeMetrics Node metrics.
      * @param cacheMetrics Cache metrics.
      */
-    ClusterNodeMetrics(ClusterMetrics nodeMetrics, @Nullable Map<Integer, CacheMetrics> cacheMetrics) {
+    ClusterNodeMetrics(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
         this.nodeMetrics = nodeMetrics;
         this.cacheMetrics = cacheMetrics;
     }
