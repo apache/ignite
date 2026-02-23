@@ -17,20 +17,20 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -43,50 +43,34 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    private TcpDiscoveryNode node;
-
-    /** Marshalled {@link #node}. */
-    @Order(value = 6, method = "nodeBytes")
-    @GridToStringExclude
-    private byte[] nodeBytes;
+    @Order(6)
+    TcpDiscoveryNodeMessage nodeMsg;
 
     /** */
     @Order(value = 7, method = "gridDiscoveryData")
     private DiscoveryDataPacket dataPacket;
 
-    /** Pending messages containner. */
-    private Collection<TcpDiscoveryAbstractMessage> msgs;
-
-    /** Marshalled {@link #msgs}. */
-    @Order(value = 8, method = "messagesBytes")
-    @GridToStringExclude
-    private @Nullable byte[] msgsBytes;
+    /** Message to hold collection of pending {@link TcpDiscoveryAbstractMessage}. */
+    @Order(8)
+    TcpDiscoveryCollectionMessage msgs;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    private @Nullable Collection<TcpDiscoveryNode> top;
-
-    /** Marshalled {@link #top}. */
-    @Order(value = 9, method = "topologyBytes")
-    @GridToStringExclude
-    private @Nullable byte[] topBytes;
+    @Order(9)
+    @Nullable ClusterNodeCollectionMessage top;
 
     /** */
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
-    private Map<Long, Collection<ClusterNode>> topHist;
-
-    /** Marshalled {@link #topHist}. */
-    @Order(value = 10, method = "topologyHistoryBytes")
-    @GridToStringExclude
-    private @Nullable byte[] topHistBytes;
+    @Order(10)
+    @Nullable Map<Long, ClusterNodeCollectionMessage> topHistMsgs;
 
     /** Start time of the first grid node. */
     @Order(value = 11, method = "gridStartTime")
@@ -115,7 +99,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         assert node != null;
         assert gridStartTime > 0;
 
-        this.node = node;
+        nodeMsg = new TcpDiscoveryNodeMessage(node);
         this.dataPacket = dataPacket;
         this.gridStartTime = gridStartTime;
     }
@@ -126,17 +110,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
         super(msg);
 
-        this.node = msg.node;
-        this.nodeBytes = msg.nodeBytes;
-        this.msgs = msg.msgs;
-        this.msgsBytes = msg.msgsBytes;
-        this.top = msg.top;
-        this.topBytes = msg.topBytes;
-        this.clientTop = msg.clientTop;
-        this.topHist = msg.topHist;
-        this.topHistBytes = msg.topHistBytes;
-        this.dataPacket = msg.dataPacket;
-        this.gridStartTime = msg.gridStartTime;
+        nodeMsg = msg.nodeMsg;
+        top = msg.top;
+        msgs = msg.msgs;
+        clientTop = msg.clientTop;
+        topHistMsgs = msg.topHistMsgs;
+        dataPacket = msg.dataPacket;
+        gridStartTime = msg.gridStartTime;
     }
 
     /**
@@ -145,17 +125,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return New node.
      */
     public TcpDiscoveryNode node() {
-        return node;
-    }
-
-    /** @return Marshalled {@link #node}. */
-    public byte[] nodeBytes() {
-        return nodeBytes;
-    }
-
-    /** @param nodeBytes Marshalled {@link #node}. */
-    public void nodeBytes(byte[] nodeBytes) {
-        this.nodeBytes = nodeBytes;
+        return new TcpDiscoveryNode(nodeMsg);
     }
 
     /**
@@ -163,30 +133,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
-        return msgs;
+    public Collection<TcpDiscoveryAbstractMessage> messages() {
+        return msgs == null ? Collections.emptyList() : msgs.messages();
     }
 
     /**
-     * Sets pending messages to send to new node.
+     * Sets pending messages.
      *
-     * @param msgs Pending messages to send to new node.
+     * @param msgs Pending messages.
      */
-    public void messages(
-        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs
-    ) {
-        this.msgs = msgs;
-        msgsBytes = null;
-    }
-
-    /** @return Marshalled {@link #msgs}. */
-    public byte[] messagesBytes() {
-        return msgsBytes;
-    }
-
-    /** @param msgsBytes Marshalled {@link #msgs}. */
-    public void messagesBytes(byte[] msgsBytes) {
-        this.msgsBytes = msgsBytes;
+    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        this.msgs = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
     }
 
     /**
@@ -195,7 +152,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Current topology.
      */
     @Nullable public Collection<TcpDiscoveryNode> topology() {
-        return top;
+        return top.clusterNodeMessages().stream().map(TcpDiscoveryNode::new).collect(Collectors.toList());
     }
 
     /**
@@ -204,18 +161,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param top Current topology.
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
-        this.top = top;
-        topBytes = null;
-    }
-
-    /** @return Marshalled {@link #top}. */
-    public @Nullable byte[] topologyBytes() {
-        return topBytes;
-    }
-
-    /** @param topBytes Marshalled {@link #top}. */
-    public void topologyBytes(@Nullable byte[] topBytes) {
-        this.topBytes = topBytes;
+        this.top = top == null ? null : ClusterNodeCollectionMessage.of(top);
     }
 
     /**
@@ -240,7 +186,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Map with topology snapshots history.
      */
     public Map<Long, Collection<ClusterNode>> topologyHistory() {
-        return topHist;
+        if (F.isEmpty(topHistMsgs))
+            return Collections.emptyMap();
+
+        return topHistMsgs.entrySet().stream()
+            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue().clusterNodes()))
+            .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
     }
 
     /**
@@ -249,18 +200,20 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param topHist Map with topology snapshots history.
      */
     public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
-        this.topHist = topHist;
-        topHistBytes = null;
-    }
+        if (F.isEmpty(topHist)) {
+            topHistMsgs = null;
 
-    /** @return Marshalled {@link #topHist}. */
-    public @Nullable byte[] topologyHistoryBytes() {
-        return topHistBytes;
-    }
+            return;
+        }
 
-    /** @param topHistBytes Marshalled {@link #topHist}. */
-    public void topologyHistoryBytes(@Nullable byte[] topHistBytes) {
-        this.topHistBytes = topHistBytes;
+        topHistMsgs = U.newHashMap(topHist.size());
+
+        topHist.forEach((nodeId, clusterNodes) -> {
+            Collection<TcpDiscoveryNodeMessage> clusterNodeImpls = clusterNodes.stream().map(TcpDiscoveryNodeMessage::new)
+                .collect(Collectors.toList());
+
+            topHistMsgs.put(nodeId, new ClusterNodeCollectionMessage(clusterNodeImpls));
+        });
     }
 
     /**
@@ -303,101 +256,33 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         this.gridStartTime = gridStartTime;
     }
 
-    /**
-     * Pre-marshalling call. Should be idempotent.
-     *
-     * @param marsh marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
-        if (node != null && nodeBytes == null) {
-            try {
-                nodeBytes = U.marshal(marsh, node);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal cluster node.", e);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
+        nodeMsg.prepareMarshal(marsh);
 
-        if (msgs != null && msgsBytes == null) {
-            try {
-                msgsBytes = U.marshal(marsh, msgs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal pending messages.", e);
-            }
-        }
+        if (msgs != null)
+            msgs.prepareMarshal(marsh);
 
-        if (top != null && topBytes == null) {
-            try {
-                topBytes = U.marshal(marsh, top);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal topology nodes.", e);
-            }
-        }
+        if (top != null)
+            top.prepareMarshal(marsh);
 
-        if (topHist != null && topHistBytes == null) {
-            try {
-                topHistBytes = U.marshal(marsh, topHist);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal topology history.", e);
-            }
-        }
+        if (!F.isEmpty(topHistMsgs))
+            topHistMsgs.values().forEach(t -> t.prepareMarshal(marsh));
     }
 
-    /**
-     * Post-unmarshalling call. Should be idempotent.
-     *
-     * @param marsh  Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (nodeBytes != null && node == null) {
-            try {
-                node = U.unmarshal(marsh, nodeBytes, clsLdr);
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        nodeMsg.finishUnmarshal(marsh, clsLdr);
 
-                nodeBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal cluster node.", e);
-            }
-        }
+        if (msgs != null)
+            msgs.finishUnmarshal(marsh, clsLdr);
 
-        if (msgsBytes != null && msgs == null) {
-            try {
-                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+        if (top != null)
+            top.finishUnmarshal(marsh, clsLdr);
 
-                msgsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal pending messages.", e);
-            }
-        }
-
-        if (topBytes != null && top == null) {
-            try {
-                top = U.unmarshal(marsh, topBytes, clsLdr);
-
-                topBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal topology nodes.", e);
-            }
-        }
-
-        if (topHistBytes != null && topHist == null) {
-            try {
-                topHist = U.unmarshal(marsh, topHistBytes, clsLdr);
-
-                topHistBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal topology history.", e);
-            }
-        }
+        if (!F.isEmpty(topHistMsgs))
+            topHistMsgs.values().forEach(t -> t.finishUnmarshal(marsh, clsLdr));
     }
-
 
     /** {@inheritDoc} */
     @Override public short directType() {
