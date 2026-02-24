@@ -57,7 +57,7 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */
