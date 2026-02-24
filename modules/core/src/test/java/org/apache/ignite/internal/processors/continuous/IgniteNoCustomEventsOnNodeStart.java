@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -60,8 +60,8 @@ public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
      */
     static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-            if (GridTestUtils.getFieldValue(msg, "delegate") instanceof CacheAffinityChangeMessage)
+        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) {
+            if (U.unwrapCustomMessage(msg) instanceof CacheAffinityChangeMessage)
                 return;
 
             failed = true;

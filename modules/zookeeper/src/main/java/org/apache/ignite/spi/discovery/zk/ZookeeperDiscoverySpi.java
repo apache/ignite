@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -49,7 +50,6 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -404,7 +404,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+    @Override public void sendCustomEvent(DiscoveryCustomMessage msg) {
         impl.sendCustomMessage(msg);
     }
 
