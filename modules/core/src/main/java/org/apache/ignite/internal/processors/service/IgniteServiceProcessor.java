@@ -70,9 +70,9 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.systemview.ServiceViewWalker;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -2080,7 +2080,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             return err;
         }
 
-        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
+        try (Scope ignored = ctx.security().withContext(secCtx)) {
             for (ServiceInfo desc : svcs) {
                 SecurityException err = checkPermissions(desc.name(), SERVICE_DEPLOY);
 
