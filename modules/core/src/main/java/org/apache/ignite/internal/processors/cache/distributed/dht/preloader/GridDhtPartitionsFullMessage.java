@@ -59,7 +59,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Partitions without duplicated data. */
     @Order(6)
     @Compress
-    private Map<Integer, GridDhtPartitionFullMap> locParts;
+    Map<Integer, GridDhtPartitionFullMap> locParts;
 
     /** */
     @Order(7)
@@ -102,7 +102,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(value = 13, method = "errorMessages")
     @Compress
     @SuppressWarnings("unused")
-    Map<UUID, ErrorMessage> errMsgs;
+    private Map<UUID, ErrorMessage> errMsgs;
 
     /** */
     @Order(14)
@@ -239,20 +239,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Local partitions.
-     */
-    public Map<Integer, GridDhtPartitionFullMap> localPartitions() {
-        return locParts;
-    }
-
-    /**
-     * @param locParts Local partitions.
-     */
-    public void localPartitions(Map<Integer, GridDhtPartitionFullMap> locParts) {
-        this.locParts = locParts;
-    }
-
-    /**
      * @param grpId Cache group ID.
      * @return {@code True} if message contains full map for given cache.
      */
@@ -342,13 +328,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @param partHistSuppliers Partitions history suppliers.
-     */
-    public void partitionHistorySuppliers(IgniteDhtPartitionHistorySuppliersMap partHistSuppliers) {
-        this.partHistSuppliers = partHistSuppliers;
-    }
-
-    /**
      *
      */
     public Set<Integer> partsToReload(UUID nodeId, int grpId) {
@@ -414,76 +393,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     public void rebalanced(boolean rebalanced) {
         flags = rebalanced ? (byte)(flags | REBALANCED_FLAG_MASK) : (byte)(flags & ~REBALANCED_FLAG_MASK);
-    }
-
-    /**
-     * @return Duplicated partitions data.
-     */
-    public Map<Integer, Integer> duplicatedPartitionsData() {
-        return dupPartsData;
-    }
-
-    /**
-     * @param dupPartsData Duplicated partitions data.
-     */
-    public void duplicatedPartitionsData(Map<Integer, Integer> dupPartsData) {
-        this.dupPartsData = dupPartsData;
-    }
-
-    /**
-     * @return Partitions update counters.
-     */
-    public IgniteDhtPartitionCountersMap partitionCounters() {
-        return partCntrs;
-    }
-
-    /**
-     * @param partCntrs Partitions update counters.
-     */
-    public void partitionCounters(IgniteDhtPartitionCountersMap partCntrs) {
-        this.partCntrs = partCntrs;
-    }
-
-    /**
-     * @return Partitions that must be cleared and re-loaded.
-     */
-    public IgniteDhtPartitionsToReloadMap partitionsToReload() {
-        return partsToReload;
-    }
-
-    /**
-     * @param partsToReload Partitions that must be cleared and re-loaded.
-     */
-    public void partitionsToReload(IgniteDhtPartitionsToReloadMap partsToReload) {
-        this.partsToReload = partsToReload;
-    }
-
-    /**
-     * @return Rebalanced flags.
-     */
-    public byte rebalancedFlags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Rebalanced flags.
-     */
-    public void rebalancedFlags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
-     * @return Lost partitions.
-     */
-    public Map<Integer, int[]> lostPartitions() {
-        return lostParts;
-    }
-
-    /**
-     * @param lostParts Lost partitions.
-     */
-    public void lostPartitions(Map<Integer, int[]> lostParts) {
-        this.lostParts = lostParts;
     }
 
     /** {@inheritDoc} */

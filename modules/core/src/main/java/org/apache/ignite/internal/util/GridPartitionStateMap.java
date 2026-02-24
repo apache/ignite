@@ -61,11 +61,11 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      * the second element next {@link GridPartitionStateMap#BITS} bits in reverse order, etc.
      */
     @Order(0)
-    private BitSet states;
+    BitSet states;
 
     /** */
     @Order(1)
-    private int size;
+    int size;
 
     /** {@inheritDoc} */
     @Override public Set<Entry<Integer, GridDhtPartitionState>> entrySet() {
@@ -197,27 +197,6 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     /** {@inheritDoc} */
     @Override public int size() {
         return size;
-    }
-
-    /**
-     * @param size Size.
-     */
-    public void size(int size) {
-        this.size = size;
-    }
-
-    /**
-     * @return States.
-     */
-    public BitSet states() {
-        return states;
-    }
-
-    /**
-     * @param states States.
-     */
-    public void states(BitSet states) {
-        this.states = states;
     }
 
     /** */

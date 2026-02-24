@@ -47,19 +47,19 @@ public class GridDhtPartitionFullMap
 
     /** Node ID. */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Node order. */
     @Order(1)
-    private long nodeOrder;
+    long nodeOrder;
 
     /** Update sequence number. */
-    @Order(value = 2, method = "updateSequence")
-    private long updateSeq;
+    @Order(2)
+    long updateSeq;
 
     /** Partition map. */
     @Order(3)
-    private Map<UUID, GridDhtPartitionMap> map;
+    Map<UUID, GridDhtPartitionMap> map;
 
     /**
      * @param nodeId Node ID.
@@ -142,13 +142,6 @@ public class GridDhtPartitionFullMap
     }
 
     /**
-     * @param nodeId Node ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
      * @return Node order.
      */
     public long nodeOrder() {
@@ -156,31 +149,10 @@ public class GridDhtPartitionFullMap
     }
 
     /**
-     * @param nodeOrder Node order.
-     */
-    public void nodeOrder(long nodeOrder) {
-        this.nodeOrder = nodeOrder;
-    }
-
-    /**
      * @return Update sequence.
      */
     public long updateSequence() {
         return updateSeq;
-    }
-
-    /**
-     * @return Partition map.
-     */
-    public Map<UUID, GridDhtPartitionMap> map() {
-        return map;
-    }
-
-    /**
-     * @param map Partition map.
-     */
-    public void map(Map<UUID, GridDhtPartitionMap> map) {
-        this.map = map;
     }
 
     /**
