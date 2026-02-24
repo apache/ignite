@@ -20,20 +20,25 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final short DIRECT_TYPE = 504;
 
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;
@@ -42,16 +47,24 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private static final byte ENABLED_MASK = 0x02;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Request id. */
-    private final UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** Cache names. */
-    private final Collection<String> caches;
+    @Order(2)
+    Collection<String> caches;
 
     /** Flags. */
-    private final byte flags;
+    @Order(3)
+    byte flags;
+
+    /** */
+    public CacheStatisticsModeChangeMessage() {
+    }
 
     /**
      * Constructor for response.
@@ -83,6 +96,11 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
             flags |= ENABLED_MASK;
 
         this.flags = flags;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
