@@ -17,8 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
@@ -37,13 +40,17 @@ import org.jetbrains.annotations.Nullable;
  * Several of them might be a {@link Message}, several may not and require the original marshalling.
  */
 public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMessage {
+    /** {@link TcpDiscoveryAbstractMessage} pending messages which are a {@link Message}. */
+    @Order(value = 0, method = "writableMessages")
+    @Nullable private Map<Integer, Message> writableMsgs;
+
     /** Marshallable or Java-serializable pending messages which are not a {@link Message}. */
-    @Nullable private Collection<TcpDiscoveryAbstractMessage> marshallableMsgs;
+    @Nullable private Map<Integer, TcpDiscoveryAbstractMessage> marshallableMsgs;
 
     /** Marshalled {@link #marshallableMsgs}. */
-    @Order(0)
+    @Order(value = 1, method = "marshallableMessagesBytes")
     @GridToStringExclude
-    @Nullable byte[] marshallableMsgsBytes;
+    @Nullable private byte[] marshallableMsgsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryCollectionMessage() {
@@ -82,15 +89,61 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
     }
 
     /**
+     * @return Writable messages by their order.
+     * @see #messages()
+     */
+    public @Nullable Map<Integer, Message> writableMessages() {
+        return writableMsgs;
+    }
+
+    /** @param msgs Writable messages by their order. */
+    public void writableMessages(@Nullable Map<Integer, Message> msgs) {
+        writableMsgs = msgs;
+    }
+
+    /** @return Bytes of {@link #marshallableMsgs}. */
+    public @Nullable byte[] marshallableMessagesBytes() {
+        return marshallableMsgsBytes;
+    }
+
+    /** @param marshallableMsgsBytes Bytes of {@link #marshallableMsgs}. */
+    public void marshallableMessagesBytes(@Nullable byte[] marshallableMsgsBytes) {
+        this.marshallableMsgsBytes = marshallableMsgsBytes;
+    }
+
+    /**
      * Gets pending messages sent to new node by its previous.
      *
      * @return Pending messages from previous node.
      */
     public Collection<TcpDiscoveryAbstractMessage> messages() {
-        if(F.isEmpty(marshallableMsgs))
+        if (F.isEmpty(writableMsgs) && F.isEmpty(marshallableMsgs))
             return Collections.emptyList();
 
-        return marshallableMsgs;
+        int totalSz = (F.isEmpty(writableMsgs) ? 0 : writableMsgs.size())
+            + (F.isEmpty(marshallableMsgs) ? 0 : marshallableMsgs.size());
+
+        List<TcpDiscoveryAbstractMessage> res = new ArrayList<>(totalSz);
+
+        for (int i = 0; i < totalSz; ++i) {
+            Message m = F.isEmpty(writableMsgs) ? null : writableMsgs.get(i);
+
+            if (m == null) {
+                TcpDiscoveryAbstractMessage adm = marshallableMsgs.get(i);
+
+                assert adm != null;
+
+                res.add(adm);
+            }
+            else {
+                assert marshallableMsgs == null || marshallableMsgs.get(i) == null;
+                assert m instanceof TcpDiscoveryAbstractMessage;
+
+                res.add((TcpDiscoveryAbstractMessage)m);
+            }
+        }
+
+        return res;
     }
 
     /**
@@ -100,17 +153,32 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
         marshallableMsgsBytes = null;
-        marshallableMsgs = null;
 
-        if (F.isEmpty(msgs))
+        if (F.isEmpty(msgs)) {
+            marshallableMsgs = null;
+            writableMsgs = null;
+
             return;
+        }
 
-        marshallableMsgs = msgs;
-    }
+        // Keeps the original message order.
+        int idx = 0;
 
-    /** */
-    private boolean filterWritableMessage(TcpDiscoveryAbstractMessage m) {
-        return false;
+        for (TcpDiscoveryAbstractMessage m : msgs) {
+            if (m instanceof Message) {
+                if (writableMsgs == null)
+                    writableMsgs = U.newHashMap(msgs.size());
+
+                writableMsgs.put(idx++, (Message)m);
+
+                continue;
+            }
+
+            if (marshallableMsgs == null)
+                marshallableMsgs = U.newHashMap(msgs.size());
+
+            marshallableMsgs.put(idx++, m);
+        }
     }
 
     /** {@inheritDoc} */
