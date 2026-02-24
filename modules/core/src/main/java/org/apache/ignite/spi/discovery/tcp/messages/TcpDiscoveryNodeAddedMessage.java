@@ -197,6 +197,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
                 throw new IgniteException("Failed to marshal topology history.", e);
             }
         }
+
+        if(pendingMsgsMsg != null)
+            pendingMsgsMsg.prepareMarshal(marsh);
     }
 
     /** {@inheritDoc} */
@@ -233,6 +236,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
                 throw new IgniteException("Failed to unmarshal topology history.", e);
             }
         }
+
+        if(pendingMsgsMsg != null)
+            pendingMsgsMsg.finishUnmarshal(marsh, clsLdr);
     }
 
 
