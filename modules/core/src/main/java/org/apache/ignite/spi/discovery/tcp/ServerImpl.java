@@ -1124,8 +1124,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
-        joinReqMsg.prepareMarshal(spi.marshaller());
-
         joinReqMsg.spanContainer().span(
             tracing.create(TraceableMessagesTable.traceName(joinReqMsg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> locNode.id().toString())
@@ -3305,9 +3303,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg instanceof TraceableMessage)
                 tracing.messages().beforeSend((TraceableMessage)msg);
-
-            if (msg instanceof TcpDiscoveryJoinRequestMessage)
-                ((TcpDiscoveryJoinRequestMessage)msg).prepareMarshal(spi.marshaller());
 
             sendMessageToClients(msg);
 
