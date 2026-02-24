@@ -47,28 +47,28 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Max order. */
     @Order(20)
-    private UUID nearNodeId;
+    UUID nearNodeId;
 
     /** Future ID. */
-    @Order(value = 21, method = "futureId")
-    private IgniteUuid futId;
+    @Order(21)
+    IgniteUuid futId;
 
     /** Mini future ID. */
     @Order(22)
-    private int miniId;
+    int miniId;
 
     /** Topology version. */
-    @Order(value = 23, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(23)
+    AffinityTopologyVersion topVer;
 
     /** Invalidate near entries flags. */
     @Order(24)
-    private BitSet invalidateNearEntries;
+    BitSet invalidateNearEntries;
 
     /** Near writes. */
     @Order(25)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> nearWrites;
+    Collection<IgniteTxEntry> nearWrites;
 
     /** Owned versions by key. */
     @GridToStringInclude
@@ -76,39 +76,39 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** Owned keys. */
     @Order(26)
-    private Collection<IgniteTxKey> ownedKeys;
+    Collection<IgniteTxKey> ownedKeys;
 
     /** Owned values. */
-    @Order(value = 27, method = "ownedValues")
-    private Collection<GridCacheVersion> ownedVals;
+    @Order(27)
+    Collection<GridCacheVersion> ownedVals;
 
     /** */
-    @Order(value = 28, method = "updateCounters")
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    @Order(28)
+    Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Near transaction ID. */
-    @Order(value = 29, method = "nearXidVersion")
-    private GridCacheVersion nearXidVer;
+    @Order(29)
+    GridCacheVersion nearXidVer;
 
     /** Task name hash. */
     @Order(30)
-    private int taskNameHash;
+    int taskNameHash;
 
     /** Preload keys. */
     @Order(31)
-    private BitSet preloadKeys;
+    BitSet preloadKeys;
 
     /** */
     private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
-    @Order(value = 32, method = "skipCompletedVersion")
-    private boolean skipCompletedVers;
+    @Order(32)
+    boolean skipCompletedVers;
 
     /** Transaction label. */
-    @Order(value = 33, method = "txLabel")
+    @Order(33)
     @GridToStringInclude
-    @Nullable private String txLbl;
+    @Nullable String txLbl;
 
     /**
      * Empty constructor.

@@ -31,8 +31,8 @@ public class IgniteDhtPartitionCountersMap implements Message {
     public static final short TYPE_CODE = 507;
 
     /** */
-    @Order(value = 0, method = "partitionCounters")
-    private Map<Integer, CachePartitionFullCountersMap> map;
+    @Order(0)
+    Map<Integer, CachePartitionFullCountersMap> map;
 
     /**
      * @return {@code True} if map is empty.

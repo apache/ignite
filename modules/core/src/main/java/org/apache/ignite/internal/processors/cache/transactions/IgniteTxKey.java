@@ -33,11 +33,11 @@ public class IgniteTxKey implements Message {
     /** Key. */
     @Order(0)
     @GridToStringInclude(sensitive = true)
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** Cache ID. */
     @Order(1)
-    private int cacheId;
+    int cacheId;
 
     /**
      * Empty constructor.

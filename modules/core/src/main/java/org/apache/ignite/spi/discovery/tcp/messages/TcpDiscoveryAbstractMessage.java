@@ -53,7 +53,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
 
     /** Message ID. */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /**
      * Verifier node ID.
@@ -63,21 +63,21 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * verification.
      */
     @Order(1)
-    private UUID verifierNodeId;
+    UUID verifierNodeId;
 
     /** Topology version. */
-    @Order(value = 2, method = "topologyVersion")
-    private long topVer;
+    @Order(2)
+    long topVer;
 
     /** Flags. */
     @GridToStringExclude
     @Order(3)
-    private int flags;
+    int flags;
 
     /** */
     @GridToStringInclude
     @Order(4)
-    private Set<UUID> failedNodes;
+    Set<UUID> failedNodes;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.

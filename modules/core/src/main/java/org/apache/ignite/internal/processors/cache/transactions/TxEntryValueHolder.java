@@ -42,17 +42,17 @@ public class TxEntryValueHolder implements Message {
     /** Stored value. */
     @Order(value = 0, method = "storedValue")
     @GridToStringInclude(sensitive = true)
-    private @Nullable CacheObject val;
+    @Nullable CacheObject val;
 
     /** Cache operation. */
-    @Order(value = 1, method = "operation")
+    @Order(1)
     @GridToStringInclude
-    private GridCacheOperation op = NOOP;
+    GridCacheOperation op = NOOP;
 
     /** Flag indicating that value has been set for write. */
-    @Order(value = 2, method = "hasWriteValue")
+    @Order(2)
     @GridToStringExclude
-    private boolean hasWriteVal;
+    boolean hasWriteVal;
 
     /** Flag indicating that value has been set for read. */
     @GridToStringExclude

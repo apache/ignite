@@ -32,7 +32,7 @@ public class IntLongMap implements Message {
 
     /** Map. */
     @Order(0)
-    private @Nullable Map<Integer, Long> map;
+    @Nullable Map<Integer, Long> map;
 
     /** Default constructor. */
     public IntLongMap() {

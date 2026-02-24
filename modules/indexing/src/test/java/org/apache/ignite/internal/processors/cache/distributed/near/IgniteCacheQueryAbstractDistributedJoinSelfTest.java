@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
-import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -65,10 +61,10 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         "order by co._key, pr._key ";
 
     /** */
-    protected static final String QRY_LONG = "select pe.id, co.id, pr._key\n" +
+    protected static final String QRY_LONG = "select id1 from (select pe.id as id1, co.id, pr._key\n" +
         "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
-        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
-        "order by pe.id desc";
+        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key\n" +
+        "order by pe.id) where id1 > sleep(10)";
 
     /** */
     protected static final int GRID_CNT = 2;
@@ -104,6 +100,7 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
             cc.setRebalanceMode(SYNC);
             cc.setLongQueryWarningTimeout(15_000);
             cc.setAffinity(new RendezvousAffinityFunction(false, 60));
+            cc.setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class);
 
             switch (name) {
                 case "pe":
@@ -163,10 +160,8 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
 
         IgniteCache<Integer, Product> pr = grid(0).cache("pr");
 
-        Random rnd = new GridRandom();
-
         for (int i = 0; i < PRODUCT_CNT; i++)
-            pr.put(i, new Product(i, rnd.nextInt(COMPANY_CNT)));
+            pr.put(i, new Product(i, i % COMPANY_CNT));
 
         IgniteCache<Integer, Person> pe = grid(0).cache("pe");
 
@@ -176,8 +171,8 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         IgniteCache<Integer, Purchase> pu = grid(0).cache("pu");
 
         for (int i = 0; i < PURCHASE_CNT; i++) {
-            int persId = rnd.nextInt(PERS_CNT);
-            int prodId = rnd.nextInt(PRODUCT_CNT);
+            int persId = i % PERS_CNT;
+            int prodId = i % PRODUCT_CNT;
 
             pu.put(i, new Purchase(persId, prodId));
         }
@@ -256,22 +251,6 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         Product(int id, int companyId) {
             this.id = id;
             this.companyId = companyId;
-        }
-    }
-
-    /** */
-    public static class Functions {
-        /** */
-        @QuerySqlFunction
-        public static int sleep() {
-            try {
-                U.sleep(1_000);
-            }
-            catch (IgniteInterruptedCheckedException ignored) {
-                // No-op.
-            }
-
-            return 0;
         }
     }
 }

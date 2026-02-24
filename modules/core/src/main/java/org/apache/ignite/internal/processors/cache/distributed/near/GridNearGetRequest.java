@@ -58,16 +58,16 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     public static final int RECOVERY_FLAG_MASK = 0x08;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(4)
+    IgniteUuid futId;
 
     /** Sub ID. */
     @Order(5)
-    private IgniteUuid miniId;
+    IgniteUuid miniId;
 
     /** Version. */
-    @Order(value = 6, method = "version")
-    private GridCacheVersion ver;
+    @Order(6)
+    GridCacheVersion ver;
 
     /** */
     @GridToStringInclude
@@ -75,35 +75,35 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** */
     @Order(7)
-    private List<KeyCacheObject> keys;
+    List<KeyCacheObject> keys;
 
     /** */
     @Order(8)
-    private List<Boolean> readersFlags;
+    List<Boolean> readersFlags;
 
     /** */
     @Order(9)
-    private byte flags;
+    byte flags;
 
     /** Topology version. */
-    @Order(value = 10, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(10)
+    AffinityTopologyVersion topVer;
 
     /** Task name hash. */
     @Order(11)
-    private int taskNameHash;
+    int taskNameHash;
 
     /** TTL for read operation. */
     @Order(12)
-    private long createTtl;
+    long createTtl;
 
     /** TTL for read operation. */
     @Order(13)
-    private long accessTtl;
+    long accessTtl;
 
     /** Transaction label. */
-    @Order(value = 14, method = "txLabel")
-    private @Nullable String txLbl;
+    @Order(14)
+    @Nullable String txLbl;
 
     /**
      * Empty constructor.

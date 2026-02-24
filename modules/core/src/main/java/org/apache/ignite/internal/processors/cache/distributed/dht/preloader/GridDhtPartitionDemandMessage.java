@@ -29,23 +29,23 @@ import org.jetbrains.annotations.NotNull;
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** Rebalance id. */
     @Order(4)
-    private long rebalanceId;
+    long rebalanceId;
 
     /** Partitions map. */
-    @Order(value = 5, method = "partitions")
-    private IgniteDhtDemandedPartitionsMap parts;
+    @Order(5)
+    IgniteDhtDemandedPartitionsMap parts;
 
     /** Timeout. */
     @Order(6)
-    private long timeout;
+    long timeout;
 
     /** Worker ID. */
     @Order(7)
-    private int workerId = -1;
+    int workerId = -1;
 
     /** Topology version. */
-    @Order(value = 8, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(8)
+    AffinityTopologyVersion topVer;
 
     /**
      * @param rebalanceId Rebalance id for this node.

@@ -20,12 +20,8 @@ package org.apache.ignite.spi.discovery.zk;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.curator.test.TestingCluster;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
@@ -87,35 +83,6 @@ public class ZookeeperDiscoverySpiTestConfigurator {
         }
         finally {
             lock.unlock();
-        }
-    }
-
-    /** */
-    private static class TestZookeeperDiscoverySpi extends ZookeeperDiscoverySpi implements IgniteDiscoverySpiInternalListenerSupport {
-        /** */
-        private volatile IgniteDiscoverySpiInternalListener internalLsnr;
-
-        /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-            if (internalLsnr != null && !internalLsnr.beforeSendCustomEvent(this, log, msg))
-                return;
-
-            super.sendCustomEvent(msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void beforeJoinTopology(ClusterNode locNode) {
-            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-            if (internalLsnr != null)
-                internalLsnr.beforeJoin(locNode, log);
-        }
-
-        /** */
-        @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-            internalLsnr = lsnr;
         }
     }
 }
