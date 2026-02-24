@@ -1888,7 +1888,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msgs0 = new ArrayList<>(msgs.size());
 
                     for (PendingMessage pendingMsg : msgs) {
-                        if (pendingMsg.msg != null)
+                        if (pendingMsg.msg == null)
+                            continue;
+
+                        if (pendingMsg.msg == nodeAddedMsg) {
+                            TcpDiscoveryNodeAddedMessage msg0 = (TcpDiscoveryNodeAddedMessage)pendingMsg.msg;
+                            msg0 = new TcpDiscoveryNodeAddedMessage(msg0);
+                            // Prevents infinite write/read message cycles and stack overflow.
+                            msg0.messages(null);
+
+                            msgs0.add(msg0);
+                        }
+                        else
                             msgs0.add(pendingMsg.msg);
                     }
                 }
@@ -5108,7 +5119,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!F.isEmpty(msg.topHist))
                                 topHist.putAll(msg.topHist);
 
-                            pendingMsgs.reset(msg.msgs);
+                            pendingMsgs.reset(msg.messages());
                         }
                         else {
                             if (log.isDebugEnabled())

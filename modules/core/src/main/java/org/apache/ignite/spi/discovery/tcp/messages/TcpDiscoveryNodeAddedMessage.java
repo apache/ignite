@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -27,10 +28,10 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,13 +60,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     @Order(7)
     public DiscoveryDataPacket dataPacket;
 
-    /** Pending messages containner. */
-    public Collection<TcpDiscoveryAbstractMessage> msgs;
-
-    /** Marshalled {@link #msgs}. */
+    /** Pending messages holder. */
     @Order(8)
-    @GridToStringExclude
-    @Nullable byte[] msgsBytes;
+    public @Nullable TcpDiscoveryCollectionMessage pendingMessagesMsg;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
@@ -128,8 +125,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         this.node = msg.node;
         this.nodeBytes = msg.nodeBytes;
-        this.msgs = msg.msgs;
-        this.msgsBytes = msg.msgsBytes;
+        this.pendingMessagesMsg = msg.pendingMessagesMsg;
         this.top = msg.top;
         this.topBytes = msg.topBytes;
         this.clientTop = msg.clientTop;
@@ -145,8 +141,15 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        this.msgs = msgs;
-        msgsBytes = null;
+        assert F.isEmpty(msgs) || msgs.stream().noneMatch(m -> m == this)
+            : "Adding current message to its pending messages may issue infinite write/read message cycles and stack overflow.";
+
+        pendingMessagesMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
+    }
+
+    /** @return Pending messages to send to new node. */
+    public Collection<TcpDiscoveryAbstractMessage> messages() {
+        return pendingMessagesMsg != null ? pendingMessagesMsg.messages() : Collections.emptyList();
     }
 
     /**
@@ -185,12 +188,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             dataPacket.clearUnmarshalledJoiningNodeData();
     }
 
-    /**
-     * Pre-marshalling call. Should be idempotent.
-     *
-     * @param marsh marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         if (node != null && nodeBytes == null) {
             try {
                 nodeBytes = U.marshal(marsh, node);
@@ -200,14 +199,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
         }
 
-        if (msgs != null && msgsBytes == null) {
-            try {
-                msgsBytes = U.marshal(marsh, msgs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal pending messages.", e);
-            }
-        }
+        if (pendingMessagesMsg != null)
+            pendingMessagesMsg.prepareMarshal(marsh);
 
         if (top != null && topBytes == null) {
             try {
@@ -228,13 +221,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         }
     }
 
-    /**
-     * Post-unmarshalling call. Should be idempotent.
-     *
-     * @param marsh  Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (nodeBytes != null && node == null) {
             try {
                 node = U.unmarshal(marsh, nodeBytes, clsLdr);
@@ -246,16 +234,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
         }
 
-        if (msgsBytes != null && msgs == null) {
-            try {
-                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
-
-                msgsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal pending messages.", e);
-            }
-        }
+        if (pendingMessagesMsg != null)
+            pendingMessagesMsg.finishUnmarshal(marsh, clsLdr);
 
         if (topBytes != null && top == null) {
             try {
@@ -283,7 +263,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 20;
+        return 21;
     }
 
     /** {@inheritDoc} */
