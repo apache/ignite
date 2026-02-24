@@ -26,15 +26,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class LatchAckMessage implements Message {
     /** Latch id. */
     @Order(0)
-    private String latchId;
+    String latchId;
 
     /** Latch topology version. */
     @Order(1)
-    private AffinityTopologyVersion topVer;
+    AffinityTopologyVersion topVer;
 
     /** Flag indicates that ack is final. */
     @Order(2)
-    private boolean isFinal;
+    boolean isFinal;
 
     /**
      * Constructor.

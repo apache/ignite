@@ -26,16 +26,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class IndexKeyDefinition implements Message {
     /** A message for {@link IndexKeyType}. */
-    @Order(value = 0, method = "indexKeyTypeMessage")
-    private IndexKeyTypeMessage idxTypeMsg;
+    @Order(0)
+    IndexKeyTypeMessage idxTypeMsg;
 
     /** Order. */
-    @Order(value = 1, method = "ascending")
-    private boolean asc;
+    @Order(1)
+    boolean asc;
 
     /** Precision for variable length key types. */
     @Order(2)
-    private int precision;
+    int precision;
 
     /** */
     public IndexKeyDefinition() {

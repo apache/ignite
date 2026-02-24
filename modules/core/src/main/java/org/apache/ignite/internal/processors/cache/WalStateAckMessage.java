@@ -28,20 +28,20 @@ import org.jetbrains.annotations.Nullable;
  */
 public class WalStateAckMessage implements Message {
     /** Operation ID. */
-    @Order(value = 0, method = "operationId")
-    private UUID opId;
+    @Order(0)
+    UUID opId;
 
     /** Affinity node flag. */
     @Order(1)
-    private boolean affNode;
+    boolean affNode;
 
     /** Operation result. */
     @Order(2)
-    private boolean changed;
+    boolean changed;
 
     /** Error message. */
-    @Order(value = 3, method = "errorMessage")
-    private String errMsg;
+    @Order(3)
+    String errMsg;
 
     /** Sender node ID. */
     private UUID sndNodeId;

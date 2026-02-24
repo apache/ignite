@@ -36,15 +36,15 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
 
     /** */
     @Order(5)
-    private long order;
+    long order;
 
     /** */
-    @Order(value = 6, method = "previousNodeAliveFlag")
-    private boolean prevNodeAliveFlag;
+    @Order(6)
+    boolean prevNodeAliveFlag;
 
     /** Redirect addresses messages serialization holder. */
-    @Order(value = 7, method = "redirectAddressesMessages")
-    private @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
+    @Order(7)
+    @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
 
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.

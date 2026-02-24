@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 abstract class AbstractSnapshotMessage implements Message {
     /** Unique message ID. */
     @Order(0)
-    private String id;
+    String id;
 
     /**
      * Empty constructor.

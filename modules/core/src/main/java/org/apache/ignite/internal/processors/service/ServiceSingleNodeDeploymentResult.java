@@ -35,12 +35,12 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     private static final long serialVersionUID = 0L;
 
     /** Count of service's instances. */
-    @Order(value = 0, method = "count")
-    private int cnt;
+    @Order(0)
+    int cnt;
 
     /** Serialized exceptions. */
     @Order(1)
-    private Collection<byte[]> errors;
+    Collection<byte[]> errors;
 
     /**
      * Empty constructor for marshalling purposes.

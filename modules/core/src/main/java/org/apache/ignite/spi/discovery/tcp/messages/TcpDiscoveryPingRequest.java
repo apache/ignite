@@ -32,7 +32,7 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage impleme
 
     /** Pinged client node ID. */
     @Order(5)
-    private @Nullable UUID clientNodeId;
+    @Nullable UUID clientNodeId;
 
     /** */
     public TcpDiscoveryPingRequest() {
