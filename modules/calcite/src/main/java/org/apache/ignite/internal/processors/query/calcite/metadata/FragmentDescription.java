@@ -32,19 +32,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class FragmentDescription implements MarshalableMessage {
     /** */
     @Order(0)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(1)
-    private FragmentMapping mapping;
+    FragmentMapping mapping;
 
     /** */
     @Order(2)
-    private Map<Long, UUIDCollectionMessage> remoteSources0;
+    Map<Long, UUIDCollectionMessage> remoteSources0;
 
     /** */
     @Order(3)
-    private ColocationGroup target;
+    ColocationGroup target;
 
     /** */
     private Map<Long, List<UUID>> remoteSources;

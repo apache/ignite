@@ -77,64 +77,64 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** Thread ID. */
     @Order(7)
     @GridToStringInclude
-    private long threadId;
+    public long threadId;
 
     /** Transaction concurrency. */
     @Order(8)
     @GridToStringInclude
-    private TransactionConcurrency concurrency;
+    public TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
     @Order(9)
     @GridToStringInclude
-    private TransactionIsolation isolation;
+    public TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
-    @Order(value = 10, method = "writeVersion")
+    @Order(10)
     @GridToStringInclude
-    private GridCacheVersion writeVer;
+    public GridCacheVersion writeVer;
 
     /** Transaction timeout. */
     @Order(11)
     @GridToStringInclude
-    private long timeout;
+    public long timeout;
 
     /** Transaction read set. */
     @Order(12)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> reads;
+    public Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
     @Order(13)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> writes;
+    public Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
     @GridToStringInclude
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
-    @Order(value = 14, method = "dhtVersionKeys")
-    private Collection<IgniteTxKey> dhtVerKeys;
+    @Order(14)
+    public Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @Order(value = 15, method = "dhtVersionValues")
-    private Collection<GridCacheVersion> dhtVerVals;
+    @Order(15)
+    public Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
     @Order(16)
-    private int txSize;
+    public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
     private Map<UUID, Collection<UUID>> txNodes;
 
     /** Tx nodes direct marshallable message. */
-    @Order(value = 17, method = "txNodesMessages")
-    private Map<UUID, UUIDCollectionMessage> txNodesMsg;
+    @Order(17)
+    public Map<UUID, UUIDCollectionMessage> txNodesMsg;
 
     /** IO policy. */
-    @Order(value = 18, method = "policy")
-    private byte plc;
+    @Order(18)
+    public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
@@ -142,7 +142,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     @Order(19)
     @GridToStringExclude
-    private byte flags;
+    public byte flags;
 
     /** Application attributes. */
     @GridToStringExclude

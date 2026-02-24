@@ -37,16 +37,16 @@ public class GridQueryFailResponse implements Message {
     public static final byte RETRY_QUERY = 2;
 
     /** */
-    @Order(value = 0, method = "queryRequestId")
-    private long qryReqId;
+    @Order(0)
+    long qryReqId;
 
     /** */
-    @Order(value = 1, method = "error")
-    private String errMsg;
+    @Order(1)
+    String errMsg;
 
     /** */
     @Order(2)
-    private byte failCode;
+    byte failCode;
 
     /**
      * Default constructor.

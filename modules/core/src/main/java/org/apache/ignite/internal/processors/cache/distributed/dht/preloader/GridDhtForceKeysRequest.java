@@ -37,21 +37,21 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(4)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
     @Order(5)
-    private IgniteUuid miniId;
+    IgniteUuid miniId;
 
     /** Keys to request. */
     @Order(6)
     @GridToStringInclude
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    @Order(value = 7, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(7)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor.

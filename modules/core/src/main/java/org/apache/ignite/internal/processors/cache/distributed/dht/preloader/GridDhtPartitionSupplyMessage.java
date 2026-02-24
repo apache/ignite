@@ -44,32 +44,32 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** An unique (per demander) rebalance id. */
     @Order(4)
-    private long rebalanceId;
+    long rebalanceId;
 
     /** Topology version for which demand message is sent. */
-    @Order(value = 5, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(5)
+    AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
     @Order(6)
-    private Map<Integer, Long> last;
+    Map<Integer, Long> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
     @Order(7)
-    private Collection<Integer> missed;
+    Collection<Integer> missed;
 
     /** Entries. */
     @Order(8)
-    private Map<Integer, CacheEntryInfoCollection> infos;
+    Map<Integer, CacheEntryInfoCollection> infos;
 
     /** Message size. */
-    @Order(value = 9, method = "messageSize")
-    private int msgSize;
+    @Order(9)
+    int msgSize;
 
     /** Supplying process error message. */
-    @Order(value = 10, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(10)
+    @Nullable ErrorMessage errMsg;
 
     /**
      * @param rebalanceId Rebalance id.

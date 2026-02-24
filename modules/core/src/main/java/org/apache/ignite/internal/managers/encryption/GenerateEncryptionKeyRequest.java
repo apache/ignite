@@ -28,11 +28,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class GenerateEncryptionKeyRequest implements Message {
     /** Request ID. */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /** */
-    @Order(value = 1, method = "keyCount")
-    private int keyCnt;
+    @Order(1)
+    int keyCnt;
 
     /** */
     public GenerateEncryptionKeyRequest() {

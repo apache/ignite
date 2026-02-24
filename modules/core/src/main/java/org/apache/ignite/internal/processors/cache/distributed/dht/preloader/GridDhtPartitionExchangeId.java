@@ -46,16 +46,16 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     /** Node ID. */
     @Order(0)
     @GridToStringExclude
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Event type. */
-    @Order(value = 1, method = "event")
+    @Order(1)
     @GridToStringExclude
-    private int evt;
+    int evt;
 
     /** Topology version. */
-    @Order(value = 2, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(2)
+    AffinityTopologyVersion topVer;
 
     /** */
     private DiscoveryEvent discoEvt;

@@ -30,8 +30,8 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** Coordinator version. */
-    @Order(value = 5, method = "error")
-    private String err;
+    @Order(5)
+    String err;
 
     /** */
     public TcpDiscoveryCheckFailedMessage() {

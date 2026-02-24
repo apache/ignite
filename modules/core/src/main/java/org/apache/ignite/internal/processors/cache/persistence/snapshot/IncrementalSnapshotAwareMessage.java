@@ -33,19 +33,19 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
 
     /** Original transaction message. */
     @Order(3)
-    private GridCacheMessage payload;
+    GridCacheMessage payload;
 
     /** Incremental snapshot ID. */
     @Order(4)
-    private UUID id;
+    UUID id;
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    @Order(value = 5, method = "txIncrementalSnapshotId")
-    private @Nullable UUID txSnpId;
+    @Order(5)
+    @Nullable UUID txSnpId;
 
     /** Incremental snapshot topology version. */
-    @Order(value = 6, method = "snapshotTopologyVersion")
-    private long topVer;
+    @Order(6)
+    long topVer;
 
     /** */
     public IncrementalSnapshotAwareMessage() {

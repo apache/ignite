@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class MetadataRequestMessage implements Message {
     /** */
     @Order(0)
-    private int typeId;
+    int typeId;
 
     /**
      * Default constructor.

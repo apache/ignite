@@ -18,21 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
-import org.apache.ignite.internal.codegen.CalciteErrorMessageSerializer;
-import org.apache.ignite.internal.codegen.ColocationGroupSerializer;
-import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
-import org.apache.ignite.internal.codegen.FragmentMappingSerializer;
-import org.apache.ignite.internal.codegen.GenericValueMessageSerializer;
-import org.apache.ignite.internal.codegen.InboxCloseMessageSerializer;
-import org.apache.ignite.internal.codegen.QueryBatchAcknowledgeMessageSerializer;
-import org.apache.ignite.internal.codegen.QueryBatchMessageSerializer;
-import org.apache.ignite.internal.codegen.QueryCloseMessageSerializer;
-import org.apache.ignite.internal.codegen.QueryStartRequestSerializer;
-import org.apache.ignite.internal.codegen.QueryStartResponseSerializer;
-import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroupSerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescriptionSerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 
 /**

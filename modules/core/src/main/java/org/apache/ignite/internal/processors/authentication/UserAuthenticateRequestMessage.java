@@ -28,15 +28,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class UserAuthenticateRequestMessage implements Message {
     /** User name. */
     @Order(0)
-    private String name;
+    String name;
 
     /** User password. */
-    @Order(value = 1, method = "password")
-    private String passwd;
+    @Order(1)
+    String passwd;
 
     /** Request ID. */
     @Order(2)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /**
      *

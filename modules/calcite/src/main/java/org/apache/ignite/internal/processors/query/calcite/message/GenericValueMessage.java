@@ -31,7 +31,7 @@ public final class GenericValueMessage implements ValueMessage {
 
     /** */
     @Order(0)
-    private byte[] serialized;
+    byte[] serialized;
 
     /** */
     public GenericValueMessage() {

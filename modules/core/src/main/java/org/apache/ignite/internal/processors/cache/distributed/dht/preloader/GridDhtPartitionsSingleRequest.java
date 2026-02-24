@@ -25,8 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMessage {
     /** */
-    @Order(value = 6, method = "restoreExchangeId")
-    private GridDhtPartitionExchangeId restoreExchId;
+    @Order(6)
+    GridDhtPartitionExchangeId restoreExchId;
 
     /**
      * Empty constructor.
