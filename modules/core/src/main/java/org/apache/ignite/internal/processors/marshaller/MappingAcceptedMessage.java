@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,21 +32,42 @@ import org.jetbrains.annotations.Nullable;
  *
  * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
-public class MappingAcceptedMessage implements DiscoveryCustomMessage {
+public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
+    /** */
+    public static final short DIRECT_TYPE = 515;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final MarshallerMappingItem item;
+    @Order(1)
+    byte platformId;
+
+    /** */
+    @Order(2)
+    int typeId;
+
+    /** */
+    @Order(3)
+    String clsName;
+
+    /** */
+    public MappingAcceptedMessage() {
+        // No-op.
+    }
 
     /**
      * @param item Item.
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
-        this.item = item;
+        this.id = IgniteUuid.randomUuid();
+        this.platformId = item.platformId();
+        this.typeId = item.typeId();
+        this.clsName = item.className();
     }
 
     /** {@inheritDoc} */
@@ -70,7 +93,12 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage {
 
     /** */
     MarshallerMappingItem getMappingItem() {
-        return item;
+        return new MarshallerMappingItem(platformId, typeId, clsName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
