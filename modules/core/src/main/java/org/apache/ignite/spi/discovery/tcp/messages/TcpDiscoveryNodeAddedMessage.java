@@ -123,16 +123,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
         super(msg);
 
-        this.node = msg.node;
-        this.nodeBytes = msg.nodeBytes;
-        this.pendingMessagesMsg = msg.pendingMessagesMsg;
-        this.top = msg.top;
-        this.topBytes = msg.topBytes;
-        this.clientTop = msg.clientTop;
-        this.topHist = msg.topHist;
-        this.topHistBytes = msg.topHistBytes;
-        this.dataPacket = msg.dataPacket;
-        this.gridStartTime = msg.gridStartTime;
+        node = msg.node;
+        nodeBytes = msg.nodeBytes;
+        pendingMessagesMsg = msg.pendingMessagesMsg;
+        top = msg.top;
+        topBytes = msg.topBytes;
+        clientTop = msg.clientTop;
+        topHist = msg.topHist;
+        topHistBytes = msg.topHistBytes;
+        dataPacket = msg.dataPacket;
+        gridStartTime = msg.gridStartTime;
     }
 
     /**
