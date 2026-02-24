@@ -368,7 +368,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private void startWriter() {
         try {
             synchronized (mux) {
-                if (writer != null)
+                if (isRunning)
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
@@ -392,7 +392,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Stops performance statistics writer. */
     private void stopWriter() {
         synchronized (mux) {
-            if (writer == null)
+            if (!isRunning)
                 return;
 
             FilePerformanceStatisticsWriter writer = this.writer;
@@ -415,7 +415,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         FilePerformanceStatisticsWriter oldWriter = null;
 
         synchronized (mux) {
-            if (writer == null)
+            if (!isRunning)
                 return;
 
             FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
