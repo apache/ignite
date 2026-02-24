@@ -32,6 +32,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -85,8 +88,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Current security context if differs from {@link #dfltSecCtx}. */
-    private final ThreadLocal<SecurityContext> curSecCtx = new ThreadLocal<>();
+    /** Context attribute that holds Security Context. */
+    private static final OperationContextAttribute<SecurityContext> SEC_CTX = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -106,13 +109,6 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** Default security context. */
     private volatile SecurityContext dfltSecCtx;
 
-    /** Default operation security context for the case when current and new contexts are default. */
-    private final OperationSecurityContext dfltOpCtx = new OperationSecurityContext(this, null) {
-        @Override public void close() {
-            // No-op.
-        }
-    };
-
     /**
      * @param ctx Grid kernal context.
      * @param secPrc Security processor.
@@ -129,25 +125,12 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
-        assert secCtx != null;
-
-        SecurityContext dflt = dfltSecCtx;
-        SecurityContext cur = curSecCtx.get();
-
-        boolean isNewCtxDflt = secCtx == dflt;
-        boolean isCurCtxDflt = cur == null;
-
-        if (isCurCtxDflt && isNewCtxDflt)
-            return dfltOpCtx;
-
-        curSecCtx.set(isNewCtxDflt ? null : secCtx);
-
-        return new OperationSecurityContext(this, isCurCtxDflt ? null : cur);
+    @Override public Scope withContext(SecurityContext secCtx) {
+        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(UUID subjId) {
+    @Override public Scope withContext(UUID subjId) {
         try {
             SecurityContext res = secPrc.securityContext(subjId);
 
@@ -187,19 +170,14 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
             );
     }
 
-    /** Restores local node context for the current thread. */
-    void restoreDefaultContext() {
-        curSecCtx.set(null);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isDefaultContext() {
-        return curSecCtx.get() == null;
+        return OperationContext.get(SEC_CTX) == null;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = curSecCtx.get();
+        SecurityContext res = OperationContext.get(SEC_CTX);
 
         return res == null ? dfltSecCtx : res;
     }
