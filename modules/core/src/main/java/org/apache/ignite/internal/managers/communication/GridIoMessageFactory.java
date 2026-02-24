@@ -270,6 +270,7 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessageSerialize
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
+import org.apache.ignite.internal.processors.continuous.GridContinuousMessageSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
@@ -369,7 +370,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
         factory.register((short)8, GridIoMessage::new, new GridIoMessageSerializer());
-        factory.register((short)9, GridIoUserMessage::new);
+        factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
         factory.register((short)10, GridDeploymentInfoBean::new);
         factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
@@ -417,7 +418,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)57, GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer());
         factory.register((short)58, GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer());
         factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
-        factory.register((short)61, GridContinuousMessage::new);
+        factory.register((short)61, GridContinuousMessage::new, new GridContinuousMessageSerializer());
         factory.register((short)62, DataStreamerRequest::new);
         factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
