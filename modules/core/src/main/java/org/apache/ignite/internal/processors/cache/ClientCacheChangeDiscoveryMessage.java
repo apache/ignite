@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -30,34 +31,45 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Sent from cache client node to asynchronously notify about started.closed client caches.
  */
-public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage {
+public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    public static final short DIRECT_TYPE = 508;
+
+    /** */
+    @Order(0)
+    IgniteUuid id;
 
     /** */
     @GridToStringInclude
-    private Map<Integer, Boolean> startedCaches;
+    @Order(1)
+    Map<Integer, Boolean> startedCaches;
 
     /** */
     @GridToStringInclude
-    private Set<Integer> closedCaches;
+    @Order(2)
+    Set<Integer> closedCaches;
 
     /** Update timeout object, used to batch multiple starts/close into single discovery message. */
     private transient ClientCacheUpdateTimeout updateTimeoutObj;
+
+    /** */
+    public ClientCacheChangeDiscoveryMessage() {}
 
     /**
      * @param startedCaches Started caches.
      * @param closedCaches Closed caches.
      */
     public ClientCacheChangeDiscoveryMessage(Map<Integer, Boolean> startedCaches, Set<Integer> closedCaches) {
+        this.id = IgniteUuid.randomUuid();
         this.startedCaches = startedCaches;
         this.closedCaches = closedCaches;
     }
@@ -176,6 +188,11 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
