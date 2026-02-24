@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -32,31 +33,45 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents discovery message that is used to provide information about dynamic cache start failure.
  */
-public class ExchangeFailureMessage implements DiscoveryCustomMessage {
+public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
+    /** */
+    public static final short DIRECT_TYPE = 512;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache names. */
     @GridToStringInclude
-    private final Collection<String> cacheNames;
+    @Order(0)
+    Collection<String> cacheNames;
 
     /** Custom message ID. */
-    private final IgniteUuid id;
+    @Order(1)
+    IgniteUuid id;
 
     /** */
-    private final GridDhtPartitionExchangeId exchId;
+    @Order(2)
+    GridDhtPartitionExchangeId exchId;
 
     /** */
+    // TODO: Throwable is not a standard Message type, may require special handling in the future.
     @GridToStringInclude
-    private final Map<UUID, Throwable> exchangeErrors;
+    @Order(3)
+    Map<UUID, Throwable> exchangeErrors;
 
     /** Actions to be done to rollback changes done before the exchange failure. */
     private transient ExchangeActions exchangeRollbackActions;
+
+    /** */
+    public ExchangeFailureMessage() {
+        // No-op.
+    }
 
     /**
      * Creates new DynamicCacheChangeFailureMessage instance.
@@ -152,6 +167,11 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
         AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
