@@ -23,7 +23,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -33,7 +32,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -95,10 +94,8 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         setFlag(RESPONDED_FLAG_POS, responded);
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         if (node != null && nodeBytes == null) {
             try {
                 nodeBytes = U.marshal(marsh, node);
@@ -109,11 +106,8 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         }
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (nodeBytes != null && node == null) {
             try {
                 node = U.unmarshal(marsh, nodeBytes, clsLdr);
