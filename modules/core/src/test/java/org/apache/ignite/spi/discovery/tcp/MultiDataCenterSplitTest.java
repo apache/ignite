@@ -93,8 +93,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         return cartesianProduct(
             F.asList(2, 3, 4), // Servers number per DC.
             F.asList(true, false), // Full-timeout failure (or fail quickly).
-            F.asList( false, true), // Whether few nodes of the remote DC respond to the ping.
-            F.asList( 1, 2, 4) // Ping pool size.
+            F.asList(false, true), // Whether few nodes of the remote DC respond to the ping.
+            F.asList(1, 2, TcpDiscoverySpi.DFLT_RMT_DC_PING_POOL_SIZE) // Ping pool size.
         );
     }
 
@@ -150,14 +150,21 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         discoSpiSupplier = () -> testDiscovery(TcpDiscoverySpi.DFLT_PORT + srvrsPerDc,
             TcpDiscoverySpi.DFLT_PORT + srvrsPerDc * 2 - 1, rmtDcNodesRespond);
 
-        startGridsMultiThreaded(srvrsPerDc);
+        startGrids(srvrsPerDc);
 
         // Start DC1.
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
         discoSpiSupplier = () -> testDiscovery(TcpDiscoverySpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT + srvrsPerDc - 1,
             rmtDcNodesRespond);
 
-        startGridsMultiThreaded(srvrsPerDc, srvrsPerDc);
+        for (int g = srvrsPerDc; g < srvrsPerDc << 1; ++g)
+            startGrid(g);
+
+        for (int g = 0; g < srvrsPerDc / 2; ++g) {
+            assertEquals(discoSpi(grid(g)).locNode.order(), g + 1);
+            assertEquals(discoSpi(grid(g)).locNode.discoveryPort(), TcpDiscoverySpi.DFLT_PORT + g);
+            assertEquals(discoSpi(grid(g)).locNode.dataCenterId(), g <= srvrsPerDc / 2 ? DC_ID_0 : DC_ID_1);
+        }
 
         // Register the log listeners.
         // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
