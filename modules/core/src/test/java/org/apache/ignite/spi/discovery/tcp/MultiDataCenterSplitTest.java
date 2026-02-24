@@ -273,8 +273,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
                         return false;
                 }
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Awaiting for DC is splitted, grid: " + grid.name() + ". DC's '" + dcId + "' node cnt: "
+                if (log.isInfoEnabled()) {
+                    log.info("Awaiting for DC is splitted, grid: " + grid.name() + ". DC's '" + dcId + "' node cnt: "
                         + dcCnt + ", total nodes cnt: " + totalCnt + '.');
                 }
 
