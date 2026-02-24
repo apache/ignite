@@ -77,6 +77,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics process. */
     private DistributedProcess<Serializable, Serializable> rotateProc;
 
+    /** Whether performance statistics collection is running. */
+    private volatile boolean isRunning;
+
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
@@ -336,7 +339,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** @return {@code True} if collecting performance statistics is enabled. */
     public boolean enabled() {
-        return writer != null;
+        return isRunning;
     }
 
     /** {@inheritDoc} */
@@ -373,6 +376,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
                 writer.start();
                 U.newThread(sysViewWriter).start();
+
+                isRunning = true;
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -398,6 +403,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
             writer.stop();
             U.awaitForWorkersStop(Collections.singleton(sysViewWriter), true, log);
+
+            isRunning = false;
         }
 
         log.info("Performance statistics writer stopped.");
