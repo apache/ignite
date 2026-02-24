@@ -40,14 +40,15 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** Added node ID. */
     @Order(6)
-    UUID nodeId;
+    public UUID nodeId;
 
     /**
      * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
      * TcpDiscoveryNodeAddFinishedMessage.
      */
     @Order(7)
-    @GridToStringExclude DiscoveryDataPacket clientDiscoData;
+    @GridToStringExclude
+    public DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude
@@ -86,38 +87,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
-     * Gets ID of the node added.
-     *
-     * @return ID of the node added.
-     */
-    public UUID nodeId() {
-        return nodeId;
-    }
-
-    /**
-     * @param nodeId ID of the node added.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
-     * @return Discovery data for joined client.
-     */
-    public DiscoveryDataPacket clientDiscoData() {
-        return clientDiscoData;
-    }
-
-    /**
-     * @param clientDiscoData Discovery data for joined client.
-     */
-    public void clientDiscoData(DiscoveryDataPacket clientDiscoData) {
-        this.clientDiscoData = clientDiscoData;
-
-        assert clientDiscoData == null || !clientDiscoData.hasDataFromNode(nodeId);
-    }
-
-    /**
      * @return Client node attributes.
      */
     public Map<String, Object> clientNodeAttributes() {
@@ -130,20 +99,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
         this.clientNodeAttrs = clientNodeAttrs;
         clientNodeAttrsBytes = null;
-    }
-
-    /**
-     * @return Serialized client node attributes.
-     */
-    public @Nullable byte[] clientNodeAttributesBytes() {
-        return clientNodeAttrsBytes;
-    }
-
-    /**
-     * @param clientNodeAttrsBytes Serialized client node attributes.
-     */
-    public void clientNodeAttributesBytes(@Nullable byte[] clientNodeAttrsBytes) {
-        this.clientNodeAttrsBytes = clientNodeAttrsBytes;
     }
 
     /** {@inheritDoc} */

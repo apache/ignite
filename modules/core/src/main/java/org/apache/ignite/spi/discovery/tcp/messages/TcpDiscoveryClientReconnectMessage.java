@@ -37,16 +37,16 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    @Order(value = 5, method = "routerNodeId")
-    private UUID routerNodeId;
+    @Order(5)
+    public UUID routerNodeId;
 
     /** Last message ID. */
-    @Order(value = 6, method = "lastMessageId")
-    private IgniteUuid lastMsgId;
+    @Order(6)
+    public IgniteUuid lastMsgId;
 
     /** Pending messages holder. */
-    @Order(value = 7, method = "pendingMessagesTransferMessage")
-    @Nullable private volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    @Order(7)
+    @Nullable volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientReconnectMessage() {
@@ -66,30 +66,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
-     * @return New router node ID.
-     */
-    public UUID routerNodeId() {
-        return routerNodeId;
-    }
-
-    /** @param routerNodeId New router node ID. */
-    public void routerNodeId(UUID routerNodeId) {
-        this.routerNodeId = routerNodeId;
-    }
-
-    /**
-     * @return Last message ID.
-     */
-    public IgniteUuid lastMessageId() {
-        return lastMsgId;
-    }
-
-    /** @param lastMsgId Last message ID. */
-    public void lastMessageId(IgniteUuid lastMsgId) {
-        this.lastMsgId = lastMsgId;
-    }
-
-    /**
      * @param msgs Pending messages.
      */
     public void pendingMessages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
@@ -101,16 +77,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
      */
     public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
         return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
-    }
-
-    /** @return Message to transfer the pending messages. */
-    public @Nullable TcpDiscoveryCollectionMessage pendingMessagesTransferMessage() {
-        return pendingMsgsMsg;
-    }
-
-    /** @param pendingMsgsMsg Message to transfer the pending messages. */
-    public void pendingMessagesTransferMessage(@Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg) {
-        this.pendingMsgsMsg = pendingMsgsMsg;
     }
 
     /**
@@ -144,7 +110,7 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 20;
+        return 21;
     }
 
     /** {@inheritDoc} */

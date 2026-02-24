@@ -27,6 +27,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -121,16 +122,28 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
         super(msg);
 
-        this.node = msg.node;
-        this.nodeBytes = msg.nodeBytes;
-        this.pendingMsgsMsg = msg.pendingMsgsMsg;
-        this.top = msg.top;
-        this.topBytes = msg.topBytes;
-        this.clientTop = msg.clientTop;
-        this.topHist = msg.topHist;
-        this.topHistBytes = msg.topHistBytes;
-        this.dataPacket = msg.dataPacket;
-        this.gridStartTime = msg.gridStartTime;
+        node = msg.node;
+        nodeBytes = msg.nodeBytes;
+        pendingMsgsMsg = msg.pendingMsgsMsg;
+        top = msg.top;
+        topBytes = msg.topBytes;
+        clientTop = msg.clientTop;
+        topHist = msg.topHist;
+        topHistBytes = msg.topHistBytes;
+        dataPacket = msg.dataPacket;
+        gridStartTime = msg.gridStartTime;
+    }
+
+    /**
+     * Sets pending messages to send to new node.
+     *
+     * @param msgs Pending messages to send to new node.
+     */
+    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        assert F.isEmpty(msgs) || msgs.stream().noneMatch(m -> m == this)
+            : "Adding current message to its pending messages may issue infinite write/read message cycles and stack overflow.";
+
+        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
     }
 
     /**
@@ -238,7 +251,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */

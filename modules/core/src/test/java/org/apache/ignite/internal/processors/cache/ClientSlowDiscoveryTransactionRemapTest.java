@@ -377,7 +377,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
 
         // Delay node join of second client.
         clientDiscoSpi.interceptor = msg -> {
-            if (msg.nodeId().toString().endsWith("2"))
+            if (msg.nodeId.toString().endsWith("2"))
                 U.awaitQuiet(clientDiscoSpiBlock);
         };
 
