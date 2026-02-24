@@ -43,17 +43,17 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
 
     /** Message id. */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /** Receiver node id. */
     @Order(1)
     @GridToStringInclude
-    private UUID receiverNodeId;
+    public UUID receiverNodeId;
 
     /** Connection index. */
-    @Order(value = 2, method = "connectionIndex")
+    @Order(2)
     @GridToStringInclude
-    private int connIdx;
+    public int connIdx;
 
     /**
      * @param receiverNodeId Receiver node id.
@@ -73,31 +73,6 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
-    }
-
-    /** @param id Message id. */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /** @return Receiver node id. */
-    public UUID receiverNodeId() {
-        return receiverNodeId;
-    }
-
-    /** @param receiverNodeId Receiver node id. */
-    public void receiverNodeId(UUID receiverNodeId) {
-        this.receiverNodeId = receiverNodeId;
-    }
-
-    /** @return Connection index. */
-    public int connectionIndex() {
-        return connIdx;
-    }
-
-    /** @param connIdx Connection index. */
-    public void connectionIndex(int connIdx) {
-        this.connIdx = connIdx;
     }
 
     /** {@inheritDoc} */
