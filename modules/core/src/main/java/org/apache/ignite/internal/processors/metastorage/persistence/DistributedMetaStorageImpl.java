@@ -1134,7 +1134,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
             else
-                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+                completeWrite(new DistributedMetaStorageHistoryItem(msg.key, msg.valBytes));
         }
         catch (IgniteInterruptedCheckedException e) {
             throw U.convertException(e);
@@ -1313,21 +1313,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void completeCas(
         DistributedMetaStorageCasMessage msg
     ) throws IgniteCheckedException {
-        if (!msg.matches())
+        if (!msg.matches)
             return;
 
-        Serializable oldVal = bridge.read(msg.key());
+        Serializable oldVal = bridge.read(msg.key);
 
-        Serializable expVal = unmarshal(marshaller, msg.expectedValue());
+        Serializable expVal = unmarshal(marshaller, msg.expectedVal);
 
         if (!Objects.deepEquals(oldVal, expVal)) {
-            msg.matches(false);
+            msg.matches = false;
 
             // Do nothing if expected value doesn't match with the actual one.
             return;
         }
 
-        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+        completeWrite(new DistributedMetaStorageHistoryItem(msg.key, msg.valBytes));
     }
 
     /**

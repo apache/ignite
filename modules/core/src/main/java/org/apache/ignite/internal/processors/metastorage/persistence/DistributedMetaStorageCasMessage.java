@@ -30,12 +30,12 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 4, method = "expectedValue")
-    private byte[] expectedVal;
+    @Order(4)
+    byte[] expectedVal;
 
     /** */
     @Order(5)
-    private boolean matches;
+    boolean matches;
 
     /** Empty constructor for {@link DiscoveryMessageFactory}. */
     public DistributedMetaStorageCasMessage() {
@@ -50,29 +50,9 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
         matches = true;
     }
 
-    /** */
-    public byte[] expectedValue() {
-        return expectedVal;
-    }
-
-    /** */
-    public void expectedValue(byte[] expectedVal) {
-        this.expectedVal = expectedVal;
-    }
-
-    /** */
-    public void matches(boolean matches) {
-        this.matches = matches;
-    }
-
-    /** */
-    public boolean matches() {
-        return matches;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), matches);
+        return new DistributedMetaStorageCasAckMessage(reqId, matches);
     }
 
     /** {@inheritDoc} */

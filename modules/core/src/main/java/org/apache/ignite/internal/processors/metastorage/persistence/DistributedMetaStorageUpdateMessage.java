@@ -37,21 +37,21 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
 
     /** */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /** Request ID. */
-    @Order(value = 1, method = "requestId")
+    @Order(1)
     @GridToStringInclude
-    private UUID reqId;
+    UUID reqId;
 
     /** */
     @Order(2)
     @GridToStringInclude
-    private String key;
+    String key;
 
     /** */
-    @Order(value = 3, method = "value")
-    private byte[] valBytes;
+    @Order(3)
+    byte[] valBytes;
 
     /** Empty constructor for {@link DiscoveryMessageFactory}. */
     public DistributedMetaStorageUpdateMessage() {
@@ -70,41 +70,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
-    }
-
-    /** */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /** */
-    public UUID requestId() {
-        return reqId;
-    }
-
-    /** */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
-    }
-
-    /** */
-    public String key() {
-        return key;
-    }
-
-    /** */
-    public void key(String key) {
-        this.key = key;
-    }
-
-    /** */
-    public byte[] value() {
-        return valBytes;
-    }
-
-    /** */
-    public void value(byte[] valBytes) {
-        this.valBytes = valBytes;
     }
 
     /** */
