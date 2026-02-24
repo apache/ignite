@@ -151,7 +151,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory, IgniteConfiguration.DFLT_NETWORK_COMPRESSION);
 
         // Skip write class header.
         writer.onHeaderWritten();

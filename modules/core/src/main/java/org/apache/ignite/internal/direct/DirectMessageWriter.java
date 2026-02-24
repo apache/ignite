@@ -56,12 +56,16 @@ public class DirectMessageWriter implements MessageWriter {
     /** */
     private final MessageFactory msgFactory;
 
+    /** Network compression level. Used only for {@link CompressedMessage}. */
+    private final int compressionLvl;
+
     /** Buffer for writing. */
     private ByteBuffer buf;
 
     /** */
-    public DirectMessageWriter(final MessageFactory msgFactory) {
+    public DirectMessageWriter(final MessageFactory msgFactory, final int compressionLvl) {
         this.msgFactory = msgFactory;
+        this.compressionLvl = compressionLvl;
 
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
@@ -443,7 +447,7 @@ public class DirectMessageWriter implements MessageWriter {
         if (!stream.serializeFinished()) {
             ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
 
             tmpWriter.setBuffer(tmpBuf);
 
@@ -471,7 +475,7 @@ public class DirectMessageWriter implements MessageWriter {
 
             tmpBuf.flip();
 
-            stream.compressedMessage(new CompressedMessage(tmpBuf));
+            stream.compressedMessage(new CompressedMessage(tmpBuf, compressionLvl));
             stream.serializeFinished(true);
         }
 

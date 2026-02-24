@@ -58,6 +58,9 @@ public class CompressedMessage implements Message {
     private boolean finalChunk;
 
     /** */
+    private int compressedLvl;
+
+    /** */
     public CompressedMessage() {
         // No-op.
     }
@@ -65,8 +68,9 @@ public class CompressedMessage implements Message {
     /**
      * @param buf Source buffer with seralized data.
      */
-    public CompressedMessage(ByteBuffer buf) {
+    public CompressedMessage(ByteBuffer buf, int compressedLvl) {
         dataSize = buf.remaining();
+        this.compressedLvl = compressedLvl;
 
         if (dataSize > 0)
             chunkedReader = new ChunkedByteReader(compress(buf), CHUNK_SIZE);
@@ -208,7 +212,7 @@ public class CompressedMessage implements Message {
         buf.get(data);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length);
-        Deflater deflater = new Deflater(Deflater.BEST_SPEED, true);
+        Deflater deflater = new Deflater(compressedLvl, true);
 
         try (DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater)) {
             dos.write(data);

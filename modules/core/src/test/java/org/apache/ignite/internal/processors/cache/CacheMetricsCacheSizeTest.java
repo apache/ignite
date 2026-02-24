@@ -112,7 +112,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         // We have to skip this header at the further message reading.
         AtomicInteger initHdrSize = new AtomicInteger();
 
-        DirectMessageWriter msgWritter = new DirectMessageWriter(msgFactory) {
+        DirectMessageWriter msgWritter = new DirectMessageWriter(msgFactory, grid(0).configuration().getNetworkCompressionLevel()) {
             @Override public void onHeaderWritten() {
                 super.onHeaderWritten();
 
