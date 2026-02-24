@@ -2516,7 +2516,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).dataPacket;
 
                 if (dataPacket != null) {
                     Map<UUID, NodeSpecificData> discoData = U.field(dataPacket, "nodeSpecificData");

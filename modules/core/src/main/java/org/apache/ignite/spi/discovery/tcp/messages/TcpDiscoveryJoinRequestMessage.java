@@ -23,7 +23,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -33,12 +32,12 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** New node that wants to join the topology. */
-    private TcpDiscoveryNode node;
+    public TcpDiscoveryNode node;
 
     /** Serialized {@link #node}. */
     // TODO Remove the field after completing https://issues.apache.org/jira/browse/IGNITE-27899.
@@ -47,7 +46,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
     /** Discovery data container. */
     @Order(7)
-    DiscoveryDataPacket dataPacket;
+    public DiscoveryDataPacket dataPacket;
 
     /** Constructor. */
     public TcpDiscoveryJoinRequestMessage() {
@@ -68,20 +67,6 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     }
 
     /**
-     * Gets new node that wants to join the topology.
-     *
-     * @return Node that wants to join the topology.
-     */
-    public TcpDiscoveryNode node() {
-        return node;
-    }
-
-    /** @return Discovery data container that collects data from all cluster nodes. */
-    public DiscoveryDataPacket gridDiscoveryData() {
-        return dataPacket;
-    }
-
-    /**
      * @return Responded flag.
      */
     public boolean responded() {
@@ -95,10 +80,8 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         setFlag(RESPONDED_FLAG_POS, responded);
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         if (node != null && nodeBytes == null) {
             try {
                 nodeBytes = U.marshal(marsh, node);
@@ -109,11 +92,8 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         }
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
         if (nodeBytes != null && node == null) {
             try {
                 node = U.unmarshal(marsh, nodeBytes, clsLdr);

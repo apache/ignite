@@ -787,8 +787,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
 
-                    joinReqMsg.prepareMarshal(spi.marshaller());
-
                     TcpDiscoveryNode nodef = node;
 
                     joinReqMsg.spanContainer().span(
@@ -2224,7 +2222,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
-                        spi.gridStartTime = msg.gridStartTime();
+                        spi.gridStartTime = msg.gridStartTime;
 
                         if (disconnected())
                             rmtNodes.clear();
@@ -2259,7 +2257,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
 
-                        DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
+                        DiscoveryDataPacket dataPacket = msg.dataPacket;
 
                         if (dataPacket != null && dataPacket.hasJoiningNodeData()) {
                             if (joining())

@@ -53,7 +53,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** */
     @Order(7)
-    DiscoveryDataPacket dataPacket;
+    public DiscoveryDataPacket dataPacket;
 
     /** Message to hold collection of pending {@link TcpDiscoveryAbstractMessage}. */
     @Order(8)
@@ -66,7 +66,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** */
     @GridToStringInclude
-    transient Collection<TcpDiscoveryNode> clientTop;
+    public transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
     @Order(10)
@@ -74,7 +74,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Start time of the first grid node. */
     @Order(11)
-    long gridStartTime;
+    public long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeAddedMessage() {
@@ -129,21 +129,24 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
+     * Sets pending messages to send to new node.
+     *
+     * @param msgs Pending messages to send to new node.
+     */
+    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        assert F.isEmpty(msgs) || msgs.stream().noneMatch(m -> m == this)
+            : "Adding current message to its pending messages may issue infinite write/read message cycles and stack overflow.";
+
+        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
+    }
+
+    /**
      * Gets pending messages sent to new node by its previous.
      *
      * @return Pending messages from previous node.
      */
     public Collection<TcpDiscoveryAbstractMessage> messages() {
         return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
-    }
-
-    /**
-     * Sets pending messages.
-     *
-     * @param msgs Pending messages.
-     */
-    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
     }
 
     /**
@@ -163,22 +166,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
         this.top = top == null ? null : top.stream().map(t -> new TcpDiscoveryNodeMessage(t))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * @param top Topology at the moment when client joined.
-     */
-    public void clientTopology(Collection<TcpDiscoveryNode> top) {
-        assert top != null && !top.isEmpty() : top;
-
-        this.clientTop = top;
-    }
-
-    /**
-     * @return Topology at the moment when client joined.
-     */
-    public Collection<TcpDiscoveryNode> clientTopology() {
-        return clientTop;
     }
 
     /**
@@ -218,13 +205,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
-     * @return {@link DiscoveryDataPacket} carried by this message.
-     */
-    public DiscoveryDataPacket gridDiscoveryData() {
-        return dataPacket;
-    }
-
-    /**
      * Clears discovery data to minimize message size.
      */
     public void clearDiscoveryData() {
@@ -240,21 +220,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             dataPacket.clearUnmarshalledJoiningNodeData();
     }
 
-    /**
-     * @return First grid node start time.
-     */
-    public long gridStartTime() {
-        return gridStartTime;
-    }
-
-    /** @param gridStartTime First grid node start time. */
-    public void gridStartTime(long gridStartTime) {
-        this.gridStartTime = gridStartTime;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */
