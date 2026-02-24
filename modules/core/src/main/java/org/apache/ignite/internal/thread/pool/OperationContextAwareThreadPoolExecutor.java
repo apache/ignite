@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.thread;
+package org.apache.ignite.internal.thread.pool;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,24 +23,17 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Extends {@link ThreadPoolExecutor} with the ability to execute tasks in security context that was actual when task was
- * added to executor's queue.
- */
-public class SecurityAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
+/** */
+public class OperationContextAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
     /** */
-    private final IgniteSecurity security;
-
-    /** */
-    public SecurityAwareThreadPoolExecutor(
-        IgniteSecurity security,
+    public OperationContextAwareThreadPoolExecutor(
         String threadNamePrefix,
         String igniteInstanceName,
         int corePoolSize,
@@ -51,51 +44,51 @@ public class SecurityAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
         Thread.UncaughtExceptionHandler eHnd
     ) {
         super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ, plc, eHnd);
-
-        this.security = security;
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
-        return super.submit(SecurityAwareCallable.of(security, task));
+        return super.submit(OperationContextAwareCallable.wrapIfContextNotEmpty(task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Runnable task, T res) {
-        return super.submit(SecurityAwareRunnable.of(security, task), res);
+        return super.submit(OperationContextAwareRunnable.wrapIfContextNotEmpty(task), res);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
-        return super.submit(SecurityAwareRunnable.of(security, task));
+        return super.submit(OperationContextAwareRunnable.wrapIfContextNotEmpty(task));
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
+        return super.invokeAll(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(
-        @NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return super.invokeAll(SecurityAwareCallable.of(security, tasks));
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks,
-        long timeout, @NotNull TimeUnit unit) throws InterruptedException {
-        return super.invokeAll(SecurityAwareCallable.of(security, tasks), timeout, unit);
+        @NotNull Collection<? extends Callable<T>> tasks,
+        long timeout,
+        @NotNull TimeUnit unit
+    ) throws InterruptedException {
+        return super.invokeAll(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
-        return super.invokeAny(SecurityAwareCallable.of(security, tasks));
+        return super.invokeAny(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks));
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return super.invokeAny(SecurityAwareCallable.of(security, tasks), timeout, unit);
+        return super.invokeAny(OperationContextAwareCallable.wrapIfContextNotEmpty(tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(SecurityAwareRunnable.of(security, cmd));
+        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(cmd));
     }
 }
