@@ -44,8 +44,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.Search
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -94,15 +94,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertTrue("Not finished queries found on client", waitForCondition(
             () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
 
-        waitForCondition(() -> {
-            for (Ignite ign : G.allGrids()) {
-                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
-                    return false;
-            }
-
-            return true;
-        }, INBOX_INITIALIZATION_TIMEOUT * 2);
-
         for (Ignite ign : G.allGrids()) {
             if (destroyCachesAfterTest()) {
                 for (String cacheName : ign.cacheNames())
@@ -118,8 +109,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
                 0, execSvc.memoryTracker().allocated());
 
-            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
-                0, qryProc.mailboxRegistry().inboxes().size());
+            assertTrue("Not closed inbox found [ignite=" + ign.name() + ']',
+                waitForCondition(() -> qryProc.mailboxRegistry().inboxes().isEmpty(), INBOX_INITIALIZATION_TIMEOUT * 2));
 
             assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
                 0, qryProc.mailboxRegistry().outboxes().size());
@@ -245,7 +236,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected List<List<?>> sqlAsRoot(IgniteEx ignite, String sql) throws Exception {
         SecurityContext secCtx = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        try (OperationSecurityContext ignored = ignite.context().security().withContext(secCtx)) {
+        try (Scope ignored = ignite.context().security().withContext(secCtx)) {
             return sql(ignite, sql);
         }
     }

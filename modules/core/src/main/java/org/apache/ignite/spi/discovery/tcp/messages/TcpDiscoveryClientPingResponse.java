@@ -32,11 +32,11 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
 
     /** Pinged client node ID. */
     @Order(5)
-    private @Nullable UUID nodeToPing;
+    @Nullable UUID nodeToPing;
 
     /** */
-    @Order(value = 6, method = "result")
-    private boolean res;
+    @Order(6)
+    boolean res;
 
     /** */
     public TcpDiscoveryClientPingResponse() {

@@ -122,7 +122,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         discoPort.set(TcpDiscoverySpi.DFLT_PORT);
 
-        Ignite client = fut.get();
+        Ignite client = fut.get(10_000);
 
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 

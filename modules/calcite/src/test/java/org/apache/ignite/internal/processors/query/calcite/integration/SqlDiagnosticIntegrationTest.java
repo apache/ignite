@@ -325,7 +325,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testThreadPoolMetrics() {
+    public void testThreadPoolMetrics() throws Exception {
         String regName = metricName(PoolProcessor.THREAD_POOLS, AbstractQueryTaskExecutor.THREAD_POOL_NAME);
         MetricRegistry mreg = client.context().metric().registry(regName);
 
@@ -337,7 +337,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         sql("SELECT 'test'");
 
-        assertTrue(tasksCnt.value() > 0);
+        assertTrue(waitForCondition(() -> tasksCnt.value() > 0, 1000));
     }
 
     /** */

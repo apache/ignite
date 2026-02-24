@@ -14,8 +14,6 @@
 // limitations under the License.
 = System Views
 
-WARNING: The system views are an experimental feature and can be changed in future releases.
-
 Ignite provides a number of built-in SQL views that contain information about cluster nodes and node metrics.
 The views are available in the SYS schema.
 See the link:SQL/schemas[Understanding Schemas] page for the information on how to access a non-default schema.

@@ -46,51 +46,51 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
     @Order(9)
-    private @Nullable Collection<GridCacheVersion> pending;
+    @Nullable Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(10)
+    IgniteUuid futId;
 
     /** Mini future ID. */
     @Order(11)
-    private int miniId;
+    int miniId;
 
     /** DHT version. */
-    @Order(value = 12, method = "dhtVersion")
-    private GridCacheVersion dhtVer;
+    @Order(12)
+    GridCacheVersion dhtVer;
 
     /** Write version. */
-    @Order(value = 13, method = "writeVersion")
-    private GridCacheVersion writeVer;
+    @Order(13)
+    GridCacheVersion writeVer;
 
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
     /** OwnedVals' keys for marshalling. */
-    @Order(value = 14, method = "ownedValuesKeys")
-    private @Nullable Collection<IgniteTxKey> ownedValKeys;
+    @Order(14)
+    @Nullable Collection<IgniteTxKey> ownedValKeys;
 
     /** OwnedVals' values for marshalling. */
-    @Order(value = 15, method = "ownedValuesValues")
-    private @Nullable Collection<CacheVersionedValue> ownedValVals;
+    @Order(15)
+    @Nullable Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
-    @Order(value = 16, method = "returnValue")
-    private GridCacheReturn retVal;
+    @Order(16)
+    GridCacheReturn retVal;
 
     /** Keys that did not pass the filter. */
     @Order(17)
-    private @Nullable Collection<IgniteTxKey> filterFailedKeys;
+    @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(value = 18, method = "clientRemapVersion")
-    private @Nullable AffinityTopologyVersion clientRemapVer;
+    @Order(18)
+    @Nullable AffinityTopologyVersion clientRemapVer;
 
     /** One-phase commit on primary flag. */
     @Order(19)
-    private boolean onePhaseCommit;
+    boolean onePhaseCommit;
 
     /**
      * Empty constructor.

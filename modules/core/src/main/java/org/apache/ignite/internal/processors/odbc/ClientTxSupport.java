@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -36,6 +37,7 @@ public interface ClientTxSupport {
      * @param isolation Transaction isolation.
      * @param timeout Transaction timeout.
      * @param lb Transaction label.
+     * @param appAttrs Application attributes.
      * @return Transaction id.
      */
     default int startClientTransaction(
@@ -43,7 +45,8 @@ public interface ClientTxSupport {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
-        String lb
+        String lb,
+        Map<String, String> appAttrs
     ) {
         GridNearTxLocal tx;
 
@@ -60,7 +63,7 @@ public interface ClientTxSupport {
                 true,
                 0,
                 lb,
-                null
+                appAttrs
             );
         }
         finally {

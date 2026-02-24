@@ -48,6 +48,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -369,8 +370,9 @@ public final class ClientUtils {
                 });
             }
             else if (cfg.getExpiryPolicy() != null) {
-                throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
-                    "version %s, required version %s", protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
+                throw new ClientFeatureNotSupportedByServerException(String.format(
+                    "Expire policies are not supported by the server version %s, required version %s",
+                    protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
             }
 
             if (protocolCtx.isFeatureSupported(CACHE_STORAGES)) {
@@ -378,7 +380,7 @@ public final class ClientUtils {
                 itemWriter.accept(CfgItem.IDX_PATH, w -> w.writeString(cfg.getIndexPath()));
             }
             else if (!F.isEmpty(cfg.getStoragePaths()) || !F.isEmpty(cfg.getIndexPath()))
-                throw new ClientProtocolError("Cache storages are not supported by the server");
+                throw new ClientFeatureNotSupportedByServerException("Cache storages are not supported by the server");
 
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
             writer.writeInt(origPos + 4, propCnt.get()); // properties count

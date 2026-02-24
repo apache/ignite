@@ -28,12 +28,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class UserManagementOperationFinishedMessage implements Message {
     /** Operation Id. */
-    @Order(value = 0, method = "operationId")
-    private IgniteUuid opId;
+    @Order(0)
+    IgniteUuid opId;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private String errorMsg;
+    @Order(1)
+    String errorMsg;
 
     /**
      *

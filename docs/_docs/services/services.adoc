@@ -312,8 +312,6 @@ an issue for real jobs like working with a DB or a cache.
 
 == Service Middleware
 
-WARNING: This feature is experimental and may change in future releases.
-
 [CAUTION]
 ====
 This feature may affect performance of service execution.

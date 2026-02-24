@@ -58,30 +58,30 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private static final int RECOVERY_FLAG_MASK = 0x40;
 
     /** Future ID. */
-    @Order(value = 20, method = "futureId")
-    private IgniteUuid futId;
+    @Order(20)
+    IgniteUuid futId;
 
     /** Mini future ID. */
     @Order(21)
-    private int miniId;
+    int miniId;
 
     /** Topology version. */
-    @Order(value = 22, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(22)
+    AffinityTopologyVersion topVer;
 
     /** Task name hash. */
     @Order(23)
-    private int taskNameHash;
+    int taskNameHash;
 
     /** */
-    @Order(value = 24, method = "nearFlags")
+    @Order(24)
     @GridToStringExclude
-    private byte flags;
+    byte flags;
 
     /** Transaction label. */
-    @Order(value = 25, method = "txLabel")
+    @Order(25)
     @GridToStringInclude
-    @Nullable private String txLbl;
+    @Nullable String txLbl;
 
     /**
      * Empty constructor.

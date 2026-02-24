@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -168,6 +169,75 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
 
         assertFalse(root.hasNext());
     }
+
+    /** */
+    @Test
+    public void testDistributedInputs() {
+        // Check all variants containing from 0 to 2 duplicated rows for 2 inputs.
+        int[][] inputVariants = {
+            {0, 0}, {0, 1}, {0, 2},
+            {1, 0}, {1, 1}, {1, 2},
+            {2, 0}, {2, 1}, {2, 2}
+        };
+
+        // Check 2 cluster nodes.
+        int[][] rowsCnt = new int[2][];
+
+        for (int node0input = 0; node0input < inputVariants.length; node0input++) {
+            for (int node1input = 0; node1input < inputVariants.length; node1input++) {
+                rowsCnt[0] = inputVariants[node0input];
+                rowsCnt[1] = inputVariants[node1input];
+                checkDistributedSetOp(false, rowsCnt);
+                checkDistributedSetOp(true, rowsCnt);
+            }
+        }
+    }
+
+    /**
+     * @param all All.
+     * @param rowsCnt Count of duplicated rows per node per input.
+     */
+    protected void checkDistributedSetOp(boolean all, int[][] rowsCnt) {
+        ExecutionContext<Object[]> ctx = executionContext();
+        RelDataType rowType = TypeUtils.createRowType(ctx.getTypeFactory(), String.class);
+
+        List<Node<Object[]>> mapNodes = new ArrayList<>();
+        int[] totalRowsCnt = new int[rowsCnt[0].length];
+
+        for (int i = 0; i < rowsCnt.length; i++) {
+            for (int j = 0; j < rowsCnt[i].length; j++)
+                totalRowsCnt[j] += rowsCnt[i][j];
+
+            List<Node<Object[]>> inputs = Arrays.stream(rowsCnt[i])
+                .mapToObj(cnt -> new ScanNode<>(ctx, rowType, new TestTable(cnt, rowType, r -> "test")))
+                .collect(Collectors.toList());
+
+            AbstractSetOpNode<Object[]> mapNode;
+
+            mapNode = setOpNodeFactory(ctx, rowType, MAP, all, inputs.size());
+
+            mapNode.register(inputs);
+
+            mapNodes.add(mapNode);
+        }
+
+        // Use union all to emulate streams from different cluster nodes.
+        Node<Object[]> unionNode = new UnionAllNode<>(ctx, rowType);
+        unionNode.register(mapNodes);
+
+        AbstractSetOpNode<Object[]> reduceNode = setOpNodeFactory(ctx, rowType, REDUCE, all, 1);
+
+        reduceNode.register(Collections.singletonList(unionNode));
+
+        RootNode<Object[]> root = new RootNode<>(ctx, rowType);
+        root.register(reduceNode);
+
+        assertEquals("Unexpected result [rowsCnt=" + Arrays.deepToString(rowsCnt) + ", all=" + all + ']',
+            expectedResultSize(totalRowsCnt, all), F.size(root));
+    }
+
+    /** */
+    protected abstract int expectedResultSize(int[] totalRowsCnt, boolean all);
 
     /** */
     protected abstract AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx, RelDataType rowType,

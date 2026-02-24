@@ -426,8 +426,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             }
             catch (Throwable e) {
                 onError.accept(e);
-
-                throw new IgniteException("Unexpected exception", e);
             }
         });
     }

@@ -68,7 +68,7 @@ interface ReliableChannelEx extends AutoCloseable {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientError;
+    );
 
     /**
      * Send request to affinity node and handle response.
@@ -101,7 +101,7 @@ interface ReliableChannelEx extends AutoCloseable {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientError;
+    );
 
     /**
      * Send request without payload and handle response.
@@ -119,7 +119,7 @@ interface ReliableChannelEx extends AutoCloseable {
     public default <T> IgniteClientFuture<T> serviceAsync(
         ClientOperation op,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientError {
+    ) {
         return serviceAsync(op, null, payloadReader);
     }
 
@@ -139,7 +139,7 @@ interface ReliableChannelEx extends AutoCloseable {
     public default IgniteClientFuture<Void> requestAsync(
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter
-    ) throws ClientException, ClientError {
+    ) {
         return serviceAsync(op, payloadWriter, null);
     }
 }

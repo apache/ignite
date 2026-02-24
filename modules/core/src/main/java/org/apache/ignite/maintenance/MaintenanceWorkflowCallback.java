@@ -18,7 +18,6 @@
 package org.apache.ignite.maintenance;
 
 import java.util.List;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
  * {@link MaintenanceRegistry} during its workflow will collect necessary information about maintenance for components
  * without knowing implementation details of the components.
  */
-@IgniteExperimental
 public interface MaintenanceWorkflowCallback {
     /**
      * Called by {@link MaintenanceRegistry} and enables it to check if maintenance is still needed

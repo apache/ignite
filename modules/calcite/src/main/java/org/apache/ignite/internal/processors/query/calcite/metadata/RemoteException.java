@@ -39,7 +39,7 @@ public class RemoteException extends RuntimeException {
      * @param fragmentId Fragment ID.
      */
     public RemoteException(UUID nodeId, UUID queryId, long fragmentId, Throwable cause) {
-        super("Remote query execution", cause);
+        super("Remote query execution: " + cause.getMessage(), cause);
         this.nodeId = nodeId;
         this.queryId = queryId;
         this.fragmentId = fragmentId;

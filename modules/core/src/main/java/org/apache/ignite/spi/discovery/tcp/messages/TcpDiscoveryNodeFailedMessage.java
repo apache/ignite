@@ -35,15 +35,15 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
 
     /** ID of the failed node. */
     @Order(6)
-    private UUID failedNodeId;
+    UUID failedNodeId;
 
     /** Internal order of the failed node. */
-    @Order(value = 7, method = "internalOrder")
-    private long order;
+    @Order(7)
+    long order;
 
     /** */
     @Order(8)
-    private String warning;
+    String warning;
 
     /** Constructor. */
     public TcpDiscoveryNodeFailedMessage() {

@@ -552,23 +552,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         return locNode;
     }
 
-    /**
-     * Used in tests (called via reflection).
-     *
-     * @return Copy of SPI.
-     */
-    private ZookeeperDiscoverySpi cloneSpiConfiguration() {
-        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
-
-        spi.setZkRootPath(zkRootPath);
-        spi.setZkConnectionString(zkConnectionString);
-        spi.setSessionTimeout(sesTimeout);
-        spi.setJoinTimeout(joinTimeout);
-        spi.setClientReconnectDisabled(clientReconnectDisabled);
-
-        return spi;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ZookeeperDiscoverySpi.class, this);

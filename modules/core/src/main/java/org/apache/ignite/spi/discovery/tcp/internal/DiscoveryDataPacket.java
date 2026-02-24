@@ -50,22 +50,22 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /** */
     @Order(0)
-    private UUID joiningNodeId;
+    UUID joiningNodeId;
 
     /** */
     @Order(1)
-    private Map<Integer, byte[]> joiningNodeData = new HashMap<>();
+    Map<Integer, byte[]> joiningNodeData = new HashMap<>();
 
     /** */
     private transient Map<Integer, Serializable> unmarshalledJoiningNodeData;
 
     /** */
     @Order(2)
-    private Map<Integer, byte[]> commonData = new HashMap<>();
+    Map<Integer, byte[]> commonData = new HashMap<>();
 
     /** */
     @Order(3)
-    private Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
+    Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
 
     /** */
     private transient boolean joiningNodeClient;

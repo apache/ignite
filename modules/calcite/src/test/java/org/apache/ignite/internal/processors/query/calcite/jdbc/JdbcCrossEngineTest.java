@@ -35,7 +35,7 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.junit.Test;
 
 /**
- * Cross check queries on experimental and non-experimental SQL engines.
+ * Cross check queries on SQL engines.
  */
 public class JdbcCrossEngineTest extends AbstractJdbcTest {
     /** Nodes count. */
