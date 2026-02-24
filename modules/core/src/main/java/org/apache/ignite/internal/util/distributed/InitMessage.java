@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,24 +38,38 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see SingleNodeMessage
  */
-public class InitMessage<I extends Serializable> implements DiscoveryCustomMessage {
+public class InitMessage<I extends Serializable> implements DiscoveryCustomMessage, Message {
+    /** */
+    public static final short DIRECT_TYPE = 514;
+
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Process id. */
-    private final UUID procId;
+    @Order(1)
+    UUID procId;
 
     /** Process type. */
-    private final int type;
+    @Order(2)
+    int type;
 
     /** Request. */
-    private final I req;
+    // TODO: Generic type I extends Serializable may require special handling in the future.
+    @Order(3)
+    I req;
 
     /** Whether coordinator waits client nodes results. */
-    private final boolean waitClnRes;
+    @Order(4)
+    boolean waitClnRes;
+
+    /** */
+    public InitMessage() {
+        // No-op.
+    }
 
     /**
      * @param procId Process id.
@@ -106,6 +122,11 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     /** @return Whether coordinator waits client nodes results. */
     public boolean waitClientResults() {
         return waitClnRes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
