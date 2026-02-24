@@ -176,7 +176,7 @@ public class GridDhtPartitionFullMap
     /**
      * @param updateSeq New update sequence value.
      */
-    public void updateSequence(long updateSeq) {
+    public void newUpdateSequence(long updateSeq) {
         this.updateSeq = updateSeq;
     }
 
@@ -184,7 +184,7 @@ public class GridDhtPartitionFullMap
      * @param updateSeq New update sequence value.
      * @return Old update sequence value.
      */
-    public long checkAndUpdateSequence(long updateSeq) {
+    public long updateSequence(long updateSeq) {
         long old = this.updateSeq;
 
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq +

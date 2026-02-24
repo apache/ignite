@@ -48,19 +48,19 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
     /** Node ID. */
     @Order(0)
-    UUID nodeId;
+    protected UUID nodeId;
 
     /** Update sequence number. */
     @Order(1)
-    long updateSeq;
+    protected long updateSeq;
 
     /** Topology version. */
     @Order(2)
-    AffinityTopologyVersion top;
+    protected AffinityTopologyVersion top;
 
     /** */
     @Order(3)
-    GridPartitionStateMap map;
+    protected GridPartitionStateMap map;
 
     /** */
     private volatile int moving;
@@ -207,17 +207,6 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     }
 
     /**
-     * @param map Map.
-     */
-    public void map(GridPartitionStateMap map) {
-        this.map = new GridPartitionStateMap();
-
-        if (map != null)
-            for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet())
-                put(entry.getKey(), entry.getValue());
-    }
-
-    /**
      * @return Node ID.
      */
     public UUID nodeId() {
@@ -257,13 +246,6 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      */
     public AffinityTopologyVersion topologyVersion() {
         return top;
-    }
-
-    /**
-     * @param top Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion top) {
-        this.top = top;
     }
 
     /** {@inheritDoc} */
