@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 public class CacheInvokeDirectResult implements Message {
     /** Cache key. */
     @Order(0)
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** */
     @GridToStringInclude
@@ -41,13 +41,13 @@ public class CacheInvokeDirectResult implements Message {
 
     /** Result. */
     @GridToStringInclude
-    @Order(value = 1, method = "result")
-    private CacheObject res;
+    @Order(1)
+    CacheObject res;
 
     /** Error message. */
     @GridToStringInclude(sensitive = true)
-    @Order(value = 2, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(2)
+    ErrorMessage errMsg;
 
     /**
      * Default constructor.

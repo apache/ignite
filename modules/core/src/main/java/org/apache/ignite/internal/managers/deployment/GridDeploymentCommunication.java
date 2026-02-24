@@ -188,7 +188,7 @@ class GridDeploymentCommunication {
 
         if (req.responseTopic() == null) {
             try {
-                req.responseTopic(U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
+                req.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to process deployment request (will ignore) [" +
@@ -357,13 +357,11 @@ class GridDeploymentCommunication {
     void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws IgniteCheckedException {
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
-        Message req = new GridDeploymentRequest(null, null, rsrcName, true);
-
         if (!rmtNodes.isEmpty()) {
             ctx.io().sendToGridTopic(
                 rmtNodes,
                 TOPIC_CLASSLOAD,
-                req,
+                new GridDeploymentRequest(null, null, rsrcName, true),
                 GridIoPolicy.P2P_POOL);
         }
     }
@@ -420,7 +418,7 @@ class GridDeploymentCommunication {
             long start = U.currentTimeMillis();
 
             if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
-                req.responseTopicBytes(U.marshal(marsh, req.responseTopic()));
+                req.prepareMarshal(marsh);
 
             ctx.io().sendToGridTopic(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 

@@ -38,20 +38,20 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     public static final short TYPE_CODE = 178;
 
     /** Snapshot operation request ID. */
-    @Order(value = 1, method = "requestId")
-    private UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** Snapshot name to request. */
-    @Order(value = 2, method = "snapshotName")
-    private String snpName;
+    @Order(2)
+    String snpName;
 
     /** Snapshot directory path. */
-    @Order(value = 3, method = "snapshotPath")
-    private String snpPath;
+    @Order(3)
+    String snpPath;
 
     /** Map of cache group ids and corresponding set of its partition ids. */
-    @Order(value = 4, method = "partitions")
-    private Map<Integer, int[]> parts;
+    @Order(4)
+    Map<Integer, int[]> parts;
 
     /**
      * Empty constructor.

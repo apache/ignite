@@ -40,7 +40,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -69,8 +71,14 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("TEST_CACHE_OWN")
+            .setSqlSchema("OWN_SCHEMA")
+            .setSqlFunctionClasses(FunctionsLibrary.class);
+
         return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+            new SqlConfiguration()
+                .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()))
+                .setCacheConfiguration(ccfg);
     }
 
     /** {@inheritDoc} */
@@ -111,6 +119,21 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         assert conn.isClosed();
 
         stopAllGrids();
+    }
+
+    /** Test user defined table through jdbc. */
+    @Test
+    public void testUdt() throws Exception {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM TABLE(\"OWN_SCHEMA\".STR_ARRAY_CONSUME_TABLE(?))")) {
+            ps.setObject(1, List.of("row1", "row2"));
+            ResultSet rs = ps.executeQuery();
+
+            assertTrue(rs.next());
+            assertEquals("row1", rs.getString(1));
+
+            assertTrue(rs.next());
+            assertEquals("row2", rs.getString(1));
+        }
     }
 
     /**
@@ -488,6 +511,18 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         /** */
         @Override public int hashCode() {
             return Objects.hash(id, name, val);
+        }
+    }
+
+    /** User defined functions. */
+    public static class FunctionsLibrary {
+        /** Function consume String array and output it row by row. */
+        @QuerySqlTableFunction(alias = "STR_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Object[]> strArrConsumeTable(List<String> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
         }
     }
 }

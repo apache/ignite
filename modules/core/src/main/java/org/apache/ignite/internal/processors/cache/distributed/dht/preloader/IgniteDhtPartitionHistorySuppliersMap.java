@@ -40,8 +40,8 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** */
-    @Order(value = 0, method = "historySuppliers")
-    private Map<UUID, PartitionReservationsMap> map;
+    @Order(0)
+    Map<UUID, PartitionReservationsMap> map;
 
     /**
      * @return Empty map.

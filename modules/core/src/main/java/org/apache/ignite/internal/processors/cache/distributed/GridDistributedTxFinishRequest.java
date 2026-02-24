@@ -56,48 +56,48 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     protected static final int STORE_ENABLED_FLAG_MASK = 0x20;
 
     /** Topology version. */
-    @Order(value = 7, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(7)
+    public AffinityTopologyVersion topVer;
 
     /** Future ID. */
-    @Order(value = 8, method = "futureId")
-    private IgniteUuid futId;
+    @Order(8)
+    public IgniteUuid futId;
 
     /** Thread ID. */
     @Order(9)
-    private long threadId;
+    public long threadId;
 
     /** Commit version. */
-    @Order(value = 10, method = "commitVersion")
-    private GridCacheVersion commitVer;
+    @Order(10)
+    public GridCacheVersion commitVer;
 
     /** Invalidate flag. */
-    @Order(value = 11, method = "isInvalidate")
-    private boolean invalidate;
+    @Order(11)
+    public boolean invalidate;
 
     /** Commit flag. */
     @Order(12)
-    private boolean commit;
+    public boolean commit;
 
     /** Min version used as base for completed versions. */
-    @Order(value = 13, method = "baseVersion")
-    private GridCacheVersion baseVer;
+    @Order(13)
+    public GridCacheVersion baseVer;
 
     /** IO policy. */
-    @Order(value = 14, method = "policy")
-    private byte plc;
+    @Order(14)
+    public byte plc;
 
     /** Task name hash. */
     @Order(15)
-    private int taskNameHash;
+    public int taskNameHash;
 
     /** */
     @Order(16)
-    private byte flags;
+    public byte flags;
 
     /** Write synchronization mode. */
-    @Order(value = 17)
-    private CacheWriteSynchronizationMode syncMode;
+    @Order(17)
+    public CacheWriteSynchronizationMode syncMode;
 
     /** Transient TX state. */
     private IgniteTxState txState;

@@ -28,11 +28,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class UserAuthenticateResponseMessage implements Message {
     /** Request ID. */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private String errMsg;
+    @Order(1)
+    String errMsg;
 
     /**
      *

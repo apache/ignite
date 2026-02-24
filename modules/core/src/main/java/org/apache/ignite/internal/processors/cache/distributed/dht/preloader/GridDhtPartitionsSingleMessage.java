@@ -48,51 +48,51 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * <p>
      * TODO Remove this field after completing task IGNITE-26976.
      */
-    @Order(value = 6, method = "partitionBytes")
-    private byte[] partsBytes;
+    @Order(6)
+    byte[] partsBytes;
 
     /** */
-    @Order(value = 7, method = "duplicatedPartitionsData")
-    private Map<Integer, Integer> dupPartsData;
+    @Order(7)
+    Map<Integer, Integer> dupPartsData;
 
     /** Partitions update counters. */
-    @Order(value = 8, method = "partitionUpdateCounters")
+    @Order(8)
     @GridToStringInclude
-    private Map<Integer, CachePartitionPartialCountersMap> partCntrs;
+    Map<Integer, CachePartitionPartialCountersMap> partCntrs;
 
     /** Partitions sizes. */
-    @Order(value = 9, method = "partitionSizesMap")
+    @Order(9)
     @GridToStringInclude
-    private Map<Integer, IntLongMap> partsSizes;
+    Map<Integer, IntLongMap> partsSizes;
 
     /** Partitions history reservation counters. */
-    @Order(value = 10, method = "partitionHistoryCountersMap")
+    @Order(10)
     @GridToStringInclude
-    private Map<Integer, IntLongMap> partHistCntrs;
+    Map<Integer, IntLongMap> partHistCntrs;
 
     /** Error message. */
-    @Order(value = 11, method = "errorMessage")
+    @Order(11)
     @GridToStringInclude
-    private ErrorMessage errMsg;
+    ErrorMessage errMsg;
 
     /** */
     @Order(12)
-    private boolean client;
+    boolean client;
 
     /** */
-    @Order(value = 13, method = "cacheGroupsAffinityRequest")
-    private Collection<Integer> grpsAffReq;
+    @Order(13)
+    Collection<Integer> grpsAffReq;
 
     /** Start time of exchange on node which sent this message in nanoseconds. */
     @Order(14)
-    private long exchangeStartTime;
+    long exchangeStartTime;
 
     /**
      * Exchange finish message, sent to new coordinator when it tries to restore state after previous coordinator failed
      * during exchange.
      */
-    @Order(value = 15, method = "finishMessage")
-    private GridDhtPartitionsFullMessage finishMsg;
+    @Order(15)
+    GridDhtPartitionsFullMessage finishMsg;
 
     /**
      * Empty constructor.

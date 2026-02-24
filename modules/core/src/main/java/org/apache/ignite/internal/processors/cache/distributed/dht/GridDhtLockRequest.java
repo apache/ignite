@@ -42,11 +42,11 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Invalidate reader flags. */
     @Order(20)
-    private BitSet invalidateEntries;
+    BitSet invalidateEntries;
 
     /** Mini future ID. */
     @Order(21)
-    private IgniteUuid miniId;
+    IgniteUuid miniId;
 
     /** Owner mapped version, if any. */
     @GridToStringInclude
@@ -55,32 +55,32 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
     @Order(22)
     @GridToStringExclude
-    private KeyCacheObject[] ownedKeys;
+    KeyCacheObject[] ownedKeys;
 
     /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
     @Order(23)
     @GridToStringExclude
-    private GridCacheVersion[] ownedValues;
+    GridCacheVersion[] ownedValues;
 
     /** Topology version. */
-    @Order(value = 24, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(24)
+    AffinityTopologyVersion topVer;
 
     /** Task name hash. */
     @Order(25)
-    private int taskNameHash;
+    int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
     @Order(26)
-    private BitSet preloadKeys;
+    BitSet preloadKeys;
 
     /** TTL for read operation. */
     @Order(27)
-    private long accessTtl;
+    long accessTtl;
 
     /** Transaction label. */
-    @Order(value = 28, method = "txLabel")
-    private String txLbl;
+    @Order(28)
+    String txLbl;
 
     /**
      * Empty constructor.

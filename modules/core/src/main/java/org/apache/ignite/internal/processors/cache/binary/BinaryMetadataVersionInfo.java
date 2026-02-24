@@ -43,21 +43,21 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
 
     /** Serialized binary metadata. */
     @Order(0)
-    private transient byte[] metadataBytes;
+    transient byte[] metadataBytes;
 
     /**
      * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
      * for this type. When a metadata update is proposed, this version is incremented.
      */
-    @Order(value = 1, method = "pendingVersion")
-    private int pendingVer;
+    @Order(1)
+    int pendingVer;
 
     /**
      * The version of metadata that has been accepted by the entire cluster.
      * This represents the number of updates that have been confirmed across all nodes.
      */
-    @Order(value = 2, method = "acceptedVersion")
-    private int acceptedVer;
+    @Order(2)
+    int acceptedVer;
 
     /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;

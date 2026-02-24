@@ -27,16 +27,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class QueryStartResponse implements CalciteMessage {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
-    @Order(value = 2, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(2)
+    @Nullable ErrorMessage errMsg;
 
     /** */
     public QueryStartResponse() {}

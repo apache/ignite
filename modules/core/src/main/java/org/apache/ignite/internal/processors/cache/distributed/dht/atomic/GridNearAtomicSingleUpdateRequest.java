@@ -53,7 +53,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     protected KeyCacheObject key;
 
     /** Value to update. */
-    @Order(value = 11, method = "value")
+    @Order(11)
     protected CacheObject val;
 
     /**
