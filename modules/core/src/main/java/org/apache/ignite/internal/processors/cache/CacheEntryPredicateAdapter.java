@@ -143,16 +143,6 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public @Nullable CacheObject value() {
-        return val;
-    }
-
-    /** */
-    public void value(@Nullable CacheObject val) {
-        this.val = val;
-    }
-
-    /** */
     public byte code() {
         assert type != null;
 

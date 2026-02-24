@@ -74,13 +74,6 @@ public class GridTestMessage implements Message {
     }
 
     /**
-     * @return Response id.
-     */
-    public long getResponseId() {
-        return resId;
-    }
-
-    /**
      * @param payload Payload to be set.
      */
     public void payload(byte[] payload) {

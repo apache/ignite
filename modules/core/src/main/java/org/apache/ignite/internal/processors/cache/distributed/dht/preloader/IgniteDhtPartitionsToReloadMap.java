@@ -83,13 +83,6 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         parts.add(partId);
     }
 
-    /**
-     * @return {@code True} if empty.
-     */
-    public synchronized boolean isEmpty() {
-        return map == null || map.isEmpty();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDhtPartitionsToReloadMap.class, this);
