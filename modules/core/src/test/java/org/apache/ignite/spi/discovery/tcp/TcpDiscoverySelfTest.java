@@ -2525,7 +2525,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData;
 
                 if (dataPacket != null) {
                     Map<UUID, NodeSpecificData> discoData = U.field(dataPacket, "nodeSpecificData");

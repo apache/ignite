@@ -2293,9 +2293,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (getLocalNodeId().equals(msg.nodeId())) {
+            if (getLocalNodeId().equals(msg.nodeId)) {
                 if (joining()) {
-                    DiscoveryDataPacket dataContainer = msg.clientDiscoData();
+                    DiscoveryDataPacket dataContainer = msg.clientDiscoData;
 
                     if (dataContainer != null)
                         spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
@@ -2307,7 +2307,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         delayDiscoData.clear();
                     }
 
-                    locNode.setAttributes(msg.clientNodeAttributes());
+                    locNode.setAttributes(msg.clientNodeAttrs);
 
                     clearNodeSensitiveData(locNode);
 
@@ -2350,7 +2350,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (nodeAdded()) {
-                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
+                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId);
 
                     if (node == null) {
                         if (log.isDebugEnabled())
@@ -2543,6 +2543,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
+                Collection<TcpDiscoveryAbstractMessage> pendingMsgs = msg.pendingMsgsMsg == null
+                    ? Collections.emptyList()
+                    : msg.pendingMsgsMsg.messages();
+
                 if (reconnector != null) {
                     assert msg.success() : msg;
 
@@ -2553,7 +2557,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     reconnector = null;
 
-                    for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
+                    for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                         if (log.isDebugEnabled())
                             log.debug("Process pending message on reconnect [msg=" + pendingMsg + ']');
 
@@ -2563,7 +2567,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     if (joinLatch.getCount() > 0) {
                         if (msg.success()) {
-                            for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
+                            for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                 if (log.isDebugEnabled())
                                     log.debug("Process pending message on connect [msg=" + pendingMsg + ']');
 

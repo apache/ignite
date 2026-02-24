@@ -17,13 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,16 +35,16 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    @Order(value = 5, method = "routerNodeId")
-    private UUID routerNodeId;
+    @Order(value = 5)
+    public UUID routerNodeId;
 
     /** Last message ID. */
-    @Order(value = 6, method = "lastMessageId")
-    private IgniteUuid lastMsgId;
+    @Order(6)
+    public IgniteUuid lastMsgId;
 
     /** Pending messages holder. */
-    @Order(value = 7, method = "pendingMessagesTransferMessage")
-    @Nullable private volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    @Order(7)
+    @Nullable public volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientReconnectMessage() {
@@ -64,54 +61,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
         this.routerNodeId = routerNodeId;
         this.lastMsgId = lastMsgId;
-    }
-
-    /**
-     * @return New router node ID.
-     */
-    public UUID routerNodeId() {
-        return routerNodeId;
-    }
-
-    /** @param routerNodeId New router node ID. */
-    public void routerNodeId(UUID routerNodeId) {
-        this.routerNodeId = routerNodeId;
-    }
-
-    /**
-     * @return Last message ID.
-     */
-    public IgniteUuid lastMessageId() {
-        return lastMsgId;
-    }
-
-    /** @param lastMsgId Last message ID. */
-    public void lastMessageId(IgniteUuid lastMsgId) {
-        this.lastMsgId = lastMsgId;
-    }
-
-    /**
-     * @param msgs Pending messages.
-     */
-    public void pendingMessages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
-    }
-
-    /**
-     * @return Pending messages.
-     */
-    public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
-        return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
-    }
-
-    /** @return Message to transfer the pending messages. */
-    public @Nullable TcpDiscoveryCollectionMessage pendingMessagesTransferMessage() {
-        return pendingMsgsMsg;
-    }
-
-    /** @param pendingMsgsMsg Message to transfer the pending messages. */
-    public void pendingMessagesTransferMessage(@Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg) {
-        this.pendingMsgsMsg = pendingMsgsMsg;
     }
 
     /**

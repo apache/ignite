@@ -41,16 +41,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMessage {
     /** {@link TcpDiscoveryAbstractMessage} pending messages which are a {@link Message}. */
-    @Order(value = 0, method = "writableMessages")
-    @Nullable private Map<Integer, Message> writableMsgs;
+    @Order(0)
+    @Nullable Map<Integer, Message> writableMsgs;
 
     /** Marshallable or Java-serializable pending messages which are not a {@link Message}. */
-    @Nullable private Map<Integer, TcpDiscoveryAbstractMessage> marshallableMsgs;
+    @Nullable Map<Integer, TcpDiscoveryAbstractMessage> marshallableMsgs;
 
     /** Marshalled {@link #marshallableMsgs}. */
-    @Order(value = 1, method = "marshallableMessagesBytes")
+    @Order(1)
     @GridToStringExclude
-    @Nullable private byte[] marshallableMsgsBytes;
+    @Nullable byte[] marshallableMsgsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryCollectionMessage() {
@@ -86,29 +86,6 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
                 throw new IgniteException("Failed to unmarshal marshallable pending messages.", e);
             }
         }
-    }
-
-    /**
-     * @return Writable messages by their order.
-     * @see #messages()
-     */
-    public @Nullable Map<Integer, Message> writableMessages() {
-        return writableMsgs;
-    }
-
-    /** @param msgs Writable messages by their order. */
-    public void writableMessages(@Nullable Map<Integer, Message> msgs) {
-        writableMsgs = msgs;
-    }
-
-    /** @return Bytes of {@link #marshallableMsgs}. */
-    public @Nullable byte[] marshallableMessagesBytes() {
-        return marshallableMsgsBytes;
-    }
-
-    /** @param marshallableMsgsBytes Bytes of {@link #marshallableMsgs}. */
-    public void marshallableMessagesBytes(@Nullable byte[] marshallableMsgsBytes) {
-        this.marshallableMsgsBytes = marshallableMsgsBytes;
     }
 
     /**

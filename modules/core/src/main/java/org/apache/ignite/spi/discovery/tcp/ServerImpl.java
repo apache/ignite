@@ -137,6 +137,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpd
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
@@ -2487,12 +2488,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                if (addFinishMsg.clientDiscoData() != null) {
+                if (addFinishMsg.clientDiscoData != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
                     msg = addFinishMsg;
 
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
+                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData;
 
                     Set<Integer> mrgdCmnData = new HashSet<>();
                     Set<UUID> mrgdSpecData = new HashSet<>();
@@ -2503,7 +2504,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
                             DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
+                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData;
 
                             if (existingDiscoData != null)
                                 allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
@@ -2540,9 +2541,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    if (addFinishMsg.clientDiscoData() != null && clientId.equals(addFinishMsg.nodeId())) {
-                        addFinishMsg.clientDiscoData(null);
-                        addFinishMsg.clientNodeAttributes(null);
+                    if (addFinishMsg.clientDiscoData != null && clientId.equals(addFinishMsg.nodeId)) {
+                        addFinishMsg.clientDiscoData = null;
+                        addFinishMsg.clientNodeAttrs = null;
 
                         break;
                     }
@@ -4136,7 +4137,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         Collection<TcpDiscoveryAbstractMessage> msgs = msgHist.messages(null, node);
 
                         if (msgs != null) {
-                            reconMsg.pendingMessages(msgs);
+                            reconMsg.pendingMsgsMsg = new TcpDiscoveryCollectionMessage(msgs);
 
                             reconMsg.success(true);
                         }
@@ -4858,9 +4859,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         node.id());
 
                     if (node.clientRouterNodeId() != null) {
-                        addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
+                        addFinishMsg.clientDiscoData = msg.gridDiscoveryData();
 
-                        addFinishMsg.clientNodeAttributes(node.attributes());
+                        addFinishMsg.clientNodeAttrs = node.attributes();
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -5125,7 +5126,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             assert msg != null;
 
-            UUID nodeId = msg.nodeId();
+            UUID nodeId = msg.nodeId;
 
             assert nodeId != null;
 
@@ -6985,7 +6986,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 TcpDiscoveryClientReconnectMessage msg0 = (TcpDiscoveryClientReconnectMessage)msg;
 
                                 // If message is received from previous node and node is connecting forward to next node.
-                                if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
+                                if (!getLocalNodeId().equals(msg0.routerNodeId) && state == CONNECTING) {
                                     spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
                                     msgWorker.addMessage(msg);
@@ -7346,25 +7347,25 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             UUID locNodeId = getLocalNodeId();
 
-            boolean isLocNodeRouter = msg.routerNodeId().equals(locNodeId);
+            boolean isLocNodeRouter = msg.routerNodeId.equals(locNodeId);
 
             TcpDiscoveryNode node = ring.node(nodeId);
 
             assert node == null || node.clientRouterNodeId() != null;
 
             if (node != null) {
-                node.clientRouterNodeId(msg.routerNodeId());
+                node.clientRouterNodeId(msg.routerNodeId);
                 node.clientAliveTime(spi.clientFailureDetectionTimeout());
             }
 
             if (!msg.verified()) {
                 if (isLocNodeRouter || isLocalNodeCoordinator()) {
                     if (node != null) {
-                        Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
+                        Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMsgId, node);
 
                         if (pending != null) {
                             msg.verifierNodeId(locNodeId);
-                            msg.pendingMessages(pending);
+                            msg.pendingMsgsMsg = new TcpDiscoveryCollectionMessage(pending);
                             msg.success(true);
 
                             if (log.isDebugEnabled()) {
