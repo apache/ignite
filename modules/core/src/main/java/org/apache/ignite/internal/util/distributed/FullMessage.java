@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,24 +39,39 @@ import org.jetbrains.annotations.Nullable;
  * @see InitMessage
  * @see SingleNodeMessage
  */
-public class FullMessage<R extends Serializable> implements DiscoveryCustomMessage {
+public class FullMessage<R extends Serializable> implements DiscoveryCustomMessage, Message {
+    /** */
+    public static final short DIRECT_TYPE = 513;
+
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Process id. */
-    private final UUID processId;
+    @Order(1)
+    UUID processId;
 
     /** Process type. */
-    private final int type;
+    @Order(2)
+    int type;
 
     /** Results. */
-    private Map<UUID, R> res;
+    // TODO: Generic type R extends Serializable may require special handling in the future.
+    @Order(3)
+    Map<UUID, R> res;
 
     /** Errors. */
-    private Map<UUID, Throwable> err;
+    // TODO: Throwable is not a standard Message type, may require special handling in the future.
+    @Order(4)
+    Map<UUID, Throwable> err;
+
+    /** */
+    public FullMessage() {
+        // No-op.
+    }
 
     /**
      * @param processId Process id.
@@ -63,6 +80,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
      * @param err Errors
      */
     public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Throwable> err) {
+        this.id = IgniteUuid.randomUuid();
         this.processId = processId;
         this.type = type.ordinal();
         this.res = res;
@@ -108,6 +126,11 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     /** @return Nodes errors. */
     public Map<UUID, Throwable> error() {
         return err;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
