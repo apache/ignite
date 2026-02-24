@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class UUIDCollectionMessage implements Message {
     /** The collection of UUIDs that was wrapped. */
     @Order(0)
-    private Collection<UUID> uuids;
+    Collection<UUID> uuids;
 
     /**
      * Empty constructor required for direct marshalling.

@@ -23,26 +23,10 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 public class DefaultMapperEnumFieldsMessage implements Message {
     @Order(0)
-    private TransactionIsolation publicEnum;
+    TransactionIsolation publicEnum;
 
     @Order(1)
-    private GridCacheOperation internalEnum;
-
-    public TransactionIsolation publicEnum() {
-        return publicEnum;
-    }
-
-    public void publicEnum(TransactionIsolation publicEnum) {
-        this.publicEnum = publicEnum;
-    }
-
-    public GridCacheOperation internalEnum() {
-        return internalEnum;
-    }
-
-    public void internalEnum(GridCacheOperation internalEnum) {
-        this.internalEnum = internalEnum;
-    }
+    GridCacheOperation internalEnum;
 
     public short directType() {
         return 0;

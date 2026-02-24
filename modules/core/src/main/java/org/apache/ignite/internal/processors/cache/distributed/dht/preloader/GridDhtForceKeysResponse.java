@@ -40,26 +40,26 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(4)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
     @Order(5)
-    private IgniteUuid miniId;
+    IgniteUuid miniId;
 
     /** Error message. */
-    @Order(value = 6, method = "errorMessage")
-    @Nullable private volatile ErrorMessage errMsg;
+    @Order(6)
+    @Nullable volatile ErrorMessage errMsg;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
     @Order(7)
-    private List<KeyCacheObject> missedKeys;
+    List<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
-    @Order(value = 8, method = "forcedInfos")
-    private List<GridCacheEntryInfo> infos;
+    @Order(8)
+    List<GridCacheEntryInfo> infos;
 
     /**
      * Empty constructor.

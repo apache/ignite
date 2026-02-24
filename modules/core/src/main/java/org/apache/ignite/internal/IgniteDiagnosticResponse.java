@@ -25,12 +25,12 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class IgniteDiagnosticResponse implements Message {
     /** */
-    @Order(value = 0, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** */
-    @Order(value = 1, method = "responseInfo")
-    private @Nullable String respInfo;
+    @Order(1)
+    @Nullable String respInfo;
 
     /**
      * Default constructor required by {@link GridIoMessageFactory}.
