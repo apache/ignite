@@ -29,7 +29,7 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
 
     /** */
     @Order(2)
-    private boolean updated;
+    boolean updated;
 
     /** Empty constructor of {@link DiscoveryMessageFactory}. */
     public DistributedMetaStorageCasAckMessage() {
@@ -40,16 +40,6 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
     public DistributedMetaStorageCasAckMessage(UUID reqId, boolean updated) {
         super(reqId);
 
-        this.updated = updated;
-    }
-
-    /** */
-    public boolean updated() {
-        return updated;
-    }
-
-    /** */
-    public void updated(boolean updated) {
         this.updated = updated;
     }
 

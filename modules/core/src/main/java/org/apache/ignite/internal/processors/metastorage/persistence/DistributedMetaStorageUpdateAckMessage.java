@@ -36,11 +36,11 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
 
     /** */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /** Request ID. */
-    @Order(value = 1, method = "requestId")
-    private UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** Empty constructor of {@link DiscoveryMessageFactory}. */
     public DistributedMetaStorageUpdateAckMessage() {
@@ -56,21 +56,6 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
-    }
-
-    /** @param id Message id. */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /** @return Request ID. */
-    public UUID requestId() {
-        return reqId;
-    }
-
-    /** @param reqId Request ID. */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
     }
 
     /** {@inheritDoc} */

@@ -1160,11 +1160,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateAckMessage msg
     ) {
-        GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.requestId());
+        GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.reqId);
 
         if (fut != null) {
             Boolean res = msg instanceof DistributedMetaStorageCasAckMessage
-                ? ((DistributedMetaStorageCasAckMessage)msg).updated()
+                ? ((DistributedMetaStorageCasAckMessage)msg).updated
                 : null;
 
             fut.onDone(res);
