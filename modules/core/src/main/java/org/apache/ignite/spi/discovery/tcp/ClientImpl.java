@@ -787,6 +787,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
 
+                    joinReqMsg.prepareMarshal(spi.marshaller());
+
                     TcpDiscoveryNode nodef = node;
 
                     joinReqMsg.spanContainer().span(
