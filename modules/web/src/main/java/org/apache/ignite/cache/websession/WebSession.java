@@ -249,7 +249,7 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getValue(String name) {
+    @Deprecated public Object getValue(String name) {
         return getAttribute(name);
     }
 
@@ -262,7 +262,7 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public String[] getValueNames() {
+    @Deprecated public String[] getValueNames() {
         if (!isValid)
             throw new IllegalStateException("Call on invalidated session!");
 
@@ -281,7 +281,7 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void putValue(String name, Object val) {
+    @Deprecated public void putValue(String name, Object val) {
         setAttribute(name, val);
     }
 
@@ -297,7 +297,7 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeValue(String name) {
+    @Deprecated public void removeValue(String name) {
         removeAttribute(name);
     }
 
@@ -326,7 +326,7 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public HttpSessionContext getSessionContext() {
+    @Deprecated public HttpSessionContext getSessionContext() {
         return EMPTY_SES_CTX;
     }
 

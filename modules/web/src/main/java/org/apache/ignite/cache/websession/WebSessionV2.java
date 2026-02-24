@@ -182,8 +182,7 @@ class WebSessionV2 implements HttpSession {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public HttpSessionContext getSessionContext() {
+    @Deprecated public HttpSessionContext getSessionContext() {
         return EMPTY_SES_CTX;
     }
 
@@ -216,7 +215,7 @@ class WebSessionV2 implements HttpSession {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getValue(final String name) {
+    @Deprecated public Object getValue(final String name) {
         return getAttribute(name);
     }
 
@@ -231,7 +230,7 @@ class WebSessionV2 implements HttpSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void putValue(final String name, final Object val) {
+    @Deprecated public void putValue(final String name, final Object val) {
         setAttribute(name, val);
     }
 
@@ -263,7 +262,7 @@ class WebSessionV2 implements HttpSession {
     }
 
     /** {@inheritDoc} */
-    @Override public String[] getValueNames() {
+    @Deprecated public String[] getValueNames() {
         assertValid();
 
         final Set<String> names = attributeNames();
@@ -279,7 +278,7 @@ class WebSessionV2 implements HttpSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeValue(final String name) {
+    @Deprecated public void removeValue(final String name) {
         removeAttribute(name);
     }
 
