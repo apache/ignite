@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
@@ -145,5 +146,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
         factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
         factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
+        factory.register((short)509, CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
     }
 }
