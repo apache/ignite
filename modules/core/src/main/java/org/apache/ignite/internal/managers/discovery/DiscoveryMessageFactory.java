@@ -21,6 +21,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessageSerializer;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -120,5 +122,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new TcpConnectionRequestDiscoveryMessageSerializer());
         factory.register(CacheStatisticsModeChangeMessage.DIRECT_TYPE, CacheStatisticsModeChangeMessage::new,
             new CacheStatisticsModeChangeMessageSerializer());
+        factory.register(ChangeGlobalStateFinishMessage.DIRECT_TYPE, ChangeGlobalStateFinishMessage::new,
+            new ChangeGlobalStateFinishMessageSerializer());
     }
 }
