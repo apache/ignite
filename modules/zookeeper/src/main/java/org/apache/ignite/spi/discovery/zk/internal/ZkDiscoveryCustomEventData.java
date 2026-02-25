@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
@@ -41,7 +42,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     DiscoverySpiCustomMessage msg;
 
     /** Unmarshalled message. */
-    transient DiscoverySpiCustomMessage resolvedMsg;
+    transient DiscoveryCustomMessage resolvedMsg;
 
     /**
      * @param evtId Event ID.

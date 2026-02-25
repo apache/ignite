@@ -105,13 +105,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(int topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * Gets combined node order and DR ID.
      *
      * @return Combined integer for node order and DR ID.
@@ -121,24 +114,10 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
-     * New combined node order and DR ID.
-     */
-    public void nodeOrderAndDrIdRaw(int nodeOrderDrId) {
-        this.nodeOrderDrId = nodeOrderDrId;
-    }
-
-    /**
      * @return Version order.
      */
     @Override public long order() {
         return order;
-    }
-
-    /**
-     * @param order New order.
-     */
-    public void order(long order) {
-        this.order = order;
     }
 
     /** {@inheritDoc} */
@@ -192,14 +171,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
      */
     public boolean isLess(GridCacheVersion ver) {
         return compareTo(ver) < 0;
-    }
-
-    /**
-     * @param ver Version.
-     * @return {@code True} if this version is less or equal.
-     */
-    public boolean isLessEqual(GridCacheVersion ver) {
-        return compareTo(ver) <= 0;
     }
 
     /**

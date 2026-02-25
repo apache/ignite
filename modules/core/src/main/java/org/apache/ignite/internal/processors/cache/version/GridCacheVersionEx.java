@@ -81,13 +81,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return drVer;
     }
 
-    /**
-     * @param drVer New DR version.
-     */
-    public void conflictVersion(GridCacheVersion drVer) {
-        this.drVer = drVer;
-    }
-
     /** {@inheritDoc} */
     @Override public CacheEntryVersion otherClusterVersion() {
         return conflictVersion();

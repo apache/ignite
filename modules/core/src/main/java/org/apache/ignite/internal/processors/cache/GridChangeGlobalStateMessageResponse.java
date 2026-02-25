@@ -61,31 +61,10 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     }
 
     /**
-     * @param reqId Request id.
-     */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Activation error.
      */
     public @Nullable Throwable getError() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
