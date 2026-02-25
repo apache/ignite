@@ -29,7 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_COMPRESSION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
 
 /**
@@ -63,8 +62,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        boolean fullyWritten = loopBuffer(buf, 0, buf0 ->
-            srcMsg.writeTo(buf0, new DirectMessageWriter(msgFactory, DFLT_NETWORK_COMPRESSION)));
+        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(msgFactory)));
         assertTrue("The message was not written completely.", fullyWritten);
 
         buf.flip();

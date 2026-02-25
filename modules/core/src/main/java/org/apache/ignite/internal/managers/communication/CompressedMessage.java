@@ -37,7 +37,7 @@ public class CompressedMessage implements Message {
     public static final short TYPE_CODE = -101;
 
     /** */
-    private static final int CHUNK_SIZE = 1024 * 10;
+    static final int CHUNK_SIZE = 1024 * 10;
 
     /** */
     private static final int BUFFER_CAPACITY = CHUNK_SIZE * 10;
@@ -66,14 +66,14 @@ public class CompressedMessage implements Message {
     }
 
     /**
-     * @param buf Source buffer with seralized data.
+     * @param buf Source buffer with serialized data.
      */
     public CompressedMessage(ByteBuffer buf, int compressedLvl) {
         dataSize = buf.remaining();
         this.compressedLvl = compressedLvl;
 
         if (dataSize > 0)
-            chunkedReader = new ChunkedByteReader(compress(buf), CHUNK_SIZE);
+            chunkedReader = new ChunkedByteReader(compress(buf));
     }
 
     /** */
@@ -271,15 +271,11 @@ public class CompressedMessage implements Message {
         private final byte[] inputData;
 
         /** */
-        private final int chunkSize;
-
-        /** */
         private int position;
 
         /** */
-        ChunkedByteReader(byte[] inputData, int chunkSize) {
+        ChunkedByteReader(byte[] inputData) {
             this.inputData = inputData;
-            this.chunkSize = chunkSize;
         }
 
         /** */
@@ -287,7 +283,7 @@ public class CompressedMessage implements Message {
             if (position >= inputData.length)
                 return null;
 
-            int curChunkSize = Math.min(inputData.length - position, chunkSize);
+            int curChunkSize = Math.min(inputData.length - position, CHUNK_SIZE);
 
             byte[] chunk = new byte[curChunkSize];
 

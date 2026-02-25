@@ -108,7 +108,7 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory(), spi.ignite().configuration().getNetworkCompressionLevel());
+        msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
 
         try {

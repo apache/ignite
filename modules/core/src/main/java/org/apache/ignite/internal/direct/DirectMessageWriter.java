@@ -42,6 +42,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_COMPRESSION;
+
 /**
  * Message writer implementation.
  */
@@ -61,6 +63,11 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** Buffer for writing. */
     private ByteBuffer buf;
+
+    /** */
+    public DirectMessageWriter(final MessageFactory msgFactory) {
+        this(msgFactory, DFLT_NETWORK_COMPRESSION);
+    }
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory, final int compressionLvl) {

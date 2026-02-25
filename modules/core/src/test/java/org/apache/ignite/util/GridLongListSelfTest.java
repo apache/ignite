@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_COMPRESSION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -156,7 +155,7 @@ public class GridLongListSelfTest {
      * @param initSz Initial size of list.
      */
     private static void testSerialization(GridLongList ll, int initSz) {
-        DirectMessageWriter writer = new DirectMessageWriter(null, DFLT_NETWORK_COMPRESSION);
+        DirectMessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -237,7 +236,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationInsufficientBuffer() {
-        DirectMessageWriter writer = new DirectMessageWriter(null, DFLT_NETWORK_COMPRESSION);
+        DirectMessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(10);
 
@@ -253,7 +252,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationOfNullValue() {
-        DirectMessageWriter writer = new DirectMessageWriter(null, DFLT_NETWORK_COMPRESSION);
+        DirectMessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
