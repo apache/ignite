@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,10 +45,10 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     /** Serialized message bytes. */
      //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
     @Order(6)
-    private volatile @Nullable byte[] msgBytes;
+    volatile @Nullable byte[] msgBytes;
 
     /**
-     * Default constructor.
+     * Constructor for {@link DiscoveryMessageFactory}.
      */
     public TcpDiscoveryCustomEventMessage() {
         //No-op.
