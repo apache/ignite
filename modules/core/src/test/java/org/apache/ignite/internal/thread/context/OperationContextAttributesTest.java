@@ -547,7 +547,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testThreadContextAwareForkJoinPool() throws Exception {
-        doContextAwareExecutorServiceTest(deferShutdown(new IgniteForkJoinPool()));
+        doContextAwareExecutorServiceTest(deferShutdown(new IgniteForkJoinPool("test", "test", 2, null, false)));
     }
 
     /** */

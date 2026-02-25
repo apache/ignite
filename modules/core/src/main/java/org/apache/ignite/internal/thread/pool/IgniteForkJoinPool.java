@@ -21,6 +21,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutorService;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteForkJoinPool extends OperationContextAwareExecutorService<ForkJoinPool> {
@@ -28,19 +29,19 @@ public class IgniteForkJoinPool extends OperationContextAwareExecutorService<For
     private static final IgniteForkJoinPool COMMON = new IgniteForkJoinPool(ForkJoinPool.commonPool());
 
     /** */
-    public IgniteForkJoinPool() {
-        this(new ForkJoinPool());
-    }
-
-    /** */
     public IgniteForkJoinPool(
         String threadNamePrefix,
-        String igniteInstanceName,
+        @Nullable String igniteInstanceName,
         int parallelism,
-        Thread.UncaughtExceptionHandler handler,
+        @Nullable Thread.UncaughtExceptionHandler handler,
         boolean asyncMode
     ) {
-        this(new ForkJoinPool(parallelism, new IgniteForkJoinWorkerThreadFactory(threadNamePrefix, igniteInstanceName), handler, asyncMode));
+        this(new ForkJoinPool(
+            parallelism,
+            new IgniteForkJoinWorkerThreadFactory(threadNamePrefix, igniteInstanceName),
+            handler,
+            asyncMode)
+        );
     }
 
     /** */
