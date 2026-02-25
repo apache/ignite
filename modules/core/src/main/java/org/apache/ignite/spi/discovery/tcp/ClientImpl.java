@@ -2215,13 +2215,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
-            TcpDiscoveryNode node = msg.node;
+            TcpDiscoveryNode node = new TcpDiscoveryNode(msg.nodeMsg);
 
             UUID newNodeId = node.id();
 
             if (getLocalNodeId().equals(newNodeId)) {
                 if (joining()) {
-                    Collection<TcpDiscoveryNode> top = msg.top;
+                    Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
                         spi.gridStartTime = msg.gridStartTime;
@@ -2240,8 +2240,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        if (!F.isEmpty(msg.topHist))
-                            topHist.putAll(msg.topHist);
+                        topHist.putAll(msg.topologyHistory());
                     }
                     else {
                         if (log.isDebugEnabled())

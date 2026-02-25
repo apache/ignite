@@ -174,7 +174,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     private boolean isDiscoveryNodeAddedMessage(Object msg, int joiningNdeIdx) {
         return msg instanceof TcpDiscoveryNodeAddedMessage &&
             Objects.equals(getTestIgniteInstanceName(joiningNdeIdx),
-                ((TcpDiscoveryNodeAddedMessage)msg).node.attribute(ATTR_IGNITE_INSTANCE_NAME));
+                ((TcpDiscoveryNodeAddedMessage)msg).nodeMsg.attribute(ATTR_IGNITE_INSTANCE_NAME));
     }
 
     /** */
