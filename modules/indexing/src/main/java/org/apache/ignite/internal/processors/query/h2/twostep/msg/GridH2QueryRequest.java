@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -40,16 +36,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 
 /**
  * Query request.
  */
-@IgniteCodeGeneratingFail
 public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * Map query will not destroy context until explicit query cancel request will be received because distributed join
@@ -99,63 +91,73 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private static final int FLAG_DATA_PAGE_SCAN_DISABLED = 0b10 << FLAG_DATA_PAGE_SCAN_SHIFT;
 
     /** */
-    private long reqId;
+    @Order(0)
+    long reqId;
 
     /** */
     @GridToStringInclude
-    @GridDirectCollection(Integer.class)
-    private List<Integer> caches;
+    @Order(1)
+    List<Integer> caches;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    @Order(2)
+    AffinityTopologyVersion topVer;
 
     /** Explicit partitions mappings for nodes. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = int[].class)
-    private Map<UUID, int[]> parts;
+    @Order(3)
+    Map<UUID, int[]> parts;
 
     /** Query partitions. */
     @GridToStringInclude
-    private int[] qryParts;
+    @Order(4)
+    int[] qryParts;
 
     /** */
-    private int pageSize;
-
-    /** */
-    @GridToStringInclude
-    @GridDirectCollection(Message.class)
-    private List<GridCacheSqlQuery> qrys;
-
-    /** */
-    private byte flags;
+    @Order(5)
+    int pageSize;
 
     /** */
     @GridToStringInclude
-    @GridDirectCollection(Message.class)
-    private Collection<QueryTable> tbls;
+    @Order(6)
+    List<GridCacheSqlQuery> qrys;
 
     /** */
-    private int timeout;
+    @Order(7)
+    byte flags;
+
+    /** */
+    @GridToStringInclude
+    @Order(8)
+    Collection<QueryTable> tbls;
+
+    /** */
+    @Order(9)
+    int timeout;
 
     /** */
     @GridToStringInclude(sensitive = true)
-    @GridDirectTransient
-    private Object[] params;
+    Object[] params;
 
     /** */
-    private byte[] paramsBytes;
+    @Order(10)
+    byte[] paramsBytes;
 
     /** Schema name. */
-    private String schemaName;
+    @Order(11)
+    String schemaName;
 
     /** Query initiator id. */
-    private String qryInitiatorId;
+    @Order(12)
+    String qryInitiatorId;
 
     /** Id of the query assigned by {@link RunningQueryManager} on originator node. */
-    private long qryId;
+    @Order(13)
+    long qryId;
 
     /** */
-    private boolean explicitTimeout;
+    @Order(14)
+    boolean explicitTimeout;
 
     /**
      * Empty constructor.
@@ -545,241 +547,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
         // To avoid deserializing of enum types.
         params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(caches, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt(pageSize))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray(paramsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMap(parts, MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeCollection(qrys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeCollection(tbls, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeIntArray(qryParts))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeString(schemaName))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeBoolean(explicitTimeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeLong(qryId))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeString(qryInitiatorId))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                caches = reader.readCollection(MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                pageSize = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                paramsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                parts = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                qrys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                tbls = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                timeout = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                qryParts = reader.readIntArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                schemaName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                explicitTimeout = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                qryId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                qryInitiatorId = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
