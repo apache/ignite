@@ -255,6 +255,13 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Deque<GridDeployment> deps = cache.get(meta.alias());
 
         if (deps != null) {
+            ClassLoader ldr = Thread.currentThread().getContextClassLoader();
+
+            if (ldr == null)
+                ldr = U.resolveClassLoader(ctx.config());
+
+            ldr = (ldr instanceof GridDeploymentClassLoader) ? null : ldr;
+
             for (GridDeployment dep : deps) {
                 if (dep.undeployed())
                     continue;
@@ -267,19 +274,13 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
                     return dep;
                 }
-                else {
-                    ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-                    if (ldr == null)
-                        ldr = U.resolveClassLoader(ctx.config());
+                if (ldr != null && dep.classLoader() == ldr) {
+                    if (log.isTraceEnabled())
+                        log.trace("Deployment was found for class with the local app class loader [alias="
+                            + meta.alias() + "]");
 
-                    if (ldr != null && !(ldr instanceof GridDeploymentClassLoader) && ldr == dep.classLoader()) {
-                        if (log.isTraceEnabled())
-                            log.trace("Deployment was found for class with the local app class loader [alias="
-                                + meta.alias() + "]");
-
-                        return dep;
-                    }
+                    return dep;
                 }
             }
         }

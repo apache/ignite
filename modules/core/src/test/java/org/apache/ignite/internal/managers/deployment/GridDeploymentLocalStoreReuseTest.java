@@ -108,7 +108,7 @@ public class GridDeploymentLocalStoreReuseTest extends AbstractThinClientTest {
                 client.compute().execute(TestTask.class.getName(), null);
         }
 
-        assertTrue(lsnr0.check(5_000));
-        assertTrue(lsnr1.check(5_000));
+        assertTrue(lsnr0.check());
+        assertTrue(lsnr1.check());
     }
 }
