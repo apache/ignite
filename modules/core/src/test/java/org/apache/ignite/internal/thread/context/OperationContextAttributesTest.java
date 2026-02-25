@@ -605,8 +605,12 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             checkGenerator.accept("test1", 1);
         }
 
-        try (Scope ignored = OperationContext.set(STR_ATTR, "test2", INT_ATTR, 2)) {
-            checkGenerator.accept("test2", 2);
+        try (Scope ignored = OperationContext.set(INT_ATTR, 2)) {
+            checkGenerator.accept(DFLT_STR_VAL, 2);
+        }
+
+        try (Scope ignored = OperationContext.set(STR_ATTR, "test2")) {
+            checkGenerator.accept("test2", DFLT_INT_VAL);
         }
 
         checkGenerator.accept(DFLT_STR_VAL, DFLT_INT_VAL);

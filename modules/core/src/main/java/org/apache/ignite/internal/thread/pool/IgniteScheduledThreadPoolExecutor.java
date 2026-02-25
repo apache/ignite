@@ -17,27 +17,16 @@
 
 package org.apache.ignite.internal.thread.pool;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.ignite.internal.thread.IgniteThreadFactory;
-import org.apache.ignite.internal.thread.context.concurrent.ContextAwareScheduledExecutorService;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareScheduledExecutorService;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UNDEFINED;
-import static org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable.wrapIfContextNotEmpty;
-import static org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable.wrapIfContextNotEmpty;
 
 /** */
-public class IgniteScheduledThreadPoolExecutor extends ContextAwareScheduledExecutorService {
+public class IgniteScheduledThreadPoolExecutor extends OperationContextAwareScheduledExecutorService {
     /**
      * @param threadNamePrefix Pool thread name prefix.
      * @param igniteInstanceName Ignite instance name.
@@ -48,86 +37,6 @@ public class IgniteScheduledThreadPoolExecutor extends ContextAwareScheduledExec
             poolSize,
             new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, UNDEFINED, null))
         );
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public ScheduledFuture<?> schedule(@NotNull Runnable command, long delay, @NotNull TimeUnit unit) {
-        return super.schedule(wrapIfContextNotEmpty(command), delay, unit);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <V> ScheduledFuture<V> schedule(@NotNull Callable<V> callable, long delay, @NotNull TimeUnit unit) {
-        return super.schedule(wrapIfContextNotEmpty(callable), delay, unit);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public ScheduledFuture<?> scheduleAtFixedRate(
-        @NotNull Runnable command,
-        long initialDelay,
-        long period,
-        @NotNull TimeUnit unit
-    ) {
-        return super.scheduleAtFixedRate(wrapIfContextNotEmpty(command), initialDelay, period, unit);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public ScheduledFuture<?> scheduleWithFixedDelay(
-        @NotNull Runnable command,
-        long initialDelay,
-        long delay,
-        @NotNull TimeUnit unit
-    ) {
-        return super.scheduleWithFixedDelay(wrapIfContextNotEmpty(command), initialDelay, delay, unit);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
-        return super.submit(wrapIfContextNotEmpty(task));
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> Future<T> submit(@NotNull Runnable task, T result) {
-        return super.submit(wrapIfContextNotEmpty(task), result);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
-        return super.submit(wrapIfContextNotEmpty(task));
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return super.invokeAll(wrapIfContextNotEmpty(tasks));
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(
-        @NotNull Collection<? extends Callable<T>> tasks,
-        long timeout,
-        @NotNull TimeUnit unit
-    ) throws InterruptedException {
-        return super.invokeAll(wrapIfContextNotEmpty(tasks), timeout, unit);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> T invokeAny(
-        @NotNull Collection<? extends Callable<T>> tasks
-    ) throws InterruptedException, ExecutionException {
-        return super.invokeAny(wrapIfContextNotEmpty(tasks));
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T invokeAny(
-        @NotNull Collection<? extends Callable<T>> tasks,
-        long timeout,
-        @NotNull TimeUnit unit
-    ) throws InterruptedException, ExecutionException, TimeoutException {
-        return super.invokeAny(wrapIfContextNotEmpty(tasks), timeout, unit);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void execute(@NotNull Runnable command) {
-        super.execute(wrapIfContextNotEmpty(command));
     }
 
     /**

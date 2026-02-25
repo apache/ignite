@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.thread.IgniteThreadFactory;
-import org.apache.ignite.internal.thread.context.concurrent.ContextAwareExecutorService;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutorService;
 import org.apache.ignite.internal.util.GridMutableLong;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +61,8 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACT
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteThreadPoolExecutor extends ContextAwareExecutorService<ThreadPoolExecutor> implements MetricsAwareExecutorService {
+public class IgniteThreadPoolExecutor extends OperationContextAwareExecutorService<ThreadPoolExecutor>
+    implements MetricsAwareExecutorService {
     /** Thread local task start time. */
     @GridToStringExclude
     private final ThreadLocal<GridMutableLong> taskStartTime = ThreadLocal.withInitial(() -> new GridMutableLong(0));
