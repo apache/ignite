@@ -34,8 +34,8 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 5, method = "metricsMessage")
-    private TcpDiscoveryNodeMetricsMessage metricsMsg;
+    @Order(5)
+    TcpDiscoveryNodeMetricsMessage metricsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientMetricsUpdateMessage() {
@@ -61,15 +61,6 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
      */
     public TcpDiscoveryNodeMetricsMessage metricsMessage() {
         return metricsMsg;
-    }
-
-    /**
-     * Sets the metrics message.
-     *
-     * @param metricsMsg Metrics holder message.
-     */
-    public void metricsMessage(TcpDiscoveryNodeMetricsMessage metricsMsg) {
-        this.metricsMsg = metricsMsg;
     }
 
     /** {@inheritDoc} */

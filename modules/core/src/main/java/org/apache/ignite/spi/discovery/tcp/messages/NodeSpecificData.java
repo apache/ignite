@@ -33,7 +33,7 @@ public class NodeSpecificData implements Message, Serializable {
 
     /** Node specific data. */
     @Order(0)
-    private Map<Integer, byte[]> nodeSpecificData;
+    Map<Integer, byte[]> nodeSpecificData;
 
     /** Constructor. */
     public NodeSpecificData() {
@@ -52,13 +52,6 @@ public class NodeSpecificData implements Message, Serializable {
      */
     public Map<Integer, byte[]> nodeSpecificData() {
         return nodeSpecificData;
-    }
-
-    /**
-     * @param nodeSpecificData New node specific data.
-     */
-    public void nodeSpecificData(Map<Integer, byte[]> nodeSpecificData) {
-        this.nodeSpecificData = nodeSpecificData;
     }
 
     /** {@inheritDoc} */

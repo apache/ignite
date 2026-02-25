@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.systemview.CachePagesListViewWalker;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1081,7 +1081,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
      * @param viewName System view.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, String viewName, String poolName) throws Exception {
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String viewName, String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
         execSvc.execute(0, new TestRunnable(latch, 0));

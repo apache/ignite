@@ -50,22 +50,22 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /** */
     @Order(0)
-    private UUID joiningNodeId;
+    UUID joiningNodeId;
 
     /** */
     @Order(1)
-    private Map<Integer, byte[]> joiningNodeData = new HashMap<>();
+    Map<Integer, byte[]> joiningNodeData = new HashMap<>();
 
     /** */
     private transient Map<Integer, Serializable> unmarshalledJoiningNodeData;
 
     /** */
     @Order(2)
-    private Map<Integer, byte[]> commonData = new HashMap<>();
+    Map<Integer, byte[]> commonData = new HashMap<>();
 
     /** */
     @Order(3)
-    private Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
+    Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
 
     /** */
     private transient boolean joiningNodeClient;
@@ -87,55 +87,6 @@ public class DiscoveryDataPacket implements Serializable, Message {
      */
     public UUID joiningNodeId() {
         return joiningNodeId;
-    }
-
-    /**
-     * @param joiningNodeId Joining node ID.
-     */
-    public void joiningNodeId(UUID joiningNodeId) {
-        this.joiningNodeId = joiningNodeId;
-    }
-
-    /**
-     * @return Joining node data.
-     */
-    public Map<Integer, byte[]> joiningNodeData() {
-        return joiningNodeData;
-    }
-
-    /**
-     * @param joiningNodeData Joining node data.
-     */
-    public void joiningNodeData(Map<Integer, byte[]> joiningNodeData) {
-        this.joiningNodeData = joiningNodeData;
-    }
-
-    /**
-     * @return Common data.
-     */
-    public Map<Integer, byte[]> commonData() {
-        return commonData;
-    }
-
-    /**
-     * @param commonData Common data.
-     */
-    public void commonData(Map<Integer, byte[]> commonData) {
-        this.commonData = commonData;
-    }
-
-    /**
-     * @return Node specific data.
-     */
-    public Map<UUID, NodeSpecificData> nodeSpecificData() {
-        return nodeSpecificData;
-    }
-
-    /**
-     * @param nodeSpecificData New node specific data.
-     */
-    public void nodeSpecificData(Map<UUID, NodeSpecificData> nodeSpecificData) {
-        this.nodeSpecificData = nodeSpecificData;
     }
 
     /**

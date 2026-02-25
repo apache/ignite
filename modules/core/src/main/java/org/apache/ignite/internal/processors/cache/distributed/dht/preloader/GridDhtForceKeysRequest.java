@@ -37,21 +37,21 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(4)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
     @Order(5)
-    private IgniteUuid miniId;
+    IgniteUuid miniId;
 
     /** Keys to request. */
     @Order(6)
     @GridToStringInclude
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    @Order(value = 7, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(7)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor.
@@ -96,24 +96,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini-future ID.
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini-future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -124,24 +110,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param keys Keys.
-     */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Topology version for which keys are requested.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version for which keys are requested.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

@@ -26,11 +26,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class MetadataResponseMessage implements Message {
     /** Type ID. */
     @Order(0)
-    private int typeId;
+    int typeId;
 
     /** Binary metadata version info. */
-    @Order(value = 1, method = "metadataVersionInfo")
-    private BinaryMetadataVersionInfo metaVerInfo;
+    @Order(1)
+    BinaryMetadataVersionInfo metaVerInfo;
 
     /** */
     public MetadataResponseMessage() {
@@ -68,13 +68,6 @@ public class MetadataResponseMessage implements Message {
      */
     public int typeId() {
         return typeId;
-    }
-
-    /**
-     * @param typeId Type ID.
-     */
-    public void typeId(int typeId) {
-        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */

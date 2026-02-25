@@ -43,12 +43,12 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class ColocationGroup implements CalciteMessage {
     /** */
-    @Order(value = 0, method = "sourceIds")
-    private long[] srcIds;
+    @Order(0)
+    long[] srcIds;
 
     /** */
     @Order(1)
-    private List<UUID> nodeIds;
+    List<UUID> nodeIds;
 
     /** */
     private List<List<UUID>> assignments;
@@ -60,8 +60,8 @@ public class ColocationGroup implements CalciteMessage {
     private boolean primaryAssignment;
 
     /** Marshalled assignments serialization call holder. */
-    @Order(2)
-    private int[] marshalledAssignments;
+    @Order(value = 2, method = "marshalledAssignments")
+    int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
@@ -122,21 +122,6 @@ public class ColocationGroup implements CalciteMessage {
      */
     public List<UUID> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
-    }
-
-    /** */
-    public void nodeIds(List<UUID> nodeIds) {
-        this.nodeIds = nodeIds;
-    }
-
-    /** */
-    public long[] sourceIds() {
-        return srcIds;
-    }
-
-    /** */
-    public void sourceIds(long[] srcIds) {
-        this.srcIds = srcIds;
     }
 
     /**

@@ -35,8 +35,8 @@ public class IndexKeyTypeMessage implements Message {
     private @Nullable IndexKeyType val;
 
     /** Code. */
-    @Order(0)
-    private byte code = NULL_VALUE_CODE;
+    @Order(value = 0, method = "code")
+    byte code = NULL_VALUE_CODE;
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
     public IndexKeyTypeMessage() {

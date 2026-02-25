@@ -26,12 +26,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridJobSiblingsRequest implements Message {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
     @Order(1)
-    private long topicId;
+    long topicId;
 
     /**
      * Empty constructor.
@@ -59,24 +59,10 @@ public class GridJobSiblingsRequest implements Message {
     }
 
     /**
-     * @param sesId New session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
-    /**
      * @return Topic ID.
      */
     public long topicId() {
         return topicId;
-    }
-
-    /**
-     * @param topicId New topic ID.
-     */
-    public void topicId(long topicId) {
-        this.topicId = topicId;
     }
 
     /** {@inheritDoc} */

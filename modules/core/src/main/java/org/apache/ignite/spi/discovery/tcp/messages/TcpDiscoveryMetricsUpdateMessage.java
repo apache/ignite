@@ -54,17 +54,17 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
     /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
-    @Order(value = 5, method = "connectedClientsMetricsMessages")
-    private Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs;
+    @Order(5)
+    Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs;
 
     /** Servers full metrics: server id -> server metrics + metrics of server's caches. */
     @GridToStringExclude
-    @Order(value = 6, method = "serversFullMetricsMessages")
-    private @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
+    @Order(6)
+    @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
 
     /** Client node IDs. */
-    @Order(value = 7)
-    private @Nullable Set<UUID> clientNodeIds;
+    @Order(7)
+    @Nullable Set<UUID> clientNodeIds;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryMetricsUpdateMessage() {
@@ -182,19 +182,9 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         return serversFullMetricsMsgs;
     }
 
-    /** @param serversFullMetricsMsgs Map of server full metrics messages. */
-    public void serversFullMetricsMessages(Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs) {
-        this.serversFullMetricsMsgs = serversFullMetricsMsgs;
-    }
-
     /** @return Map of nodes metrics messages. */
     public @Nullable Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMessages() {
         return connectedClientsMetricsMsgs;
-    }
-
-    /** @param connectedClientsMetricsMsgs Map of nodes metrics messages. */
-    public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs) {
-        this.connectedClientsMetricsMsgs = connectedClientsMetricsMsgs;
     }
 
     /**
@@ -204,15 +194,6 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
      */
     public @Nullable Set<UUID> clientNodeIds() {
         return clientNodeIds;
-    }
-
-    /**
-     * Sets client node IDs.
-     *
-     * @param clientNodeIds Client node IDs.
-     */
-    public void clientNodeIds(@Nullable Set<UUID> clientNodeIds) {
-        this.clientNodeIds = clientNodeIds;
     }
 
     /**

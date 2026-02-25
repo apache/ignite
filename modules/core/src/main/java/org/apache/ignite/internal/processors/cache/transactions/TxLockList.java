@@ -30,8 +30,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class TxLockList implements Message {
     /** Tx locks. */
     @GridToStringInclude
-    @Order(value = 0, method = "transactionLocks")
-    private List<TxLock> txLocks = new ArrayList<>();
+    @Order(0)
+    List<TxLock> txLocks = new ArrayList<>();
 
     /**
      * Default constructor.
@@ -45,13 +45,6 @@ public class TxLockList implements Message {
      */
     public List<TxLock> transactionLocks() {
         return txLocks;
-    }
-
-    /**
-     * @param txLocks Lock list.
-     */
-    public void transactionLocks(List<TxLock> txLocks) {
-        this.txLocks = txLocks;
     }
 
     /**

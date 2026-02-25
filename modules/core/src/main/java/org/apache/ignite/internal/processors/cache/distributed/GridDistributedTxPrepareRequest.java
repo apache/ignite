@@ -77,64 +77,64 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** Thread ID. */
     @Order(7)
     @GridToStringInclude
-    private long threadId;
+    public long threadId;
 
     /** Transaction concurrency. */
     @Order(8)
     @GridToStringInclude
-    private TransactionConcurrency concurrency;
+    public TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
     @Order(9)
     @GridToStringInclude
-    private TransactionIsolation isolation;
+    public TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
-    @Order(value = 10, method = "writeVersion")
+    @Order(10)
     @GridToStringInclude
-    private GridCacheVersion writeVer;
+    public GridCacheVersion writeVer;
 
     /** Transaction timeout. */
     @Order(11)
     @GridToStringInclude
-    private long timeout;
+    public long timeout;
 
     /** Transaction read set. */
     @Order(12)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> reads;
+    public Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
     @Order(13)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> writes;
+    public Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
     @GridToStringInclude
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
-    @Order(value = 14, method = "dhtVersionKeys")
-    private Collection<IgniteTxKey> dhtVerKeys;
+    @Order(14)
+    public Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @Order(value = 15, method = "dhtVersionValues")
-    private Collection<GridCacheVersion> dhtVerVals;
+    @Order(15)
+    public Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
     @Order(16)
-    private int txSize;
+    public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
     private Map<UUID, Collection<UUID>> txNodes;
 
     /** Tx nodes direct marshallable message. */
-    @Order(value = 17, method = "txNodesMessages")
-    private Map<UUID, UUIDCollectionMessage> txNodesMsg;
+    @Order(17)
+    public Map<UUID, UUIDCollectionMessage> txNodesMsg;
 
     /** IO policy. */
-    @Order(value = 18, method = "policy")
-    private byte plc;
+    @Order(18)
+    public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
@@ -142,7 +142,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     @Order(19)
     @GridToStringExclude
-    private byte flags;
+    public byte flags;
 
     /** Application attributes. */
     @GridToStringExclude
@@ -251,13 +251,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param plc IO policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * Adds version to be verified on remote node.
      *
      * @param key Key for which version is verified.
@@ -285,24 +278,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param threadId Thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
      * @return Commit version.
      */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer Commit version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -320,13 +299,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param timeout Transaction timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
      * @return Concurrency.
      */
     public TransactionConcurrency concurrency() {
@@ -334,24 +306,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param concurrency Concurrency.
-     */
-    public void concurrency(TransactionConcurrency concurrency) {
-        this.concurrency = concurrency;
-    }
-
-    /**
      * @return Isolation level.
      */
     public TransactionIsolation isolation() {
         return isolation;
-    }
-
-    /**
-     * @param isolation Isolation level.
-     */
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
     }
 
     /**
@@ -383,73 +341,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @return DHT version keys.
-     */
-    public Collection<IgniteTxKey> dhtVersionKeys() {
-        return dhtVerKeys;
-    }
-
-    /**
-     * @param dhtVerKeys DHT version keys.
-     */
-    public void dhtVersionKeys(Collection<IgniteTxKey> dhtVerKeys) {
-        this.dhtVerKeys = dhtVerKeys;
-    }
-
-    /**
-     * @return DHT version values.
-     */
-    public Collection<GridCacheVersion> dhtVersionValues() {
-        return dhtVerVals;
-    }
-
-    /**
-     * @param dhtVerVals DHT version values.
-     */
-    public void dhtVersionValues(Collection<GridCacheVersion> dhtVerVals) {
-        this.dhtVerVals = dhtVerVals;
-    }
-
-    /**
      * @return Expected transaction size.
      */
     public int txSize() {
         return txSize;
-    }
-
-    /**
-     * @param txSize Expected transaction size.
-     */
-    public void txSize(int txSize) {
-        this.txSize = txSize;
-    }
-
-    /**
-     * @return Tx nodes direct marshallable message.
-     */
-    public Map<UUID, UUIDCollectionMessage> txNodesMessages() {
-        return txNodesMsg;
-    }
-
-    /**
-     * @param txNodesMsg Tx nodes direct marshallable message.
-     */
-    public void txNodesMessages(Map<UUID, UUIDCollectionMessage> txNodesMsg) {
-        this.txNodesMsg = txNodesMsg;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /**

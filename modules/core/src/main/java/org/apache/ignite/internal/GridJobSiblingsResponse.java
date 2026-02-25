@@ -35,7 +35,7 @@ public class GridJobSiblingsResponse implements Message {
 
     /** */
     @Order(0)
-    private byte[] siblingsBytes;
+    byte[] siblingsBytes;
 
     /**
      * Empty constructor.
@@ -56,20 +56,6 @@ public class GridJobSiblingsResponse implements Message {
      */
     public @Nullable Collection<ComputeJobSibling> jobSiblings() {
         return siblings;
-    }
-
-    /**
-     * @return Serialized siblings.
-     */
-    public byte[] siblingsBytes() {
-        return siblingsBytes;
-    }
-
-    /**
-     * @param siblingsBytes Serialized siblings.
-     */
-    public void siblingsBytes(byte[] siblingsBytes) {
-        this.siblingsBytes = siblingsBytes;
     }
 
     /**

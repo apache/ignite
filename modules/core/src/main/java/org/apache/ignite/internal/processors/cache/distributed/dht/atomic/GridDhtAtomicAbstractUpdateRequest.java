@@ -62,15 +62,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future ID on primary. */
-    @Order(value = 4, method = "futureId")
+    @Order(4)
     protected long futId;
 
     /** Write version. */
-    @Order(value = 5, method = "writeVersion")
+    @Order(5)
     protected GridCacheVersion writeVer;
 
     /** Topology version. */
-    @Order(value = 6, method = "topologyVersion")
+    @Order(6)
     protected AffinityTopologyVersion topVer;
 
     /** Task name hash. */
@@ -85,11 +85,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** */
     @Order(8)
-    private UUID nearNodeId;
+    UUID nearNodeId;
 
     /** */
-    @Order(value = 9, method = "nearFutureId")
-    private long nearFutId;
+    @Order(9)
+    long nearFutId;
 
     /** Additional flags. */
     @Order(10)
@@ -143,13 +143,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @param nearNodeId Near node ID.
      * @param nearFutId Future ID on near node.
      */
@@ -181,13 +174,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return nearNodeId;
     }
 
-    /**
-     * @param nearNodeId New near node id.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -205,13 +191,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public final byte flags() {
         return flags;
-    }
-
-    /**
-     * @param flags New additional flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /**
@@ -320,24 +299,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param taskNameHash New task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Future ID on primary node.
      */
     public final long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId New future ID on primary node.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /**
@@ -348,24 +313,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param nearFutId New near future id.
-     */
-    public void nearFutureId(long nearFutId) {
-        this.nearFutId = nearFutId;
-    }
-
-    /**
      * @return Write version.
      */
     public final GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer New write version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**

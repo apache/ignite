@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class InetSocketAddressMessage extends InetAddressMessage {
     /** */
     @Order(2)
-    private int port;
+    int port;
 
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.
@@ -50,11 +50,6 @@ public class InetSocketAddressMessage extends InetAddressMessage {
     /** @return Port. */
     public int port() {
         return port;
-    }
-
-    /** @param port Port. */
-    public void port(int port) {
-        this.port = port;
     }
 
     /** {@inheritDoc} */

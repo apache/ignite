@@ -43,47 +43,47 @@ public class GridEventStorageMessage implements Message {
     private Object resTopic;
 
     /** */
-    @Order(value = 0, method = "responseTopicBytes")
-    private byte[] resTopicBytes;
+    @Order(0)
+    byte[] resTopicBytes;
 
     /** */
     private IgnitePredicate<?> filter;
 
     /** */
-    @Order(value = 1, method = "filterBytes")
-    private byte[] filterBytes;
+    @Order(1)
+    byte[] filterBytes;
 
     /** */
     private Collection<Event> evts;
 
     /** */
-    @Order(value = 2, method = "eventsBytes")
-    private byte[] evtsBytes;
+    @Order(2)
+    byte[] evtsBytes;
 
     /** */
-    @Order(value = 3, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(3)
+    ErrorMessage errMsg;
 
     /** */
-    @Order(value = 4, method = "classLoaderId")
-    private IgniteUuid clsLdrId;
+    @Order(4)
+    IgniteUuid clsLdrId;
 
     /** */
-    @Order(value = 5, method = "deploymentMode")
-    private DeploymentMode depMode;
+    @Order(5)
+    DeploymentMode depMode;
 
     /** */
-    @Order(value = 6, method = "filterClassName")
-    private String filterClsName;
+    @Order(6)
+    String filterClsName;
 
     /** */
-    @Order(value = 7, method = "userVersion")
-    private String userVer;
+    @Order(7)
+    String userVer;
 
     /** Node class loader participants. */
     @GridToStringInclude
     @Order(value = 8, method = "loaderParticipants")
-    private Map<UUID, IgniteUuid> ldrParties;
+    Map<UUID, IgniteUuid> ldrParties;
 
     /** */
     public GridEventStorageMessage() {
@@ -143,34 +143,6 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @return Serialized response topic.
-     */
-    public byte[] responseTopicBytes() {
-        return resTopicBytes;
-    }
-
-    /**
-     * @param resTopicBytes Serialized response topic.
-     */
-    public void responseTopicBytes(byte[] resTopicBytes) {
-        this.resTopicBytes = resTopicBytes;
-    }
-
-    /**
-     * @return Filter.
-     */
-    public byte[] filterBytes() {
-        return filterBytes;
-    }
-
-    /**
-     * @param filterBytes Filter bytes.
-     */
-    public void filterBytes(byte[] filterBytes) {
-        this.filterBytes = filterBytes;
-    }
-
-    /**
      * @return Filter.
      */
     public IgnitePredicate<?> filter() {
@@ -185,31 +157,10 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @return Serialized events.
-     */
-    public byte[] eventsBytes() {
-        return evtsBytes;
-    }
-
-    /**
-     * @param evtsBytes Serialized events.
-     */
-    public void eventsBytes(byte[] evtsBytes) {
-        this.evtsBytes = evtsBytes;
-    }
-
-    /**
      * @return the Class loader ID.
      */
     public IgniteUuid classLoaderId() {
         return clsLdrId;
-    }
-
-    /**
-     * @param clsLdrId the Class loader ID.
-     */
-    public void classLoaderId(IgniteUuid clsLdrId) {
-        this.clsLdrId = clsLdrId;
     }
 
     /**
@@ -220,13 +171,6 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @param depMode Deployment mode.
-     */
-    public void deploymentMode(DeploymentMode depMode) {
-        this.depMode = depMode;
-    }
-
-    /**
      * @return Filter class name.
      */
     public String filterClassName() {
@@ -234,24 +178,10 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @param filterClsName Filter class name.
-     */
-    public void filterClassName(String filterClsName) {
-        this.filterClsName = filterClsName;
-    }
-
-    /**
      * @return User version.
      */
     public String userVersion() {
         return userVer;
-    }
-
-    /**
-     * @param userVer User version.
-     */
-    public void userVersion(String userVer) {
-        this.userVer = userVer;
     }
 
     /**
@@ -273,20 +203,6 @@ public class GridEventStorageMessage implements Message {
      */
     @Nullable Throwable exception() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /**

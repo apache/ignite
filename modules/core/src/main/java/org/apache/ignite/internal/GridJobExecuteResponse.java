@@ -40,15 +40,15 @@ import org.jetbrains.annotations.Nullable;
 public class GridJobExecuteResponse implements Message {
     /** */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
-    @Order(value = 1, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(1)
+    IgniteUuid sesId;
 
     /** */
     @Order(2)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** */
     private IgniteException gridEx;
@@ -58,34 +58,34 @@ public class GridJobExecuteResponse implements Message {
      * Wraps also possible serialization error.
      */
     @Order(value = 3, method = "exceptionMessage")
-    private @Nullable ErrorMessage gridExMsg;
+    @Nullable ErrorMessage gridExMsg;
 
     /** Job result serialization call holder. */
-    @Order(value = 4, method = "jobResultBytes")
-    private @Nullable byte[] resBytes;
+    @Order(4)
+    @Nullable byte[] resBytes;
 
     /** */
     private @Nullable Object res;
 
     /** */
     /** Job attributes serialization call holder. */
-    @Order(value = 5, method = "jobAttrubutesBytes")
-    private byte[] jobAttrsBytes;
+    @Order(5)
+    byte[] jobAttrsBytes;
 
     /** */
     private Map<Object, Object> jobAttrs;
 
     /** */
-    @Order(value = 6, method = "cancelled")
-    private boolean isCancelled;
+    @Order(6)
+    boolean isCancelled;
 
     /** */
     @GridToStringExclude
     private IgniteException fakeEx;
 
     /** Retry topology version. */
-    @Order(value = 7, method = "retryTopologyVersion")
-    private AffinityTopologyVersion retry;
+    @Order(7)
+    AffinityTopologyVersion retry;
 
     /**
      * Default constructor.
@@ -134,33 +134,11 @@ public class GridJobExecuteResponse implements Message {
         return sesId;
     }
 
-    /** */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
     /**
      * @return Job ID.
      */
     public IgniteUuid jobId() {
         return jobId;
-    }
-
-    /** */
-    public void jobId(IgniteUuid jobId) {
-        this.jobId = jobId;
-    }
-
-    /**
-     * @return Serialized job result.
-     */
-    @Nullable public byte[] jobResultBytes() {
-        return resBytes;
-    }
-
-    /** */
-    public void jobResultBytes(@Nullable byte[] resBytes) {
-        this.resBytes = resBytes;
     }
 
     /**
@@ -196,18 +174,6 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /**
-     * @return Serialized job attributes.
-     */
-    @Nullable public byte[] jobAttrubutesBytes() {
-        return jobAttrsBytes;
-    }
-
-    /** */
-    public void jobAttrubutesBytes(@Nullable byte[] jobAttrsBytes) {
-        this.jobAttrsBytes = jobAttrsBytes;
-    }
-
-    /**
      * @return Job attributes.
      */
     @Nullable public Map<Object, Object> getJobAttributes() {
@@ -221,21 +187,11 @@ public class GridJobExecuteResponse implements Message {
         return isCancelled;
     }
 
-    /** */
-    public void cancelled(boolean cancelled) {
-        isCancelled = cancelled;
-    }
-
     /**
      * @return Sender node ID.
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
     }
 
     /**
@@ -265,11 +221,6 @@ public class GridJobExecuteResponse implements Message {
      */
     public @Nullable AffinityTopologyVersion retryTopologyVersion() {
         return retry;
-    }
-
-    /** */
-    public void retryTopologyVersion(@Nullable AffinityTopologyVersion retry) {
-        this.retry = retry;
     }
 
     /**

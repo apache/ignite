@@ -40,20 +40,20 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
 
     /** */
-    @Order(value = 0, method = "partitionIds")
-    private int[] partIds;
+    @Order(0)
+    int[] partIds;
 
     /** */
-    @Order(value = 1, method = "initialUpdateCounters")
-    private long[] initialUpdCntrs;
+    @Order(1)
+    long[] initialUpdCntrs;
 
     /** */
-    @Order(value = 2, method = "updateCounters")
-    private long[] updCntrs;
+    @Order(2)
+    long[] updCntrs;
 
     /** */
-    @Order(value = 3, method = "currentIndex")
-    private int curIdx;
+    @Order(3)
+    int curIdx;
 
     /** */
     public CachePartitionPartialCountersMap() {
@@ -234,62 +234,6 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
         sb.append("}");
 
         return sb.toString();
-    }
-
-    /**
-     * @return Partition IDs.
-     */
-    public int[] partitionIds() {
-        return partIds;
-    }
-
-    /**
-     * @param partIds Partition IDs.
-     */
-    public void partitionIds(int[] partIds) {
-        this.partIds = partIds;
-    }
-
-    /**
-     * @return Partition initial update counters.
-     */
-    public long[] initialUpdateCounters() {
-        return initialUpdCntrs;
-    }
-
-    /**
-     * @param initialUpdCntrs Partition initial update counters.
-     */
-    public void initialUpdateCounters(long[] initialUpdCntrs) {
-        this.initialUpdCntrs = initialUpdCntrs;
-    }
-
-    /**
-     * @return Partition update counters.
-     */
-    public long[] updateCounters() {
-        return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Partition update counters.
-     */
-    public void updateCounters(long[] updCntrs) {
-        this.updCntrs = updCntrs;
-    }
-
-    /**
-     * @return Current index.
-     */
-    public int currentIndex() {
-        return curIdx;
-    }
-
-    /**
-     * @param curIdx Current index.
-     */
-    public void currentIndex(int curIdx) {
-        this.curIdx = curIdx;
     }
 
     /** {@inheritDoc} */

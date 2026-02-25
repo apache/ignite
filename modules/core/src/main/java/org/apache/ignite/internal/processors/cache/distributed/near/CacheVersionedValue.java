@@ -32,14 +32,14 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class CacheVersionedValue implements Message {
     /** Value. */
-    @Order(value = 0, method = "value")
+    @Order(0)
     @GridToStringInclude
-    private CacheObject val;
+    CacheObject val;
 
     /** Cache version. */
-    @Order(value = 1, method = "version")
+    @Order(1)
     @GridToStringInclude
-    private GridCacheVersion ver;
+    GridCacheVersion ver;
 
     /** */
     public CacheVersionedValue() {
@@ -63,24 +63,10 @@ public class CacheVersionedValue implements Message {
     }
 
     /**
-     * @param ver New cache version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
-    }
-
-    /**
      * @return Cache object.
      */
     public CacheObject value() {
         return val;
-    }
-
-    /**
-     * @param val New value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
     }
 
     /**

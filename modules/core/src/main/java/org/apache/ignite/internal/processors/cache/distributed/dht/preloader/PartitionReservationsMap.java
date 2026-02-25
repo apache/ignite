@@ -29,21 +29,14 @@ public class PartitionReservationsMap implements Message {
     public static final short TYPE_CODE = 509;
 
     /** Mapping between GroupPartitionIdPair objects and their respective history counter values. */
-    @Order(value = 0, method = "reservations")
-    private Map<GroupPartitionIdPair, Long> map;
+    @Order(0)
+    Map<GroupPartitionIdPair, Long> map;
 
     /**
      * @return Partition reservations map.
      */
     public Map<GroupPartitionIdPair, Long> reservations() {
         return map;
-    }
-
-    /**
-     * @param map Partition reservations map.
-     */
-    public void reservations(Map<GroupPartitionIdPair, Long> map) {
-        this.map = map;
     }
 
     /**

@@ -44,32 +44,32 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** An unique (per demander) rebalance id. */
     @Order(4)
-    private long rebalanceId;
+    long rebalanceId;
 
     /** Topology version for which demand message is sent. */
-    @Order(value = 5, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(5)
+    AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
     @Order(6)
-    private Map<Integer, Long> last;
+    Map<Integer, Long> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
     @Order(7)
-    private Collection<Integer> missed;
+    Collection<Integer> missed;
 
     /** Entries. */
     @Order(8)
-    private Map<Integer, CacheEntryInfoCollection> infos;
+    Map<Integer, CacheEntryInfoCollection> infos;
 
     /** Message size. */
-    @Order(value = 9, method = "messageSize")
-    private int msgSize;
+    @Order(9)
+    int msgSize;
 
     /** Supplying process error message. */
-    @Order(value = 10, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(10)
+    @Nullable ErrorMessage errMsg;
 
     /**
      * @param rebalanceId Rebalance id.
@@ -131,13 +131,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param rebalanceId New unique (per demander) rebalance id.
-     */
-    public void rebalanceId(long rebalanceId) {
-        this.rebalanceId = rebalanceId;
-    }
-
-    /**
      * @return Topology version for which demand message is sent.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -145,24 +138,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param topVer New topology version for which demand message is sent.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Partitions that have been fully sent.
      */
     public Map<Integer, Long> last() {
         return last;
-    }
-
-    /**
-     * @param last New map of partitions that have been fully sent.
-     */
-    public void last(Map<Integer, Long> last) {
-        this.last = last;
     }
 
     /**
@@ -200,13 +179,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param missed New partitions which were not found.
-     */
-    public void missed(Collection<Integer> missed) {
-        this.missed = missed;
-    }
-
-    /**
      * @return Entries.
      */
     public Map<Integer, CacheEntryInfoCollection> getInfosSafe() {
@@ -216,37 +188,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         return infos;
     }
 
-    /**
-     * @return Entries.
-     */
-    public Map<Integer, CacheEntryInfoCollection> infos() {
-        return infos;
-    }
-
-    /**
-     * @param infos New entries.
-     */
-    public void infos(Map<Integer, CacheEntryInfoCollection> infos) {
-        this.infos = infos;
-    }
-
     /** Supplying process error. */
     @Nullable @Override public Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Supplying process error message.
-     */
-    @Nullable public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg New supplying process error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /**
@@ -254,13 +198,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      */
     public int messageSize() {
         return msgSize;
-    }
-
-    /**
-     * @param msgSize New message size.
-     */
-    public void messageSize(int msgSize) {
-        this.msgSize = msgSize;
     }
 
     /**

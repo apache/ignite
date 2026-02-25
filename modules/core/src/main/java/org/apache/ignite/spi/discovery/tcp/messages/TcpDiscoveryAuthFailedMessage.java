@@ -32,12 +32,12 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     private static final long serialVersionUID = 0L;
 
     /** Creator address. */
-    @Order(value = 5, method = "creatorAddressMessage")
-    private InetAddressMessage creatorAddrMsg;
+    @Order(5)
+    InetAddressMessage creatorAddrMsg;
 
     /** Node id for which authentication was failed. */
     @Order(6)
-    private UUID targetNodeId;
+    UUID targetNodeId;
 
     /** Default constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryAuthFailedMessage() {
@@ -61,21 +61,6 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     /** @return Node for which authentication was failed. */
     public UUID targetNodeId() {
         return targetNodeId;
-    }
-
-    /** @param targetNodeId Node for which authentication was failed. */
-    public void targetNodeId(UUID targetNodeId) {
-        this.targetNodeId = targetNodeId;
-    }
-
-    /** @return Creator address message. */
-    public InetAddressMessage creatorAddressMessage() {
-        return creatorAddrMsg;
-    }
-
-    /** @param addr Creator address message. */
-    public void creatorAddressMessage(InetAddressMessage addr) {
-        this.creatorAddrMsg = addr;
     }
 
     /** @return Creator address. */

@@ -36,8 +36,8 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
     public static final short TYPE_CODE = 513;
 
     /** */
-    @Order(value = 0, method = "partitionsToReload")
-    private Map<UUID, CachePartitionsToReloadMap> map;
+    @Order(0)
+    Map<UUID, CachePartitionsToReloadMap> map;
 
     /**
      * @param nodeId Node ID.
@@ -83,30 +83,9 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         parts.add(partId);
     }
 
-    /**
-     * @return {@code True} if empty.
-     */
-    public synchronized boolean isEmpty() {
-        return map == null || map.isEmpty();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDhtPartitionsToReloadMap.class, this);
-    }
-
-    /**
-     * @return Partition reload map.
-     */
-    public Map<UUID, CachePartitionsToReloadMap> partitionsToReload() {
-        return map;
-    }
-
-    /**
-     * @param map Partition reload map.
-     */
-    public void partitionsToReload(Map<UUID, CachePartitionsToReloadMap> map) {
-        this.map = map;
     }
 
     /** {@inheritDoc} */
