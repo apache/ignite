@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.thread.pool;
 
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutorService;
+import org.apache.ignite.thread.IgniteThread;
 
 /** */
 public class IgniteForkJoinPool extends OperationContextAwareExecutorService<ForkJoinPool> {
@@ -31,18 +33,14 @@ public class IgniteForkJoinPool extends OperationContextAwareExecutorService<For
     }
 
     /** */
-    public IgniteForkJoinPool(int parallelism) {
-        this(new ForkJoinPool(parallelism));
-    }
-
-    /** */
     public IgniteForkJoinPool(
+        String threadNamePrefix,
+        String igniteInstanceName,
         int parallelism,
-        ForkJoinPool.ForkJoinWorkerThreadFactory factory,
         Thread.UncaughtExceptionHandler handler,
         boolean asyncMode
     ) {
-        this(new ForkJoinPool(parallelism, factory, handler, asyncMode));
+        this(new ForkJoinPool(parallelism, new IgniteForkJoinWorkerThreadFactory(threadNamePrefix, igniteInstanceName), handler, asyncMode));
     }
 
     /** */
@@ -53,5 +51,29 @@ public class IgniteForkJoinPool extends OperationContextAwareExecutorService<For
     /** */
     public static IgniteForkJoinPool commonPool() {
         return COMMON;
+    }
+
+    /** */
+    private static final class IgniteForkJoinWorkerThreadFactory implements ForkJoinPool.ForkJoinWorkerThreadFactory {
+        /** */
+        private final String threadName;
+
+        /** */
+        private final String igniteInstanceName;
+
+        /** */
+        private IgniteForkJoinWorkerThreadFactory(String threadName, String igniteInstanceName) {
+            this.threadName = threadName;
+            this.igniteInstanceName = igniteInstanceName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+            ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+
+            worker.setName(IgniteThread.createName(worker.getPoolIndex(), threadName, igniteInstanceName));
+
+            return worker;
+        }
     }
 }
