@@ -183,10 +183,6 @@ public final class IgniteNodeAttributes {
     /** */
     public static final String ATTR_DATA_STREAMER_POOL_SIZE = ATTR_PREFIX + ".data.streamer.pool.size";
 
-    /** Memory configuration. */
-    @Deprecated
-    public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
-
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
 

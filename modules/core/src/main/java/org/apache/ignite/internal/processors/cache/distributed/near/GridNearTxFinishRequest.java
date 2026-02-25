@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Mini future ID. */
     @Order(18)
-    private int miniId;
+    int miniId;
 
     /**
      * Empty constructor.
@@ -130,15 +130,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * For use only in GridNearTxFinishRequestSerializer.
-     *
-     * @param miniId Mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
     }
 
     /**

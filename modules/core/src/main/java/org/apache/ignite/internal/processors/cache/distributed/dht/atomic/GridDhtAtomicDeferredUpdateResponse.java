@@ -36,8 +36,8 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** ACK future versions. */
-    @Order(value = 4, method = "futureIds")
-    private GridLongList futIds;
+    @Order(4)
+    GridLongList futIds;
 
     /** */
     @GridToStringExclude

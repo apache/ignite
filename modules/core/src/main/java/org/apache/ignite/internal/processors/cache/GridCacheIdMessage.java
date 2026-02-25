@@ -31,20 +31,13 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
     /** Cache ID. */
     @GridToStringInclude
     @Order(3)
-    protected int cacheId;
+    public int cacheId;
 
     /**
      * @return Cache ID.
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
     }
 
     /** {@inheritDoc} */

@@ -28,16 +28,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GenerateEncryptionKeyResponse implements Message {
     /** Request message ID. */
-    @Order(value = 0, method = "requestId")
-    private IgniteUuid id;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    @Order(value = 1, method = "encryptionKeys")
-    private Collection<byte[]> encKeys;
+    @Order(1)
+    Collection<byte[]> encKeys;
 
     /** Master key digest that encrypted group encryption keys. */
     @Order(2)
-    private byte[] masterKeyDigest;
+    byte[] masterKeyDigest;
 
     /** */
     public GenerateEncryptionKeyResponse() {
@@ -62,36 +62,15 @@ public class GenerateEncryptionKeyResponse implements Message {
     }
 
     /**
-     * @param id Request id.
-     */
-    public void requestId(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /**
      * @return Encryption keys.
      */
     public Collection<byte[]> encryptionKeys() {
         return encKeys;
     }
 
-    /**
-     * @param encKeys Encryption keys.
-     */
-    public void encryptionKeys(Collection<byte[]> encKeys) {
-        this.encKeys = encKeys;
-    }
-
     /** @return Master key digest that encrypted group encryption keys. */
     public byte[] masterKeyDigest() {
         return masterKeyDigest;
-    }
-
-    /**
-     * @param masterKeyDigest Master key digest that encrypted group encryption keys.
-     */
-    public void masterKeyDigest(byte[] masterKeyDigest) {
-        this.masterKeyDigest = masterKeyDigest;
     }
 
     /** {@inheritDoc} */

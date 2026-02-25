@@ -30,16 +30,16 @@ public class GridQueryKillRequest implements Message {
     public static final short TYPE_CODE = 172;
 
     /** Request id. */
-    @Order(value = 0, method = "requestId")
-    private long reqId;
+    @Order(0)
+    long reqId;
 
     /** Query id on a node. */
     @Order(1)
-    private long nodeQryId;
+    long nodeQryId;
 
     /** Async response flag. */
-    @Order(value = 2, method = "asyncResponse")
-    private boolean asyncRes;
+    @Order(2)
+    boolean asyncRes;
 
     /**
      * Default constructor.
@@ -67,13 +67,6 @@ public class GridQueryKillRequest implements Message {
     }
 
     /**
-     * @param reqId New request id.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Query id on a node.
      */
     public long nodeQryId() {
@@ -81,24 +74,10 @@ public class GridQueryKillRequest implements Message {
     }
 
     /**
-     * @param nodeQryId New query id on a node.
-     */
-    public void nodeQryId(long nodeQryId) {
-        this.nodeQryId = nodeQryId;
-    }
-
-    /**
      * @return {@code true} in case response should be send back asynchronous.
      */
     public boolean asyncResponse() {
         return asyncRes;
-    }
-
-    /**
-     * @param asyncRes New async response flag.
-     */
-    public void asyncResponse(boolean asyncRes) {
-        this.asyncRes = asyncRes;
     }
 
     /** {@inheritDoc} */

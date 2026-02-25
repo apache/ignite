@@ -26,16 +26,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class IndexKeyDefinition implements Message {
     /** A message for {@link IndexKeyType}. */
-    @Order(value = 0, method = "indexKeyTypeMessage")
-    private IndexKeyTypeMessage idxTypeMsg;
+    @Order(0)
+    IndexKeyTypeMessage idxTypeMsg;
 
     /** Order. */
-    @Order(value = 1, method = "ascending")
-    private boolean asc;
+    @Order(1)
+    boolean asc;
 
     /** Precision for variable length key types. */
     @Order(2)
-    private int precision;
+    int precision;
 
     /** */
     public IndexKeyDefinition() {
@@ -66,11 +66,6 @@ public class IndexKeyDefinition implements Message {
     }
 
     /** */
-    public void ascending(boolean asc) {
-        this.asc = asc;
-    }
-
-    /** */
     public IndexKeyType indexKeyType() {
         return idxTypeMsg.value();
     }
@@ -80,18 +75,4 @@ public class IndexKeyDefinition implements Message {
         return precision;
     }
 
-    /** */
-    public void precision(int precision) {
-        this.precision = precision;
-    }
-
-    /** */
-    public IndexKeyTypeMessage indexKeyTypeMessage() {
-        return idxTypeMsg;
-    }
-
-    /** */
-    public void indexKeyTypeMessage(IndexKeyTypeMessage idxTypeMsg) {
-        this.idxTypeMsg = idxTypeMsg;
-    }
 }

@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** Near keys. */
     @Order(8)
-    private List<KeyCacheObject> nearKeys;
+    List<KeyCacheObject> nearKeys;
 
     /**
      * Empty constructor.
@@ -48,13 +48,6 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
      */
     public GridDhtUnlockRequest(int cacheId, int dhtCnt, boolean addDepInfo) {
         super(cacheId, dhtCnt, addDepInfo);
-    }
-
-    /**
-     * Sets the near.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
     }
 
     /**

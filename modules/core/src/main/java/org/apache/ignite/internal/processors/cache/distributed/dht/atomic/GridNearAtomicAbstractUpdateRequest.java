@@ -76,19 +76,19 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected UUID nodeId;
 
     /** Future version. */
-    @Order(value = 4, method = "futureId")
+    @Order(4)
     protected long futId;
 
     /** Topology version. */
-    @Order(value = 5, method = "topologyVersion")
+    @Order(5)
     protected AffinityTopologyVersion topVer;
 
     /** Cache update operation. */
-    @Order(value = 6, method = "operation")
+    @Order(6)
     protected GridCacheOperation op;
 
     /** Write synchronization mode. */
-    @Order(value = 7, method = "writeSynchronizationMode")
+    @Order(7)
     protected CacheWriteSynchronizationMode syncMode;
 
     /** Task name hash. */
@@ -215,11 +215,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
-    /** Sets new topology version. */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
     /** {@inheritDoc} */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
@@ -278,50 +273,15 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * Sets task name hash code.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
-     * @return Compressed boolean flags.
-     */
-    public short flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags New compressed boolean flags.
-     */
-    public void flags(short flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return Cache update operation.
      */
     public GridCacheOperation operation() {
         return op;
     }
 
-    /**
-     * @param op Cache update operation.
-     */
-    public void operation(GridCacheOperation op) {
-        this.op = op;
-    }
-
     /** @return Write synchronization mode. */
     public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
-    }
-
-    /**
-     * @param syncMode Write synchronization mode.
-     */
-    public void writeSynchronizationMode(CacheWriteSynchronizationMode syncMode) {
-        this.syncMode = syncMode;
     }
 
     /**
@@ -336,13 +296,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * Sets near node future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /**

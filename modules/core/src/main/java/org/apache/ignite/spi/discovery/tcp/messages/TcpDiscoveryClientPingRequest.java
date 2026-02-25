@@ -32,7 +32,7 @@ public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage i
 
     /** Pinged client node ID. */
     @Order(5)
-    private @Nullable UUID nodeToPing;
+    @Nullable UUID nodeToPing;
 
     /** */
     public TcpDiscoveryClientPingRequest() {
@@ -54,13 +54,6 @@ public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage i
      */
     @Nullable public UUID nodeToPing() {
         return nodeToPing;
-    }
-
-    /**
-     * @param nodeToPing Pinged client node ID.
-     */
-    public void nodeToPing(@Nullable UUID nodeToPing) {
-        this.nodeToPing = nodeToPing;
     }
 
     /** {@inheritDoc} */

@@ -32,40 +32,26 @@ public class GridTaskResultResponse implements Message {
     private @Nullable Object res;
 
     /** Serialized result. */
-    @Order(value = 0, method = "resultBytes")
-    private byte[] resBytes;
+    @Order(0)
+    byte[] resBytes;
 
     /** Finished flag. */
     @Order(1)
-    private boolean finished;
+    boolean finished;
 
     /** Flag indicating that task has ever been launched on node. */
     @Order(2)
-    private boolean found;
+    boolean found;
 
     /** Error. */
-    @Order(value = 3, method = "error")
-    private String err;
+    @Order(3)
+    String err;
 
     /**
      * @return Task result.
      */
     @Nullable public Object result() {
         return res;
-    }
-
-    /**
-     * @param resBytes Serialized result.
-     */
-    public void resultBytes(byte[] resBytes) {
-        this.resBytes = resBytes;
-    }
-
-    /**
-     * @return Serialized result.
-     */
-    public byte[] resultBytes() {
-        return resBytes;
     }
 
     /**

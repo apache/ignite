@@ -138,10 +138,10 @@ import org.apache.ignite.internal.processors.configuration.distributed.SimpleDis
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.systemview.MetastorageViewWalker;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -210,7 +210,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SystemProperty(value = "Enables log checkpoint read lock holders")
     public static final String IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS = "IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS";
 
-    /** MemoryPolicyConfiguration name reserved for meta store. */
+    /** {@link DataRegionConfiguration} name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** Name of the system view for a system {@link MetaStorage}. */
@@ -2917,7 +2917,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cpTs,
         UUID cpId,
         WALPointer walPtr,
-        StripedExecutor exec
+        IgniteStripedExecutor exec
     ) throws IgniteCheckedException {
         assert checkpointManager != null : "Checkpoint is null";
 

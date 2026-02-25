@@ -33,19 +33,19 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
 
     /** Original transaction message. */
     @Order(3)
-    private GridCacheMessage payload;
+    GridCacheMessage payload;
 
     /** Incremental snapshot ID. */
     @Order(4)
-    private UUID id;
+    UUID id;
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    @Order(value = 5, method = "txIncrementalSnapshotId")
-    private @Nullable UUID txSnpId;
+    @Order(5)
+    @Nullable UUID txSnpId;
 
     /** Incremental snapshot topology version. */
-    @Order(value = 6, method = "snapshotTopologyVersion")
-    private long topVer;
+    @Order(6)
+    long topVer;
 
     /** */
     public IncrementalSnapshotAwareMessage() {
@@ -69,23 +69,9 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return id;
     }
 
-    /**
-     * @param id Incremental snapshot ID.
-     */
-    public void id(UUID id) {
-        this.id = id;
-    }
-
     /** ID of the latest incremental snapshot after which this transaction committed. */
     public UUID txIncrementalSnapshotId() {
         return txSnpId;
-    }
-
-    /**
-     * @param txSnpId ID of the latest incremental snapshot after which this transaction committed.
-     */
-    public void txIncrementalSnapshotId(UUID txSnpId) {
-        this.txSnpId = txSnpId;
     }
 
     /** */
@@ -93,23 +79,9 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return payload;
     }
 
-    /**
-     * @param payload Original transaction message.
-     */
-    public void payload(GridCacheMessage payload) {
-        this.payload = payload;
-    }
-
     /** @return Incremental snapshot topology version. */
     public long snapshotTopologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Incremental snapshot topology version.
-     */
-    public void snapshotTopologyVersion(long topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

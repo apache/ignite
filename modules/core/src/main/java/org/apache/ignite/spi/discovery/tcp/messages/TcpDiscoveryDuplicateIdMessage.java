@@ -32,7 +32,7 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
 
     /** ID of the node with duplicate ID. */
     @Order(5)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public TcpDiscoveryDuplicateIdMessage() {
@@ -58,13 +58,6 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @param nodeId Node with duplicate ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */

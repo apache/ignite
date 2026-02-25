@@ -28,15 +28,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class MissingMappingResponseMessage implements Message {
     /** */
     @Order(0)
-    private byte platformId;
+    byte platformId;
 
     /** */
     @Order(1)
-    private int typeId;
+    int typeId;
 
     /** */
-    @Order(value = 2, method = "className")
-    private String clsName;
+    @Order(2)
+    String clsName;
 
     /**
      * Default constructor.
@@ -67,11 +67,6 @@ public class MissingMappingResponseMessage implements Message {
         return platformId;
     }
 
-    /** */
-    public void platformId(byte platformId) {
-        this.platformId = platformId;
-    }
-
     /**
      *
      */
@@ -79,21 +74,11 @@ public class MissingMappingResponseMessage implements Message {
         return typeId;
     }
 
-    /** */
-    public void typeId(int typeId) {
-        this.typeId = typeId;
-    }
-
     /**
      *
      */
     public String className() {
         return clsName;
-    }
-
-    /** */
-    public void className(String clsName) {
-        this.clsName = clsName;
     }
 
     /** {@inheritDoc} */

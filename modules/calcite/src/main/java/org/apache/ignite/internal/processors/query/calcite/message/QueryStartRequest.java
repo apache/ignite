@@ -34,50 +34,50 @@ import org.jetbrains.annotations.Nullable;
 public class QueryStartRequest implements MarshalableMessage, ExecutionContextAware {
     /** */
     @Order(0)
-    private String schema;
+    String schema;
 
     /** */
-    @Order(value = 1, method = "queryId")
-    private UUID qryId;
+    @Order(1)
+    UUID qryId;
 
     /** */
-    @Order(value = 2, method = "originatingQueryId")
-    private long originatingQryId;
+    @Order(2)
+    long originatingQryId;
 
     /** */
-    @Order(value = 3, method = "topologyVersion")
-    private AffinityTopologyVersion ver;
+    @Order(3)
+    AffinityTopologyVersion ver;
 
     /** */
-    @Order(value = 4, method = "fragmentDescription")
-    private FragmentDescription fragmentDesc;
+    @Order(4)
+    FragmentDescription fragmentDesc;
 
     /** */
-    @Order(value = 5)
-    private String root;
+    @Order(5)
+    String root;
 
     /** Total count of fragments in query for this node. */
-    @Order(value = 6, method = "totalFragmentsCount")
-    private int totalFragmentsCnt;
+    @Order(6)
+    int totalFragmentsCnt;
 
     /** */
     private @Nullable Object[] params;
 
     /** */
-    @Order(value = 7, method = "parametersBytes")
-    private @Nullable byte[] paramsBytes;
+    @Order(7)
+    @Nullable byte[] paramsBytes;
 
     /** */
-    @Order(value = 8)
-    private long timeout;
+    @Order(8)
+    long timeout;
 
     /** */
-    @Order(value = 9, method = "queryTransactionEntries")
-    private @Nullable Collection<QueryTxEntry> qryTxEntries;
+    @Order(9)
+    @Nullable Collection<QueryTxEntry> qryTxEntries;
 
     /** */
-    @Order(value = 10, method = "applicationAttributes")
-    private @Nullable Map<String, String> appAttrs;
+    @Order(10)
+    @Nullable Map<String, String> appAttrs;
 
     /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
@@ -119,19 +119,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return schema;
     }
 
-    /** */
-    public void schema(String schema) {
-        this.schema = schema;
-    }
-
     /** {@inheritDoc} */
     @Override public UUID queryId() {
         return qryId;
-    }
-
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
     }
 
     /**
@@ -139,21 +129,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
      */
     public long originatingQueryId() {
         return originatingQryId;
-    }
-
-    /** */
-    public void originatingQueryId(long originatingQryId) {
-        this.originatingQryId = originatingQryId;
-    }
-
-    /** */
-    public @Nullable byte[] parametersBytes() {
-        return paramsBytes;
-    }
-
-    /** */
-    public void parametersBytes(@Nullable byte[] paramsBytes) {
-        this.paramsBytes = paramsBytes;
     }
 
     /** {@inheritDoc} */
@@ -168,21 +143,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return fragmentDesc;
     }
 
-    /** */
-    public void fragmentDescription(FragmentDescription fragmentDesc) {
-        this.fragmentDesc = fragmentDesc;
-    }
-
     /**
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion() {
         return ver;
-    }
-
-    /** */
-    public void topologyVersion(AffinityTopologyVersion ver) {
-        this.ver = ver;
     }
 
     /**
@@ -192,21 +157,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return root;
     }
 
-    /** */
-    public void root(String root) {
-        this.root = root;
-    }
-
     /**
      * @return Total count of fragments in query for this node.
      */
     public int totalFragmentsCount() {
         return totalFragmentsCnt;
-    }
-
-    /** */
-    public void totalFragmentsCount(int totalFragmentsCnt) {
-        this.totalFragmentsCnt = totalFragmentsCnt;
     }
 
     /**
@@ -232,16 +187,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
-    /** */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /** */
-    public void parametersBytes(long timeout) {
-        this.timeout = timeout;
-    }
-
     /**
      * @return Transaction entries to mixin on query processing.
      */
@@ -250,18 +195,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /** */
-    public void queryTransactionEntries(@Nullable Collection<QueryTxEntry> qryTxEntries) {
-        this.qryTxEntries = qryTxEntries;
-    }
-
-    /** */
     public @Nullable Map<String, String> applicationAttributes() {
         return appAttrs;
-    }
-
-    /** */
-    public void applicationAttributes(@Nullable Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */

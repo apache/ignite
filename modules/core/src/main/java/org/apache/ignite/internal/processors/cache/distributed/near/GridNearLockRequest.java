@@ -47,37 +47,37 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
     /** Topology version. */
-    @Order(value = 20, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(20)
+    AffinityTopologyVersion topVer;
 
     /** Mini future ID. */
     @Order(21)
-    private int miniId;
+    int miniId;
 
     /** Array of mapped DHT versions for this entry. */
-    @Order(value = 22, method = "dhtVersions")
+    @Order(22)
     @GridToStringInclude
-    private GridCacheVersion[] dhtVers;
+    GridCacheVersion[] dhtVers;
 
     /** Task name hash. */
     @Order(23)
-    private int taskNameHash;
+    int taskNameHash;
 
     /** TTL for create operation. */
     @Order(24)
-    private long createTtl;
+    long createTtl;
 
     /** TTL for read operation. */
     @Order(25)
-    private long accessTtl;
+    long accessTtl;
 
     /** */
-    @Order(value = 26, method = "nearFlags")
-    private byte flags;
+    @Order(26)
+    byte flags;
 
     /** Transaction label. */
-    @Order(value = 27, method = "txLabel")
-    private String txLbl;
+    @Order(27)
+    String txLbl;
 
     /**
      * Empty constructor.
@@ -229,13 +229,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Sync commit flag.
      */
     public boolean syncCommit() {
@@ -278,20 +271,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Array of mapped DHT versions for this entry.
-     */
-    public GridCacheVersion[] dhtVersions() {
-        return dhtVers;
-    }
-
-    /**
-     * @param dhtVers Array of mapped DHT versions for this entry.
-     */
-    public void dhtVersions(GridCacheVersion[] dhtVers) {
-        this.dhtVers = dhtVers;
-    }
-
-    /**
      * @param idx Index of the key.
      * @return DHT version for key at given index.
      */
@@ -307,13 +286,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
-     */
-    public void createTtl(long createTtl) {
-        this.createTtl = createTtl;
-    }
-
-    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
@@ -321,38 +293,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param accessTtl TTL for read operation.
-     */
-    public void accessTtl(long accessTtl) {
-        this.accessTtl = accessTtl;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte nearFlags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void nearFlags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param txLbl Transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
     }
 
     /** {@inheritDoc} */

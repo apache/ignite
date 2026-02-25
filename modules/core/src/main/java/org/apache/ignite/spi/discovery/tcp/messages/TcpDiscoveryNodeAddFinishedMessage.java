@@ -42,23 +42,22 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** Added node ID. */
     @Order(6)
-    private UUID nodeId;
+    UUID nodeId;
 
     /**
      * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
      * TcpDiscoveryNodeAddFinishedMessage.
      */
     @Order(7)
-    @GridToStringExclude
-    private DiscoveryDataPacket clientDiscoData;
+    @GridToStringExclude DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude
     private Map<String, Object> clientNodeAttrs;
 
     /** Serialized client node attributes. */
-    @Order(value = 8, method = "clientNodeAttributesBytes")
-    private @Nullable byte[] clientNodeAttrsBytes;
+    @Order(8)
+    @Nullable byte[] clientNodeAttrsBytes;
 
     /** Constructor. */
     public TcpDiscoveryNodeAddFinishedMessage() {
@@ -98,13 +97,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
-     * @param nodeId ID of the node added.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
      * @return Discovery data for joined client.
      */
     public DiscoveryDataPacket clientDiscoData() {
@@ -132,20 +124,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
      */
     public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
         this.clientNodeAttrs = clientNodeAttrs;
-    }
-
-    /**
-     * @return Serialized client node attributes.
-     */
-    public @Nullable byte[] clientNodeAttributesBytes() {
-        return clientNodeAttrsBytes;
-    }
-
-    /**
-     * @param clientNodeAttrsBytes Serialized client node attributes.
-     */
-    public void clientNodeAttributesBytes(@Nullable byte[] clientNodeAttrsBytes) {
-        this.clientNodeAttrsBytes = clientNodeAttrsBytes;
     }
 
     /**

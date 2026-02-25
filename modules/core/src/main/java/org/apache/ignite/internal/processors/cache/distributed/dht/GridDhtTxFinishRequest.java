@@ -35,15 +35,15 @@ import org.jetbrains.annotations.NotNull;
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
     @Order(18)
-    private UUID nearNodeId;
+    UUID nearNodeId;
 
     /** Mini future ID. */
     @Order(19)
-    private int miniId;
+    int miniId;
 
     /** */
-    @Order(value = 20, method = "updateCounters")
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    @Order(20)
+    Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
      * Empty constructor.
@@ -132,24 +132,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
-     * @param miniId Mini ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
      * @return Near node ID.
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @param nearNodeId Near node ID.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
     }
 
     /**
@@ -213,13 +199,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Partition counters update deferred until transaction commit.
-     */
-    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */

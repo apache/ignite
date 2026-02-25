@@ -34,7 +34,7 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
     @Order(7)
-    private List<KeyCacheObject> keys;
+    public List<KeyCacheObject> keys;
 
     /**
      * Empty constructor.
@@ -52,13 +52,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
         super(keyCnt, addDepInfo);
 
         this.cacheId = cacheId;
-    }
-
-    /**
-     * Sets the keys
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
     }
 
     /**

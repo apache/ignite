@@ -49,15 +49,15 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(value = 12, method = "invokeArgumentsBytes")
-    private @Nullable List<byte[]> invokeArgsBytes;
+    @Order(12)
+    @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
     private @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** Entry processors bytes. */
-    @Order(value = 13, method = "entryProcessorBytes")
-    private @Nullable byte[] entryProcBytes;
+    @Order(13)
+    @Nullable byte[] entryProcBytes;
 
     /**
      * Empty constructor.
@@ -160,26 +160,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     /** {@inheritDoc} */
     @Nullable @Override public Object[] invokeArguments() {
         return invokeArgs;
-    }
-
-    /** */
-    public @Nullable byte[] entryProcessorBytes() {
-        return entryProcBytes;
-    }
-
-    /** */
-    public void entryProcessorBytes(@Nullable byte[] entryProcBytes) {
-        this.entryProcBytes = entryProcBytes;
-    }
-
-    /** */
-    public @Nullable List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /** */
-    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
     }
 
     /** {@inheritDoc} */

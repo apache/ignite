@@ -26,12 +26,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** */
 public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
-    @Order(value = 0, method = "dhtVersion")
-    private GridCacheVersion dhtVer;
+    @Order(0)
+    GridCacheVersion dhtVer;
 
     /** */
-    @Order(value = 1, method = "nearVersion")
-    private GridCacheVersion nearVer;
+    @Order(1)
+    GridCacheVersion nearVer;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.
@@ -52,26 +52,6 @@ public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -65;
-    }
-
-    /** */
-    public GridCacheVersion dhtVersion() {
-        return dhtVer;
-    }
-
-    /** */
-    public void dhtVersion(GridCacheVersion dhtVer) {
-        this.dhtVer = dhtVer;
-    }
-
-    /** */
-    public GridCacheVersion nearVersion() {
-        return nearVer;
-    }
-
-    /** */
-    public void nearVersion(GridCacheVersion nearVer) {
-        this.nearVer = nearVer;
     }
 
     /** {@inheritDoc} */

@@ -32,11 +32,11 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
 
     /** Pinged client node ID. */
     @Order(5)
-    private @Nullable UUID nodeToPing;
+    @Nullable UUID nodeToPing;
 
     /** */
-    @Order(value = 6, method = "result")
-    private boolean res;
+    @Order(6)
+    boolean res;
 
     /** */
     public TcpDiscoveryClientPingResponse() {
@@ -63,24 +63,10 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
     }
 
     /**
-     * @param nodeToPing Pinged client node ID.
-     */
-    public void nodeToPing(@Nullable UUID nodeToPing) {
-        this.nodeToPing = nodeToPing;
-    }
-
-    /**
      * @return Result of ping.
      */
     public boolean result() {
         return res;
-    }
-
-    /**
-     * @param res Result of ping.
-     */
-    public void result(boolean res) {
-        this.res = res;
     }
 
     /** {@inheritDoc} */
