@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.thread.pool;
 
 import java.util.concurrent.ForkJoinPool;
-import org.apache.ignite.internal.thread.context.concurrent.ContextAwareExecutorService;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutorService;
 
 /** */
-public class IgniteForkJoinPool extends ContextAwareExecutorService<ForkJoinPool> {
+public class IgniteForkJoinPool extends OperationContextAwareExecutorService<ForkJoinPool> {
     /** */
     private static final IgniteForkJoinPool COMMON = new IgniteForkJoinPool(ForkJoinPool.commonPool());
 

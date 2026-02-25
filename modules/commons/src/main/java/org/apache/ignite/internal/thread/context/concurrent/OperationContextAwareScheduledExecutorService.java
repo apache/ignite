@@ -25,10 +25,10 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareC
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
 /** */
-public class ContextAwareScheduledExecutorService extends ContextAwareExecutorService<ScheduledExecutorService>
+public abstract class OperationContextAwareScheduledExecutorService extends OperationContextAwareExecutorService<ScheduledExecutorService>
     implements ScheduledExecutorService {
     /** */
-    public ContextAwareScheduledExecutorService(ScheduledExecutorService delegate) {
+    protected OperationContextAwareScheduledExecutorService(ScheduledExecutorService delegate) {
         super(delegate);
     }
 

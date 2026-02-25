@@ -29,17 +29,17 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareC
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
 /** */
-public class ContextAwareExecutorService<E extends ExecutorService> implements ExecutorService {
+public abstract class OperationContextAwareExecutorService<E extends ExecutorService> implements ExecutorService {
     /** */
     protected E delegate;
 
     /** */
-    public ContextAwareExecutorService() {
+    protected OperationContextAwareExecutorService() {
         // No-op.
     }
 
     /** */
-    protected ContextAwareExecutorService(E delegate) {
+    protected OperationContextAwareExecutorService(E delegate) {
         this.delegate = delegate;
     }
 
