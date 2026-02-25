@@ -17,18 +17,13 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Message for {@link TcpDiscoveryNode}.
- *
- * @see TcpDiscoveryNode#writeExternal(ObjectOutput)
- */
+/** Message for {@link TcpDiscoveryNode}. */
 public class TcpDiscoveryNodeMessage extends ClusterNodeMessage {
     /** */
     @Order(10)

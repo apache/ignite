@@ -18,9 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -58,11 +55,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode, Comparable<TcpDiscoveryNode> {
     /** Node ID. */
     private volatile UUID id;
 
@@ -578,66 +571,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         }
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, id);
-        U.writeMap(out, attrs);
-        U.writeCollection(out, addrs);
-        U.writeCollection(out, hostNames);
-        out.writeInt(discPort);
-
-        // Cluster metrics
-        byte[] mtr = null;
-
-        ClusterMetrics metrics = this.metrics;
-
-        if (metrics != null)
-            mtr = ClusterMetricsSnapshot.serialize(metrics);
-
-        U.writeByteArray(out, mtr);
-
-        // Legacy: Number of cache metrics
-        out.writeInt(0);
-
-        out.writeLong(order);
-        out.writeLong(intOrder);
-        out.writeObject(ver);
-        U.writeUuid(out, clientRouterNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readUuid(in);
-
-        attrs = U.sealMap(U.<String, Object>readMap(in));
-        addrs = U.readCollection(in);
-        hostNames = U.readCollection(in);
-        discPort = in.readInt();
-
-        Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
-
-        // Cluster metrics
-        byte[] mtr = U.readByteArray(in);
-
-        if (mtr != null)
-            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
-
-        // Legacy: Cache metrics
-        int cacheMetricsSize = in.readInt();
-        assert cacheMetricsSize == 0;
-        assert cacheMetrics != null && cacheMetrics.isEmpty();
-
-        order = in.readLong();
-        intOrder = in.readLong();
-        ver = (IgniteProductVersion)in.readObject();
-        clientRouterNodeId = U.readUuid(in);
-
-        if (clientRouterNodeId() != null)
-            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
-        else
-            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */
