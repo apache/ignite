@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery;
 import java.util.Collection;
 import java.util.NavigableMap;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,8 +42,8 @@ public class DiscoveryNotification {
     /** Topology history. */
     private @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist;
 
-    /** Custom message data. */
-    private @Nullable DiscoverySpiCustomMessage customMsgData;
+    /** Custom message. */
+    private @Nullable DiscoveryCustomMessage customMsg;
 
     /** Span container. */
     private SpanContainer spanContainer;
@@ -66,7 +67,7 @@ public class DiscoveryNotification {
      * @param node Node.
      * @param topSnapshot Topology snapshot.
      * @param topHist Topology history.
-     * @param customMsgData Custom message data.
+     * @param customMsg Custom message.
      * @param spanContainer Span container.
      */
     public DiscoveryNotification(
@@ -75,7 +76,7 @@ public class DiscoveryNotification {
         ClusterNode node,
         Collection<ClusterNode> topSnapshot,
         @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist,
-        @Nullable DiscoverySpiCustomMessage customMsgData,
+        @Nullable DiscoveryCustomMessage customMsg,
         SpanContainer spanContainer
     ) {
         this.eventType = eventType;
@@ -83,7 +84,7 @@ public class DiscoveryNotification {
         this.node = node;
         this.topSnapshot = topSnapshot;
         this.topHist = topHist;
-        this.customMsgData = customMsgData;
+        this.customMsg = customMsg;
         this.spanContainer = spanContainer;
     }
 
@@ -123,10 +124,10 @@ public class DiscoveryNotification {
     }
 
     /**
-     * @return Custom message data.
+     * @return Custom message.
      */
-    public DiscoverySpiCustomMessage getCustomMsgData() {
-        return customMsgData;
+    public DiscoveryCustomMessage customMessage() {
+        return customMsg;
     }
 
     /**

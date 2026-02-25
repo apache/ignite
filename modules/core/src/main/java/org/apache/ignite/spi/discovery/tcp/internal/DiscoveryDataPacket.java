@@ -90,55 +90,6 @@ public class DiscoveryDataPacket implements Serializable, Message {
     }
 
     /**
-     * @param joiningNodeId Joining node ID.
-     */
-    public void joiningNodeId(UUID joiningNodeId) {
-        this.joiningNodeId = joiningNodeId;
-    }
-
-    /**
-     * @return Joining node data.
-     */
-    public Map<Integer, byte[]> joiningNodeData() {
-        return joiningNodeData;
-    }
-
-    /**
-     * @param joiningNodeData Joining node data.
-     */
-    public void joiningNodeData(Map<Integer, byte[]> joiningNodeData) {
-        this.joiningNodeData = joiningNodeData;
-    }
-
-    /**
-     * @return Common data.
-     */
-    public Map<Integer, byte[]> commonData() {
-        return commonData;
-    }
-
-    /**
-     * @param commonData Common data.
-     */
-    public void commonData(Map<Integer, byte[]> commonData) {
-        this.commonData = commonData;
-    }
-
-    /**
-     * @return Node specific data.
-     */
-    public Map<UUID, NodeSpecificData> nodeSpecificData() {
-        return nodeSpecificData;
-    }
-
-    /**
-     * @param nodeSpecificData New node specific data.
-     */
-    public void nodeSpecificData(Map<UUID, NodeSpecificData> nodeSpecificData) {
-        this.nodeSpecificData = nodeSpecificData;
-    }
-
-    /**
      * @param bag Bag.
      * @param nodeId Node id.
      * @param marsh Marsh.

@@ -23,10 +23,11 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 
 /**
  * This annotation is for all implementations of {@link DiscoverySpi} that support
- * topology mutable {@link DiscoverySpiCustomMessage}s.
+ * topology mutable {@link DiscoveryCustomMessage}s.
  */
 @Documented
 @Inherited
@@ -34,7 +35,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface DiscoverySpiMutableCustomMessageSupport {
     /**
-     * @return Whether or not target SPI supports mutable {@link DiscoverySpiCustomMessage}s.
+     * @return Whether or not target SPI supports mutable {@link DiscoveryCustomMessage}s.
      */
     public boolean value();
 }
