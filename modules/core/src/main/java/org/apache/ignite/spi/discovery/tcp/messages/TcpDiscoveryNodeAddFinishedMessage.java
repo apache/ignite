@@ -40,14 +40,15 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** Added node ID. */
     @Order(6)
-    UUID nodeId;
+    public UUID nodeId;
 
     /**
      * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
      * TcpDiscoveryNodeAddFinishedMessage.
      */
     @Order(7)
-    @GridToStringExclude DiscoveryDataPacket clientDiscoData;
+    @GridToStringExclude
+    public DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude

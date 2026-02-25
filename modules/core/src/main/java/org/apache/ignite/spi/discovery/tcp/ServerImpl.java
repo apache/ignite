@@ -2500,12 +2500,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                if (addFinishMsg.clientDiscoData() != null) {
+                if (addFinishMsg.clientDiscoData != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
                     msg = addFinishMsg;
 
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
+                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData;
 
                     Set<Integer> mrgdCmnData = new HashSet<>();
                     Set<UUID> mrgdSpecData = new HashSet<>();
@@ -2516,7 +2516,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
                             DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
+                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData;
 
                             if (existingDiscoData != null)
                                 allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
@@ -2553,8 +2553,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    if (addFinishMsg.clientDiscoData() != null && clientId.equals(addFinishMsg.nodeId())) {
-                        addFinishMsg.clientDiscoData(null);
+                    if (addFinishMsg.clientDiscoData != null && clientId.equals(addFinishMsg.nodeId)) {
+                        addFinishMsg.clientDiscoData = null;
                         addFinishMsg.clientNodeAttributes(null);
 
                         break;
@@ -4871,7 +4871,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         node.id());
 
                     if (node.clientRouterNodeId() != null) {
-                        addFinishMsg.clientDiscoData(msg.dataPacket);
+                        addFinishMsg.clientDiscoData = msg.dataPacket;
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
                     }
@@ -5136,7 +5136,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             assert msg != null;
 
-            UUID nodeId = msg.nodeId();
+            UUID nodeId = msg.nodeId;
 
             assert nodeId != null;
 

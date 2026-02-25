@@ -2293,9 +2293,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (getLocalNodeId().equals(msg.nodeId())) {
+            if (getLocalNodeId().equals(msg.nodeId)) {
                 if (joining()) {
-                    DiscoveryDataPacket dataContainer = msg.clientDiscoData();
+                    DiscoveryDataPacket dataContainer = msg.clientDiscoData;
 
                     if (dataContainer != null)
                         spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
@@ -2350,7 +2350,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (nodeAdded()) {
-                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
+                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId);
 
                     if (node == null) {
                         if (log.isDebugEnabled())
