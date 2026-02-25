@@ -80,7 +80,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedUntrustedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithAddressFilterTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithWrongServerTest;
-import org.apache.ignite.spi.discovery.tcp.TestMetricUpdateFailure;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
@@ -151,8 +150,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     IgniteDiscoveryMassiveNodeFailTest.class,
     TcpDiscoveryCoordinatorFailureTest.class,
-
-    TestMetricUpdateFailure.class,
 
     // Client connect.
     IgniteClientConnectTest.class,
