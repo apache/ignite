@@ -95,8 +95,8 @@ import org.apache.ignite.internal.systemview.CachePagesListViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.MetastorageViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.GridTestClockTimer;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1930,7 +1930,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
      * @param view System view.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, SystemView<StripedExecutorTaskView> view,
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, SystemView<StripedExecutorTaskView> view,
         String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 

@@ -242,13 +242,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @param topVer Topology version.
-     */
-    void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @param filteredCnt Number of entries filtered before this entry.
      */
     void filteredCount(long filteredCnt) {

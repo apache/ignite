@@ -29,9 +29,6 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Node ID. */
-    private final UUID nodeId;
-
     /** Cache names which are expected to be in the group along with their deployment IDs. */
     private Map<String, IgniteUuid> caches;
 
@@ -56,16 +53,8 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
         Map<String, IgniteUuid> caches, boolean enable) {
         super(opId, grpId, grpDepId);
 
-        this.nodeId = nodeId;
         this.caches = caches;
         this.enable = enable;
-    }
-
-    /**
-     * @return Node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
     }
 
     /**

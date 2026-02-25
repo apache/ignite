@@ -124,11 +124,6 @@ public class FragmentMapping implements CalciteMessage {
     }
 
     /** */
-    public void colocationGroups(List<ColocationGroup> colocationGrps) {
-        this.colocationGrps = colocationGrps;
-    }
-
-    /** */
     public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSrc) {
         if (colocationGrps.isEmpty())
             return this;

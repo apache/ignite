@@ -63,11 +63,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         this.futId = futId;
     }
 
-    /** Partition ID this message is targeted to. */
-    public void partition(int part) {
-        this.part = part;
-    }
-
     /** {@inheritDoc} */
     @Override public final int partition() {
         return part;
@@ -79,16 +74,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
      */
     public GridCacheVersion xid() {
         return txId;
-    }
-
-    /** */
-    public void xid(GridCacheVersion txId) {
-        this.txId = txId;
-    }
-
-    /** */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**

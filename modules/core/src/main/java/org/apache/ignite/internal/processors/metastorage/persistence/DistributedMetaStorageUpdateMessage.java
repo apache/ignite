@@ -73,11 +73,6 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         return valBytes;
     }
 
-    /** */
-    public boolean isAckMessage() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return new DistributedMetaStorageUpdateAckMessage(reqId);
