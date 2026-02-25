@@ -39,6 +39,7 @@ public class TcpDiscoveryNodeMessage extends ClusterNodeMessage {
     public long intOrder;
 
     /** */
+    @Order(12)
     public @Nullable UUID clientRouterNodeId;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
