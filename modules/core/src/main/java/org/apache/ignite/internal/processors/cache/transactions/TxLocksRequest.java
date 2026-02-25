@@ -72,27 +72,6 @@ public class TxLocksRequest extends GridCacheMessage {
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] txKeysArray() {
-        return txKeysArr;
-    }
-
-    /**
-     * @param txKeysArr Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public void txKeysArray(IgniteTxKey[] txKeysArr) {
-        this.txKeysArr = txKeysArr;
-    }
-
-    /**
      * @return Tx keys.
      */
     public Collection<IgniteTxKey> txKeys() {

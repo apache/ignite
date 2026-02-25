@@ -83,48 +83,6 @@ public class TxLocksResponse extends GridCacheMessage {
     }
 
     /**
-     * @return Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] nearTxKeysArray() {
-        return nearTxKeysArr;
-    }
-
-    /**
-     * @param nearTxKeysArr Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public void nearTxKeysArray(IgniteTxKey[] nearTxKeysArr) {
-        this.nearTxKeysArr = nearTxKeysArr;
-    }
-
-    /**
-     * @return Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] txKeysArray() {
-        return txKeysArr;
-    }
-
-    /**
-     * @param txKeysArr Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public void txKeysArray(IgniteTxKey[] txKeysArr) {
-        this.txKeysArr = txKeysArr;
-    }
-
-    /**
-     * @return Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public TxLockList[] locksArray() {
-        return locksArr;
-    }
-
-    /**
-     * @param locksArr Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public void locksArray(TxLockList[] locksArr) {
-        this.locksArr = locksArr;
-    }
-
-    /**
      * @return Lock lists for all tx nearTxKeysArr.
      */
     public Map<IgniteTxKey, TxLockList> txLocks() {

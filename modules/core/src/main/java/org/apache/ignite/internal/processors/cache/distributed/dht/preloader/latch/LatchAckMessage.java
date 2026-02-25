@@ -63,13 +63,6 @@ public class LatchAckMessage implements Message {
     }
 
     /**
-     * @param latchId New latch id.
-     */
-    public void latchId(String latchId) {
-        this.latchId = latchId;
-    }
-
-    /**
      * @return Latch topology version.
      */
     public AffinityTopologyVersion topVer() {
@@ -77,24 +70,10 @@ public class LatchAckMessage implements Message {
     }
 
     /**
-     * @param topVer New latch topology version.
-     */
-    public void topVer(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return {@code} if ack is final.
      */
     public boolean isFinal() {
         return isFinal;
-    }
-
-    /**
-     * @param isFinal New flag indicates that ack is final.
-     */
-    public void isFinal(boolean isFinal) {
-        this.isFinal = isFinal;
     }
 
     /** {@inheritDoc} */

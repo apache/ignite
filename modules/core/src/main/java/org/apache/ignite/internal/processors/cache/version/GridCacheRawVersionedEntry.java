@@ -121,30 +121,9 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         return key.value(null, false);
     }
 
-    /**
-     * @param key Key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
-     * @return Key bytes.
-     */
-    public byte[] keyBytes() {
-        return keyBytes;
-    }
-
     /** {@inheritDoc} */
     @Override public V value(CacheObjectValueContext ctx) {
         return val != null ? val.<V>value(ctx, false) : null;
-    }
-
-    /**
-     * @return Value bytes.
-     */
-    public byte[] valueBytes() {
-        return valBytes;
     }
 
     /** {@inheritDoc} */
@@ -196,19 +175,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /**
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        assert key != null;
-
-        key.finishUnmarshal(ctx, null);
-
-        if (val != null)
-            val.finishUnmarshal(ctx, null);
-    }
-
-    /**
      * Perform internal key unmarshal of this entry. It must be performed after entry is deserialized and before
      * its restored key/value are needed.
      *
@@ -223,27 +189,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
             key = U.unmarshal(marsh, keyBytes, U.resolveClassLoader(null, ctx.classLoader()));
 
             key.finishUnmarshal(ctx, null);
-        }
-    }
-
-    /**
-     * Perform internal marshal of this entry before it will be serialized.
-     *
-     * @param ctx Context.
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshal(CacheObjectContext ctx, Marshaller marsh) throws IgniteCheckedException {
-        if (keyBytes == null) {
-            key.prepareMarshal(ctx);
-
-            keyBytes = U.marshal(marsh, key);
-        }
-
-        if (valBytes == null && val != null) {
-            val.prepareMarshal(ctx);
-
-            valBytes = U.marshal(marsh, val);
         }
     }
 

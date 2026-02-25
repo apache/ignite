@@ -54,26 +54,6 @@ public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
         return -65;
     }
 
-    /** */
-    public GridCacheVersion dhtVersion() {
-        return dhtVer;
-    }
-
-    /** */
-    public void dhtVersion(GridCacheVersion dhtVer) {
-        this.dhtVer = dhtVer;
-    }
-
-    /** */
-    public GridCacheVersion nearVersion() {
-        return nearVer;
-    }
-
-    /** */
-    public void nearVersion(GridCacheVersion nearVer) {
-        this.nearVer = nearVer;
-    }
-
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
         sb.append(U.nl())

@@ -191,13 +191,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param updCntrs Update counters list.
-     */
-    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
-    }
-
-    /**
      * @return Near cache writes for which cache was not found (possible if client near cache was closed).
      */
     @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
@@ -212,38 +205,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param nearXidVer Near transaction ID.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
-    }
-
-    /**
      * @return Near node ID.
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @param nodeId Near node ID.
-     */
-    public void nearNodeId(UUID nodeId) {
-        nearNodeId = nodeId;
-    }
-
-    /**
-     * @return Invalidate near entries flags.
-     */
-    public BitSet invalidateNearEntries() {
-        return invalidateNearEntries;
-    }
-
-    /**
-     * @param invalidateNearEntries Invalidate near entries flags.
-     */
-    public void invalidateNearEntries(BitSet invalidateNearEntries) {
-        this.invalidateNearEntries = invalidateNearEntries;
     }
 
     /**
@@ -254,24 +219,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Near writes.
      */
     public Collection<IgniteTxEntry> nearWrites() {
         return nearWrites == null ? Collections.emptyList() : nearWrites;
-    }
-
-    /**
-     * @param nearWrites Near writes.
-     */
-    public void nearWrites(Collection<IgniteTxEntry> nearWrites) {
-        this.nearWrites = nearWrites;
     }
 
     /**
@@ -320,13 +271,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini future ID.
      */
     public int miniId() {
@@ -334,66 +278,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param miniId Mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
-     * @return Owned keys.
-     */
-    public Collection<IgniteTxKey> ownedKeys() {
-        return ownedKeys;
-    }
-
-    /**
-     * @param ownedKeys Owned keys.
-     */
-    public void ownedKeys(Collection<IgniteTxKey> ownedKeys) {
-        this.ownedKeys = ownedKeys;
-    }
-
-    /**
-     * @return Owned values.
-     */
-    public Collection<GridCacheVersion> ownedValues() {
-        return ownedVals;
-    }
-
-    /**
-     * @param ownedVals Owned values.
-     */
-    public void ownedValues(Collection<GridCacheVersion> ownedVals) {
-        this.ownedVals = ownedVals;
-    }
-
-    /**
-     * @return Preload keys.
-     */
-    public BitSet preloadKeys() {
-        return preloadKeys;
-    }
-
-    /**
-     * @param preloadKeys Preload keys.
-     */
-    public void preloadKeys(BitSet preloadKeys) {
-        this.preloadKeys = preloadKeys;
     }
 
     /**
@@ -424,24 +312,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param skipCompletedVers {@code True} if remote tx should skip adding itself to completed versions map on finish.
-     */
-    public void skipCompletedVersion(boolean skipCompletedVers) {
-        this.skipCompletedVers = skipCompletedVers;
-    }
-
-    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param txLbl Transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
     }
 
     /**

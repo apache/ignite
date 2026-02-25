@@ -53,26 +53,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.keys = new HashSet<>(keys);
     }
 
-    /** */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /** */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /** */
-    public Collection<KeyCacheObject> keys() {
-        return keys;
-    }
-
-    /** */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return -64;
