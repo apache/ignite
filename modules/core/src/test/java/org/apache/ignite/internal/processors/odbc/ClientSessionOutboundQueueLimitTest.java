@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientRetryNonePolicy;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.events.ConnectionClosedEvent;
@@ -70,7 +71,7 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
                 .setAddresses("127.0.0.1:10800")
                 .setHandshakeTimeout(5000) // Server will drop packets intended for the client, it can hang on handshake during reconnect.
                 .setRequestTimeout(5000)
-                .setRetryLimit(1) // Let's not retry operations if the channel was closed while waiting for a response.
+                .setRetryPolicy(new ClientRetryNonePolicy()) // Let's not retry failed operations.
                 .setEventListeners(new ConnectionEventListener() {
                     @Override public void onConnectionClosed(ConnectionClosedEvent event) {
                         isCliDisconnected.set(true);
