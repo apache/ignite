@@ -86,38 +86,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
-     * Gets ID of the node added.
-     *
-     * @return ID of the node added.
-     */
-    public UUID nodeId() {
-        return nodeId;
-    }
-
-    /**
-     * @param nodeId ID of the node added.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
-     * @return Discovery data for joined client.
-     */
-    public DiscoveryDataPacket clientDiscoData() {
-        return clientDiscoData;
-    }
-
-    /**
-     * @param clientDiscoData Discovery data for joined client.
-     */
-    public void clientDiscoData(DiscoveryDataPacket clientDiscoData) {
-        this.clientDiscoData = clientDiscoData;
-
-        assert clientDiscoData == null || !clientDiscoData.hasDataFromNode(nodeId);
-    }
-
-    /**
      * @return Client node attributes.
      */
     public Map<String, Object> clientNodeAttributes() {
