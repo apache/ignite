@@ -58,18 +58,8 @@ public class IgniteDiagnosticResponse implements Message {
     }
 
     /** */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-    /** */
     public @Nullable String responseInfo() {
         return respInfo;
-    }
-
-    /** */
-    public void responseInfo(@Nullable String respInfo) {
-        this.respInfo = respInfo;
     }
 
     /** {@inheritDoc} */

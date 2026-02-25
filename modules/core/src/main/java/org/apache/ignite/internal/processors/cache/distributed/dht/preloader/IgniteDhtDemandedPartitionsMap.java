@@ -114,11 +114,6 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     }
 
     /** */
-    public boolean hasPartition(int partId) {
-        return hasHistorical(partId) || hasFull(partId);
-    }
-
-    /** */
     public boolean hasHistorical() {
         return historical != null && !historical.isEmpty();
     }

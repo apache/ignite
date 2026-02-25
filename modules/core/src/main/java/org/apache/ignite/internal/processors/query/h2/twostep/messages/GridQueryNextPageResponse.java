@@ -116,24 +116,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param qryReqId Query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
-    }
-
-    /**
      * @return Index segment ID.
      */
     public int segmentId() {
         return segmentId;
-    }
-
-    /**
-     * @param segmentId Index segment ID.
-     */
-    public void segmentId(int segmentId) {
-        this.segmentId = segmentId;
     }
 
     /**
@@ -144,24 +130,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param qry Query.
-     */
-    public void query(int qry) {
-        this.qry = qry;
-    }
-
-    /**
      * @return Page.
      */
     public int page() {
         return page;
-    }
-
-    /**
-     * @param page Page.
-     */
-    public void page(int page) {
-        this.page = page;
     }
 
     /**
@@ -172,13 +144,6 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param allRows All rows.
-     */
-    public void allRows(int allRows) {
-        this.allRows = allRows;
-    }
-
-    /**
      * @return Columns in row.
      */
     public int columns() {
@@ -186,24 +151,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param cols Columns in row.
-     */
-    public void columns(int cols) {
-        this.cols = cols;
-    }
-
-    /**
      * @return Values.
      */
     public Collection<Message> values() {
         return vals;
-    }
-
-    /**
-     * @param vals Values.
-     */
-    public void values(Collection<Message> vals) {
-        this.vals = vals;
     }
 
     /**
@@ -251,13 +202,6 @@ public class GridQueryNextPageResponse implements Message {
      */
     public boolean last() {
         return last;
-    }
-
-    /**
-     * @param last Last page flag.
-     */
-    public void last(boolean last) {
-        this.last = last;
     }
 
     /** {@inheritDoc} */
