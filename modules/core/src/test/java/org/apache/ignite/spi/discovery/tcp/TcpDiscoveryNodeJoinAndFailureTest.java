@@ -163,7 +163,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage finishedMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    UUID nodeId = finishedMsg.nodeId();
+                    UUID nodeId = finishedMsg.nodeId;
 
                     if (nodeId.equals(node2Id)) {
                         Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");

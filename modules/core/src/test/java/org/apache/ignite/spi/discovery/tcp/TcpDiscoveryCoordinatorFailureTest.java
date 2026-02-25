@@ -341,7 +341,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage finishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    if ((finishMsg.nodeId().getLeastSignificantBits() & 0xFFFF) == dropNodeIdx) {
+                    if ((finishMsg.nodeId.getLeastSignificantBits() & 0xFFFF) == dropNodeIdx) {
                         drop = true;
 
                         dropLatch.countDown();
