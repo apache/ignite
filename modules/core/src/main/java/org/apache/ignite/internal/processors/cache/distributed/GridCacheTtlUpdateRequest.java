@@ -89,24 +89,10 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return TTL.
      */
     public long ttl() {
         return ttl;
-    }
-
-    /**
-     * @param ttl New TTL.
-     */
-    public void ttl(long ttl) {
-        this.ttl = ttl;
     }
 
     /**
@@ -149,34 +135,10 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param keys New entries keys.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Versions.
      */
     public List<GridCacheVersion> versions() {
         return vers;
-    }
-
-    /**
-     * @param vers New entries versions.
-     */
-    public void versions(List<GridCacheVersion> vers) {
-        this.vers = vers;
-    }
-
-    /**
-     * @param idx Entry index.
-     * @return Version.
-     */
-    public GridCacheVersion version(int idx) {
-        assert idx >= 0 && idx < vers.size() : idx;
-
-        return vers.get(idx);
     }
 
     /**
@@ -187,24 +149,10 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param nearKeys New near entries keys.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
-    }
-
-    /**
      * @return Versions for near cache entries.
      */
     public List<GridCacheVersion> nearVersions() {
         return nearVers;
-    }
-
-    /**
-     * @param nearVers New near entries versions.
-     */
-    public void nearVersions(List<GridCacheVersion> nearVers) {
-        this.nearVers = nearVers;
     }
 
     /** {@inheritDoc} */

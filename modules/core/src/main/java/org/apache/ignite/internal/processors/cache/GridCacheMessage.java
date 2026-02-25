@@ -266,14 +266,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @param depInfo Preset deployment info.
-     * @see GridCacheDeployable#deployInfo()
-     */
-    public void deployInfo(GridDeploymentInfoBean depInfo) {
-        this.depInfo = depInfo;
-    }
-
-    /**
      * This method is called before the whole message is serialized
      * and is responsible for pre-marshalling state.
      *

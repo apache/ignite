@@ -105,36 +105,6 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     }
 
     /**
-     * @param nodeId New node ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
-     * @return Event.
-     */
-    public int event() {
-        return evt;
-    }
-
-    /**
-     * @param evt New event type.
-     */
-    public void event(int evt) {
-        this.evt = evt;
-    }
-
-    /**
-     * @return Discovery event timestamp.
-     */
-    long eventTimestamp() {
-        assert discoEvt != null;
-
-        return discoEvt.timestamp();
-    }
-
-    /**
      * @param discoEvt Discovery event.
      */
     void discoveryEvent(DiscoveryEvent discoEvt) {
@@ -169,13 +139,6 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**

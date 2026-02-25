@@ -187,12 +187,15 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -230,7 +233,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -8304,5 +8306,15 @@ public abstract class IgniteUtils extends CommonUtils {
                InvocationTargetException e) {
             return (IgniteDataTransferObjectSerializer<T>)EMPTY_DTO_SERIALIZER;
         }
+    }
+
+    /**
+     * Unwraps messsage if it is wrapped by {@link SecurityAwareCustomMessageWrapper}.
+     *
+     * @param msg Message.
+     */
+    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoveryCustomMessage msg) {
+        return msg instanceof SecurityAwareCustomMessageWrapper ?
+            ((SecurityAwareCustomMessageWrapper)msg).delegate() : msg;
     }
 }

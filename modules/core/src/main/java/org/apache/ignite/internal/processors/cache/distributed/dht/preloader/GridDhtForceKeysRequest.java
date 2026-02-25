@@ -96,24 +96,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini-future ID.
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini-future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -124,24 +110,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param keys Keys.
-     */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Topology version for which keys are requested.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version for which keys are requested.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

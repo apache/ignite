@@ -134,33 +134,11 @@ public class GridJobExecuteResponse implements Message {
         return sesId;
     }
 
-    /** */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
     /**
      * @return Job ID.
      */
     public IgniteUuid jobId() {
         return jobId;
-    }
-
-    /** */
-    public void jobId(IgniteUuid jobId) {
-        this.jobId = jobId;
-    }
-
-    /**
-     * @return Serialized job result.
-     */
-    @Nullable public byte[] jobResultBytes() {
-        return resBytes;
-    }
-
-    /** */
-    public void jobResultBytes(@Nullable byte[] resBytes) {
-        this.resBytes = resBytes;
     }
 
     /**
@@ -196,18 +174,6 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /**
-     * @return Serialized job attributes.
-     */
-    @Nullable public byte[] jobAttrubutesBytes() {
-        return jobAttrsBytes;
-    }
-
-    /** */
-    public void jobAttrubutesBytes(@Nullable byte[] jobAttrsBytes) {
-        this.jobAttrsBytes = jobAttrsBytes;
-    }
-
-    /**
      * @return Job attributes.
      */
     @Nullable public Map<Object, Object> getJobAttributes() {
@@ -221,21 +187,11 @@ public class GridJobExecuteResponse implements Message {
         return isCancelled;
     }
 
-    /** */
-    public void cancelled(boolean cancelled) {
-        isCancelled = cancelled;
-    }
-
     /**
      * @return Sender node ID.
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
     }
 
     /**
@@ -265,11 +221,6 @@ public class GridJobExecuteResponse implements Message {
      */
     public @Nullable AffinityTopologyVersion retryTopologyVersion() {
         return retry;
-    }
-
-    /** */
-    public void retryTopologyVersion(@Nullable AffinityTopologyVersion retry) {
-        this.retry = retry;
     }
 
     /**

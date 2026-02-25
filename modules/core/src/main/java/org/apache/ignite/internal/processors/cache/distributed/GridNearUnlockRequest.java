@@ -55,13 +55,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * Sets the keys
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Keys.
      */
     public List<KeyCacheObject> keys() {
