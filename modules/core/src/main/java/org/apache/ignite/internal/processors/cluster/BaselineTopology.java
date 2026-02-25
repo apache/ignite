@@ -420,7 +420,7 @@ public class BaselineTopology implements Serializable {
         Map<Object, Map<String, Object>> nodeMap = new HashMap<>();
 
         for (BaselineNode node : nodes)
-            nodeMap.put(node.consistentId(), node.attributes());
+            nodeMap.put(node.consistentId(), new HashMap<>(node.attributes()));
 
         return new BaselineTopology(nodeMap, id);
     }

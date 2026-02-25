@@ -151,6 +151,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
@@ -2434,15 +2435,13 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private static void enrichNodeWithAttribute(TcpDiscoveryNode node, String attrName, @Nullable Object attrVal) {
+    private static void enrichNodeWithAttribute(TcpDiscoveryNodeMessage nodeMsg, String attrName, @Nullable Object attrVal) {
         if (attrVal == null)
             return;
 
-        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
+        Map<String, Object> attrs = nodeMsg.attributes();
         attrs.put(attrName, attrVal);
-
-        node.setAttributes(attrs);
+        nodeMsg.attributes(attrs);
     }
 
     /** */
@@ -4016,7 +4015,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
 
-            final TcpDiscoveryNode node = msg.node();
+            final TcpDiscoveryNode node = new TcpDiscoveryNode(msg.nodeMsg);
 
             final UUID locNodeId = getLocalNodeId();
 
@@ -4313,7 +4312,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (err == null) {
                     try {
-                        DiscoveryDataBag data = msg.gridDiscoveryData().unmarshalJoiningNodeData(
+                        DiscoveryDataBag data = msg.dataPacket.unmarshalJoiningNodeData(
                             spi.marshaller(),
                             U.resolveClassLoader(spi.ignite().configuration()),
                             false,
@@ -4659,7 +4658,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Internal order has been assigned to node: " + node);
 
-                DiscoveryDataPacket data = msg.gridDiscoveryData();
+                DiscoveryDataPacket data = msg.dataPacket;
 
                 TcpDiscoveryNodeAddedMessage nodeAddedMsg = new TcpDiscoveryNodeAddedMessage(locNodeId,
                     node, data, spi.gridStartTime);
@@ -4867,7 +4866,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (node.clientRouterNodeId() != null) {
                         addFinishMsg.clientDiscoData = msg.dataPacket;
 
-                        addFinishMsg.clientNodeAttributes(node.attributes());
+                        addFinishMsg.clientNodeAttributes(new HashMap<>(node.attributes()));
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -6960,8 +6959,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Current node holds connection with the node that is joining the cluster. Therefore, it can
                             // save certificates with which the connection was established to joining node attributes.
-                            if (spi.nodeAuth != null && nodeId.equals(req.node().id()))
-                                enrichNodeWithAttribute(req.node(), ATTR_NODE_CERTIFICATES, ses.extractCertificates());
+                            if (spi.nodeAuth != null && nodeId.equals(req.nodeMsg.id()))
+                                enrichNodeWithAttribute(req.nodeMsg, ATTR_NODE_CERTIFICATES, ses.extractCertificates());
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
@@ -7473,11 +7472,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             long sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                 spi.getSocketTimeout();
 
-            if (state == CONNECTED) {
-                TcpDiscoveryNode node = msg.node();
+            TcpDiscoveryNode node = new TcpDiscoveryNode(msg.nodeMsg);
 
+            if (state == CONNECTED) {
                 // Check that joining node can accept incoming connections.
-                if (node.clientRouterNodeId() == null) {
+                if (msg.nodeMsg.clientRouterNodeId == null) {
                     if (!pingJoiningNode(node)) {
                         spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
 
@@ -7493,7 +7492,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msg.responded(true);
 
                 if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone()) {
-                    clientMsgWrk.clientVersion(U.productVersion(msg.node()));
+                    clientMsgWrk.clientVersion(U.productVersion(node));
 
                     new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
                 }
@@ -7527,7 +7526,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
 
-                fromAddrs.addAll(msg.node().socketAddresses());
+                fromAddrs.addAll(node.socketAddresses());
 
                 spi.stats.onMessageProcessingFinished(msg);
 

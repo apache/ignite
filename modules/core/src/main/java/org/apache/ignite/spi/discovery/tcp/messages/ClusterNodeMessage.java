@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,7 +100,7 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage, Clus
         hostNames = clusterNode.hostNames();
         verMsg = new IgniteProductVersionMessage(clusterNode.version());
 
-        attrs = clusterNode.attributes();
+        attrs = new HashMap<>(clusterNode.attributes());
 
         metricsMsg = new TcpDiscoveryNodeMetricsMessage(clusterNode.metrics());
     }
@@ -178,6 +179,12 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage, Clus
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
         return attrs;
+    }
+
+    /** @param attrs Attributes. */
+    public void attributes(Map<String, Object> attrs) {
+        this.attrs = attrs;
+        attrsBytes = null;
     }
 
     /** {@inheritDoc} */
