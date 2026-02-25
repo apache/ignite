@@ -914,13 +914,6 @@ Index(es):
 You can enable or disable sampling of traces for a specific API by using the `--tracing-configuration` command.
 Refer to the link:monitoring-metrics/tracing[Tracing] section for details.
 
-Before using the command, enable experimental features of the control script:
-
-[source, shell]
-----
-export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
-----
-
 To view the current tracing configuration, execute the following command:
 
 [source, shell]

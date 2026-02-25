@@ -30,11 +30,11 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
 
     /** Original update message. */
     @Order(4)
-    private GridNearAtomicAbstractUpdateRequest payload;
+    GridNearAtomicAbstractUpdateRequest payload;
 
     /** Application attributes. */
-    @Order(value = 5, method = "applicationAttributes")
-    private Map<String, String> appAttrs;
+    @Order(5)
+    Map<String, String> appAttrs;
 
     /** */
     public AtomicApplicationAttributesAwareRequest() {

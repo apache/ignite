@@ -767,6 +767,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_NAME.null",
                 "SYS.LOCAL_CACHE_GROUPS_IO.PHYSICAL_READS.null",
                 "SYS.LOCAL_CACHE_GROUPS_IO.LOGICAL_READS.null",
+                "SYS.LOCAL_CACHE_GROUPS_IO.INSERTED_BYTES.null",
+                "SYS.LOCAL_CACHE_GROUPS_IO.REMOVED_BYTES.null",
                 "SYS.SQL_QUERIES_HISTORY.SCHEMA_NAME.null",
                 "SYS.SQL_QUERIES_HISTORY.SQL.null",
                 "SYS.SQL_QUERIES_HISTORY.LOCAL.null",

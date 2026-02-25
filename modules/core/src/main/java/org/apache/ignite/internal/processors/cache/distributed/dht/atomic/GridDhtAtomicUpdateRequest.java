@@ -46,81 +46,81 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** Keys to update. */
     @GridToStringInclude
     @Order(11)
-    private List<KeyCacheObject> keys;
+    List<KeyCacheObject> keys;
 
     /** Values to update. */
     @GridToStringInclude
-    @Order(value = 12, method = "values")
-    private List<CacheObject> vals;
+    @Order(12)
+    List<CacheObject> vals;
 
     /** Previous values. */
     @GridToStringInclude
-    @Order(value = 13, method = "previousValues")
-    private List<CacheObject> prevVals;
+    @Order(13)
+    List<CacheObject> prevVals;
 
     /** Conflict versions. */
-    @Order(value = 14, method = "conflictVersions")
-    private List<GridCacheVersion> conflictVers;
+    @Order(14)
+    List<GridCacheVersion> conflictVers;
 
     /** TTLs. */
     @Order(15)
-    private GridLongList ttls;
+    GridLongList ttls;
 
     /** Conflict expire time. */
     @Order(16)
-    private GridLongList conflictExpireTimes;
+    GridLongList conflictExpireTimes;
 
     /** Near TTLs. */
     @Order(17)
-    private GridLongList nearTtls;
+    GridLongList nearTtls;
 
     /** Near expire times. */
     @Order(18)
-    private GridLongList nearExpireTimes;
+    GridLongList nearExpireTimes;
 
     /** Near cache keys to update. */
     @GridToStringInclude
     @Order(19)
-    private List<KeyCacheObject> nearKeys;
+    List<KeyCacheObject> nearKeys;
 
     /** Values to update. */
     @GridToStringInclude
-    @Order(value = 20, method = "nearValues")
-    private List<CacheObject> nearVals;
+    @Order(20)
+    List<CacheObject> nearVals;
 
     /** Obsolete near values. */
     @GridToStringInclude
     @Order(21)
-    private List<Integer> obsoleteIndexes;
+    List<Integer> obsoleteIndexes;
 
     /** Force transform backups flag. */
     @Order(22)
-    private boolean forceTransformBackups;
+    boolean forceTransformBackups;
 
     /** Entry processors. */
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(23)
-    private List<byte[]> entryProcessorsBytes;
+    List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
     private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
 
     /** Near entry processors bytes. */
     @Order(24)
-    private List<byte[]> nearEntryProcessorsBytes;
+    List<byte[]> nearEntryProcessorsBytes;
 
     /** Optional arguments for entry processor. */
     private Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(value = 25, method = "invokeArgumentsBytes")
-    private List<byte[]> invokeArgsBytes;
+    @Order(25)
+    List<byte[]> invokeArgsBytes;
 
     /** Partition. */
-    @Order(value = 26, method = "updateCounters")
-    private GridLongList updateCntrs;
+    @Order(26)
+    GridLongList updateCntrs;
 
     /**
      * Empty constructor.

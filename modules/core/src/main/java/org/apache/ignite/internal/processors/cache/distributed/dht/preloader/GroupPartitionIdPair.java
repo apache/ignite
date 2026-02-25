@@ -27,12 +27,12 @@ public class GroupPartitionIdPair implements Message {
     public static final short TYPE_CODE = 508;
 
     /** Group ID. */
-    @Order(value = 0, method = "groupId")
-    private int grpId;
+    @Order(0)
+    int grpId;
 
     /** Partition ID. */
-    @Order(value = 1, method = "partitionId")
-    private int partId;
+    @Order(1)
+    int partId;
 
     /** Default constructor. */
     public GroupPartitionIdPair() {

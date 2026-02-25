@@ -2099,10 +2099,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 try {
                     GridPeerDeployAware jobPda0 = jobPda;
 
-                    final Throwable cause = U.unmarshal(
-                        ctx,
-                        errBytes,
+                    res.finishUnmarshal(ctx.marshaller(),
                         U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
+
+                    final Throwable cause = res.error();
 
                     final String msg = "DataStreamer request failed [node=" + nodeId + "]";
 

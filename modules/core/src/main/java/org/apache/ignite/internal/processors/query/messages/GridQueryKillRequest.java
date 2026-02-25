@@ -30,16 +30,16 @@ public class GridQueryKillRequest implements Message {
     public static final short TYPE_CODE = 172;
 
     /** Request id. */
-    @Order(value = 0, method = "requestId")
-    private long reqId;
+    @Order(0)
+    long reqId;
 
     /** Query id on a node. */
     @Order(1)
-    private long nodeQryId;
+    long nodeQryId;
 
     /** Async response flag. */
-    @Order(value = 2, method = "asyncResponse")
-    private boolean asyncRes;
+    @Order(2)
+    boolean asyncRes;
 
     /**
      * Default constructor.

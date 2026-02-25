@@ -51,59 +51,59 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** Sender node ID. */
     @Order(7)
-    private UUID nodeId;
+    public UUID nodeId;
 
     /** Near transaction version. */
-    @Order(value = 8, method = "nearXidVersion")
-    private GridCacheVersion nearXidVer;
+    @Order(8)
+    public GridCacheVersion nearXidVer;
 
     /** Thread ID. */
     @Order(9)
-    private long threadId;
+    public long threadId;
 
     /** Future ID. */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(10)
+    public IgniteUuid futId;
 
     /** Max wait timeout. */
     @Order(11)
-    private long timeout;
+    public long timeout;
 
     /** Indicates whether lock is obtained within a scope of transaction. */
-    @Order(value = 12, method = "inTx")
-    private boolean isInTx;
+    @Order(12)
+    public boolean isInTx;
 
     /** Invalidate flag for transactions. */
     @Order(13)
-    private boolean isInvalidate;
+    public boolean isInvalidate;
 
     /** Indicates whether implicit lock so for read or write operation. */
-    @Order(value = 14, method = "txRead")
-    private boolean isRead;
+    @Order(14)
+    public boolean isRead;
 
     /** Transaction isolation level. */
     @Order(15)
-    private TransactionIsolation isolation;
+    public TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
     @Order(16)
-    private List<KeyCacheObject> keys;
+    public List<KeyCacheObject> keys;
 
     /** Array indicating whether value should be returned for a key. */
-    @Order(value = 17, method = "returnValues")
+    @Order(17)
     @GridToStringInclude
-    private boolean[] retVals;
+    public boolean[] retVals;
 
     /** Key-bytes index. */
     protected int idx;
 
     /** Key count. */
     @Order(18)
-    private int txSize;
+    public int txSize;
 
     /** Additional flags. */
     @Order(19)
-    private byte flags;
+    public byte flags;
 
     /**
      * Empty constructor.

@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
     /** Filter. */
     @Order(12)
-    private CacheEntryPredicate[] filter;
+    CacheEntryPredicate[] filter;
 
     /**
      * Empty constructor.

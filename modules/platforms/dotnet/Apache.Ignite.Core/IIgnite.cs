@@ -134,7 +134,6 @@ namespace Apache.Ignite.Core
         /// <param name="platformCacheConfiguration">Platform cache configuration. Can be null.
         /// When not null, native .NET cache is created additionally.</param>
         /// <returns>Existing or newly created cache.</returns>
-        [IgniteExperimental]
         ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration,
             NearCacheConfiguration nearConfiguration, PlatformCacheConfiguration platformCacheConfiguration);
 
@@ -177,7 +176,6 @@ namespace Apache.Ignite.Core
         /// <param name="platformCacheConfiguration">Platform cache configuration. Can be null.
         /// When not null, native .NET cache is created additionally.</param>
         /// <returns>Existing or newly created cache.</returns>
-        [IgniteExperimental]
         ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration,
             NearCacheConfiguration nearConfiguration, PlatformCacheConfiguration platformCacheConfiguration);
 
@@ -307,7 +305,6 @@ namespace Apache.Ignite.Core
         /// <typeparam name="TK">Cache key type.</typeparam>
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <returns>Near cache instance.</returns>
-        [IgniteExperimental]
         ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration,
             PlatformCacheConfiguration platformConfiguration);
 
@@ -331,7 +328,6 @@ namespace Apache.Ignite.Core
         /// <typeparam name="TK">Cache key type.</typeparam>
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <returns>Near cache instance.</returns>
-        [IgniteExperimental]
         ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration,
             PlatformCacheConfiguration platformConfiguration);
 
@@ -392,28 +388,6 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheNames">Names of caches to reset partitions for.</param>
         void ResetLostPartitions(params string[] cacheNames);
-
-        /// <summary>
-        /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
-        /// <para />
-        /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
-        /// <para />
-        /// Obsolete, use <see cref="GetDataRegionMetrics()"/>.
-        /// </summary>
-        [Obsolete("Use GetDataRegionMetrics.")]
-        ICollection<IMemoryMetrics> GetMemoryMetrics();
-
-        /// <summary>
-        /// Gets the memory metrics for the specified memory policy.
-        /// <para />
-        /// To get metrics for the default memory region,
-        /// use <see cref="MemoryConfiguration.DefaultMemoryPolicyName"/>.
-        /// <para />
-        /// Obsolete, use <see cref="GetDataRegionMetrics(string)"/>.
-        /// </summary>
-        /// <param name="memoryPolicyName">Name of the memory policy.</param>
-        [Obsolete("Use GetDataRegionMetrics.")]
-        IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
 
         /// <summary>
         /// Changes Ignite grid state to active or inactive.

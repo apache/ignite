@@ -28,15 +28,15 @@ import org.jetbrains.annotations.Nullable;
 public class GridJobCancelRequest implements Message {
     /** */
     @Order(0)
-    private IgniteUuid sessionId;
+    IgniteUuid sessionId;
 
     /** */
     @Order(1)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** */
     @Order(2)
-    private boolean system;
+    boolean system;
 
     /**
      * Default constructor.

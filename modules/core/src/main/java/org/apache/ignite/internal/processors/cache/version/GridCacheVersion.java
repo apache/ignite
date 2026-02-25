@@ -44,16 +44,16 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
-    @Order(value = 0, method = "topologyVersion")
-    private int topVer;
+    @Order(0)
+    int topVer;
 
     /** Node order (used as global order) and DR ID. */
-    @Order(value = 1, method = "nodeOrderAndDrIdRaw")
-    private int nodeOrderDrId;
+    @Order(1)
+    int nodeOrderDrId;
 
     /** Order. */
     @Order(2)
-    private long order;
+    long order;
 
     /**
      * Empty constructor required by {@link Externalizable}.

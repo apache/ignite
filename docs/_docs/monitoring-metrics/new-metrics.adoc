@@ -244,6 +244,8 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |grpId  | integer | Group id
 |name  |  string | Name of the index
 |startTime  | long |   Statistics collect start time
+|insertedBytes | long | Count of inserted to store bytes
+|removedBytes | long | Count of removed from store bytes
 |===
 
 

@@ -34,15 +34,15 @@ import org.jetbrains.annotations.Nullable;
 public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** Error message. */
     @GridToStringExclude
-    @Order(value = 7, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(7)
+    @Nullable public ErrorMessage errMsg;
 
     /** TX state. */
     private IgniteTxState txState;
 
     /** Partition ID this message is targeted to. */
-    @Order(value = 8, method = "partition")
-    private int part;
+    @Order(8)
+    public int part;
 
     /**
      * Empty constructor.

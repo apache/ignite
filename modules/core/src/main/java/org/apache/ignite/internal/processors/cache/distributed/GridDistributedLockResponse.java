@@ -38,17 +38,17 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** Future ID. */
-    @Order(value = 7, method = "futureId")
-    private IgniteUuid futId;
+    @Order(7)
+    public IgniteUuid futId;
 
     /** Error. */
-    @Order(value = 8, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(8)
+    public ErrorMessage errMsg;
 
     /** Values. */
     @GridToStringInclude
-    @Order(value = 9, method = "values")
-    private List<CacheObject> vals;
+    @Order(9)
+    public List<CacheObject> vals;
 
     /**
      * Empty constructor.

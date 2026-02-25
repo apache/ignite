@@ -34,10 +34,22 @@ public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void trackPhysicalAndLogicalRead(long pageAddr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackPageInsertData(long bytes) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackPageRemoveData(long bytes) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

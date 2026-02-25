@@ -18,16 +18,12 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.BYTE_ARR;
 
 /**
  * Service single node deployment result.
@@ -39,10 +35,12 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     private static final long serialVersionUID = 0L;
 
     /** Count of service's instances. */
-    private int cnt;
+    @Order(0)
+    int cnt;
 
     /** Serialized exceptions. */
-    private Collection<byte[]> errors;
+    @Order(1)
+    Collection<byte[]> errors;
 
     /**
      * Empty constructor for marshalling purposes.
@@ -83,59 +81,6 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
      */
     public void errors(Collection<byte[]> errors) {
         this.errors = errors;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cnt))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCollection(errors, BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cnt = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errors = reader.readCollection(BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -27,9 +27,12 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.INSERTED_BYTES;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.REMOVED_BYTES;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_INNER;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
@@ -62,10 +65,13 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTest() throws Exception {
         ignite = startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -128,6 +134,116 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
         long cachePhysicalReadsCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
 
         assertEquals(0, cachePhysicalReadsCnt);
+    }
+
+    /** */
+    @Test
+    public void testInsertedDeletedBytes() {
+        int cnt = 100;
+
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes = mreg.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes = mreg.findMetric(REMOVED_BYTES);
+
+        assertEquals(0, insertedBytes.value());
+
+        populateCache(cnt);
+
+        int minEntrySize = 20; // Size of key, size of val, entry headers, data page payload headers, etc.
+        int maxEntrySize = 100;
+
+        assertTrue(insertedBytes.value() > cnt * minEntrySize);
+        assertTrue(insertedBytes.value() < cnt * maxEntrySize);
+
+        assertEquals(0, removedBytes.value());
+
+        clearCache(cnt);
+
+        assertEquals(insertedBytes.value(), removedBytes.value());
+    }
+
+    /** */
+    @Test
+    public void testInsertedDeletedBytesInplaceUpdate() {
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes = mreg.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes = mreg.findMetric(REMOVED_BYTES);
+
+        ignite.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+        long inserted0 = insertedBytes.value();
+
+        assertNotSame(0, inserted0);
+
+        // Inplace update.
+        ignite.cache(DEFAULT_CACHE_NAME).put(0, 1);
+
+        assertNotSame(0, removedBytes.value());
+        assertEquals(insertedBytes.value() - inserted0, removedBytes.value());
+    }
+
+    /** */
+    @Test
+    public void testInsertedDeletedBytesMultipage() {
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes = mreg.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes = mreg.findMetric(REMOVED_BYTES);
+
+        assertEquals(0, insertedBytes.value());
+
+        int size = 100_000;
+
+        ignite.cache(DEFAULT_CACHE_NAME).put(0, new byte[size]);
+
+        assertTrue("Unexpected value for insertedBytes: " + insertedBytes.value(), insertedBytes.value() > size);
+
+        ignite.cache(DEFAULT_CACHE_NAME).remove(0);
+
+        assertEquals(insertedBytes.value(), removedBytes.value());
+    }
+
+    /** */
+    @Test
+    public void testInsertedDeletedBytesOnRebalance() throws Exception {
+        int cnt = 100;
+
+        MetricRegistry mreg0 = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes0 = mreg0.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes0 = mreg0.findMetric(REMOVED_BYTES);
+
+        populateCache(cnt);
+
+        assertNotSame(0, insertedBytes0.value());
+        assertEquals(0, removedBytes0.value());
+
+        IgniteEx ignite1 = startGrid(1);
+
+        waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
+
+        MetricRegistry mreg1 = ignite1.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes1 = mreg1.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes1 = mreg1.findMetric(REMOVED_BYTES);
+
+        assertNotSame(0, removedBytes0.value());
+        assertNotSame(0, insertedBytes1.value());
+        assertEquals(0, removedBytes1.value());
+
+        clearCache(cnt);
+
+        assertNotSame(0, removedBytes1.value());
+
+        assertTrue(GridTestUtils.waitForCondition(() -> insertedBytes0.value() == removedBytes0.value(), 1_000L));
+        assertTrue(GridTestUtils.waitForCondition(() -> insertedBytes1.value() == removedBytes1.value(), 1_000L));
     }
 
     /**
