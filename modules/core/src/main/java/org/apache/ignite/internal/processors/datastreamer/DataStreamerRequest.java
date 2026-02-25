@@ -41,7 +41,7 @@ public class DataStreamerRequest implements Message {
     /** */
     // TODO: Refactor bytes serialization
     @Order(1)
-    byte[] resTopicBytes;
+    // TODO: Refactor bytes serialization
 
     /** Cache name. */
     @Order(2)
