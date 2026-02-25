@@ -39,16 +39,16 @@ public class DataStreamerRequest implements Message {
     long reqId;
 
     /** */
-    // TODO: Refactor bytes serialization
+    // TODO: Refactor bytes serialization - IGNITE-27977
     @Order(1)
-    // TODO: Refactor bytes serialization
+    byte[] resTopicBytes;
 
     /** Cache name. */
     @Order(2)
     String cacheName;
 
     /** */
-    // TODO: byte[] field - consider refactoring to use typed serialization
+    // TODO: Refactor bytes serialization - IGNITE-27977
     @Order(3)
     byte[] updaterBytes;
 
