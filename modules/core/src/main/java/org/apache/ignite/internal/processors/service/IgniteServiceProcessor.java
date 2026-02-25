@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.systemview.ServiceViewWalker;
-import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -196,10 +194,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
     /** Undeployment futures. */
     private final ConcurrentMap<IgniteUuid, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap<>();
-
-    /** Thread factory. */
-    private final ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(), "service",
-        new OomExceptionHandler(ctx));
 
     /** Marshaller for serialization/deserialization of service's instance. */
     private final Marshaller marsh;
@@ -1304,7 +1298,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         UUID.randomUUID(),
                         cacheName,
                         affKey,
-                        newSingleThreadExecutor("service-redeploy-worker", ctx.igniteInstanceName()),
+                        newSingleThreadExecutor("service", ctx.igniteInstanceName(), new OomExceptionHandler(ctx)),
                         cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);

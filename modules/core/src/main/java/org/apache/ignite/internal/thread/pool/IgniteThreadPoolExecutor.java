@@ -340,7 +340,30 @@ public class IgniteThreadPoolExecutor extends OperationContextAwareExecutorServi
      * @return Thread pool instance.
      */
     public static IgniteThreadPoolExecutor newSingleThreadExecutor(String threadNamePrefix, String igniteInstanceName) {
-        return new IgniteThreadPoolExecutor(threadNamePrefix, igniteInstanceName, 1, 1, 0, new LinkedBlockingQueue<>());
+        return newSingleThreadExecutor(threadNamePrefix, igniteInstanceName, null);
+    }
+
+    /**
+     * @param threadNamePrefix Pool thread name prefix.
+     * @param igniteInstanceName Ignite instance name.
+     * @param errHandler Error handler.
+     * @return Thread pool instance.
+     */
+    public static IgniteThreadPoolExecutor newSingleThreadExecutor(
+        String threadNamePrefix,
+        String igniteInstanceName,
+        UncaughtExceptionHandler errHandler
+    ) {
+        return new IgniteThreadPoolExecutor(
+            threadNamePrefix,
+            igniteInstanceName,
+            1,
+            1,
+            0,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.UNDEFINED,
+            errHandler
+        );
     }
 
     /**
