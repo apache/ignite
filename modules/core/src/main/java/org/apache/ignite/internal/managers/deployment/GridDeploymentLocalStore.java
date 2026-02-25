@@ -67,6 +67,9 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by classloader. */
     private final Map<ClassLoader, Deque<GridDeployment>> cacheByLdr = new IdentityHashMap<>();
 
+    /** Classloader to deployment map. */
+    private final Map<ClassLoader, GridDeployment> depsByLdr = new IdentityHashMap<>();
+
     /** Mutex. */
     private final Object mux = new Object();
 
@@ -315,14 +318,12 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             try {
                 Deque<GridDeployment> cachedDeps = null;
 
-                Deque<GridDeployment> depsByLdr = cacheByLdr.get(ldr);
+                GridDeployment depByLdr = depsByLdr.get(ldr);
 
-                if (!F.isEmpty(depsByLdr)) {
-                    GridDeployment depByLdr = depsByLdr.peekFirst();
-
+                if (depByLdr != null) {
                     fireEvt = depByLdr.addDeployedClass(cls, alias);
 
-                    cachedDeps = depsByLdr;
+                    cachedDeps = cacheByLdr.get(ldr);
 
                     dep = depByLdr;
                 }
@@ -365,6 +366,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     cache.put(cls.getName(), deps);
                 }
 
+                depsByLdr.put(ldr, dep);
                 cacheByLdr.put(ldr, deps);
 
                 if (log.isDebugEnabled())
@@ -582,6 +584,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     i1.remove();
             }
 
+            depsByLdr.remove(ldr);
             cacheByLdr.remove(ldr);
         }
 
