@@ -131,15 +131,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
-     * Sets message ID.
-     *
-     * @param id Message ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /**
      * Gets sender node ID.
      *
      * @return Sender node ID.
@@ -298,20 +289,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     @Nullable public Set<UUID> failedNodes() {
         return failedNodes;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public int flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags New flags.
-     */
-    public void flags(int flags) {
-        this.flags = flags;
     }
 
     /** {@inheritDoc} */

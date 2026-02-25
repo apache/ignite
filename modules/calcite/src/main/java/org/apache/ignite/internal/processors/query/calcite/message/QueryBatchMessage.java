@@ -74,23 +74,9 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         return qryId;
     }
 
-    /**
-     * @param qryId Query ID.
-     */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
-    }
-
-    /**
-     * @param fragmentId Fragment ID.
-     */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
     }
 
     /**
@@ -101,24 +87,10 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @param exchangeId Exchange ID.
-     */
-    public void exchangeId(long exchangeId) {
-        this.exchangeId = exchangeId;
-    }
-
-    /**
      * @return Batch ID.
      */
     public int batchId() {
         return batchId;
-    }
-
-    /**
-     * @param batchId Batch ID.
-     */
-    public void batchId(int batchId) {
-        this.batchId = batchId;
     }
 
     /**
@@ -129,31 +101,10 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @param last Last batch flag.
-     */
-    public void last(boolean last) {
-        this.last = last;
-    }
-
-    /**
      * @return Rows.
      */
     public List<Object> rows() {
         return rows;
-    }
-
-    /**
-     * @return Message rows.
-     */
-    public List<ValueMessage> messageRows() {
-        return mRows;
-    }
-
-    /**
-     * @param mRows Message rows.
-     */
-    public void messageRows(List<ValueMessage> mRows) {
-        this.mRows = mRows;
     }
 
     /** {@inheritDoc} */

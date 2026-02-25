@@ -108,27 +108,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
-     * @param lastVer Last used version among all nodes.
-     */
-    public void lastVersion(GridCacheVersion lastVer) {
-        this.lastVer = lastVer;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return {@code True} if message data is compressed.
      */
     public final boolean compressed() {

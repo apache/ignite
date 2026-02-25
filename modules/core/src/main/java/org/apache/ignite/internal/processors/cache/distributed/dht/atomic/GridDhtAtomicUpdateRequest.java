@@ -321,13 +321,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return forceTransformBackups;
     }
 
-    /**
-     * @param forceTransformBackups New force transform backups flag.
-     */
-    public void forceTransformBackups(boolean forceTransformBackups) {
-        this.forceTransformBackups = forceTransformBackups;
-    }
-
     /** {@inheritDoc} */
     @Override public int size() {
         return keys.size();
@@ -353,20 +346,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return keys.get(idx);
     }
 
-    /**
-     * @return Keys to update.
-     */
-    public List<KeyCacheObject> keys() {
-        return keys;
-    }
-
-    /**
-     * @param keys New keys to update.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
     /** {@inheritDoc} */
     @Override public Long updateCounter(int updCntr) {
         if (updateCntrs != null && updCntr < updateCntrs.size())
@@ -380,20 +359,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return nearKeys.get(idx);
     }
 
-    /**
-     * @return Near cache keys to update.
-     */
-    public List<KeyCacheObject> nearKeys() {
-        return nearKeys;
-    }
-
-    /**
-     * @param nearKeys New near cache keys to update.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject value(int idx) {
         if (vals != null)
@@ -402,40 +367,12 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return null;
     }
 
-    /**
-     * @return Values to update.
-     */
-    public List<CacheObject> values() {
-        return vals;
-    }
-
-    /**
-     * @param vals New values to update.
-     */
-    public void values(List<CacheObject> vals) {
-        this.vals = vals;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject previousValue(int idx) {
         if (prevVals != null)
             return prevVals.get(idx);
 
         return null;
-    }
-
-    /**
-     * @return Previous values.
-     */
-    public List<CacheObject> previousValues() {
-        return prevVals;
-    }
-
-    /**
-     * @param prevVals New previous values.
-     */
-    public void previousValues(List<CacheObject> prevVals) {
-        this.prevVals = prevVals;
     }
 
     /** {@inheritDoc} */
@@ -449,20 +386,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             return nearVals.get(idx);
 
         return null;
-    }
-
-    /**
-     * @return Values to update.
-     */
-    public List<CacheObject> nearValues() {
-        return nearVals;
-    }
-
-    /**
-     * @param nearVals New values to update.
-     */
-    public void nearValues(List<CacheObject> nearVals) {
-        this.nearVals = nearVals;
     }
 
     /** {@inheritDoc} */
@@ -481,20 +404,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return null;
     }
 
-    /**
-     * @return Conflict versions.
-     */
-    public List<GridCacheVersion> conflictVersions() {
-        return conflictVers;
-    }
-
-    /**
-     * @param conflictVers New conflict versions.
-     */
-    public void conflictVersions(List<GridCacheVersion> conflictVers) {
-        this.conflictVers = conflictVers;
-    }
-
     /** {@inheritDoc} */
     @Override public long ttl(int idx) {
         if (ttls != null) {
@@ -506,20 +415,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return CU.TTL_NOT_CHANGED;
     }
 
-    /**
-     * @return TTLs.
-     */
-    public GridLongList ttls() {
-        return ttls;
-    }
-
-    /**
-     * @param ttls New TTLs.
-     */
-    public void ttls(GridLongList ttls) {
-        this.ttls = ttls;
-    }
-
     /** {@inheritDoc} */
     @Override public long nearTtl(int idx) {
         if (nearTtls != null) {
@@ -529,20 +424,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         }
 
         return CU.TTL_NOT_CHANGED;
-    }
-
-    /**
-     * @return Near TTLs.
-     */
-    public GridLongList nearTtls() {
-        return nearTtls;
-    }
-
-    /**
-     * @param nearTtls New near TTLs.
-     */
-    public void nearTtls(GridLongList nearTtls) {
-        this.nearTtls = nearTtls;
     }
 
     /** {@inheritDoc} */
@@ -567,20 +448,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
-    /**
-     * @return Conflict expire times.
-     */
-    public GridLongList conflictExpireTimes() {
-        return conflictExpireTimes;
-    }
-
-    /**
-     * @param conflictExpireTimes New conflict expire times.
-     */
-    public void conflictExpireTimes(GridLongList conflictExpireTimes) {
-        this.conflictExpireTimes = conflictExpireTimes;
-    }
-
     /** {@inheritDoc} */
     @Override public long nearExpireTime(int idx) {
         if (nearExpireTimes != null) {
@@ -590,90 +457,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         }
 
         return CU.EXPIRE_TIME_CALCULATE;
-    }
-
-    /**
-     * @return Near expire times.
-     */
-    public GridLongList nearExpireTimes() {
-        return nearExpireTimes;
-    }
-
-    /**
-     * @param nearExpireTimes New near expire times.
-     */
-    public void nearExpireTimes(GridLongList nearExpireTimes) {
-        this.nearExpireTimes = nearExpireTimes;
-    }
-
-    /**
-     * @return Obsolete near values.
-     */
-    public List<Integer> obsoleteIndexes() {
-        return obsoleteIndexes;
-    }
-
-    /**
-     * @param obsoleteIndexes New obsolete near values.
-     */
-    public void obsoleteIndexes(List<Integer> obsoleteIndexes) {
-        this.obsoleteIndexes = obsoleteIndexes;
-    }
-
-    /**
-     * @return Partition update counters.
-     */
-    public GridLongList updateCounters() {
-        return updateCntrs;
-    }
-
-    /**
-     * @param updateCntrs New partition update counters.
-     */
-    public void updateCounters(GridLongList updateCntrs) {
-        this.updateCntrs = updateCntrs;
-    }
-
-    /**
-     * @return Serialized entry processors.
-     */
-    public List<byte[]> entryProcessorsBytes() {
-        return entryProcessorsBytes;
-    }
-
-    /**
-     * @param entryProcessorsBytes New entry processors.
-     */
-    public void entryProcessorsBytes(List<byte[]> entryProcessorsBytes) {
-        this.entryProcessorsBytes = entryProcessorsBytes;
-    }
-
-    /**
-     * @return Serialized near entry processors.
-     */
-    public List<byte[]> nearEntryProcessorsBytes() {
-        return nearEntryProcessorsBytes;
-    }
-
-    /**
-     * @param nearEntryProcessorsBytes New serialized near entry processors.
-     */
-    public void nearEntryProcessorsBytes(List<byte[]> nearEntryProcessorsBytes) {
-        this.nearEntryProcessorsBytes = nearEntryProcessorsBytes;
-    }
-
-    /**
-     * @return Serialized optional entry processor arguments.
-     */
-    public List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /**
-     * @param invokeArgsBytes New serialized optional entry processor arguments.
-     */
-    public void invokeArgumentsBytes(List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
     }
 
     /** {@inheritDoc} */

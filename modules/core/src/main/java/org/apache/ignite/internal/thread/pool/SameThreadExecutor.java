@@ -15,30 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread.pool;
 
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.X;
+import java.util.concurrent.Executor;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * OOM exception handler for system threads.
+ *
  */
-public class OomExceptionHandler implements Thread.UncaughtExceptionHandler {
-    /** Context. */
-    private final GridKernalContext ctx;
+public class SameThreadExecutor implements Executor {
+    /** */
+    public static final Executor INSTANCE = new SameThreadExecutor();
 
-    /**
-     * @param ctx Context.
-     */
-    public OomExceptionHandler(GridKernalContext ctx) {
-        this.ctx = ctx;
-    }
+    /** */
+    private SameThreadExecutor() {}
 
     /** {@inheritDoc} */
-    @Override public void uncaughtException(Thread t, Throwable e) {
-        if (X.hasCause(e, OutOfMemoryError.class))
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+    @Override public void execute(@NotNull Runnable command) {
+        command.run();
     }
 }
