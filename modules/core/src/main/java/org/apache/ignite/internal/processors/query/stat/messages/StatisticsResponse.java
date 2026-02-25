@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Response for statistics request.
@@ -32,10 +30,12 @@ public class StatisticsResponse implements Message {
     public static final short TYPE_CODE = 188;
 
     /** Request id. */
-    private UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Requested statistics. */
-    private StatisticsObjectData data;
+    @Order(1)
+    StatisticsObjectData data;
 
     /**
      * Constructor.
@@ -74,61 +74,6 @@ public class StatisticsResponse implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StatisticsResponse.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(data))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeUuid(reqId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                data = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                reqId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

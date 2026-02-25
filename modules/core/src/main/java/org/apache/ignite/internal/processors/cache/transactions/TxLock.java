@@ -83,13 +83,6 @@ public class TxLock implements Message {
     }
 
     /**
-     * @param nearNodeId  Near node ID.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
-    }
-
-    /**
      * @return Transaction ID.
      */
     public GridCacheVersion txId() {
@@ -97,38 +90,10 @@ public class TxLock implements Message {
     }
 
     /**
-     * @param txId  Transaction ID.
-     */
-    public void txId(GridCacheVersion txId) {
-        this.txId = txId;
-    }
-
-    /**
      * @return Thread ID.
      */
     public long threadId() {
         return threadId;
-    }
-
-    /**
-     * @param threadId  Thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
-     * @return Ownership.
-     */
-    public byte ownership() {
-        return ownership;
-    }
-
-    /**
-     * @param ownership Ownership.
-     */
-    public void ownership(byte ownership) {
-        this.ownership = ownership;
     }
 
     /**

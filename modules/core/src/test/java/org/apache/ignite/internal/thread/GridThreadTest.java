@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 
 /**
