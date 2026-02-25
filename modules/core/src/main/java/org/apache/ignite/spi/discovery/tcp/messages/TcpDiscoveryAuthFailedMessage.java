@@ -54,7 +54,7 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     public TcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress creatorAddr, UUID targetNodeId) {
         super(creatorNodeId);
 
-        this.creatorAddrMsg = new InetAddressMessage(creatorAddr);
+        creatorAddrMsg = new InetAddressMessage(creatorAddr);
         this.targetNodeId = targetNodeId;
     }
 

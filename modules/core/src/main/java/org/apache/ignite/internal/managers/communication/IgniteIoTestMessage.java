@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 @IgniteCodeGeneratingFail
 public class IgniteIoTestMessage implements Message {
     /** */
-    private static byte FLAG_PROC_FROM_NIO = 1;
+    private static final byte FLAG_PROC_FROM_NIO = 1;
 
     /** */
     private long id;

@@ -98,7 +98,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE;
 
         return GridUnsafe.getInt(data, off);
     }
@@ -111,7 +111,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 4;
 
         return GridUnsafe.getLong(data, off);
     }
@@ -124,7 +124,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 12;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 12;
 
         return GridUnsafe.getLong(data, off);
     }
@@ -137,7 +137,7 @@ public class PartitionUpdateCountersMessage implements Message {
     public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
 
-        long off = GridUnsafe.BYTE_ARR_OFF + size++ * ITEM_SIZE;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)size++ * ITEM_SIZE;
 
         GridUnsafe.putInt(data, off, part); off += 4;
         GridUnsafe.putLong(data, off, init); off += 8;

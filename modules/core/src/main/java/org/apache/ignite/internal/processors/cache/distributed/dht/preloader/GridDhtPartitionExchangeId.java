@@ -82,7 +82,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         assert discoEvt != null;
 
         this.nodeId = nodeId;
-        this.evt = discoEvt.type();
+        evt = discoEvt.type();
         this.topVer = topVer;
         this.discoEvt = discoEvt;
 
