@@ -44,7 +44,7 @@ public class IgniteIoTestMessage implements Message {
     private boolean req;
 
     /** */
-    private byte payload[];
+    private byte[] payload;
 
     /** */
     private long reqCreateTs;
