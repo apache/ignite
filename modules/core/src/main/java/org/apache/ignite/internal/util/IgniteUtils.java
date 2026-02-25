@@ -187,7 +187,9 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -8304,5 +8306,15 @@ public abstract class IgniteUtils extends CommonUtils {
                InvocationTargetException e) {
             return (IgniteDataTransferObjectSerializer<T>)EMPTY_DTO_SERIALIZER;
         }
+    }
+
+    /**
+     * Unwraps messsage if it is wrapped by {@link SecurityAwareCustomMessageWrapper}.
+     *
+     * @param msg Message.
+     */
+    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoveryCustomMessage msg) {
+        return msg instanceof SecurityAwareCustomMessageWrapper ?
+            ((SecurityAwareCustomMessageWrapper)msg).delegate() : msg;
     }
 }
