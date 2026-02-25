@@ -47,6 +47,11 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     @Order(6)
     volatile @Nullable byte[] msgBytes;
 
+    /** {@link Message} representation of original message. */
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(7)
+    volatile @Nullable Message serMsg;
+
     /**
      * Constructor for {@link DiscoveryMessageFactory}.
      */
@@ -72,6 +77,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
         super(msg);
 
         msgBytes = msg.msgBytes;
+        serMsg = msg.serMsg;
         this.msg = msg.msg;
     }
 
@@ -96,9 +102,13 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
     public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: msg =" + msg;
+        if (msg instanceof Message)
+            serMsg = (Message)msg;
+        else {
+            assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: msg =" + msg;
 
-        msgBytes = U.marshal(marsh, msg);
+            msgBytes = U.marshal(marsh, msg);
+        }
     }
 
     /**
@@ -108,8 +118,13 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param ldr Class loader.
      */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    public void finishUnmarhal(Marshaller marsh, ClassLoader ldr) throws Throwable {
-        if (msg == null) {
+    public void finishUnmarhal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (msg != null)
+            return;
+
+        if (serMsg != null)
+            msg = (DiscoveryCustomMessage)serMsg;
+        else {
             try {
                 msg = U.unmarshal(marsh, msgBytes, ldr);
             }
