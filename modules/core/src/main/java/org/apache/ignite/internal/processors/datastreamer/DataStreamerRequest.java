@@ -39,7 +39,7 @@ public class DataStreamerRequest implements Message {
     long reqId;
 
     /** */
-    // TODO: byte[] field - consider refactoring to use typed serialization
+    // TODO: Refactor bytes serialization
     @Order(1)
     byte[] resTopicBytes;
 
