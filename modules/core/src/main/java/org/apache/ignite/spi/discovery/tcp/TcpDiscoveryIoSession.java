@@ -109,16 +109,28 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory(), msg -> {
-            if (msg instanceof TcpDiscoveryMarshallableMessage)
-                ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
-        });
-        msgReader = new DirectMessageReader(spi.messageFactory(), null, msg -> {
-            if (msg instanceof TcpDiscoveryMarshallableMessage) {
-                ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(spi.marshaller(),
-                    U.resolveClassLoader(spi.ignite().configuration()));
+        msgWriter = new DirectMessageWriter(spi.messageFactory()) {
+            @Override public boolean writeMessage(@Nullable Message msg) {
+                // Repeatable calls. Current limitation.
+                if (msg instanceof TcpDiscoveryMarshallableMessage)
+                    ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
+
+                return super.writeMessage(msg);
             }
-        });
+        };
+
+        msgReader = new DirectMessageReader(spi.messageFactory(), null){
+            @Override public <T extends Message> @Nullable T readMessage() {
+                T m = super.readMessage();
+
+                if (isLastRead() && m instanceof TcpDiscoveryMarshallableMessage) {
+                    ((TcpDiscoveryMarshallableMessage)m).finishUnmarshal(spi.marshaller(),
+                        U.resolveClassLoader(spi.ignite().configuration()));
+                }
+
+                return m;
+            }
+        };
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
