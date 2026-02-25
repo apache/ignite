@@ -30,8 +30,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test callback for discovery SPI.
@@ -52,7 +50,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     private final Object mux = new Object();
 
     /** */
-    private List<DiscoverySpiCustomMessage> blockedMsgs = new ArrayList<>();
+    private List<DiscoveryCustomMessage> blockedMsgs = new ArrayList<>();
 
     /** */
     private volatile DiscoverySpi spi;
@@ -121,13 +119,13 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
+    @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoveryCustomMessage msg) {
         this.spi = spi;
         this.log = log;
 
         synchronized (mux) {
             if (blockCustomEvtCls != null) {
-                DiscoveryCustomMessage msg0 = GridTestUtils.getFieldValue(msg, "delegate");
+                DiscoveryCustomMessage msg0 = U.unwrapCustomMessage(msg);
 
                 if (blockCustomEvtCls.contains(msg0.getClass())) {
                     log.info("Block custom message: " + msg0);
@@ -176,7 +174,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
         if (spi == null)
             return;
 
-        List<DiscoverySpiCustomMessage> msgs;
+        List<DiscoveryCustomMessage> msgs;
 
         synchronized (this) {
             msgs = new ArrayList<>(blockedMsgs);
@@ -186,7 +184,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
             blockedMsgs.clear();
         }
 
-        for (DiscoverySpiCustomMessage msg : msgs) {
+        for (DiscoveryCustomMessage msg : msgs) {
             log.info("Resend blocked message: " + msg);
 
             spi.sendCustomEvent(msg);

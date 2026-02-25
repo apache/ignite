@@ -132,24 +132,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
-     * @param miniId Mini ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
      * @return Near node ID.
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @param nearNodeId Near node ID.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
     }
 
     /**
@@ -213,13 +199,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Partition counters update deferred until transaction commit.
-     */
-    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */

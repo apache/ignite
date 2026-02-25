@@ -298,7 +298,9 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecim
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequestSerializer;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponseSerializer;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequestSerializer;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
@@ -501,8 +503,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new);
         factory.register(StatisticsObjectData.TYPE_CODE, StatisticsObjectData::new);
         factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
-        factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
-        factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
+        factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new, new StatisticsRequestSerializer());
+        factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new, new StatisticsResponseSerializer());
 
         factory.register(CachePartitionPartialCountersMap.TYPE_CODE, CachePartitionPartialCountersMap::new,
             new CachePartitionPartialCountersMapSerializer());

@@ -56,13 +56,6 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
         return msgId;
     }
 
-    /**
-     * @param msgId Acknowledged message ID.
-     */
-    public void messageId(IgniteUuid msgId) {
-        this.msgId = msgId;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
         return true;
