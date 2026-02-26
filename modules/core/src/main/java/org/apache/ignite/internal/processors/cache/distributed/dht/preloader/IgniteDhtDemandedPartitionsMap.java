@@ -107,10 +107,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
         if (full != null && full.remove(partId))
             return true;
 
-        if (historical != null && historical.remove(partId))
-            return true;
-
-        return false;
+        return historical != null && historical.remove(partId);
     }
 
     /** */

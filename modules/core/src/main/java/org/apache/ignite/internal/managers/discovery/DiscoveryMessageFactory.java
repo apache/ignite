@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -49,6 +51,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
@@ -81,6 +85,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessageSerializer;
 
@@ -99,6 +105,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
 
+        // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
         factory.register((short)1, TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
         factory.register((short)2, TcpDiscoveryPingResponse::new, new TcpDiscoveryPingResponseSerializer());
@@ -120,7 +127,13 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new, new TcpDiscoveryNodeAddFinishedMessageSerializer());
         factory.register((short)20, TcpDiscoveryJoinRequestMessage::new, new TcpDiscoveryJoinRequestMessageSerializer());
-        factory.register((short)21, TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
-        factory.register((short)22, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageSerializer());
+        factory.register((short)21, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
+        factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
+            new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
+        factory.register((short)23, TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
+        factory.register((short)24, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageSerializer());
+
+        // DiscoveryCustomMessage
+        factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
     }
 }

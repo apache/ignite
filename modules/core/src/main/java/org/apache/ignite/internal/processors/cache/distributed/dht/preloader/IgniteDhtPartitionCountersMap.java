@@ -56,9 +56,6 @@ public class IgniteDhtPartitionCountersMap implements Message {
 
         CachePartitionFullCountersMap cntrMap = map.get(cacheId);
 
-        if (cntrMap == null)
-            return null;
-
         return cntrMap;
     }
 
