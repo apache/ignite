@@ -19,6 +19,10 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
+import org.apache.ignite.internal.processors.cache.WalStateFinishMessageSerializer;
+import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
+import org.apache.ignite.internal.processors.cache.WalStateProposeMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -126,5 +130,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
+        factory.register((short)501, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
+        factory.register((short)502, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
     }
 }

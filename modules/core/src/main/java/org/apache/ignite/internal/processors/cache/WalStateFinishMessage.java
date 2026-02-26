@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -30,10 +31,17 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Whether WAL state was changed as a result of this call. */
-    private final boolean changed;
+    @Order(4)
+    boolean changed;
 
     /** Error message. */
-    private final String errMsg;
+    @Order(5)
+    String errMsg;
+
+    /** Constructor. */
+    public WalStateFinishMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -68,5 +76,10 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WalStateFinishMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 501;
     }
 }
