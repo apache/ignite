@@ -44,7 +44,7 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
     /** Pending messages holder. */
     @Order(7)
-    @Nullable public TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    @Nullable public volatile TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientReconnectMessage() {
