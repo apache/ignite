@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 
 /**
  * Test marshaller context.
@@ -68,7 +69,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         };
 
         ctx.add(new PoolProcessor(ctx) {
-            final IgniteThreadPoolExecutor sysExecSvc = IgniteThreadPoolExecutor.newFixedThreadPool("test-scope", "sys", THREADS);
+            final IgniteThreadPoolExecutor sysExecSvc = newFixedThreadPool("test-scope", "sys", THREADS);
 
             @Override public IgniteThreadPoolExecutor getSystemExecutorService() {
                 return sysExecSvc;

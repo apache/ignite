@@ -42,6 +42,7 @@ import org.junit.Test;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newSingleThreadExecutor;
 
 /**
  * Test marshaller context.
@@ -56,7 +57,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx = newContext();
-        execSvc = IgniteThreadPoolExecutor.newSingleThreadExecutor("test-scope", "sys");
+        execSvc = newSingleThreadExecutor("test-scope", "sys");
 
         ctx.add(new PoolProcessor(ctx) {
             @Override public IgniteThreadPoolExecutor getSystemExecutorService() {
