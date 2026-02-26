@@ -36,7 +36,7 @@ import org.h2.value.Value;
 public class GridH2ValueMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-4, () -> GridH2Null.INSTANCE);
+        factory.register((short)-4, () -> GridH2Null.INSTANCE, new GridH2NullSerializer());
         factory.register((short)-5, GridH2Boolean::new, new GridH2BooleanSerializer());
         factory.register((short)-6, GridH2Byte::new, new GridH2ByteSerializer());
         factory.register((short)-7, GridH2Short::new, new GridH2ShortSerializer());
