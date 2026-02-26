@@ -129,14 +129,12 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        writableMsgs = null;
         marshallableMsgsBytes = null;
+        marshallableMsgs = null;
 
-        if (F.isEmpty(msgs)) {
-            marshallableMsgs = null;
-            writableMsgs = null;
-
+        if (F.isEmpty(msgs))
             return;
-        }
 
         // Keeps the original message order.
         int idx = 0;
