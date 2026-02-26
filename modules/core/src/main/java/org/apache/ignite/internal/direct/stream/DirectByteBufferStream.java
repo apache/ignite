@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -223,13 +222,7 @@ public class DirectByteBufferStream {
 
     /** Is required to instantiate {@link CacheObject} while reading messages. */
     @GridToStringExclude
-    @Nullable private final IgniteCacheObjectProcessor cacheObjProc;
-
-    /** Optional message post-reader. */
-    @Nullable private final Consumer<Message> msgPostReader;
-
-    /** Optional message pre-writer. */
-    @Nullable private final Consumer<Message> msgPreWriter;
+    private final @Nullable IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
     @GridToStringExclude
@@ -352,27 +345,18 @@ public class DirectByteBufferStream {
      * @param msgFactory Message factory.
      */
     public DirectByteBufferStream(MessageFactory msgFactory) {
-        this(msgFactory, null, null, null);
+        this(msgFactory, null);
     }
 
     /**
      * Constructror for stream used for reading messages.
      *
      * @param msgFactory Message factory.
-     * @param cacheObjProc Optional cache object processor.
-     * @param msgPostReader Optional message post-reader.
-     * @param msgPreWriter Optional message pre-writer.
+     * @param cacheObjProc Cache object processor.
      */
-    public DirectByteBufferStream(
-        MessageFactory msgFactory,
-        @Nullable IgniteCacheObjectProcessor cacheObjProc,
-        @Nullable Consumer<Message> msgPostReader,
-        @Nullable Consumer<Message> msgPreWriter
-    ) {
+    public DirectByteBufferStream(MessageFactory msgFactory, @Nullable IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
-        this.msgPostReader = msgPostReader;
-        this.msgPreWriter = msgPreWriter;
     }
 
     /**
@@ -898,10 +882,6 @@ public class DirectByteBufferStream {
             if (buf.hasRemaining()) {
                 try {
                     writer.beforeInnerMessageWrite();
-
-                    // Repeatable call. Current limitation.
-                    if (msgPreWriter != null)
-                        msgPreWriter.accept(msg);
 
                     lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
                 }
@@ -1569,9 +1549,6 @@ public class DirectByteBufferStream {
 
             msgTypeDone = false;
             msg = null;
-
-            if (msgPostReader != null)
-                msgPostReader.accept(msg0);
 
             return (T)msg0;
         }
