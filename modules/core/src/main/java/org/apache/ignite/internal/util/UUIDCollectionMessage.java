@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -67,7 +68,7 @@ public class UUIDCollectionMessage implements Message {
 
         UUIDCollectionMessage that = (UUIDCollectionMessage)o;
 
-        return uuids == that.uuids || (uuids != null && uuids.equals(that.uuids));
+        return Objects.equals(uuids, that.uuids);
     }
 
     /** {@inheritDoc} */
