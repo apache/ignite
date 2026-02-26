@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -210,10 +209,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** */
     @Order(12)
     GridCacheVersion serReadVer;
-
-    /** */
-    @GridToStringExclude
-    private transient @Nullable GridAbsClosureX cqNotifyC;
 
     /**
      * Empty constructor.
@@ -1111,12 +1106,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         // First of all check classes that may be loaded by class loader other than application one.
         return key != null && !clsLdr.equals(key.getClass().getClassLoader()) ?
             key.getClass() : val != null ? val.getClass() : getClass();
-    }
-
-    /**
-     */
-    public GridAbsClosureX cqNotifyClosure() {
-        return cqNotifyC;
     }
 
     /** {@inheritDoc} */
