@@ -45,7 +45,7 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 22;
+        return 24;
     }
 
     /** {@inheritDoc} */

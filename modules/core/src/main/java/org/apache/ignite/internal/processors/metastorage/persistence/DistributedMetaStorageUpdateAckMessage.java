@@ -79,7 +79,7 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 21;
+        return 23;
     }
 
     /** {@inheritDoc} */
