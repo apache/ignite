@@ -141,8 +141,12 @@ public class GridP2PComputeExceptionTest extends GridCommonAbstractTest {
 
             if (isWriteBroken)
                 assertThrows(log, () -> compute.execute(task, null), IgniteException.class, EX_SERIALIZE_MSG);
-            else
+            else {
+                // Ignite internally wraps the unmarshaller exceptions:
+                // OptimizedMarshaller throw IgniteCheckedException when unmarshalling fails which is then wrapped
+                // into BinaryObjectException
                 assertThrows(log, () -> compute.execute(task, null), BinaryObjectException.class, EX_UNMARSHAL_MSG);
+            }
 
             assertEquals(4, ignite.cluster().topologyVersion());
         }

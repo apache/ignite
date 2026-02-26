@@ -308,8 +308,6 @@ public class GridJobExecuteResponse implements Message {
                     ", ses=" + sesId + ", jobId=" + jobId +
                     ", msg=\"" + e.getMessage() + "\"]";
 
-                wrapSerializationError(e, msg, log);
-
                 gridEx = new IgniteException(msg);
 
                 U.error(log, msg, e);
