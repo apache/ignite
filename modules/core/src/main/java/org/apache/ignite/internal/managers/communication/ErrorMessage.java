@@ -131,7 +131,7 @@ public class ErrorMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -100;
+        return -66;
     }
 
     /** {@inheritDoc} */

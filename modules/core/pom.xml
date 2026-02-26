@@ -35,6 +35,7 @@
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
         <ignite.generated.source.path>${project.build.directory}/generated-sources/codegen</ignite.generated.source.path>
+        <ignite.generated.test.source.path>${project.build.directory}/generated-test-sources/codegen</ignite.generated.test.source.path>
     </properties>
 
     <dependencies>
@@ -377,6 +378,18 @@
                             </sources>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>add-generated-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${ignite.generated.test.source.path}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -384,6 +397,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <generatedSourcesDirectory>${ignite.generated.source.path}</generatedSourcesDirectory>
+                    <generatedTestSourcesDirectory>${ignite.generated.test.source.path}</generatedTestSourcesDirectory>
                     <annotationProcessors>
                         <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
                         <annotationProcessor>org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor</annotationProcessor>

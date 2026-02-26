@@ -181,6 +181,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
@@ -2874,7 +2875,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot operation handlers. */
     protected static class SnapshotHandlers {
         /** Snapshot operation handlers. */
-        private final Map<SnapshotHandlerType, List<SnapshotHandler<Object>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
+        private final Map<SnapshotHandlerType, List<SnapshotHandler<?>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
 
         /** Executor service used to invoke handlers in parallel. */
         private ExecutorService execSvc;
@@ -2896,12 +2897,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             registerHandler(new SnapshotPartitionsQuickVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
-            SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
+            SnapshotHandler<Message>[] extHnds = (SnapshotHandler<Message>[])ctx.plugins().extensions(SnapshotHandler.class);
 
             if (extHnds == null)
                 return;
 
-            for (SnapshotHandler<Object> extHnd : extHnds)
+            for (SnapshotHandler<Message> extHnd : extHnds)
                 registerHandler(extHnd);
         }
 
@@ -2911,17 +2912,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return Results from all handlers with the specified type.
          * @throws IgniteCheckedException if parallel execution was failed.
          */
-        protected @Nullable Map<String, SnapshotHandlerResult<Object>> invokeAll(
+        protected @Nullable Map<String, SnapshotHandlerResult<Message>> invokeAll(
             SnapshotHandlerType type,
             SnapshotHandlerContext ctx
         ) throws IgniteCheckedException {
-            List<SnapshotHandler<Object>> handlers = this.handlers.get(type);
+            List<SnapshotHandler<?>> handlers = this.handlers.get(type);
 
             if (F.isEmpty(handlers))
                 return null;
 
             if (handlers.size() == 1) {
-                SnapshotHandler<Object> hnd = handlers.get(0);
+                SnapshotHandler<?> hnd = handlers.get(0);
 
                 return F.asMap(hnd.getClass().getName(), invoke(hnd, ctx));
             }
@@ -2952,7 +2953,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (res.isEmpty())
                 return;
 
-            List<SnapshotHandler<Object>> hnds = handlers.get(type);
+            List<SnapshotHandler<?>> hnds = handlers.get(type);
 
             if (hnds == null || hnds.size() != res.size()) {
                 throw new IgniteCheckedException("Snapshot handlers configuration mismatch (number of local snapshot " +
@@ -2995,7 +2996,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param hnd Snapshot operation handler.
          * @param ctx Snapshot operation handler context.
          */
-        private SnapshotHandlerResult<Object> invoke(SnapshotHandler<Object> hnd, SnapshotHandlerContext ctx) {
+        private SnapshotHandlerResult<Message> invoke(SnapshotHandler<?> hnd, SnapshotHandlerContext ctx) {
             try {
                 return new SnapshotHandlerResult<>(hnd.invoke(ctx), null);
             }
@@ -3007,7 +3008,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** */
-        private void registerHandler(SnapshotHandler hnd) {
+        private void registerHandler(SnapshotHandler<?> hnd) {
             handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
         }
     }
@@ -4119,30 +4120,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             super.close();
 
             U.closeQuiet(idxIo);
-        }
-    }
-
-    /** */
-    private static class SnapshotOperationResponse implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Results of single-node handlers execution. */
-        private final Map<String, SnapshotHandlerResult<Object>> hndResults;
-
-        /** Default constructor. */
-        public SnapshotOperationResponse() {
-            this(null);
-        }
-
-        /** @param hndResults Results of single-node handlers execution.  */
-        public SnapshotOperationResponse(Map<String, SnapshotHandlerResult<Object>> hndResults) {
-            this.hndResults = hndResults;
-        }
-
-        /** @return Results of single-node handlers execution. */
-        public @Nullable Map<String, SnapshotHandlerResult<Object>> handlerResults() {
-            return hndResults;
         }
     }
 
