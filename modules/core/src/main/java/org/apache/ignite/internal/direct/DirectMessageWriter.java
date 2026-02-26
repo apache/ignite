@@ -53,7 +53,7 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory);
             }

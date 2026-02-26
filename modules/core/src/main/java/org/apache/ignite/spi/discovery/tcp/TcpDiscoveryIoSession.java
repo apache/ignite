@@ -28,6 +28,7 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.util.function.Supplier;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,7 +38,10 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
@@ -94,6 +98,9 @@ public class TcpDiscoveryIoSession {
     /** Intermediate buffer for serializing discovery messages. */
     final ByteBuffer msgBuf;
 
+    /** */
+    final MessageFactory msgFactory;
+
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -109,28 +116,10 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory()) {
-            @Override public boolean writeMessage(@Nullable Message msg) {
-                // Repeatable calls. Current limitation.
-                if (msg instanceof TcpDiscoveryMarshallableMessage)
-                    ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
+        msgFactory = enhanceMessageFactory(spi.messageFactory());
 
-                return super.writeMessage(msg);
-            }
-        };
-
-        msgReader = new DirectMessageReader(spi.messageFactory(), null) {
-            @Override public <T extends Message> @Nullable T readMessage() {
-                T m = super.readMessage();
-
-                if (isLastRead() && m instanceof TcpDiscoveryMarshallableMessage) {
-                    ((TcpDiscoveryMarshallableMessage)m).finishUnmarshal(spi.marshaller(),
-                        U.resolveClassLoader(spi.ignite().configuration()));
-                }
-
-                return m;
-            }
-        };
+        msgWriter = new DirectMessageWriter(msgFactory);
+        msgReader = new DirectMessageReader(msgFactory, null);
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
@@ -142,6 +131,60 @@ public class TcpDiscoveryIoSession {
         catch (IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @return Enhanced {@link MessageFactory} allowing to pre-marshall and post-unmarshall {@link TcpDiscoveryMarshallableMessage}.
+     */
+    private MessageFactory enhanceMessageFactory(MessageFactory mf) {
+        assert clsLdr != null;
+
+        return new MessageFactory() {
+            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                mf.register(directType, supplier);
+            }
+
+            @Override public void register(short directType, Supplier<Message> supplier,
+                MessageSerializer serializer) throws IgniteException {
+                mf.register(directType, supplier, serializer);
+            }
+
+            @Override public Message create(short type) {
+                return mf.create(type);
+            }
+
+            @Override public MessageSerializer serializer(short type) {
+                MessageSerializer serializer = mf.serializer(type);
+
+                return new MessageSerializer() {
+                    private Message curMarshallableMsg;
+
+                    @Override public boolean writeTo(Message msg, MessageWriter writer) {
+                        if (msg instanceof TcpDiscoveryMarshallableMessage && curMarshallableMsg == null) {
+                            curMarshallableMsg = msg;
+
+                            ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
+                        }
+
+                        boolean res = serializer.writeTo(msg, writer);
+
+                        if (res && curMarshallableMsg != null)
+                            curMarshallableMsg = null;
+
+                        return res;
+                    }
+
+                    @Override public boolean readFrom(Message msg, MessageReader reader) {
+                        boolean res = serializer.readFrom(msg, reader);
+
+                        if (res && msg instanceof TcpDiscoveryMarshallableMessage)
+                            ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(spi.marshaller(), clsLdr);
+
+                        return res;
+                    }
+                };
+            }
+        };
     }
 
     /**
@@ -197,12 +240,12 @@ public class TcpDiscoveryIoSession {
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
-            Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+            Message msg = msgFactory.create(makeMessageType((byte)in.read(), (byte)in.read()));
 
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
 
-            MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
+            MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
             boolean finished;
 
@@ -277,7 +320,7 @@ public class TcpDiscoveryIoSession {
         if (m instanceof TcpDiscoveryMarshallableMessage)
             ((TcpDiscoveryMarshallableMessage)m).prepareMarshal(spi.marshaller());
 
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+        MessageSerializer msgSer = msgFactory.serializer(m.directType());
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);
