@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +29,10 @@ import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 /**
  *
  */
-class ClusterNodeMetrics {
+public class ClusterNodeMetrics implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private final ClusterMetrics nodeMetrics;
 
@@ -63,7 +67,7 @@ class ClusterNodeMetrics {
     /**
      * @return Cache metrics.
      */
-    Map<Integer, CacheMetrics> cacheMetrics() {
-        return cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
+    public Map<Integer, CacheMetrics> cacheMetrics() {
+        return cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 }
