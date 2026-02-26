@@ -113,6 +113,7 @@ public class TcpDiscoveryIoSession {
             if (msg instanceof TcpDiscoveryMarshallableMessage)
                 ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
         });
+
         msgReader = new DirectMessageReader(spi.messageFactory(), null, msg -> {
             if (msg instanceof TcpDiscoveryMarshallableMessage) {
                 ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(spi.marshaller(),
