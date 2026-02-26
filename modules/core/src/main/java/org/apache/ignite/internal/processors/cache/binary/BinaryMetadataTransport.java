@@ -922,23 +922,18 @@ final class BinaryMetadataTransport {
 
             if (msg.isOnCoordinator()) {
                 if (metaVerInfo == null)
-                    msg.markRejected(new BinaryObjectException("Type not found [typeId=" + typeId + ']'));
+                    msg.markRejected("Type not found [typeId=" + typeId + ']');
 
                 if (metaVerInfo.pendingVersion() != metaVerInfo.acceptedVersion()) {
-                    msg.markRejected(new BinaryObjectException(
-                        "Remove type failed. " +
-                            "Type is being updated now [typeId=" + typeId
-                            + ", pendingVersion=" + metaVerInfo.pendingVersion()
-                            + ", acceptedVersion=" + metaVerInfo.acceptedVersion()
-                            + ']'));
+                    msg.markRejected("Remove type failed. " +
+                        "Type is being updated now [typeId=" + typeId
+                        + ", pendingVersion=" + metaVerInfo.pendingVersion()
+                        + ", acceptedVersion=" + metaVerInfo.acceptedVersion()
+                        + ']');
                 }
 
-                if (metaVerInfo.removing()) {
-                    msg.markRejected(new BinaryObjectException(
-                        "Remove type failed. " +
-                            "Type is being removed now [typeId=" + typeId
-                            + ']'));
-                }
+                if (metaVerInfo.removing())
+                    msg.markRejected("Remove type failed. Type is being removed now [typeId=" + typeId + ']');
 
                 msg.setOnCoordinator(false);
             }
