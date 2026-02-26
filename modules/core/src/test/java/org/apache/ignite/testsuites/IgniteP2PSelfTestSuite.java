@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.GridP2PAffinitySelfTest;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentLocalStoreReuseTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDifferentLocalDeploymentSelfTest;
 import org.apache.ignite.internal.managers.deployment.P2PCacheOperationIntoComputeTest;
@@ -82,7 +83,8 @@ import org.junit.runners.Suite;
     GridDifferentLocalDeploymentSelfTest.class,
     P2PUnsupportedClassVersionTest.class,
     P2PClassLoadingFailureHandlingTest.class,
-    P2PClassLoadingIssuesTest.class
+    P2PClassLoadingIssuesTest.class,
+    GridDeploymentLocalStoreReuseTest.class,
 })
 public class IgniteP2PSelfTestSuite {
 }

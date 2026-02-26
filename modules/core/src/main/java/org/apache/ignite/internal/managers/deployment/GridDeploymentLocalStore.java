@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -62,6 +63,12 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by class name. */
     private final ConcurrentMap<String, Deque<GridDeployment>> cache = new ConcurrentHashMap<>();
+
+    /** Deployment cache by classloader. */
+    private final Map<ClassLoader, Deque<GridDeployment>> cacheByLdr = new IdentityHashMap<>();
+
+    /** Classloader to deployment map. */
+    private final Map<ClassLoader, GridDeployment> depsByLdr = new IdentityHashMap<>();
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -251,6 +258,13 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Deque<GridDeployment> deps = cache.get(meta.alias());
 
         if (deps != null) {
+            ClassLoader ldr = Thread.currentThread().getContextClassLoader();
+
+            if (ldr == null)
+                ldr = U.resolveClassLoader(ctx.config());
+
+            ldr = (ldr instanceof GridDeploymentClassLoader) ? null : ldr;
+
             for (GridDeployment dep : deps) {
                 if (dep.undeployed())
                     continue;
@@ -260,6 +274,14 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     if (log.isTraceEnabled())
                         log.trace("Deployment was found for class with specific class loader [alias=" + meta.alias() +
                             ", clsLdrId=" + meta.classLoaderId() + "]");
+
+                    return dep;
+                }
+
+                if (ldr != null && dep.classLoader() == ldr) {
+                    if (log.isTraceEnabled())
+                        log.trace("Deployment was found for class with the local app class loader [alias="
+                            + meta.alias() + "]");
 
                     return dep;
                 }
@@ -296,23 +318,14 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             try {
                 Deque<GridDeployment> cachedDeps = null;
 
-                // Find existing class loader info.
-                for (Deque<GridDeployment> deps : cache.values()) {
-                    for (GridDeployment d : deps) {
-                        if (d.classLoader() == ldr) {
-                            // Cache class and alias.
-                            fireEvt = d.addDeployedClass(cls, alias);
+                GridDeployment depByLdr = depsByLdr.get(ldr);
 
-                            cachedDeps = deps;
+                if (depByLdr != null) {
+                    fireEvt = depByLdr.addDeployedClass(cls, alias);
 
-                            dep = d;
+                    cachedDeps = cacheByLdr.get(ldr);
 
-                            break;
-                        }
-                    }
-
-                    if (cachedDeps != null)
-                        break;
+                    dep = depByLdr;
                 }
 
                 if (cachedDeps != null) {
@@ -352,6 +365,9 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     // Cache by class name as well.
                     cache.put(cls.getName(), deps);
                 }
+
+                depsByLdr.put(ldr, dep);
+                cacheByLdr.put(ldr, deps);
 
                 if (log.isDebugEnabled())
                     log.debug("Created new deployment: " + dep);
@@ -567,6 +583,9 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 if (deps.isEmpty())
                     i1.remove();
             }
+
+            depsByLdr.remove(ldr);
+            cacheByLdr.remove(ldr);
         }
 
         for (GridDeployment dep : doomed) {
