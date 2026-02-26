@@ -43,7 +43,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     private volatile DiscoveryCustomMessage msg;
 
     /** Serialized message bytes. */
-    //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
     @Order(6)
     volatile @Nullable byte[] msgBytes;
 
@@ -51,7 +51,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * Constructor for {@link DiscoveryMessageFactory}.
      */
     public TcpDiscoveryCustomEventMessage() {
-        //No-op.
+        // No-op.
     }
 
     /**
@@ -94,7 +94,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      *
      * @param marsh Marshaller.
      */
-    //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
     public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: msg =" + msg;
 
@@ -107,7 +107,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param marsh Marshaller.
      * @param ldr Class loader.
      */
-    //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
     public void finishUnmarhal(Marshaller marsh, ClassLoader ldr) throws Throwable {
         if (msg == null) {
             try {
