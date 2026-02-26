@@ -59,7 +59,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     protected AffinityTopologyVersion top;
 
     /** */
-    @Order(3)
+    @Order(value = 3, method = "map")
     protected GridPartitionStateMap map;
 
     /** */
@@ -204,6 +204,17 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      */
     public GridPartitionStateMap map() {
         return map;
+    }
+
+    /**
+     * @param map Partitions state map.
+     */
+    public void map(GridPartitionStateMap map) {
+        this.map = new GridPartitionStateMap();
+
+        if (map != null)
+            for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet())
+                put(entry.getKey(), entry.getValue());
     }
 
     /**
