@@ -47,6 +47,9 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     /** Single node response. */
     private R resp;
 
+    /** Response byte representation. */
+    private byte[] respBytes;
+
     /** Error. */
     private Throwable err;
 
@@ -92,8 +95,14 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray(U.toBytes(resp)))
+                if (respBytes == null) {
+                    respBytes = toBytes(resp);
+                }
+
+                if (!writer.writeByteArray(respBytes))
                     return false;
+                else
+                    respBytes = null;
 
                 writer.incrementState();
 
@@ -150,6 +159,11 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
         }
 
         return true;
+    }
+
+    /** */
+    byte[] toBytes(Serializable obj) {
+        return U.toBytes(obj);
     }
 
     /** {@inheritDoc} */
