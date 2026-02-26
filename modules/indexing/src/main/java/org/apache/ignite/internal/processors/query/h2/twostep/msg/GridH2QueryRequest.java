@@ -489,7 +489,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code this} for chaining.
      */
     public GridH2QueryRequest queryId(long queryId) {
-        this.qryId = queryId;
+        qryId = queryId;
 
         return this;
     }
