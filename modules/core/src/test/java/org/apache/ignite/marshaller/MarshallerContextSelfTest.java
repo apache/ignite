@@ -23,8 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +33,7 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -52,15 +51,15 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     private GridTestKernalContext ctx;
 
     /** */
-    private ExecutorService execSvc;
+    private IgniteThreadPoolExecutor execSvc;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx = newContext();
-        execSvc = Executors.newSingleThreadExecutor();
+        execSvc = IgniteThreadPoolExecutor.newSingleThreadExecutor("test-scope", "sys");
 
         ctx.add(new PoolProcessor(ctx) {
-            @Override public ExecutorService getSystemExecutorService() {
+            @Override public IgniteThreadPoolExecutor getSystemExecutorService() {
                 return execSvc;
             }
         });
