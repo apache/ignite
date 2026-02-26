@@ -213,7 +213,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Executor service for thin clients. */
     @GridToStringExclude
-    private ExecutorService thinClientExec;
+    private IgniteThreadPoolExecutor thinClientExec;
 
     /** Rebalance striped executor service. */
     @GridToStringExclude
@@ -855,7 +855,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @return Thread pool implementation to be used in grid to process job execution
      *      requests and user messages sent to the node.
      */
-    public ExecutorService getExecutorService() {
+    public IgniteThreadPoolExecutor getExecutorService() {
         return execSvc;
     }
 
@@ -864,7 +864,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Thread pool implementation to be used in grid for service proxy invocations.
      */
-    public ExecutorService getServiceExecutorService() {
+    public IgniteThreadPoolExecutor getServiceExecutorService() {
         return svcExecSvc;
     }
 
@@ -873,7 +873,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Thread pool implementation to be used in grid for internal system messages.
      */
-    public ExecutorService getSystemExecutorService() {
+    public IgniteThreadPoolExecutor getSystemExecutorService() {
         return sysExecSvc;
     }
 
@@ -894,7 +894,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @return Thread pool implementation to be used in grid for internal and Visor
      *      jobs processing.
      */
-    public ExecutorService getManagementExecutorService() {
+    public IgniteThreadPoolExecutor getManagementExecutorService() {
         return mgmtExecSvc;
     }
 
@@ -902,7 +902,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @return Thread pool implementation to be used for peer class loading
      *      requests handling.
      */
-    public ExecutorService getPeerClassLoadingExecutorService() {
+    public IgniteThreadPoolExecutor getPeerClassLoadingExecutorService() {
         return p2pExecSvc;
     }
 
@@ -922,7 +922,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @return Thread pool implementation to be used for processing of client
      *      messages.
      */
-    public ExecutorService getRestExecutorService() {
+    public IgniteThreadPoolExecutor getRestExecutorService() {
         return restExecSvc;
     }
 
@@ -931,7 +931,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Affinity executor service.
      */
-    public ExecutorService getAffinityExecutorService() {
+    public IgniteThreadPoolExecutor getAffinityExecutorService() {
         return affExecSvc;
     }
 
@@ -940,7 +940,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Indexing executor service.
      */
-    @Nullable public ExecutorService getIndexingExecutorService() {
+    @Nullable public IgniteThreadPoolExecutor getIndexingExecutorService() {
         return idxExecSvc;
     }
 
@@ -949,7 +949,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Thread pool implementation to be used in grid for query messages.
      */
-    public ExecutorService getQueryExecutorService() {
+    public IgniteThreadPoolExecutor getQueryExecutorService() {
         return qryExecSvc;
     }
 
@@ -967,7 +967,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Executor service that is in charge of processing schema change messages.
      */
-    public ExecutorService getSchemaExecutorService() {
+    public IgniteThreadPoolExecutor getSchemaExecutorService() {
         return schemaExecSvc;
     }
 
@@ -976,14 +976,14 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Executor service that is in charge of processing rebalance messages.
      */
-    public ExecutorService getRebalanceExecutorService() {
+    public IgniteThreadPoolExecutor getRebalanceExecutorService() {
         return rebalanceExecSvc;
     }
 
     /**
      * @return Executor service that is used for processing snapshot tasks (taking, sending, restoring).
      */
-    public ExecutorService getSnapshotExecutorService() {
+    public IgniteThreadPoolExecutor getSnapshotExecutorService() {
         return snpExecSvc;
     }
 
@@ -992,7 +992,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Executor service for thin clients.
      */
-    public ExecutorService getThinClientExecutorService() {
+    public IgniteThreadPoolExecutor getThinClientExecutorService() {
         return thinClientExec;
     }
 
@@ -1010,14 +1010,14 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @return Thread pool for create/rebuild indexes.
      */
-    public ExecutorService buildIndexExecutorService() {
+    public IgniteThreadPoolExecutor buildIndexExecutorService() {
         return buildIdxExecSvc;
     }
 
     /**
      * @return Executor to perform a data pages scanning during cache group re-encryption.
      */
-    public ExecutorService getReencryptionExecutorService() {
+    public IgniteThreadPoolExecutor getReencryptionExecutorService() {
         return reencryptExecSvc;
     }
 

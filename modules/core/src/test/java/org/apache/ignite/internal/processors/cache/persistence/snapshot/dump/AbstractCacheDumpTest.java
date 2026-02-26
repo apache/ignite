@@ -288,7 +288,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 if (ign.configuration().isClientMode() == Boolean.TRUE)
                     continue;
 
-                if (((ThreadPoolExecutor)((IgniteEx)ign).context().pools().getSnapshotExecutorService()).getTaskCount() <= 1)
+                if (((IgniteEx)ign).context().pools().getSnapshotExecutorService().getTaskCount() <= 1)
                     return false;
             }
 
