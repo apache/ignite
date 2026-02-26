@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.QueryTable;
+import org.apache.ignite.internal.processors.query.h2.QueryTableSerializer;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -61,7 +62,7 @@ public class GridH2ValueMessageFactory implements MessageFactoryProvider {
         factory.register((short)-33, GridH2QueryRequest::new, new GridH2QueryRequestSerializer());
         factory.register((short)-34, GridH2RowRange::new, new GridH2RowRangeSerializer());
         factory.register((short)-35, GridH2RowRangeBounds::new, new GridH2RowRangeBoundsSerializer());
-        factory.register((short)-54, QueryTable::new, new GridH2NullSerializer());
+        factory.register((short)-54, QueryTable::new, new QueryTableSerializer());
         factory.register((short)-55, GridH2DmlRequest::new, new GridH2DmlRequestSerializer());
         factory.register((short)-56, GridH2DmlResponse::new, new GridH2DmlResponseSerializer());
     }
