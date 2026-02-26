@@ -2544,7 +2544,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (addFinishMsg.clientDiscoData != null && clientId.equals(addFinishMsg.nodeId)) {
                         addFinishMsg.clientDiscoData = null;
-                        addFinishMsg.clientNodeAttrs = null;
+                        addFinishMsg.clientNodeAttributes(null);
 
                         break;
                     }
@@ -4862,7 +4862,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (node.clientRouterNodeId() != null) {
                         addFinishMsg.clientDiscoData = msg.gridDiscoveryData();
 
-                        addFinishMsg.clientNodeAttrs = node.attributes();
+                        addFinishMsg.clientNodeAttributes(node.attributes());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);

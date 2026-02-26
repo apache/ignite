@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -52,7 +53,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** */
     @GridToStringExclude
-    public Map<String, Object> clientNodeAttrs;
+    Map<String, Object> clientNodeAttrs;
 
     /** Serialized client node attributes. */
     @Order(8)
@@ -84,6 +85,23 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         nodeId = msg.nodeId;
         clientDiscoData = msg.clientDiscoData;
         clientNodeAttrs = msg.clientNodeAttrs;
+        clientNodeAttrsBytes = msg.clientNodeAttrsBytes;
+    }
+
+    /**
+     * Sets new client attributes and ensures that thet will be serialized.
+     *
+     * @param attrs Client attributes.
+     */
+    public void clientNodeAttributes(@Nullable Map<String, Object> attrs) {
+        clientNodeAttrs = F.isEmpty(attrs) ? null : attrs;
+        // Ensure new data will be serialized.
+        clientNodeAttrsBytes = null;
+    }
+
+    /** @return Client attributes. */
+    public @Nullable Map<String, Object> clientNodeAttributes() {
+        return clientNodeAttrs;
     }
 
     /** {@inheritDoc} */
