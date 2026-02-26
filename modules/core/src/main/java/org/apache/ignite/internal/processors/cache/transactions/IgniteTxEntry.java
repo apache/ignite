@@ -1119,13 +1119,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         return cqNotifyC;
     }
 
-    /**
-     * @param clo Clo.
-     */
-    public void cqNotifyClosure(GridAbsClosureX clo) {
-        cqNotifyC = clo;
-    }
-
     /** {@inheritDoc} */
     @Override public ClassLoader classLoader() {
         return deployClass().getClassLoader();
