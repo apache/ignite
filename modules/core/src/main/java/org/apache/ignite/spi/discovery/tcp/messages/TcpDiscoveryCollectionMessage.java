@@ -59,7 +59,31 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
 
     /** @param msgs Discovery messages to hold. */
     public TcpDiscoveryCollectionMessage(Collection<TcpDiscoveryAbstractMessage> msgs) {
-        messages(msgs);
+        writableMsgs = null;
+        marshallableMsgsBytes = null;
+        marshallableMsgs = null;
+
+        if (F.isEmpty(msgs))
+            return;
+
+        // Keeps the original message order.
+        int idx = 0;
+
+        for (TcpDiscoveryAbstractMessage m : msgs) {
+            if (m instanceof Message) {
+                if (writableMsgs == null)
+                    writableMsgs = U.newHashMap(msgs.size());
+
+                writableMsgs.put(idx++, (Message)m);
+
+                continue;
+            }
+
+            if (marshallableMsgs == null)
+                marshallableMsgs = U.newHashMap(msgs.size());
+
+            marshallableMsgs.put(idx++, m);
+        }
     }
 
     /** @param marsh marshaller. */
@@ -121,39 +145,6 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
         }
 
         return res;
-    }
-
-    /**
-     * Sets pending messages to send to new node.
-     *
-     * @param msgs Pending messages to send to new node.
-     */
-    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        writableMsgs = null;
-        marshallableMsgsBytes = null;
-        marshallableMsgs = null;
-
-        if (F.isEmpty(msgs))
-            return;
-
-        // Keeps the original message order.
-        int idx = 0;
-
-        for (TcpDiscoveryAbstractMessage m : msgs) {
-            if (m instanceof Message) {
-                if (writableMsgs == null)
-                    writableMsgs = U.newHashMap(msgs.size());
-
-                writableMsgs.put(idx++, (Message)m);
-
-                continue;
-            }
-
-            if (marshallableMsgs == null)
-                marshallableMsgs = U.newHashMap(msgs.size());
-
-            marshallableMsgs.put(idx++, m);
-        }
     }
 
     /** {@inheritDoc} */
