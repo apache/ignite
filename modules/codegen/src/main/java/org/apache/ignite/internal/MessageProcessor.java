@@ -145,6 +145,8 @@ public class MessageProcessor extends AbstractProcessor {
                     }
 
                     validateEnumFieldMapping(type, el);
+
+                    result.add((VariableElement)el);
                 }
             }
 
@@ -156,8 +158,6 @@ public class MessageProcessor extends AbstractProcessor {
         for (Map.Entry entry : elMap.entrySet()) {
             List<VariableElement> elList = (List<VariableElement>)entry.getValue();
             elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
-
-            result.addAll(elList);
 
             for (int i = 0; i < elList.size(); i++) {
                 if (elList.get(i).getAnnotation(Order.class).value() != i) {
