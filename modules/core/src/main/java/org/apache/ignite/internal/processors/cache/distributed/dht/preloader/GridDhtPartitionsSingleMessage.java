@@ -148,31 +148,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @param client {@code True} if sent from client node.
-     */
-    public void client(boolean client) {
-        this.client = client;
-    }
-
-    /**
      * @return {@code True} if sent from client node.
      */
     public boolean client() {
         return client;
-    }
-
-    /**
-     * @return Duplicated partitions data.
-     */
-    public Map<Integer, Integer> duplicatedPartitionsData() {
-        return dupPartsData;
-    }
-
-    /**
-     * @param dupPartsData Duplicated partitions data.
-     */
-    public void duplicatedPartitionsData(Map<Integer, Integer> dupPartsData) {
-        this.dupPartsData = dupPartsData;
     }
 
     /**
@@ -207,13 +186,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partCntrs = new HashMap<>();
 
         partCntrs.put(grpId, cntrMap);
-    }
-
-    /**
-     * @param partCntrs Partition update counters per cache group.
-     */
-    public void partitionUpdateCounters(Map<Integer, CachePartitionPartialCountersMap> partCntrs) {
-        this.partCntrs = partCntrs;
     }
 
     /** @return Partition update counters per cache group. */
@@ -263,34 +235,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @return Partitions sizes.
-     */
-    public Map<Integer, IntLongMap> partitionSizesMap() {
-        return partsSizes;
-    }
-
-    /**
-     * @param partsSizes Partitions sizes.
-     */
-    public void partitionSizesMap(Map<Integer, IntLongMap> partsSizes) {
-        this.partsSizes = partsSizes;
-    }
-
-    /**
-     * @return Partitions history reservation counters.
-     */
-    public Map<Integer, IntLongMap> partitionHistoryCountersMap() {
-        return partHistCntrs;
-    }
-
-    /**
-     * @param partHistCntrs Partitions history reservation counters.
-     */
-    public void partitionHistoryCountersMap(Map<Integer, IntLongMap> partHistCntrs) {
-        this.partHistCntrs = partHistCntrs;
-    }
-
-    /**
      * @param cntrMap Partition history counters.
      */
     void partitionHistoryCounters(Map<Integer, Map<Integer, Long>> cntrMap) {
@@ -329,34 +273,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             parts = new HashMap<>();
 
         return parts;
-    }
-
-    /**
-     * @return Serialized local partitions.
-     */
-    public byte[] partitionBytes() {
-        return partsBytes;
-    }
-
-    /**
-     * @param partsBytes Serialized local partitions.
-     */
-    public void partitionBytes(byte[] partsBytes) {
-        this.partsBytes = partsBytes;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /**

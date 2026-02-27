@@ -165,20 +165,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @return Recovery flag.
-     */
-    public final boolean recovery() {
-        return isFlag(RECOVERY_FLAG_MASK);
-    }
-
-    /**
-     * @param val Recovery flag.
-     */
-    public void recovery(boolean val) {
-        setFlag(val, RECOVERY_FLAG_MASK);
-    }
-
-    /**
      * @return {@code True} if first optimistic tx prepare request sent from client node.
      */
     public final boolean firstClientRequest() {
@@ -197,13 +183,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**
@@ -228,13 +207,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Implicit single flag.
      */
     public final boolean implicitSingle() {
@@ -256,38 +228,10 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param txLbl Transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte nearFlags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void nearFlags(byte flags) {
-        this.flags = flags;
     }
 
     /**

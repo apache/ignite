@@ -48,13 +48,6 @@ public class TxLockList implements Message {
     }
 
     /**
-     * @param txLocks Lock list.
-     */
-    public void transactionLocks(List<TxLock> txLocks) {
-        this.txLocks = txLocks;
-    }
-
-    /**
      * @param txLock Tx lock.
      */
     public void add(TxLock txLock) {

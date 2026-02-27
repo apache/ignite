@@ -94,15 +94,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         return order;
     }
 
-    /**
-     * Sets order of the node sent the response.
-     *
-     * @param order Order of the node sent the response.
-     */
-    public void order(long order) {
-        this.order = order;
-    }
-
     /** @return Socket addresses list for redirect. */
     public @Nullable Collection<InetSocketAddress> redirectAddresses() {
         return F.isEmpty(redirectAddrsMsgs)
@@ -115,26 +106,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         redirectAddrsMsgs = sockAddrs == null
             ? null
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
-    }
-
-    /** @return Collection of {@link InetAddressMessage}. */
-    public @Nullable Collection<InetSocketAddressMessage> redirectAddressesMessages() {
-        return redirectAddrsMsgs;
-    }
-
-    /** @param redirectAddrsMsgs Collection of {@link InetAddressMessage}. */
-    public void redirectAddressesMessages(@Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs) {
-        this.redirectAddrsMsgs = redirectAddrsMsgs;
-    }
-
-    /** @return Previous node aliveness flag. */
-    public boolean previousNodeAliveFlag() {
-        return prevNodeAliveFlag;
-    }
-
-    /** @param prevNodeAliveFlag Previous node aliveness flag. */
-    public void previousNodeAliveFlag(boolean prevNodeAliveFlag) {
-        this.prevNodeAliveFlag = prevNodeAliveFlag;
     }
 
     /** {@inheritDoc} */

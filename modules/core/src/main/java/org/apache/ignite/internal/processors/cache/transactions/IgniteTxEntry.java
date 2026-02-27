@@ -129,7 +129,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Visible value for peek. */
     @GridToStringInclude
     @GridDirectTransient
-    private TxEntryValueHolder prevVal = new TxEntryValueHolder();
+    private final TxEntryValueHolder prevVal = new TxEntryValueHolder();
 
     /** Old value before update. */
     @GridToStringInclude
@@ -443,7 +443,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param partCntr Partition counter.
      */
     public void updateCounter(long partCntr) {
-        this.partUpdateCntr = partCntr;
+        partUpdateCntr = partCntr;
     }
 
     /**
@@ -1096,10 +1096,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ver Entry version.
      */
     public void entryReadVersion(GridCacheVersion ver) {
-        assert this.serReadVer == null : "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
+        assert serReadVer == null : "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
         assert ver != null;
 
-        this.serReadVer = ver;
+        serReadVer = ver;
     }
 
     /**
@@ -1339,13 +1339,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public GridAbsClosureX cqNotifyClosure() {
         return cqNotifyC;
-    }
-
-    /**
-     * @param clo Clo.
-     */
-    public void cqNotifyClosure(GridAbsClosureX clo) {
-        cqNotifyC = clo;
     }
 
     /** {@inheritDoc} */

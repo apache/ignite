@@ -65,10 +65,7 @@ public class GridH2Null extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        return true;
+        return super.readFrom(buf, reader);
     }
 
     /** {@inheritDoc} */
