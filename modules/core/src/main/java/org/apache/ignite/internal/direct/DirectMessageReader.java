@@ -51,10 +51,10 @@ public class DirectMessageReader implements MessageReader {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
-    /** */
+    /** Message factory. */
     private final MessageFactory msgFactory;
 
-    /** */
+    /** Cache object processor. */
     private final IgniteCacheObjectProcessor cacheObjProc;
 
     /** Buffer for reading. */
@@ -474,7 +474,7 @@ public class DirectMessageReader implements MessageReader {
         return S.toString(DirectMessageReader.class, this);
     }
 
-    /** */
+    /** @return Deserialized object. */
     private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Function<DirectMessageReader, T> fun) {
         Message msg = stream.readMessage(this);
 

@@ -48,28 +48,31 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_C
  * Message writer implementation.
  */
 public class DirectMessageWriter implements MessageWriter {
-    /** */
-    private static final int TMP_BUF_CAPACITY = 1024 * 10;
+    /** Temporary buffer capacity.  */
+    private static final int TMP_BUF_CAPACITY = 10 * 1024;
 
     /** State. */
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
-    /** */
+    /** Message factory. */
     private final MessageFactory msgFactory;
 
-    /** Network compression level. Used only for {@link CompressedMessage}. */
+    /** Compression level. Used only for {@link CompressedMessage}. */
     private final int compressionLvl;
 
     /** Buffer for writing. */
     private ByteBuffer buf;
 
-    /** */
+    /** @param msgFactory Message factory. */
     public DirectMessageWriter(final MessageFactory msgFactory) {
         this(msgFactory, DFLT_NETWORK_COMPRESSION);
     }
 
-    /** */
+    /**
+     * @param msgFactory Message factory.
+     * @param compressionLvl Compression level.
+     */
     public DirectMessageWriter(final MessageFactory msgFactory, final int compressionLvl) {
         this.msgFactory = msgFactory;
         this.compressionLvl = compressionLvl;
@@ -443,7 +446,11 @@ public class DirectMessageWriter implements MessageWriter {
         return S.toString(DirectMessageWriter.class, this);
     }
 
-    /** */
+    /**
+     * @param consumer Consumer.
+     * @param isNull {@code True} if message is null.
+     * @param stream Byte buffer stream.
+     */
     private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean isNull, DirectByteBufferStream stream) {
         if (isNull) {
             stream.writeShort(Short.MIN_VALUE);

@@ -18,12 +18,12 @@
 package org.apache.ignite.internal;
 
 import java.util.List;
-import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-public class TestCollectionsCompressedMessage implements Message {
+public class TestCompressUnsupportedTypeMessage implements Message {
     @Order(0)
-    List<CompressedMessage> messageList;
+    @Compress
+    List<String> message;
 
     public short directType() {
         return 0;

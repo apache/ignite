@@ -322,9 +322,12 @@ public class MessageSerializerGenerator {
 
         String getExpr = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName + "()";
 
+        TypeMirror type = field.asType();
+
         boolean compress = field.getAnnotation(Compress.class) != null;
 
-        TypeMirror type = field.asType();
+        if (compress)
+            checkTypeForCompress(type);
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -383,7 +386,7 @@ public class MessageSerializerGenerator {
                 args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
 
                 if (compress)
-                    args.add("true");
+                    args.add("true"); // the value of the compress argument in the MessageWriter#writeMap method
 
                 returnFalseIfWriteFailed(write, field, "writer.writeMap", args.toArray(String[]::new));
             }
@@ -551,6 +554,9 @@ public class MessageSerializerGenerator {
 
         boolean compress = field.getAnnotation(Compress.class) != null;
 
+        if (compress)
+            checkTypeForCompress(type);
+
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
@@ -626,10 +632,10 @@ public class MessageSerializerGenerator {
                 List<String> args = new ArrayList<>();
                 args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
                 args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
-                args.add("false");
+                args.add("false"); // the value of the linked argument in the MessageReader#readMap method
 
                 if (compress)
-                    args.add("true");
+                    args.add("true"); // the value of the compress argument in the MessageReader#readMap method
 
                 returnFalseIfReadFailed(field, "reader.readMap", args.toArray(String[]::new));
             }
@@ -990,5 +996,16 @@ public class MessageSerializerGenerator {
         sb.deleteCharAt(sb.length() - 1);
 
         return sb.toString();
+    }
+
+    /** Checks that the Compress annotation is used only for supported types: Map and Message. */
+    private void checkTypeForCompress(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            if (assignableFrom(erasedType(type), type(Map.class.getName())) ||
+                assignableFrom(type, type(MESSAGE_INTERFACE)))
+                return;
+        }
+
+        throw new IllegalArgumentException("Compress annotation is used for an unsupported type: " + type);
     }
 }

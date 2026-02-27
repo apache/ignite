@@ -23,15 +23,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestMapCompressedMessage implements Message {
     @Order(0)
-    private Map<String, CompressedMessage> stringMessageMap;
-
-    public Map<String, CompressedMessage> stringMessageMap() {
-        return stringMessageMap;
-    }
-
-    public void stringMessageMap(Map<String, CompressedMessage> stringMessageMap) {
-        this.stringMessageMap = stringMessageMap;
-    }
+    Map<String, CompressedMessage> stringMessageMap;
 
     public short directType() {
         return 0;

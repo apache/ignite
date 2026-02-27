@@ -31,57 +31,62 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** */
+/**
+ * Internal message used when transmitting fields annotated with @Compress over the network.
+ * <p>
+ * WARNING: CompressedMessage is not intended for explicit use in messages.
+ */
 public class CompressedMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = -101;
 
-    /** */
-    static final int CHUNK_SIZE = 1024 * 10;
+    /** Chunk size. */
+    static final int CHUNK_SIZE = 10 * 1024;
 
-    /** */
-    private static final int BUFFER_CAPACITY = CHUNK_SIZE * 10;
+    /** Reader buffer capacity. */
+    private static final int BUFFER_CAPACITY = 10 * CHUNK_SIZE;
 
-    /** */
+    /** Temporary buffer for compressed data received over the network. */
     private ByteBuffer tmpBuf;
 
-    /** */
+    /** Raw data size. */
     private int dataSize;
 
-    /** */
+    /** Chunked byte reader. */
     private ChunkedByteReader chunkedReader;
 
-    /** */
+    /** Chunk. */
     private byte[] chunk;
 
-    /** */
+    /** Flag indicating whether this is the last chunk. */
     private boolean finalChunk;
 
-    /** */
-    private int compressedLvl;
+    /** Compression level. */
+    private int compressionLvl;
 
-    /** */
+    /** Constructor. */
     public CompressedMessage() {
         // No-op.
     }
 
     /**
      * @param buf Source buffer with serialized data.
+     * @param compressionLvl Compression level.
      */
-    public CompressedMessage(ByteBuffer buf, int compressedLvl) {
+    public CompressedMessage(ByteBuffer buf, int compressionLvl) {
         dataSize = buf.remaining();
-        this.compressedLvl = compressedLvl;
+        this.compressionLvl = compressionLvl;
 
         if (dataSize > 0)
             chunkedReader = new ChunkedByteReader(compress(buf));
     }
 
-    /** */
+    /** @return Raw data size. */
     public int dataSize() {
         return dataSize;
     }
 
-    /** */
+    /** @return Uncompressed data. */
     public byte[] uncompressed() {
         assert finalChunk;
 
@@ -205,6 +210,7 @@ public class CompressedMessage implements Message {
 
     /**
      * @param buf Buffer.
+     * @return Compressed data.
      */
     private byte[] compress(ByteBuffer buf) {
         byte[] data = new byte[dataSize];
@@ -212,7 +218,7 @@ public class CompressedMessage implements Message {
         buf.get(data);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length);
-        Deflater deflater = new Deflater(compressedLvl, true);
+        Deflater deflater = new Deflater(compressionLvl, true);
 
         try (DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater)) {
             dos.write(data);
@@ -228,7 +234,7 @@ public class CompressedMessage implements Message {
         return baos.toByteArray();
     }
 
-    /** */
+    /** @return Uncompressed data. */
     private byte[] uncompress() {
         if (tmpBuf == null)
             return null;
@@ -265,31 +271,31 @@ public class CompressedMessage implements Message {
         return S.toString(CompressedMessage.class, this);
     }
 
-    /** */
+    /** Byte reader returning data chunks of predefined size. */
     private static class ChunkedByteReader {
-        /** */
+        /** Input data. */
         private final byte[] inputData;
 
-        /** */
-        private int position;
+        /** Current position. */
+        private int pos;
 
-        /** */
+        /** Constructor. */
         ChunkedByteReader(byte[] inputData) {
             this.inputData = inputData;
         }
 
-        /** */
+        /** @return Next chunk of bytes or null. */
         byte[] nextChunk() {
-            if (position >= inputData.length)
+            if (pos >= inputData.length)
                 return null;
 
-            int curChunkSize = Math.min(inputData.length - position, CHUNK_SIZE);
+            int curChunkSize = Math.min(inputData.length - pos, CHUNK_SIZE);
 
             byte[] chunk = new byte[curChunkSize];
 
-            System.arraycopy(inputData, position, chunk, 0, curChunkSize);
+            System.arraycopy(inputData, pos, chunk, 0, curChunkSize);
 
-            position += curChunkSize;
+            pos += curChunkSize;
 
             return chunk;
         }

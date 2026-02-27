@@ -22,15 +22,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestCompressedMessage implements Message {
     @Order(0)
-    private CompressedMessage message;
-
-    public CompressedMessage message() {
-        return message;
-    }
-
-    public void message(CompressedMessage message) {
-        this.message = message;
-    }
+    CompressedMessage message;
 
     public short directType() {
         return 0;
