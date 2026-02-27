@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** Near keys. */
-    @Order(8)
+    @Order(0)
     List<KeyCacheObject> nearKeys;
 
     /**

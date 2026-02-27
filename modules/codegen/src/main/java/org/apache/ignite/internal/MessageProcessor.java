@@ -126,11 +126,16 @@ public class MessageProcessor extends AbstractProcessor {
      */
     private List<VariableElement> orderedFields(TypeElement type) {
         List<VariableElement> result = new ArrayList<>();
+        Map<String, List<VariableElement>> elMap = new HashMap<>();
 
         while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
+            for (Element el : type.getEnclosedElements()) {
                 if (el.getAnnotation(Order.class) != null) {
-                    result.add((VariableElement)el);
+                    String enclosingName = el.getEnclosingElement().getSimpleName().toString();
+
+                    elMap.computeIfAbsent(enclosingName, k -> new ArrayList<>());
+
+                    elMap.get(enclosingName).add((VariableElement)el);
 
                     if (el.getModifiers().contains(Modifier.STATIC)) {
                         processingEnv.getMessager().printMessage(
@@ -148,14 +153,19 @@ public class MessageProcessor extends AbstractProcessor {
             type = (TypeElement)superType;
         }
 
-        result.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
+        for (Map.Entry entry : elMap.entrySet()) {
+            List<VariableElement> elList = (List<VariableElement>)entry.getValue();
+            elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
-        for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).getAnnotation(Order.class).value() != i) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Annotation @Order must be a sequence from 0 to " + (result.size() - 1),
-                    result.get(i));
+            result.addAll(elList);
+
+            for (int i = 0; i < elList.size(); i++) {
+                if (elList.get(i).getAnnotation(Order.class).value() != i) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Annotation @Order must be a sequence from 0 to " + (elList.size() - 1),
+                        elList.get(i));
+                }
             }
         }
 
