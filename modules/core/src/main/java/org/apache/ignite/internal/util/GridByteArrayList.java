@@ -76,13 +76,6 @@ public class GridByteArrayList implements Message, Externalizable {
     }
 
     /**
-     * @param data The underlying array.
-     */
-    public void internalArray(byte[] data) {
-        this.data = data;
-    }
-
-    /**
      * Gets copy of internal array.
      *
      * @return Copy of internal array.
@@ -131,13 +124,6 @@ public class GridByteArrayList implements Message, Externalizable {
      */
     public int size() {
         return size;
-    }
-
-    /**
-     * @param size Number of bytes in the list.
-     */
-    public void size(int size) {
-        this.size = size;
     }
 
     /**

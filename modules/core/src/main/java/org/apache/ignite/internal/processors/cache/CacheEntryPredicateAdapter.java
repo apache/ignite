@@ -63,7 +63,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     public CacheEntryPredicateAdapter(@Nullable CacheObject val) {
-        this.type = PredicateType.VALUE;
+        type = PredicateType.VALUE;
 
         this.val = val;
     }
@@ -140,16 +140,6 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         if (type == PredicateType.VALUE)
             val.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /** */
-    public @Nullable CacheObject value() {
-        return val;
-    }
-
-    /** */
-    public void value(@Nullable CacheObject val) {
-        this.val = val;
     }
 
     /** */

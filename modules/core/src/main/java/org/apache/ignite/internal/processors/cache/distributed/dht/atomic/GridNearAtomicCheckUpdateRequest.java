@@ -68,14 +68,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param futId Future ID on near node.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-
-    /**
      * @return Related update request.
      */
     GridNearAtomicAbstractUpdateRequest updateRequest() {
@@ -85,13 +77,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
-    }
-
-    /**
-     * @param partId Partition ID this message is targeted to or {@code -1} if it cannot be determined.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
     }
 
     /** {@inheritDoc} */

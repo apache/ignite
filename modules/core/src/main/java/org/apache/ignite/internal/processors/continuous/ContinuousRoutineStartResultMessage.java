@@ -73,13 +73,6 @@ public class ContinuousRoutineStartResultMessage implements Message {
     }
 
     /**
-     * @param cntrsMap Counters map.
-     */
-    public void countersMap(@Nullable CachePartitionPartialCountersMap cntrsMap) {
-        this.cntrsMap = cntrsMap;
-    }
-
-    /**
      * @return Routine ID.
      */
     public UUID routineId() {
@@ -87,24 +80,10 @@ public class ContinuousRoutineStartResultMessage implements Message {
     }
 
     /**
-     * @param routineId Routine ID.
-     */
-    public void routineId(UUID routineId) {
-        this.routineId = routineId;
-    }
-
-    /**
      * @return Error message.
      */
     public @Nullable ErrorMessage errorMessage() {
         return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

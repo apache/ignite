@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,17 +39,11 @@ import org.jetbrains.annotations.Nullable;
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
-    /** Local partitions. Serialized as {@link #partsBytes}, may be compressed. */
-    @GridToStringInclude
-    private Map<Integer, GridDhtPartitionMap> parts;
-
-    /**
-     * Serialized local partitions. Unmarshalled to {@link #parts}.
-     * <p>
-     * TODO Remove this field after completing task IGNITE-26976.
-     */
+    /** Local partitions. */
     @Order(6)
-    byte[] partsBytes;
+    @Compress
+    @GridToStringInclude
+    Map<Integer, GridDhtPartitionMap> parts;
 
     /** */
     @Order(7)
@@ -57,16 +51,19 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** Partitions update counters. */
     @Order(8)
+    @Compress
     @GridToStringInclude
     Map<Integer, CachePartitionPartialCountersMap> partCntrs;
 
     /** Partitions sizes. */
     @Order(9)
+    @Compress
     @GridToStringInclude
     Map<Integer, IntLongMap> partsSizes;
 
     /** Partitions history reservation counters. */
     @Order(10)
+    @Compress
     @GridToStringInclude
     Map<Integer, IntLongMap> partHistCntrs;
 
@@ -105,16 +102,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param exchId Exchange ID.
      * @param client Client message flag.
      * @param lastVer Last version.
-     * @param compress {@code True} if it is possible to use compression for message.
      */
     public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId,
         boolean client,
-        @Nullable GridCacheVersion lastVer,
-        boolean compress
+        @Nullable GridCacheVersion lastVer
     ) {
         super(exchId, lastVer);
-
-        compressed(compress);
 
         this.client = client;
     }
@@ -148,31 +141,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @param client {@code True} if sent from client node.
-     */
-    public void client(boolean client) {
-        this.client = client;
-    }
-
-    /**
      * @return {@code True} if sent from client node.
      */
     public boolean client() {
         return client;
-    }
-
-    /**
-     * @return Duplicated partitions data.
-     */
-    public Map<Integer, Integer> duplicatedPartitionsData() {
-        return dupPartsData;
-    }
-
-    /**
-     * @param dupPartsData Duplicated partitions data.
-     */
-    public void duplicatedPartitionsData(Map<Integer, Integer> dupPartsData) {
-        this.dupPartsData = dupPartsData;
     }
 
     /**
@@ -187,7 +159,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         parts.put(cacheId, locMap);
 
         if (dupDataCache != null) {
-            assert compressed();
             assert F.isEmpty(locMap.map());
             assert parts.containsKey(dupDataCache);
 
@@ -207,13 +178,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partCntrs = new HashMap<>();
 
         partCntrs.put(grpId, cntrMap);
-    }
-
-    /**
-     * @param partCntrs Partition update counters per cache group.
-     */
-    public void partitionUpdateCounters(Map<Integer, CachePartitionPartialCountersMap> partCntrs) {
-        this.partCntrs = partCntrs;
     }
 
     /** @return Partition update counters per cache group. */
@@ -263,34 +227,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @return Partitions sizes.
-     */
-    public Map<Integer, IntLongMap> partitionSizesMap() {
-        return partsSizes;
-    }
-
-    /**
-     * @param partsSizes Partitions sizes.
-     */
-    public void partitionSizesMap(Map<Integer, IntLongMap> partsSizes) {
-        this.partsSizes = partsSizes;
-    }
-
-    /**
-     * @return Partitions history reservation counters.
-     */
-    public Map<Integer, IntLongMap> partitionHistoryCountersMap() {
-        return partHistCntrs;
-    }
-
-    /**
-     * @param partHistCntrs Partitions history reservation counters.
-     */
-    public void partitionHistoryCountersMap(Map<Integer, IntLongMap> partHistCntrs) {
-        this.partHistCntrs = partHistCntrs;
-    }
-
-    /**
      * @param cntrMap Partition history counters.
      */
     void partitionHistoryCounters(Map<Integer, Map<Integer, Long>> cntrMap) {
@@ -332,34 +268,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @return Serialized local partitions.
-     */
-    public byte[] partitionBytes() {
-        return partsBytes;
-    }
-
-    /**
-     * @param partsBytes Serialized local partitions.
-     */
-    public void partitionBytes(byte[] partsBytes) {
-        this.partsBytes = partsBytes;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @param ex Exception.
      */
     public void setError(Throwable ex) {
@@ -388,34 +296,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (parts != null && partsBytes == null) {
-            byte[] partsBytes0 = U.marshal(ctx, parts);
-
-            if (compressed()) {
-                try {
-                    partsBytes0 = U.zip(partsBytes0);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
-                }
-            }
-
-            partsBytes = partsBytes0;
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (partsBytes != null && parts == null) {
-            parts = compressed()
-                ? U.unmarshalZip(ctx.marshaller(), partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()))
-                : U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
 
         if (dupPartsData != null) {
             assert parts != null;
