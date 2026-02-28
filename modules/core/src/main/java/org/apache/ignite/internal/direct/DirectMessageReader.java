@@ -503,7 +503,7 @@ public class DirectMessageReader implements MessageReader {
         tmpBuf.put(uncompressed);
         tmpBuf.flip();
 
-        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc, null);
 
         tmpReader.setBuffer(tmpBuf);
 

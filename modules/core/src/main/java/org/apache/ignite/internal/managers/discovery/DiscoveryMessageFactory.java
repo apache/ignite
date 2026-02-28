@@ -55,8 +55,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -104,6 +102,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        // Utility messages.
         factory.register((short)-112, TcpDiscoveryNodeMessage::new, new TcpDiscoveryNodeMessageSerializer());
         factory.register((short)-111, ClusterNodeCollectionMessage::new, new ClusterNodeCollectionMessageSerializer());
         factory.register((short)-110, ClusterNodeMessage::new, new ClusterNodeMessageSerializer());

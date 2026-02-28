@@ -32,6 +32,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -109,7 +110,7 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory(), msg -> {
+        msgWriter = new DirectMessageWriter(spi.messageFactory(), IgniteConfiguration.DFLT_NETWORK_COMPRESSION, msg -> {
             if (msg instanceof TcpDiscoveryMarshallableMessage)
                 ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
         });

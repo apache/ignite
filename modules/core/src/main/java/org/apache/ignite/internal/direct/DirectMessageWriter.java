@@ -466,7 +466,7 @@ public class DirectMessageWriter implements MessageWriter {
         if (!stream.serializeFinished()) {
             ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl, null);
 
             tmpWriter.setBuffer(tmpBuf);
 
