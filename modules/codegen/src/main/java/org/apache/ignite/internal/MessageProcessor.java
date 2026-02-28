@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -126,7 +127,7 @@ public class MessageProcessor extends AbstractProcessor {
      */
     private List<VariableElement> orderedFields(TypeElement type) {
         List<VariableElement> result = new ArrayList<>();
-        Map<String, List<VariableElement>> elMap = new HashMap<>();
+        Map<String, List<VariableElement>> elMap = new LinkedHashMap<>();
 
         while (type != null) {
             for (Element el : type.getEnclosedElements()) {
