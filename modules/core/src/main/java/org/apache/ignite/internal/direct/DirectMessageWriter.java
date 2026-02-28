@@ -66,25 +66,20 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** @param msgFactory Message factory. */
     public DirectMessageWriter(final MessageFactory msgFactory) {
-        this(msgFactory, DFLT_NETWORK_COMPRESSION, null);
+        this(msgFactory, DFLT_NETWORK_COMPRESSION);
     }
 
     /**
      * @param msgFactory Message factory.
      * @param compressionLvl Compression level.
-     * @param msgPreSerializer Optional message pre-writer.
      */
-    public DirectMessageWriter(
-        MessageFactory msgFactory,
-        int compressionLvl,
-        @Nullable Consumer<Message> msgPreSerializer
-    ) {
+    public DirectMessageWriter(final MessageFactory msgFactory, final int compressionLvl) {
         this.msgFactory = msgFactory;
         this.compressionLvl = compressionLvl;
 
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, msgPreSerializer);
+                return new StateItem(msgFactory);
             }
         });
     }
@@ -466,7 +461,7 @@ public class DirectMessageWriter implements MessageWriter {
         if (!stream.serializeFinished()) {
             ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl, null);
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
 
             tmpWriter.setBuffer(tmpBuf);
 
@@ -518,12 +513,9 @@ public class DirectMessageWriter implements MessageWriter {
         /** */
         private boolean hdrWritten;
 
-        /**
-         * @param msgFactory Message Factory.
-         * @param msgPreWriter Optional message pre-writer.
-         */
-        public StateItem(MessageFactory msgFactory, @Nullable Consumer<Message> msgPreWriter) {
-            stream = new DirectByteBufferStream(msgFactory, null, null, msgPreWriter);
+        /** */
+        public StateItem(MessageFactory msgFactory) {
+            stream = new DirectByteBufferStream(msgFactory);
         }
 
         /** {@inheritDoc} */

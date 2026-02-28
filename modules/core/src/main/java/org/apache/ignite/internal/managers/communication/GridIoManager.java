@@ -433,11 +433,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(MessageFactory msgFactory) {
-                    return new DirectMessageWriter(msgFactory, ctx.config().getNetworkCompressionLevel(), null);
+                    return new DirectMessageWriter(msgFactory, ctx.config().getNetworkCompressionLevel());
                 }
 
                 @Override public MessageReader reader(MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory, ctx.cacheObjects(), null);
+                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
                 }
             };
         }

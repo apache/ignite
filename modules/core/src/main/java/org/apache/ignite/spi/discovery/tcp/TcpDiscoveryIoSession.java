@@ -32,7 +32,6 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,7 +39,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,7 +79,7 @@ public class TcpDiscoveryIoSession {
     private final Socket sock;
 
     /** */
-    final DirectMessageWriter msgWriter;
+    private final DirectMessageWriter msgWriter;
 
     /** */
     private final DirectMessageReader msgReader;
@@ -93,7 +91,7 @@ public class TcpDiscoveryIoSession {
     private final CompositeInputStream in;
 
     /** Intermediate buffer for serializing discovery messages. */
-    final ByteBuffer msgBuf;
+    private final ByteBuffer msgBuf;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -110,16 +108,8 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory(), IgniteConfiguration.DFLT_NETWORK_COMPRESSION, msg -> {
-            if (msg instanceof TcpDiscoveryMarshallableMessage)
-                ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
-        });
-        msgReader = new DirectMessageReader(spi.messageFactory(), null, msg -> {
-            if (msg instanceof TcpDiscoveryMarshallableMessage) {
-                ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(spi.marshaller(),
-                    U.resolveClassLoader(spi.ignite().configuration()));
-            }
-        });
+        msgWriter = new DirectMessageWriter(spi.messageFactory());
+        msgReader = new DirectMessageReader(spi.messageFactory(), null);
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
@@ -221,9 +211,6 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            if (msg instanceof TcpDiscoveryMarshallableMessage)
-                ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(spi.marshaller(), clsLdr);
-
             return (T)msg;
         }
         catch (Exception e) {
@@ -263,9 +250,6 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException {
-        if (m instanceof TcpDiscoveryMarshallableMessage)
-            ((TcpDiscoveryMarshallableMessage)m).prepareMarshal(spi.marshaller());
-
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();

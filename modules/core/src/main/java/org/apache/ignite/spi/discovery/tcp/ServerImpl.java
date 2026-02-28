@@ -1743,9 +1743,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(
-        long topVer, Collection<ClusterNode> top
-    ) {
+    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;

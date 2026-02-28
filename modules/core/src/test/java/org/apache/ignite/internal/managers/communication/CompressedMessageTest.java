@@ -93,7 +93,7 @@ public class CompressedMessageTest {
 
         msgBuf.flip();
 
-        DirectMessageReader reader = new DirectMessageReader(msgFactory, null, null);
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
 
         reader.setBuffer(msgBuf);
 

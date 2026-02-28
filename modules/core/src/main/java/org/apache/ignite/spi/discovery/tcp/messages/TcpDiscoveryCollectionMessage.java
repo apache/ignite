@@ -59,6 +59,10 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
 
     /** @param msgs Discovery messages to hold. */
     public TcpDiscoveryCollectionMessage(Collection<TcpDiscoveryAbstractMessage> msgs) {
+        writableMsgs = null;
+        marshallableMsgsBytes = null;
+        marshallableMsgs = null;
+
         if (F.isEmpty(msgs))
             return;
 

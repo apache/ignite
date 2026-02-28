@@ -127,7 +127,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         assertTrue(msgWritter.getBuffer().hasRemaining());
 
-        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null, null);
+        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null);
         msgReader.setBuffer(msgWritter.getBuffer());
 
         msgWritter.getBuffer().rewind();
