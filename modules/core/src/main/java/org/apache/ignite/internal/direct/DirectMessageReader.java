@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Consumer;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -59,6 +58,9 @@ public class DirectMessageReader implements MessageReader {
     /** Cache object processor. */
     private final IgniteCacheObjectProcessor cacheObjProc;
 
+    /** */
+    private final @Nullable Consumer<Message> msgPostSerializer;
+
     /** Buffer for reading. */
     private ByteBuffer buf;
 
@@ -68,26 +70,17 @@ public class DirectMessageReader implements MessageReader {
     /**
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
-     */
-    public DirectMessageReader(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-        this.msgFactory = msgFactory;
-        this.cacheObjProc = cacheObjProc;
-
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
-    public DirectMessageReader(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-        this(msgFactory, cacheObjProc, null);
-    }
-
-    /**
-     * @param msgFactory Message factory.
-     * @param cacheObjProc Cache object processor.
-     * @param msgPostSerializer Optional message processor to call after the serialization.
+     * @param msgPostSerializer Optional message post-serializer.
      */
     public DirectMessageReader(
-        final MessageFactory msgFactory,
+        MessageFactory msgFactory,
         IgniteCacheObjectProcessor cacheObjProc,
         @Nullable Consumer<Message> msgPostSerializer
     ) {
+        this.msgFactory = msgFactory;
+        this.cacheObjProc = cacheObjProc;
+        this.msgPostSerializer = msgPostSerializer;
+
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory, cacheObjProc, msgPostSerializer);
@@ -514,7 +507,7 @@ public class DirectMessageReader implements MessageReader {
         tmpBuf.put(uncompressed);
         tmpBuf.flip();
 
-        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc, msgPostSerializer);
 
         tmpReader.setBuffer(tmpBuf);
 
@@ -537,14 +530,14 @@ public class DirectMessageReader implements MessageReader {
         /**
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
-         * @param msgPostReader Optional message post-reader.
+         * @param msgPostSerializer Optional message post-serializer.
          */
         public StateItem(
             MessageFactory msgFactory,
             IgniteCacheObjectProcessor cacheObjProc,
-            @Nullable Consumer<Message> msgPostReader
+            @Nullable Consumer<Message> msgPostSerializer
         ) {
-            stream = new DirectByteBufferStream(msgFactory, cacheObjProc, msgPostReader, null);
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc, msgPostSerializer, null);
         }
 
         /** {@inheritDoc} */

@@ -43,6 +43,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMess
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_COMPRESSION;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
@@ -109,7 +110,7 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory(), msg -> {
+        msgWriter = new DirectMessageWriter(spi.messageFactory(), DFLT_NETWORK_COMPRESSION, msg -> {
             if (msg instanceof TcpDiscoveryMarshallableMessage)
                 ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(spi.marshaller());
         });

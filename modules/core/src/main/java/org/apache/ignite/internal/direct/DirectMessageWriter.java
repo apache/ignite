@@ -61,34 +61,32 @@ public class DirectMessageWriter implements MessageWriter {
     /** Compression level. Used only for {@link CompressedMessage}. */
     private final int compressionLvl;
 
+    /** Optional message pre-writer. */
+    private final @Nullable Consumer<Message> msgPreSerializer;
+
     /** Buffer for writing. */
     private ByteBuffer buf;
 
-    /** */
-    public DirectMessageWriter(MessageFactory msgFactory) {
-        this(msgFactory, null);
-    }
-
-    /**
-     * @param msgFactory Message factory.
-     * @param msgPreSerializer Optional message pre-writer.
-     */
-    public DirectMessageWriter(MessageFactory msgFactory, @Nullable Consumer<Message> msgPreSerializer) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
     /** @param msgFactory Message factory. */
     public DirectMessageWriter(final MessageFactory msgFactory) {
-        this(msgFactory, DFLT_NETWORK_COMPRESSION);
+        this(msgFactory, DFLT_NETWORK_COMPRESSION, null);
     }
 
     /**
      * @param msgFactory Message factory.
      * @param compressionLvl Compression level.
+     * @param msgPreSerializer Optional message pre-writer.
      */
-    public DirectMessageWriter(final MessageFactory msgFactory, final int compressionLvl) {
+    public DirectMessageWriter(
+        MessageFactory msgFactory,
+        int compressionLvl,
+        @Nullable Consumer<Message> msgPreSerializer
+    ) {
         this.msgFactory = msgFactory;
         this.compressionLvl = compressionLvl;
+        this.msgPreSerializer = msgPreSerializer;
 
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory, msgPreSerializer);
             }
@@ -472,7 +470,7 @@ public class DirectMessageWriter implements MessageWriter {
         if (!stream.serializeFinished()) {
             ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl, msgPreSerializer);
 
             tmpWriter.setBuffer(tmpBuf);
 
@@ -526,10 +524,10 @@ public class DirectMessageWriter implements MessageWriter {
 
         /**
          * @param msgFactory Message Factory.
-         * @param msgPreWriter Optional message pre-writer.
+         * @param msgPreSerializer Optional message pre-serializer.
          */
-        public StateItem(MessageFactory msgFactory, @Nullable Consumer<Message> msgPreWriter) {
-            stream = new DirectByteBufferStream(msgFactory, null, null, msgPreWriter);
+        public StateItem(MessageFactory msgFactory, @Nullable Consumer<Message> msgPreSerializer) {
+            stream = new DirectByteBufferStream(msgFactory, null, null, msgPreSerializer);
         }
 
         /** {@inheritDoc} */
