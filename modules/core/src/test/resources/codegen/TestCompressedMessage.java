@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.internal;
+package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public interface TcpConnectionIndexAwareMessage extends Message {
-    /** */
-    public int UNDEFINED_CONNECTION_INDEX = -1;
+public class TestCompressedMessage implements Message {
+    @Order(0)
+    CompressedMessage message;
 
-    /**
-     * @return {@link #UNDEFINED_CONNECTION_INDEX} if standard index has to be used. Desired connection index otherwise.
-     */
-    public int connectionIndex();
+    public short directType() {
+        return 0;
+    }
 }
