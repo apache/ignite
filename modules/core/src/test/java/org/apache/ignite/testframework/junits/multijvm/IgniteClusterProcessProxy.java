@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
@@ -39,6 +40,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -309,7 +311,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> nodes() {
-        return compute.call(new NodesTask());
+        return compute.call(new NodesTask()).stream().map(n -> (ClusterNode)n).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -422,8 +424,8 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
      */
     private static class LocalNodeTask extends ClusterTaskAdapter<ClusterNode> {
         /** {@inheritDoc} */
-        @Override public ClusterNode call() throws Exception {
-            return cluster().localNode();
+        @Override public ClusterNode call() {
+            return ExternalizableTcpDiscoveryNode.of(cluster().localNode());
         }
     }
 
@@ -432,8 +434,8 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
      */
     private static class NodesTask extends ClusterTaskAdapter<Collection<ClusterNode>> {
         /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> call() throws Exception {
-            return cluster().nodes();
+        @Override public Collection<ClusterNode> call() {
+            return ExternalizableTcpDiscoveryNode.of(cluster().nodes());
         }
     }
 
@@ -452,8 +454,8 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode call() throws Exception {
-            return nodeId == null ? cluster().node() : cluster().node(nodeId);
+        @Override public ClusterNode call() {
+            return ExternalizableTcpDiscoveryNode.of(nodeId == null ? cluster().node() : cluster().node(nodeId));
         }
     }
 
@@ -462,7 +464,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
      */
     private static class HostNamesTask extends ClusterTaskAdapter<Collection<String>> {
         /** {@inheritDoc} */
-        @Override public Collection<String> call() throws Exception {
+        @Override public Collection<String> call() {
             return cluster().hostNames();
         }
     }

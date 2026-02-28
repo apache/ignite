@@ -17,12 +17,15 @@
 
 package org.apache.ignite.events;
 
+import java.io.Externalizable;
+import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,13 +72,13 @@ public class DiscoveryEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Cluster node. Has to be {@link Externalizable} or {@link Serializable}. */
     private ClusterNode evtNode;
 
     /** Topology version. */
     private long topVer;
 
-    /** Collection of nodes corresponding to topology version. */
+    /** Collection of nodes corresponding to topology version. Has to be {@link Externalizable} or {@link Serializable}. */
     private Collection<ClusterNode> topSnapshot;
 
     /** Template to generate {@link #message()} lazily. Will be joined with {@link #eventNode()} converted to string. */
@@ -107,7 +110,7 @@ public class DiscoveryEvent extends EventAdapter {
     public DiscoveryEvent(ClusterNode node, String msg, int type, ClusterNode evtNode) {
         super(node, msg, type);
 
-        this.evtNode = evtNode;
+        eventNode(evtNode);
     }
 
     /**
@@ -116,7 +119,7 @@ public class DiscoveryEvent extends EventAdapter {
      * @param evtNode Event node.
      */
     public void eventNode(ClusterNode evtNode) {
-        this.evtNode = evtNode;
+        this.evtNode = ExternalizableTcpDiscoveryNode.of(evtNode);
     }
 
     /**
@@ -160,7 +163,7 @@ public class DiscoveryEvent extends EventAdapter {
      */
     public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
         this.topVer = topVer;
-        this.topSnapshot = topSnapshot;
+        this.topSnapshot = ExternalizableTcpDiscoveryNode.of(topSnapshot);
     }
 
     /**

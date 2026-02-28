@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -104,7 +105,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
-        return compute.call(new MapKeyToPrimaryAndBackupsTask<>(cacheName, key));
+        return ExternalizableTcpDiscoveryNode.of(compute.call(new MapKeyToPrimaryAndBackupsTask<>(cacheName, key)));
     }
 
     /** {@inheritDoc} */
@@ -182,8 +183,8 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> call() throws Exception {
-            return affinity().mapKeyToPrimaryAndBackups(key);
+        @Override public Collection<ClusterNode> call() {
+            return ExternalizableTcpDiscoveryNode.of(affinity().mapKeyToPrimaryAndBackups(key));
         }
     }
 
@@ -199,7 +200,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws Exception {
+        @Override public Integer call() {
             return affinity().partitions();
         }
     }
@@ -326,8 +327,8 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode call() throws Exception {
-            return affinity().mapKeyToNode(key);
+        @Override public ClusterNode call() {
+            return ExternalizableTcpDiscoveryNode.of(affinity().mapKeyToNode(key));
         }
     }
 
@@ -348,8 +349,8 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode call() throws Exception {
-            return affinity().mapPartitionToNode(part);
+        @Override public ClusterNode call() {
+            return ExternalizableTcpDiscoveryNode.of(affinity().mapPartitionToNode(part));
         }
     }
 
@@ -393,7 +394,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> call() throws Exception {
-            return affinity().mapPartitionToPrimaryAndBackups(part);
+            return ExternalizableTcpDiscoveryNode.of(affinity().mapPartitionToPrimaryAndBackups(part));
         }
     }
 

@@ -17,11 +17,14 @@
 
 package org.apache.ignite.events;
 
+import java.io.Externalizable;
+import java.io.Serializable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,7 +41,7 @@ public class EventAdapter implements Event {
     /** */
     private final long tstamp = U.currentTimeMillis();
 
-    /** */
+    /** Has to be {@link Externalizable} or {@link Serializable}. */
     private ClusterNode node;
 
     /** */
@@ -69,7 +72,7 @@ public class EventAdapter implements Event {
 
         A.ensure(type > 0, "Event type ID must be greater than zero.");
 
-        this.node = node;
+        node(node);
         this.msg = msg;
         this.type = type;
     }
@@ -109,7 +112,7 @@ public class EventAdapter implements Event {
      * @param node Node.
      */
     public void node(ClusterNode node) {
-        this.node = node;
+        this.node = ExternalizableTcpDiscoveryNode.of(node);
     }
 
     /**

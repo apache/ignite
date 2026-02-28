@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.io.Externalizable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 
 /**
  * Cached affinity calculations.
@@ -44,7 +46,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
 
-    /** Collection of calculated affinity nodes. */
+    /** Collection of calculated affinity nodes. Has to be {@link Externalizable} or {@link Serializable}. */
     private List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
@@ -89,7 +91,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert idealAssignment != null;
 
         this.topVer = topVer;
-        this.assignment = assignment;
+        assigment0(assignment);
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
         primary = new HashMap<>();
@@ -105,10 +107,17 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff) {
         this.topVer = topVer;
 
-        assignment = aff.assignment;
+        assigment0(aff.assignment);
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
+    }
+
+    /** */
+    private void assigment0(List<List<ClusterNode>> assignment) {
+        this.assignment = new ArrayList<>(assignment.size());
+
+        assignment.forEach(nodes -> this.assignment.add(ExternalizableTcpDiscoveryNode.of(nodes)));
     }
 
     /**
