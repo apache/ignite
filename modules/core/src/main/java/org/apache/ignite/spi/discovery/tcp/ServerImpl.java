@@ -114,6 +114,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -261,7 +262,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Metric for max message queue size. */
     private MaxValueMetric maxMsgQueueSizeMetric;
 
-    /** Failed nodes (but still in topology). */
+    /** Failed nodes (but still in topology): Node -> Id of the failure issuer node. */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
 
     /** */
@@ -1848,6 +1849,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Calls {@link TcpDiscoveryNodeAddedMessage#prepareMarshal(Marshaller)}.
      * @param msg Message to prepare.
      * @param destNodeId Destination node ID.
      * @param msgs Messages to include.
@@ -1862,7 +1864,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (msg instanceof TcpDiscoveryNodeAddedMessage) {
             TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-            TcpDiscoveryNode node = nodeAddedMsg.node();
+            TcpDiscoveryNode node = nodeAddedMsg.node;
 
             if (node.id().equals(destNodeId)) {
                 Collection<TcpDiscoveryNode> allNodes = ring.allNodes();
@@ -1875,24 +1877,33 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // in case this message is resent due to failures/leaves.
                     // There will be separate messages for nodes with greater
                     // internal order.
-                    if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
+                    if (n0.internalOrder() < nodeAddedMsg.node.internalOrder())
                         topToSnd.add(n0);
                 }
 
                 nodeAddedMsg.topology(topToSnd);
 
-                Collection<TcpDiscoveryAbstractMessage> msgs0 = null;
-
                 if (msgs != null) {
-                    msgs0 = new ArrayList<>(msgs.size());
+                    Collection<TcpDiscoveryAbstractMessage> msgs0 = new ArrayList<>(msgs.size());
 
                     for (PendingMessage pendingMsg : msgs) {
-                        if (pendingMsg.msg != null)
+                        if (pendingMsg.msg == null)
+                            continue;
+
+                        if (pendingMsg.msg == nodeAddedMsg) {
+                            TcpDiscoveryNodeAddedMessage msg0 = (TcpDiscoveryNodeAddedMessage)pendingMsg.msg;
+                            msg0 = new TcpDiscoveryNodeAddedMessage(msg0);
+                            // Prevents infinite write/read message cycles and stack overflow.
+                            msg0.messages(null);
+
+                            msgs0.add(msg0);
+                        }
+                        else
                             msgs0.add(pendingMsg.msg);
                     }
-                }
 
-                nodeAddedMsg.messages(msgs0);
+                    nodeAddedMsg.messages(msgs0);
+                }
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -1901,6 +1912,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 nodeAddedMsg.topologyHistory(hist);
+
+                nodeAddedMsg.prepareMarshal(spi.marshaller());
             }
         }
     }
@@ -2466,7 +2479,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 msg = addedMsg;
 
-                TcpDiscoveryNode node = addedMsg.node();
+                TcpDiscoveryNode node = addedMsg.node;
 
                 if (node.clientRouterNodeId() != null && !msgs.contains(msg)) {
                     Collection<TcpDiscoveryNode> allNodes = ring.allNodes();
@@ -2480,24 +2493,26 @@ class ServerImpl extends TcpDiscoveryImpl {
                             top.add(n0);
                     }
 
-                    addedMsg.clientTopology(top);
+                    addedMsg.clientTop = top;
                 }
 
                 // Do not need this data for client reconnect.
-                if (addedMsg.gridDiscoveryData() != null)
+                if (addedMsg.dataPacket != null)
                     addedMsg.clearDiscoveryData();
+
+                addedMsg.prepareMarshal(spi.marshaller());
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                if (addFinishMsg.clientDiscoData() != null) {
+                if (addFinishMsg.clientDiscoData != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
                     addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
+                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData;
 
                     Set<Integer> mrgdCmnData = new HashSet<>();
                     Set<UUID> mrgdSpecData = new HashSet<>();
@@ -2508,7 +2523,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
                             DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
+                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData;
 
                             if (existingDiscoData != null)
                                 allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
@@ -2545,9 +2560,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    if (addFinishMsg.clientDiscoData() != null && clientId.equals(addFinishMsg.nodeId())) {
-                        addFinishMsg.clientDiscoData(null);
-                        addFinishMsg.clientNodeAttributes(null);
+                    if (addFinishMsg.clientDiscoData != null && clientId.equals(addFinishMsg.nodeId)) {
+                        addFinishMsg.clientDiscoData = null;
+                        addFinishMsg.clientNodeAttrs = null;
 
                         break;
                     }
@@ -2576,7 +2591,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 synchronized (msgs) {
                     for (TcpDiscoveryAbstractMessage msg : msgs) {
                         if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                            if (node.id().equals(((TcpDiscoveryNodeAddedMessage)msg).node().id()))
+                            if (node.id().equals(((TcpDiscoveryNodeAddedMessage)msg).node.id()))
                                 res = new ArrayList<>(msgs.size());
                         }
 
@@ -2639,14 +2654,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                 TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                if (addedMsg.node().id().equals(destNodeId)) {
-                    assert addedMsg.clientTopology() != null : addedMsg;
+                if (addedMsg.node.id().equals(destNodeId)) {
+                    assert addedMsg.clientTop != null : addedMsg;
 
                     TcpDiscoveryNodeAddedMessage msg0 = new TcpDiscoveryNodeAddedMessage(addedMsg);
 
                     prepareNodeAddedMessage(msg0, destNodeId, null);
 
-                    msg0.topology(addedMsg.clientTopology());
+                    msg0.topology(addedMsg.clientTop);
+
+                    msg0.prepareMarshal(spi.marshaller());
 
                     return msg0;
                 }
@@ -3124,8 +3141,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
 
-                if (msg instanceof TcpDiscoveryNodeAddedMessage)
-                    proc = ((TcpDiscoveryNodeAddedMessage)msg).node().equals(locNode);
+                if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    ((TcpDiscoveryNodeAddedMessage)msg).finishUnmarshal(spi.marshaller(),
+                        U.resolveClassLoader(spi.ignite().configuration()));
+
+                    proc = ((TcpDiscoveryNodeAddedMessage)msg).node.equals(locNode);
+                }
 
                 if (!proc) {
                     if (log.isDebugEnabled()) {
@@ -3155,8 +3176,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     sendMessageAcrossRing(msg);
             }
 
-            else if (msg instanceof TcpDiscoveryNodeAddedMessage)
+            else if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                ((TcpDiscoveryNodeAddedMessage)msg).finishUnmarshal(spi.marshaller(),
+                    U.resolveClassLoader(spi.ignite().configuration()));
+
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
+            }
 
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
                 processNodeAddFinishedMessage((TcpDiscoveryNodeAddFinishedMessage)msg);
@@ -3279,7 +3304,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
+                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node.id())) {
                             msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
@@ -3510,7 +3535,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     if (nextOrder != next.internalOrder()) {
                                         // Is next currently being added?
                                         boolean nextNew = (msg instanceof TcpDiscoveryNodeAddedMessage &&
-                                            ((TcpDiscoveryNodeAddedMessage)msg).node().id().equals(nextId));
+                                            ((TcpDiscoveryNodeAddedMessage)msg).node.id().equals(nextId));
 
                                         if (!nextNew)
                                             nextNew = hasPendingAddMessage(nextId);
@@ -4001,7 +4026,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (pendingMsg.msg instanceof TcpDiscoveryNodeAddedMessage) {
                     TcpDiscoveryNodeAddedMessage addMsg = (TcpDiscoveryNodeAddedMessage)pendingMsg.msg;
 
-                    if (addMsg.node().id().equals(nodeId))
+                    if (addMsg.node.id().equals(nodeId))
                         return true;
                 }
             }
@@ -4017,7 +4042,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
 
-            final TcpDiscoveryNode node = msg.node();
+            final TcpDiscoveryNode node = msg.node;
 
             final UUID locNodeId = getLocalNodeId();
 
@@ -4314,7 +4339,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (err == null) {
                     try {
-                        DiscoveryDataBag data = msg.gridDiscoveryData().unmarshalJoiningNodeData(
+                        DiscoveryDataBag data = msg.dataPacket.unmarshalJoiningNodeData(
                             spi.marshaller(),
                             U.resolveClassLoader(spi.ignite().configuration()),
                             false,
@@ -4660,7 +4685,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Internal order has been assigned to node: " + node);
 
-                DiscoveryDataPacket data = msg.gridDiscoveryData();
+                DiscoveryDataPacket data = msg.dataPacket;
 
                 TcpDiscoveryNodeAddedMessage nodeAddedMsg = new TcpDiscoveryNodeAddedMessage(locNodeId,
                     node, data, spi.gridStartTime);
@@ -4834,7 +4859,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            TcpDiscoveryNode node = msg.node();
+            TcpDiscoveryNode node = msg.node;
 
             assert node != null;
 
@@ -4866,9 +4891,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         node.id());
 
                     if (node.clientRouterNodeId() != null) {
-                        addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
+                        addFinishMsg.clientDiscoData = msg.dataPacket;
 
-                        addFinishMsg.clientNodeAttributes(node.attributes());
+                        addFinishMsg.clientNodeAttrs = node.attributes();
 
                         addFinishMsg.prepareMarshal(spi.marshaller());
                     }
@@ -4897,8 +4922,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
                 // Local node already has node from message in local topology.
                 // Just pass it to coordinator via the ring.
-                if (sendMessageToRemotes(msg))
+                if (sendMessageToRemotes(msg)) {
+                    msg.prepareMarshal(spi.marshaller());
+
                     sendMessageAcrossRing(msg);
+                }
 
                 if (log.isDebugEnabled()) {
                     log.debug("Local node already has node being added. Passing TcpDiscoveryNodeAddedMessage to " +
@@ -5025,7 +5053,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
+                    DiscoveryDataPacket dataPacket = msg.dataPacket;
 
                     assert dataPacket != null : msg;
 
@@ -5056,10 +5084,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
                         // Initialize topology.
-                        Collection<TcpDiscoveryNode> top = msg.topology();
+                        Collection<TcpDiscoveryNode> top = msg.top;
 
                         if (top != null && !top.isEmpty()) {
-                            spi.gridStartTime = msg.gridStartTime();
+                            spi.gridStartTime = msg.gridStartTime;
 
                             for (TcpDiscoveryNode n : top) {
                                 assert n.internalOrder() < node.internalOrder() :
@@ -5081,12 +5109,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            gridDiscoveryData = msg.gridDiscoveryData();
+                            gridDiscoveryData = msg.dataPacket;
 
                             joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
-                            topHist.putAll(msg.topologyHistory());
+
+                            if (!F.isEmpty(msg.topHist))
+                                topHist.putAll(msg.topHist);
 
                             pendingMsgs.reset(msg.messages());
                         }
@@ -5121,8 +5151,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processMessageFailedNodes(msg);
             }
 
-            if (sendMessageToRemotes(msg))
+            if (sendMessageToRemotes(msg)) {
+                msg.prepareMarshal(spi.marshaller());
+
                 sendMessageAcrossRing(msg);
+            }
         }
 
         /**
@@ -5133,7 +5166,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             assert msg != null;
 
-            UUID nodeId = msg.nodeId();
+            UUID nodeId = msg.nodeId;
 
             assert nodeId != null;
 
@@ -6970,8 +7003,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Current node holds connection with the node that is joining the cluster. Therefore, it can
                             // save certificates with which the connection was established to joining node attributes.
-                            if (spi.nodeAuth != null && nodeId.equals(req.node().id()))
-                                enrichNodeWithAttribute(req.node(), ATTR_NODE_CERTIFICATES, ses.extractCertificates());
+                            if (spi.nodeAuth != null && nodeId.equals(req.node.id()))
+                                enrichNodeWithAttribute(req.node, ATTR_NODE_CERTIFICATES, ses.extractCertificates());
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
@@ -7484,7 +7517,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 spi.getSocketTimeout();
 
             if (state == CONNECTED) {
-                TcpDiscoveryNode node = msg.node();
+                TcpDiscoveryNode node = msg.node;
 
                 // Check that joining node can accept incoming connections.
                 if (node.clientRouterNodeId() == null) {
@@ -7503,7 +7536,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msg.responded(true);
 
                 if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone()) {
-                    clientMsgWrk.clientVersion(U.productVersion(msg.node()));
+                    clientMsgWrk.clientVersion(U.productVersion(msg.node));
 
                     new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
                 }
@@ -7537,7 +7570,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
 
-                fromAddrs.addAll(msg.node().socketAddresses());
+                fromAddrs.addAll(msg.node.socketAddresses());
 
                 spi.stats.onMessageProcessingFinished(msg);
 
@@ -7815,8 +7848,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                 TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                if (clientNodeId.equals(addedMsg.node().id()))
-                    return addedMsg.topology() != null;
+                if (clientNodeId.equals(addedMsg.node.id()))
+                    return addedMsg.top != null;
             }
 
             return true;

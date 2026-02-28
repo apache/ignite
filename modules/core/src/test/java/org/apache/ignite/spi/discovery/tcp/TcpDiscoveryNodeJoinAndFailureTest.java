@@ -152,7 +152,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     TcpDiscoveryJoinRequestMessage joinReq = (TcpDiscoveryJoinRequestMessage)msg;
 
-                    if (joinReq.node().id().equals(node2Id))
+                    if (joinReq.node.id().equals(node2Id))
                         joinReqsCntr.incrementAndGet();
                 }
             }
@@ -163,7 +163,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage finishedMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    UUID nodeId = finishedMsg.nodeId();
+                    UUID nodeId = finishedMsg.nodeId;
 
                     if (nodeId.equals(node2Id)) {
                         Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
@@ -195,14 +195,14 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
                     int joinReqsCnt = joinReqsCntr.get();
 
-                    if (joinReq.node().id().equals(node2Id) && joinReqsCnt == 1)
+                    if (joinReq.node.id().equals(node2Id) && joinReqsCnt == 1)
                         throw new RuntimeException("Stop node1 exception by subsequent join req");
                 }
 
                 if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                     TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                    if (addedMsg.node().discoveryPort() == 47503)
+                    if (addedMsg.node.discoveryPort() == 47503)
                         throw new RuntimeException("Stop node1 exception by new node added msg");
                 }
             }
