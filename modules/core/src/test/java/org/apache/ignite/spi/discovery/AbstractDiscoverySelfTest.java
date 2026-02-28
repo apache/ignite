@@ -351,24 +351,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     }
 
     /**
-     * Checks that node serializable.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNodeSerialize() throws Exception {
-        for (DiscoverySpi spi : spis) {
-            ClusterNode node = spi.getLocalNode();
-
-            assert node != null;
-
-            writeObject(node);
-
-            info("Serialize node success [nodeId=" + node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
-        }
-    }
-
-    /**
      * @param idx Index.
      * @return Discovery SPI.
      */

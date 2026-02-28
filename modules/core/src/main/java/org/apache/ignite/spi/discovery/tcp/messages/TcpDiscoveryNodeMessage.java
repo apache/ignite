@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.HashMap;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
@@ -46,6 +47,7 @@ public class TcpDiscoveryNodeMessage extends ClusterNodeMessage {
     public TcpDiscoveryNodeMessage(TcpDiscoveryNode tcpDiscoveryNode) {
         super(tcpDiscoveryNode);
 
+        attrs = new HashMap<>(tcpDiscoveryNode.getAttributes());
         discPort = tcpDiscoveryNode.discoveryPort();
         intOrder = tcpDiscoveryNode.internalOrder();
         clientRouterNodeId = tcpDiscoveryNode.clientRouterNodeId();
