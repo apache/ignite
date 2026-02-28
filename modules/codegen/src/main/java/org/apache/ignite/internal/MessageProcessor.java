@@ -155,8 +155,8 @@ public class MessageProcessor extends AbstractProcessor {
             type = (TypeElement)superType;
         }
 
-        for (Map.Entry entry : elMap.entrySet()) {
-            List<VariableElement> elList = (List<VariableElement>)entry.getValue();
+        for (Map.Entry<String, List<VariableElement>> entry : elMap.entrySet()) {
+            List<VariableElement> elList = entry.getValue();
             elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
             for (int i = 0; i < elList.size(); i++) {
