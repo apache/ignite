@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import java.util.function.Supplier;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -65,6 +72,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -87,11 +95,34 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustom
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessageSerializer;
+import org.jetbrains.annotations.Nullable;
 
-/** Message factory for discovery messages. */
+/**
+ * Message factory for discovery messages. Allows to create an enhanced {@link MessageFactory} allowing to create
+ * automated pre- and post- marshalling message serializer for {@link TcpDiscoveryMarshallableMessage}.
+ */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
+    /** Custom data marshaller. */
+    private final @Nullable Marshaller cstDataMarshall;
+
+    /** Class loader for the custom data marshalling. */
+    private final @Nullable ClassLoader cstDataMarshallClsLdr;
+
+    /**
+     * @param cstDataMarshall Custom data marshaller.
+     * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
+     */
+    public DiscoveryMessageFactory(@Nullable Marshaller cstDataMarshall, @Nullable ClassLoader cstDataMarshallClsLdr) {
+        assert cstDataMarshall == null && cstDataMarshallClsLdr == null || cstDataMarshall != null && cstDataMarshallClsLdr != null;
+
+        this.cstDataMarshall = cstDataMarshall;
+        this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
+    }
+
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory = enhanceMessageFactory(factory);
+
         factory.register((short)-108, TcpDiscoveryCollectionMessage::new, new TcpDiscoveryCollectionMessageSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
         factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
@@ -132,5 +163,71 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
+    }
+
+    /**
+     * @return Enhanced {@link MessageFactory} allowing to create automated pre- and post- marshalling message serializer
+     * for {@link TcpDiscoveryMarshallableMessage}.
+     */
+    private MessageFactory enhanceMessageFactory(MessageFactory mf) {
+        if (cstDataMarshall == null || cstDataMarshallClsLdr == null)
+            return mf;
+
+        return new MessageFactory() {
+            @Override public void register(
+                short directType,
+                Supplier<Message> supplier,
+                MessageSerializer serializer
+            ) throws IgniteException {
+                if (supplier.get() instanceof TcpDiscoveryMarshallableMessage) {
+                    final MessageSerializer serializer0 = serializer;
+
+                    serializer = new MessageSerializer() {
+                        private Message curMarshallableMsg;
+
+                        @Override public boolean writeTo(Message msg, MessageWriter writer) {
+                            if (msg instanceof TcpDiscoveryMarshallableMessage && curMarshallableMsg == null) {
+                                curMarshallableMsg = msg;
+
+                                ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(cstDataMarshall);
+                            }
+
+                            boolean res = serializer0.writeTo(msg, writer);
+
+                            if (res && curMarshallableMsg != null) {
+                                assert msg instanceof TcpDiscoveryMarshallableMessage;
+
+                                curMarshallableMsg = null;
+                            }
+
+                            return res;
+                        }
+
+                        @Override public boolean readFrom(Message msg, MessageReader reader) {
+                            boolean res = serializer0.readFrom(msg, reader);
+
+                            if (res && msg instanceof TcpDiscoveryMarshallableMessage)
+                                ((TcpDiscoveryMarshallableMessage)msg).finishUnmarshal(cstDataMarshall, cstDataMarshallClsLdr);
+
+                            return res;
+                        }
+                    };
+                }
+
+                mf.register(directType, supplier, serializer);
+            }
+
+            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                mf.register(directType, supplier);
+            }
+
+            @Override public Message create(short type) {
+                return mf.create(type);
+            }
+
+            @Override public MessageSerializer serializer(short type) {
+                return mf.serializer(type);
+            }
+        };
     }
 }
