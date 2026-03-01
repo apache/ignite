@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -126,37 +125,11 @@ public class MessageProcessor extends AbstractProcessor {
      * @return a list of {@code VariableElement} objects representing all ordered fields, including those declared in superclasses.
      */
     private List<VariableElement> orderedFields(TypeElement type) {
+        List<List<VariableElement>> hierList = hierarchicalOrderedFields(type);
+
         List<VariableElement> result = new ArrayList<>();
-        Map<String, List<VariableElement>> elMap = new LinkedHashMap<>();
 
-        while (type != null) {
-            for (Element el : type.getEnclosedElements()) {
-                if (el.getAnnotation(Order.class) != null) {
-                    String enclosingName = el.getEnclosingElement().getSimpleName().toString();
-
-                    elMap.computeIfAbsent(enclosingName, k -> new ArrayList<>());
-
-                    elMap.get(enclosingName).add((VariableElement)el);
-
-                    if (el.getModifiers().contains(Modifier.STATIC)) {
-                        processingEnv.getMessager().printMessage(
-                            Diagnostic.Kind.ERROR,
-                            "Annotation @Order must only be used for non-static fields.",
-                            el);
-                    }
-
-                    validateEnumFieldMapping(type, el);
-                }
-            }
-
-            Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
-
-            type = (TypeElement)superType;
-        }
-
-        for (Map.Entry<String, List<VariableElement>> entry : elMap.entrySet()) {
-            List<VariableElement> elList = entry.getValue();
-
+        for (List<VariableElement> elList : hierList) {
             elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
             result.addAll(elList);
@@ -172,6 +145,34 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return result;
+    }
+
+    /** */
+    private List<List<VariableElement>> hierarchicalOrderedFields(TypeElement type) {
+        Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
+
+        List<List<VariableElement>> hierList = superType == null ? new ArrayList<>() : hierarchicalOrderedFields((TypeElement)superType);
+
+        List<VariableElement> elList = new ArrayList<>();
+
+        for (Element el : type.getEnclosedElements()) {
+            if (el.getAnnotation(Order.class) != null) {
+                elList.add((VariableElement)el);
+
+                if (el.getModifiers().contains(Modifier.STATIC)) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Annotation @Order must only be used for non-static fields.",
+                        el);
+                }
+
+                validateEnumFieldMapping(type, el);
+            }
+        }
+
+        hierList.add(elList);
+
+        return hierList;
     }
 
     /**
