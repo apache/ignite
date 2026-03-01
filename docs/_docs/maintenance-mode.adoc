@@ -17,7 +17,7 @@
 == Overview
 
 Maintenance mode is a special state of the node where its functionality is limited.
-Nodes in this mode do not join the cluster and remain isolated until maintenance mode has been completed.
+Nodes in this mode do not join the cluster and remain isolated until maintenance task has been completed.
 
 Nodes can enter maintenance mode during restarts when situations that could lead to data corruption or actions required may affect the functioning of the cluster while the node remains part of it.
 To enter nodes into emergency mode requires a restart. More details are provided below in the section “<<Reasons for Transitioning into Maintenance Mode>>”
@@ -84,9 +84,7 @@ A node's IP address and port can be found in its logs.
 The node remains in maintenance mode until potentially corrupted data is cleared.
 This deletion can be done manually followed by a node restart.
 Afterward, the node will recover lost data from backups stored on other cluster nodes through the rebalancing process.
-More detailed information about this procedure can be found in the "link:data-rebalancing[Data Rebalancing]" section of the "Application Developer Guide."
-
-Following data removal, the node will exit maintenance mode and rejoin the cluster upon the next restart.
+More detailed information about this procedure can be found in the "link:data-rebalancing[Data Rebalancing]".
 
 == Scheduled Maintenance Mode
 
@@ -102,17 +100,3 @@ Commands that trigger maintenance mode on the next restart:
 More details about these commands can be found in the "Control Script" section under subsections "link:tools/control-script#defragmentation[Defragmentation]" and "link:tools/control-script#rebuild_index[Rebuild index]".
 
 To exit maintenance mode and return the node to the cluster, restart the node.
-
-== Outdated Caches
-
-A cache is considered outdated if both conditions are met:
-
-- the node left the cluster (e.g., entered maintenance mode);
-- while the node was unavailable, the cache was removed from the cluster.
-
-Outdated caches need to be deleted.
-
-To maintain data consistency, the node marks outdated caches for deletion and enters maintenance mode.
-
-While in maintenance mode, the node automatically deletes outdated caches.
-After maintenance mode completes, restart the node to rejoin the cluster.

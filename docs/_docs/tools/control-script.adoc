@@ -1399,6 +1399,15 @@ control.bat --persistence backup caches cache1,cache2,cache3
 
 where `cache1,cache2,cache3` are comma-separated cache names.
 
+The layout these backup files are stored is `{IGNITE_WORK_DIR}/db/{nodeId}/backup_cache-{CACHE_NAME}`.
+
+[WARNING]
+====
+Backup files created via the `./control.sh --persistence backup ...` commands should not be regarded as snapshot recovery mechanisms.
+These are exact copies of folders containing caches intended for subsequent analysis of the causes of corruption or attempts to recover data, but it's important to remember that these operations require specialized knowledge, and there are no universal methods for analyzing and recovering corrupted caches.
+====
+
+After completing all manipulations with the copied corrupted data backed up or if they become unnecessary, they can be manually deleted from the above-specified directory.
 
 == Defragmentation
 
