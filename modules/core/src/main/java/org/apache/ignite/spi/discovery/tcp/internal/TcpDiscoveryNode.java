@@ -18,9 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -32,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
@@ -46,6 +42,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
@@ -57,28 +54,24 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode, Comparable<TcpDiscoveryNode> {
     /** Node ID. */
-    private volatile UUID id;
+    protected volatile UUID id;
 
     /** Consistent ID. */
     @GridToStringInclude
-    private Object consistentId;
+    protected Object consistentId;
 
     /** Node attributes. */
     @GridToStringExclude
-    private Map<String, Object> attrs;
+    protected Map<String, Object> attrs;
 
     /** Internal discovery addresses as strings. */
     @GridToStringInclude
-    private Collection<String> addrs;
+    protected Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    private Collection<String> hostNames;
+    protected Collection<String> hostNames;
 
     /** */
     @GridToStringInclude
@@ -86,21 +79,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    private int discPort;
+    protected int discPort;
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile ClusterMetrics metrics;
+    protected volatile ClusterMetrics metrics;
 
     /** Node cache metrics. */
     @GridToStringExclude
-    private volatile Map<Integer, CacheMetrics> cacheMetrics;
+    private volatile Map<Integer, CacheMetrics> cacheMetrics = Collections.emptyMap();
 
     /** Node order in the topology. */
-    private volatile long order;
+    protected volatile long order;
 
     /** Node order in the topology (internal). */
-    private volatile long intOrder;
+    protected volatile long intOrder;
 
     /** The most recent time when metrics update message was received from the node. */
     @GridToStringExclude
@@ -112,37 +105,37 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Metrics provider (transient). */
     @GridToStringExclude
-    private DiscoveryMetricsProvider metricsProvider;
+    private @Nullable DiscoveryMetricsProvider metricsProvider;
 
     /** Visible flag (transient). */
     @GridToStringExclude
     private boolean visible;
 
     /** Grid local node flag (transient). */
-    private boolean loc;
+    protected boolean loc;
 
     /** Version. */
-    private IgniteProductVersion ver;
+    protected IgniteProductVersion ver;
 
-    /** Alive check time (used by clients). */
+    /** Alive check time (used by clients). Transient. */
     @GridToStringExclude
-    private transient volatile long aliveCheckTimeNanos;
+    private volatile long aliveCheckTimeNanos;
 
     /** Client router node ID. */
     @GridToStringExclude
-    private UUID clientRouterNodeId;
+    protected UUID clientRouterNodeId;
 
-    /** */
+    /** Transient. */
     @GridToStringExclude
-    private transient volatile InetSocketAddress lastSuccessfulAddr;
+    private volatile InetSocketAddress lastSuccessfulAddr;
 
-    /** Cache client initialization flag. */
+    /** Cache client initialization flag. Transient. */
     @GridToStringExclude
-    private transient volatile boolean cacheCliInit;
+    protected volatile boolean cacheCliInit;
 
-    /** Cache client flag. */
+    /** Cache client flag. Transient. */
     @GridToStringExclude
-    private transient boolean cacheCli;
+    protected boolean cacheCli;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -158,20 +151,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param discPort Port.
-     * @param metricsProvider Metrics provider.
+     * @param nodeMetrics Node metrics.
      * @param ver Version.
      * @param consistentId Node consistent ID.
      */
-    public TcpDiscoveryNode(UUID id,
+    public TcpDiscoveryNode(
+        UUID id,
         Collection<String> addrs,
         Collection<String> hostNames,
         int discPort,
-        DiscoveryMetricsProvider metricsProvider,
+        ClusterMetrics nodeMetrics,
         IgniteProductVersion ver,
-        Serializable consistentId
+        Object consistentId
     ) {
         assert id != null;
-        assert metricsProvider != null;
+        assert nodeMetrics != null;
         assert ver != null;
 
         this.id = id;
@@ -183,14 +177,49 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         this.addrs = sortedAddrs;
         this.hostNames = hostNames;
         this.discPort = discPort;
-        this.metricsProvider = metricsProvider;
         this.ver = ver;
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        metrics = metricsProvider.metrics();
-        cacheMetrics = metricsProvider.cacheMetrics();
+        metrics = nodeMetrics;
         sockAddrs = U.toSocketAddresses(this, discPort);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param id Node Id.
+     * @param addrs Addresses.
+     * @param hostNames Host names.
+     * @param discPort Port.
+     * @param metricsProvider Metrics provider.
+     * @param ver Version.
+     * @param consistentId Node consistent ID.
+     */
+    public TcpDiscoveryNode(
+        UUID id,
+        Collection<String> addrs,
+        Collection<String> hostNames,
+        int discPort,
+        DiscoveryMetricsProvider metricsProvider,
+        IgniteProductVersion ver,
+        Object consistentId
+    ) {
+        this(id, addrs, hostNames, discPort, metricsProvider.metrics(), ver, consistentId);
+
+        this.metricsProvider = metricsProvider;
+        cacheMetrics = metricsProvider.cacheMetrics();
+    }
+
+    /** @param msg The transfer message. */
+    public TcpDiscoveryNode(TcpDiscoveryNodeMessage msg) {
+        this(msg.id(), msg.addresses(), msg.hostNames(), msg.discPort, new ClusterMetricsSnapshot(msg.metricsMsg),
+            msg.version(), msg.consistentId());
+
+        attrs = msg.attributes();
+        order = msg.order();
+        intOrder = msg.intOrder;
+        clientRouterNodeId = msg.clientRouterNodeId;
     }
 
     /**
@@ -223,6 +252,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param consistentId Consistent globally unique node ID.
      */
     @Override public void setConsistentId(Serializable consistentId) {
+        consistentId0(consistentId);
+    }
+
+    /** @param consistentId Consistent globally unique node ID. */
+    protected void consistentId0(Object consistentId) {
         this.consistentId = consistentId;
 
         final Map<String, Object> map = new HashMap<>(attrs);
@@ -303,8 +337,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
-        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
+    @Override public void setCacheMetrics(@Nullable Map<Integer, CacheMetrics> cacheMetrics) {
+        this.cacheMetrics = !F.isEmpty(cacheMetrics) ? cacheMetrics : Collections.emptyMap();
     }
 
     /**
@@ -334,7 +368,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param order Order of the node.
      */
     public void order(long order) {
-        assert order > 0 : "Order is invalid: " + this;
+        assert order > 0 : "Order is invalid: " + order + ", nodeId: " + id;
 
         this.order = order;
     }
@@ -463,7 +497,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         if (!cacheCliInit) {
-            Boolean clientModeAttr = ((ClusterNode)this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+            Boolean clientModeAttr = attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
             cacheCli = clientModeAttr != null && clientModeAttr;
 
@@ -555,69 +589,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, id);
-        U.writeMap(out, attrs);
-        U.writeCollection(out, addrs);
-        U.writeCollection(out, hostNames);
-        out.writeInt(discPort);
-
-        // Cluster metrics
-        byte[] mtr = null;
-
-        ClusterMetrics metrics = this.metrics;
-
-        if (metrics != null)
-            mtr = ClusterMetricsSnapshot.serialize(metrics);
-
-        U.writeByteArray(out, mtr);
-
-        // Legacy: Number of cache metrics
-        out.writeInt(0);
-
-        out.writeLong(order);
-        out.writeLong(intOrder);
-        out.writeObject(ver);
-        U.writeUuid(out, clientRouterNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readUuid(in);
-
-        attrs = U.sealMap(U.<String, Object>readMap(in));
-        addrs = U.readCollection(in);
-        hostNames = U.readCollection(in);
-        discPort = in.readInt();
-
-        Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
-
-        // Cluster metrics
-        byte[] mtr = U.readByteArray(in);
-
-        if (mtr != null)
-            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
-
-        // Legacy: Cache metrics
-        int size = in.readInt();
-
-        for (int i = 0; i < size; i++) {
-            in.readInt();
-            in.readObject();
-        }
-
-        order = in.readLong();
-        intOrder = in.readLong();
-        ver = (IgniteProductVersion)in.readObject();
-        clientRouterNodeId = U.readUuid(in);
-
-        if (clientRouterNodeId() != null)
-            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
-        else
-            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         return id.hashCode();
     }
@@ -630,22 +601,5 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient(), "dataCenterId", dataCenterId());
-    }
-
-    /**
-     * IMPORTANT!
-     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
-     * @param node to copy data from
-     */
-    public TcpDiscoveryNode(ClusterNode node) {
-        this.id = node.id();
-        this.consistentId = node.consistentId();
-        this.addrs = node.addresses();
-        this.hostNames = node.hostNames();
-        this.order = node.order();
-        this.ver = node.version();
-        this.clientRouterNodeId = node.isClient() ? node.id() : null;
-
-        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
     }
 }

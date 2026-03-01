@@ -17,17 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Initial message sent by a node that wants to enter topology.
@@ -37,17 +31,13 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** New node that wants to join the topology. */
-    private TcpDiscoveryNode node;
-
-    /** Serialized {@link #node}. */
-    // TODO Remove the field after completing https://issues.apache.org/jira/browse/IGNITE-27899.
+    /** Message holding new node that wants to join the topology. */
     @Order(6)
-    byte[] nodeBytes;
+    public TcpDiscoveryNodeMessage nodeMsg;
 
     /** Discovery data container. */
     @Order(7)
-    DiscoveryDataPacket dataPacket;
+    public DiscoveryDataPacket dataPacket;
 
     /** Constructor. */
     public TcpDiscoveryJoinRequestMessage() {
@@ -63,22 +53,8 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, DiscoveryDataPacket dataPacket) {
         super(node.id());
 
-        this.node = node;
+        nodeMsg = new TcpDiscoveryNodeMessage(node);
         this.dataPacket = dataPacket;
-    }
-
-    /**
-     * Gets new node that wants to join the topology.
-     *
-     * @return Node that wants to join the topology.
-     */
-    public TcpDiscoveryNode node() {
-        return node;
-    }
-
-    /** @return Discovery data container that collects data from all cluster nodes. */
-    public DiscoveryDataPacket gridDiscoveryData() {
-        return dataPacket;
     }
 
     /**
@@ -95,37 +71,6 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         setFlag(RESPONDED_FLAG_POS, responded);
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
-        if (node != null && nodeBytes == null) {
-            try {
-                nodeBytes = U.marshal(marsh, node);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal TcpDiscoveryNode object", e);
-            }
-        }
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (nodeBytes != null && node == null) {
-            try {
-                node = U.unmarshal(marsh, nodeBytes, clsLdr);
-
-                nodeBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal TcpDiscoveryNode object", e);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         // NOTE!
@@ -136,7 +81,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
         TcpDiscoveryJoinRequestMessage other = (TcpDiscoveryJoinRequestMessage)obj;
 
-        return eqNodes(other.node, node);
+        return nodeMsg.id.equals(other.nodeMsg.id);
     }
 
     /** {@inheritDoc} */

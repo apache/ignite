@@ -94,6 +94,7 @@ import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -106,7 +107,7 @@ import static org.junit.Assert.fail;
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private static final transient ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
 
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
@@ -959,8 +960,8 @@ public class IgniteProcessProxy implements IgniteEx {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public ClusterNode call() throws Exception {
-            return ((IgniteEx)ignite).localNode();
+        @Override public ClusterNode call() {
+            return ExternalizableTcpDiscoveryNode.of(((IgniteEx)ignite).localNode());
         }
     }
 }

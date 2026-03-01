@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -328,38 +327,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any errors occur.
-     */
-    @Test
-    public void testNodeConnectMessageSize() throws Exception {
-        try {
-            Ignite g1 = startGrid(1);
-
-            final AtomicInteger igniteInstanceNameIdx = new AtomicInteger(1);
-
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    startGrid(igniteInstanceNameIdx.incrementAndGet());
-
-                    return null;
-                }
-            }, 4, "grid-starter");
-
-            Collection<TcpDiscoveryNode> nodes = ((ServerImpl)discoMap.get(g1.name()).impl).ring().allNodes();
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-            marshaller(g1).marshal(nodes, bos);
-
-            info(">>> Approximate node connect message size [topSize=" + nodes.size() +
-                ", msgSize=" + bos.size() / 1024.0 + "KB]");
-        }
-        finally {
-            stopAllGrids(false);
         }
     }
 
@@ -2516,7 +2483,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).dataPacket;
 
                 if (dataPacket != null) {
                     Map<UUID, NodeSpecificData> discoData = U.field(dataPacket, "nodeSpecificData");
@@ -2525,7 +2492,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData;
 
                 if (dataPacket != null) {
                     Map<UUID, NodeSpecificData> discoData = U.field(dataPacket, "nodeSpecificData");

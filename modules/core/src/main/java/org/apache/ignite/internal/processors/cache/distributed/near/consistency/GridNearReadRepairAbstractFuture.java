@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -583,7 +584,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                         ((repairedEntries.get(key) != null && repairedEntries.get(key).equals(res)) ||
                             (repairedEntries.get(key) == null && res == null));
 
-                    entriesInfo.getMapping().put(node, new EventEntryInfo(val, ver, primary, correct));
+                    entriesInfo.getMapping().put(ExternalizableTcpDiscoveryNode.of(node),
+                        new EventEntryInfo(val, ver, primary, correct));
                 }
             }
         }

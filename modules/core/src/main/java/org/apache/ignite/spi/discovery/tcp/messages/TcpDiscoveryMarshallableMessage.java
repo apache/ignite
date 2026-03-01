@@ -15,15 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Serialization test for discovery messages. */
-public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
-    /** {@inheritDoc} */
-    @Override protected MessageFactoryProvider messageFactory() {
-        return new DiscoveryMessageFactory(null, null);
-    }
+/**
+ * Base class for TCP Discovery messages which still require external pre- and post- marshalling.
+ * <br>
+ * TODO: Remove/revise after https://issues.apache.org/jira/browse/IGNITE-25883
+ */
+public interface TcpDiscoveryMarshallableMessage extends Message {
+    /**
+     * Should be idempotent.
+     *
+     * @param marsh Marshaller.
+     */
+    void prepareMarshal(Marshaller marsh);
+
+    /**
+     * Should be idempotent.
+     *
+     * @param marsh Marshaller.
+     * @param clsLdr Class loader.
+     */
+    void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr);
 }

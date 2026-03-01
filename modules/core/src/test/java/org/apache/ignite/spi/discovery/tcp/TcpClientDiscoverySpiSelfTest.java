@@ -2675,7 +2675,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             if (delayJoinAckFor != null && msg instanceof TcpDiscoveryJoinRequestMessage) {
                 TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
 
-                if (delayJoinAckFor.equals(msg0.node().attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME))) {
+                if (delayJoinAckFor.equals(msg0.nodeMsg.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME))) {
                     log.info("Delay response [sock=" + sock + ", msg=" + msg0 + ", res=" + res + ']');
 
                     delayJoinAckFor = null;

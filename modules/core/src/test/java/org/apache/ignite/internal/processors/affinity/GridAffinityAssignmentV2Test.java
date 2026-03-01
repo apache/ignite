@@ -29,11 +29,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
+import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
@@ -49,7 +52,11 @@ import static org.junit.Assert.fail;
  */
 public class GridAffinityAssignmentV2Test {
     /**  */
-    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider();
+    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider() {
+        @Override public ClusterMetrics metrics() {
+            return new ClusterMetricsSnapshot();
+        }
+    };
 
     /** */
     protected IgniteProductVersion ver = new IgniteProductVersion();
@@ -206,7 +213,7 @@ public class GridAffinityAssignmentV2Test {
         List<ClusterNode> nodes = new ArrayList<>();
 
         for (int i = 0; i < 10; i++)
-            nodes.add(node(metrics, ver, "1" + i));
+            nodes.add(ExternalizableTcpDiscoveryNode.of(node(metrics, ver, "1" + i)));
 
         GridAffinityAssignmentV2 gridAffAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
@@ -246,6 +253,8 @@ public class GridAffinityAssignmentV2Test {
         );
 
         node.setAttributes(Collections.emptyMap());
+        node.order(1);
+        node.internalOrder(1);
 
         return node;
     }

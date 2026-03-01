@@ -71,7 +71,7 @@ public class DirectMessageReader implements MessageReader {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
 
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory, cacheObjProc);
             }
@@ -521,7 +521,7 @@ public class DirectMessageReader implements MessageReader {
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
          */
-        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+        public StateItem(MessageFactory msgFactory, @Nullable IgniteCacheObjectProcessor cacheObjProc) {
             stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
         }
 

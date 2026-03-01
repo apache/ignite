@@ -788,8 +788,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
 
-                    joinReqMsg.prepareMarshal(spi.marshaller());
-
                     TcpDiscoveryNode nodef = node;
 
                     joinReqMsg.spanContainer().span(
@@ -2216,7 +2214,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
-            TcpDiscoveryNode node = msg.node();
+            TcpDiscoveryNode node = new TcpDiscoveryNode(msg.nodeMsg);
 
             UUID newNodeId = node.id();
 
@@ -2225,7 +2223,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
-                        spi.gridStartTime = msg.gridStartTime();
+                        spi.gridStartTime = msg.gridStartTime;
 
                         if (disconnected())
                             rmtNodes.clear();
@@ -2241,8 +2239,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        if (msg.topologyHistory() != null)
-                            topHist.putAll(msg.topologyHistory());
+                        topHist.putAll(msg.topologyHistory());
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -2261,7 +2258,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
 
-                        DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
+                        DiscoveryDataPacket dataPacket = msg.dataPacket;
 
                         if (dataPacket != null && dataPacket.hasJoiningNodeData()) {
                             if (joining())
@@ -2296,9 +2293,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (getLocalNodeId().equals(msg.nodeId())) {
+            if (getLocalNodeId().equals(msg.nodeId)) {
                 if (joining()) {
-                    DiscoveryDataPacket dataContainer = msg.clientDiscoData();
+                    DiscoveryDataPacket dataContainer = msg.clientDiscoData;
 
                     if (dataContainer != null)
                         spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
@@ -2309,8 +2306,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         delayDiscoData.clear();
                     }
-
-                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
 
@@ -2355,7 +2350,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (nodeAdded()) {
-                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
+                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId);
 
                     if (node == null) {
                         if (log.isDebugEnabled())
