@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,9 +57,9 @@ public class ExternalizableTcpDiscoveryNode extends TcpDiscoveryNode implements 
         if (clusterNode instanceof TcpDiscoveryNode) {
             TcpDiscoveryNode node = (TcpDiscoveryNode)clusterNode;
 
-            discPort = node.discoveryPort();
-            attrs = node.getAttributes();
-            intOrder = node.internalOrder();
+            discPort = node.discPort;
+            attrs = node.attrs;
+            intOrder = node.intOrder;
             clientRouterNodeId = node.clientRouterNodeId();
         }
         else
@@ -83,29 +82,25 @@ public class ExternalizableTcpDiscoveryNode extends TcpDiscoveryNode implements 
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, id());
-        U.writeMap(out, getAttributes());
-        U.writeCollection(out, addresses());
-        U.writeCollection(out, hostNames());
-        out.writeInt(discoveryPort());
+        U.writeUuid(out, id);
+        U.writeMap(out, attrs);
+        U.writeCollection(out, addrs);
+        U.writeCollection(out, hostNames);
+        out.writeInt(discPort);
 
         // Cluster metrics
         byte[] mtr = null;
-
-        ClusterMetrics metrics = metrics();
-
         if (metrics != null)
             mtr = ClusterMetricsSnapshot.serialize(metrics);
-
         U.writeByteArray(out, mtr);
 
         // Legacy: Number of cache metrics
         out.writeInt(0);
 
-        out.writeLong(order());
-        out.writeLong(internalOrder());
-        out.writeObject(version());
-        U.writeUuid(out, clientRouterNodeId());
+        out.writeLong(order);
+        out.writeLong(intOrder);
+        out.writeObject(ver);
+        U.writeUuid(out, clientRouterNodeId);
     }
 
     /** {@inheritDoc} */

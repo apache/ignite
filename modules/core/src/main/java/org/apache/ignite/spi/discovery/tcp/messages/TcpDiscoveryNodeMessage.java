@@ -27,15 +27,15 @@ import org.jetbrains.annotations.Nullable;
 /** Message for {@link TcpDiscoveryNode}. */
 public class TcpDiscoveryNodeMessage extends ClusterNodeMessage {
     /** */
-    @Order(10)
+    @Order(8)
     public int discPort;
 
     /** */
-    @Order(11)
+    @Order(9)
     public long intOrder;
 
     /** */
-    @Order(12)
+    @Order(10)
     public @Nullable UUID clientRouterNodeId;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */

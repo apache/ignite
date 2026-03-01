@@ -211,6 +211,17 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         cacheMetrics = metricsProvider.cacheMetrics();
     }
 
+    /** @param msg The transfer message. */
+    public TcpDiscoveryNode(TcpDiscoveryNodeMessage msg) {
+        this(msg.id(), msg.addresses(), msg.hostNames(), msg.discPort, new ClusterMetricsSnapshot(msg.metricsMsg),
+            msg.version(), msg.consistentId());
+
+        attrs = msg.attributes();
+        order = msg.order();
+        intOrder = msg.intOrder;
+        clientRouterNodeId = msg.clientRouterNodeId;
+    }
+
     /**
      * @return Last successfully connected address.
      */
@@ -590,16 +601,5 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient(), "dataCenterId", dataCenterId());
-    }
-
-    /** */
-    public TcpDiscoveryNode(TcpDiscoveryNodeMessage m) {
-        this(m.id(), m.addresses(), m.hostNames(), m.discPort, new ClusterMetricsSnapshot(m.metricsMsg), m.version(),
-            m.consistentId());
-
-        attrs = m.attributes();
-        order = m.order();
-        intOrder = m.intOrder;
-        clientRouterNodeId = m.clientRouterNodeId;
     }
 }

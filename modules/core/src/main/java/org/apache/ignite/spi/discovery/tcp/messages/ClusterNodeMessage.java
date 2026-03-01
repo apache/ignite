@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,26 +63,18 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage, Clus
     @Order(5)
     IgniteProductVersionMessage verMsg;
 
-    /** Local node flag. Should be transient, but is reuired by {@link ClusterNode#isLocal()}. */
-    @Order(6)
-    boolean loc;
-
-    /** Client node flag. Should be transient, but is reuired by {@link ClusterNode#isClient()}. */
-    @Order(7)
-    boolean client;
-
     /** Consistent ID. Should be {@link String}, but is not guaranteed by the various APIs. */
     Object consistentId;
 
     /** */
-    @Order(8)
+    @Order(6)
     byte[] consistentIdBytes;
 
     /** */
     Map<String, Object> attrs;
 
     /** */
-    @Order(9)
+    @Order(7)
     byte[] attrsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -95,8 +88,6 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage, Clus
         consistentId = clusterNode.consistentId();
         order = clusterNode.order();
         addrs = clusterNode.addresses();
-        loc = clusterNode.isLocal();
-        client = clusterNode.isClient();
         hostNames = clusterNode.hostNames();
         verMsg = new IgniteProductVersionMessage(clusterNode.version());
 
@@ -202,14 +193,14 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage, Clus
         return new IgniteProductVersion(verMsg);
     }
 
-    /** {@inheritDoc} */
+    /** The local flag is transient due to the current logic. */
     @Override public boolean isLocal() {
-        return loc;
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return client;
+        return Boolean.TRUE.equals(attrs.get(IgniteNodeAttributes.ATTR_CLIENT_MODE));
     }
 
     /** {@inheritDoc} */
