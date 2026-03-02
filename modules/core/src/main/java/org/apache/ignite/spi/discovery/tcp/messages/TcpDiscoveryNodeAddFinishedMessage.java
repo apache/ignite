@@ -87,10 +87,19 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
-     * @return Client node attributes.
+     * Gets ID of the node added.
+     *
+     * @return ID of the node added.
      */
-    public Map<String, Object> clientNodeAttributes() {
-        return clientNodeAttrs;
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @return Discovery data for joined client.
+     */
+    public DiscoveryDataPacket clientDiscoData() {
+        return clientDiscoData;
     }
 
     /**
@@ -99,6 +108,13 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
         this.clientNodeAttrs = clientNodeAttrs;
         clientNodeAttrsBytes = null;
+    }
+
+    /**
+     * @return Client node attributes.
+     */
+    public Map<String, Object> clientNodeAttributes() {
+        return clientNodeAttrs;
     }
 
     /** {@inheritDoc} */

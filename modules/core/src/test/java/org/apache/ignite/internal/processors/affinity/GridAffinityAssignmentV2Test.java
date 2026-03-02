@@ -29,14 +29,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
-import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
@@ -52,11 +49,7 @@ import static org.junit.Assert.fail;
  */
 public class GridAffinityAssignmentV2Test {
     /**  */
-    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider() {
-        @Override public ClusterMetrics metrics() {
-            return new ClusterMetricsSnapshot();
-        }
-    };
+    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider();
 
     /** */
     protected IgniteProductVersion ver = new IgniteProductVersion();
@@ -253,8 +246,6 @@ public class GridAffinityAssignmentV2Test {
         );
 
         node.setAttributes(Collections.emptyMap());
-        node.order(1);
-        node.internalOrder(1);
 
         return node;
     }

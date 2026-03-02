@@ -94,7 +94,6 @@ import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -960,8 +959,8 @@ public class IgniteProcessProxy implements IgniteEx {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public ClusterNode call() {
-            return ExternalizableTcpDiscoveryNode.of(((IgniteEx)ignite).localNode());
+        @Override public ClusterNode call() throws Exception {
+            return ((IgniteEx)ignite).localNode();
         }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,27 +35,38 @@ import org.jetbrains.annotations.Nullable;
  * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format
  * stored in Ignite caches.
  */
-public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage {
+public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Node UUID which initiated metadata update. */
-    private final UUID origNodeId;
+    @Order(1)
+    UUID origNodeId;
 
     /** Metadata type id. */
-    private final int typeId;
+    @Order(2)
+    int typeId;
 
     /** Message acceptance status. */
-    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
+    @Order(3)
+    boolean rejected;
 
     /** Message received on coordinator. */
-    private boolean onCoordinator = true;
+    @Order(4)
+    boolean onCoordinator = true;
 
     /** */
-    private BinaryObjectException err;
+    @Order(5)
+    String errMsg;
+
+    /** Constructor. */
+    public MetadataRemoveProposedMessage() {
+        // No-op.
+    }
 
     /**
      * @param typeId Binary type ID.
@@ -62,8 +75,8 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     public MetadataRemoveProposedMessage(int typeId, UUID origNodeId) {
         assert origNodeId != null;
 
+        id = IgniteUuid.randomUuid();
         this.origNodeId = origNodeId;
-
         this.typeId = typeId;
     }
 
@@ -74,7 +87,7 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return (status == ProposalStatus.SUCCESSFUL) ? new MetadataRemoveAcceptedMessage(typeId) : null;
+        return !rejected ? new MetadataRemoveAcceptedMessage(typeId) : null;
     }
 
     /** {@inheritDoc} */
@@ -90,21 +103,21 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     }
 
     /**
-     * @param err Error caused this update to be rejected.
+     * @param errMsg Error message caused this update to be rejected.
      */
-    void markRejected(BinaryObjectException err) {
-        status = ProposalStatus.REJECTED;
-        this.err = err;
+    void markRejected(String errMsg) {
+        rejected = true;
+        this.errMsg = errMsg;
     }
 
     /** */
     boolean rejected() {
-        return status == ProposalStatus.REJECTED;
+        return rejected;
     }
 
     /** */
     BinaryObjectException rejectionError() {
-        return err;
+        return new BinaryObjectException(errMsg);
     }
 
     /** */
@@ -127,17 +140,13 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
         this.onCoordinator = onCoordinator;
     }
 
-    /** Message acceptance status. */
-    private enum ProposalStatus {
-        /** */
-        SUCCESSFUL,
-
-        /** */
-        REJECTED
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MetadataRemoveProposedMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 503;
     }
 }

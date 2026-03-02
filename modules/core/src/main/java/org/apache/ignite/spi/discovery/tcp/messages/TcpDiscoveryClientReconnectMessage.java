@@ -66,17 +66,17 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
-     * @param msgs Pending messages.
+     * @return New router node ID.
      */
-    public void pendingMessages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = msgs == null ? null : new TcpDiscoveryCollectionMessage(msgs);
+    public UUID routerNodeId() {
+        return routerNodeId;
     }
 
     /**
-     * @return Pending messages.
+     * @return Last message ID.
      */
-    public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
-        return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
+    public IgniteUuid lastMessageId() {
+        return lastMsgId;
     }
 
     /**

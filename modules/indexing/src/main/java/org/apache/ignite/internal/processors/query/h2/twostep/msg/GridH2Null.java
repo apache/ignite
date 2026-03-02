@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -30,6 +28,10 @@ import org.h2.value.ValueNull;
 public class GridH2Null extends GridH2ValueMessage {
     /** */
     public static GridH2Null INSTANCE = new GridH2Null();
+
+    /** Dummy field to use codegen serializer. */
+    @Order(0)
+    byte dummy;
 
     /**
      * Disallow new instance creation.
@@ -41,31 +43,6 @@ public class GridH2Null extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) {
         return ValueNull.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        return super.readFrom(buf, reader);
     }
 
     /** {@inheritDoc} */

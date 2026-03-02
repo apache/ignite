@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.metric;
 
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.IgniteUtils.getTotalMemoryAvailable;
 
 /** */
 public class SystemMetricsTest extends GridCommonAbstractTest {
@@ -55,11 +56,11 @@ public class SystemMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that the total physical memory node attribute has a positive value.
+     * Checks that the total physical memory has a positive value.
      */
     @Test
     public void testTotalSystemMemory() {
-        long phyMem = (long)grid(0).context().nodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM);
+        long phyMem = getTotalMemoryAvailable();
 
         assertTrue("Total system memory size is negative: " + phyMem, phyMem >= 0);
     }

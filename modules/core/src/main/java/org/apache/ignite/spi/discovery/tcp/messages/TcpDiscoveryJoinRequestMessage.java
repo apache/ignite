@@ -57,6 +57,11 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         this.dataPacket = dataPacket;
     }
 
+    /** @return Discovery data container that collects data from all cluster nodes. */
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
+    }
+
     /**
      * @return Responded flag.
      */

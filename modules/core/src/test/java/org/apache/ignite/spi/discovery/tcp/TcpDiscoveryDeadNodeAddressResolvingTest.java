@@ -78,22 +78,23 @@ public class TcpDiscoveryDeadNodeAddressResolvingTest extends GridCommonAbstract
      * Checks that there is no node by consistent id in the topology history snapshot.
      *
      * @param disco Discovery manager.
-     * @param top Topology version.
+     * @param topology Topology version.
      * @param consistentId Node consistent id.
      */
-    private void checkNoNode(GridDiscoveryManager disco, int top, String consistentId) {
-        assertFalse(findNode(disco, top, consistentId).isPresent());
+    private void checkNoNode(GridDiscoveryManager disco, int topology, String consistentId) {
+        assertFalse(findNode(disco, topology, consistentId).isPresent());
     }
 
     /**
      * Checks that {@link TcpDiscoveryNode} from the topology snapshot doesn't have resolved socket addresses.
      *
      * @param disco Discovery manager.
-     * @param top Topology version.
+     * @param topology Topology version.
      * @param consistentId Node consistent id.
+     * @throws Exception If failed.
      */
-    private void checkSockAddrsNull(GridDiscoveryManager disco, int top, String consistentId) {
-        Optional<ClusterNode> node = findNode(disco, top, consistentId);
+    private void checkSockAddrsNull(GridDiscoveryManager disco, int topology, String consistentId) throws Exception {
+        Optional<ClusterNode> node = findNode(disco, topology, consistentId);
 
         assertTrue(node.isPresent());
 

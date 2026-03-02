@@ -23,7 +23,6 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
