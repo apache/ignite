@@ -47,7 +47,7 @@ public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMe
     @Order(0)
     @Nullable Map<Integer, Message> writableMsgs;
 
-    /** Marshallable or Java-serializable pending messages which still requires old-style serialization. */
+    /** Marshallable or Java-serializable pending messages which still require old-style serialization. */
     @Nullable Map<Integer, TcpDiscoveryAbstractMessage> marshallableMsgs;
 
     /** Marshalled {@link #marshallableMsgs}. */
