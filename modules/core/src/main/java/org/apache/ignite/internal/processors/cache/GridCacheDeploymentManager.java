@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -42,7 +40,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -66,9 +63,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Cache class loader */
     private volatile ClassLoader globalLdr;
-
-    /** Undeploys. */
-    private final Map<String, List<CA>> undeploys = new HashMap<>();
 
     /** Per-thread deployment context. */
     private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap<>();
@@ -171,59 +165,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         ignoreOwnership.set(ignore);
 
         return old;
-    }
-
-    /**
-     * Undeploy all queued up closures.
-     *
-     * @param ctx Cache context.
-     */
-    public void unwind(GridCacheContext ctx) {
-        List<CA> q;
-
-        synchronized (undeploys) {
-            q = undeploys.remove(ctx.name());
-        }
-
-        if (q == null)
-            return;
-
-        int cnt = 0;
-
-        for (CA c : q) {
-            c.apply();
-
-            cnt++;
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Unwound undeploys count: " + cnt);
-    }
-
-    /**
-     * Undeploys given class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     * @param ctx Grid cache context.
-     */
-    public void onUndeploy(final ClassLoader ldr, final GridCacheContext<K, V> ctx) {
-        assert ldr != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
-
-        synchronized (undeploys) {
-            List<CA> queue = undeploys.get(ctx.name());
-
-            if (queue == null)
-                undeploys.put(ctx.name(), queue = new ArrayList<>());
-
-            queue.add(new CA() {
-                @Override public void apply() {
-                    onUndeploy0(ldr, ctx);
-                }
-            });
-        }
     }
 
     /**
@@ -685,7 +626,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     @Override public void printMemoryStats() {
         X.println(">>> ");
         X.println(">>> Cache deployment manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
-        X.println(">>>   Undeploys: " + undeploys.size());
         X.println(">>>   Cached deployments: " + deps.size());
     }
 
