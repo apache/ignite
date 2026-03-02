@@ -263,7 +263,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         fut.miniId(),
                         mappedKeys,
                         topVer,
-                        cctx.deploymentEnabled());
+                        false);
 
                     try {
                         add(fut); // Append new future.

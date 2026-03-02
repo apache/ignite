@@ -215,7 +215,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 ctx.cacheId(),
                 msg.futureId(),
                 msg.miniId(),
-                ctx.deploymentEnabled());
+                false);
 
             GridDhtPartitionTopology top = ctx.topology();
 

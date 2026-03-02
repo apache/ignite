@@ -159,7 +159,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                     true,
                     futureId(),
                     fut.futureId(),
-                    tx.activeCachesDeploymentEnabled());
+                    false);
 
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
@@ -276,7 +276,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                         false,
                         futureId(),
                         fut.futureId(),
-                        tx.activeCachesDeploymentEnabled());
+                        false);
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
@@ -315,7 +315,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                     false,
                     futureId(),
                     fut.futureId(),
-                    tx.activeCachesDeploymentEnabled());
+                    false);
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());

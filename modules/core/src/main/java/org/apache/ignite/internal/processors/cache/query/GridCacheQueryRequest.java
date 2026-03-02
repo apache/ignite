@@ -206,7 +206,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            deployFilterOrTransformer,
             qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
@@ -230,7 +230,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
             qry.isDataPageScanEnabled());
     }
 
@@ -244,7 +244,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
             cctx.affinity().affinityTopologyVersion(),
-            cctx.deploymentEnabled());
+            false);
     }
 
     /**

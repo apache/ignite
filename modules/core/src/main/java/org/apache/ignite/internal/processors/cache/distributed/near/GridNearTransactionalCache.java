@@ -405,7 +405,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             if (req == null) {
                                 map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                    ctx.deploymentEnabled()));
+                                    false));
 
                                 req.version(ver);
                             }
@@ -522,7 +522,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                     if (req == null) {
                                         map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                            ctx.deploymentEnabled()));
+                                            false));
 
                                         req.version(ver);
                                     }

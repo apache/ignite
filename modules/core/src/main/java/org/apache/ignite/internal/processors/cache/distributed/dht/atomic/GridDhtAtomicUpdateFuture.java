@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -89,7 +88,7 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             topVer,
             updateReq.taskNameHash(),
             null,
-            cctx.deploymentEnabled(),
+            false,
             updateReq.keepBinary(),
             updateReq.skipStore(),
             false,

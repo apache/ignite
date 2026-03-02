@@ -736,7 +736,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                             if (req == null) {
                                 map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                    ctx.deploymentEnabled()));
+                                    false));
 
                                 req.version(ver);
                             }
@@ -840,7 +840,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                     if (req == null) {
                         map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                            ctx.deploymentEnabled()));
+                            false));
 
                         req.version(ver);
                     }

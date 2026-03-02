@@ -237,7 +237,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.taskNameHash(),
             false,
             true,
-            tx.activeCachesDeploymentEnabled(),
+            false,
             tx.txState().recovery());
 
         for (IgniteTxEntry txEntry : writes) {

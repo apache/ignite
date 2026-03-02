@@ -1762,7 +1762,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.futureId(),
             req.partition(),
             false,
-            ctx.deploymentEnabled());
+            false);
 
         res.addFailedKeys(req.keys(), e);
 
@@ -1786,7 +1786,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.futureId(),
             req.partition(),
             false,
-            ctx.deploymentEnabled());
+            false);
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
@@ -3425,7 +3425,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),
                     req.partition(),
                     req.futureId(),
-                    ctx.deploymentEnabled());
+                    false);
 
                 dhtRes.nearEvicted(nearEvicted);
             }

@@ -924,7 +924,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             skipReadThrough,
                             cctx.store().configured(),
                             keepBinary,
-                            cctx.deploymentEnabled(),
+                            false,
                             inTx() ? tx.label() : null);
 
                         try {
