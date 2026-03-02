@@ -134,8 +134,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             txNodes,
             retVal,
             last,
-            onePhaseCommit,
-            false);
+            onePhaseCommit);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;

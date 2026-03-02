@@ -155,8 +155,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             txNodes,
             retVal,
             last,
-            onePhaseCommit,
-            false);
+            onePhaseCommit);
 
         assert futId != null;
         assert miniId != 0;
