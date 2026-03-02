@@ -78,7 +78,7 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
 
     /** {@inheritDoc} */
     @Override public boolean stopProcess() {
-        return delegate.stopProcess();
+        return delegate().stopProcess();
     }
 
     /**
