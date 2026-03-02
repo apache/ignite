@@ -73,7 +73,7 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return delegate.isMutable();
+        return delegate().isMutable();
     }
 
     /** {@inheritDoc} */
