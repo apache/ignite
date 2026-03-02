@@ -210,7 +210,6 @@ public class ClassUsageRestrictionRuleTest {
             checker.process(Collections.singletonList(new File(inputFile.toURI())));
 
             return violations;
-
         }
         finally {
             checker.destroy();
