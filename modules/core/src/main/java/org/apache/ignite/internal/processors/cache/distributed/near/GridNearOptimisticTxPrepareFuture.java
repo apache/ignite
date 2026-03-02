@@ -531,7 +531,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.taskNameHash(),
                     m.clientFirst(),
                     txMapping.transactionNodes().size() == 1,
-                    false,
                     tx.txState().recovery());
 
                 for (IgniteTxEntry txEntry : m.entries()) {
