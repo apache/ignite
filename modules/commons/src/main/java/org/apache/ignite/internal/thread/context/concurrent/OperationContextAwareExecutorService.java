@@ -25,10 +25,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
-/** */
+/**
+ * Represents wrapper over an arbitrary {@link ExecutorService} that automatically captures
+ * the {@link OperationContextSnapshot} of {@link OperationContext} bound to the thread from which the task is submitted
+ * for execution. It automatically restores captured {@link OperationContextSnapshot} when the task is executed.
+ *
+ * @see OperationContext
+ * @see OperationContextSnapshot
+ * @see OperationContextAwareRunnable
+ * @see OperationContextAwareCallable
+ */
 public abstract class OperationContextAwareExecutorService<E extends ExecutorService> implements ExecutorService {
     /** */
     protected E delegate;

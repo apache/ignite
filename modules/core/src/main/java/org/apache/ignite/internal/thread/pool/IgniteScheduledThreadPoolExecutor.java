@@ -20,12 +20,19 @@ package org.apache.ignite.internal.thread.pool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareScheduledExecutorService;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UNDEFINED;
 
-/** */
+/**
+ * Ignite specific wrapper over {@link ScheduledThreadPoolExecutor} that supports {@link OperationContext} propagation
+ * and automatically uses custom Ignite {@link IgniteThreadFactory}.
+ *
+ * @see OperationContext
+ * @see OperationContextAwareScheduledExecutorService
+ */
 public class IgniteScheduledThreadPoolExecutor extends OperationContextAwareScheduledExecutorService {
     /**
      * @param threadNamePrefix Pool thread name prefix.

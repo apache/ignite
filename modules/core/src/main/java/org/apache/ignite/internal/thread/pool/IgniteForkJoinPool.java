@@ -19,11 +19,19 @@ package org.apache.ignite.internal.thread.pool;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutorService;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareScheduledExecutorService;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Ignite specific wrapper over {@link ForkJoinPool} that supports {@link OperationContext} propagation and customizes
+ * pool's thread factory using Ignite instance info.
+ *
+ * @see OperationContext
+ * @see OperationContextAwareScheduledExecutorService
+ */
 public class IgniteForkJoinPool extends OperationContextAwareExecutorService<ForkJoinPool> {
     /** */
     private static final IgniteForkJoinPool COMMON = new IgniteForkJoinPool(ForkJoinPool.commonPool());
@@ -40,8 +48,8 @@ public class IgniteForkJoinPool extends OperationContextAwareExecutorService<For
             parallelism,
             new IgniteForkJoinWorkerThreadFactory(threadNamePrefix, igniteInstanceName),
             handler,
-            asyncMode)
-        );
+            asyncMode
+        ));
     }
 
     /** */
