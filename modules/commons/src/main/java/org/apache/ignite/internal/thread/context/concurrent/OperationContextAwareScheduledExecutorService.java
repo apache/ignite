@@ -21,10 +21,22 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 
-/** */
+/**
+ * Represents wrapper over an arbitrary {@link ScheduledExecutorService} that automatically captures
+ * the {@link OperationContextSnapshot} of {@link OperationContext} bound to the thread from which the task is submitted
+ * for execution. It automatically restores captured {@link OperationContextSnapshot} when the task is executed.
+ *
+ * @see OperationContextAwareExecutorService
+ * @see OperationContext
+ * @see OperationContextSnapshot
+ * @see OperationContextAwareRunnable
+ * @see OperationContextAwareCallable
+ */
 public abstract class OperationContextAwareScheduledExecutorService extends OperationContextAwareExecutorService<ScheduledExecutorService>
     implements ScheduledExecutorService {
     /** */
