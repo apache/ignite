@@ -69,7 +69,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param taskNameHash Task name hash.
-     * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
      * @param updCntrs Update counters for Tx.
@@ -91,7 +90,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int taskNameHash,
-        boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
         Collection<PartitionUpdateCountersMessage> updCntrs
@@ -110,7 +108,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             committedVers,
             rolledbackVers,
             taskNameHash,
-            addDepInfo);
+            false);
 
         assert miniId != 0;
         assert nearNodeId != null;

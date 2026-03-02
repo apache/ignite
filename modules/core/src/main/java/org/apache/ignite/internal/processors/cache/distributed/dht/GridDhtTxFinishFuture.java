@@ -375,7 +375,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.taskNameHash(),
                 false,
                 false,
-                false,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
@@ -468,7 +467,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.taskNameHash(),
                 false,
                 false,
-                false,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
@@ -536,7 +534,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
                     tx.taskNameHash(),
-                    false,
                     false,
                     false,
                     null);

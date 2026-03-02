@@ -882,7 +882,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             0,
-            false,
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
             null);
