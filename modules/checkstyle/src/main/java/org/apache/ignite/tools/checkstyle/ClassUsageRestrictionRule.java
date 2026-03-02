@@ -32,7 +32,15 @@ import static com.puppycrawl.tools.checkstyle.api.TokenTypes.METHOD_CALL;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.METHOD_REF;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.STATIC_IMPORT;
 
-/** */
+/**
+ * Represents a rule for Static Code Analyzer that provides the ability to restrict usage of a specified Java class.
+ * The rule prevents the class from being instantiated and considers the following scenarios:
+ * <ul>
+ *    <li>extending the restricted class</li>
+ *    <li>invoking the restricted class's constructor or its new method reference</li>
+ *    <li>invoking factory methods or their references that produce instances of the restricted class</li>
+ * </ul>
+ */
 public class ClassUsageRestrictionRule extends AbstractCheck {
     /** */
     private static final int[] TOKENS = new int[] {
@@ -132,12 +140,12 @@ public class ClassUsageRestrictionRule extends AbstractCheck {
         return TOKENS.clone();
     }
 
-    /** */
+    /** @param clsName The fully qualified name of the Java class which use should be restricted. */
     public void setClassName(String clsName) {
         restrictedCls = ClassDescriptor.forName(clsName);
     }
 
-    /** */
+    /** @param factoryMethods A comma-separated list of restricted class factory method names that should be prevented from being called. */
     public void setFactoryMethods(String factoryMethods) {
         Set<String> restrictedFactoryMethods = new HashSet<>(DEFAULT_RESTRICTED_FACTORY_METHODS);
 
@@ -146,7 +154,10 @@ public class ClassUsageRestrictionRule extends AbstractCheck {
         this.restrictedFactoryMethods = restrictedFactoryMethods;
     }
 
-    /** */
+    /**
+     * @param substitutionClsName The name of the Java class that acts as a replacement for the restricted class and is
+     * displayed in the rule violation error message.
+     */
     public void setSubstitutionClassName(String substitutionClsName) {
         this.substitutionClsName = substitutionClsName;
     }
