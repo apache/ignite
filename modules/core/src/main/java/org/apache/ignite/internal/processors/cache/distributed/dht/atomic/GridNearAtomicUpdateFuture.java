@@ -1015,7 +1015,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     filter,
                     taskNameHash,
                     flags,
-                    false,
                     keys.size());
 
                 mapped = new PrimaryRequestState(req, nodes, false);
@@ -1129,7 +1128,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             filter,
             taskNameHash,
             flags,
-            false,
             1);
 
         req.addUpdateEntry(cacheKey,

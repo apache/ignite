@@ -566,8 +566,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     op,
                     invokeArgs,
                     taskNameHash,
-                    flags,
-                    false);
+                    flags);
             }
             else {
                 if (filter == null || filter.length == 0) {
@@ -579,8 +578,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         syncMode,
                         op,
                         taskNameHash,
-                        flags,
-                        false);
+                        flags);
                 }
                 else {
                     req = new GridNearAtomicSingleUpdateFilterRequest(
@@ -592,8 +590,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         op,
                         filter,
                         taskNameHash,
-                        flags,
-                        false);
+                        flags);
                 }
             }
         }
@@ -610,7 +607,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 filter,
                 taskNameHash,
                 flags,
-                false,
                 1);
         }
 
