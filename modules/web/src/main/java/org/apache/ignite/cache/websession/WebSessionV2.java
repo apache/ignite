@@ -181,7 +181,9 @@ class WebSessionV2 implements HttpSession {
         return maxInactiveInterval;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Always returns an empty context.
+     */
     @Deprecated public HttpSessionContext getSessionContext() {
         return EMPTY_SES_CTX;
     }
@@ -214,7 +216,9 @@ class WebSessionV2 implements HttpSession {
         return attr;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttribute(String)}.
+     */
     @Deprecated public Object getValue(final String name) {
         return getAttribute(name);
     }
@@ -229,7 +233,9 @@ class WebSessionV2 implements HttpSession {
             attributes().put(name, val);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #setAttribute(String, Object)}.
+     */
     @Deprecated public void putValue(final String name, final Object val) {
         setAttribute(name, val);
     }
@@ -261,7 +267,9 @@ class WebSessionV2 implements HttpSession {
         return entity.attributes().keySet();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttributeNames()}.
+     */
     @Deprecated public String[] getValueNames() {
         assertValid();
 
@@ -277,7 +285,9 @@ class WebSessionV2 implements HttpSession {
         attributes().put(name, REMOVED_ATTR);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #removeAttribute(String)}.
+     */
     @Deprecated public void removeValue(final String name) {
         removeAttribute(name);
     }
