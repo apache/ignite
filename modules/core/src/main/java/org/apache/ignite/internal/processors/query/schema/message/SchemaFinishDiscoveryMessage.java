@@ -31,7 +31,7 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     private static final long serialVersionUID = 0L;
 
     /** No-op flag. */
-    @Order(4)
+    @Order(0)
     boolean nop;
 
     /**

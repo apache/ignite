@@ -32,7 +32,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     private static final long serialVersionUID = 0L;
 
     /** Cache deployment ID. */
-    @Order(4)
+    @Order(0)
     IgniteUuid depId;
 
     /** Whether to perform exchange. */
