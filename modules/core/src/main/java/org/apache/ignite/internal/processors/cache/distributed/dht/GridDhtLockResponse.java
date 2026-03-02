@@ -38,16 +38,16 @@ import org.apache.ignite.lang.IgniteUuid;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtLockResponse extends GridDistributedLockResponse {
     /** Mini future ID. */
-    @Order(10)
+    @Order(0)
     IgniteUuid miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
-    @Order(11)
+    @Order(1)
     Collection<Integer> invalidParts;
 
     /** Preload entries returned from backup. */
-    @Order(12)
+    @Order(2)
     List<GridCacheEntryInfo> preloadEntries;
 
     /**

@@ -49,11 +49,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(10)
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
-    @Order(11)
+    @Order(1)
     protected CacheObject val;
 
     /**

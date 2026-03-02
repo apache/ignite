@@ -32,11 +32,11 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
     private static final long serialVersionUID = 0L;
 
     /** ID of the message to discard (this and all preceding). */
-    @Order(5)
+    @Order(0)
     IgniteUuid msgId;
 
     /** True if this is discard ID for custom event message. */
-    @Order(6)
+    @Order(1)
     boolean customMsgDiscard;
 
     /** */

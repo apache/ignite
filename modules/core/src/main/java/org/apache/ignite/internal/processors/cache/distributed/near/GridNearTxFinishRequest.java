@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Mini future ID. */
-    @Order(18)
+    @Order(0)
     int miniId;
 
     /**

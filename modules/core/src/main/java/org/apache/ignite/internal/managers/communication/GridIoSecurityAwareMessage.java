@@ -29,7 +29,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     public static final short TYPE_CODE = 174;
 
     /** Security subject ID that will be used during message processing on a remote node. */
-    @Order(8)
+    @Order(0)
     UUID secSubjId;
 
     /**
