@@ -427,7 +427,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, null, data, null, finished);
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                finished, false, false);
+                finished, false);
 
             if (qryInfo.query().type() == INDEX)
                 res.indexQueryMetadata(idxQryMetadata);
@@ -473,7 +473,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                finished, qryInfo.reducer() == null, false);
+                finished, qryInfo.reducer() == null);
 
             res.data(entities != null ? entities : data);
 
