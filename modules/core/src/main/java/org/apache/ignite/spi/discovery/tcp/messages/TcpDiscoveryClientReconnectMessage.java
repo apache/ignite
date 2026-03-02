@@ -35,15 +35,15 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    @Order(value = 5)
+    @Order(0)
     public UUID routerNodeId;
 
     /** Last message ID. */
-    @Order(6)
+    @Order(1)
     public IgniteUuid lastMsgId;
 
     /** Pending messages holder. */
-    @Order(7)
+    @Order(2)
     @Nullable public TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
