@@ -31,11 +31,11 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Whether WAL state was changed as a result of this call. */
-    @Order(4)
+    @Order(0)
     boolean changed;
 
     /** Error message. */
-    @Order(5)
+    @Order(1)
     String errMsg;
 
     /** Constructor. */
@@ -80,6 +80,6 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 501;
+        return 504;
     }
 }

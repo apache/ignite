@@ -19,14 +19,14 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
-import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage;
-import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
-import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
-import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
 import org.apache.ignite.internal.processors.cache.WalStateProposeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;

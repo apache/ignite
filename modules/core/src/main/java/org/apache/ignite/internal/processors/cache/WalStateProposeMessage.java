@@ -31,11 +31,11 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Cache names which are expected to be in the group along with their deployment IDs. */
-    @Order(4)
+    @Order(0)
     Map<String, IgniteUuid> caches;
 
     /** Whether WAL should be enabled or disabled. */
-    @Order(5)
+    @Order(1)
     boolean enable;
 
     /** Whether message is being handled on cache affinity node. */
@@ -99,6 +99,6 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 502;
+        return 505;
     }
 }
