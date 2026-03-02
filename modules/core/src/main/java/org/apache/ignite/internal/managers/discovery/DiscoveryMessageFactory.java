@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
@@ -133,5 +135,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)501, SecurityAwareCustomMessageWrapper::new, new SecurityAwareCustomMessageWrapperSerializer());
         factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
+        factory.register((short)504, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
+            new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
     }
 }
