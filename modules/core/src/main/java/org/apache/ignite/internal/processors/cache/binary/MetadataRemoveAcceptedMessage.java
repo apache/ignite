@@ -107,6 +107,6 @@ public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage, Me
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 501;
+        return 502;
     }
 }
