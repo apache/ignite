@@ -190,22 +190,19 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
                     final MessageSerializer serializer0 = serializer;
 
                     serializer = new MessageSerializer() {
-                        private Message curMarshallableMsg;
+                        private boolean marshallableMsg;
 
                         @Override public boolean writeTo(Message msg, MessageWriter writer) {
-                            if (msg instanceof TcpDiscoveryMarshallableMessage && curMarshallableMsg == null) {
-                                curMarshallableMsg = msg;
+                            if (msg instanceof TcpDiscoveryMarshallableMessage && !marshallableMsg) {
+                                marshallableMsg = true;
 
                                 ((TcpDiscoveryMarshallableMessage)msg).prepareMarshal(cstDataMarshall);
                             }
 
                             boolean res = serializer0.writeTo(msg, writer);
 
-                            if (res && curMarshallableMsg != null) {
-                                assert msg instanceof TcpDiscoveryMarshallableMessage;
-
-                                curMarshallableMsg = null;
-                            }
+                            if (res && marshallableMsg)
+                                marshallableMsg = false;
 
                             return res;
                         }
