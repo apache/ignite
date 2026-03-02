@@ -1,6 +1,400 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite distributed database for high-performance computing 2.18.0
+-----------------------------------------------------------
+Ignite:
+* Move binary classes to binary-api
+* Move OptimizedMarshaller to ignite-binary-impl
+* Move GridFunc to ignite-commons
+* Move BinaryReader and BinaryWriter implementations to binary-impl
+* BinaryContext dependencies moved to commons and binary-api
+* Move GridToStringBuilder to ignite-commons
+* Move builders package to ignite-binary-impl
+* BinaryStreams moved to ignite-binary-impl
+* Move IgniteException, IgniteCheckedException to ignite-commons
+* Refactor ClusterMetricsUpdateMessage
+* Binary API initial commit
+* Remove unused code from MessageReader and MessageWriter
+* Move GridUnsafe to ignite-unsafe
+* Minify binary classes visibility
+* Move JdkMarshaller to ignite-binary-impl
+* Remove unsafe dependency from binary-api
+* Move GridTuple* to ignite-commons
+* Add MessageProcessor for generating Message ser/der
+* Snapshot check bases on DistributedProcess
+* Add SessionContext API
+* Remove unused code from IgniteUtils
+* Store crash recovery data to checkpoint recovery files
+* Generate serdes code for management commands arguments
+* Remove setMarshaller from tests
+* Remove VerifyBackupPartitionsTaskV2#V2_SINCE_VER
+* Support of data region storage path implemented
+* Remove U dependency from binary package
+* Move BinaryObjectImpl to binary-impl
+* Add JMH benchmark and helper for TPC-H queries
+* Make BinaryWriterExImpl package private
+* Remove redundant IdleVerify code
+* Use MessageSerializer for diagnostic messages
+* Several storage paths per cache
+* Perform enum fields serialization/deserialization with external mappers
+* Remove Message#fieldsCount
+* Initial commit for ignite-commons
+* Cleanup GridFunc
+* Make BinaryReaderExImpl package private
+* Added metrics of TCP communication connection pool
+* Added support of partition loss detection after cluster inactivity
+* Use MessageSerializer for GridJobExecuteRequest
+* Move binaryMetadata, marshaller directories logic to NodeFileTree
+* Use MessageSerializer for GridDistributedLockRequest
+* Remove NodeFileTree.cacheStorage(String) method
+* Use MessageSerializer for GridCacheQueryResponse
+* Remove Message interface from CacheObject
+* Recording systemViews to perfStart report
+* Per cache custom storagePath configuration
+* Replace F.eq with the Objects.equals
+* Add max value aggregated interval metric
+* Use MessageSerializer for GridDistributedTxPrepareRequest
+* Support of cache storage for --persitence commands
+* Inline binary writer methods
+* DataStorageConfiguration#extraSnapshotPaths added
+* Use MessageSerializer for NearCacheUpdates message
+* Use MessageSerializer for TcpDiscoveryMetricsUpdateMessage
+* Ignite accepts joining node with rolling upgrade version
+* Move WAL dirs to NodeFileTree
+* Remove GridNioFuture
+* Fixed in-memory cluster hanging when error is thrown on activation
+* Use MessageSerializer for FragmentDescription
+* Refactor GridDistributedTxPrepareResponse and successors
+* Replace VisorDataTransferObject with IgniteDataTransferObject
+* Rename IncrementalSnapshotVerificationTask classes
+* Move defragmentation logic to CacheFileTree
+* TcpDiscoverySpi uses MessageSerializer
+* Remove Serializable interface from Message
+* Refactor GridLongList
+* Refactor GridDhtLockResponse and successors
+* Discovery optimizations for MultiDC
+* Move IgniteThread to commons
+* Refactor GridNearAtomicAbstractUpdateRequest and GridNearAtomicSingleUpdateRequest
+* Fix hang in put with RANDOM_LRU and RANDOM_2_LRU eviction policy
+* WAL state/enable/disable commands
+* Use MessageSerializer for GridDhtAtomicUpdateRequest
+* Move cache dir/partition iteration into NodeFileTree
+* Explicit index cache path
+* Remove unused Ipc classes
+* Move BinarySerializedFieldComparator to test
+* Refactor serialization of CacheEntryPredicateAdapter and CacheEntrySerializablePredicate
+* Remove deprecated SpiQuery
+* Move T* aliases to ignite-commons
+* Remove IGNITE_EXCHANGE_COMPATIBILITY_VER_1
+* Add serdes tests for Services with custom exceptions
+* Skip read-through in DML operations
+* Cache partition files calculation in NodeFileTree
+* Incremental snapshot migration to SnapshotFileTree
+* Remove Message#onAckReceived
+* Refactor GridDhtPartitionSupplyMessage
+* Move readString, writeString to CommonUtils
+* Migration to snapshot file tree in tests
+* Implement an affinity backup filter assigning partition copies evenly between data centers
+* Move checkpoint dir to NodeFileTree
+* Refactor BinaryMetadataHolder
+* Remove marshaller from IgniteConfiguration
+* Сheckpoint command added
+* Use MessageSerializer for GridCacheReturn, GridChangeGlobalStateMessageResponse, GridNearGetResponse
+* Implement a TopologyValidator based on DataCenterId
+* Use MessageSerializer for GridDistributedTxFinishRequest
+* Refactor SnapshotOperationRequest class to be stateless for serialization framework
+* IndexQuery can't use an index until data population completes
+* Remove setSharedMemoryPort
+* Remove "instanceof BinaryMarshaller" from tests
+* WAL files move to NodeFileTree
+* Remove candsByIdxBytes field from GridDistributedBaseMessage
+* Provide flag to include DataStructure to cache dump
+* Use CommonUtils instead of U in binary
+* Remove GridDhtPartitionDemandMessage#VERSION_SINCE
+* Introduce CacheIdleVerifyCancelCommand
+* Refactor QueryStartResponse, FragmentMapping, ColocationGroup
+* Use MessageSerializer for handshake messages
+* Refactor IncrementalSnapshotVerificationTask
+* Compatibility test for Ignite snapshot
+* Remove explicit call of setMarshaller for binary marshaller
+* Dump reader - cache names filter added
+* Refactor GridNearUnlockRequest
+* Fix snapshot creation if DataRegionConfiguration#storagePath set
+* Refactor GridJobExecuteResponse
+* Use MessageSerializer for GridDhtPartitionsFullMessage
+* Reduce the number of JUnit parameters in SnapshotCompatibilityTest, refactor corresponding code
+* Add Message interface to IgniteDhtPartitionCountersMap
+* Use MessageSerializer for GridDhtAtomicSingleUpdateRequest
+* Move discoveryInternalLsnr to tests
+* IgniteSnapshotManager migration to SnapshotFileTree
+* Optimize IgniteDiagnosticMessage marshalling
+* Remove PARTIAL_COUNTERS_MAP_SINCE
+* Remove EXCHANGE_PROTOCOL_2_SINCE
+* Remove orphaned qryResCache and related code
+* Move binary streams implementations to package-private
+* Add Message interface to IgniteDhtPartitionsToReloadMap
+* Move cacheWorkDir, cacheDir to NodeFileTree
+* Refactor SnapshotMetadataVerificationTask
+* Fix memory leak in HeavyQueriesTracker
+* Move SnapshotFileTree constants to private
+* Remove DurableBackgroundCleanupIndexTreeTask and related code
+* Remove IgniteDataTransferObject protoVer fields
+* Fix reading performance statistics report due to miss-cached strings
+* Add metrics to improve node network unavailability detection
+* Refeactor building of IdleVerifyResult
+* Remove IgniteConfiguration from BinaryContext
+* Added authorization of Compute Job cancellation
+* Remove CacheObjectValueContext#kernalContext method
+* Remove BinaryFieldEx interface
+* Refactor GridNearSingleGetRequest, CacheEntryInfoCollection, GridDistributedTxFinishResponse
+* Simplify BinaryContext creation
+* Rename SnapshotPartitionsVerifyTaskResult class
+* Remove BinaryConfiguration dependency from BinaryContext
+* Make BinaryObjectImpl package private
+* Move snapshots, snp to NodeFileTree
+* Fix discrepancy with CacheStore in case of an error during tx commit phase
+* Extract GridToStringBuilder Unsafe code to interface
+* Split TcpDiscoveryIoSession to fix race in RingMessageWorker
+* Use MessageSerializer for GridNearGetRequest
+* Move cache dir filters to NodeFileTree
+* New node property to distinguish different DCs
+* Added offline commands support
+* Remove instanceOf BinaryMarshaller
+* Add metrics for inserted/removed bytes to/from cache group
+* Rebalancing optimization for MultiDC
+* Use MessageSerializer for TxLockList, CommittedVersion, GridNearSingleGetResponse
+* More cleanup binary writer
+* Use MessageSerializer for GridNearAtomicUpdateResponse and GridNearAtomicCheckUpdateRequest
+* Use MessageSerializer for QueryStartRequest
+* Remove GridMessageCollection
+* Use MessageSerializer for GridCacheTxRecoveryRequest and GridCacheTxRecoveryResponse
+* Use MessageSerializer for MetadataResponseMessage
+* Minify visibility of BinaryUtils doReadXXXArray methods
+* Fix freelist corruption in JDK17 with ShenandoahGC and assertions turned off
+* Use MessageSerializer for GridCacheMessage
+* Refactor CacheInvokeDirectResult
+* Fixed missing error for partially successful putAll on ATOMIC, FULL_SYNC caches during primary node stop
+* Added capturing of cluster node certificates during join process
+* Fix query entity configuration merge on node join
+* Refactor GridDhtForceKeysResponse
+* Use MessageSerializer for SnapshotFiles* messages
+* .ΝΕΤ: Propagate compute task names to Java
+* Remove RMV_ANON_CLS_POS_CHANGED_SINCE
+* Make BinaryReaderHandles package private
+* Fixed NPE when getting cluster name on inactive cluster
+* Fix CdcCommandLineStartup interruption
+* Use MessageSerializer for SchemaOperationStatusMessage
+* Make BinarySchema package-private
+* Add configOnly flag to dump
+* Use MessageSerializer for TcpDiscoveryConnectionCheckMessage
+* Remove Message interface from GridIntList
+* Use MessageSerializer for TcpDiscoveryHandshakeResponse
+* Use SnapshotFileTree in LocalSnapshotSender
+* Remove setForceServerMode
+* CdcMain clears corrupted cdc state files
+* Fixed flaky ServiceAwarenessTest.testNodesLeaveMultiThreaded
+* Remove GridCacheMessage#handlerId and #cacheGroupMessage
+* Fix transaction closing on explicit rollback or commit
+* Optimize writing Map by BinaryWriterExImpl
+* Add test for freelist corruption during cache clear with JDK17 with ShenandoahGC
+* Use CacheObjectValueContext where possible
+* Use MessageSerializer for GridCacheEntryInfo
+* Move BinaryObjectOffheapImpl to package-private
+* Fix tx support init in partitionAwareness mode
+* Use MessageSerializer for GridQueryKillRequest and GridQueryKillResponse
+* Make BinaryObjectBuilderImpl package private
+* Minify BinaryUtils methods visibility
+* Add tx deadlocks count metric
+* Use MessageSerializer for MissingMappingRequestMessage and MissingMappingResponseMessage
+* Remove redundant IgniteExperimental annotations
+* Fix snapshot restoration when indexPath equal to storagePath
+* Use MessageSerializer for GridCacheVersion and GridCacheVersionEx
+* Use MessageSerializer for GridDhtAtomicNearResponse
+* Cache API optimizations for MultiDC
+* Clean up IgniteIndexReaderTest
+* Refactor SnapshotHandlerRestoreTask
+* Refactor UpdateErrors message
+* Use MessageSerializer for GridQueryNextPageRequest
+* Allow to create table for already existing cache with defined schema
+* PerfStat: fix reading empty unsupported system views
+* Enforce explicit use of OutputStream for TcpDiscoverySpi#writeToSocket
+* Make BinarySchemaRegistry package private
+* Merge HandshakeMessage classes
+* Clean TcpCommunicationSpi unused methods
+* Use MessageSerializer for GridTaskResultResponse
+* Move WAL segments to NodeFileTree
+* Fix inconsistent behaviour on concurrent commit and timeout with 1PC
+* Disable distributed processes during rolling upgrade
+* Fix suboptimal expire shift calculation
+* Use MessageSerializer for GridDhtAtomicUpdateResponse
+* Fix corrupted tree exception on expiration
+* Move constant to private
+* Use MessageSerializer for IncrementalSnapshotAwareMessage
+* Fix AssertionError on concurrent services undeployment
+* Move IgniteSnapshotManager#partitionRowIterator to tests
+* Add logs for local snapshot creation steps
+* Fix check dump on other node
+* Speed up warmup running in several threads
+* Use MessageSerializer for WalStateAckMessage
+* Move WAL compacted file constants to NodeFileTree
+* Use MessageSerializer for GridTaskResultRequest
+* Make BinaryEnumObjectImpl package private
+* Remove orphaned TcpDiscoverySpi#writeToSocket method
+* Fixed missing test parameters for GridRuntimeExceptionSelfTest
+* Added performance statistics for putAllConflict, removeAllConflict operations
+* Use MessageSerializer for PartitionUpdateCountersMessage
+* Updated jetty-server dependency version from 9.4.56.v20240826 to 11.0.24
+* Use MessageSerializer for InboxCloseMessage
+* Make BinaryLazyValue package private
+* GridInternalWrapper renamed and moved to ignite-commons
+* Use MessageSerializer for GridDhtPartitionExchangeId
+* Use MessageSerializer for CacheEvictionEntry
+* Reduce memory requirements of largeUserAttributes* tests
+* Use MessageSerializer for GridJobSiblingsResponse
+* Refactoring setting socket timeout for TcpDiscoverySpi#writeToSocket
+* Use MessageSerializer for GridDhtPartitionsSingleRequest
+* Move BinaryArrayIdentityResolver to package-private
+* Fix primitive column descriptor problem with alias on key or val field
+* Use MessageSerializer for CacheContinuousQueryBatchAck
+* Remove BinaryWriter#typeId setter
+* Use MessageSerializer for AtomicApplicationAttributesAwareRequest
+* Fix message serializer code generation problems
+* Fix LengthPrefixCodec issue with 3 byte buffer
+* Make "metastorage" and "distributedMetastorage" system views filtrable
+* Use MessageSerializer for UUIDCollectionMessage
+* BPlusTree reuses lastRow from rowFilter closure to fill buffer
+* Fix flaky GridTcpCommunicationSpiConfigSelfTest
+* Use MessageSerializer for ServiceSingleNodeDeploymentResultBatch
+* Use MessageSerializer for UserAuthenticateResponseMessage
+* Move BinaryEnumArray to package-private
+* Fix GridLogCommandHandler path validation
+* Keep order in IndexQueryResultMeta message
+* Use MessageSerializer for GridDhtAtomicDeferredUpdateResponse
+* remove always true CacheObjectBinaryProcesor#isBinaryEnabled
+* Add warn if index inline size is too big
+* Use MessageSerializer for TcpDiscoveryRingLatencyCheckMessage
+* Compatibility test - Restore snapshot with custom path
+* Use MessageSerializer for TcpDiscoveryHandshakeRequest
+* Use MessageSerializer for GridQueryCancelRequest
+* Use MessageSerializer for SessionChannelMessage
+* Use MessageSerializer for TcpDiscoveryDuplicateIdMessage
+* Fix IndexQuery can query backup partition if setPartition is used
+* Remove setForceServerMode from ConfigVariationsFactory
+* Remove IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES
+* Fixed H2QueryInfo#planWithoutScanCount for UNION queries.
+* GridDhtPartitionSupplyMessage minor refactoring
+* Add parent process listener to IgniteCompatibilityNodeRunner
+* Documentation of distributed properties for blocking new connections.
+* Remove redundant maps in IndexProcessor
+* Refactor serialization for TcpDiscoveryAbstractTraceableMessage
+* Move BinaryClassDescriptor#newInstance to BinaryReaderExImpl
+* Make BinaryObjectExImpl package private
+* Move WAL temp file constants to NodeFileTree
+* Fixed flaky the CommunicationConnectionPoolMetricsTest#testMetricsBasics test
+* Remove MIN_BLT_SUPPORTING_VER
+* Wait for pending messages to be sent before checks
+* Remove setForceServerMode from GridCacheAbstractRemoveFailureTest
+* Added LastArchivedSegment metric
+* Move maintenance file to NodeFileTree
+* Initialized StandaloneGridKernalContext with no-op security processor implementation
+* Move BinaryNoopMetadataHandler to package-private
+* Fixed an assertion error on the cluster state command
+* Fix snapshot restore failure due to non-serializable cache group names collection
+* Fix binary compatibility issue with dcId property
+* Add CODEOWNERS for platforms
+* Throw when CacheConfiguration#extraStoragePaths contains duplicates
+* Added data center ID to the ClusterNodeView
+* Remove FORCE_ADD_REASSIGNMENT_SINCE.
+* Update NodeFileTree javadoc for CDC files
+* Removed NOT_NULLS_SUPPORT_VER.
+* Deploy ignite-commons to staging
+* Restore 'checkout' in `sonar-pr-from-fork-build.yml`
+* Fix typos in method names of IncrementalSnapshotAwareMessage
+* Exclude new modules from release
+* Remove QueryUtils usage from BinaryContext
+* Fix SnapshotCompressionBasicTest
+* Fix exclusions in IgniteCompatibilityAbstractTest
+* Updated IgniteReleasedVersion for compatibility tests to 2.17.0
+* Test TcpDiscoveryCoordinatorFailureTest#testClusterFailedNewCoordinatorInitialized hangs and locks suite SPI(Discovery) until timeout
+* Updated dependency version commons-lang3 to 3.18.0
+* Thick client optimizations for MultiDC
+* Remove orphaned PHP client code
+* Cache storage path added to ClientCacheConfiguration
+* Added client router node metric.
+
+SQL:
+* Add system view for SQL query plans history
+* Add docs for PostgreSQL cdc-extension
+* Fixed performance drop introduced by SQL plan history system view
+* Method to create SQL cache via thin client
+* Fixed node crash after SQL query with WITH clause
+* Add initiatorId to the SQL_QUERY_HISTORY system view
+* Fix indexed field validation
+* Add information about query initiator id to log
+* Set H2 default SQL plan history to zero
+* Documentation: Add SQL_PLANS_HISTORY view performance considerations
+
+SQL Calcite:
+* Update Calcite version to 1.40
+* Support UNNEST operator
+* Add HASH join type
+* Refactor PlannerTest
+* Add query blocking tasks executor (allows to execute SQL inside UDF)
+* Add non-equi condition support for LEFT/RIGHT/FULL/ANTI HASH JOIN
+* Add heuristics to optimize join order
+* Add group partitions reservation
+* Refactor JmhSqlBenchmark
+* Fix MergeJoin/NestedLoopJoin buffers overflow
+* Add support of user-defined table functions
+* Optimize scans with filter
+* Add dynamic configuration to disable a rule globally
+* Fix merge filter to scan after trimmed fields
+* Add thread pool starvation warning, add UDF query warning
+* Optimize memory consumption for hash-table based operators
+* Add extraction of common part from disjunction in conditions
+* Fix mapping sending for trim exchange
+* Optimize IN statement with literals
+* Optimization for MultiDC
+* Add number of passed query parameters validation
+* Fix incorrect processing of IS NOT DISTINCT condition in MergeJoin
+* Limit joins number to commute in planning
+* Fix usage of checkState() in the join nodes
+* Fix cast of dynamic parameters
+* Fix wider type for fixed chars coercion
+* Fix NVL/COALESCE failure with correlated subquery as parameter
+* Fix excessive log output on planning error
+* Reduce contention by QueryBlockingTaskExecutor
+* Fixed assertion on planning for filter with double correlate
+* Reuse Row for non-storing accumulators
+* Fix function with schema serialization
+* Fix "field names not distinct" assertion error
+* Fix flaky CancelTest.testNotOriginatorNodeStop
+
+Control utility:
+* Added support for interactive input of sensitive command arguments in control utility
+* Add rolling upgrade commands for control.sh
+* Implement control.sh status command for rolling upgrade
+* Fix control.sh --kill compute command authorization and authorization error propagation
+* Removed redundant permission check to cancel services from control utility
+
+Java thin client:
+* SqlFieldsQuery initiator ID support
+* Fix NPE on SQL fields query
+* Remove GridClient from control.sh
+* Fix multi-key operations unordered map/set warnings in server logs
+* Optimizations for MultiDC
+* Move GridClientByteUtils to IgniteUtils
+* Fix thin client duplicates channels
+* Add handshake timeout configuration for java thin client
+* Fixed management client connection if the 'newThinConnectionsEnabled' property is set
+* Fix binary meta sending on reconnect
+* Simplify GridClientOptimizedMarshaller
+* Fixed cache list command if mapped to a client node
+
+JDBC:
+* Add JDBC local query property
+
 Apache Ignite In-Memory Distributed Database 2.17.0
 -----------------------------------------------------------
 
