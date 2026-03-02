@@ -32,19 +32,22 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * TODO: Remove/revise after https://issues.apache.org/jira/browse/IGNITE-25883
- * Message to transfer a collection of {@link TcpDiscoveryAbstractMessage} with the original order.
+ * Message to transfer a collection of {@link TcpDiscoveryAbstractMessage}.
  * Several of them might be a {@link Message}, several may not and require the original marshalling.
+ * Allows not to keep old-style marshalling for entyre messages collection if just one of them is not a {@link Message}.
+ * Should be removed when all the messages implement {@link Message}.
  */
 public class TcpDiscoveryCollectionMessage implements TcpDiscoveryMarshallableMessage {
-    /** {@link TcpDiscoveryAbstractMessage} pending messages which are a {@link Message}. */
+    /** Pending messages which can be serialized with {@link MessageSerializer}. */
     @Order(0)
     @Nullable Map<Integer, Message> writableMsgs;
 
-    /** Marshallable or Java-serializable pending messages which are not a {@link Message}. */
+    /** Marshallable or Java-serializable pending messages which still requires old-style serialization. */
     @Nullable Map<Integer, TcpDiscoveryAbstractMessage> marshallableMsgs;
 
     /** Marshalled {@link #marshallableMsgs}. */
