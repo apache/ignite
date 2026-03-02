@@ -130,7 +130,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
-        factory.register((short)501, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
-        factory.register((short)502, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
+        factory.register((short)501, SecurityAwareCustomMessageWrapper::new, new SecurityAwareCustomMessageWrapperSerializer());
+        factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
+        factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
     }
 }

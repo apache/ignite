@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.internal;
+package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public interface TcpConnectionIndexAwareMessage extends Message {
-    /** */
-    public int UNDEFINED_CONNECTION_INDEX = -1;
+public class TestCompressUnsupportedTypeMessage implements Message {
+    @Order(0)
+    @Compress
+    List<String> message;
 
-    /**
-     * @return {@link #UNDEFINED_CONNECTION_INDEX} if standard index has to be used. Desired connection index otherwise.
-     */
-    public int connectionIndex();
+    public short directType() {
+        return 0;
+    }
 }

@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.internal;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/** */
-public interface TcpConnectionIndexAwareMessage extends Message {
-    /** */
-    public int UNDEFINED_CONNECTION_INDEX = -1;
-
-    /**
-     * @return {@link #UNDEFINED_CONNECTION_INDEX} if standard index has to be used. Desired connection index otherwise.
-     */
-    public int connectionIndex();
+/** This annotation indicates that this field will be compressed during serialization. */
+@Retention(RetentionPolicy.CLASS)
+@Target(ElementType.FIELD)
+public @interface Compress {
+    // No-op.
 }
