@@ -98,7 +98,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         AffinityTopologyVersion clientRemapVer,
         boolean compatibleRemapVer
     ) {
-        super(cacheId, lockVer, futId, cnt, err, false);
+        super(cacheId, lockVer, futId, cnt, err);
 
         assert miniId != 0;
 
