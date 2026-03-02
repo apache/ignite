@@ -64,7 +64,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param cnt Key count.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt) {
-        super(cacheId, lockVer, futId, cnt, false);
+        super(cacheId, lockVer, futId, cnt);
 
         assert miniId != null;
 

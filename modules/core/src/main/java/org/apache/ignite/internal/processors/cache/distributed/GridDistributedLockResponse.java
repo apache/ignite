@@ -62,14 +62,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param cnt Key count.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        int cnt,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        int cnt) {
+        super(lockVer, cnt, false);
 
         assert futId != null;
 
