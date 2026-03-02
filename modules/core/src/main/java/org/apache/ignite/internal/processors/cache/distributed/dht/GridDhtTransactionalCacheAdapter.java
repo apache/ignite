@@ -466,7 +466,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         try {
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
-                ctx.deploymentEnabled());
+                false);
 
             dhtTx = startRemoteTx(nodeId, req, res);
         }
