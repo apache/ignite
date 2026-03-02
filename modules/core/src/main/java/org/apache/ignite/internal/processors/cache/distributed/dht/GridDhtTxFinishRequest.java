@@ -34,15 +34,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
-    @Order(18)
+    @Order(0)
     UUID nearNodeId;
 
     /** Mini future ID. */
-    @Order(19)
+    @Order(1)
     int miniId;
 
     /** */
-    @Order(20)
+    @Order(2)
     Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**

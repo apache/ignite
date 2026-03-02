@@ -35,15 +35,15 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(5)
+    @Order(0)
     long order;
 
     /** */
-    @Order(6)
+    @Order(1)
     boolean prevNodeAliveFlag;
 
     /** Redirect addresses messages serialization holder. */
-    @Order(7)
+    @Order(2)
     @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
 
     /**
