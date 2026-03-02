@@ -88,7 +88,6 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             topVer,
             updateReq.taskNameHash(),
             null,
-            false,
             updateReq.keepBinary(),
             updateReq.skipStore(),
             false,
