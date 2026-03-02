@@ -431,8 +431,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.version(),
             req.futureId(),
             req.miniId(),
-            e,
-            false);
+            e);
 
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -475,7 +474,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, err, e);
 
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackCheckedException(err, e), false);
+                new IgniteTxRollbackCheckedException(err, e));
 
             fail = true;
         }
@@ -488,7 +487,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.version(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException(err, e), false);
+                new IgniteCheckedException(err, e));
 
             fail = true;
         }
