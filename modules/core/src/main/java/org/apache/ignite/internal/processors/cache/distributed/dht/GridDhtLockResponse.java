@@ -79,7 +79,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
         Throwable err) {
-        super(cacheId, lockVer, futId, err, false);
+        super(cacheId, lockVer, futId, err);
 
         assert miniId != null;
 
