@@ -1761,7 +1761,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             nodeId,
             req.futureId(),
             req.partition(),
-            false,
             false);
 
         res.addFailedKeys(req.keys(), e);
@@ -1785,7 +1784,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             node.id(),
             req.futureId(),
             req.partition(),
-            false,
             false);
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
@@ -3254,7 +3252,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             nodeId,
             checkReq.futureId(),
             checkReq.partition(),
-            false,
             false);
 
         GridCacheReturn ret = new GridCacheReturn(false, true);
