@@ -134,6 +134,6 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage, M
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 501;
+        return 504;
     }
 }
