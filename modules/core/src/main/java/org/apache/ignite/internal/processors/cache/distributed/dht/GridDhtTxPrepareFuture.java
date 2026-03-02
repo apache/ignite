@@ -1428,7 +1428,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 true,
                 tx.onePhaseCommit(),
                 tx.taskNameHash(),
-                false,
                 tx.storeWriteThrough(),
                 retVal,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
@@ -1539,7 +1538,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     true,
                     tx.onePhaseCommit(),
                     tx.taskNameHash(),
-                    false,
                     tx.storeWriteThrough(),
                     retVal,
                     null);
