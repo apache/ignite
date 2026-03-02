@@ -63,7 +63,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     public CacheEntryPredicateAdapter(@Nullable CacheObject val) {
-        this.type = PredicateType.VALUE;
+        type = PredicateType.VALUE;
 
         this.val = val;
     }

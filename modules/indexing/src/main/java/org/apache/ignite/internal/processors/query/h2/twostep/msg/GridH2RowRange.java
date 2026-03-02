@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridH2RowRange implements Message {
     /** */
-    private static int FLAG_PARTIAL = 1;
+    private static final int FLAG_PARTIAL = 1;
 
     /** */
     @Order(0)

@@ -118,7 +118,7 @@ public class GridH2IndexRangeRequest implements Message {
      * @param segmentId Origin index segment ID.
      */
     public void originSegmentId(int segmentId) {
-        this.originSegmentId = segmentId;
+        originSegmentId = segmentId;
     }
 
     /**

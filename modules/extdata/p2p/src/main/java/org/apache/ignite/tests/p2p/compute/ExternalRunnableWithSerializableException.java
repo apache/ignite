@@ -15,17 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.internal;
+package org.apache.ignite.tests.p2p.compute;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import java.io.Externalizable;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /** */
-public interface TcpConnectionIndexAwareMessage extends Message {
+public class ExternalRunnableWithSerializableException implements IgniteRunnable {
     /** */
-    public int UNDEFINED_CONNECTION_INDEX = -1;
+    private static final String EX_MSG = "Message from Exception";
 
-    /**
-     * @return {@link #UNDEFINED_CONNECTION_INDEX} if standard index has to be used. Desired connection index otherwise.
-     */
-    public int connectionIndex();
+
+    /** {@inheritDoc} */
+    @Override public void run() {
+        throw new SerializableException(EX_MSG);
+    }
+
+    /** Custom {@link Externalizable} Exception */
+    public static class SerializableException extends IgniteException {
+        /** */
+        public SerializableException(String msg) {
+            super(msg);
+        }
+    }
 }

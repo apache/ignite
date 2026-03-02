@@ -18,15 +18,11 @@
 package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Key, describing the object of statistics. For example: table with some columns.
@@ -39,14 +35,16 @@ public class StatisticsKeyMessage implements Message, Serializable {
     public static final short TYPE_CODE = 183;
 
     /** Object schema. */
-    private String schema;
+    @Order(0)
+    String schema;
 
     /** Object name. */
-    private String obj;
+    @Order(1)
+    String obj;
 
     /** Optional list of columns to collect statistics by. */
-    @GridDirectCollection(String.class)
-    private List<String> colNames;
+    @Order(2)
+    List<String> colNames;
 
     /**
      * Empty constructor.
@@ -87,75 +85,6 @@ public class StatisticsKeyMessage implements Message, Serializable {
      */
     public List<String> colNames() {
         return colNames;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(colNames, MessageCollectionItemType.STRING))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString(obj))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeString(schema))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                colNames = reader.readCollection(MessageCollectionItemType.STRING);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                obj = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                schema = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

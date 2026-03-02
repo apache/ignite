@@ -75,7 +75,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         this.reqId = reqId;
         this.updCnt = updCnt;
         this.errKeys = errKeys;
-        this.err = error;
+        err = error;
     }
 
     /**
