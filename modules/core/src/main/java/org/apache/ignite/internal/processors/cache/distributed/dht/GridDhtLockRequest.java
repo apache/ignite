@@ -151,8 +151,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             skipReadThrough,
-            keepBinary,
-            false);
+            keepBinary);
 
         this.topVer = topVer;
 

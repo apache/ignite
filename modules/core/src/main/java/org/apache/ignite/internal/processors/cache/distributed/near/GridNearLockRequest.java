@@ -151,8 +151,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             skipReadThrough,
-            keepBinary,
-            false);
+            keepBinary);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
