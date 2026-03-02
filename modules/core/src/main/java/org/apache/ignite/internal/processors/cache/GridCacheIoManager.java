@@ -418,8 +418,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
 
@@ -788,8 +787,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 res.onError(req.classError());
 
@@ -1052,8 +1050,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 res.onError(req.classError());
 

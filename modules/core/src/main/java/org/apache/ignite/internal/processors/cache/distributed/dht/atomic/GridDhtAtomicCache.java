@@ -3421,8 +3421,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (nearEvicted != null) {
                 dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
             }
