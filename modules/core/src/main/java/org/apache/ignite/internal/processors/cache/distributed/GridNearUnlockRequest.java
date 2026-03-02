@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
-    @Order(7)
+    @Order(0)
     public List<KeyCacheObject> keys;
 
     /**

@@ -76,28 +76,28 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected UUID nodeId;
 
     /** Future version. */
-    @Order(4)
+    @Order(0)
     protected long futId;
 
     /** Topology version. */
-    @Order(5)
+    @Order(1)
     protected AffinityTopologyVersion topVer;
 
     /** Cache update operation. */
-    @Order(6)
+    @Order(2)
     protected GridCacheOperation op;
 
     /** Write synchronization mode. */
-    @Order(7)
+    @Order(3)
     protected CacheWriteSynchronizationMode syncMode;
 
     /** Task name hash. */
-    @Order(8)
+    @Order(4)
     protected int taskNameHash;
 
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
-    @Order(9)
+    @Order(5)
     protected short flags;
 
     /** */

@@ -42,23 +42,23 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     public static final int CONTAINS_VAL_FLAG_MASK = 0x2;
 
     /** Future ID. */
-    @Order(4)
+    @Order(0)
     long futId;
 
     /** Result. */
-    @Order(5)
+    @Order(1)
     Message res;
 
     /** Topology version. */
-    @Order(value = 6, method = "topologyVersion")
+    @Order(value = 2, method = "topologyVersion")
     AffinityTopologyVersion topVer;
 
     /** Error message. */
-    @Order(7)
+    @Order(3)
     ErrorMessage errMsg;
 
     /** Flags. */
-    @Order(8)
+    @Order(4)
     byte flags;
 
     /**
