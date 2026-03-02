@@ -107,8 +107,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             baseVer,
             committedVers,
             rolledbackVers,
-            taskNameHash,
-            false);
+            taskNameHash);
 
         assert miniId != 0;
         assert nearNodeId != null;

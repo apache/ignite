@@ -87,8 +87,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             baseVer,
             committedVers,
             rolledbackVers,
-            taskNameHash,
-            false
+            taskNameHash
         );
 
         explicitLock(explicitLock);
