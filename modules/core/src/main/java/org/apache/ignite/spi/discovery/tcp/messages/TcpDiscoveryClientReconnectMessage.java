@@ -64,6 +64,20 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
+     * @return New router node ID.
+     */
+    public UUID routerNodeId() {
+        return routerNodeId;
+    }
+
+    /**
+     * @return Last message ID.
+     */
+    public IgniteUuid lastMessageId() {
+        return lastMsgId;
+    }
+
+    /**
      * @param success Success flag.
      */
     public void success(boolean success) {

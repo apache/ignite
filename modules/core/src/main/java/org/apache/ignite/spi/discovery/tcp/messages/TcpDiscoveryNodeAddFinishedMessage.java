@@ -89,6 +89,36 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
+     * Gets ID of the node added.
+     *
+     * @return ID of the node added.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @return Discovery data for joined client.
+     */
+    public DiscoveryDataPacket clientDiscoData() {
+        return clientDiscoData;
+    }
+
+    /**
+     * @param clientDiscoData Discovery data for joined client.
+     */
+    public void clientDiscoData(DiscoveryDataPacket clientDiscoData) {
+        this.clientDiscoData = clientDiscoData;
+
+        assert clientDiscoData == null || !clientDiscoData.hasDataFromNode(nodeId);
+    }
+
+    /** @return Client attributes. */
+    public @Nullable Map<String, Object> clientNodeAttributes() {
+        return clientNodeAttrs;
+    }
+
+    /**
      * Sets new client attributes and ensures that thet will be serialized.
      *
      * @param attrs Client attributes.
@@ -97,11 +127,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         clientNodeAttrs = F.isEmpty(attrs) ? null : attrs;
         // Ensure new data will be serialized.
         clientNodeAttrsBytes = null;
-    }
-
-    /** @return Client attributes. */
-    public @Nullable Map<String, Object> clientNodeAttributes() {
-        return clientNodeAttrs;
     }
 
     /** {@inheritDoc} */

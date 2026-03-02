@@ -262,7 +262,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Metric for max message queue size. */
     private MaxValueMetric maxMsgQueueSizeMetric;
 
-    /** Failed nodes (but still in topology): Node -> Id of the failure issuer node. */
+    /** Failed nodes (but still in topology). */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
 
     /** */
@@ -2489,12 +2489,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                if (addFinishMsg.clientDiscoData != null) {
+                if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
 
                     msg = addFinishMsg;
 
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData;
+                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
 
                     Set<Integer> mrgdCmnData = new HashSet<>();
                     Set<UUID> mrgdSpecData = new HashSet<>();
@@ -2505,7 +2505,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
                             DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData;
+                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
 
                             if (existingDiscoData != null)
                                 allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
@@ -2542,8 +2542,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    if (addFinishMsg.clientDiscoData != null && clientId.equals(addFinishMsg.nodeId)) {
-                        addFinishMsg.clientDiscoData = null;
+                    if (addFinishMsg.clientDiscoData() != null && clientId.equals(addFinishMsg.nodeId())) {
+                        addFinishMsg.clientDiscoData(null);
                         addFinishMsg.clientNodeAttributes(null);
 
                         break;
@@ -4860,7 +4860,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         node.id());
 
                     if (node.clientRouterNodeId() != null) {
-                        addFinishMsg.clientDiscoData = msg.gridDiscoveryData();
+                        addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
                     }
@@ -5127,7 +5127,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             assert msg != null;
 
-            UUID nodeId = msg.nodeId;
+            UUID nodeId = msg.nodeId();
 
             assert nodeId != null;
 
@@ -6992,7 +6992,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 TcpDiscoveryClientReconnectMessage msg0 = (TcpDiscoveryClientReconnectMessage)msg;
 
                                 // If message is received from previous node and node is connecting forward to next node.
-                                if (!getLocalNodeId().equals(msg0.routerNodeId) && state == CONNECTING) {
+                                if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
                                     spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
                                     msgWorker.addMessage(msg);
@@ -7353,21 +7353,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             UUID locNodeId = getLocalNodeId();
 
-            boolean isLocNodeRouter = msg.routerNodeId.equals(locNodeId);
+            boolean isLocNodeRouter = msg.routerNodeId().equals(locNodeId);
 
             TcpDiscoveryNode node = ring.node(nodeId);
 
             assert node == null || node.clientRouterNodeId() != null;
 
             if (node != null) {
-                node.clientRouterNodeId(msg.routerNodeId);
+                node.clientRouterNodeId(msg.routerNodeId());
                 node.clientAliveTime(spi.clientFailureDetectionTimeout());
             }
 
             if (!msg.verified()) {
                 if (isLocNodeRouter || isLocalNodeCoordinator()) {
                     if (node != null) {
-                        Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMsgId, node);
+                        Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
                         if (pending != null) {
                             msg.verifierNodeId(locNodeId);
