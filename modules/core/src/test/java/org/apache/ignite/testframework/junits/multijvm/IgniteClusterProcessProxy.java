@@ -40,7 +40,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.internal.ExternalizableTcpDiscoveryNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -425,7 +424,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     private static class LocalNodeTask extends ClusterTaskAdapter<ClusterNode> {
         /** {@inheritDoc} */
         @Override public ClusterNode call() {
-            return ExternalizableTcpDiscoveryNode.of(cluster().localNode());
+            return Ecluster().localNode();
         }
     }
 

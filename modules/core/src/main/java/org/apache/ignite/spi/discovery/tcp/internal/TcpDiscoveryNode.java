@@ -18,6 +18,9 @@
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
@@ -42,7 +46,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
@@ -54,24 +57,28 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode, Comparable<TcpDiscoveryNode> {
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
+    Comparable<TcpDiscoveryNode>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node ID. */
-    protected volatile UUID id;
+    private volatile UUID id;
 
     /** Consistent ID. */
     @GridToStringInclude
-    protected Object consistentId;
+    private Object consistentId;
 
     /** Node attributes. */
     @GridToStringExclude
-    protected Map<String, Object> attrs;
+    private Map<String, Object> attrs;
 
     /** Internal discovery addresses as strings. */
     @GridToStringInclude
-    protected Collection<String> addrs;
+    private Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    protected Collection<String> hostNames;
+    private Collection<String> hostNames;
 
     /** */
     @GridToStringInclude
@@ -79,21 +86,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    protected int discPort;
+    private int discPort;
 
     /** Node metrics. */
     @GridToStringExclude
-    protected volatile ClusterMetrics metrics;
+    private volatile ClusterMetrics metrics;
 
     /** Node cache metrics. */
     @GridToStringExclude
-    private volatile Map<Integer, CacheMetrics> cacheMetrics = Collections.emptyMap();
+    private volatile Map<Integer, CacheMetrics> cacheMetrics;
 
     /** Node order in the topology. */
-    protected volatile long order;
+    private volatile long order;
 
     /** Node order in the topology (internal). */
-    protected volatile long intOrder;
+    private volatile long intOrder;
 
     /** The most recent time when metrics update message was received from the node. */
     @GridToStringExclude
@@ -112,30 +119,30 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private boolean visible;
 
     /** Grid local node flag (transient). */
-    protected boolean loc;
+    private boolean loc;
 
     /** Version. */
-    protected IgniteProductVersion ver;
+    private IgniteProductVersion ver;
 
-    /** Alive check time (used by clients). Transient. */
+    /** Alive check time (used by clients). */
     @GridToStringExclude
-    private volatile long aliveCheckTimeNanos;
+    private transient volatile long aliveCheckTimeNanos;
 
     /** Client router node ID. */
     @GridToStringExclude
-    protected UUID clientRouterNodeId;
+    private UUID clientRouterNodeId;
 
-    /** Transient. */
+    /** */
     @GridToStringExclude
-    private volatile InetSocketAddress lastSuccessfulAddr;
+    private transient volatile InetSocketAddress lastSuccessfulAddr;
 
-    /** Cache client initialization flag. Transient. */
+    /** Cache client initialization flag. */
     @GridToStringExclude
-    protected volatile boolean cacheCliInit;
+    private transient volatile boolean cacheCliInit;
 
-    /** Cache client flag. Transient. */
+    /** Cache client flag. */
     @GridToStringExclude
-    protected boolean cacheCli;
+    private transient boolean cacheCli;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -252,11 +259,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param consistentId Consistent globally unique node ID.
      */
     @Override public void setConsistentId(Serializable consistentId) {
-        consistentId0(consistentId);
-    }
-
-    /** @param consistentId Consistent globally unique node ID. */
-    protected void consistentId0(Object consistentId) {
         this.consistentId = consistentId;
 
         final Map<String, Object> map = new HashMap<>(attrs);
@@ -368,7 +370,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param order Order of the node.
      */
     public void order(long order) {
-        assert order > 0 : "Order is invalid: " + order + ", nodeId: " + id;
+        assert order > 0 : "Order is invalid: " + this;
 
         this.order = order;
     }
@@ -497,7 +499,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         if (!cacheCliInit) {
-            Boolean clientModeAttr = attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+            Boolean clientModeAttr = (Boolean)attrs.get(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
             cacheCli = clientModeAttr != null && clientModeAttr;
 
@@ -586,6 +588,69 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeUuid(out, id);
+        U.writeMap(out, attrs);
+        U.writeCollection(out, addrs);
+        U.writeCollection(out, hostNames);
+        out.writeInt(discPort);
+
+        // Cluster metrics
+        byte[] mtr = null;
+
+        ClusterMetrics metrics = this.metrics;
+
+        if (metrics != null)
+            mtr = ClusterMetricsSnapshot.serialize(metrics);
+
+        U.writeByteArray(out, mtr);
+
+        // Legacy: Number of cache metrics
+        out.writeInt(0);
+
+        out.writeLong(order);
+        out.writeLong(intOrder);
+        out.writeObject(ver);
+        U.writeUuid(out, clientRouterNodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        id = U.readUuid(in);
+
+        attrs = U.sealMap(U.<String, Object>readMap(in));
+        addrs = U.readCollection(in);
+        hostNames = U.readCollection(in);
+        discPort = in.readInt();
+
+        Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
+
+        // Cluster metrics
+        byte[] mtr = U.readByteArray(in);
+
+        if (mtr != null)
+            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+
+        // Legacy: Cache metrics
+        int size = in.readInt();
+
+        for (int i = 0; i < size; i++) {
+            in.readInt();
+            in.readObject();
+        }
+
+        order = in.readLong();
+        intOrder = in.readLong();
+        ver = (IgniteProductVersion)in.readObject();
+        clientRouterNodeId = U.readUuid(in);
+
+        if (clientRouterNodeId() != null)
+            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
+        else
+            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */

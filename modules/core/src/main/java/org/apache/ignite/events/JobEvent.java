@@ -17,8 +17,6 @@
 
 package org.apache.ignite.events;
 
-import java.io.Externalizable;
-import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -88,7 +86,7 @@ public class JobEvent extends EventAdapter {
     /** */
     private IgniteUuid jobId;
 
-    /** Has to be {@link Externalizable} or {@link Serializable}. */
+    /** */
     private ClusterNode taskNode;
 
     /** */
@@ -213,7 +211,7 @@ public class JobEvent extends EventAdapter {
      * @param taskNode Node where parent task of the job has originated.
      */
     public void taskNode(ClusterNode taskNode) {
-        this.taskNode = ExternalizableTcpDiscoveryNode.of(taskNode);
+        this.taskNode = taskNode;
     }
 
     /**

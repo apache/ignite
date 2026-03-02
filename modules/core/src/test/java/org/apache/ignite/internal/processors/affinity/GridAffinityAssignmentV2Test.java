@@ -213,7 +213,7 @@ public class GridAffinityAssignmentV2Test {
         List<ClusterNode> nodes = new ArrayList<>();
 
         for (int i = 0; i < 10; i++)
-            nodes.add(ExternalizableTcpDiscoveryNode.of(node(metrics, ver, "1" + i)));
+            nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignmentV2 gridAffAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
