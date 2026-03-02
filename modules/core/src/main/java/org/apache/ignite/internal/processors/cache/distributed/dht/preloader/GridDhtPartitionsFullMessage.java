@@ -57,38 +57,38 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private Map<Integer, GridDhtPartitionFullMap> parts;
 
     /** Partitions without duplicated data. */
-    @Order(6)
+    @Order(0)
     @Compress
     Map<Integer, GridDhtPartitionFullMap> locParts;
 
     /** */
-    @Order(7)
+    @Order(1)
     Map<Integer, Integer> dupPartsData;
 
     /** Partitions update counters. */
-    @Order(8)
+    @Order(2)
     @Compress
     @GridToStringInclude
     IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
-    @Order(9)
+    @Order(3)
     @Compress
     @GridToStringInclude
     IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
-    @Order(10)
+    @Order(4)
     @Compress
     @GridToStringInclude
     IgniteDhtPartitionsToReloadMap partsToReload;
 
     /** Partition sizes. */
-    @Order(11)
+    @Order(5)
     Map<Integer, IntLongMap> partsSizes;
 
     /** Topology version. */
-    @Order(12)
+    @Order(6)
     AffinityTopologyVersion topVer;
 
     /** Exceptions. */
@@ -99,29 +99,29 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * Used as a stub for serialization of {@link #errs}.
      * All logic resides within getter and setter.
      */
-    @Order(value = 13, method = "errorMessages")
+    @Order(value = 7, method = "errorMessages")
     @Compress
     @SuppressWarnings("unused")
     private Map<UUID, ErrorMessage> errMsgs;
 
     /** */
-    @Order(14)
+    @Order(8)
     AffinityTopologyVersion resTopVer;
 
     /** */
-    @Order(15)
+    @Order(9)
     Map<Integer, CacheGroupAffinityMessage> joinedNodeAff;
 
     /** */
-    @Order(16)
+    @Order(10)
     Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
 
     /** */
-    @Order(17)
+    @Order(11)
     byte flags;
 
     /** */
-    @Order(18)
+    @Order(12)
     @GridToStringExclude
     Map<Integer, int[]> lostParts;
 

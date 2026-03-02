@@ -54,16 +54,16 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
     /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
-    @Order(5)
+    @Order(0)
     Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs;
 
     /** Servers full metrics: server id -> server metrics + metrics of server's caches. */
     @GridToStringExclude
-    @Order(6)
+    @Order(1)
     @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
 
     /** Client node IDs. */
-    @Order(7)
+    @Order(2)
     @Nullable Set<UUID> clientNodeIds;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */

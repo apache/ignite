@@ -45,81 +45,81 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Keys to update. */
     @GridToStringInclude
-    @Order(11)
+    @Order(0)
     List<KeyCacheObject> keys;
 
     /** Values to update. */
     @GridToStringInclude
-    @Order(12)
+    @Order(1)
     List<CacheObject> vals;
 
     /** Previous values. */
     @GridToStringInclude
-    @Order(13)
+    @Order(2)
     List<CacheObject> prevVals;
 
     /** Conflict versions. */
-    @Order(14)
+    @Order(3)
     List<GridCacheVersion> conflictVers;
 
     /** TTLs. */
-    @Order(15)
+    @Order(4)
     GridLongList ttls;
 
     /** Conflict expire time. */
-    @Order(16)
+    @Order(5)
     GridLongList conflictExpireTimes;
 
     /** Near TTLs. */
-    @Order(17)
+    @Order(6)
     GridLongList nearTtls;
 
     /** Near expire times. */
-    @Order(18)
+    @Order(7)
     GridLongList nearExpireTimes;
 
     /** Near cache keys to update. */
     @GridToStringInclude
-    @Order(19)
+    @Order(8)
     List<KeyCacheObject> nearKeys;
 
     /** Values to update. */
     @GridToStringInclude
-    @Order(20)
+    @Order(9)
     List<CacheObject> nearVals;
 
     /** Obsolete near values. */
     @GridToStringInclude
-    @Order(21)
+    @Order(10)
     List<Integer> obsoleteIndexes;
 
     /** Force transform backups flag. */
-    @Order(22)
+    @Order(11)
     boolean forceTransformBackups;
 
     /** Entry processors. */
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
-    @Order(23)
+    @Order(12)
     List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
     private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
 
     /** Near entry processors bytes. */
-    @Order(24)
+    @Order(13)
     List<byte[]> nearEntryProcessorsBytes;
 
     /** Optional arguments for entry processor. */
     private Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(25)
+    @Order(14)
     List<byte[]> invokeArgsBytes;
 
     /** Partition. */
-    @Order(26)
+    @Order(15)
     GridLongList updateCntrs;
 
     /**

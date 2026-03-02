@@ -47,36 +47,36 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
     /** Topology version. */
-    @Order(20)
+    @Order(0)
     AffinityTopologyVersion topVer;
 
     /** Mini future ID. */
-    @Order(21)
+    @Order(1)
     int miniId;
 
     /** Array of mapped DHT versions for this entry. */
-    @Order(22)
+    @Order(2)
     @GridToStringInclude
     GridCacheVersion[] dhtVers;
 
     /** Task name hash. */
-    @Order(23)
+    @Order(3)
     int taskNameHash;
 
     /** TTL for create operation. */
-    @Order(24)
+    @Order(4)
     long createTtl;
 
     /** TTL for read operation. */
-    @Order(25)
+    @Order(5)
     long accessTtl;
 
     /** */
-    @Order(26)
+    @Order(6)
     byte flags;
 
     /** Transaction label. */
-    @Order(27)
+    @Order(7)
     String txLbl;
 
     /**

@@ -41,11 +41,11 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
     /** Serialized {@link #node}. */
     // TODO Remove the field after completing https://issues.apache.org/jira/browse/IGNITE-27899.
-    @Order(6)
+    @Order(0)
     byte[] nodeBytes;
 
     /** Discovery data container. */
-    @Order(7)
+    @Order(1)
     DiscoveryDataPacket dataPacket;
 
     /** Constructor. */
