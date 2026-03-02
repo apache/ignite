@@ -1164,7 +1164,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             0,
             null,
             topVer,
-            false,
             false);
 
         try {
@@ -1217,7 +1216,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 err,
                 clienRemapVer,
-                false,
                 clienRemapVer != null);
 
             if (err == null) {
@@ -1328,7 +1326,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 e,
                 null,
-                false,
                 false);
         }
     }
