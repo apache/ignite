@@ -1671,8 +1671,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                false);
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
             req.version(dhtVer);
 
@@ -1706,8 +1705,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                    false);
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
                 req.version(dhtVer);
 
