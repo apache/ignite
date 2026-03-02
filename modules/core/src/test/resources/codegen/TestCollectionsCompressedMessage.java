@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.X;
+import java.util.List;
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * OOM exception handler for system threads.
- */
-public class OomExceptionHandler implements Thread.UncaughtExceptionHandler {
-    /** Context. */
-    private final GridKernalContext ctx;
+public class TestCollectionsCompressedMessage implements Message {
+    @Order(0)
+    List<CompressedMessage> messageList;
 
-    /**
-     * @param ctx Context.
-     */
-    public OomExceptionHandler(GridKernalContext ctx) {
-        this.ctx = ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void uncaughtException(Thread t, Throwable e) {
-        if (X.hasCause(e, OutOfMemoryError.class))
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+    public short directType() {
+        return 0;
     }
 }

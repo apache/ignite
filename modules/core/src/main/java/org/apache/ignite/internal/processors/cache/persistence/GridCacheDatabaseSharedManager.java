@@ -138,10 +138,10 @@ import org.apache.ignite.internal.processors.configuration.distributed.SimpleDis
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.systemview.MetastorageViewWalker;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -2917,7 +2917,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cpTs,
         UUID cpId,
         WALPointer walPtr,
-        StripedExecutor exec
+        IgniteStripedExecutor exec
     ) throws IgniteCheckedException {
         assert checkpointManager != null : "Checkpoint is null";
 

@@ -236,62 +236,6 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
         return sb.toString();
     }
 
-    /**
-     * @return Partition IDs.
-     */
-    public int[] partitionIds() {
-        return partIds;
-    }
-
-    /**
-     * @param partIds Partition IDs.
-     */
-    public void partitionIds(int[] partIds) {
-        this.partIds = partIds;
-    }
-
-    /**
-     * @return Partition initial update counters.
-     */
-    public long[] initialUpdateCounters() {
-        return initialUpdCntrs;
-    }
-
-    /**
-     * @param initialUpdCntrs Partition initial update counters.
-     */
-    public void initialUpdateCounters(long[] initialUpdCntrs) {
-        this.initialUpdCntrs = initialUpdCntrs;
-    }
-
-    /**
-     * @return Partition update counters.
-     */
-    public long[] updateCounters() {
-        return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Partition update counters.
-     */
-    public void updateCounters(long[] updCntrs) {
-        this.updCntrs = updCntrs;
-    }
-
-    /**
-     * @return Current index.
-     */
-    public int currentIndex() {
-        return curIdx;
-    }
-
-    /**
-     * @param curIdx Current index.
-     */
-    public void currentIndex(int curIdx) {
-        this.curIdx = curIdx;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;

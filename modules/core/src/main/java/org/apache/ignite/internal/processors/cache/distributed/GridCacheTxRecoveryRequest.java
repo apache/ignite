@@ -94,24 +94,10 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param nearTxCheck {@code True} if should check only tx on near node.
-     */
-    public void nearTxCheck(boolean nearTxCheck) {
-        this.nearTxCheck = nearTxCheck;
-    }
-
-    /**
      * @return Near version.
      */
     public GridCacheVersion nearXidVersion() {
         return nearXidVer;
-    }
-
-    /**
-     * @param nearXidVer Near version.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
     }
 
     /**
@@ -122,24 +108,10 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini future ID.
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -150,24 +122,10 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param txNum Expected number of transactions on node.
-     */
-    public void transactions(int txNum) {
-        this.txNum = txNum;
-    }
-
-    /**
      * @return System transaction flag.
      */
     public boolean system() {
         return sys;
-    }
-
-    /**
-     * @param sys System transaction flag.
-     */
-    public void system(boolean sys) {
-        this.sys = sys;
     }
 
     /** {@inheritDoc} */
