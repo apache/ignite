@@ -90,7 +90,7 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
 
     /** {@inheritDoc} */
     @Override public @Nullable DiscoveryCustomMessage ackMessage() {
-        DiscoveryCustomMessage ack = delegate.ackMessage();
+        DiscoveryCustomMessage ack = delegate().ackMessage();
 
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }
