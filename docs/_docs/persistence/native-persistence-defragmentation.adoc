@@ -39,7 +39,7 @@ To request defragmentation, use the following command:
 control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
 ----
 
-After the manual restart, the node with the requested defragmentation enters a special mode called maintenance mode. The node in maintenance mode does not join the rest of the cluster but remains isolated until defragmentation is completed (or canceled by explicit user request). After that, the user has to restart the node one more time: it exits maintenance mode and returns to normal operations (joining the cluster and starting to serve regular workload).
+After the manual restart, the node with the requested defragmentation enters a special mode called link:maintenance-mode[Maintenance Mode]. The node in maintenance mode does not join the rest of the cluster but remains isolated until defragmentation is completed (or canceled by explicit user request). After that, the user has to restart the node one more time: it exits maintenance mode and returns to normal operations (joining the cluster and starting to serve regular workload).
 
 [NOTE]
 ====

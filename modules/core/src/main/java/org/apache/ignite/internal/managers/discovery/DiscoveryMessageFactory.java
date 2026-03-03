@@ -27,6 +27,10 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAccepted
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -137,7 +141,9 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)501, SecurityAwareCustomMessageWrapper::new, new SecurityAwareCustomMessageWrapperSerializer());
         factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
-        factory.register((short)504, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
-        factory.register((short)505, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
+        factory.register((short)504, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
+        factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
+        factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
+        factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
     }
 }
