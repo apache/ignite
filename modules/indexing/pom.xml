@@ -73,6 +73,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -139,7 +140,6 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
             <scope>test</scope>
         </dependency>
 
