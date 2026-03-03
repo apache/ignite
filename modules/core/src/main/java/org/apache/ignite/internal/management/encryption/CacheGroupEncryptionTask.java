@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -62,26 +61,11 @@ public abstract class CacheGroupEncryptionTask<T> extends VisorMultiNodeTask<Enc
     }
 
     /** */
-    public abstract static class SingleFieldDto<T> extends IgniteDataTransferObject {
-        /** Object value. */
-        private T val;
-
+    public interface SingleFieldDto<T> {
         /**
           * @return Object value.
          */
-        protected T value() {
-            return val;
-        }
-
-        /**
-         * @param val Data object.
-         * @return {@code this} for chaining.
-         */
-        protected SingleFieldDto<T> value(T val) {
-            this.val = val;
-
-            return this;
-        }
+        public T value();
     }
 
     /**

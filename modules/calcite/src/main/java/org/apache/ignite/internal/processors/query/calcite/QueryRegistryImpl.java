@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -58,12 +57,8 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
 
             RunningQueryManager qryMgr = kctx.query().runningQueryManager();
 
-            SqlFieldsQuery fieldsQry = rootQry.context().unwrap(SqlFieldsQuery.class);
-
-            String initiatorId = fieldsQry != null ? fieldsQry.getQueryInitiatorId() : null;
-
             long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
-                false, createCancelToken(qry), initiatorId, false, true, false);
+                false, createCancelToken(qry), rootQry.initiatorId(), false, true, false);
 
             rootQry.localQueryId(locId);
 

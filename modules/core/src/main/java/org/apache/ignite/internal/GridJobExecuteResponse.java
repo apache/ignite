@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,45 +38,50 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobExecuteResponse implements Message {
     /** */
-    private UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
     /** */
-    private IgniteUuid sesId;
+    @Order(1)
+    IgniteUuid sesId;
 
     /** */
-    private IgniteUuid jobId;
+    @Order(2)
+    IgniteUuid jobId;
+
+    /** Job result exception call holder. */
+    @Order(3)
+    @Nullable byte[] gridExBytes;
 
     /** */
-    private byte[] gridExBytes;
-
-    /** */
-    @GridDirectTransient
     private IgniteException gridEx;
 
-    /** */
-    private byte[] resBytes;
+    /** Job result serialization call holder. */
+    @Order(4)
+    @Nullable byte[] resBytes;
 
     /** */
-    @GridDirectTransient
-    private Object res;
+    private @Nullable Object res;
 
     /** */
-    private byte[] jobAttrsBytes;
+    /** Job attributes serialization call holder. */
+    @Order(5)
+    byte[] jobAttrsBytes;
 
     /** */
-    @GridDirectTransient
     private Map<Object, Object> jobAttrs;
 
     /** */
-    private boolean isCancelled;
+    @Order(6)
+    boolean isCancelled;
 
     /** */
     @GridToStringExclude
-    @GridDirectTransient
     private IgniteException fakeEx;
 
-    /** */
-    private AffinityTopologyVersion retry;
+    /** Retry topology version. */
+    @Order(7)
+    AffinityTopologyVersion retry;
 
     /**
      * Default constructor.
@@ -86,11 +94,8 @@ public class GridJobExecuteResponse implements Message {
      * @param nodeId Sender node ID.
      * @param sesId Task session ID
      * @param jobId Job ID.
-     * @param gridExBytes Serialized grid exception.
      * @param gridEx Grid exception.
-     * @param resBytes Serialized result.
      * @param res Result.
-     * @param jobAttrsBytes Serialized job attributes.
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      * @param retry Topology version for that partitions haven't been reserved on the affinity node.
@@ -98,11 +103,8 @@ public class GridJobExecuteResponse implements Message {
     public GridJobExecuteResponse(UUID nodeId,
         IgniteUuid sesId,
         IgniteUuid jobId,
-        byte[] gridExBytes,
-        IgniteException gridEx,
-        byte[] resBytes,
-        Object res,
-        byte[] jobAttrsBytes,
+        @Nullable IgniteException gridEx,
+        @Nullable Object res,
         Map<Object, Object> jobAttrs,
         boolean isCancelled,
         AffinityTopologyVersion retry
@@ -114,35 +116,25 @@ public class GridJobExecuteResponse implements Message {
         this.nodeId = nodeId;
         this.sesId = sesId;
         this.jobId = jobId;
-        this.gridExBytes = gridExBytes;
-        this.gridEx = gridEx;
-        this.resBytes = resBytes;
         this.res = res;
-        this.jobAttrsBytes = jobAttrsBytes;
         this.jobAttrs = jobAttrs;
         this.isCancelled = isCancelled;
         this.retry = retry;
+        this.gridEx = gridEx;
     }
 
     /**
      * @return Task session ID.
      */
-    public IgniteUuid getSessionId() {
+    public IgniteUuid sessionId() {
         return sesId;
     }
 
     /**
      * @return Job ID.
      */
-    public IgniteUuid getJobId() {
+    public IgniteUuid jobId() {
         return jobId;
-    }
-
-    /**
-     * @return Serialized job result.
-     */
-    @Nullable public byte[] getJobResultBytes() {
-        return resBytes;
     }
 
     /**
@@ -153,24 +145,20 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /**
-     * @return Serialized job exception.
-     */
-    @Nullable public byte[] getExceptionBytes() {
-        return gridExBytes;
-    }
-
-    /**
      * @return Job exception.
      */
-    @Nullable public IgniteException getException() {
+    @Nullable public IgniteException exception() {
         return gridEx;
     }
 
-    /**
-     * @return Serialized job attributes.
-     */
-    @Nullable public byte[] getJobAttributesBytes() {
-        return jobAttrsBytes;
+    /** */
+    public void exceptionBytes(@Nullable byte[] gridExBytes) {
+        this.gridExBytes = gridExBytes;
+    }
+
+    /** */
+    public @Nullable byte[] exceptionBytes() {
+        return gridExBytes;
     }
 
     /**
@@ -183,14 +171,14 @@ public class GridJobExecuteResponse implements Message {
     /**
      * @return Job cancellation status.
      */
-    public boolean isCancelled() {
+    public boolean cancelled() {
         return isCancelled;
     }
 
     /**
      * @return Sender node ID.
      */
-    public UUID getNodeId() {
+    public UUID nodeId() {
         return nodeId;
     }
 
@@ -219,152 +207,102 @@ public class GridJobExecuteResponse implements Message {
      * @return Topology version for that specified partitions haven't been reserved
      *          on the affinity node.
      */
-    public AffinityTopologyVersion getRetryTopologyVersion() {
-        return retry != null ? retry : AffinityTopologyVersion.NONE;
+    public @Nullable AffinityTopologyVersion retryTopologyVersion() {
+        return retry;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+    /**
+     * Serializes user data to byte[] with provided marshaller.
+     * Erases non-marshalled data like {@link #getJobAttributes()} or {@link #getJobResult()}.
+     */
+    public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) throws IgniteCheckedException {
+        if (res != null) {
+            try {
+                resBytes = U.marshal(marsh, res);
+            }
+            catch (IgniteCheckedException e) {
+                resBytes = null;
+
+                String msg = "Failed to serialize job response [nodeId=" + nodeId +
+                    ", ses=" + sesId + ", jobId=" + jobId +
+                    ", resCls=" + (res == null ? null : res.getClass()) + ']';
+
+                wrapSerializationError(e, msg, log);
+            }
+
+            res = null;
+        }
+
+        if (!F.isEmpty(jobAttrs)) {
+            try {
+                jobAttrsBytes = U.marshal(marsh, jobAttrs);
+            }
+            catch (IgniteCheckedException e) {
+                jobAttrsBytes = null;
+
+                String msg = "Failed to serialize job attributes [nodeId=" + nodeId +
+                    ", ses=" + sesId + ", jobId=" + jobId +
+                    ", attrs=" + jobAttrs + ']';
+
+                wrapSerializationError(e, msg, log);
+            }
+
+            jobAttrs = null;
+        }
+
+        if (gridEx != null) {
+            try {
+                gridExBytes = U.marshal(marsh, gridEx);
+            }
+            catch (IgniteCheckedException e) {
+                String msg = "Failed to serialize job exception [nodeId=" + nodeId +
+                    ", ses=" + sesId + ", jobId=" + jobId +
+                    ", msg=\"" + e.getMessage() + "\"]";
+
+                gridEx = new IgniteException(msg);
+
+                U.error(log, msg, e);
+
+                gridExBytes = U.marshal(marsh, gridEx);
+            }
+
+            gridEx = null;
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
+    /**
+     * Deserializes user data from byte[] with provided marshaller and class loader.
+     * Erases marshalled data like {@link #jobAttrubutesBytes()} or {@link #jobResultBytes()}.
+     */
+    public void unmarshallUserData(Marshaller marshaller, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (jobAttrsBytes != null) {
+            jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
 
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
+            jobAttrsBytes = null;
         }
 
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(gridExBytes))
-                    return false;
+        if (resBytes != null) {
+            res = U.unmarshal(marshaller, resBytes, clsLdr);
 
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean(isCancelled))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(jobAttrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeIgniteUuid(jobId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeUuid(nodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByteArray(resBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeAffinityTopologyVersion(retry))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeIgniteUuid(sesId))
-                    return false;
-
-                writer.incrementState();
-
+            resBytes = null;
         }
 
-        return true;
+        if (gridExBytes != null) {
+            gridEx = U.unmarshal(marshaller, gridExBytes, clsLdr);
+
+            gridExBytes = null;
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
+    /** */
+    private void wrapSerializationError(IgniteCheckedException e, String msg, @Nullable IgniteLogger log) {
+        if (gridEx != null)
+            gridEx.addSuppressed(e);
+        else
+            gridEx = U.convertException(e);
 
-        switch (reader.state()) {
-            case 0:
-                gridExBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                isCancelled = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                jobAttrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                jobId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                nodeId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                resBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                retry = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                sesId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+        if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
+            U.error(log, msg, e);
     }
 
     /** {@inheritDoc} */

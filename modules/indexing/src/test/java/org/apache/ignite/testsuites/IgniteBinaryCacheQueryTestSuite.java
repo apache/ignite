@@ -114,9 +114,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheDataPageScanQueryT
 import org.apache.ignite.internal.processors.cache.query.CacheScanQueryFailoverTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCircularQueueTest;
-import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
-import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryWithH2IndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
@@ -305,7 +303,6 @@ import org.junit.runners.Suite;
     IgniteBinaryObjectQueryArgumentsTest.class,
     IgniteBinaryObjectLocalQueryArgumentsTest.class,
 
-    IndexingSpiQuerySelfTest.class,
     IndexingSpiQueryTxSelfTest.class,
 
     IgniteCacheMultipleIndexedTypesTest.class,
@@ -313,7 +310,6 @@ import org.junit.runners.Suite;
     IgniteSqlQueryStartFinishListenerTest.class,
 
     GridCircularQueueTest.class,
-    IndexingSpiQueryWithH2IndexingSelfTest.class,
 
     // DDL.
     H2DynamicIndexTransactionalReplicatedSelfTest.class,

@@ -19,19 +19,34 @@ package org.apache.ignite.internal.processors.security;
 
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.util.Objects;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.doPrivileged;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isInIgnitePackage;
 
 /** */
 public abstract class IgniteSecurityAdapter extends GridProcessorAdapter implements IgniteSecurity {
-    /** Code source for ignite-core module. */
-    private static final CodeSource CORE_CODE_SOURCE = SecurityUtils.class.getProtectionDomain().getCodeSource();
+    /** Code sources for ignite modules. */
+    private static final Set<CodeSource> MODULES = new HashSet<>(Arrays.asList(
+        SecurityUtils.class.getProtectionDomain().getCodeSource(), //ignite-core
+        BinaryType.class.getProtectionDomain().getCodeSource() //ignite-binary-api
+    ));
+
+    static {
+        // ignite-binary-impl. Theoretically, can be absent in runtime due to other implementation of binary-api.
+        Class<?> jdkMarshCls = U.classForName("org.apache.ignite.marshaller.jdk.JdkMarshallerImpl", null);
+
+        if (jdkMarshCls != null)
+            MODULES.add(jdkMarshCls.getProtectionDomain().getCodeSource());
+    }
 
     /** System types cache. */
     private static final ConcurrentMap<Class<?>, Boolean> SYSTEM_TYPES = new ConcurrentHashMap<>();
@@ -48,8 +63,15 @@ public abstract class IgniteSecurityAdapter extends GridProcessorAdapter impleme
             c -> {
                 ProtectionDomain pd = doPrivileged(c::getProtectionDomain);
 
-                return pd != null
-                    && Objects.equals(CORE_CODE_SOURCE, pd.getCodeSource())
+                if (pd == null)
+                    return false;
+
+                CodeSource cs = pd.getCodeSource();
+
+                if (cs == null)
+                    return false;
+
+                return MODULES.contains(cs)
                     // It allows users create an Uber-JAR that includes both Ignite source code and custom classes
                     // and to pass mentioned classes to Ignite via public API (e.g. tasks execution).
                     // Otherwise, Ignite will treat custom classes as internal and block their execution through the

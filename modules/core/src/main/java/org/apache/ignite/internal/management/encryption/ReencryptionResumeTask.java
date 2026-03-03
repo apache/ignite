@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.management.encryption.ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -52,8 +53,11 @@ public class ReencryptionResumeTask extends CacheGroupEncryptionTask<Boolean> {
 
         /** {@inheritDoc} */
         @Override protected SingleFieldDto<Boolean> run0(CacheGroupContext grp) throws IgniteCheckedException {
-            return new ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult().value(
-                ignite.context().encryption().resumeReencryption(grp.groupId()));
+            ReencryptionSuspendResumeJobResult res = new ReencryptionSuspendResumeJobResult();
+
+            res.val = ignite.context().encryption().resumeReencryption(grp.groupId());
+
+            return res;
         }
     }
 }

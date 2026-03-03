@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
@@ -163,7 +162,7 @@ public class FilePerformanceStatisticsWriter {
     public synchronized void start() {
         assert !started;
 
-        new IgniteThread(fileWriter).start();
+        U.newThread(fileWriter).start();
 
         started = true;
     }

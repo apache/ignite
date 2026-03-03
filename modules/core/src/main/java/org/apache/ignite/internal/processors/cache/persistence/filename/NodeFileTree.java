@@ -403,10 +403,7 @@ public class NodeFileTree extends SharedFileTree {
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         }
 
-        extraStorages = extraStorages(
-            dsCfg,
-            storagePath -> resolveDirectory(Path.of(storagePath, DB_DIR).toString())
-        );
+        extraStorages = extraStorages(dsCfg);
     }
 
     /** @return Node storage directory. */
@@ -594,9 +591,16 @@ public class NodeFileTree extends SharedFileTree {
         boolean idxPathEmpty = !includeIdxPath || F.isEmpty(idxPath);
 
         if (F.isEmpty(csp)) {
-            return idxPathEmpty
-                ? new File[]{cacheStorage(null, cacheDirName)}
-                : new File[]{cacheStorage(null, cacheDirName), cacheStorage(idxPath, cacheDirName)};
+            File cs = cacheStorage(null, cacheDirName);
+
+            if (idxPathEmpty)
+                return new File[]{cs};
+
+            File idxStorage = cacheStorage(idxPath, cacheDirName);
+
+            return idxStorage.equals(cs)
+                ? new File[]{cs}
+                : new File[]{cs, idxStorage};
         }
 
         File[] cs = new File[csp.length + (idxPathEmpty ? 0 : 1)];
@@ -604,8 +608,23 @@ public class NodeFileTree extends SharedFileTree {
         for (int i = 0; i < csp.length; i++)
             cs[i] = cacheStorage(csp[i], cacheDirName);
 
-        if (!idxPathEmpty)
-            cs[cs.length - 1] = cacheStorage(idxPath, cacheDirName);
+        if (!idxPathEmpty) {
+            File idxStorage = cacheStorage(idxPath, cacheDirName);
+
+            for (int i = 0; i < csp.length; i++) {
+                // indexPath equals to some storagePath.
+                // No need to add twice.
+                if (cs[i].equals(idxStorage)) {
+                    File[] cs2 = new File[csp.length];
+
+                    System.arraycopy(cs, 0, cs2, 0, cs2.length);
+
+                    return cs2;
+                }
+            }
+
+            cs[cs.length - 1] = idxStorage;
+        }
 
         return cs;
     }
@@ -967,12 +986,15 @@ public class NodeFileTree extends SharedFileTree {
      * @return Node storages.
      * @see DataStorageConfiguration#setExtraStoragePaths(String...)
      */
-    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
+    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg) {
         if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePaths()))
             return Collections.emptyMap();
 
         return Arrays.stream(dsCfg.getExtraStoragePaths())
-            .collect(Collectors.toMap(Function.identity(), resolver));
+            .collect(Collectors.toMap(
+                Function.identity(),
+                p -> resolveDirectory(Path.of(p, DB_DIR).toString()))
+            );
     }
 
     /**
@@ -1107,7 +1129,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    private File resolveDirectory(String cfg) {
+    protected File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()

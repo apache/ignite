@@ -101,16 +101,6 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws Exception In case of error.
-     */
-    @Test
-    public void testAddedDeploymentInfo() throws Exception {
-        GridCacheContext<?, ?> ctx = cacheContext();
-
-        assertFalse(ctx.deploymentEnabled());
-    }
-
-    /**
      * @return Cache context.
      */
     protected GridCacheContext<?, ?> cacheContext() {
@@ -130,16 +120,6 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     public static class TestMessage extends GridCacheMessage implements GridCacheDeployable {
         /** */
         public static final short DIRECT_TYPE = 302;
-
-        /** {@inheritDoc} */
-        @Override public int handlerId() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cacheGroupMessage() {
-            return false;
-        }
 
         /** {@inheritDoc} */
         @Override public short directType() {

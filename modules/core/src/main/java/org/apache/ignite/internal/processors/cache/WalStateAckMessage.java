@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,23 +26,22 @@ import org.jetbrains.annotations.Nullable;
 /**
  * WAL state ack message (sent from participant node to coordinator).
  */
-@IgniteCodeGeneratingFail
 public class WalStateAckMessage implements Message {
     /** Operation ID. */
-    @Order(value = 0, method = "operationId")
-    private UUID opId;
+    @Order(0)
+    UUID opId;
 
     /** Affinity node flag. */
     @Order(1)
-    private boolean affNode;
+    boolean affNode;
 
     /** Operation result. */
     @Order(2)
-    private boolean changed;
+    boolean changed;
 
     /** Error message. */
-    @Order(value = 3, method = "errorMessage")
-    private String errMsg;
+    @Order(3)
+    String errMsg;
 
     /** Sender node ID. */
     private UUID sndNodeId;
@@ -78,24 +76,10 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
-     * @param opId New operation ID.
-     */
-    public void operationId(UUID opId) {
-        this.opId = opId;
-    }
-
-    /**
      * @return Affinity node flag.
      */
     public boolean affNode() {
         return affNode;
-    }
-
-    /**
-     * @param affNode New affinity node flag.
-     */
-    public void affNode(boolean affNode) {
-        this.affNode = affNode;
     }
 
     /**
@@ -106,24 +90,10 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
-     * @param changed New operation result.
-     */
-    public void changed(boolean changed) {
-        this.changed = changed;
-    }
-
-    /**
      * @return Error message.
      */
     @Nullable public String errorMessage() {
         return errMsg;
-    }
-
-    /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(String errMsg) {
-        this.errMsg = errMsg;
     }
 
     /**
@@ -143,11 +113,6 @@ public class WalStateAckMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 129;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

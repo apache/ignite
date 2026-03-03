@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -134,7 +134,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
         }
         finally {
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID,
-                String.valueOf(OptimizedMarshaller.USE_DFLT_SUID));
+                String.valueOf(Marshallers.USE_DFLT_SUID));
         }
     }
 

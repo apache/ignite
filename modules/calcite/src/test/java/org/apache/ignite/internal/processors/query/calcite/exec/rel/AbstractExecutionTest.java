@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDesc
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -247,7 +249,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** Task reordering executor. */
-    private static class IgniteTestStripedThreadPoolExecutor extends org.apache.ignite.thread.IgniteStripedThreadPoolExecutor {
+    private static class IgniteTestStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
         /** */
         final Deque<T2<Runnable, Integer>> tasks = new ArrayDeque<>();
 
@@ -334,6 +336,11 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
     protected QueryTaskExecutor taskExecutor(UUID nodeId) {
         return taskExecutors.get(nodeId);
+    }
+
+    /** */
+    protected ExecutionContext<Object[]> executionContext() {
+        return executionContext(nodes.get(new Random().nextInt(nodesCnt)), UUID.randomUUID(), 0);
     }
 
     /** */

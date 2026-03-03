@@ -18,11 +18,13 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * Pages timestamp histogramm representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class PagesTimestampHistogramView {
     /** Data region name. */
     private final String dataRegionName;

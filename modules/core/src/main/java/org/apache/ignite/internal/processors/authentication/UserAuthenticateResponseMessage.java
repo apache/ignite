@@ -28,11 +28,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class UserAuthenticateResponseMessage implements Message {
     /** Request ID. */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private String errMsg;
+    @Order(1)
+    String errMsg;
 
     /**
      *
@@ -65,34 +65,15 @@ public class UserAuthenticateResponseMessage implements Message {
     }
 
     /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @return Request ID.
      */
     public IgniteUuid id() {
         return id;
     }
 
-    /**
-     * @param id New request ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 132;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
     }
 
     /** {@inheritDoc} */

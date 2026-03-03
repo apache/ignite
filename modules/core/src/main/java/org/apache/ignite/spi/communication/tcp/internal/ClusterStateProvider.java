@@ -141,6 +141,13 @@ public class ClusterStateProvider {
     }
 
     /**
+     * @return {@code true} if {@code IgniteSpiContext} is available.
+     */
+    public boolean spiContextAvailable() {
+        return tcpCommSpi.spiContextInitialized();
+    }
+
+    /**
      * @return Outbound messages queue size.
      */
     public int getOutboundMessagesQueueSize() {

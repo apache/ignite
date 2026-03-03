@@ -17,29 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     /** Request id. */
-    private UUID requestId;
+    @Order(0)
+    UUID reqId;
 
-    /** Activation error. */
-    @GridDirectTransient
-    private Throwable err;
-
-    /** Serialized activation error. */
-    private byte[] errBytes;
+    /** Activation error message. */
+    @Order(1)
+    ErrorMessage errMsg;
 
     /**
      * Default constructor.
@@ -49,114 +43,28 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     }
 
     /**
-     *
+     * Constructor.
      */
-    public GridChangeGlobalStateMessageResponse(UUID requestId, Throwable err) {
-        this.requestId = requestId;
-        this.err = err;
-    }
+    public GridChangeGlobalStateMessageResponse(UUID reqId, @Nullable Throwable err) {
+        this.reqId = reqId;
 
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
+        // Minor optimization.
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
-     *
+     * @return Request id.
      */
-    public UUID getRequestId() {
-        return requestId;
+    public UUID requestId() {
+        return reqId;
     }
 
     /**
-     *
+     * @return Activation error.
      */
-    public Throwable getError() {
-        return err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (err != null && errBytes == null)
-            errBytes = CU.marshal(ctx, false, err);
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeUuid(requestId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                requestId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    public @Nullable Throwable getError() {
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */

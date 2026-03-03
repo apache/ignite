@@ -23,12 +23,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,15 +46,13 @@ import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
-/**
- *
- */
+/** Tests that buffers of join nodes are cleared at the join end and that a join node is not stuck. */
 @RunWith(Parameterized.class)
 public class JoinBuffersExecutionTest extends AbstractExecutionTest {
-    /** Tests merge join with input bigger that the buffer size. */
+    /** */
     @Test
     public void testMergeJoinBuffers() throws Exception {
-        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType, cond) ->
+        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
             MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, Comparator.comparingInt(r -> (Integer)r[0]), true);
 
         Consumer<AbstractNode<?>> bufChecker = (node) -> {
@@ -60,28 +61,47 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             assertTrue(((MergeJoinNode<?>)node).rightInBuf.size() <= IN_BUFFER_SIZE);
         };
 
-        doTestJoinBuffer(joinFactory, bufChecker);
+        doTestJoinBuffer(joinFactory, bufChecker, false);
     }
 
-    /** Tests NL with input bigger that the buffer size. */
+    /** */
     @Test
     public void testNLJoinBuffers() throws Exception {
-        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType, cond) ->
+        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
             NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType, (r1, r2) -> r1[0].equals(r2[0]));
 
         Consumer<AbstractNode<?>> bufChecker = (node) ->
-            assertTrue(((NestedLoopJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
+            assertTrue(((AbstractRightMaterializedJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
 
-        doTestJoinBuffer(joinFactory, bufChecker);
+        doTestJoinBuffer(joinFactory, bufChecker, false);
+    }
+
+    /** */
+    @Test
+    public void testHashJoinBuffers() throws Exception {
+        IgniteJoinInfo joinInfo = new IgniteJoinInfo(ImmutableIntList.of(0), ImmutableIntList.of(0),
+            ImmutableBitSet.of(), ImmutableList.of());
+
+        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
+            HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo, null);
+
+        Consumer<AbstractNode<?>> bufChecker = (node) ->
+            assertTrue(((AbstractRightMaterializedJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
+
+        doTestJoinBuffer(joinFactory, bufChecker, true);
     }
 
     /**
+     * Tests a join with input bigger that the buffer size.
+     *
      * @param joinFactory Creates certain join node.
      * @param joinBufChecker Finally check node after successfull run.
+     * @param sortResults If {@code true}, sorts results before checking.
      */
     private void doTestJoinBuffer(
         JoinFactory joinFactory,
-        Consumer<AbstractNode<?>> joinBufChecker
+        Consumer<AbstractNode<?>> joinBufChecker,
+        boolean sortResults
     ) throws Exception {
         for (JoinRelType joinType : F.asList(LEFT, INNER, RIGHT, FULL, SEMI, ANTI)) {
             if (log.isInfoEnabled())
@@ -106,8 +126,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
 
             RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class);
 
-            AbstractNode<Object[]> join = joinFactory.create(ctx, outType, leftType, rightType, joinType,
-                (r1, r2) -> r1[0].equals(r2[0]));
+            AbstractNode<Object[]> join = joinFactory.create(ctx, outType, leftType, rightType, joinType);
 
             join.register(F.asList(leftNode, rightNode));
 
@@ -138,6 +157,10 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             join.request(size * size);
 
             assertTrue(GridTestUtils.waitForCondition(finished::get, getTestTimeout()));
+
+            // Sorting might be needed because join may not produce a sorted result.
+            if (sortResults)
+                sortResults(res, joinType);
 
             switch (joinType) {
                 case LEFT:
@@ -223,6 +246,36 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
+    private static void sortResults(List<Object[]> res, JoinRelType joinType) {
+        res.sort(new Comparator<>() {
+            @Override public int compare(Object[] row0, Object[] row1) {
+                assert row0.length == row1.length;
+
+                int v1;
+                int v2;
+
+                if (joinType == SEMI || joinType == ANTI) {
+                    assert row0.length == 1;
+                    assert row0[0] != null && row1[0] != null;
+
+                    v1 = (int)row0[0];
+                    v2 = (int)row1[0];
+                }
+                else {
+                    assert row0.length == 2;
+                    assert (row0[0] == row0[1] && row0[0] != null) || row0[0] != null || row0[1] != null;
+                    assert (row1[0] == row1[1] && row1[0] != null) || row1[0] != null || row1[1] != null;
+
+                    v1 = (int)(row0[0] == null ? row0[1] : row0[0]);
+                    v2 = (int)(row1[0] == null ? row1[1] : row1[0]);
+                }
+
+                return Integer.compare(v1, v2);
+            }
+        });
+    }
+
+    /** */
     @FunctionalInterface
     protected interface JoinFactory {
         /** */
@@ -231,8 +284,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             RelDataType outType,
             RelDataType leftType,
             RelDataType rightType,
-            JoinRelType joinType,
-            BiPredicate<Object[], Object[]> cond
+            JoinRelType joinType
         );
     }
 }

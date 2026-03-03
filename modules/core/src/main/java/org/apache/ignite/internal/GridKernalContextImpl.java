@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -121,6 +123,10 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
  */
 @GridToStringExclude
 public class GridKernalContextImpl implements GridKernalContext, Externalizable {
+    static {
+        GridBinaryMarshaller.binaryContextSupplier(() -> IgnitionEx.localIgnite().context().cacheObjects().binaryContext());
+    }
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -357,6 +363,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private PerformanceStatisticsProcessor perfStatProc;
 
+    /** Rolling upgrade processor. */
+    @GridToStringExclude
+    private RollingUpgradeProcessor rollUpProc;
+
     /** */
     private Thread.UncaughtExceptionHandler hnd;
 
@@ -591,6 +601,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             transProc = (CacheObjectTransformerProcessor)comp;
         else if (comp instanceof PerformanceStatisticsProcessor)
             perfStatProc = (PerformanceStatisticsProcessor)comp;
+        else if (comp instanceof RollingUpgradeProcessor)
+            rollUpProc = (RollingUpgradeProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -1098,6 +1110,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
         return perfStatProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RollingUpgradeProcessor rollingUpgrade() {
+        return rollUpProc;
     }
 
     /** {@inheritDoc} */

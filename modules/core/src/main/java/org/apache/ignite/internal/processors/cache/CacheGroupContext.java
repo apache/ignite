@@ -116,9 +116,6 @@ public class CacheGroupContext {
     private final byte ioPlc;
 
     /** */
-    private final boolean depEnabled;
-
-    /** */
     private final boolean storeCacheId;
 
     /** We modify content under lock, by making defensive copy, field always contains unmodifiable list. */
@@ -257,8 +254,6 @@ public class CacheGroupContext {
 
         ioPlc = cacheType.ioPolicy();
 
-        depEnabled = false;
-
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
         
         log = ctx.kernalContext().log(getClass());
@@ -300,13 +295,6 @@ public class CacheGroupContext {
      */
     public boolean storeCacheIdInDataPage() {
         return storeCacheId;
-    }
-
-    /**
-     * @return {@code True} if deployment is enabled.
-     */
-    public boolean deploymentEnabled() {
-        return depEnabled;
     }
 
     /**
@@ -444,16 +432,6 @@ public class CacheGroupContext {
     }
 
     /**
-     *
-     */
-    public void unwindUndeploys() {
-        List<GridCacheContext<?, ?>> caches = this.caches;
-
-        for (GridCacheContext<?, ?> cctx : caches)
-            cctx.deploy().unwind(cctx);
-    }
-
-    /**
      * @param type Event type to check.
      * @return {@code True} if given event type should be recorded.
      */
@@ -462,10 +440,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return {@code True} if cache created by user.
+     * @return Cache type.
      */
-    public boolean userCache() {
-        return cacheType.userCache();
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**
@@ -1342,6 +1320,11 @@ public class CacheGroupContext {
     /** */
     public boolean isPreparedToStop() {
         return preparedToStop;
+    }
+
+    /** */
+    public void applyRecoveryData(CacheGroupRecoveryState grpState) {
+        top.applyRecoveryData(grpState);
     }
 
     /**

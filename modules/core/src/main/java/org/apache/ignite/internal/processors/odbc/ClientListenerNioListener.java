@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -38,9 +39,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -230,7 +230,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             ClientListenerResponse resp;
 
-            try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
+            try (Scope ignored = ctx.security().withContext(connCtx.securityContext())) {
                 resp = hnd.handle(req);
             }
 
@@ -269,7 +269,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                 ", resp=" + resp.status() + ']');
         }
 
-        GridNioFuture<?> fut = ses.send(parser.encode(resp));
+        IgniteInternalFuture<?> fut = ses.send(parser.encode(resp));
 
         fut.listen(() -> {
             if (fut.error() == null)
@@ -569,7 +569,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         // When security is enabled, only an administrator can connect and execute commands.
         if (connCtx.securityContext() != null) {
-            try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
+            try (Scope ignored = ctx.security().withContext(connCtx.securityContext())) {
                 ctx.security().authorize(SecurityPermission.ADMIN_OPS);
             }
             catch (SecurityException e) {

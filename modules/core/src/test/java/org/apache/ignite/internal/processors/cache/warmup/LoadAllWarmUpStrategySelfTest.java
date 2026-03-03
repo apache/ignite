@@ -230,7 +230,7 @@ public class LoadAllWarmUpStrategySelfTest extends GridCommonAbstractTest {
         requireNonNull(n);
 
         return n.context().cache().cacheGroups().stream()
-            .filter(grpCtx -> grpCtx.userCache() && grpCtx.persistenceEnabled())
+            .filter(grpCtx -> grpCtx.cacheType().userCache() && grpCtx.persistenceEnabled())
             // Check for exists gap in local partitions.
             .peek(grpCtx -> assertTrue(grpCtx.topology().localPartitionsNumber() < grpCtx.topology().partitions()))
             .map(CacheGroupContext::dataRegion)

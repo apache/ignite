@@ -28,15 +28,15 @@ import org.jetbrains.annotations.Nullable;
 public class GridJobCancelRequest implements Message {
     /** */
     @Order(0)
-    private IgniteUuid sessionId;
+    IgniteUuid sessionId;
 
     /** */
     @Order(1)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** */
     @Order(2)
-    private boolean system;
+    boolean system;
 
     /**
      * Default constructor.
@@ -103,32 +103,6 @@ public class GridJobCancelRequest implements Message {
      */
     public boolean system() {
         return system;
-    }
-
-    /**
-     * Gets execution ID of task to be cancelled.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sessionId = sesId;
-    }
-
-    /**
-     * Gets session ID of job to be cancelled. If {@code null}, then
-     * all jobs for the specified task execution ID will be cancelled.
-     */
-    public void jobId(IgniteUuid jobId) {
-        this.jobId = jobId;
-    }
-
-    /**
-     */
-    public void system(boolean system) {
-        this.system = system;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

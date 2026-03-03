@@ -42,9 +42,9 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.L
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -85,7 +85,7 @@ public class IndexingDefragmentation {
         IgniteThreadPoolExecutor defragmentationThreadPool,
         IgniteLogger log
     ) throws IgniteCheckedException {
-        int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
+        int pageSize = grpCtx.shared().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
 
         PageMemoryEx oldCachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
@@ -145,7 +145,7 @@ public class IndexingDefragmentation {
             for (InlineIndex oldIdx : indexes.idxs) {
                 InlineIndexRowHandler oldRowHnd = oldIdx.segment(0).rowHandler();
 
-                SortedIndexDefinition idxDef = (SortedIndexDefinition)indexing.indexDefinition(oldIdx.id());
+                SortedIndexDefinition idxDef = oldIdx.indexDefinition();
 
                 InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
@@ -204,7 +204,7 @@ public class IndexingDefragmentation {
             return true;
         }
         catch (Throwable t) {
-            newCtx.cacheObjectContext().kernalContext()
+            newCtx.shared().kernalContext()
                 .failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;
@@ -224,7 +224,7 @@ public class IndexingDefragmentation {
             List<InlineIndex> indexes = indexing.treeIndexes(cctx.name(), false);
 
             for (InlineIndex idx: indexes) {
-                String table = indexing.indexDefinition(idx.id()).idxName().tableName();
+                String table = idx.indexDefinition().idxName().tableName();
 
                 idxs.putIfAbsent(table, new TableIndexes(cctx, table));
 

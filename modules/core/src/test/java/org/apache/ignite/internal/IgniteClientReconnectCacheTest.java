@@ -48,7 +48,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -68,6 +67,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -157,7 +157,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     public void testReconnect() throws Exception {
         IgniteEx client = startClientGrid(SRV_CNT);
 
-        final IgniteDiscoverySpi clientSpi = spi0(client);
+        final IgniteDiscoverySpiInternalListenerSupport clientSpi = (IgniteDiscoverySpiInternalListenerSupport)spi0(client);
 
         Ignite srv = ignite(0);
 
@@ -461,7 +461,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         throws Exception {
         Ignite srv = ignite(0);
 
-        final IgniteDiscoverySpi clientSpi = spi0(client);
+        final IgniteDiscoverySpiInternalListenerSupport clientSpi = (IgniteDiscoverySpiInternalListenerSupport)spi0(client);
         final DiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(1);

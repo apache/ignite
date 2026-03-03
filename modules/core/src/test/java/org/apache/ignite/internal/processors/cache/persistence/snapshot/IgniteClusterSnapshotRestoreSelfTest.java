@@ -284,8 +284,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             }
             catch (Exception e) {
                 assertTrue("Unexpected exception: " + Throwables.getStackTraceAsString(e),
-                    X.hasCause(e, "The previous snapshot restore operation was not completed.",
-                    IgniteCheckedException.class, IgniteException.class));
+                    X.hasCause(e, "The previous snapshot restore operation was not completed", IgniteException.class)
+                        || X.hasCause(e, "has already started", IgniteException.class));
 
                 failCnt.incrementAndGet();
             }

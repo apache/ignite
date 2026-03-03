@@ -30,12 +30,12 @@ public class GridQueryKillResponse implements Message {
     public static final short TYPE_CODE = 173;
 
     /** Error text. */
-    @Order(value = 0, method = "error")
-    private String errMsg;
+    @Order(0)
+    String errMsg;
 
     /** Request id.*/
-    @Order(value = 1, method = "requestId")
-    private long reqId;
+    @Order(1)
+    long reqId;
 
     /**
      * Default constructor.
@@ -61,29 +61,10 @@ public class GridQueryKillResponse implements Message {
     }
 
     /**
-     * @param reqId New request id.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Error text or {@code null} if no error.
      */
     public String error() {
         return errMsg;
-    }
-
-    /**
-     * @param errMsg New error text.
-     */
-    public void error(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

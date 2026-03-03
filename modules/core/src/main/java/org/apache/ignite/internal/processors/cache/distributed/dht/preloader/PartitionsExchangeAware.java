@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface which allows to subscribe a component for partition map exchange events
@@ -53,8 +54,9 @@ public interface PartitionsExchangeAware {
      * Guarantees that no updates were performed on local node since exchange process started.
      *
      * @param fut Partition map exchange future.
+     * @param err Optional error, e.g. node stopping.
      */
-    public default void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    public default void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut, @Nullable Throwable err) {
         // No-op.
     }
 

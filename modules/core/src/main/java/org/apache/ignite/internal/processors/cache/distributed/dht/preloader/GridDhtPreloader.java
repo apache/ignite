@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,12 +34,14 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -46,7 +50,9 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
@@ -61,6 +67,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
+
+    /** Cache rebalance topic. */
+    static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
 
     /** Disable rebalancing cancellation optimization. */
     private final boolean disableRebalancingCancellationOptimization = IgniteSystemProperties.getBoolean(
@@ -191,6 +200,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
+        String dcId = ctx.localNode().dataCenterId();
+        Collection<UUID> sameDcNodeIds = dcId == null ? null : new HashSet<>(F.viewReadOnly(
+            ctx.discovery().aliveServerNodes(), ClusterNode::id, n -> Objects.equals(n.dataCenterId(), dcId)));
+
         for (int p = 0; p < partitions; p++) {
             if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
@@ -209,12 +222,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert part != null;
                 assert part.id() == p;
 
+                GridDhtPartitionState state = part.state();
+
                 // Do not rebalance OWNING or LOST partitions.
-                if (part.state() == OWNING || part.state() == LOST)
+                if (state == OWNING || state == LOST)
                     continue;
 
                 // State should be switched to MOVING during PME.
-                if (part.state() != MOVING) {
+                if (state != MOVING) {
                     throw new AssertionError("Partition has invalid state for rebalance "
                         + aff.topologyVersion() + " " + part);
                 }
@@ -224,8 +239,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (grp.persistenceEnabled() && exchFut != null) {
                     List<UUID> nodeIds = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
-                    if (!F.isEmpty(nodeIds))
+                    if (!F.isEmpty(nodeIds)) {
+                        if (sameDcNodeIds != null)
+                            nodeIds = retainNodesNotEmpty(nodeIds, sameDcNodeIds::contains);
+
                         histSupplier = ctx.discovery().node(nodeIds.get(p % nodeIds.size()));
+                    }
                 }
 
                 if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
@@ -256,6 +275,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     });
 
                     if (!picked.isEmpty()) {
+                        if (dcId != null)
+                            picked = retainNodesNotEmpty(picked, n -> Objects.equals(dcId, n.dataCenterId()));
+
                         ClusterNode n = picked.get(p % picked.size());
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);
@@ -297,6 +319,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
 
         return assignments;
+    }
+
+    /**
+     * Retains nodes which satisfy filter. Returns original list if result set is empty.
+     */
+    private <T> List<T> retainNodesNotEmpty(List<T> nodes, IgnitePredicate<T> filter) {
+        List<T> nodes0 = U.arrayList(nodes, filter);
+
+        return !F.isEmpty(nodes0) ? nodes0 : nodes;
     }
 
     /** {@inheritDoc} */

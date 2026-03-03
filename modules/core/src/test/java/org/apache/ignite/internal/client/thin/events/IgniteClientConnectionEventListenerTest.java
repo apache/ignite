@@ -90,8 +90,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
 
                 HandshakeStartEvent hsStartEv = (HandshakeStartEvent)evSet.get(HandshakeStartEvent.class);
 
-                assertEquals(hsStartEv.connectionDescription().protocol(), "ProtocolContext [version=" + ProtocolVersion.LATEST_VER
-                    + ", features=[]]");
+                assertEquals(hsStartEv.connectionDescription().protocol(), "ProtocolContext [version=" + srvVer + ", features=[]]");
                 assertEquals(LOCALHOST, hsStartEv.connectionDescription().remoteAddress().getAddress());
                 assertEquals(SRV_PORT, hsStartEv.connectionDescription().remoteAddress().getPort());
                 assertEquals(LOCALHOST, hsStartEv.connectionDescription().localAddress().getAddress());

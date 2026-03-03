@@ -33,11 +33,11 @@ public class IgniteTxKey implements Message {
     /** Key. */
     @Order(0)
     @GridToStringInclude(sensitive = true)
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** Cache ID. */
     @Order(1)
-    private int cacheId;
+    int cacheId;
 
     /**
      * Empty constructor.
@@ -63,24 +63,10 @@ public class IgniteTxKey implements Message {
     }
 
     /**
-     * @param key New key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
      * @return Cache ID.
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @param cacheId New cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
     }
 
     /**
@@ -100,11 +86,6 @@ public class IgniteTxKey implements Message {
         assert key != null;
 
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

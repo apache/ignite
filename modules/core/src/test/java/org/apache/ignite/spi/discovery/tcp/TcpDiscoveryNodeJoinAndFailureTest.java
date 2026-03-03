@@ -167,8 +167,8 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
                     if (nodeId.equals(node2Id)) {
                         Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
-
-                        OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
+                        TcpDiscoveryIoSession ses = GridTestUtils.getFieldValue(workerObj, "ses");
+                        OutputStream out = GridTestUtils.getFieldValue(ses, "out");
 
                         try {
                             out.close();

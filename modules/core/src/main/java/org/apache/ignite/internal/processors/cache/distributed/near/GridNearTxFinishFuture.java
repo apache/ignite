@@ -752,7 +752,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.threadId(),
             commit,
             tx.isInvalidate(),
-            tx.system(),
             tx.ioPolicy(),
             syncMode,
             m.explicitLock(),
@@ -761,14 +760,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             null,
-            tx.size(),
-            tx.taskNameHash(),
-            tx.activeCachesDeploymentEnabled()
+            tx.taskNameHash()
         );
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            req.miniId(miniId);
+            req.updateMiniId(miniId);
 
             IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
@@ -779,7 +776,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         else {
             FinishMiniFuture fut = new FinishMiniFuture(miniId, m);
 
-            req.miniId(fut.futureId());
+            req.updateMiniId(fut.futureId());
 
             add(fut); // Append new future.
 
@@ -877,7 +874,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.threadId(),
             true,
             false,
-            tx.system(),
             tx.ioPolicy(),
             false,
             tx.syncMode(),
@@ -885,8 +881,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             0,
-            0,
-            tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
             null);

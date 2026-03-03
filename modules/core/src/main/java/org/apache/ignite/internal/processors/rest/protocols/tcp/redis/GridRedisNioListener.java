@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedi
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetRangeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisStrlenCommandHandler;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -162,7 +161,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
      * @param res Response.
      * @return NIO send future.
      */
-    private GridNioFuture<?> sendResponse(GridNioSession ses, GridRedisMessage res) {
+    private IgniteInternalFuture<?> sendResponse(GridNioSession ses, GridRedisMessage res) {
         return ses.send(res);
     }
 }

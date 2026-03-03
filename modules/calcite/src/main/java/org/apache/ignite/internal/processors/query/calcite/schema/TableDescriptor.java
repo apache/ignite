@@ -26,12 +26,10 @@ import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -94,19 +92,20 @@ public interface TableDescriptor<TableRow> extends RelProtoDataType, Initializer
     boolean isUpdateAllowed(RelOptTable tbl, int colIdx);
 
     /**
-     * Converts a cache row to relational node row.
+     * Converts a table row to relational node row.
      *
      * @param ectx Execution context.
-     * @param row Cache row.
-     * @param requiredColumns Participating columns.
+     * @param tableRow Table row.
+     * @param row Relational node row.
+     * @param fieldColMapping Mapping from row fields to table columns.
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
     <Row> Row toRow(
         ExecutionContext<Row> ectx,
-        TableRow row,
-        RowHandler.RowFactory<Row> factory,
-        @Nullable ImmutableBitSet requiredColumns
+        TableRow tableRow,
+        Row row,
+        int[] fieldColMapping
     ) throws IgniteCheckedException;
 
     /**

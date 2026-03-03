@@ -32,9 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -42,7 +40,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -57,7 +54,6 @@ import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
-import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
@@ -134,11 +130,10 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCach
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
-import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
+import static org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
-import static org.apache.ignite.internal.util.StripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 import static org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
 import static org.apache.ignite.internal.util.nio.GridNioServer.DFLT_IO_BALANCE_PERIOD;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
@@ -177,10 +172,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Exit code to pass to loader when Ignite instance is being restarted",
         type = Integer.class, defaults = "0")
     public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
-
-    /** Defines Ignite installation folder. */
-    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
-    public static final String IGNITE_HOME = "IGNITE_HOME";
 
     /** If this system property is set to {@code true} - no shutdown hook will be set. */
     @SystemProperty("If true then no shutdown hook will be set")
@@ -517,14 +508,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "than specified by this property", type = Integer.class, defaults = "512")
     public static final String IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
 
-    /**
-     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
-     * this memory block is released. This will help to recognize cases when already released memory is accessed.
-     */
-    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
-        "memory block is released. This will help to recognize cases when already released memory is accessed")
-    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
-
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     @SystemProperty(value = "Maximum size for atomic cache queue delete history",
         type = Integer.class, defaults = "" + DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE + " per partition")
@@ -770,6 +753,12 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
+    /** Human-readable ID of a data center where the node is running. */
+    @IgniteExperimental
+    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
+        type = String.class)
+    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
+
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
         type = Integer.class, defaults = "" + DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE)
@@ -833,26 +822,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     /** Indicating whether local store keeps primary only. Backward compatibility flag. */
     @SystemProperty("Enables local store keeps primary only. Backward compatibility flag")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
-
-    /**
-     * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
-     * {@link Serializable} classes.
-     */
-    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
-        "for Serializable classes")
-    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
-        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
-
-    /**
-     * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
-     * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
-     * in algorithms that encrypts data in String format.
-     */
-    @SystemProperty("Manages type of serialization mechanism for String that is " +
-        "marshalled/unmarshalled by BinaryMarshaller. Should be used for cases when a String contains a surrogate " +
-        "symbol without its pair one. This is frequently used in algorithms that encrypts data in String format")
-    public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
-        "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
 
     /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
     @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
@@ -970,16 +939,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,
         defaults = "" + DFLT_IO_BALANCE_PERIOD)
     public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
-
-    /**
-     * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
-     * the natural order is used.
-     * <p>
-     * NOTICE: Should be the default in Apache Ignite 3.0
-     */
-    @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
-        "By default, the natural order is used")
-    public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
 
     /**
      * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
@@ -1162,11 +1121,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_USE_ASYNC_FILE_IO_FACTORY)
     public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
 
-    /** Max amount of remembered errors for {@link GridLogThrottle}. */
-    @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
-        defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
-    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
-
     /**
      * If this property is set, {@link DataStorageConfiguration#setWriteThrottlingEnabled(boolean)}
      * will be overridden to {@code true} regardless the initial value in the configuration.
@@ -1266,13 +1220,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "file with corresponding feature is available in classpath and OS and filesystem settings allows to enable " +
         "this mode", defaults = "true")
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
-
-    /**
-     * When set to {@code true}, warnings that are intended for development environments and not for production
-     * (such as coding mistakes in code using Ignite) will not be logged.
-     */
-    @SystemProperty("Enables development environments warnings")
-    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
@@ -1857,7 +1804,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @deprecated Use {@link ShutdownPolicy} instead.
      */
     @Deprecated
-    @IgniteExperimental
     @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
         "caches exist that have backups configured")
@@ -1868,7 +1814,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * If enabled, subquery will be rewritten to JOIN where possible.
      * Default is {@code true}.
      */
-    @IgniteExperimental
     @SystemProperty("Enables subquery rewriting optimization. " +
         "If enabled, subquery will be rewritten to JOIN where possible")
     public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
@@ -1882,6 +1827,15 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty("Enables setting attribute value of TcpCommunicationSpi#ATTR_HOST_NAMES " +
         "when value IgniteConfiguration#getLocalHost is ip, for backward compatibility")
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
+
+    /**
+     * When set to positive number warning will be produced when outgoing message queue size of TCP communication SPI
+     * exeeds provided value.
+     * Default is {@code 0} (do not print warning).
+     */
+    @SystemProperty(value = "When set to positive number warning will be produced when outgoing message queue size of " +
+        "TCP communication SPI exeeds provided value. Default is 0 (do not print warning)", type = Integer.class)
+    public static final String IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE = "IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE";
 
     /**
      * When above zero, prints tx key collisions once per interval.
@@ -2005,21 +1959,12 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
 
     /**
-     * Enables storage of typed arrays.
-     * The default value is {@link BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
-     */
-    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
-        defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
-    public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
-
-    /**
      * Flag to indicate that disk writes during snapshot process should be in a sequential manner when possible. This
      * generates extra disk space usage.
      * The default value is {@link IgniteSnapshotManager#DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}.
      */
     @SystemProperty(value = "Flag to indicate that disk writes during snapshot process should be in a sequential " +
         "manner when possible. This generates extra disk space usage", defaults = "" + DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE)
-    @IgniteExperimental
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
 
     /**
@@ -2029,7 +1974,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @see org.apache.ignite.spi.systemview.view.ConfigurationView
      */
     @SystemProperty(value = "Packages list to expose in configuration view")
-    @IgniteExperimental
     public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
 
     /**

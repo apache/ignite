@@ -17,29 +17,25 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.cache.query.index.Order;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Defines a signle index key.
  */
-public class IndexKeyDefinition implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Index key type. {@link IndexKeyType}. */
-    private IndexKeyType idxType;
+public class IndexKeyDefinition implements Message {
+    /** A message for {@link IndexKeyType}. */
+    @Order(0)
+    IndexKeyTypeMessage idxTypeMsg;
 
     /** Order. */
-    private Order order;
+    @Order(1)
+    boolean asc;
 
     /** Precision for variable length key types. */
-    private int precision;
+    @Order(2)
+    int precision;
 
     /** */
     public IndexKeyDefinition() {
@@ -47,9 +43,10 @@ public class IndexKeyDefinition implements Externalizable {
     }
 
     /** */
-    public IndexKeyDefinition(int idxTypeCode, Order order, long precision) {
-        idxType = IndexKeyType.forCode(idxTypeCode);
-        this.order = order;
+    public IndexKeyDefinition(int idxTypeCode, long precision, boolean asc) {
+        idxTypeMsg = new IndexKeyTypeMessage(idxTypeCode);
+
+        this.asc = asc;
 
         // Workaround due to wrong type conversion (int -> long).
         if (precision >= Integer.MAX_VALUE)
@@ -58,14 +55,19 @@ public class IndexKeyDefinition implements Externalizable {
             this.precision = (int)precision;
     }
 
-    /** */
-    public Order order() {
-        return order;
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 113;
     }
 
     /** */
-    public IndexKeyType idxType() {
-        return idxType;
+    public boolean ascending() {
+        return asc;
+    }
+
+    /** */
+    public IndexKeyType indexKeyType() {
+        return idxTypeMsg.value();
     }
 
     /** */
@@ -73,16 +75,4 @@ public class IndexKeyDefinition implements Externalizable {
         return precision;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // Send only required info for using in MergeSort algorithm.
-        out.writeInt(idxType.code());
-        U.writeEnum(out, order.sortOrder());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        idxType = IndexKeyType.forCode(in.readInt());
-        order = new Order(U.readEnum(in, SortOrder.class), null);
-    }
 }

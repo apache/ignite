@@ -398,6 +398,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) {
         onStart(ctx,
+            distrCfg,
             executionSvc,
             mailboxRegistry,
             partSvc,
@@ -407,7 +408,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             mappingSvc,
             qryPlanCache,
             exchangeSvc,
-            qryReg
+            qryReg,
+            prepareSvc
         );
 
         started = true;
@@ -419,6 +421,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             started = false;
 
             onStop(
+                prepareSvc,
                 qryReg,
                 executionSvc,
                 mailboxRegistry,
@@ -428,7 +431,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 taskExecutor,
                 mappingSvc,
                 qryPlanCache,
-                exchangeSvc
+                exchangeSvc,
+                distrCfg
             );
         }
     }
@@ -752,7 +756,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
             qryPlannerTimeout,
-            timeout
+            timeout,
+            fldsQry != null ? fldsQry.getQueryInitiatorId() : null
         );
 
         if (qrys != null)

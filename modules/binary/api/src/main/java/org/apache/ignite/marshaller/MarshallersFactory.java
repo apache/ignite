@@ -17,7 +17,9 @@
 
 package org.apache.ignite.marshaller;
 
+import java.io.Serializable;
 import java.util.ServiceLoader;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -39,4 +41,16 @@ public interface MarshallersFactory {
      * @return Filtered instance of {@link JdkMarshaller}.
      */
     public JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter);
+
+    /** @return Optimized marshaller instance. */
+    public OptimizedMarshaller optimized();
+
+    /**
+     * Creates new marshaller providing whether it should
+     * require {@link Serializable} interface or not.
+     *
+     * @param requireSer Whether to require {@link Serializable}.
+     * @return Optimized marshaller instance.
+     */
+    public OptimizedMarshaller optimized(boolean requireSer);
 }

@@ -468,6 +468,9 @@ public abstract class QueryChecker {
         if (expectedResultSize >= 0)
             assertEquals("Unexpected result size", expectedResultSize, res.size());
 
+        if (resultChecker != null)
+            resultChecker.accept(res);
+
         if (expectedResult != null) {
             if (!ordered) {
                 // Avoid arbitrary order.
@@ -477,9 +480,6 @@ public abstract class QueryChecker {
 
             assertEqualsCollections(expectedResult, res);
         }
-
-        if (resultChecker != null)
-            resultChecker.accept(res);
     }
 
     /** */

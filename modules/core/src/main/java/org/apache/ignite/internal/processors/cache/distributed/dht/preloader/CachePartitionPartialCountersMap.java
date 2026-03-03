@@ -21,13 +21,18 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class CachePartitionPartialCountersMap implements Serializable {
+public class CachePartitionPartialCountersMap implements Serializable, Message {
+    /** */
+    public static final short TYPE_CODE = 500;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,19 +40,23 @@ public class CachePartitionPartialCountersMap implements Serializable {
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
 
     /** */
-    private int[] partIds;
+    @Order(0)
+    int[] partIds;
 
     /** */
-    private long[] initialUpdCntrs;
+    @Order(1)
+    long[] initialUpdCntrs;
 
     /** */
-    private long[] updCntrs;
+    @Order(2)
+    long[] updCntrs;
 
     /** */
-    private int curIdx;
+    @Order(3)
+    int curIdx;
 
     /** */
-    private CachePartitionPartialCountersMap() {
+    public CachePartitionPartialCountersMap() {
         this(0);
     }
 
@@ -225,5 +234,10 @@ public class CachePartitionPartialCountersMap implements Serializable {
         sb.append("}");
 
         return sb.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

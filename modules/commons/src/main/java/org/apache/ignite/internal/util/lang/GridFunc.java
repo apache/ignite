@@ -2139,4 +2139,18 @@ public class GridFunc {
 
         return Integer.compare(a1.length, a2.length);
     }
+
+    /**
+     * @param col Collection.
+     */
+    public static <T> Collection<T> emptyIfNull(@Nullable Collection<T> col) {
+        return col == null ? Collections.emptySet() : col;
+    }
+
+    /**
+     * @param map Map.
+     */
+    public static <K, V> Map<K, V> emptyIfNull(@Nullable Map<K, V> map) {
+        return map == null ? Collections.emptyMap() : map;
+    }
 }

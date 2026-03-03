@@ -36,7 +36,13 @@ import org.apache.ignite.internal.GridStopWithCollisionSpiTest;
 import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
+import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
+import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
+import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
+import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
+import org.apache.ignite.internal.managers.communication.IndexKeyTypeMessageTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -143,7 +149,13 @@ import org.junit.runners.Suite;
     JavaVersionCommandParserTest.class,
     ClientSessionOutboundQueueLimitTest.class,
 
-    MessageProcessorTest.class
+    MessageProcessorTest.class,
+    ErrorMessageSelfTest.class,
+    CacheEntryPredicateAdapterMessageTest.class,
+    DefaultEnumMapperTest.class,
+    IndexKeyTypeMessageTest.class,
+    IgniteDataTransferObjectProcessorTest.class,
+    CompressedMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }

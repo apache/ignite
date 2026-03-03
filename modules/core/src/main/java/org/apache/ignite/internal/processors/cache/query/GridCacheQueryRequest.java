@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -38,15 +36,11 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 
 /**
  * Query request.
@@ -65,95 +59,108 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11;
 
     /** */
-    private long id;
+    @Order(0)
+    long id;
 
     /** */
-    private String cacheName;
+    @Order(1)
+    String cacheName;
 
     /** */
-    private GridCacheQueryType type;
+    @Order(2)
+    GridCacheQueryType type;
 
     /** */
-    private boolean fields;
-
-    /** */
+    @Order(3)
     @GridToStringInclude(sensitive = true)
-    private String clause;
+    String clause;
 
     /** */
-    @GridDirectTransient
     private IndexQueryDesc idxQryDesc;
 
     /** */
-    private byte[] idxQryDescBytes;
+    @Order(4)
+    byte[] idxQryDescBytes;
 
     /** */
-    private int limit;
+    @Order(5)
+    int limit;
 
     /** */
-    private String clsName;
+    @Order(6)
+    String clsName;
 
     /** */
-    @GridDirectTransient
     private IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
-    private byte[] keyValFilterBytes;
+    @Order(7)
+    byte[] keyValFilterBytes;
 
     /** */
-    @GridDirectTransient
     private IgniteReducer<Object, Object> rdc;
 
     /** */
-    private byte[] rdcBytes;
+    @Order(8)
+    byte[] rdcBytes;
 
     /** */
-    @GridDirectTransient
     private IgniteClosure<?, ?> trans;
 
     /** */
-    private byte[] transBytes;
+    @Order(9)
+    byte[] transBytes;
 
     /** */
-    @GridDirectTransient
     private Object[] args;
 
     /** */
-    private byte[] argsBytes;
+    @Order(10)
+    byte[] argsBytes;
 
     /** */
-    private int pageSize;
+    @Order(11)
+    int pageSize;
 
     /** */
-    private boolean incBackups;
+    @Order(12)
+    boolean incBackups;
 
     /** */
-    private boolean cancel;
+    @Order(13)
+    boolean cancel;
 
     /** */
-    private boolean incMeta;
+    @Order(14)
+    boolean incMeta;
 
     /** */
-    private boolean all;
+    @Order(15)
+    boolean all;
 
     /** */
-    private boolean keepBinary;
+    @Order(16)
+    boolean keepBinary;
 
     /** */
-    private int taskHash;
+    @Order(17)
+    int taskHash;
 
     /** Partition. */
-    private int part = -1;
+    @Order(18)
+    int part = -1;
 
     /** */
-    private AffinityTopologyVersion topVer;
+    @Order(value = 19, method = "topologyVersion")
+    AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
-    @GridDirectCollection(KeyCacheObject.class)
-    private Collection<KeyCacheObject> skipKeys;
+    @Order(20)
+    Collection<KeyCacheObject> skipKeys;
 
     /** */
-    private byte flags;
+    @Order(21)
+    byte flags;
 
     /**
      * Empty constructor.
@@ -165,10 +172,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /**
      * Send initial query request to specified nodes.
      *
+     * @param cctx Cache context.
      * @param reqId Request (cache query) ID.
      * @param fut Cache query future, contains query info.
      */
-    public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
+    static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
         GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         GridCacheQueryBean bean = fut.query();
         CacheQuery<?> qry = bean.query();
@@ -198,7 +206,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            deployFilterOrTransformer,
             qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
@@ -206,39 +214,36 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /**
      * Send request for fetching query result pages to specified nodes.
      *
+     * @param cctx Cache context.
      * @param reqId Request (cache query) ID.
+     * @param qry Query.
      */
-    public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        CacheQuery<?> qry, boolean fields) {
-
+    static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId, CacheQuery<?> qry) {
         return new GridCacheQueryRequest(
             cctx.cacheId(),
             reqId,
             cctx.name(),
             qry.pageSize(),
             qry.includeBackups(),
-            fields,
             false,
             qry.keepBinary(),
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
             qry.isDataPageScanEnabled());
     }
 
     /**
      * Send cancel query request, so no new pages will be sent.
      *
+     * @param cctx Cache context.
      * @param reqId Query request ID.
-     * @param fieldsQry Whether query is a fields query.
      */
-    public static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId, boolean fieldsQry) {
+    static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId) {
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
-            fieldsQry,
-            cctx.affinity().affinityTopologyVersion(),
-            cctx.deploymentEnabled());
+            cctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -246,22 +251,16 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      *
      * @param cacheId Cache ID.
      * @param id Request to cancel.
-     * @param fields Fields query flag.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info flag.
      */
     private GridCacheQueryRequest(
         int cacheId,
         long id,
-        boolean fields,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         this.cacheId = cacheId;
         this.id = id;
-        this.fields = fields;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
 
         cancel = true;
     }
@@ -274,7 +273,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param cacheName Cache name.
      * @param pageSize Page size.
      * @param incBackups {@code true} if need to include backups.
-     * @param fields Fields query flag.
      * @param all Whether to load all pages.
      * @param keepBinary Whether to keep binary.
      * @param taskHash Task name hash code.
@@ -288,7 +286,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         String cacheName,
         int pageSize,
         boolean incBackups,
-        boolean fields,
         boolean all,
         boolean keepBinary,
         int taskHash,
@@ -301,7 +298,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.cacheName = cacheName;
         this.pageSize = pageSize;
         this.incBackups = incBackups;
-        this.fields = fields;
         this.all = all;
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
@@ -362,14 +358,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert type != null || fields;
-        assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);
-        assert clsName != null || fields || type == SCAN || type == SET || type == SPI;
+        assert clause != null || (type == SCAN || type == SET || type == INDEX);
+        assert clsName != null || fields || type == SCAN || type == SET;
 
         this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
         this.type = type;
-        this.fields = fields;
         this.clause = clause;
         this.idxQryDesc = idxQryDesc;
         this.limit = limit;
@@ -411,11 +406,18 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return topVer != null ? topVer : AffinityTopologyVersion.NONE;
     }
 
+    /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (keyValFilter != null && keyValFilterBytes == null) {
             if (addDepInfo)
@@ -461,7 +463,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         Marshaller mrsh = ctx.marshaller();
@@ -500,19 +502,19 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param ctx Context.
      * @throws IgniteCheckedException In case of error.
      */
-    void beforeLocalExecution(GridCacheContext ctx) throws IgniteCheckedException {
+    void beforeLocalExecution(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
         Marshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? U.<IgniteReducer<Object, Object>>unmarshal(marsh, U.marshal(marsh, rdc),
+        rdc = rdc != null ? U.unmarshal(marsh, U.marshal(marsh, rdc),
             U.resolveClassLoader(ctx.gridConfig())) : null;
         trans = trans != null ? U.<IgniteClosure<Object, Object>>unmarshal(marsh, U.marshal(marsh, trans),
             U.resolveClassLoader(ctx.gridConfig())) : null;
-        idxQryDesc = idxQryDesc != null ? U.<IndexQueryDesc>unmarshal(marsh, U.marshal(marsh, idxQryDesc),
+        idxQryDesc = idxQryDesc != null ? U.unmarshal(marsh, U.marshal(marsh, idxQryDesc),
             U.resolveClassLoader(ctx.gridConfig())) : null;
     }
 
     /**
-     * @return Request id.
+     * @return Request ID.
      */
     public long id() {
         return id;
@@ -530,13 +532,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     public GridCacheQueryType type() {
         return type;
-    }
-
-    /**
-     * @return {@code true} if query returns fields.
-     */
-    public boolean fields() {
-        return fields;
     }
 
     /**
@@ -665,367 +660,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @return partition.
+     * @return Partition.
      */
     @Override public int partition() {
         return part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeBoolean(all))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByteArray(argsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeString(cacheName))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeBoolean(cancel))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeString(clause))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeString(clsName))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeBoolean(fields))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeLong(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeBoolean(incBackups))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeBoolean(incMeta))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeBoolean(keepBinary))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeByteArray(keyValFilterBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeInt(pageSize))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeInt(part))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeByteArray(rdcBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeInt(limit))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeInt(taskHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeByteArray(transBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeByte(type != null ? (byte)type.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeByteArray(idxQryDescBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
-                if (!writer.writeCollection(skipKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                all = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                argsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                cacheName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                cancel = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                clause = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                clsName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                fields = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                id = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                incBackups = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                incMeta = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                keepBinary = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                keyValFilterBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                pageSize = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                part = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                rdcBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                limit = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                taskHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                transBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                byte typeOrd;
-
-                typeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                type = GridCacheQueryType.fromOrdinal(typeOrd);
-
-                reader.incrementState();
-
-            case 25:
-                idxQryDescBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                skipKeys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

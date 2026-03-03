@@ -326,6 +326,20 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
+     * @return Local query flag.
+     */
+    public boolean isLocal() {
+        return props.isLocal();
+    }
+
+    /**
+     * @param loc Local query flag.
+     */
+    public void setLocal(boolean loc) {
+        props.setLocal(loc);
+    }
+
+    /**
      * @return Skip reducer on update flag.
      */
     public boolean isSkipReducerOnUpdate() {

@@ -100,7 +100,13 @@ class SystemViewFileWriter extends GridWorker {
             "metrics",
             "caches",
             "sql.queries",
-            "nodes");
+            "nodes",
+            "cacheGroupPageLists",
+            "dataRegionPageLists",
+            "partitionStates",
+            "statisticsPartitionData",
+            "metastorage",
+            "distributed.metastorage");
         sysViewPredicate = view -> !ignoredViews.contains(view.name());
 
         doWrite(buf -> {

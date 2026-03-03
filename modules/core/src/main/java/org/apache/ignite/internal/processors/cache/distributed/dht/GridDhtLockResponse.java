@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -33,25 +31,24 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * DHT cache lock response.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtLockResponse extends GridDistributedLockResponse {
-    /** Mini ID. */
-    private IgniteUuid miniId;
+    /** Mini future ID. */
+    @Order(0)
+    IgniteUuid miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
-    @GridDirectCollection(int.class)
-    private Collection<Integer> invalidParts;
+    @Order(1)
+    Collection<Integer> invalidParts;
 
-    /** Preload entries. */
-    @GridDirectCollection(GridCacheEntryInfo.class)
-    private List<GridCacheEntryInfo> preloadEntries;
+    /** Preload entries returned from backup. */
+    @Order(2)
+    List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor.
@@ -65,11 +62,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param cnt Key count.
-     * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
-        boolean addDepInfo) {
-        super(cacheId, lockVer, futId, cnt, addDepInfo);
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt) {
+        super(cacheId, lockVer, futId, cnt);
 
         assert miniId != null;
 
@@ -81,11 +76,10 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
-     * @param addDepInfo Deployment info.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
-        Throwable err, boolean addDepInfo) {
-        super(cacheId, lockVer, futId, err, addDepInfo);
+        Throwable err) {
+        super(cacheId, lockVer, futId, err);
 
         assert miniId != null;
 
@@ -97,6 +91,13 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      */
     public IgniteUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @param miniId New mini future ID.
+     */
+    public void miniId(IgniteUuid miniId) {
+        this.miniId = miniId;
     }
 
     /**
@@ -113,7 +114,14 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Invalid partitions.
      */
     public Collection<Integer> invalidPartitions() {
-        return invalidParts == null ? Collections.emptySet() : invalidParts;
+        return invalidParts;
+    }
+
+    /**
+     * @param invalidParts New invalid partitions.
+     */
+    public void invalidPartitions(Collection<Integer> invalidParts) {
+        this.invalidParts = invalidParts;
     }
 
     /**
@@ -129,12 +137,17 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     }
 
     /**
-     * Gets preload entries returned from backup.
-     *
-     * @return Collection of preload entries.
+     * @return Preload entries returned from backup.
      */
     public Collection<GridCacheEntryInfo> preloadEntries() {
-        return preloadEntries == null ? Collections.emptyList() : preloadEntries;
+        return preloadEntries;
+    }
+
+    /**
+     * @param preloadEntries New preload entries returned from backup.
+     */
+    public void preloadEntries(List<GridCacheEntryInfo> preloadEntries) {
+        this.preloadEntries = preloadEntries;
     }
 
     /** {@inheritDoc} */
@@ -153,81 +166,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         if (preloadEntries != null)
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 11:
-                if (!writer.writeCollection(invalidParts, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeIgniteUuid(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 11:
-                invalidParts = reader.readCollection(MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                miniId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                preloadEntries = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

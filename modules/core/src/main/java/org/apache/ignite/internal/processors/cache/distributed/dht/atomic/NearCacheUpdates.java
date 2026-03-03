@@ -33,70 +33,35 @@ import org.jetbrains.annotations.Nullable;
  */
 public class NearCacheUpdates implements Message {
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
-    @Order(value = 0, method = "nearValuesIndexes")
-    private List<Integer> nearValsIdxs;
+    @Order(0)
+    List<Integer> nearValsIdxs;
 
     /** Indexes of keys for which update was skipped (used if originating node has near cache). */
-    @Order(value = 1, method = "skippedIndexes")
-    private List<Integer> nearSkipIdxs;
+    @Order(1)
+    List<Integer> nearSkipIdxs;
 
     /** Values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
-    @Order(value = 2, method = "nearValues")
-    private List<CacheObject> nearVals;
+    @Order(2)
+    List<CacheObject> nearVals;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
-    @Order(value = 3, method = "nearVersion")
-    private GridCacheVersion nearVer;
+    @Order(3)
+    GridCacheVersion nearVer;
 
     /** Near TTLs. */
     @Order(4)
-    private GridLongList nearTtls;
+    GridLongList nearTtls;
 
     /** Near expire times. */
     @Order(5)
-    private GridLongList nearExpireTimes;
+    GridLongList nearExpireTimes;
 
     /**
      * @return Values.
      */
     public List<CacheObject> nearValues() {
         return nearVals;
-    }
-
-    /**
-     * @param nearVals values.
-     */
-    public void nearValues(List<CacheObject> nearVals) {
-        this.nearVals = nearVals;
-    }
-
-    /**
-     * @return Near TTLs.
-     */
-    public GridLongList nearTtls() {
-        return nearTtls;
-    }
-
-    /**
-     * @param nearTtls Near TTLs.
-     */
-    public void nearTtls(GridLongList nearTtls) {
-        this.nearTtls = nearTtls;
-    }
-
-    /**
-     * @return Near expire times.
-     */
-    public GridLongList nearExpireTimes() {
-        return nearExpireTimes;
-    }
-
-    /**
-     * @param nearExpireTimes Near expire times.
-     */
-    public void nearExpireTimes(GridLongList nearExpireTimes) {
-        this.nearExpireTimes = nearExpireTimes;
     }
 
     /**
@@ -215,24 +180,10 @@ public class NearCacheUpdates implements Message {
     }
 
     /**
-     * @param nearSkipIdxs Indexes of keys for which update was skipped
-     */
-    public void skippedIndexes(List<Integer> nearSkipIdxs) {
-        this.nearSkipIdxs = nearSkipIdxs;
-    }
-
-    /**
      * @return Indexes of keys for which values were generated on primary node.
      */
     public @Nullable List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
-    }
-
-    /**
-     * @param nearValsIdxs Indexes of keys for which values were generated on primary node.
-     */
-    public void nearValuesIndexes(List<Integer> nearValsIdxs) {
-        this.nearValsIdxs = nearValsIdxs;
     }
 
     /**
@@ -246,11 +197,6 @@ public class NearCacheUpdates implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -51;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

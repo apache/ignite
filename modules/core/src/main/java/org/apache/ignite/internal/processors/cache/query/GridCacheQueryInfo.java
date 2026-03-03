@@ -49,9 +49,6 @@ class GridCacheQueryInfo {
     private long reqId;
 
     /** */
-    private boolean incMeta;
-
-    /** */
     private boolean all;
 
     /** */
@@ -65,7 +62,6 @@ class GridCacheQueryInfo {
      * @param locFut Query future in case of local query.
      * @param sndId Sender node id.
      * @param reqId Request id in case of distributed query.
-     * @param incMeta Include meta data or not.
      * @param all Whether to load all pages.
      * @param args Arguments.
      */
@@ -77,7 +73,6 @@ class GridCacheQueryInfo {
         GridCacheLocalQueryFuture<?, ?, ?> locFut,
         UUID sndId,
         long reqId,
-        boolean incMeta,
         boolean all,
         Object[] args
     ) {
@@ -88,7 +83,6 @@ class GridCacheQueryInfo {
         this.locFut = locFut;
         this.sndId = sndId;
         this.reqId = reqId;
-        this.incMeta = incMeta;
         this.all = all;
         this.args = args;
     }
@@ -140,13 +134,6 @@ class GridCacheQueryInfo {
      */
     long requestId() {
         return reqId;
-    }
-
-    /**
-     * @return Include meta data or not.
-     */
-    boolean includeMetaData() {
-        return incMeta;
     }
 
     /**

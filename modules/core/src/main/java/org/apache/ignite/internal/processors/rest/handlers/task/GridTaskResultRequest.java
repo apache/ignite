@@ -27,11 +27,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class GridTaskResultRequest implements Message {
     /** Task ID. */
     @Order(0)
-    private IgniteUuid taskId;
+    IgniteUuid taskId;
 
     /** Topic ID. */
     @Order(1)
-    private long topicId;
+    long topicId;
 
     /**
      * Empty constructor.
@@ -57,31 +57,10 @@ public class GridTaskResultRequest implements Message {
     }
 
     /**
-     * @param taskId Task ID.
-     */
-    public void taskId(IgniteUuid taskId) {
-        assert taskId != null;
-
-        this.taskId = taskId;
-    }
-
-    /**
      * @return Topic ID.
      */
     public long topicId() {
         return topicId;
-    }
-
-    /**
-     * @param topicId New topic ID.
-     */
-    public void topicId(long topicId) {
-        this.topicId = topicId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

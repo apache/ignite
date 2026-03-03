@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ExecutorAwareMessage;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,33 +38,40 @@ public class GridIoMessage implements Message, SpanTransport {
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
     /** Policy. */
-    private byte plc;
+    @Order(0)
+    byte plc;
 
     /** Message topic. */
     @GridToStringInclude
-    @GridDirectTransient
     private Object topic;
 
     /** Topic bytes. */
-    private byte[] topicBytes;
+    @Order(1)
+    byte[] topicBytes;
 
     /** Topic ordinal. */
-    private int topicOrd = -1;
+    @Order(2)
+    int topicOrd = -1;
 
     /** Message ordered flag. */
-    private boolean ordered;
+    @Order(3)
+    boolean ordered;
 
     /** Message timeout. */
-    private long timeout;
+    @Order(4)
+    long timeout;
 
     /** Whether message can be skipped on timeout. */
-    private boolean skipOnTimeout;
+    @Order(5)
+    boolean skipOnTimeout;
 
     /** Message. */
-    private Message msg;
+    @Order(6)
+    Message msg;
 
     /** Serialized span */
-    private byte[] span;
+    @Order(7)
+    byte[] span;
 
     /**
      * Default constructor.
@@ -107,7 +114,7 @@ public class GridIoMessage implements Message, SpanTransport {
     /**
      * @return Policy.
      */
-    byte policy() {
+    public byte policy() {
         return plc;
     }
 
@@ -126,23 +133,9 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @return Topic bytes.
-     */
-    byte[] topicBytes() {
-        return topicBytes;
-    }
-
-    /**
-     * @param topicBytes Topic bytes.
-     */
-    void topicBytes(byte[] topicBytes) {
-        this.topicBytes = topicBytes;
-    }
-
-    /**
      * @return Topic ordinal.
      */
-    int topicOrdinal() {
+    public int topicOrdinal() {
         return topicOrd;
     }
 
@@ -170,13 +163,8 @@ public class GridIoMessage implements Message, SpanTransport {
     /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
-    boolean isOrdered() {
+    public boolean isOrdered() {
         return ordered;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        msg.onAckReceived();
     }
 
     /** {@inheritDoc} */
@@ -187,145 +175,6 @@ public class GridIoMessage implements Message, SpanTransport {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         throw new AssertionError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(msg))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean(ordered))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByte(plc))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeBoolean(skipOnTimeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeByteArray(span))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeByteArray(topicBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt(topicOrd))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                msg = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                ordered = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                plc = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                skipOnTimeout = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                span = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                timeout = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                topicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                topicOrd = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -365,6 +214,26 @@ public class GridIoMessage implements Message, SpanTransport {
             return ((ExecutorAwareMessage)msg).executorName();
 
         return null;
+    }
+
+    /**
+     * @param marsh Marshaller.
+     */
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (topic != null && topicBytes == null)
+            topicBytes = U.marshal(marsh, topic);
+    }
+
+    /**
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     */
+    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (topicBytes != null && topic == null) {
+            topic = U.unmarshal(marsh, topicBytes, ldr);
+
+            topicBytes = null;
+        }
     }
 
     /** {@inheritDoc} */

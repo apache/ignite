@@ -17,17 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,7 +33,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Mini future ID. */
-    private int miniId;
+    @Order(0)
+    int miniId;
 
     /**
      * Empty constructor.
@@ -50,7 +49,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param threadId Thread ID.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
      * @param plc IO policy.
      * @param syncMode Write synchronization mode.
      * @param explicitLock Explicit lock flag.
@@ -59,9 +57,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
@@ -69,7 +65,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         long threadId,
         boolean commit,
         boolean invalidate,
-        boolean sys,
         byte plc,
         CacheWriteSynchronizationMode syncMode,
         boolean explicitLock,
@@ -78,9 +73,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize,
-        int taskNameHash,
-        boolean addDepInfo) {
+        int taskNameHash) {
         super(
             xidVer,
             futId,
@@ -89,15 +82,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             threadId,
             commit,
             invalidate,
-            sys,
             plc,
             syncMode,
             baseVer,
             committedVers,
             rolledbackVers,
-            taskNameHash,
-            txSize,
-            addDepInfo
+            taskNameHash
         );
 
         explicitLock(explicitLock);
@@ -142,57 +132,10 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(int miniId) {
+    public void updateMiniId(int miniId) {
         assert miniId > 0;
 
         this.miniId = miniId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 21:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 21:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

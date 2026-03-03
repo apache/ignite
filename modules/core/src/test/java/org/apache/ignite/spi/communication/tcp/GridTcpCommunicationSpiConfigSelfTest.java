@@ -194,7 +194,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
                 // No-op.
             }
 
-            return new MetricRegistryImpl(name, null, null, new NullLogger());
+            return new MetricRegistryImpl(name, null, null, null, new NullLogger());
         });
 
         TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLog, true);

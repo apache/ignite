@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,19 +30,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ContinuousRoutineStartResultMessage implements Message {
     /** */
-    private static final int ERROR_FLAG = 0x01;
+    @Order(0)
+    UUID routineId;
 
     /** */
-    private UUID routineId;
+    @Order(1)
+    @Nullable ErrorMessage errMsg;
 
     /** */
-    private byte[] errBytes;
-
-    /** */
-    private byte[] cntrsMapBytes;
-
-    /** */
-    private int flags;
+    @Order(2)
+    CachePartitionPartialCountersMap cntrsMap;
 
     /**
      *
@@ -54,138 +50,45 @@ public class ContinuousRoutineStartResultMessage implements Message {
 
     /**
      * @param routineId Routine ID.
-     * @param cntrsMapBytes Marshalled {@link CachePartitionPartialCountersMap}.
-     * @param errBytes Error bytes.
-     * @param err {@code True} if failed to start routine.
+     * @param cntrsMap Counters map.
+     * @param err Error.
      */
-    ContinuousRoutineStartResultMessage(UUID routineId, byte[] cntrsMapBytes, byte[] errBytes, boolean err) {
+    ContinuousRoutineStartResultMessage(
+        UUID routineId,
+        @Nullable CachePartitionPartialCountersMap cntrsMap,
+        @Nullable Throwable err
+    ) {
         this.routineId = routineId;
-        this.cntrsMapBytes = cntrsMapBytes;
-        this.errBytes = errBytes;
+        this.cntrsMap = cntrsMap;
 
-        if (err)
-            flags |= ERROR_FLAG;
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
-     * @return Marshalled {@link CachePartitionPartialCountersMap}.
+     * @return Counters map.
      */
-    @Nullable byte[] countersMapBytes() {
-        return cntrsMapBytes;
-    }
-
-    /**
-     * @return {@code True} if failed to start routine.
-     */
-    boolean error() {
-        return (flags & ERROR_FLAG) != 0;
+    public @Nullable CachePartitionPartialCountersMap countersMap() {
+        return cntrsMap;
     }
 
     /**
      * @return Routine ID.
      */
-    UUID routineId() {
+    public UUID routineId() {
         return routineId;
     }
 
     /**
-     * @return Error bytes.
+     * @return Error message.
      */
-    @Nullable byte[] errorBytes() {
-        return errBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(cntrsMapBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeUuid(routineId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cntrsMapBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                flags = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                routineId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 134;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

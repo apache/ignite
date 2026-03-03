@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -55,29 +54,26 @@ public class ReencryptionSuspendTask extends CacheGroupEncryptionTask<Boolean> {
 
         /** {@inheritDoc} */
         @Override protected SingleFieldDto<Boolean> run0(CacheGroupContext grp) throws IgniteCheckedException {
-            return new ReencryptionSuspendResumeJobResult().value(
-                ignite.context().encryption().suspendReencryption(grp.groupId()));
+            ReencryptionSuspendResumeJobResult res = new ReencryptionSuspendResumeJobResult();
+
+            res.val = ignite.context().encryption().suspendReencryption(grp.groupId());
+
+            return res;
         }
     }
 
     /** */
-    protected static class ReencryptionSuspendResumeJobResult extends SingleFieldDto<Boolean> {
+    public static class ReencryptionSuspendResumeJobResult extends IgniteDataTransferObject implements SingleFieldDto<Boolean> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        public ReencryptionSuspendResumeJobResult() {
-            // No-op.
-        }
+        @Order(0)
+        Boolean val;
 
         /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            out.writeBoolean(value());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            value(in.readBoolean());
+        @Override public Boolean value() {
+            return val;
         }
     }
 }

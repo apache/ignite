@@ -16,8 +16,6 @@
 
 :javaFile: {javaCodeDir}/Tracing.java
 
-WARNING: This feature is experimental.
-
 A number of APIs in Ignite are instrumented for tracing with OpenCensus.
 You can collect distributed traces of various tasks executed in your cluster and use this information to diagnose latency problems.
 
@@ -82,12 +80,6 @@ The following sections describe the two ways of enabling trace sampling.
 === Using Control Script
 
 Go to the `{IGNITE_HOME}/bin` directory of your Ignite installation.
-Enable experimental commands in the control script:
-
-[source, shell]
-----
-export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
-----
 
 Enable tracing for a specific API:
 

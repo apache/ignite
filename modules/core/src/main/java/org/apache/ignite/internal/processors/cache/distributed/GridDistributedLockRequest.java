@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -32,9 +30,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,50 +46,64 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final int STORE_USED_FLAG_MASK = 0x04;
 
+    /** */
+    private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
+
     /** Sender node ID. */
-    private UUID nodeId;
+    @Order(0)
+    public UUID nodeId;
 
     /** Near transaction version. */
-    private GridCacheVersion nearXidVer;
+    @Order(1)
+    public GridCacheVersion nearXidVer;
 
     /** Thread ID. */
-    private long threadId;
+    @Order(2)
+    public long threadId;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    @Order(3)
+    public IgniteUuid futId;
 
     /** Max wait timeout. */
-    private long timeout;
+    @Order(4)
+    public long timeout;
 
     /** Indicates whether lock is obtained within a scope of transaction. */
-    private boolean isInTx;
+    @Order(5)
+    public boolean isInTx;
 
     /** Invalidate flag for transactions. */
-    private boolean isInvalidate;
+    @Order(6)
+    public boolean isInvalidate;
 
     /** Indicates whether implicit lock so for read or write operation. */
-    private boolean isRead;
+    @Order(7)
+    public boolean isRead;
 
-    /** Transaction isolation. */
-    private TransactionIsolation isolation;
+    /** Transaction isolation level. */
+    @Order(8)
+    public TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> keys;
+    @Order(9)
+    public List<KeyCacheObject> keys;
 
     /** Array indicating whether value should be returned for a key. */
+    @Order(10)
     @GridToStringInclude
-    private boolean[] retVals;
+    public boolean[] retVals;
 
     /** Key-bytes index. */
-    @GridDirectTransient
     protected int idx;
 
     /** Key count. */
-    private int txSize;
+    @Order(11)
+    public int txSize;
 
     /** Additional flags. */
-    private byte flags;
+    @Order(12)
+    public byte flags;
 
     /**
      * Empty constructor.
@@ -118,7 +127,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -135,10 +143,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int keyCnt,
         int txSize,
         boolean skipStore,
-        boolean keepBinary,
-        boolean addDepInfo
+        boolean skipReadThrough,
+        boolean keepBinary
     ) {
-        super(lockVer, keyCnt, addDepInfo);
+        super(lockVer, keyCnt, false);
 
         assert keyCnt > 0;
         assert futId != null;
@@ -159,11 +167,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         retVals = new boolean[keyCnt];
 
         skipStore(skipStore);
+        skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
     }
 
     /**
-     *
      * @return Node ID.
      */
     public UUID nodeId() {
@@ -178,7 +186,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     *
      * @return Owner node thread ID.
      */
     public long threadId() {
@@ -238,9 +245,25 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * Sets skip store flag value.
+     *
+     * @param skipReadThrough Skip read-through cache store flag.
+     */
+    private void skipReadThrough(boolean skipReadThrough) {
+        flags = skipReadThrough ? (byte)(flags | SKIP_READ_THROUGH_FLAG_MASK) : (byte)(flags & ~SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipReadThrough() {
+        return (flags & SKIP_READ_THROUGH_FLAG_MASK) != 0;
+    }
+
+    /**
      * @param keepBinary Keep binary flag.
      */
-    public void keepBinary(boolean keepBinary) {
+    private void keepBinary(boolean keepBinary) {
         flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
     }
 
@@ -269,7 +292,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Transaction isolation or <tt>null</tt> if not in transaction.
+     * @return Transaction isolation level.
      */
     public TransactionIsolation isolation() {
         return isolation;
@@ -340,225 +363,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 8:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeBoolean(isInTx))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeBoolean(isInvalidate))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeBoolean(isRead))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeByte(isolation != null ? (byte)isolation.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeMessage(nearXidVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeUuid(nodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeBooleanArray(retVals))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeLong(threadId))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeLong(timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeInt(txSize))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 8:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                isInTx = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                isInvalidate = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                isRead = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                byte isolationOrd;
-
-                isolationOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
-
-                reader.incrementState();
-
-            case 14:
-                keys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                nearXidVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                nodeId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                retVals = reader.readBooleanArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                threadId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                timeout = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                txSize = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

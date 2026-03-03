@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.commandline.cache.distribution;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,10 +39,12 @@ public class CacheDistributionTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Job results. */
-    private List<CacheDistributionNode> nodeResList;
+    @Order(0)
+    List<CacheDistributionNode> nodeResList;
 
     /** Exceptions. */
-    private Map<UUID, Exception> exceptions;
+    @Order(1)
+    Map<UUID, Exception> exceptions;
 
     /**
      * @param nodeResList Cluster infos.
@@ -74,18 +74,6 @@ public class CacheDistributionTaskResult extends IgniteDataTransferObject {
      */
     public Map<UUID, Exception> exceptions() {
         return exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, nodeResList);
-        U.writeMap(out, exceptions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeResList = U.readList(in);
-        exceptions = U.readMap(in);
     }
 
     /** {@inheritDoc} */

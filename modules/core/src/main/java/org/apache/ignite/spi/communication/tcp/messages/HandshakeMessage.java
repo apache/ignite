@@ -17,38 +17,37 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Handshake message.
  */
-@IgniteCodeGeneratingFail
 public class HandshakeMessage implements Message {
     /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 36;
+    private static final int MESSAGE_SIZE = 36 + 1; // additional byte for null flag of UUID value.
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
-    private UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
     /** */
-    private long rcvCnt;
+    @Order(1)
+    long rcvCnt;
 
     /** */
-    private long connectCnt;
+    @Order(2)
+    long connectCnt;
 
     /** */
-    private int connIdx;
+    @Order(3)
+    int connIdx;
 
     /**
      * Default constructor.
@@ -106,53 +105,6 @@ public class HandshakeMessage implements Message {
      */
     public int getMessageSize() {
         return MESSAGE_FULL_SIZE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
-
-        TcpCommunicationSpi.writeMessageType(buf, directType());
-
-        byte[] bytes = U.uuidToBytes(nodeId);
-
-        assert bytes.length == 16 : bytes.length;
-
-        buf.put(bytes);
-
-        buf.putLong(rcvCnt);
-
-        buf.putLong(connectCnt);
-
-        buf.putInt(connIdx);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        if (buf.remaining() < MESSAGE_SIZE)
-            return false;
-
-        byte[] nodeIdBytes = new byte[NodeIdMessage.MESSAGE_SIZE];
-
-        buf.get(nodeIdBytes);
-
-        nodeId = U.bytesToUuid(nodeIdBytes, 0);
-
-        rcvCnt = buf.getLong();
-
-        connectCnt = buf.getLong();
-
-        connIdx = buf.getInt();
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -208,6 +208,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @param needVer Need version.
      * @return Loaded values.
      */
@@ -221,6 +222,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean needVer
     ) {
         if (F.isEmpty(keys))
@@ -232,7 +234,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
-            !skipStore,
+            !skipStore && !skipReadThrough,
             forcePrimary,
             txx,
             taskName,

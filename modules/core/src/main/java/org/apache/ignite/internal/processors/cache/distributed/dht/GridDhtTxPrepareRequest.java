@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -27,8 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -41,9 +39,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,61 +46,69 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Max order. */
-    private UUID nearNodeId;
+    @Order(0)
+    UUID nearNodeId;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    @Order(1)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    private int miniId;
+    @Order(2)
+    int miniId;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    @Order(3)
+    AffinityTopologyVersion topVer;
 
     /** Invalidate near entries flags. */
-    private BitSet invalidateNearEntries;
+    @Order(4)
+    BitSet invalidateNearEntries;
 
     /** Near writes. */
+    @Order(5)
     @GridToStringInclude
-    @GridDirectCollection(IgniteTxEntry.class)
-    private Collection<IgniteTxEntry> nearWrites;
+    Collection<IgniteTxEntry> nearWrites;
 
     /** Owned versions by key. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> ownedKeys;
+    @Order(6)
+    Collection<IgniteTxKey> ownedKeys;
 
     /** Owned values. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> ownedVals;
+    @Order(7)
+    Collection<GridCacheVersion> ownedVals;
 
     /** */
-    @GridDirectCollection(PartitionUpdateCountersMessage.class)
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    @Order(8)
+    Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
+    @Order(9)
+    GridCacheVersion nearXidVer;
 
     /** Task name hash. */
-    private int taskNameHash;
+    @Order(10)
+    int taskNameHash;
 
     /** Preload keys. */
-    private BitSet preloadKeys;
+    @Order(11)
+    BitSet preloadKeys;
 
     /** */
-    @GridDirectTransient
     private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
-    private boolean skipCompletedVers;
+    @Order(12)
+    boolean skipCompletedVers;
 
     /** Transaction label. */
+    @Order(13)
     @GridToStringInclude
-    @Nullable private String txLbl;
+    @Nullable String txLbl;
 
     /**
      * Empty constructor.
@@ -125,7 +128,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
-     * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
      * @param updCntrs Update counters for Tx.
@@ -143,7 +145,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean last,
         boolean onePhaseCommit,
         int taskNameHash,
-        boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
         Collection<PartitionUpdateCountersMessage> updCntrs) {
@@ -154,8 +155,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             txNodes,
             retVal,
             last,
-            onePhaseCommit,
-            addDepInfo);
+            onePhaseCommit);
 
         assert futId != null;
         assert miniId != 0;
@@ -389,235 +389,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 21:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeBitSet(invalidateNearEntries))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeUuid(nearNodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeCollection(nearWrites, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
-                if (!writer.writeMessage(nearXidVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 27:
-                if (!writer.writeCollection(ownedKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 28:
-                if (!writer.writeCollection(ownedVals, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 29:
-                if (!writer.writeBitSet(preloadKeys))
-                    return false;
-
-                writer.incrementState();
-
-            case 30:
-                if (!writer.writeBoolean(skipCompletedVers))
-                    return false;
-
-                writer.incrementState();
-
-            case 31:
-                if (!writer.writeInt(taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 32:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 33:
-                if (!writer.writeString(txLbl))
-                    return false;
-
-                writer.incrementState();
-
-            case 34:
-                if (!writer.writeCollection(updCntrs, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 21:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                invalidateNearEntries = reader.readBitSet();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                nearNodeId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
-                nearWrites = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                nearXidVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 27:
-                ownedKeys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 28:
-                ownedVals = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 29:
-                preloadKeys = reader.readBitSet();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 30:
-                skipCompletedVers = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 31:
-                taskNameHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 32:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 33:
-                txLbl = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 34:
-                updCntrs = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

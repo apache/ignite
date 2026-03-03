@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -275,7 +276,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     @Test
     public void testRequireSerializable() throws Exception {
         try {
-            OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+            OptimizedMarshaller marsh = Marshallers.optimized(true);
 
             marsh.setContext(CTX);
 
@@ -298,7 +299,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedUnmarshallingLogging() throws Exception {
-        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+        OptimizedMarshaller marsh = Marshallers.optimized(true);
 
         marsh.setContext(CTX);
 
@@ -320,7 +321,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedMarshallingLogging() throws Exception {
-        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+        OptimizedMarshaller marsh = Marshallers.optimized(true);
 
         marsh.setContext(CTX);
 
@@ -350,7 +351,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final OptimizedMarshaller marsh = new OptimizedMarshaller();
+        final OptimizedMarshaller marsh = Marshallers.optimized();
 
         marsh.setContext(CTX);
 

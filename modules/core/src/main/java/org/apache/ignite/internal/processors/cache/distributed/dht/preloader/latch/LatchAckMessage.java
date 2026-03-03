@@ -26,15 +26,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class LatchAckMessage implements Message {
     /** Latch id. */
     @Order(0)
-    private String latchId;
+    String latchId;
 
     /** Latch topology version. */
     @Order(1)
-    private AffinityTopologyVersion topVer;
+    AffinityTopologyVersion topVer;
 
     /** Flag indicates that ack is final. */
     @Order(2)
-    private boolean isFinal;
+    boolean isFinal;
 
     /**
      * Constructor.
@@ -63,24 +63,10 @@ public class LatchAckMessage implements Message {
     }
 
     /**
-     * @param latchId New latch id.
-     */
-    public void latchId(String latchId) {
-        this.latchId = latchId;
-    }
-
-    /**
      * @return Latch topology version.
      */
     public AffinityTopologyVersion topVer() {
         return topVer;
-    }
-
-    /**
-     * @param topVer New latch topology version.
-     */
-    public void topVer(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -90,20 +76,9 @@ public class LatchAckMessage implements Message {
         return isFinal;
     }
 
-    /**
-     * @param isFinal New flag indicates that ack is final.
-     */
-    public void isFinal(boolean isFinal) {
-        this.isFinal = isFinal;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 135;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
 }

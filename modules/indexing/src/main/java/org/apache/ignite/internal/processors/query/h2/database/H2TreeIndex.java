@@ -277,7 +277,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             Value v = row.getValue(colId);
 
-            IndexKeyType colType = rowHnd.indexKeyDefinitions().get(i).idxType();
+            IndexKeyType colType = rowHnd.indexKeyDefinitions().get(i).indexKeyType();
 
             if (v == null)
                 break;

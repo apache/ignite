@@ -17,33 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Schema operation status message.
  */
-@IgniteCodeGeneratingFail
 public class SchemaOperationStatusMessage implements Message {
     /** Operation ID. */
-    private UUID opId;
+    @Order(0)
+    UUID opId;
 
-    /** Error bytes (if any). */
-    private byte[] errBytes;
+    /** Error code. */
+    @Order(1)
+    int errCode;
+
+    /** Error message. */
+    @Order(2)
+    String errMsg;
 
     /** Sender node ID. */
-    @GridDirectTransient
     private UUID sndNodeId;
 
     /** No-op flag. */
-    private boolean nop;
+    @Order(3)
+    boolean nop;
 
     /**
      * Default constructor.
@@ -56,12 +57,14 @@ public class SchemaOperationStatusMessage implements Message {
      * Constructor.
      *
      * @param opId Operation ID.
-     * @param errBytes Error bytes.
+     * @param errCode Error code.
+     * @param errMsg Error message.
      * @param nop No-op flag.
      */
-    public SchemaOperationStatusMessage(UUID opId, byte[] errBytes, boolean nop) {
+    public SchemaOperationStatusMessage(UUID opId, int errCode, @Nullable String errMsg, boolean nop) {
         this.opId = opId;
-        this.errBytes = errBytes;
+        this.errCode = errCode;
+        this.errMsg = errMsg;
         this.nop = nop;
     }
 
@@ -73,10 +76,17 @@ public class SchemaOperationStatusMessage implements Message {
     }
 
     /**
-     * @return Error bytes.
+     * @return Error code.
      */
-    @Nullable public byte[] errorBytes() {
-        return errBytes;
+    public int errorCode() {
+        return errCode;
+    }
+
+    /**
+     * @return Error message.
+     */
+    @Nullable public String errorMessage() {
+        return errMsg;
     }
 
     /**
@@ -93,73 +103,6 @@ public class SchemaOperationStatusMessage implements Message {
         this.sndNodeId = sndNodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid(opId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(nop))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                opId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                nop = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
-    }
-
     /**
      * @return <code>True</code> if message is no-op.
      */
@@ -170,11 +113,6 @@ public class SchemaOperationStatusMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -53;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

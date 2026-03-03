@@ -326,6 +326,7 @@ public class GridReduceQueryExecutor {
     /**
      * @param qryId Query ID.
      * @param schemaName Schema name.
+     * @param qryInitiatorId Query initiator ID.
      * @param qry Query.
      * @param keepBinary Keep binary.
      * @param enforceJoinOrder Enforce join order of tables.
@@ -342,6 +343,7 @@ public class GridReduceQueryExecutor {
     public Iterator<List<?>> query(
         long qryId,
         String schemaName,
+        String qryInitiatorId,
         final GridCacheTwoStepQuery qry,
         boolean keepBinary,
         boolean enforceJoinOrder,
@@ -438,7 +440,8 @@ public class GridReduceQueryExecutor {
                         .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
                         .timeout(timeoutMillis)
                         .explicitTimeout(true)
-                        .schemaName(schemaName);
+                        .schemaName(schemaName)
+                        .queryInitiatorId(qryInitiatorId);
 
                     final C2<ClusterNode, Message, Message> spec =
                         parts == null ? null : new ReducePartitionsSpecializer(mapping.queryPartitionsMap());
@@ -513,7 +516,7 @@ public class GridReduceQueryExecutor {
                         H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
                         qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
-                            ctx.localNodeId(), qryId, qryReqId);
+                            ctx.localNodeId(), qryId, qryInitiatorId, qryReqId);
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 
@@ -745,8 +748,10 @@ public class GridReduceQueryExecutor {
 
                     mapQueries.add(copy);
 
-                    if (qry.explain())
-                        copy.query("EXPLAIN " + mapQry.query()).parameterIndexes(mapQry.parameterIndexes());
+                    if (qry.explain()) {
+                        copy.query("EXPLAIN " + mapQry.query());
+                        copy.parameterIndexes(mapQry.parameterIndexes());
+                    }
                 }
             }
         }
@@ -1255,7 +1260,6 @@ public class GridReduceQueryExecutor {
      * @return Table.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private ReduceTable createMergeTable(H2PooledConnection conn, GridCacheSqlQuery qry, boolean explain)
         throws IgniteCheckedException {
         try {

@@ -17,18 +17,15 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Recovery acknowledgment message.
  */
-@IgniteCodeGeneratingFail
 public class RecoveryLastReceivedMessage implements Message {
     /** */
     public static final long ALREADY_CONNECTED = -1;
@@ -42,14 +39,19 @@ public class RecoveryLastReceivedMessage implements Message {
     /** Initiator node is not in current topogy. */
     public static final long UNKNOWN_NODE = -4;
 
-    /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 8;
+    /**
+     * Message body size in bytes. In worst case it uses 10 bytes for serialization.
+     *
+     * @see DirectByteBufferStream#writeLong(long).
+     */
+    private static final int MESSAGE_SIZE = 10;
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
-    private long rcvCnt;
+    @Order(0)
+    long rcvCnt;
 
     /**
      * Default constructor.
@@ -70,33 +72,6 @@ public class RecoveryLastReceivedMessage implements Message {
      */
     public long received() {
         return rcvCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
-
-        TcpCommunicationSpi.writeMessageType(buf, directType());
-
-        buf.putLong(rcvCnt);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        if (buf.remaining() < MESSAGE_SIZE)
-            return false;
-
-        rcvCnt = buf.getLong();
-
-        return true;
     }
 
     /** {@inheritDoc} */

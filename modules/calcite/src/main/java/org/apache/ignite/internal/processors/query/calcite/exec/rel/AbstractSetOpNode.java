@@ -262,7 +262,7 @@ public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
 
         /** */
         protected GroupKey<Row> key(Row row) {
-            return new GroupKey<>(row, hnd);
+            return GroupKey.of(row, hnd);
         }
 
         /** */

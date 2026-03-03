@@ -257,6 +257,7 @@ public class GridMapQueryExecutor {
                                 req.requestId(),
                                 segment0,
                                 req.schemaName(),
+                                req.queryInitiatorId(),
                                 req.queries(),
                                 cacheIds,
                                 req.topologyVersion(),
@@ -285,6 +286,7 @@ public class GridMapQueryExecutor {
                 req.requestId(),
                 firstSegment,
                 req.schemaName(),
+                req.queryInitiatorId(),
                 req.queries(),
                 cacheIds,
                 req.topologyVersion(),
@@ -312,6 +314,7 @@ public class GridMapQueryExecutor {
      * @param reqId Request ID.
      * @param segmentId index segment ID.
      * @param schemaName Schema name.
+     * @param qryInitiatorId Query initiator ID.
      * @param qrys Queries to execute.
      * @param cacheIds Caches which will be affected by these queries.
      * @param topVer Topology version.
@@ -332,6 +335,7 @@ public class GridMapQueryExecutor {
         final long reqId,
         final int segmentId,
         final String schemaName,
+        final String qryInitiatorId,
         final Collection<GridCacheSqlQuery> qrys,
         final List<Integer> cacheIds,
         final AffinityTopologyVersion topVer,
@@ -464,7 +468,7 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, qryInitiatorId, reqId, segmentId);
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 

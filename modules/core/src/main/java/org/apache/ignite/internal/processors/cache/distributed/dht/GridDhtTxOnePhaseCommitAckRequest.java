@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * One Phase Commit Near transaction ack request.
@@ -34,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     /** Lock or transaction versions. */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
+    @Order(0)
     protected Collection<GridCacheVersion> vers;
 
     /**
@@ -42,16 +38,6 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
      */
     public GridDhtTxOnePhaseCommitAckRequest() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
     }
 
     /**
@@ -63,7 +49,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     }
 
     /**
-     * @return Version.
+     * @return Lock or transaction versions.
      */
     public Collection<GridCacheVersion> versions() {
         return vers;
@@ -77,53 +63,6 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeCollection(vers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                vers = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

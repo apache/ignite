@@ -49,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
+import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
@@ -153,7 +154,7 @@ public class FilePerformanceStatisticsReader {
 
             UUID nodeId = nodeId(file);
 
-            try (FileIO io = ioFactory.create(file)) {
+            try (FileIO io = ioFactory.create(file, READ)) {
                 fileIo = io;
                 boolean first = true;
 

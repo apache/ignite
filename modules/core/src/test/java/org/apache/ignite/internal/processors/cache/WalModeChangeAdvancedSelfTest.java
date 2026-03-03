@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -566,7 +567,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     String msg = e.getMessage();
 
                     assert msg.startsWith("Cache doesn't exist") ||
-                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
+                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") ||
+                        msg.startsWith("Cache group") && msg.contains("does not contain any caches") :
                         e.getMessage();
                 }
                 finally {
@@ -698,5 +700,92 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Test that WAL mode change for caches from the same group requires all caches to be specified.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalModeChangeRequiresAllGroupCaches() throws Exception {
+        IgniteEx srv = startGrid(config(SRV_1, false, false));
+
+        srv.cluster().state(ACTIVE);
+
+        CacheConfiguration<Integer, Integer> cacheCfg1 = cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL);
+        CacheConfiguration<Integer, Integer> cacheCfg2 = cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL);
+
+        cacheCfg1.setGroupName("testGroup");
+        cacheCfg2.setGroupName("testGroup");
+
+        srv.getOrCreateCache(cacheCfg1);
+        srv.getOrCreateCache(cacheCfg2);
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        assertThrows(
+            () -> {
+                srv.cluster().disableWal(CACHE_NAME);
+                return null;
+            },
+            IgniteException.class,
+            "Cannot change WAL mode because not all cache names belonging to the group are provided"
+        );
+
+        assertThrows(
+            () -> {
+                srv.cluster().disableWal(CACHE_NAME_2);
+                return null;
+            },
+            IgniteException.class,
+            "Cannot change WAL mode because not all cache names belonging to the group are provided"
+        );
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        assertThrows(
+            () -> {
+                srv.cluster().enableWal(CACHE_NAME);
+                return null;
+            },
+            IgniteException.class,
+            "Cannot change WAL mode because not all cache names belonging to the group are provided"
+        );
+
+        srv.cluster().disableWal("testGroup");
+
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        assertThrows(
+            () -> {
+                srv.cluster().enableWal(CACHE_NAME_2);
+                return null;
+            },
+            IgniteException.class,
+            "Cannot change WAL mode because not all cache names belonging to the group are provided"
+        );
+
+        srv.cluster().enableWal("testGroup");
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        srv.destroyCache(CACHE_NAME_2);
+
+        srv.cluster().disableWal(CACHE_NAME);
+        assertForAllNodes(CACHE_NAME, false);
+
+        srv.cluster().enableWal("testGroup");
+        assertForAllNodes(CACHE_NAME, true);
+
+        srv.cluster().disableWal("testGroup");
+        assertForAllNodes(CACHE_NAME, false);
+
+        srv.cluster().enableWal(CACHE_NAME);
+        assertForAllNodes(CACHE_NAME, true);
     }
 }

@@ -59,18 +59,18 @@ public abstract class GridCacheMessage implements Message {
     private static final long NULL_MSG_ID = -1;
 
     /** ID of this message. */
-    @Order(value = 0, method = "messageId")
-    private long msgId = NULL_MSG_ID;
+    @Order(0)
+    public long msgId = NULL_MSG_ID;
 
     /** */
     @GridToStringInclude
-    @Order(value = 1, method = "deployInfo")
-    private GridDeploymentInfoBean depInfo;
+    @Order(1)
+    public GridDeploymentInfoBean depInfo;
 
     /** */
     @GridToStringInclude
     @Order(value = 2, method = "lastAffinityChangedTopologyVersion")
-    private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
+    @Nullable public AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
     protected boolean addDepInfo;
@@ -83,16 +83,6 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     private boolean skipPrepare;
-
-    /**
-     * @return ID to distinguish message handlers for the same messages but for different caches/cache groups.
-     */
-    public abstract int handlerId();
-
-    /**
-     * @return {@code True} if cache group message.
-     */
-    public abstract boolean cacheGroupMessage();
 
     /**
      * @return Error, if any.
@@ -273,14 +263,6 @@ public abstract class GridCacheMessage implements Message {
      */
     public GridDeploymentInfoBean deployInfo() {
         return depInfo;
-    }
-
-    /**
-     * @param depInfo Preset deployment info.
-     * @see GridCacheDeployable#deployInfo()
-     */
-    public void deployInfo(GridDeploymentInfoBean depInfo) {
-        this.depInfo = depInfo;
     }
 
     /**
@@ -626,11 +608,6 @@ public abstract class GridCacheMessage implements Message {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /**
      * @param byteCol Collection to unmarshal.
      * @param ctx Context.
@@ -651,7 +628,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
-            col.add(bytes == null ? null : U.<T>unmarshal(marsh, bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
+            col.add(bytes == null ? null : U.unmarshal(marsh, bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
 
         return col;
     }

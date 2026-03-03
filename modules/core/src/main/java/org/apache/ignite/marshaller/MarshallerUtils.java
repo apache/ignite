@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.ClassSet;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,67 +56,14 @@ public class MarshallerUtils {
     /** Default white list class names file. */
     public static final String DEFAULT_WHITELIST_CLS_NAMES_FILE = "META-INF/classnames-default-whitelist.properties";
 
-    /** Job sender node version. */
-    private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
-
-    /** Job sender node version. */
-    private static final ThreadLocal<IgniteProductVersion> JOB_RCV_NODE_VER = new ThreadLocal<>();
-
     /** */
     private static final Object MUX = new Object();
-
-    /**
-     * Set node name to marshaller context if possible.
-     *
-     * @param marsh Marshaller instance.
-     * @param nodeName Node name.
-     */
-    public static void setNodeName(Marshaller marsh, @Nullable String nodeName) {
-        if (marsh instanceof AbstractNodeNameAwareMarshaller)
-            ((AbstractNodeNameAwareMarshaller)marsh).nodeName(nodeName);
-    }
 
     /**
      * Private constructor.
      */
     private MarshallerUtils() {
         // No-op.
-    }
-
-    /**
-     * Sets thread local job sender node version.
-     *
-     * @param ver Thread local job sender node version.
-     */
-    public static void jobSenderVersion(IgniteProductVersion ver) {
-        JOB_SND_NODE_VER.set(ver);
-    }
-
-    /**
-     * Returns thread local job sender node version.
-     *
-     * @return Thread local job sender node version.
-     */
-    public static IgniteProductVersion jobSenderVersion() {
-        return JOB_SND_NODE_VER.get();
-    }
-
-    /**
-     * Sets thread local job receiver node version.
-     *
-     * @param ver Thread local job receiver node version.
-     */
-    public static void jobReceiverVersion(IgniteProductVersion ver) {
-        JOB_RCV_NODE_VER.set(ver);
-    }
-
-    /**
-     * Returns thread local job receiver node version.
-     *
-     * @return Thread local job receiver node version.
-     */
-    public static IgniteProductVersion jobReceiverVersion() {
-        return JOB_RCV_NODE_VER.get();
     }
 
     /**

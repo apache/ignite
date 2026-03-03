@@ -101,7 +101,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
             @Override public MessageSerializer serializer(short type) {
                 return null;
             }
-        });
+        }, null);
 
         stream.setBuffer(buff);
 

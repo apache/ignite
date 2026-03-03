@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
@@ -27,12 +24,10 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
-import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
-@IgniteExperimental
 public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, TracingConfigurationTaskResult>
     implements ComputeCommand<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** */
@@ -79,16 +74,6 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     public abstract static class TracingConfigurationCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            // No-op.
-        }
     }
 
     /** */

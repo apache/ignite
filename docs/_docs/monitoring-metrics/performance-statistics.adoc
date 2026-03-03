@@ -14,8 +14,6 @@
 // limitations under the License.
 = Performance Statistics
 
-WARNING: This feature is experimental and may change in future releases.
-
 == Overview
 
 Ignite provides a built-in tool for cluster profiling.

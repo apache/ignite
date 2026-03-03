@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,7 +48,7 @@ public class GridNioSessionImpl implements GridNioSession {
     private final InetSocketAddress rmtAddr;
 
     /** Session create timestamp. */
-    private long createTime;
+    private final long createTime;
 
     /** Session close timestamp. */
     private final AtomicLong closeTime = new AtomicLong();
@@ -76,7 +78,7 @@ public class GridNioSessionImpl implements GridNioSession {
     private volatile boolean readsPaused;
 
     /** Filter chain that will handle write and close requests. */
-    private GridNioFilterChain filterChain;
+    private final GridNioFilterChain filterChain;
 
     /** Accepted flag. */
     private final boolean accepted;
@@ -110,7 +112,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> send(Object msg) {
+    @Override public IgniteInternalFuture<?> send(Object msg) {
         try {
             resetSendScheduleTime();
 
@@ -119,7 +121,7 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridFinishedFuture<Object>(e);
         }
     }
 
@@ -137,39 +139,39 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> resumeReads() {
+    @Override public IgniteInternalFuture<?> resumeReads() {
         try {
             return chain().onResumeReads(this);
         }
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridFinishedFuture<Object>(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> pauseReads() {
+    @Override public IgniteInternalFuture<?> pauseReads() {
         try {
             return chain().onPauseReads(this);
         }
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridFinishedFuture<Object>(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridNioFuture<Boolean> close() {
+    @Override public IgniteInternalFuture<Boolean> close() {
         markedForClose = true;
 
         try {
             return filterChain.onSessionClose(this);
         }
         catch (IgniteCheckedException e) {
-            return new GridNioFinishedFuture<>(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -238,6 +240,11 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Override public long lastSendScheduleTime() {
         return sndSchedTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int messagesQueueSize() {
+        return 0;
     }
 
     /** {@inheritDoc} */

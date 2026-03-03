@@ -112,7 +112,7 @@ public enum IgniteComponentType {
         "ignite-opencensus"
     ),
 
-    /** Experimental calcite based query engine. */
+    /** Calcite based query engine. */
     QUERY_ENGINE(
         NoOpQueryEngine.class.getName(),
         "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor",

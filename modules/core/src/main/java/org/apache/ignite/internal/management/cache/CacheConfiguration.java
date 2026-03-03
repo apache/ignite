@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -28,11 +25,12 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
@@ -44,130 +42,172 @@ public class CacheConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private String name;
+    @Order(0)
+    String name;
 
     /** Cache group name. */
-    private String grpName;
+    @Order(1)
+    String grpName;
 
     /** Cache mode. */
-    private CacheMode mode;
+    @Order(2)
+    CacheMode mode;
 
     /** Cache atomicity mode. */
-    private CacheAtomicityMode atomicityMode;
+    @Order(3)
+    CacheAtomicityMode atomicityMode;
 
     /** Eager ttl flag. */
-    private boolean eagerTtl;
+    @Order(4)
+    boolean eagerTtl;
 
     /** Write synchronization mode. */
-    private CacheWriteSynchronizationMode writeSynchronizationMode;
+    @Order(5)
+    CacheWriteSynchronizationMode writeSynchronizationMode;
 
     /** Invalidate. */
-    private boolean invalidate;
+    @Order(6)
+    boolean invalidate;
 
     /** Max concurrent async operations. */
-    private int maxConcurrentAsyncOps;
+    @Order(7)
+    int maxConcurrentAsyncOps;
 
     /** Cache interceptor. */
-    private String interceptor;
+    @Order(8)
+    String interceptor;
 
     /** Default lock acquisition timeout. */
-    private long dfltLockTimeout;
+    @Order(9)
+    long dfltLockTimeout;
 
     /** Cache affinity config. */
-    private CacheAffinityConfiguration affinityCfg;
+    @Order(10)
+    CacheAffinityConfiguration affinityCfg;
 
     /** Preload config. */
-    private CacheRebalanceConfiguration rebalanceCfg;
+    @Order(11)
+    CacheRebalanceConfiguration rebalanceCfg;
 
     /** Eviction config. */
-    private CacheEvictionConfiguration evictCfg;
+    @Order(12)
+    CacheEvictionConfiguration evictCfg;
 
     /** Near cache config. */
-    private CacheNearConfiguration nearCfg;
+    @Order(13)
+    CacheNearConfiguration nearCfg;
 
     /** Store config. */
-    private CacheStoreConfiguration storeCfg;
+    @Order(14)
+    CacheStoreConfiguration storeCfg;
 
     /** Collection of query entities. */
-    private List<QueryEntity> qryEntities;
+    @Order(15)
+    List<QueryEntity> qryEntities;
 
     /** Collection of type metadata. */
-    private List<CacheJdbcType> jdbcTypes;
+    @Order(16)
+    List<CacheJdbcType> jdbcTypes;
 
     /** Whether statistics collection is enabled. */
-    private boolean statisticsEnabled;
+    @Order(17)
+    boolean statisticsEnabled;
 
     /** Whether management is enabled. */
-    private boolean mgmtEnabled;
+    @Order(18)
+    boolean mgmtEnabled;
 
     /** Class name of cache loader factory. */
-    private String ldrFactory;
+    @Order(19)
+    String ldrFactory;
 
     /** Class name of cache writer factory. */
-    private String writerFactory;
+    @Order(20)
+    String writerFactory;
 
     /** Class name of expiry policy factory. */
-    private String expiryPlcFactory;
+    @Order(21)
+    String expiryPlcFactory;
 
     /** Query configuration. */
-    private QueryConfiguration qryCfg;
+    @Order(22)
+    QueryConfiguration qryCfg;
 
     /** System cache flag. */
-    private boolean sys;
+    @Order(23)
+    boolean sys;
 
     /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
+    @Order(24)
+    boolean storeKeepBinary;
 
     /** On-heap cache enabled flag. */
-    private boolean onheapCache;
+    @Order(25)
+    boolean onheapCache;
 
     /** Partition loss policy. */
-    private PartitionLossPolicy partLossPlc;
+    @Order(26)
+    PartitionLossPolicy partLossPlc;
 
     /** Query parallelism. */
-    private int qryParallelism;
+    @Order(27)
+    int qryParallelism;
 
     /** Copy on read flag. */
-    private boolean cpOnRead;
+    @Order(28)
+    boolean cpOnRead;
 
     /** Eviction filter. */
-    private String evictFilter;
+    @Order(29)
+    String evictFilter;
 
     /** Listener configurations. */
-    private String lsnrConfigurations;
+    @Order(30)
+    String lsnrConfigurations;
 
     /** */
-    private boolean loadPrevVal;
+    @Order(31)
+    boolean loadPrevVal;
 
     /** Name of {@link DataRegionConfiguration} for this cache */
-    private String dataRegName;
+    @Order(32)
+    String dataRegName;
 
     /** Maximum inline size for sql indexes. */
-    private int sqlIdxMaxInlineSize;
+    @Order(33)
+    int sqlIdxMaxInlineSize;
 
     /** Node filter specifying nodes on which this cache should be deployed. */
-    private String nodeFilter;
+    @Order(34)
+    String nodeFilter;
 
     /** */
-    private int qryDetailMetricsSz;
+    @Order(35)
+    int qryDetailMetricsSz;
 
     /** Flag indicating whether data can be read from backup. */
-    private boolean readFromBackup;
+    @Order(36)
+    boolean readFromBackup;
 
     /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
+    @Order(37)
+    String tmLookupClsName;
 
     /** Cache topology validator. */
-    private String topValidator;
+    @Order(38)
+    String topValidator;
 
     /** Dynamic deployment ID. */
-    private IgniteUuid dynamicDeploymentId;
+    @Order(39)
+    IgniteUuid dynamicDeploymentId;
 
     /** Disk page compression algorithm. */
-    private DiskPageCompression diskPageCompression;
+    @Order(40)
+    DiskPageCompression diskPageCompression;
 
     /** Algorithm specific disk page compression level. */
-    private Integer diskPageCompressionLevel;
+    @Order(41)
+    Integer diskPageCompressionLevel;
 
     /**
      * Default constructor.
@@ -536,98 +576,6 @@ public class CacheConfiguration extends IgniteDataTransferObject {
      */
     public Integer getDiskPageCompressionLevel() {
         return diskPageCompressionLevel;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        U.writeString(out, grpName);
-        out.writeByte(CacheMode.toCode(mode));
-        U.writeEnum(out, atomicityMode);
-        out.writeBoolean(eagerTtl);
-        U.writeEnum(out, writeSynchronizationMode);
-        out.writeBoolean(invalidate);
-        out.writeInt(maxConcurrentAsyncOps);
-        U.writeString(out, interceptor);
-        out.writeLong(dfltLockTimeout);
-        out.writeObject(affinityCfg);
-        out.writeObject(rebalanceCfg);
-        out.writeObject(evictCfg);
-        out.writeObject(nearCfg);
-        out.writeObject(storeCfg);
-        U.writeCollection(out, qryEntities);
-        U.writeCollection(out, jdbcTypes);
-        out.writeBoolean(statisticsEnabled);
-        out.writeBoolean(mgmtEnabled);
-        U.writeString(out, ldrFactory);
-        U.writeString(out, writerFactory);
-        U.writeString(out, expiryPlcFactory);
-        out.writeObject(qryCfg);
-        out.writeBoolean(sys);
-        out.writeBoolean(storeKeepBinary);
-        out.writeBoolean(onheapCache);
-        U.writeEnum(out, partLossPlc);
-        out.writeInt(qryParallelism);
-        out.writeBoolean(cpOnRead);
-        U.writeString(out, evictFilter);
-        U.writeString(out, lsnrConfigurations);
-        out.writeBoolean(loadPrevVal);
-        U.writeString(out, dataRegName);
-        out.writeInt(sqlIdxMaxInlineSize);
-        U.writeString(out, nodeFilter);
-        out.writeInt(qryDetailMetricsSz);
-        out.writeBoolean(readFromBackup);
-        U.writeString(out, tmLookupClsName);
-        U.writeString(out, topValidator);
-        U.writeIgniteUuid(out, dynamicDeploymentId);
-        U.writeEnum(out, diskPageCompression);
-        out.writeObject(diskPageCompressionLevel);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-        grpName = U.readString(in);
-        mode = CacheMode.fromCode(in.readByte());
-        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
-        eagerTtl = in.readBoolean();
-        writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
-        invalidate = in.readBoolean();
-        maxConcurrentAsyncOps = in.readInt();
-        interceptor = U.readString(in);
-        dfltLockTimeout = in.readLong();
-        affinityCfg = (CacheAffinityConfiguration)in.readObject();
-        rebalanceCfg = (CacheRebalanceConfiguration)in.readObject();
-        evictCfg = (CacheEvictionConfiguration)in.readObject();
-        nearCfg = (CacheNearConfiguration)in.readObject();
-        storeCfg = (CacheStoreConfiguration)in.readObject();
-        qryEntities = U.readList(in);
-        jdbcTypes = U.readList(in);
-        statisticsEnabled = in.readBoolean();
-        mgmtEnabled = in.readBoolean();
-        ldrFactory = U.readString(in);
-        writerFactory = U.readString(in);
-        expiryPlcFactory = U.readString(in);
-        qryCfg = (QueryConfiguration)in.readObject();
-        sys = in.readBoolean();
-        storeKeepBinary = in.readBoolean();
-        onheapCache = in.readBoolean();
-        partLossPlc = PartitionLossPolicy.fromOrdinal(in.readByte());
-        qryParallelism = in.readInt();
-        cpOnRead = in.readBoolean();
-        evictFilter = U.readString(in);
-        lsnrConfigurations = U.readString(in);
-        loadPrevVal = in.readBoolean();
-        dataRegName = U.readString(in);
-        sqlIdxMaxInlineSize = in.readInt();
-        nodeFilter = U.readString(in);
-        qryDetailMetricsSz = in.readInt();
-        readFromBackup = in.readBoolean();
-        tmLookupClsName = U.readString(in);
-        topValidator = U.readString(in);
-        dynamicDeploymentId = U.readIgniteUuid(in);
-        diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
-        diskPageCompressionLevel = (Integer)in.readObject();
     }
 
     /** {@inheritDoc} */

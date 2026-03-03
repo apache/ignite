@@ -154,8 +154,6 @@ In this case, do not remove the nodes from the baseline topology.
 
 TODO: is this section valid for ignite?
 
-WARNING: This feature is experimental.
-
 When you simultaneously stop more nodes than the number of partition backups, some partitions may become unavailable to the remaining nodes (because both the primary and backup copies of the partition happen to be on the nodes that were shut down).
 For example, if the number of backups for a cache is set to 1 and you stop 2 nodes, there is a chance that both the primary and backup copy of a partition becomes unavailable to the rest of the cluster.
 The proper way of dealing with this situation is to stop one node, rebalance the data, and then wait until the rebalancing is finished before stopping the next node, and so on.

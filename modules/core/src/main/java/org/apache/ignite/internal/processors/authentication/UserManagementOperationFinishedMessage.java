@@ -28,12 +28,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class UserManagementOperationFinishedMessage implements Message {
     /** Operation Id. */
-    @Order(value = 0, method = "operationId")
-    private IgniteUuid opId;
+    @Order(0)
+    IgniteUuid opId;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private String errorMsg;
+    @Order(1)
+    String errorMsg;
 
     /**
      *
@@ -59,13 +59,6 @@ public class UserManagementOperationFinishedMessage implements Message {
     }
 
     /**
-     * @param opId New operation ID.
-     */
-    public void operationId(IgniteUuid opId) {
-        this.opId = opId;
-    }
-
-    /**
      * @return Success flag.
      */
     public boolean success() {
@@ -79,21 +72,9 @@ public class UserManagementOperationFinishedMessage implements Message {
         return errorMsg;
     }
 
-    /**
-     * @param errorMsg New error message.
-     */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 130;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
     }
 
     /** {@inheritDoc} */

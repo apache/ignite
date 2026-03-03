@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of the ScheduleIndexRebuildTask.
@@ -33,7 +30,8 @@ public class ScheduleIndexRebuildTaskRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map node id -> rebuild command result. */
-    private Map<UUID, ScheduleIndexRebuildJobRes> results;
+    @Order(0)
+    Map<UUID, ScheduleIndexRebuildJobRes> results;
 
     /**
      * Empty constructor required for Serializable.
@@ -49,16 +47,6 @@ public class ScheduleIndexRebuildTaskRes extends IgniteDataTransferObject {
      */
     public ScheduleIndexRebuildTaskRes(Map<UUID, ScheduleIndexRebuildJobRes> results) {
         this.results = results;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, results);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        results = U.readMap(in);
     }
 
     /**

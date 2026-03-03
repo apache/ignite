@@ -53,6 +53,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
     /** Update batch size. */
     private final Integer updateBatchSize;
 
+    /** Query initiator ID. */
+    private final String initiatorId;
+
     /**
      * Ctor.
      *
@@ -120,6 +123,11 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
             partitions = null;
             updateBatchSize = null;
         }
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_INITIATOR_ID))
+            initiatorId = reader.readString();
+        else
+            initiatorId = null;
     }
 
     /** {@inheritDoc} */
@@ -132,7 +140,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
         ctx.incrementCursors();
 
         try {
-            qry.setQueryInitiatorId(ctx.clientDescriptor());
+            qry.setQueryInitiatorId(initiatorId == null ? ctx.clientDescriptor() : initiatorId);
 
             // If cacheId is provided, we must check the cache for existence.
             if (cacheId() != 0) {

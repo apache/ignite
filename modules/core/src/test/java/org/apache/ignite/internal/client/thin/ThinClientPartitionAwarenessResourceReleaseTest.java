@@ -101,7 +101,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         awaitPartitionMapExchange();
 
         // Cache destroyed, but mappings still exist on the client side.
-        assertEquals(opCh.serverNodeId(), affCtx.affinityNode(cacheId, Integer.valueOf(0)));
+        assertEquals(opCh.serverNodeId(), affCtx.affinityNode(cacheId, Integer.valueOf(0), ClientOperation.CACHE_PUT));
 
         client.cache(PART_CACHE_NAME).put(1, 1);
 
@@ -116,7 +116,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         }, 5_000L));
 
         // Mapping for previous caches become outdated and will be updated on the next request.
-        assertNull(affCtx.currentMapping().affinityNode(cacheId, 0));
+        assertNull(affCtx.currentMapping().affinityNode(cacheId, 0, true));
 
         // Trigger the next affinity mappings update. The outdated cache with custom affinity was added
         // to pending caches list and will be processed and cleared.

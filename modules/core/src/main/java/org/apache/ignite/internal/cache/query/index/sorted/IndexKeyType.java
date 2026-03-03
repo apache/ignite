@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -186,8 +185,8 @@ public enum IndexKeyType {
         if (code == UNKNOWN.code)
             return UNKNOWN;
 
-        if (code < 0 || code >= keyTypesByCode.length)
-            throw new IllegalArgumentException("Argument is invalid: " + code);
+        if (code < 0 || code >= keyTypesByCode.length || keyTypesByCode[code] == null)
+            throw new IllegalArgumentException("Unknown index key type code: " + code);
 
         return keyTypesByCode[code];
     }
@@ -245,7 +244,7 @@ public enum IndexKeyType {
             // This includes String[] and so on.
             return ARRAY;
         }
-        else if (QueryUtils.isGeometryClass(cls))
+        else if (U.isGeometryClass(cls))
             return GEOMETRY;
         else if (LocalDate.class == cls)
             return DATE;

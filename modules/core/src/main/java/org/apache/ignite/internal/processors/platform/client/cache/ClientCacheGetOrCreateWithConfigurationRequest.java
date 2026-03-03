@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.typedef.T2;
+
 import static org.apache.ignite.internal.processors.platform.client.cache.ClientCacheCreateWithConfigurationRequest.checkClientCacheConfiguration;
 
 /**
@@ -34,7 +37,7 @@ import static org.apache.ignite.internal.processors.platform.client.cache.Client
 @SuppressWarnings("unchecked")
 public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientRequest {
     /** Cache configuration. */
-    private final CacheConfiguration cacheCfg;
+    private final T2<CacheConfiguration, Boolean> cacheCfg;
 
     /**
      * Constructor.
@@ -50,15 +53,37 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        checkClientCacheConfiguration(cacheCfg);
+        CacheConfiguration ccfg = cacheCfg.get1();
+        boolean sql = cacheCfg.get2();
+
+        checkClientCacheConfiguration(ccfg);
 
         try {
-            ctx.kernalContext().grid().getOrCreateCache(cacheCfg);
+            if (sql)
+                createSqlCache(ctx, ccfg, false);
+            else
+                ctx.kernalContext().grid().getOrCreateCache(ccfg);
         }
         catch (CacheExistsException e) {
             throw new IgniteClientException(ClientStatus.CACHE_EXISTS, e.getMessage());
         }
 
         return super.process(ctx);
+    }
+
+    /**
+     * @param ctx Client connection context.
+     * @param ccfg  Cache configuration.
+     * @param failIfExists If {@code True} then don't fail if cache exists, already.
+     */
+    public static void createSqlCache(ClientConnectionContext ctx, CacheConfiguration<?, ?> ccfg, boolean failIfExists) {
+        ctx.kernalContext().cache().dynamicStartCache(ccfg,
+            ccfg.getName(),
+            ccfg.getNearConfiguration(),
+            CacheType.USER,
+            true,         /* sql. */
+            failIfExists,
+            true,         /* fail if not started. */
+            true);        /* check thread tx */
     }
 }

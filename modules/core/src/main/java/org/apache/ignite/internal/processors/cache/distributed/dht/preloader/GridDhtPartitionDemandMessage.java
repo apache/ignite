@@ -17,53 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Partition demand request.
  */
-@IgniteCodeGeneratingFail
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
-    /** Cache rebalance topic. */
-    private static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
-
     /** Rebalance id. */
-    private long rebalanceId;
+    @Order(0)
+    long rebalanceId;
 
     /** Partitions map. */
-    @GridDirectTransient
-    private IgniteDhtDemandedPartitionsMap parts;
-
-    /** Serialized partitions map. */
-    private byte[] partsBytes;
-
-    /** Topic. */
-    @GridDirectTransient
-    private Object topic = REBALANCE_TOPIC;
-
-    /** Serialized topic. */
-    private byte[] topicBytes;
+    @Order(1)
+    IgniteDhtDemandedPartitionsMap parts;
 
     /** Timeout. */
-    private long timeout;
+    @Order(2)
+    long timeout;
 
     /** Worker ID. */
-    private int workerId = -1;
+    @Order(3)
+    int workerId = -1;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    @Order(4)
+    AffinityTopologyVersion topVer;
 
     /**
      * @param rebalanceId Rebalance id for this node.
@@ -105,7 +87,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         GridDhtPartitionDemandMessage cp = new GridDhtPartitionDemandMessage();
         cp.grpId = grpId;
         cp.rebalanceId = rebalanceId;
-        cp.topic = topic;
         cp.timeout = timeout;
         cp.workerId = workerId;
         cp.topVer = topVer;
@@ -114,7 +95,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * @return Partition.
+     * @return Partitions.
      */
     public IgniteDhtDemandedPartitionsMap partitions() {
         return parts;
@@ -123,50 +104,29 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /**
      * @param updateSeq Update sequence.
      */
-    void rebalanceId(long updateSeq) {
-        this.rebalanceId = updateSeq;
+    public void rebalanceId(long updateSeq) {
+        rebalanceId = updateSeq;
     }
 
     /**
      * @return Unique rebalance session id.
      */
-    long rebalanceId() {
+    public long rebalanceId() {
         return rebalanceId;
     }
 
     /**
      * @return Reply message timeout.
      */
-    long timeout() {
+    public long timeout() {
         return timeout;
     }
 
     /**
      * @param timeout Timeout.
      */
-    void timeout(long timeout) {
+    public void timeout(long timeout) {
         this.timeout = timeout;
-    }
-
-    /**
-     * @return Topic.
-     */
-    Object topic() {
-        return topic;
-    }
-
-    /**
-     * @return Worker ID.
-     */
-    int workerId() {
-        return workerId;
-    }
-
-    /**
-     * @param workerId Worker ID.
-     */
-    void workerId(int workerId) {
-        this.workerId = workerId;
     }
 
     /**
@@ -177,147 +137,8 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (topic != null && topicBytes == null)
-            topicBytes = U.marshal(ctx, topic);
-
-        if (parts != null && partsBytes == null)
-            partsBytes = U.marshal(ctx, parts);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (topicBytes != null && topic == null)
-            topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (partsBytes != null && parts == null)
-            parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeByteArray(partsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeByteArray(topicBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeLong(rebalanceId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeInt(workerId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                partsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                timeout = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                topicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                rebalanceId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                workerId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

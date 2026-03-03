@@ -115,7 +115,7 @@ public class ClientBinary implements IgniteBinary {
 
         int typeId = ctx.typeId(typeName);
 
-        return BinaryUtils.binaryEnum(ord, ctx, typeId);
+        return BinaryUtils.binariesFactory.binaryEnum(ctx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */
@@ -147,7 +147,7 @@ public class ClientBinary implements IgniteBinary {
                 name
             ));
 
-        return BinaryUtils.binaryEnum(ordinal, ctx, typeId);
+        return BinaryUtils.binariesFactory.binaryEnum(ctx, typeId, null, ordinal);
     }
 
     /** {@inheritDoc} */

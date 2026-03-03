@@ -94,7 +94,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -112,6 +111,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -122,8 +122,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -175,32 +176,12 @@ public final class GridTestUtils {
      */
     public static class DiscoveryHook {
         /**
-         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
-        }
-
-        /**
          * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
          *
          * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
          */
         public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
-        }
-
-        /**
-         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                afterDiscovery(unwrap((CustomMessageWrapper)msg));
         }
 
         /**
@@ -217,16 +198,6 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
-        }
-
-        /**
-         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
-         *
-         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
-         * @return Unwrapped {@link DiscoveryCustomMessage}.
-         */
-        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
-            return U.field(wrapper, "delegate");
         }
     }
 
@@ -251,11 +222,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery(notification.getCustomMsgData());
+            hook.beforeDiscovery(U.unwrapCustomMessage(notification.customMessage()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
+            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.customMessage())));
 
             return fut;
         }
@@ -2643,5 +2614,18 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param skip Skip.
+     */
+    @SuppressWarnings("deprecation")
+    public static void skipCommNioServerRead(IgniteEx ignite, boolean skip) {
+        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)(ignite.context().config().getCommunicationSpi());
+
+        GridNioServer<?> nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
+
+        setFieldValue(nioSrvr, "skipRead", skip);
     }
 }

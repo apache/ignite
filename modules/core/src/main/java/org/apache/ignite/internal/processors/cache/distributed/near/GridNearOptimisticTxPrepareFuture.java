@@ -313,7 +313,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     @Override protected void prepare0(boolean remap, boolean topLocked) {
         try {
-            boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
+            boolean txStateCheck = remap ? tx.state() == PREPARING || tx.state() == PREPARED : tx.state(PREPARING);
 
             if (!txStateCheck) {
                 if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
@@ -531,7 +531,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.taskNameHash(),
                     m.clientFirst(),
                     txMapping.transactionNodes().size() == 1,
-                    tx.activeCachesDeploymentEnabled(),
                     tx.txState().recovery());
 
                 for (IgniteTxEntry txEntry : m.entries()) {
@@ -967,7 +966,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 return;
 
             if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
-                if (parent.tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException) {
+                if ((parent.tx.state() != PREPARED && parent.tx.remainingTime() == -1)
+                    || res.error() instanceof IgniteTxTimeoutCheckedException) {
                     parent.onTimeout();
 
                     return;

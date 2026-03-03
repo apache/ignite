@@ -88,7 +88,7 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                 Collection<CacheGroupContext> ctxs = k.context().cache().cacheGroups();
 
                 for (CacheGroupContext ctx : ctxs) {
-                    if (!ctx.userCache() || !compiled.matcher(ctx.cacheOrGroupName()).find())
+                    if (!ctx.cacheType().userCache() || !compiled.matcher(ctx.cacheOrGroupName()).find())
                         continue;
 
                     CacheInfo ci = new CacheInfo();

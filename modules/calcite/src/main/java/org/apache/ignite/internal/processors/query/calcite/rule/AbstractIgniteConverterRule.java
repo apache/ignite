@@ -24,6 +24,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractIgniteConverterRule<T extends RelNode> extends ConverterRule {
@@ -39,7 +40,7 @@ public abstract class AbstractIgniteConverterRule<T extends RelNode> extends Con
     }
 
     /** {@inheritDoc} */
-    @Override public final RelNode convert(RelNode rel) {
+    @Override public final @Nullable RelNode convert(RelNode rel) {
         return convert(rel.getCluster().getPlanner(), rel.getCluster().getMetadataQuery(), (T)rel);
     }
 
@@ -51,5 +52,5 @@ public abstract class AbstractIgniteConverterRule<T extends RelNode> extends Con
      * @param rel Rel node.
      * @return Physical rel.
      */
-    protected abstract PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, T rel);
+    protected abstract @Nullable PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, T rel);
 }

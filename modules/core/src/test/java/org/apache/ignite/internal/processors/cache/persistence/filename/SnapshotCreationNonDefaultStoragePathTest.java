@@ -39,6 +39,19 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
  */
 public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
+    /** */
+    protected String[] extraSnpPaths = new String[] {
+        STORAGE_PATH_2,
+        IDX_PATH
+    };
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        U.delete(new File(U.defaultWorkDirectory()));
+    }
+
     /** {@inheritDoc} */
     @Override protected DataStorageConfiguration dataStorageConfiguration() {
         return new DataStorageConfiguration()
@@ -121,11 +134,13 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
         srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 
-        String grid1ConsId = consId(grid(1).configuration());
+        NodeFileTree ft = grid(1).context().pdsFolderResolver().fileTree();
 
         stopGrid(1);
 
         resetBaselineTopology();
+
+        ft.allStorages().forEach(U::delete);
 
         BiConsumer<String, String> check = (name, path) -> {
             for (CacheConfiguration<?, ?> ccfg : ccfgs())
@@ -155,15 +170,16 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
                 "No snapshot metadatas found for the baseline nodes with consistent ids: "
             );
 
-            Path[] copyStoppedNodeData = new Path[] {
-                Path.of(DFLT_SNAPSHOT_DIRECTORY, "mysnp"),
-                Path.of(STORAGE_PATH_2, DFLT_SNAPSHOT_DIRECTORY, "mysnp"),
-                Path.of(IDX_PATH, DFLT_SNAPSHOT_DIRECTORY, "mysnp")
-            };
+            Path[] copyStoppedNodeData = new Path[extraSnpPaths.length + 1];
+
+            copyStoppedNodeData[0] = Path.of(DFLT_SNAPSHOT_DIRECTORY, "mysnp");
+
+            for (int i = 0; i < extraSnpPaths.length; i++)
+                copyStoppedNodeData[i + 1] = Path.of(extraSnpPaths[i], DFLT_SNAPSHOT_DIRECTORY, "mysnp");
 
             for (Path copyPath : copyStoppedNodeData) {
                 FileUtils.copyDirectory(
-                    Path.of(U.defaultWorkDirectory(), grid1ConsId, copyPath.toString()).toFile(),
+                    Path.of(U.defaultWorkDirectory(), ft.folderName(), copyPath.toString()).toFile(),
                     Path.of(U.defaultWorkDirectory(), consId(grid(0).configuration()), copyPath.toString()).toFile()
                 );
             }

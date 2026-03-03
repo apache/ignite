@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,9 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -44,9 +41,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -81,72 +75,76 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = UUIDCollectionMessage::uuids;
 
     /** Thread ID. */
+    @Order(0)
     @GridToStringInclude
-    private long threadId;
+    public long threadId;
 
     /** Transaction concurrency. */
+    @Order(1)
     @GridToStringInclude
-    private TransactionConcurrency concurrency;
+    public TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
+    @Order(2)
     @GridToStringInclude
-    private TransactionIsolation isolation;
+    public TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
+    @Order(3)
     @GridToStringInclude
-    private GridCacheVersion writeVer;
+    public GridCacheVersion writeVer;
 
     /** Transaction timeout. */
+    @Order(4)
     @GridToStringInclude
-    private long timeout;
+    public long timeout;
 
     /** Transaction read set. */
+    @Order(5)
     @GridToStringInclude
-    @GridDirectCollection(IgniteTxEntry.class)
-    private Collection<IgniteTxEntry> reads;
+    public Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
+    @Order(6)
     @GridToStringInclude
-    @GridDirectCollection(IgniteTxEntry.class)
-    private Collection<IgniteTxEntry> writes;
+    public Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> dhtVerKeys;
+    @Order(7)
+    public Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> dhtVerVals;
+    @Order(8)
+    public Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
-    private int txSize;
+    @Order(9)
+    public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    @GridDirectTransient
     private Map<UUID, Collection<UUID>> txNodes;
 
     /** Tx nodes direct marshallable message. */
-    @GridDirectMap(keyType = UUID.class, valueType = UUIDCollectionMessage.class)
-    private Map<UUID, UUIDCollectionMessage> txNodesMsg;
+    @Order(10)
+    public Map<UUID, UUIDCollectionMessage> txNodesMsg;
 
     /** IO policy. */
-    private byte plc;
+    @Order(11)
+    public byte plc;
 
     /** Transient TX state. */
-    @GridDirectTransient
     private IgniteTxState txState;
 
     /** */
+    @Order(12)
     @GridToStringExclude
-    private byte flags;
+    public byte flags;
 
     /** Application attributes. */
-    @GridDirectTransient
     @GridToStringExclude
     private @Nullable Map<String, String> appAttrs;
 
@@ -166,7 +164,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param retVal Return value flag.
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -176,10 +173,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
-        boolean onePhaseCommit,
-        boolean addDepInfo
+        boolean onePhaseCommit
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(tx.xidVersion(), 0, false);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();
@@ -331,14 +327,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @param reads Reads.
      */
-    protected void reads(Collection<IgniteTxEntry> reads) {
+    public void reads(Collection<IgniteTxEntry> reads) {
         this.reads = reads;
     }
 
     /**
      * @param writes Writes.
      */
-    protected void writes(Collection<IgniteTxEntry> writes) {
+    public void writes(Collection<IgniteTxEntry> writes) {
         this.writes = writes;
     }
 
@@ -472,229 +468,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     private boolean isFlag(int mask) {
         return (flags & mask) != 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 8:
-                if (!writer.writeByte(concurrency != null ? (byte)concurrency.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeCollection(dhtVerKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeCollection(dhtVerVals, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeByte(isolation != null ? (byte)isolation.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeByte(plc))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeCollection(reads, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeLong(threadId))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeLong(timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeMap(txNodesMsg, MessageCollectionItemType.UUID, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeInt(txSize))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeMessage(writeVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeCollection(writes, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 8:
-                byte concurrencyOrd;
-
-                concurrencyOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                concurrency = TransactionConcurrency.fromOrdinal(concurrencyOrd);
-
-                reader.incrementState();
-
-            case 9:
-                dhtVerKeys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                dhtVerVals = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                byte isolationOrd;
-
-                isolationOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
-
-                reader.incrementState();
-
-            case 13:
-                plc = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                reads = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                threadId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                timeout = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                txNodesMsg = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                txSize = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                writeVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                writes = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -17,37 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Partition update counters message.
  */
-@IgniteCodeGeneratingFail
 public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
-    /** */
-    private byte data[];
+    /** Byte representation of partition counters. */
+    @Order(value = 0, method = "data")
+    byte[] data;
 
     /** */
-    private int cacheId;
+    @Order(1)
+    int cacheId;
 
     /** */
-    @GridDirectTransient
     private int size;
 
     /** Used for assigning counters to cache entries during tx finish. */
-    @GridDirectTransient
     private Map<Integer, Long> counters;
 
     /** */
@@ -64,6 +59,21 @@ public class PartitionUpdateCountersMessage implements Message {
 
         this.cacheId = cacheId;
         data = new byte[initSize * ITEM_SIZE];
+    }
+
+    /**
+     * @return Data.
+     */
+    public byte[] data() {
+        return Arrays.copyOf(data, size * ITEM_SIZE);
+    }
+
+    /**
+     * @param data New data.
+     */
+    public void data(byte[] data) {
+        this.data = data;
+        size = data == null ? 0 : data.length / ITEM_SIZE;
     }
 
     /**
@@ -88,7 +98,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE;
 
         return GridUnsafe.getInt(data, off);
     }
@@ -101,7 +111,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 4;
 
         return GridUnsafe.getLong(data, off);
     }
@@ -114,7 +124,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 12;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 12;
 
         return GridUnsafe.getLong(data, off);
     }
@@ -127,7 +137,7 @@ public class PartitionUpdateCountersMessage implements Message {
     public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
 
-        long off = GridUnsafe.BYTE_ARR_OFF + size++ * ITEM_SIZE;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)size++ * ITEM_SIZE;
 
         GridUnsafe.putInt(data, off, part); off += 4;
         GridUnsafe.putLong(data, off, init); off += 8;
@@ -153,13 +163,6 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
-     * Clears message.
-     */
-    public void clear() {
-        size = 0;
-    }
-
-    /**
      * Check if there is enough space is allocated.
      *
      * @param newSize Size to ensure.
@@ -172,70 +175,8 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(data, 0, size * ITEM_SIZE))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                data = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                size = data.length / ITEM_SIZE;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 157;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

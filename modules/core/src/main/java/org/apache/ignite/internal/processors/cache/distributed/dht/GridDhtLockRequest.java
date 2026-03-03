@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -33,9 +32,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,38 +41,46 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Invalidate reader flags. */
-    private BitSet invalidateEntries;
+    @Order(0)
+    BitSet invalidateEntries;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Owner mapped version, if any. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<KeyCacheObject, GridCacheVersion> owned;
 
     /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
+    @Order(2)
     @GridToStringExclude
-    private KeyCacheObject[] ownedKeys;
+    KeyCacheObject[] ownedKeys;
 
     /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
+    @Order(3)
     @GridToStringExclude
-    private GridCacheVersion[] ownedValues;
+    GridCacheVersion[] ownedValues;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    @Order(4)
+    AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    private int taskNameHash;
+    @Order(5)
+    int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
-    private BitSet preloadKeys;
+    @Order(6)
+    BitSet preloadKeys;
 
     /** TTL for read operation. */
-    private long accessTtl;
+    @Order(7)
+    long accessTtl;
 
     /** Transaction label. */
-    private String txLbl;
+    @Order(8)
+    String txLbl;
 
     /**
      * Empty constructor.
@@ -106,7 +110,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param skipStore Skip store flag.
      * @param storeUsed Cache store used flag.
      * @param keepBinary Keep binary flag.
-     * @param addDepInfo Deployment info flag.
      * @param txLbl Transaction label.
      */
     public GridDhtLockRequest(
@@ -128,9 +131,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean storeUsed,
         boolean keepBinary,
-        boolean addDepInfo,
         String txLbl
     ) {
         super(cacheId,
@@ -147,8 +150,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             dhtCnt,
             txSize,
             skipStore,
-            keepBinary,
-            addDepInfo);
+            skipReadThrough,
+            keepBinary);
 
         this.topVer = topVer;
 
@@ -163,13 +166,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.accessTtl = accessTtl;
 
         this.txLbl = txLbl;
-    }
-
-    /**
-     * @return Near node ID.
-     */
-    public UUID nearNodeId() {
-        return nodeId();
     }
 
     /**
@@ -229,14 +225,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             owned = new GridLeanMap<>(3);
 
         owned.put(key, ownerMapped);
-    }
-
-    /**
-     * @param key Key.
-     * @return Owner and its mapped versions.
-     */
-    @Nullable public GridCacheVersion owned(KeyCacheObject key) {
-        return owned == null ? null : owned.get(key);
     }
 
     /**
@@ -301,165 +289,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             ownedKeys = null;
             ownedValues = null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 21:
-                if (!writer.writeLong(accessTtl))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeBitSet(invalidateEntries))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeIgniteUuid(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeObjectArray(ownedKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeObjectArray(ownedValues, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
-                if (!writer.writeBitSet(preloadKeys))
-                    return false;
-
-                writer.incrementState();
-
-            case 27:
-                if (!writer.writeInt(taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 28:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 29:
-                if (!writer.writeString(txLbl))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 21:
-                accessTtl = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                invalidateEntries = reader.readBitSet();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                miniId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                ownedKeys = reader.readObjectArray(MessageCollectionItemType.MSG, KeyCacheObject.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
-                ownedValues = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                preloadKeys = reader.readBitSet();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 27:
-                taskNameHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 28:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 29:
-                txLbl = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

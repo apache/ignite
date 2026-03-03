@@ -53,6 +53,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -304,6 +306,9 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
                     ignite.cache(TEST_CACHE).put(0, new Object());
                     BinaryObject obj = (BinaryObject)ignite.cache(TEST_CACHE).withKeepBinary().get(0);
                     obj.toString();
+
+                    JdkMarshaller jdk = Marshallers.jdk();
+                    jdk.toString();
                 }
             });
     }

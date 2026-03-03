@@ -49,6 +49,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
@@ -203,7 +204,10 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
         });
 
         grid(1).context().cache().context().exchange().registerExchangeAwareComponent(new PartitionsExchangeAware() {
-            @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+            @Override public void onDoneBeforeTopologyUnlock(
+                GridDhtPartitionsExchangeFuture fut,
+                @Nullable Throwable err
+            ) {
                 if (fut.initialVersion().equals(new AffinityTopologyVersion(7, 0))) {
                     topInitLatch.countDown();
 

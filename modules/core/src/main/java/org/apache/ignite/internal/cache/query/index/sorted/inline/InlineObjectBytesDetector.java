@@ -94,8 +94,8 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
             if (fieldOff >= inlineSize)
                 return false;
 
-            if (keyDef.idxType() != IndexKeyType.JAVA_OBJECT) {
-                InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.idxType(), keyTypeSettings);
+            if (keyDef.indexKeyType() != IndexKeyType.JAVA_OBJECT) {
+                InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.indexKeyType(), keyTypeSettings);
 
                 if (keyType.inlineSize() < 0)
                     varLenPresents = true;
@@ -182,10 +182,10 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
         IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
 
         for (IndexKeyDefinition def: keyDefs) {
-            if (def.idxType() == IndexKeyType.JAVA_OBJECT)
+            if (def.indexKeyType() == IndexKeyType.JAVA_OBJECT)
                 break;
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.idxType(), settings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.indexKeyType(), settings);
 
             if (keyType == null)
                 return false;

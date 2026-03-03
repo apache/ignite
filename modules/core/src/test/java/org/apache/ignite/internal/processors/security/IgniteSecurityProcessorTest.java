@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.security;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
@@ -81,7 +81,7 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
             PUBLIC_POOL,
             TOPIC_CACHE,
             TOPIC_CACHE.ordinal(),
-            new IgniteDiagnosticMessage(),
+            new IgniteDiagnosticRequest(),
             false,
             0,
             false

@@ -214,8 +214,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                 ctx.cacheId(),
                 msg.futureId(),
-                msg.miniId(),
-                ctx.deploymentEnabled());
+                msg.miniId());
 
             GridDhtPartitionTopology top = ctx.topology();
 
@@ -1216,7 +1215,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             else if (req.needVersion())
                                 res0 = new CacheVersionedValue(info.value(), info.version());
                             else
-                                res0 = info.value();
+                                res0 = new CacheVersionedValue(info.value(), null);
                         }
 
                         res = new GridNearSingleGetResponse(
@@ -1289,7 +1288,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
             getDhtAsync(nodeId,
                 req.messageId(),
-                req.keys(),
+                req.keyMap(),
                 req.addReaders(),
                 req.readThrough(),
                 req.topologyVersion(),

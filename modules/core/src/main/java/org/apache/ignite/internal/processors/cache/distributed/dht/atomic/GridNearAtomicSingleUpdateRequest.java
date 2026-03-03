@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,12 +46,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSingleUpdateRequest {
+public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
+    @Order(1)
     protected CacheObject val;
 
     /**
@@ -71,7 +74,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      * @param op Cache update operation.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateRequest(
         int cacheId,
@@ -81,8 +83,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(cacheId,
             nodeId,
@@ -91,8 +92,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
     }
 
@@ -115,8 +115,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer) {
-        assert op != TRANSFORM;
-        assert val != null || op == DELETE;
+        assert operation() != TRANSFORM;
+        assert val != null || operation() == DELETE;
         assert conflictTtl < 0 : conflictTtl;
         assert conflictExpireTime < 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
@@ -159,6 +159,21 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         assert idx == 0 : idx;
 
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheEntryPredicate[] filter() {
+        return GridCacheUtils.empty0();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExpiryPolicy expiry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Object[] invokeArguments() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -223,67 +238,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         if (val != null)
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 10:
-                if (!writer.writeMessage(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMessage(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 10:
-                key = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                val = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.maintenance;
 
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * Matching between {@link MaintenanceTask} and {@link MaintenanceWorkflowCallback} is performed based on
  * the name of maintenance task that should be unique among all registered tasks.
  */
-@IgniteExperimental
 public class MaintenanceTask {
     /** */
     private final String name;

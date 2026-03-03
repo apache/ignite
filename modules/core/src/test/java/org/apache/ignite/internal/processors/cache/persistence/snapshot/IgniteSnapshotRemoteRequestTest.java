@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -268,8 +269,18 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         latch.countDown();
 
-        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
-            "he node from which a snapshot has been requested left the grid");
+        try {
+            fut.get(TIMEOUT);
+        }
+        catch (Exception e) {
+            boolean expErr = X.hasCause(e, "The node from which a snapshot has been requested left the grid",
+                ClusterTopologyCheckedException.class)
+                || X.hasCause(e, "Request cancelled. The snapshot operation stopped on the remote node with an error: " +
+                "The operation is cancelled due to the local node is stopping", IgniteCheckedException.class);
+
+            if (!expErr)
+                fail(e.getMessage());
+        }
     }
 
     /** @throws Exception If fails. */

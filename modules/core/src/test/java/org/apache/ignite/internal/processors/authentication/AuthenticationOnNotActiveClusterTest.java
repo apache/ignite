@@ -27,8 +27,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.asRoot;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
@@ -109,12 +109,11 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
-        SecurityContext secCtxDflt = authenticate(grid(0), User.DFAULT_USER_NAME, "ignite");
+        for (int i = 0; i < 10; ++i) {
+            String userName = "test" + i;
 
-        withSecurityContextOnAllNodes(secCtxDflt);
-
-        for (int i = 0; i < 10; ++i)
-            grid(0).context().security().createUser("test" + i, "passwd".toCharArray());
+            asRoot(grid(0), s -> s.createUser(userName, "passwd".toCharArray()));
+        }
 
         stopAllGrids();
 

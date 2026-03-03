@@ -57,6 +57,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Lazy query execution flag. */
     private final boolean lazy;
 
+    /** Local query flag. */
+    private final boolean loc;
+
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
@@ -126,6 +129,7 @@ public class SqlClientContext implements AutoCloseable {
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated caches only flag.
      * @param lazy Lazy query execution flag.
+     * @param loc Local query flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
@@ -142,6 +146,7 @@ public class SqlClientContext implements AutoCloseable {
         boolean collocated,
         boolean replicatedOnly,
         boolean lazy,
+        boolean loc,
         boolean skipReducerOnUpdate,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
@@ -158,6 +163,7 @@ public class SqlClientContext implements AutoCloseable {
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
+        this.loc = loc;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.updateBatchSize = updateBatchSize;
@@ -195,7 +201,7 @@ public class SqlClientContext implements AutoCloseable {
             this.totalProcessedOrderedReqs = 0;
 
             if (ordered) {
-                orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
+                orderedBatchThread = U.newThread(orderedBatchWorkerFactory.create());
 
                 orderedBatchThread.start();
             }
@@ -259,6 +265,13 @@ public class SqlClientContext implements AutoCloseable {
      */
     public boolean isLazy() {
         return lazy;
+    }
+
+    /**
+     * @return Local query flag.
+     */
+    public boolean isLocal() {
+        return loc;
     }
 
     /**
