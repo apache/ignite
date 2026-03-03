@@ -33,17 +33,17 @@ import org.jetbrains.annotations.Nullable;
 public abstract class GridDistributedBaseMessage extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** Lock or transaction version. */
-    @Order(4)
+    @Order(0)
     @GridToStringInclude
     public GridCacheVersion ver;
 
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
-    @Order(5)
+    @Order(1)
     @GridToStringInclude
     @Nullable public Collection<GridCacheVersion> committedVers;
 
     /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
-    @Order(6)
+    @Order(2)
     @GridToStringInclude
     @Nullable public Collection<GridCacheVersion> rolledbackVers;
 
