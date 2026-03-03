@@ -91,6 +91,12 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
         return id;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @return Operation.
      */
@@ -163,12 +169,6 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      * @return Whether request must be propagated to exchange thread.
      */
     public abstract boolean exchange();
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
