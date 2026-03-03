@@ -46,27 +46,27 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Max order. */
-    @Order(20)
+    @Order(0)
     UUID nearNodeId;
 
     /** Future ID. */
-    @Order(21)
+    @Order(1)
     IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(22)
+    @Order(2)
     int miniId;
 
     /** Topology version. */
-    @Order(23)
+    @Order(3)
     AffinityTopologyVersion topVer;
 
     /** Invalidate near entries flags. */
-    @Order(24)
+    @Order(4)
     BitSet invalidateNearEntries;
 
     /** Near writes. */
-    @Order(25)
+    @Order(5)
     @GridToStringInclude
     Collection<IgniteTxEntry> nearWrites;
 
@@ -75,38 +75,38 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */
-    @Order(26)
+    @Order(6)
     Collection<IgniteTxKey> ownedKeys;
 
     /** Owned values. */
-    @Order(27)
+    @Order(7)
     Collection<GridCacheVersion> ownedVals;
 
     /** */
-    @Order(28)
+    @Order(8)
     Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Near transaction ID. */
-    @Order(29)
+    @Order(9)
     GridCacheVersion nearXidVer;
 
     /** Task name hash. */
-    @Order(30)
+    @Order(10)
     int taskNameHash;
 
     /** Preload keys. */
-    @Order(31)
+    @Order(11)
     BitSet preloadKeys;
 
     /** */
     private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
-    @Order(32)
+    @Order(12)
     boolean skipCompletedVers;
 
     /** Transaction label. */
-    @Order(33)
+    @Order(13)
     @GridToStringInclude
     @Nullable String txLbl;
 

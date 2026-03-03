@@ -34,7 +34,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(5)
+    @Order(0)
     TcpDiscoveryNodeMetricsMessage metricsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */

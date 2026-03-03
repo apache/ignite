@@ -34,15 +34,15 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
     private static final long serialVersionUID = 0L;
 
     /** ID of the failed node. */
-    @Order(6)
+    @Order(0)
     UUID failedNodeId;
 
     /** Internal order of the failed node. */
-    @Order(7)
+    @Order(1)
     long order;
 
     /** */
-    @Order(8)
+    @Order(2)
     String warning;
 
     /** Constructor. */
