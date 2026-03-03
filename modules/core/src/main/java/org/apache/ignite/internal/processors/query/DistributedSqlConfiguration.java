@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.io.Serializable;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -44,6 +47,12 @@ public abstract class DistributedSqlConfiguration {
     /** Default value of the query timeout. */
     public static final int DFLT_QRY_TIMEOUT = 0;
 
+    /** */
+    protected final GridKernalContext ctx;
+
+    /** */
+    protected final IgniteLogger log;
+
     /** Query timeout. */
     private volatile DistributedChangeableProperty<Integer> dfltQryTimeout;
 
@@ -51,41 +60,62 @@ public abstract class DistributedSqlConfiguration {
      * @param ctx Kernal context
      * @param log Logger.
      */
-    protected DistributedSqlConfiguration(
-        GridKernalContext ctx,
-        IgniteLogger log
-    ) {
+    protected DistributedSqlConfiguration(GridKernalContext ctx, IgniteLogger log) {
+        this.ctx = ctx;
+        this.log = log;
+
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    DistributedChangeableProperty<Integer> prop = dispatcher.property(QUERY_TIMEOUT_PROPERTY_NAME);
-
-                    if (prop != null) {
-                        dfltQryTimeout = prop;
-
-                        return;
-                    }
-
-                    dfltQryTimeout = new SimpleDistributedProperty<>(
-                        QUERY_TIMEOUT_PROPERTY_NAME,
-                        SimpleDistributedProperty::parseNonNegativeInteger,
-                        "Timeout in milliseconds for default query timeout. 0 means there is no timeout."
-                    );
-
-                    dfltQryTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
-
-                    dispatcher.registerProperties(dfltQryTimeout);
+                    DistributedSqlConfiguration.this.onReadyToRegister(dispatcher);
                 }
 
-                @SuppressWarnings("deprecation")
                 @Override public void onReadyToWrite() {
-                    setDefaultValue(
-                        dfltQryTimeout,
-                        (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
-                        log);
+                    DistributedSqlConfiguration.this.onReadyToWrite();
                 }
             }
         );
+    }
+
+    /** */
+    protected void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+        registerProperty(
+            dispatcher,
+            QUERY_TIMEOUT_PROPERTY_NAME,
+            prop -> dfltQryTimeout = prop,
+            () -> new SimpleDistributedProperty<>(
+                QUERY_TIMEOUT_PROPERTY_NAME,
+                SimpleDistributedProperty::parseNonNegativeInteger,
+                "Timeout in milliseconds for default query timeout. 0 means there is no timeout."
+            ),
+            log
+        );
+    }
+
+    /** */
+    protected void onReadyToWrite() {
+        setDefaultValue(dfltQryTimeout, (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(), log);
+    }
+
+    /** */
+    protected static <T extends Serializable> void registerProperty(
+        DistributedPropertyDispatcher dispatcher,
+        String propName,
+        Consumer<DistributedChangeableProperty<T>> propSetter,
+        Supplier<DistributedChangeableProperty<T>> newPropCreator,
+        IgniteLogger log
+    ) {
+        DistributedChangeableProperty<T> prop = dispatcher.property(propName);
+
+        if (prop == null) {
+            prop = newPropCreator.get();
+
+            prop.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
+
+            dispatcher.registerProperty(prop);
+        }
+
+        propSetter.accept(prop);
     }
 
     /**

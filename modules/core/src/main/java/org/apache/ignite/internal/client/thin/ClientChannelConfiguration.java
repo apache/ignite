@@ -44,8 +44,11 @@ final class ClientChannelConfiguration {
     /** Tcp no delay. */
     private final boolean tcpNoDelay;
 
-    /** Timeout. */
-    private final int timeout;
+    /** Handshake timeout. */
+    private final int handshakeTimeout;
+
+    /** Request timeout. */
+    private final int reqTimeout;
 
     /** Send buffer size. */
     private final int sndBufSize;
@@ -123,7 +126,8 @@ final class ClientChannelConfiguration {
     ClientChannelConfiguration(ClientConfiguration cfg, List<InetSocketAddress> addrs) {
         this.sslMode = cfg.getSslMode();
         this.tcpNoDelay = cfg.isTcpNoDelay();
-        this.timeout = cfg.getTimeout();
+        this.handshakeTimeout = cfg.getHandshakeTimeout();
+        this.reqTimeout = cfg.getRequestTimeout();
         this.sndBufSize = cfg.getSendBufferSize();
         this.rcvBufSize = cfg.getReceiveBufferSize();
         this.sslClientCertKeyStorePath = cfg.getSslClientCertificateKeyStorePath();
@@ -172,10 +176,17 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @return Timeout.
+     * @return Handshake timeout.
      */
-    public int getTimeout() {
-        return timeout;
+    public int getHandshakeTimeout() {
+        return handshakeTimeout;
+    }
+
+    /**
+     * @return Request timeout.
+     */
+    public int getRequestTimeout() {
+        return reqTimeout;
     }
 
     /**

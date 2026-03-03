@@ -32,19 +32,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class FragmentDescription implements MarshalableMessage {
     /** */
     @Order(0)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(1)
-    private FragmentMapping mapping;
+    FragmentMapping mapping;
 
     /** */
-    @Order(2) // TODO: Remove this field (and MarshallableMessage interface) once IGNITE-26133 is completed
-    private Map<Long, UUIDCollectionMessage> remoteSources0;
+    @Order(2)
+    Map<Long, UUIDCollectionMessage> remoteSources0;
 
     /** */
     @Order(3)
-    private ColocationGroup target;
+    ColocationGroup target;
 
     /** */
     private Map<Long, List<UUID>> remoteSources;
@@ -119,14 +119,8 @@ public class FragmentDescription implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (mapping != null)
-            mapping.prepareMarshal(ctx);
-
-        if (target != null) {
+        if (target != null)
             target = target.explicitMapping();
-
-            target.prepareMarshal(ctx);
-        }
 
         if (remoteSources0 == null && remoteSources != null) {
             remoteSources0 = U.newHashMap(remoteSources.size());
@@ -138,12 +132,6 @@ public class FragmentDescription implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (mapping != null)
-            mapping.prepareUnmarshal(ctx);
-
-        if (target != null)
-            target.prepareUnmarshal(ctx);
-
         if (remoteSources == null && remoteSources0 != null) {
             remoteSources = U.newHashMap(remoteSources0.size());
 

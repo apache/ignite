@@ -185,8 +185,8 @@ public enum IndexKeyType {
         if (code == UNKNOWN.code)
             return UNKNOWN;
 
-        if (code < 0 || code >= keyTypesByCode.length)
-            throw new IllegalArgumentException("Argument is invalid: " + code);
+        if (code < 0 || code >= keyTypesByCode.length || keyTypesByCode[code] == null)
+            throw new IllegalArgumentException("Unknown index key type code: " + code);
 
         return keyTypesByCode[code];
     }

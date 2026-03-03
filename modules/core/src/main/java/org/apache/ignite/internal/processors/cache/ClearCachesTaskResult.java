@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Result of {@link ClearCachesTask}. */
 public class ClearCachesTaskResult extends IgniteDataTransferObject {
@@ -30,10 +27,12 @@ public class ClearCachesTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** List of cleared caches. */
-    private List<String> clearedCaches;
+    @Order(0)
+    List<String> clearedCaches;
 
     /** List of non-existent caches. */
-    private List<String> nonExistentCaches;
+    @Order(1)
+    List<String> nonExistentCaches;
 
     /** */
     public ClearCachesTaskResult(List<String> clearedCaches, List<String> nonExistentCaches) {
@@ -54,17 +53,5 @@ public class ClearCachesTaskResult extends IgniteDataTransferObject {
     /** @return List of non-existent caches. */
     public List<String> nonExistentCaches() {
         return nonExistentCaches;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, clearedCaches);
-        U.writeCollection(out, nonExistentCaches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        clearedCaches = U.readList(in);
-        nonExistentCaches = U.readList(in);
     }
 }

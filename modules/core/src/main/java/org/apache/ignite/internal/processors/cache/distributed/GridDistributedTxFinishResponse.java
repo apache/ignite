@@ -31,16 +31,16 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    @Order(value = 3, method = "xid")
-    private GridCacheVersion txId;
+    @Order(0)
+    public GridCacheVersion txId;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    public IgniteUuid futId;
 
     /** Partition ID this message is targeted to. */
-    @Order(value = 5, method = "partition")
-    private int part;
+    @Order(2)
+    public int part;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.
@@ -63,11 +63,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         this.futId = futId;
     }
 
-    /** Partition ID this message is targeted to. */
-    public void partition(int part) {
-        this.part = part;
-    }
-
     /** {@inheritDoc} */
     @Override public final int partition() {
         return part;
@@ -79,16 +74,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
      */
     public GridCacheVersion xid() {
         return txId;
-    }
-
-    /** */
-    public void xid(GridCacheVersion txId) {
-        this.txId = txId;
-    }
-
-    /** */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**

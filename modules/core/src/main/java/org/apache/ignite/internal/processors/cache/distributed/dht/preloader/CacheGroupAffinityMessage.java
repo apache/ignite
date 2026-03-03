@@ -40,16 +40,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupAffinityMessage implements Message {
     /** */
-    @Order(value = 0, method = "assignments")
-    private List<GridLongList> assigns;
+    @Order(0)
+    List<GridLongList> assigns;
 
     /** */
-    @Order(value = 1, method = "idealAssignments")
-    private List<GridLongList> idealAssigns;
+    @Order(1)
+    List<GridLongList> idealAssigns;
 
     /** */
-    @Order(value = 2, method = "assignmentsDiff")
-    private Map<Integer, GridLongList> assignsDiff;
+    @Order(2)
+    Map<Integer, GridLongList> assignsDiff;
 
     /**
      *
@@ -235,45 +235,10 @@ public class CacheGroupAffinityMessage implements Message {
     }
 
     /**
-     * @return Assignment.
-     */
-    public List<GridLongList> assignments() {
-        return assigns;
-    }
-
-    /**
-     * @param assigns Assignment.
-     */
-    public void assignments(List<GridLongList> assigns) {
-        this.assigns = assigns;
-    }
-
-    /**
-     * @return Ideal assignment.
-     */
-    public List<GridLongList> idealAssignments() {
-        return idealAssigns;
-    }
-
-    /**
-     * @param idealAssigns Ideal assignment.
-     */
-    public void idealAssignments(List<GridLongList> idealAssigns) {
-        this.idealAssigns = idealAssigns;
-    }
-
-    /**
      * @return Difference with ideal affinity assignment.
      */
     public Map<Integer, GridLongList> assignmentsDiff() {
         return assignsDiff;
-    }
-
-    /**
-     * @param assignsDiff Difference with ideal affinity assignment.
-     */
-    public void assignmentsDiff(Map<Integer, GridLongList> assignsDiff) {
-        this.assignsDiff = assignsDiff;
     }
 
     /** {@inheritDoc} */

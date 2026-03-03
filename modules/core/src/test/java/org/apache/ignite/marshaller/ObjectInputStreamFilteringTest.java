@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller;
 
 import java.util.HashMap;
+import java.util.Map;
 import javax.management.BadAttributeValueExpException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -25,7 +26,8 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.management.tx.TxVerboseInfo;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -81,7 +83,7 @@ public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
             LogListener logLsnr = LogListener
-                .matches("Failed to deserialize object [typeName=org.apache.ignite.internal.management.tx.TxVerboseInfo]")
+                .matches("Failed to deserialize object [typeName=org.apache.ignite.marshaller.ObjectInputStreamFilteringTest$Holder]")
                 .andMatches("filter status: REJECTED")
                 .build();
 
@@ -90,8 +92,9 @@ public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {
             HashMap excludedClsWrapper = new HashMap();
             excludedClsWrapper.put("0", new BadAttributeValueExpException("val"));
 
-            TxVerboseInfo javaDeserializationObj = new TxVerboseInfo();
-            javaDeserializationObj.usedCaches(excludedClsWrapper);
+            Holder javaDeserializationObj = new Holder();
+
+            javaDeserializationObj.map = excludedClsWrapper;
 
             GridTestUtils.assertThrowsWithCause(
                 () -> client.cache("missing-cache").put("0", javaDeserializationObj),
@@ -122,5 +125,12 @@ public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {
         finally {
             System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
         }
+    }
+
+    /** */
+    public static class Holder extends IgniteDataTransferObject {
+        /** */
+        @Order(0)
+        public Map map;
     }
 }

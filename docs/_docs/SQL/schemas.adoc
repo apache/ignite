@@ -92,3 +92,52 @@ If you do not use this parameter, the cache name is defined in the following for
 ....
 SQL_<SCHEMA_NAME>_<TABLE_NAME>
 ....
+
+
+== Validating Data Against the Schema
+
+Ignite can verify that values inserted into a table match the column types and constraints declared in its SQL schema. By default, Ignite performs these checks only for indexed columns. To validate all columns, enable the server-side check on every node before startup:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+SqlConfiguration sqlCfg = new SqlConfiguration()
+    .setValidationEnabled(true);
+
+IgniteConfiguration cfg = new IgniteConfiguration()
+    .setSqlConfiguration(sqlCfg);
+----
+
+tab:XML[]
+[source,xml]
+----
+<property name="sqlConfiguration">
+    <bean class="org.apache.ignite.configuration.SqlConfiguration">
+        <property name="validationEnabled" value="true"/>
+    </bean>
+</property>
+----
+--
+
+When validation is enabled, Ignite runs extra checks for each SQL `INSERT`, `MERGE`, and `UPDATE` statement as well as cache API calls that modify SQL-managed tables and rejects data that breaks the schema. Violations raise an `IgniteSQLException` for SQL clients (JDBC, ODBC, REST), while key-value API callers get a `CacheException` whose root cause is that same `IgniteSQLException`.
+In both cases the application can handle the failure and the incorrect values are not stored. SQL DML already attempts to coerce values to the declared column types, so type mismatches typically appear when you write data through the cache API or binary objects.
+
+[source,java]
+----
+// CREATE TABLE Person (id INT PRIMARY KEY, age INT);
+
+IgniteCache<Integer, BinaryObject> cache = ignite.cache("SQL_PUBLIC_PERSON").withKeepBinary();
+
+BinaryObject invalidPerson = ignite.binary().builder("Person")
+    .setField("id", 2)
+    .setField("age", "forty-two") // String instead of INT column
+    .build();
+
+cache.put(2, invalidPerson); // CacheException wrapping IgniteSQLException when validation is enabled
+----
+
+With the default configuration (validation disabled for non-indexed columns), the `put` above succeeds even though the stored `BinaryObject` does not match the SQL schema. Turning on validation causes Ignite to reject the update, protecting the table from malformed records.
+
+Enable the option when you need stronger guarantees that dynamic or user-provided data cannot break the table definition, and keep it disabled when the overhead of additional checks outweighs the risk of incorrect data.

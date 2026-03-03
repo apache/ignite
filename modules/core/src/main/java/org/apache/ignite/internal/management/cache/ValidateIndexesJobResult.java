@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,10 +27,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.apache.ignite.internal.util.IgniteUtils.readCollection;
-import static org.apache.ignite.internal.util.IgniteUtils.readMap;
-import static org.apache.ignite.internal.util.IgniteUtils.writeCollection;
-import static org.apache.ignite.internal.util.IgniteUtils.writeMap;
 
 /**
  *
@@ -42,20 +36,24 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @Order(0)
     @GridToStringInclude
-    private Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
+    Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
 
     /** Results of reverse indexes validation from node. */
+    @Order(1)
     @GridToStringInclude
-    private Map<String, ValidateIndexesPartitionResult> idxRes;
+    Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
+    @Order(2)
     @GridToStringInclude
-    private Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
+    Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
     /** Results of checking size cache and index. */
+    @Order(3)
     @GridToStringInclude
-    private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
+    Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 
     /**
      * Constructor.
@@ -121,22 +119,6 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
             (partRes != null && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
             (idxRes != null && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
             (checkSizeRes != null && checkSizeRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        writeMap(out, partRes);
-        writeMap(out, idxRes);
-        writeCollection(out, integrityCheckFailures);
-        writeMap(out, checkSizeRes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        partRes = readMap(in);
-        idxRes = readMap(in);
-        integrityCheckFailures = readCollection(in);
-        checkSizeRes = readMap(in);
     }
 
     /** {@inheritDoc} */

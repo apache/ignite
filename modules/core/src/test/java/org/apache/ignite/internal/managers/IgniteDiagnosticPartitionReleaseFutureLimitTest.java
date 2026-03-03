@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -85,11 +85,11 @@ public class IgniteDiagnosticPartitionReleaseFutureLimitTest extends GridCommonA
 
         TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
         spi1.blockMessages((node, msg) -> msg instanceof GridDhtAtomicDeferredUpdateResponse);
-        spi1.record(IgniteDiagnosticMessage.class);
+        spi1.record(IgniteDiagnosticRequest.class);
 
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(grid(2));
         spi2.blockMessages((node, msg) -> msg instanceof GridDhtAtomicDeferredUpdateResponse);
-        spi2.record(IgniteDiagnosticMessage.class);
+        spi2.record(IgniteDiagnosticRequest.class);
 
         // Populate the cache in async manner. We don't want to wait for completion all cache operations.
         // The big number of updates is needed for to enlist a huge number of cache futures into the partition release future.

@@ -204,6 +204,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         skipVals,
                         false,
                         opCtx != null && opCtx.skipStore(),
+                        opCtx != null && opCtx.skipReadThrough(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -306,6 +307,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         skipVals,
                         false,
                         opCtx != null && opCtx.skipStore(),
+                        opCtx != null && opCtx.skipReadThrough(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -658,6 +660,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
@@ -732,8 +735,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                    ctx.deploymentEnabled()));
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                 req.version(ver);
                             }
@@ -836,8 +838,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     GridNearUnlockRequest req = map.get(primary);
 
                     if (req == null) {
-                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                            ctx.deploymentEnabled()));
+                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                         req.version(ver);
                     }
@@ -901,6 +902,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -916,6 +918,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long createTtl,
         final long accessTtl,
         final boolean skipStore,
+        final boolean skipReadThrough,
         final boolean keepBinary
     ) {
         assert keys != null;
@@ -940,6 +943,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
+                skipReadThrough,
                 keepBinary);
         }
         else {
@@ -961,6 +965,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             createTtl,
                             accessTtl,
                             skipStore,
+                            skipReadThrough,
                             keepBinary);
                     }
                 }
@@ -996,6 +1001,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long createTtl,
         final long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         int cnt = keys.size();
 
@@ -1013,6 +1019,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
+                skipReadThrough,
                 keepBinary);
 
             // Add before mapping.
@@ -1081,6 +1088,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
+                skipReadThrough,
                 keepBinary);
 
             return new GridDhtEmbeddedFuture<>(

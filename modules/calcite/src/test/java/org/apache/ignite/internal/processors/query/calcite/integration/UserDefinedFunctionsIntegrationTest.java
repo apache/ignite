@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
@@ -92,7 +93,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertEquals(1, schema.getFunctions("SAMESIGN").size());
     }
 
-
     /** */
     @Test
     public void testSystemFunctionOverriding() throws Exception {
@@ -105,18 +105,25 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         // Make sure that the new functions didn't affect schema 'PUBLIC'.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
-        assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
-        assertQuery("select * from table(SYSTEM_RANGE(1, 2))").returns(1L).returns(2L).check();
-        assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
-        assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
-        assertThrows("select PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
+        assertQuery("SELECT UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("SELECT * FROM TABLE(SYSTEM_RANGE(1, 2))").returns(1L).returns(2L).check();
+        assertQuery("SELECT TYPEOF(?)").withParams(1L).returns("BIGINT").check();
+        assertQuery("SELECT ? + ?").withParams(1, 2).returns(3).check();
+        assertThrows("SELECT PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
 
         // Ensure that new functions are successfully created in a custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
-        assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
-        assertQuery("select * from table(\"OWN_SCHEMA\".SYSTEM_RANGE(1, 2))").returns(100L).check();
-        assertQuery("select \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
-        assertQuery("select \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
+        assertQuery("SELECT \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
+        assertQuery("SELECT * FROM TABLE(\"OWN_SCHEMA\".SYSTEM_RANGE(1, 2))").returns(100L).check();
+        assertQuery("SELECT \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
+        assertQuery("SELECT \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
+
+        assertQuery("SELECT * FROM TABLE(\"OWN_SCHEMA\".STR_ARRAY_CONSUME_TABLE(?)) as t").withParams(List.of("row1", "row2"))
+            .returns("row1").returns( "row2").check();
+        assertQuery("SELECT * FROM TABLE(\"OWN_SCHEMA\".OBJ_ARRAY_CONSUME_TABLE(?)) as t").withParams(List.of(new CustomClass(), "row2"))
+            .returns("CustomClass.toString").returns( "row2").check();
+        assertThrows("SELECT * FROM TABLE(\"OWN_SCHEMA\".STR_ARRAY_CONSUME_TABLE(?)) as t", IgniteSQLException.class,
+            "An error occurred while query executing", List.of(new CustomClass(), "row2"));
 
         LogListener logChecker0 = LogListener.matches("Unable to add user-defined SQL function 'upper'")
             .andMatches("Unable to add user-defined SQL function 'unix_seconds'")
@@ -227,6 +234,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         // PUBLIC schema is predefined and not dropped on cache destroy.
         assertQuery("SELECT sq(4)").returns(16d).check();
+    }
+
+    /** */
+    @Test
+    public void testUdfAnotherSchema() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
+            .setSqlSchema("EMP")
+            .setIndexedTypes(Integer.class, Employer.class));
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("udf")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(MulFunctionsLibrary.class));
+
+        for (int i = 0; i < 3; i++)
+            client.cache("emp").put(i, new Employer("emp" + i, (double)i));
+
+        assertQuery("SELECT udf.mul(_key, _key) FROM emp.Employer")
+            .returns(0).returns(1).returns(4).check();
     }
 
     /** */
@@ -695,6 +720,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         public static int plus(int x, int y) {
             return 100;
         }
+
+        /** Table function with String array as input. */
+        @QuerySqlTableFunction(alias = "STR_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Object[]> strArrConsumeTable(List<String> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
+        }
+
+        /** Table function with Object array as input. */
+        @QuerySqlTableFunction(alias = "OBJ_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Object[]> objArrConsumeTable(List<Object> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
+        }
     }
 
     /** */
@@ -706,6 +749,14 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 .cache("emp4")
                 .query(new SqlFieldsQuery("SELECT salary FROM emp4 WHERE _key = ?").setArgs(key))
                 .getAll().get(0).get(0);
+        }
+    }
+
+    /** */
+    private static class CustomClass {
+        /** */
+        @Override public String toString() {
+            return "CustomClass.toString";
         }
     }
 }

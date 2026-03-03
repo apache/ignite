@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -57,6 +58,7 @@ public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(
                 new SqlConfiguration().setSqlSchemas("MY_SCHEMA")
+                    .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration())
             )
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()

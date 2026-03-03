@@ -25,7 +25,6 @@ import java.util.UUID;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,6 +36,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
+import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessageSerializer;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
@@ -171,8 +171,9 @@ public class TcpHandshakeExecutor {
             buf.position(DIRECT_TYPE_SIZE);
 
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
+            reader.setBuffer(buf);
 
-            msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, buf, reader);
+            msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, reader);
             reader.reset();
 
             return nodeIdMsg.nodeId();
@@ -189,7 +190,9 @@ public class TcpHandshakeExecutor {
                     .order(ByteOrder.LITTLE_ENDIAN)
                     .put(U.IGNITE_HEADER);
 
-            msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
+            writer.setBuffer(buf);
+
+            msgFactory.serializer(msg.directType()).writeTo(msg, writer);
 
             buf.flip();
 
@@ -239,7 +242,9 @@ public class TcpHandshakeExecutor {
 
                 buf.position(readPos);
 
-                fininshed = msgSer.readFrom(msg, buf, reader);
+                reader.setBuffer(buf);
+
+                fininshed = msgSer.readFrom(msg, reader);
 
                 readPos = buf.position();
             }

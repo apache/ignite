@@ -235,7 +235,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     ctx.systemTx(),
                                     ctx.ioPolicy(),
                                     PESSIMISTIC,
-                                    req.isolation().value(),
+                                    req.isolation(),
                                     req.isInvalidate(),
                                     req.timeout(),
                                     req.txSize(),
@@ -259,6 +259,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 req.accessTtl(),
                                 req.skipStore(),
+                                req.skipReadThrough(),
                                 req.keepBinary());
                         }
 
@@ -430,8 +431,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.version(),
             req.futureId(),
             req.miniId(),
-            e,
-            ctx.deploymentEnabled());
+            e);
 
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -464,8 +464,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
-                ctx.deploymentEnabled());
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
 
             dhtTx = startRemoteTx(nodeId, req, res);
         }
@@ -475,7 +474,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, err, e);
 
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
+                new IgniteTxRollbackCheckedException(err, e));
 
             fail = true;
         }
@@ -488,7 +487,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.version(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException(err, e), ctx.deploymentEnabled());
+                new IgniteCheckedException(err, e));
 
             fail = true;
         }
@@ -738,6 +737,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.isKeepBinary());
     }
 
@@ -754,6 +754,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @return Lock future.
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
@@ -766,6 +767,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
@@ -788,6 +790,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             createTtl,
             accessTtl,
             skipStore,
+            skipReadThrough,
             keepBinary);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
@@ -914,7 +917,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             false,
                             ctx.ioPolicy(),
                             PESSIMISTIC,
-                            req.isolation().value(),
+                            req.isolation(),
                             req.timeout(),
                             req.isInvalidate(),
                             !req.skipStore(),
@@ -970,6 +973,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.createTtl(),
                         req.accessTtl(),
                         req.skipStore(),
+                        req.skipReadThrough(),
                         req.keepBinary());
 
                     // Add before mapping.
@@ -1042,6 +1046,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.createTtl(),
                     req.accessTtl(),
                     req.skipStore(),
+                    req.skipReadThrough(),
                     req.keepBinary(),
                     req.nearCache());
 
@@ -1158,7 +1163,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             0,
             null,
             topVer,
-            ctx.deploymentEnabled(),
             false);
 
         try {
@@ -1211,7 +1215,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 err,
                 clienRemapVer,
-                ctx.deploymentEnabled(),
                 clienRemapVer != null);
 
             if (err == null) {
@@ -1322,7 +1325,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 e,
                 null,
-                ctx.deploymentEnabled(),
                 false);
         }
     }
@@ -1669,8 +1671,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                ctx.deploymentEnabled());
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
             req.version(dhtVer);
 
@@ -1704,8 +1705,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                    ctx.deploymentEnabled());
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
                 req.version(dhtVer);
 

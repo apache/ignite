@@ -94,13 +94,6 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable public abstract <F> F fieldByOrder(int order);
 
     /**
-     * Create field comparator.
-     *
-     * @return Comparator.
-     */
-    public abstract BinarySerializedFieldComparator createFieldComparator();
-
-    /**
      * Writes field value defined by the given field offset to the given byte buffer.
      *
      * @param fieldOffset Field offset.
@@ -374,12 +367,8 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
             buf.a("... and ").a(overflow).a(" more");
     }
 
-    /**
-     * Check if object graph has circular references.
-     *
-     * @return {@code true} if object has circular references.
-     */
-    public boolean hasCircularReferences() {
+    /** {@inheritDoc} */
+    @Override public boolean hasCircularReferences() {
         try {
             BinaryReaderHandles ctx = new BinaryReaderHandles();
 

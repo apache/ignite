@@ -38,11 +38,11 @@ public class UpdateErrors implements Message {
     /** Failed keys. */
     @GridToStringInclude
     @Order(0)
-    private List<KeyCacheObject> failedKeys;
+    List<KeyCacheObject> failedKeys;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(1)
+    ErrorMessage errMsg;
 
     /**
      *
@@ -61,17 +61,17 @@ public class UpdateErrors implements Message {
     }
 
     /**
-     * @param errMsg New error message.
+     * @param err Error.
      */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
+    public void error(Throwable err) {
+        errMsg = new ErrorMessage(err);
     }
 
     /**
-     * @return Error message.
+     * @return Error.
      */
-    public ErrorMessage errorMessage() {
-        return errMsg;
+    public Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /**
@@ -79,13 +79,6 @@ public class UpdateErrors implements Message {
      */
     public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
-    }
-
-    /**
-     * @param failedKeys New failed keys.
-     */
-    public void failedKeys(List<KeyCacheObject> failedKeys) {
-        this.failedKeys = failedKeys;
     }
 
     /**
@@ -103,7 +96,7 @@ public class UpdateErrors implements Message {
         if (errMsg == null)
             errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys."));
 
-        errMsg.toThrowable().addSuppressed(e);
+        errMsg.error().addSuppressed(e);
     }
 
     /**
@@ -119,7 +112,7 @@ public class UpdateErrors implements Message {
         if (errMsg == null)
             errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys on primary node."));
 
-        errMsg.toThrowable().addSuppressed(e);
+        errMsg.error().addSuppressed(e);
     }
 
     /** */

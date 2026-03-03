@@ -536,13 +536,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
      * such cache.
      *
-     * @param cacheName Cache name.
+     * @param cacheOrGrpName Cache or cache group name.
      * @return Whether WAL disabled by this call.
      * @throws IgniteException If error occurs.
      * @see #enableWal(String)
      * @see #isWalEnabled(String)
      */
-    public boolean disableWal(String cacheName) throws IgniteException;
+    public boolean disableWal(String cacheOrGrpName) throws IgniteException;
 
     /**
      * Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
@@ -560,13 +560,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
      * such cache.
      *
-     * @param cacheName Cache name.
+     * @param cacheOrGrpName Cache or cache group name.
      * @return Whether WAL enabled by this call.
      * @throws IgniteException If error occurs.
      * @see #disableWal(String)
      * @see #isWalEnabled(String)
      */
-    public boolean enableWal(String cacheName) throws IgniteException;
+    public boolean enableWal(String cacheOrGrpName) throws IgniteException;
 
     /**
      * Checks if write-ahead logging is enabled for specified cache.

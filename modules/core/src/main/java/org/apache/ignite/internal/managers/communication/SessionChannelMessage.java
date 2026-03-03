@@ -33,7 +33,7 @@ public class SessionChannelMessage implements Message {
 
     /** Channel session unique identifier. */
     @Order(0)
-    private IgniteUuid sesId;
+    IgniteUuid sesId;
 
     /**
      * Default constructor.
@@ -54,13 +54,6 @@ public class SessionChannelMessage implements Message {
      */
     public IgniteUuid sesId() {
         return sesId;
-    }
-
-    /**
-     * @param sesId The unique session id for the channel.
-     */
-    public void sesId(IgniteUuid sesId) {
-        this.sesId = sesId;
     }
 
     /** {@inheritDoc} */

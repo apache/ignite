@@ -17,29 +17,27 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Generate encryption key response.
  */
 public class GenerateEncryptionKeyResponse implements Message {
     /** Request message ID. */
-    private IgniteUuid id;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> encKeys;
+    @Order(1)
+    Collection<byte[]> encKeys;
 
     /** Master key digest that encrypted group encryption keys. */
-    private byte[] masterKeyDigest;
+    @Order(2)
+    byte[] masterKeyDigest;
 
     /** */
     public GenerateEncryptionKeyResponse() {
@@ -73,73 +71,6 @@ public class GenerateEncryptionKeyResponse implements Message {
     /** @return Master key digest that encrypted group encryption keys. */
     public byte[] masterKeyDigest() {
         return masterKeyDigest;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(encKeys, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(masterKeyDigest))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                encKeys = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                id = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                masterKeyDigest = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

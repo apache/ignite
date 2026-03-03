@@ -22,9 +22,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
@@ -33,9 +33,6 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_PO
  * Query task executor based on queue with query blocking.
  */
 public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
-    /** */
-    private final QueryTasksQueue tasksQueue = new QueryTasksQueue();
-
     /** */
     private IgniteThreadPoolExecutor executor;
 
@@ -56,6 +53,8 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         super.onStart(ctx);
+
+        QueryTasksQueue tasksQueue = new QueryTasksQueue(ctx.config().getQueryThreadPoolSize());
 
         executor = new IgniteThreadPoolExecutor(
             THREAD_PREFIX,

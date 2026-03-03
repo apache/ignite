@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.Objects;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 
 /**
  *
@@ -42,5 +44,13 @@ public abstract class AbstractService implements LifecycleAware, Service {
     /** {@inheritDoc} */
     @Override public void onStop() {
         tearDown();
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @return Calcite query processor.
+     */
+    public static CalciteQueryProcessor queryProcessor(GridKernalContext ctx) {
+        return Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
     }
 }

@@ -26,8 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridQueryCancelRequest implements Message {
     /** */
-    @Order(value = 0, method = "queryRequestId")
-    private long qryReqId;
+    @Order(0)
+    long qryReqId;
 
     /**
      * Default constructor.
@@ -48,13 +48,6 @@ public class GridQueryCancelRequest implements Message {
      */
     public long queryRequestId() {
         return qryReqId;
-    }
-
-    /**
-     * @param qryReqId Query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
     }
 
     /** {@inheritDoc} */

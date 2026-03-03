@@ -228,7 +228,7 @@ public class GridDhtPartitionSupplier {
             demandMsg.rebalanceId(),
             grp.groupId(),
             demandMsg.topologyVersion(),
-            grp.deploymentEnabled()
+            false
         );
 
         try {
@@ -268,7 +268,7 @@ public class GridDhtPartitionSupplier {
             if (sctx == null) {
                 if (log.isDebugEnabled())
                     log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
-                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().full()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().fullSet()) +
                         ", histPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().historicalSet()) + "]");
             }
             else
@@ -276,7 +276,7 @@ public class GridDhtPartitionSupplier {
 
             if (sctx == null || sctx.iterator == null) {
 
-                remainingParts = new HashSet<>(demandMsg.partitions().full());
+                remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
 
                 CachePartitionPartialCountersMap histMap = demandMsg.partitions().historicalMap();
 
@@ -318,7 +318,7 @@ public class GridDhtPartitionSupplier {
                         supplyMsg = new GridDhtPartitionSupplyMessage(demandMsg.rebalanceId(),
                             grp.groupId(),
                             demandMsg.topologyVersion(),
-                            grp.deploymentEnabled());
+                            false);
                     }
                 }
 
@@ -457,7 +457,7 @@ public class GridDhtPartitionSupplier {
 
                     // Mark all remaining partitions as missed to trigger full rebalance.
                     if (iter == null && F.isEmpty(remainingParts)) {
-                        remainingParts = new HashSet<>(demandMsg.partitions().full());
+                        remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
                         remainingParts.addAll(demandMsg.partitions().historicalSet());
                     }
 
@@ -471,7 +471,7 @@ public class GridDhtPartitionSupplier {
                         demandMsg.rebalanceId(),
                         grp.groupId(),
                         demandMsg.topologyVersion(),
-                        grp.deploymentEnabled(),
+                        false,
                         t
                     );
                 }

@@ -158,6 +158,12 @@ public class GridNioServer<T> {
         = "Total number of messages waiting to be sent over all connections";
 
     /** */
+    public static final String MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME = "maxOutboundMessagesQueueSize";
+
+    /** */
+    public static final String MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Maximum number of messages waiting to be sent";
+
+    /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
 
     /** */
@@ -1611,12 +1617,14 @@ public class GridNioServer<T> {
                 if (messageFactory() == null) {
                     assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = msg.writeTo(buf, writer);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = messageFactory().serializer(msg.directType());
 
-                    finished = msgSer.writeTo(msg, buf, writer);
+                    writer.setBuffer(buf);
+
+                    finished = msgSer.writeTo(msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
@@ -1810,12 +1818,14 @@ public class GridNioServer<T> {
                 if (msgFactory == null) {
                     assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = msg.writeTo(buf, writer);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
-                    finished = msgSer.writeTo(msg, buf, writer);
+                    writer.setBuffer(buf);
+
+                    finished = msgSer.writeTo(msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));

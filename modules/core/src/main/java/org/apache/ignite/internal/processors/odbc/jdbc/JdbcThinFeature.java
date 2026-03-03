@@ -40,7 +40,10 @@ public enum JdbcThinFeature implements ThinProtocolFeature {
     TX_AWARE_QUERIES(4),
 
     /** Send {@link Connection#setClientInfo(String, String)} with messages. */
-    CLIENT_INFO(5);
+    CLIENT_INFO(5),
+
+    /** Execute local queries. */
+    LOCAL_QUERIES(6);
 
     /** */
     private static final EnumSet<JdbcThinFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(JdbcThinFeature.class);

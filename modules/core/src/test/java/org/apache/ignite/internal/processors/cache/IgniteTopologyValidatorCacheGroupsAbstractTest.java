@@ -134,6 +134,10 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
         @Override public TopologyValidator topologyValidator(String grpName) {
             if (GROUP_1.equals(grpName)) {
                 return new TopologyValidator() {
+                    @Override public boolean equals(Object obj) {
+                        return true;
+                    }
+
                     @Override public boolean validate(Collection<ClusterNode> nodes) {
                         return nodes.size() == 2;
                     }
@@ -141,6 +145,10 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
             }
             else if (GROUP_2.equals(grpName)) {
                 return new TopologyValidator() {
+                    @Override public boolean equals(Object obj) {
+                        return true;
+                    }
+
                     @Override public boolean validate(Collection<ClusterNode> nodes) {
                         return nodes.size() >= 2;
                     }

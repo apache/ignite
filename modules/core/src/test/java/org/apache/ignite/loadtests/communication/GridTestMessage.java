@@ -80,13 +80,6 @@ class GridTestMessage implements Message, Externalizable {
     }
 
     /**
-     * @return Bytes.
-     */
-    public byte[] bytes() {
-        return bytes;
-    }
-
-    /**
      * @param bytes Bytes.
      */
     public void bytes(byte[] bytes) {

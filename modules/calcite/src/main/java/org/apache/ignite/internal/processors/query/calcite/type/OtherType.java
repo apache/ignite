@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.lang.reflect.Type;
+import org.jetbrains.annotations.Nullable;
 
 /** OTHER SQL type for any value. */
 public class OtherType extends IgniteCustomType {
@@ -34,5 +35,15 @@ public class OtherType extends IgniteCustomType {
     /** @return Storage type */
     @Override public Type storageType() {
         return Object.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(@Nullable Object obj) {
+        // Digest is the same for built-in Calcite's OTHER type, make sure we get instance of correct class during
+        // canonization.
+        if (obj == null || obj.getClass() != getClass())
+            return false;
+
+        return super.equals(obj);
     }
 }

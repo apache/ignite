@@ -63,7 +63,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grps Collection of cache group names.
-     * @param incIdx Incremental snapshot index.
      * @param nodes IDs of the nodes that must be alive to complete the operation.
      */
     protected AbstractSnapshotOperationRequest(
@@ -71,7 +70,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
-        int incIdx,
         Collection<UUID> nodes
     ) {
         this.reqId = reqId;

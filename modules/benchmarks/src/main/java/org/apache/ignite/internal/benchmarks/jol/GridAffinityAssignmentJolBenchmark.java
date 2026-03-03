@@ -328,7 +328,6 @@ public class GridAffinityAssignmentJolBenchmark {
     private static ClusterNode node(int idx) {
         TcpDiscoveryNode node = new TcpDiscoveryNode(
             UUID.randomUUID(),
-            null,
             Collections.singletonList("127.0.0.1"),
             Collections.singletonList("127.0.0.1"),
             0,

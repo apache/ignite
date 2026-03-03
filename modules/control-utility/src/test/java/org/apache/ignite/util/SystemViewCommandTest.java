@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -833,7 +833,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @param view System view name.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, String view, String poolName) throws Exception {
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String view, String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
         execSvc.execute(0, new TestRunnable(latch, 0));
@@ -1181,6 +1181,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         checkNodesResult(F.asList(ignite0, ignite1, client), NODE_IDS);
 
         checkNodesResult(F.viewReadOnly(G.allGrids(), node -> (IgniteEx)node), ALL_NODES);
+    }
+
+    /** Checks the situation when a view (metastorage, snapshot, etc.) is missing on some nodes, i.e., thick clients. */
+    @Test
+    public void testViewParticularlyRegistered() {
+        Map<UUID, List<List<String>>> views = systemView(F.viewReadOnly(G.allGrids(), n -> (IgniteEx)n), SNAPSHOT_SYS_VIEW, ALL_NODES);
+
+        assertNotNull(views);
+        assertEquals(2, views.size());
+        assertNotNull(views.get(ignite0.localNode().id()));
+        assertNotNull(views.get(ignite1.localNode().id()));
+        assertNull(views.get(client.localNode().id()));
     }
 
     /** */

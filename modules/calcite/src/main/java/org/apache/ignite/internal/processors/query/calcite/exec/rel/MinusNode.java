@@ -78,7 +78,7 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
 
         /** {@inheritDoc} */
         @Override protected boolean affectResult(int[] cntrs) {
-            return cntrs[0] != cntrs[1];
+            return !all || cntrs[0] != cntrs[1];
         }
 
         /** {@inheritDoc} */

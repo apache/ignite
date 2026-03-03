@@ -73,7 +73,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTaskSessionInternal session() {
+    @Override public GridTaskSessionImpl session() {
         return ses;
     }
 

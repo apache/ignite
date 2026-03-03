@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,37 +43,33 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** An unique (per demander) rebalance id. */
-    @Order(4)
-    private long rebalanceId;
+    @Order(0)
+    long rebalanceId;
 
     /** Topology version for which demand message is sent. */
-    @Order(value = 5, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(1)
+    AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
-    @Order(6)
-    private Map<Integer, Long> last;
+    @Order(2)
+    Map<Integer, Long> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
-    @Order(7)
-    private Collection<Integer> missed;
+    @Order(3)
+    Collection<Integer> missed;
 
     /** Entries. */
-    @Order(8)
-    private Map<Integer, CacheEntryInfoCollection> infos;
+    @Order(4)
+    Map<Integer, CacheEntryInfoCollection> infos;
 
     /** Message size. */
-    @Order(value = 9, method = "messageSize")
-    private int msgSize;
+    @Order(5)
+    int msgSize;
 
-    /** Supplying process error. */
-    private Throwable err;
-
-    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-    /** Serialized form of supplying process error. */
-    @Order(10)
-    private byte[] errBytes;
+    /** Supplying process error message. */
+    @Order(6)
+    @Nullable ErrorMessage errMsg;
 
     /**
      * @param rebalanceId Rebalance id.
@@ -110,7 +106,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
-        this.err = err;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -133,13 +131,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param rebalanceId New unique (per demander) rebalance id.
-     */
-    public void rebalanceId(long rebalanceId) {
-        this.rebalanceId = rebalanceId;
-    }
-
-    /**
      * @return Topology version for which demand message is sent.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -147,24 +138,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param topVer New topology version for which demand message is sent.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Partitions that have been fully sent.
      */
     public Map<Integer, Long> last() {
         return last;
-    }
-
-    /**
-     * @param last New map of partitions that have been fully sent.
-     */
-    public void last(Map<Integer, Long> last) {
-        this.last = last;
     }
 
     /**
@@ -202,13 +179,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param missed New partitions which were not found.
-     */
-    public void missed(Collection<Integer> missed) {
-        this.missed = missed;
-    }
-
-    /**
      * @return Entries.
      */
     public Map<Integer, CacheEntryInfoCollection> getInfosSafe() {
@@ -218,37 +188,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         return infos;
     }
 
-    /**
-     * @return Entries.
-     */
-    public Map<Integer, CacheEntryInfoCollection> infos() {
-        return infos;
-    }
-
-    /**
-     * @param infos New entries.
-     */
-    public void infos(Map<Integer, CacheEntryInfoCollection> infos) {
-        this.infos = infos;
-    }
-
     /** Supplying process error. */
     @Nullable @Override public Throwable error() {
-        return err;
-    }
-
-    /**
-     * @return Serialized form of supplying process error.
-     */
-    public byte[] errBytes() {
-        return errBytes;
-    }
-
-    /**
-     * @param errBytes New serialized form of supplying process error.
-     */
-    public void errBytes(byte[] errBytes) {
-        this.errBytes = errBytes;
+        return ErrorMessage.error(errMsg);
     }
 
     /**
@@ -256,13 +198,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      */
     public int messageSize() {
         return msgSize;
-    }
-
-    /**
-     * @param msgSize New message size.
-     */
-    public void messageSize(int msgSize) {
-        this.msgSize = msgSize;
     }
 
     /**
@@ -296,15 +231,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
@@ -319,10 +245,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(grp.cacheObjectContext(), ldr);
         }
-
-        // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

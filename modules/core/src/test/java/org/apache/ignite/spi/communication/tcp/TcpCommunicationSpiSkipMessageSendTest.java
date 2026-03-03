@@ -18,9 +18,6 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Set;
 import java.util.UUID;
@@ -45,10 +42,10 @@ import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -281,7 +278,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         private final CountDownLatch netDisabledLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in,
+        @Override protected <T> T readMessage(TcpDiscoveryIoSession ses,
             long timeout) throws IOException, IgniteCheckedException {
             if (netDisabled) {
                 U.sleep(timeout);
@@ -289,11 +286,11 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 throw new SocketTimeoutException("CustomDiscoverySpi: network is disabled.");
             }
             else
-                return super.readMessage(sock, in, timeout);
+                return super.readMessage(ses, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (netDisabled) {
                 netDisabledLatch.countDown();
@@ -301,7 +298,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 throw new SocketTimeoutException("CustomDiscoverySpi: network is disabled.");
             }
             else
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /**

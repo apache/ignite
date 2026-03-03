@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Entry event order.
@@ -32,7 +31,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see CacheConflictResolutionManager
  * @see GridCacheVersionManager#dataCenterId(byte)
  */
-@IgniteExperimental
 public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serializable {
     /**
      * Order of the update. Value is an incremental counter value. Scope of counter is node.

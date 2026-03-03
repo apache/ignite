@@ -27,7 +27,10 @@ public class WalCommand extends CommandRegistryImpl {
     public WalCommand() {
         super(
             new WalPrintCommand(),
-            new WalDeleteCommand()
+            new WalDeleteCommand(),
+            new WalStateCommand(),
+            new WalDisableCommand(),
+            new WalEnableCommand()
         );
     }
 }

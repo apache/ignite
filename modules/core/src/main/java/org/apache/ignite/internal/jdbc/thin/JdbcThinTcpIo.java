@@ -319,7 +319,12 @@ public class JdbcThinTcpIo {
                 }
             }
 
-            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(enabledFeatures()));
+            EnumSet<JdbcThinFeature> enabledFeatures = enabledFeatures();
+
+            if (!connProps.isLocal())
+                enabledFeatures.remove(JdbcThinFeature.LOCAL_QUERIES);
+
+            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(enabledFeatures));
         }
 
         if (ver.compareTo(VER_2_13_0) >= 0)

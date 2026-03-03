@@ -418,8 +418,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
 
@@ -757,8 +756,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     req.futureId(),
                     req.miniId(),
-                    0,
-                    false);
+                    0);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
@@ -788,8 +786,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 res.onError(req.classError());
 
@@ -818,7 +815,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -834,8 +830,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     req.cacheId(),
                     req.futureId(),
-                    req.miniId(),
-                    false
+                    req.miniId()
                 );
 
                 res.error(req.classError());
@@ -893,7 +888,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     0,
                     req.classError(),
                     null,
-                    false,
                     false);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -1004,7 +998,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -1022,7 +1015,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -1040,7 +1032,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -1056,8 +1047,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 res.onError(req.classError());
 

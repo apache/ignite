@@ -119,6 +119,7 @@ import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -128,7 +129,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -317,6 +317,14 @@ public class JdbcThinConnection implements Connection {
 
         holdability = isTxAwareQueriesSupported ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
+
+        if (connProps.isLocal()) {
+            if (connProps.getAddresses().length != 1
+                || connProps.getAddresses()[0].portFrom() != connProps.getAddresses()[0].portTo()) {
+                LOG.warning("Local flag is supposed to be used only when exactly one address is specified, " +
+                    "otherwise the local query may be executed on an unexpected node");
+            }
+        }
     }
 
     /** Create new binary context. */
@@ -1977,74 +1985,78 @@ public class JdbcThinConnection implements Connection {
      */
     private IgniteProductVersion connectInBestEffortAffinityMode(
         IgniteProductVersion baseEndpointVer) throws SQLException {
-        List<Exception> exceptions = null;
+        try {
+            List<Exception> exceptions = null;
 
-        for (int i = 0; i < connProps.getAddresses().length; i++) {
-            HostAndPortRange srv = connProps.getAddresses()[i];
+            for (int i = 0; i < connProps.getAddresses().length; i++) {
+                HostAndPortRange srv = connProps.getAddresses()[i];
 
-            try {
-                InetAddress[] addrs = InetAddress.getAllByName(srv.host());
+                try {
+                    InetAddress[] addrs = InetAddress.getAllByName(srv.host());
 
-                for (InetAddress addr : addrs) {
-                    for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                        try {
-                            JdbcThinTcpIo cliIo =
-                                new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
+                    for (InetAddress addr : addrs) {
+                        for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                            try {
+                                JdbcThinTcpIo cliIo =
+                                    new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
 
-                            if (!cliIo.isPartitionAwarenessSupported()) {
-                                cliIo.close();
+                                if (!cliIo.isPartitionAwarenessSupported()) {
+                                    cliIo.close();
 
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Node doesn't support partition awareness mode.",
-                                    INTERNAL_ERROR);
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
+                                        "Node doesn't support partition awareness mode.",
+                                        INTERNAL_ERROR);
+                                }
+
+                                IgniteProductVersion endpointVer = cliIo.igniteVersion();
+
+                                if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
+                                    cliIo.close();
+
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
+                                        "the node version [" + endpointVer + "] " +
+                                        "is smaller than the base one [" + baseEndpointVer + "].",
+                                        INTERNAL_ERROR);
+                                }
+
+                                cliIo.timeout(netTimeout);
+
+                                JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
+
+                                // This can happen if the same node has several IPs or if connection manager background
+                                // timer task runs concurrently.
+                                if (ioToSameNode != null)
+                                    cliIo.close();
+                                else
+                                    connCnt.incrementAndGet();
+
+                                return cliIo.igniteVersion();
                             }
+                            catch (Exception exception) {
+                                if (exceptions == null)
+                                    exceptions = new ArrayList<>();
 
-                            IgniteProductVersion endpointVer = cliIo.igniteVersion();
-
-                            if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
-                                cliIo.close();
-
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
-                                    "the node version [" + endpointVer + "] " +
-                                    "is smaller than the base one [" + baseEndpointVer + "].",
-                                    INTERNAL_ERROR);
+                                exceptions.add(exception);
                             }
-
-                            cliIo.timeout(netTimeout);
-
-                            JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
-
-                            // This can happen if the same node has several IPs or if connection manager background
-                            // timer task runs concurrently.
-                            if (ioToSameNode != null)
-                                cliIo.close();
-                            else
-                                connCnt.incrementAndGet();
-
-                            return cliIo.igniteVersion();
-                        }
-                        catch (Exception exception) {
-                            if (exceptions == null)
-                                exceptions = new ArrayList<>();
-
-                            exceptions.add(exception);
                         }
                     }
                 }
-            }
-            catch (Exception exception) {
-                if (exceptions == null)
-                    exceptions = new ArrayList<>();
+                catch (Exception exception) {
+                    if (exceptions == null)
+                        exceptions = new ArrayList<>();
 
-                exceptions.add(exception);
+                    exceptions.add(exception);
+                }
             }
+
+            handleConnectExceptions(exceptions);
         }
-
-        handleConnectExceptions(exceptions);
-
-        isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        finally {
+            if (!ios.isEmpty())
+                isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        }
 
         return null;
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
@@ -87,6 +88,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
     /** Channels. */
     protected final TestTcpClientChannel[] channels = new TestTcpClientChannel[MAX_CLUSTER_SIZE];
+
+    /** Channels list. */
+    protected final List<TestTcpClientChannel> channelsList = Collections.unmodifiableList(F.asList(channels));
 
     /** Operations queue. */
     protected final Queue<T2<TestTcpClientChannel, ClientOperation>> opsQueue = new ConcurrentLinkedQueue<>();
@@ -184,6 +188,18 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     }
 
     /**
+     * Next operation channel index.
+     */
+    protected int nextOpChannelIdx() {
+        T2<TestTcpClientChannel, ClientOperation> nextOp = opsQueue.poll();
+
+        if (nextOp == null)
+            return -1;
+
+        return channelsList.indexOf(nextOp.get1());
+    }
+
+    /**
      * Calculates affinity channel for cache and key.
      */
     protected TestTcpClientChannel affinityChannel(Object key, IgniteInternalCache<Object, Object> cache) {
@@ -273,10 +289,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      * @return {@code true} if the channel is connected, {@code false} otherwise.
      */
     protected boolean isConnected(int chIdx) {
-        List<ReliableChannel.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
+        List<ReliableChannelImpl.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
         int chPort = DFLT_PORT + chIdx;
 
-        for (ReliableChannel.ClientChannelHolder holder : channelHolders) {
+        for (ReliableChannelImpl.ClientChannelHolder holder : channelHolders) {
             if (holder == null || holder.isClosed()) {
                 continue;
             }

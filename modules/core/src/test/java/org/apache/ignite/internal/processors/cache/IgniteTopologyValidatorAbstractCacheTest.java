@@ -335,6 +335,10 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         @Override public TopologyValidator topologyValidator(String cacheName) {
             if (CACHE_NAME_1.equals(cacheName)) {
                 return new TopologyValidator() {
+                    @Override public boolean equals(Object obj) {
+                        return true;
+                    }
+
                     @Override public boolean validate(Collection<ClusterNode> nodes) {
                         return servers(nodes) == 2;
                     }
@@ -342,6 +346,10 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
             }
             else if (CACHE_NAME_2.equals(cacheName)) {
                 return new TopologyValidator() {
+                    @Override public boolean equals(Object obj) {
+                        return true;
+                    }
+
                     @Override public boolean validate(Collection<ClusterNode> nodes) {
                         return servers(nodes) >= 2;
                     }

@@ -52,6 +52,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
@@ -631,29 +632,44 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableWal(String cacheName) throws IgniteException {
-        return changeWalMode(cacheName, true);
+    @Override public boolean enableWal(String cacheOrGrpName) throws IgniteException {
+        return changeWalMode(cacheOrGrpName, true);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disableWal(String cacheName) throws IgniteException {
-        return changeWalMode(cacheName, false);
+    @Override public boolean disableWal(String cacheOrGrpName) throws IgniteException {
+        return changeWalMode(cacheOrGrpName, false);
     }
 
     /**
      * Change WAL mode.
      *
-     * @param cacheName Cache name.
+     * @param cacheOrGrpName Cache or cache group name.
      * @param enabled Enabled flag.
      * @return {@code True} if WAL mode was changed as a result of this call.
      */
-    private boolean changeWalMode(String cacheName, boolean enabled) {
-        A.notNull(cacheName, "cacheName");
+    private boolean changeWalMode(String cacheOrGrpName, boolean enabled) {
+        A.notNull(cacheOrGrpName, "cacheOrGrpName");
 
         guard();
 
         try {
-            return ctx.cache().context().walState().changeWalMode(Collections.singleton(cacheName), enabled).get();
+            Collection<String> cacheNames;
+
+            int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
+            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(cacheOrGrpId);
+
+            if (grpDesc != null) {
+                Map<String, Integer> cachesInGrp = grpDesc.caches();
+                if (cachesInGrp.isEmpty())
+                    throw new IgniteException("Cache group '" + cacheOrGrpName + "' does not contain any caches.");
+                else
+                    cacheNames = cachesInGrp.keySet();
+            }
+            else
+                cacheNames = Collections.singleton(cacheOrGrpName);
+
+            return ctx.cache().context().walState().changeWalMode(cacheNames, enabled).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

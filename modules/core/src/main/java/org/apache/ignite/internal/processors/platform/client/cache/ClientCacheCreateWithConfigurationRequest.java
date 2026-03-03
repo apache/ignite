@@ -26,7 +26,10 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.typedef.T2;
+
 import static org.apache.ignite.internal.processors.platform.client.ClientStatus.CACHE_CONFIG_INVALID;
+import static org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetOrCreateWithConfigurationRequest.createSqlCache;
 
 /**
  * Cache create with configuration request.
@@ -34,7 +37,7 @@ import static org.apache.ignite.internal.processors.platform.client.ClientStatus
 @SuppressWarnings("unchecked")
 public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
     /** Cache configuration. */
-    private final CacheConfiguration cacheCfg;
+    private final T2<CacheConfiguration, Boolean> cacheCfg;
 
     /**
      * Constructor.
@@ -50,10 +53,16 @@ public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        checkClientCacheConfiguration(cacheCfg);
+        CacheConfiguration ccfg = cacheCfg.get1();
+        boolean sql = cacheCfg.get2();
+
+        checkClientCacheConfiguration(ccfg);
 
         try {
-            ctx.kernalContext().grid().createCache(cacheCfg);
+            if (sql)
+                createSqlCache(ctx, ccfg, true);
+            else
+                ctx.kernalContext().grid().createCache(ccfg);
         }
         catch (CacheExistsException e) {
             throw new IgniteClientException(ClientStatus.CACHE_EXISTS, e.getMessage());

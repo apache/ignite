@@ -17,26 +17,20 @@
 
 package org.apache.ignite.internal.util;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Collection of UUIDs.
  */
 public class UUIDCollectionMessage implements Message {
-    /** */
-    @GridDirectCollection(UUID.class)
-    private Collection<UUID> uuids;
+    /** The collection of UUIDs that was wrapped. */
+    @Order(0)
+    Collection<UUID> uuids;
 
     /**
      * Empty constructor required for direct marshalling.
@@ -53,64 +47,10 @@ public class UUIDCollectionMessage implements Message {
     }
 
     /**
-     * @param uuids UUIDs.
-     * @return Message.
-     */
-    public static UUIDCollectionMessage of(UUID... uuids) {
-        if (uuids == null || uuids.length == 0)
-            return null;
-
-        List<UUID> list = uuids.length == 1 ? Collections.singletonList(uuids[0]) : Arrays.asList(uuids);
-
-        return new UUIDCollectionMessage(list);
-    }
-
-    /**
      * @return The collection of UUIDs that was wrapped.
      */
     public Collection<UUID> uuids() {
         return uuids;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(uuids, MessageCollectionItemType.UUID))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                uuids = reader.readCollection(MessageCollectionItemType.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -128,7 +68,7 @@ public class UUIDCollectionMessage implements Message {
 
         UUIDCollectionMessage that = (UUIDCollectionMessage)o;
 
-        return uuids == that.uuids || (uuids != null && uuids.equals(that.uuids));
+        return Objects.equals(uuids, that.uuids);
     }
 
     /** {@inheritDoc} */

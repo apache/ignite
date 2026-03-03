@@ -39,26 +39,26 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
-    @Order(value = 4, method = "partition")
-    private int partId;
+    @Order(0)
+    int partId;
 
     /** */
-    @Order(value = 5, method = "futureId")
-    private long futId;
+    @Order(1)
+    long futId;
 
     /** */
-    @Order(6)
-    private UUID primaryId;
+    @Order(2)
+    UUID primaryId;
 
     /** */
-    @Order(7)
+    @Order(3)
     @GridToStringExclude
-    private byte flags;
+    byte flags;
 
     /** */
-    @Order(value = 8, method = "errors")
+    @Order(4)
     @GridToStringInclude
-    private UpdateErrors errs;
+    UpdateErrors errs;
 
     /**
      *

@@ -121,9 +121,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
 
     /** Internal attribute name constant. */
-    public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
 
     /** Internal attribute name constant. */
@@ -149,6 +146,9 @@ public final class IgniteNodeAttributes {
 
     /** V2 security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
+
+    /** Node certificates the connection was established with.  */
+    public static final String ATTR_NODE_CERTIFICATES = ATTR_PREFIX + ".security.certificates";
 
     /** Client mode flag. */
     public static final String ATTR_CLIENT_MODE = ATTR_PREFIX + ".cache.client";
@@ -180,10 +180,6 @@ public final class IgniteNodeAttributes {
     /** */
     public static final String ATTR_DATA_STREAMER_POOL_SIZE = ATTR_PREFIX + ".data.streamer.pool.size";
 
-    /** Memory configuration. */
-    @Deprecated
-    public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
-
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
 
@@ -195,6 +191,9 @@ public final class IgniteNodeAttributes {
 
     /** Supported features. */
     public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
+
+    /** Data center ID. */
+    public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".datacenter.id";
 
     /**
      * Enforces singleton.

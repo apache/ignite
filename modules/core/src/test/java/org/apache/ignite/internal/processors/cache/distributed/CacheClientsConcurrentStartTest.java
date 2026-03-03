@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -40,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -75,9 +74,8 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi testSpi = new TcpDiscoverySpi() {
-            @Override protected void writeToSocket(
-                Socket sock,
-                OutputStream out,
+            @Override protected void writeMessage(
+                TcpDiscoveryIoSession ses,
                 TcpDiscoveryAbstractMessage msg,
                 long timeout
             ) throws IOException, IgniteCheckedException {
@@ -92,7 +90,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
                     }
                 }
 
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
             }
         };
 

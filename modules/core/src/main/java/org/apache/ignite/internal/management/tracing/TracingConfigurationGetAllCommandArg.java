@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
 /** */
@@ -32,6 +29,7 @@ public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCo
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(optional = true, description = "Tracing span scope")
     @EnumDescription(
         names = {
@@ -49,21 +47,7 @@ public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCo
             "SQL scope"
         }
     )
-    private Scope scope;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeEnum(out, scope);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        scope = U.readEnum(in, Scope.class);
-    }
+    Scope scope;
 
     /** */
     public Scope scope() {

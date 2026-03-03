@@ -36,37 +36,37 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearLockResponse extends GridDistributedLockResponse {
     /** Pending versions that are less than {@link #version()}. */
     @GridToStringInclude
-    @Order(10)
-    private Collection<GridCacheVersion> pending;
+    @Order(0)
+    Collection<GridCacheVersion> pending;
 
     /** Mini future ID. */
-    @Order(11)
-    private int miniId;
+    @Order(1)
+    int miniId;
 
     /** DHT versions. */
     @GridToStringInclude
-    @Order(value = 12, method = "dhtVersions")
-    private GridCacheVersion[] dhtVers;
+    @Order(2)
+    GridCacheVersion[] dhtVers;
 
     /** DHT candidate versions. */
     @GridToStringInclude
-    @Order(value = 13, method = "mappedVersions")
-    private GridCacheVersion[] mappedVers;
+    @Order(3)
+    GridCacheVersion[] mappedVers;
 
     /** Filter evaluation results for fast-commit transactions. */
-    @Order(value = 14, method = "filterResults")
-    private boolean[] filterRes;
+    @Order(4)
+    boolean[] filterRes;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(value = 15, method = "clientRemapVersion")
-    private AffinityTopologyVersion clientRemapVer;
+    @Order(5)
+    AffinityTopologyVersion clientRemapVer;
 
     /**
      * Flag, indicating whether remap version is compatible with current version.
      * Used together with clientRemapVer.
      */
-    @Order(value = 16, method = "compatibleRemapVersion")
-    private boolean compatibleRemapVer;
+    @Order(6)
+    boolean compatibleRemapVer;
 
     /**
      * Empty constructor.
@@ -85,7 +85,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param err Error.
      * @param clientRemapVer {@code True} if client node should remap lock request. If {@code compatibleRemapVer} is
      * {@code true} when first request is not remapped, but all subsequent will use remap version.
-     * @param addDepInfo Deployment info.
      * @param compatibleRemapVer {@code True} if remap version is compatible with lock version.
      */
     public GridNearLockResponse(
@@ -97,10 +96,9 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         int cnt,
         Throwable err,
         AffinityTopologyVersion clientRemapVer,
-        boolean addDepInfo,
         boolean compatibleRemapVer
     ) {
-        super(cacheId, lockVer, futId, cnt, err, addDepInfo);
+        super(cacheId, lockVer, futId, cnt, err);
 
         assert miniId != 0;
 

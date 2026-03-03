@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -156,7 +155,7 @@ public class GridLongListSelfTest {
      * @param initSz Initial size of list.
      */
     private static void testSerialization(GridLongList ll, int initSz) {
-        MessageWriter writer = new DirectMessageWriter(null);
+        DirectMessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -237,7 +236,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationInsufficientBuffer() {
-        MessageWriter writer = new DirectMessageWriter(null);
+        DirectMessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(10);
 
@@ -253,7 +252,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationOfNullValue() {
-        MessageWriter writer = new DirectMessageWriter(null);
+        DirectMessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 

@@ -81,5 +81,8 @@ public class PlatformBroadcastingSingleClosureTask extends PlatformAbstractTask 
      */
     public void job(PlatformJob job) {
         this.job = job;
+
+        if (job != null)
+            this.taskName = job.name();
     }
 }

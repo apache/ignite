@@ -35,12 +35,20 @@ public class MapH2QueryInfo extends H2QueryInfo {
      * @param sql Query statement.
      * @param nodeId Originator node id.
      * @param qryId Query id.
+     * @param initiatorId Query initiator id.
      * @param reqId Request ID.
      * @param segment Segment.
      */
-    public MapH2QueryInfo(PreparedStatement stmt, String sql, UUID nodeId, long qryId, long reqId,
-        int segment) {
-        super(QueryType.MAP, stmt, sql, nodeId, qryId);
+    public MapH2QueryInfo(
+        PreparedStatement stmt,
+        String sql,
+        UUID nodeId,
+        long qryId,
+        String initiatorId,
+        long reqId,
+        int segment
+    ) {
+        super(QueryType.MAP, stmt, sql, nodeId, qryId, initiatorId);
 
         this.reqId = reqId;
         this.segment = segment;

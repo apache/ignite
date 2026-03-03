@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,7 +44,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -51,8 +51,8 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -152,7 +152,7 @@ public class ValidationOnNodeJoinUtils {
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
-                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
+                    try (Scope ignored = ctx.security().withContext(secCtx)) {
                         GridCacheProcessor.authorizeCacheCreate(ctx.security(), cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {
@@ -397,6 +397,11 @@ public class ValidationOnNodeJoinUtils {
             if (!F.isEmpty(cc.getStoragePaths())) {
                 List<String> csp = Arrays.asList(cc.getStoragePaths());
 
+                if (csp.size() != new HashSet<>(csp).size()) {
+                    throw new IgniteCheckedException("CacheConfiguration contains duplicates " +
+                        "[storagePaths=" + Arrays.toString(cc.getStoragePaths()) + ']');
+                }
+
                 Set<String> nodeStorages = nodeStorages(c.getDataStorageConfiguration());
 
                 if (!nodeStorages.containsAll(csp)) {
@@ -572,18 +577,6 @@ public class ValidationOnNodeJoinUtils {
 
         if (dsCfgBytes instanceof byte[])
             dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
-
-        if (dsCfg == null) {
-            // Try to use legacy memory configuration.
-            MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
-
-            if (memCfg != null) {
-                dsCfg = new DataStorageConfiguration();
-
-                // All properties that are used in validation should be converted here.
-                dsCfg.setPageSize(memCfg.getPageSize());
-            }
-        }
 
         if (dsCfg != null) {
             DataStorageConfiguration locDsCfg = ctx.config().getDataStorageConfiguration();

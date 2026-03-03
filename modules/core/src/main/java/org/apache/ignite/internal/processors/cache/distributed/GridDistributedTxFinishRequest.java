@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -57,48 +56,48 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     protected static final int STORE_ENABLED_FLAG_MASK = 0x20;
 
     /** Topology version. */
-    @Order(value = 7, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(0)
+    public AffinityTopologyVersion topVer;
 
     /** Future ID. */
-    @Order(value = 8, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    public IgniteUuid futId;
 
     /** Thread ID. */
-    @Order(9)
-    private long threadId;
+    @Order(2)
+    public long threadId;
 
     /** Commit version. */
-    @Order(value = 10, method = "commitVersion")
-    private GridCacheVersion commitVer;
+    @Order(3)
+    public GridCacheVersion commitVer;
 
     /** Invalidate flag. */
-    @Order(value = 11, method = "isInvalidate")
-    private boolean invalidate;
+    @Order(4)
+    public boolean invalidate;
 
     /** Commit flag. */
-    @Order(12)
-    private boolean commit;
+    @Order(5)
+    public boolean commit;
 
     /** Min version used as base for completed versions. */
-    @Order(value = 13, method = "baseVersion")
-    private GridCacheVersion baseVer;
+    @Order(6)
+    public GridCacheVersion baseVer;
 
     /** IO policy. */
-    @Order(value = 14, method = "policy")
-    private byte plc;
+    @Order(7)
+    public byte plc;
 
     /** Task name hash. */
-    @Order(15)
-    private int taskNameHash;
+    @Order(8)
+    public int taskNameHash;
 
     /** */
-    @Order(16)
-    private byte flags;
+    @Order(9)
+    public byte flags;
 
-    /** Write synchronization mode wrapper message. */
-    @Order(value = 17, method = "writeSynchronizationModeMessage")
-    private CacheWriteSynchronizationModeMessage syncModeMsg;
+    /** Write synchronization mode. */
+    @Order(10)
+    public CacheWriteSynchronizationMode syncMode;
 
     /** Transient TX state. */
     private IgniteTxState txState;
@@ -122,7 +121,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
@@ -137,10 +135,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash,
-        boolean addDepInfo
+        int taskNameHash
     ) {
-        super(xidVer, 0, addDepInfo);
+        super(xidVer, 0, false);
 
         assert xidVer != null;
         assert syncMode != null;
@@ -152,7 +149,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.commit = commit;
         this.invalidate = invalidate;
         this.plc = plc;
-        syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
+        this.syncMode = syncMode;
         this.baseVer = baseVer;
         this.taskNameHash = taskNameHash;
 
@@ -160,24 +157,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return Transaction write synchronization mode (can be null is message sent from old nodes).
+     * @return Transaction write synchronization mode.
      */
     @Nullable public final CacheWriteSynchronizationMode syncMode() {
-        return syncModeMsg != null ? syncModeMsg.value() : null;
-    }
-
-    /**
-     * @return Transaction write synchronization mode wrapper message.
-     */
-    public CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
-        return syncModeMsg;
-    }
-
-    /**
-     * @param syncModeMsg Transaction write synchronization mode wrapper message.
-     */
-    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage syncModeMsg) {
-        this.syncModeMsg = syncModeMsg;
+        return syncMode;
     }
 
     /**
@@ -201,31 +184,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return Task name hash.
-     */
-    public final int taskNameHash() {
-        return taskNameHash;
-    }
-
-    /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -236,24 +198,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param plc IO policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Future ID.
      */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**
@@ -264,13 +212,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param threadId Thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
      * @return Commit version.
      */
     public GridCacheVersion commitVersion() {
@@ -278,24 +219,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param commitVer Commit version.
-     */
-    public void commitVersion(GridCacheVersion commitVer) {
-        this.commitVer = commitVer;
-    }
-
-    /**
      * @return Commit flag.
      */
     public boolean commit() {
         return commit;
-    }
-
-    /**
-     * @param commit Commit flag.
-     */
-    public void commit(boolean commit) {
-        this.commit = commit;
     }
 
     /**
@@ -307,13 +234,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param invalidate Invalidate flag.
-     */
-    public void isInvalidate(boolean invalidate) {
-        this.invalidate = invalidate;
-    }
-
-    /**
      * @return Base version.
      */
     public GridCacheVersion baseVersion() {
@@ -321,34 +241,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param baseVer Base version.
-     */
-    public void baseVersion(GridCacheVersion baseVer) {
-        this.baseVer = baseVer;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
      *
      * @return {@code True} if reply is required.
      */
     public boolean replyRequired() {
-        assert syncModeMsg != null && syncModeMsg.value() != null;
+        assert syncMode != null;
 
-        return syncModeMsg.value() == FULL_SYNC;
+        return syncMode == FULL_SYNC;
     }
 
     /** {@inheritDoc} */

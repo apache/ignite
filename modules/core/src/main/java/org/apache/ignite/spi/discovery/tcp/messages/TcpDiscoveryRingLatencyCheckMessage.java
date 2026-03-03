@@ -18,29 +18,36 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private int maxHops;
+    /** Maximal hops number. */
+    @Order(0)
+    int maxHops;
 
-    /** */
-    private int curHop;
+    /** Current hops reached. */
+    @Order(1)
+    int curHops;
+
+    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryRingLatencyCheckMessage() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.
-     * @param maxHops Max hops for this message.
+     * @param maxHops Maximal hops number for this message.
      */
-    public TcpDiscoveryRingLatencyCheckMessage(
-        UUID creatorNodeId,
-        int maxHops
-    ) {
+    public TcpDiscoveryRingLatencyCheckMessage(UUID creatorNodeId, int maxHops) {
         super(creatorNodeId);
 
         assert maxHops > 0;
@@ -52,21 +59,26 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
      *
      */
     public void onRead() {
-        curHop++;
+        curHops++;
     }
 
     /**
-     * @return Max hops.
+     * @return Maximal hops number.
      */
-    public int maxHops() {
+    public int maximalHops() {
         return maxHops;
     }
 
     /**
-     * @return {@code True} if max hops has been reached.
+     * @return {@code True} if max hops reached.
      */
     public boolean maxHopsReached() {
-        return curHop == maxHops;
+        return curHops == maxHops;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 7;
     }
 
     /** {@inheritDoc} */

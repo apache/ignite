@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -27,7 +28,7 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
 /** */
-public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new GridIoMessageFactory();
@@ -37,6 +38,9 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
     @Override protected Message initializeMessage(Message msg) throws Exception {
         if (msg instanceof NodeIdMessage)
             FieldUtils.writeField(msg, "nodeId", UUID.randomUUID(), true);
+
+        if (msg instanceof PartitionUpdateCountersMessage)
+            FieldUtils.writeField(msg, "data", new byte[0], true);
 
         return msg;
     }
@@ -68,13 +72,6 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
             super.readIgniteUuid();
 
             return IgniteUuid.randomUuid();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int readInt() {
-            super.readInt();
-
-            return 1;
         }
     }
 }

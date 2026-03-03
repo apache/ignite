@@ -26,24 +26,24 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridQueryNextPageRequest implements Message {
     /** */
-    @Order(value = 0, method = "queryRequestId")
-    private long qryReqId;
+    @Order(0)
+    long qryReqId;
 
     /** */
     @Order(1)
-    private int segmentId;
+    int segmentId;
 
     /** */
-    @Order(value = 2, method = "query")
-    private int qry;
+    @Order(2)
+    int qry;
 
     /** */
     @Order(3)
-    private int pageSize;
+    int pageSize;
 
     /** */
     @Order(4)
-    private byte flags;
+    byte flags;
 
     /**
      * Default constructor.
@@ -75,24 +75,10 @@ public class GridQueryNextPageRequest implements Message {
     }
 
     /**
-     * @param flags New flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return Query request ID.
      */
     public long queryRequestId() {
         return qryReqId;
-    }
-
-    /**
-     * @param qryReqId New query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
     }
 
     /**
@@ -102,23 +88,9 @@ public class GridQueryNextPageRequest implements Message {
         return qry;
     }
 
-    /**
-     * @param qry New query.
-     */
-    public void query(int qry) {
-        this.qry = qry;
-    }
-
     /** @return Index segment ID */
     public int segmentId() {
         return segmentId;
-    }
-
-    /**
-     * @param segmentId New index segment ID.
-     */
-    public void segmentId(int segmentId) {
-        this.segmentId = segmentId;
     }
 
     /**
@@ -126,13 +98,6 @@ public class GridQueryNextPageRequest implements Message {
      */
     public int pageSize() {
         return pageSize;
-    }
-
-    /**
-     * @param pageSize New page size.
-     */
-    public void pageSize(int pageSize) {
-        this.pageSize = pageSize;
     }
 
     /** {@inheritDoc} */

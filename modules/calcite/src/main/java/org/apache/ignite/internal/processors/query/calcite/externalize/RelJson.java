@@ -574,7 +574,7 @@ class RelJson {
         List<SqlOperator> operators = new ArrayList<>();
 
         qctx.opTable().lookupOperatorOverloads(
-            new SqlIdentifier(name, new SqlParserPos(0, 0)),
+            new SqlIdentifier(List.of(name.split("\\.")), new SqlParserPos(0, 0)),
             null,
             sqlSyntax,
             operators,
@@ -995,7 +995,7 @@ class RelJson {
     private Object toJson(SqlOperator operator) {
         // User-defined operators are not yet handled.
         Map map = map();
-        map.put("name", operator.getName());
+        map.put("name", operator.getNameAsId().toString());
         map.put("kind", toJson(operator.kind));
         map.put("syntax", toJson(operator.getSyntax()));
         return map;

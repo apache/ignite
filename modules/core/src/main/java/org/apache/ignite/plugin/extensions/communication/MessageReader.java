@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -40,7 +41,10 @@ public interface MessageReader {
      *
      * @param buf Byte buffer.
      */
-    public void setBuffer(ByteBuffer buf);
+    @Deprecated
+    public default void setBuffer(ByteBuffer buf) {
+        // No-op.
+    }
 
     /**
      * Reads {@code byte} value.
@@ -195,7 +199,18 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage();
+    public default <T extends Message> T readMessage() {
+        return readMessage(false);
+    }
+
+    /**
+     * Reads nested message.
+     *
+     * @param compress Whether message should be decompressed.
+     * @param <T> Type of the message.
+     * @return Message.
+     */
+    public <T extends Message> T readMessage(boolean compress);
 
     /**
      * Reads {@link CacheObject}.
@@ -223,19 +238,28 @@ public interface MessageReader {
      *
      * @param itemType Array component type.
      * @param itemCls Array component class.
-     * @param <T> Type of the red object .
+     * @param <T> Type of the read object.
      * @return Array of objects.
      */
     public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls);
 
     /**
-     * Reads collection.
+     * Reads any collection.
      *
      * @param itemType Collection item type.
-     * @param <C> Type of the red collection.
+     * @param <C> Type of the read collection.
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType);
+
+    /**
+     * Reads any collection and provides it as a set.
+     *
+     * @param itemType Set item type.
+     * @param <S> Type of the read set.
+     * @return Set.
+     */
+    public <S extends Set<?>> S readSet(MessageCollectionItemType itemType);
 
     /**
      * Reads map.
@@ -243,12 +267,28 @@ public interface MessageReader {
      * @param keyType Map key type.
      * @param valType Map value type.
      * @param linked Whether {@link LinkedHashMap} should be created.
-     * @param <M> Type of the red map.
+     * @param <M> Type of the read map.
      * @return Map.
      */
-    // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter
+    // TODO: IGNITE-26329 — switch to the new readMap method without the linked flag parameter
+    public default <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
+        MessageCollectionItemType valType, boolean linked) {
+        return readMap(keyType, valType, linked, false);
+    }
+
+    /**
+     * Reads map.
+     *
+     * @param keyType Map key type.
+     * @param valType Map value type.
+     * @param linked Whether {@link LinkedHashMap} should be created.
+     * @param compress Whether map should be compressed.
+     * @param <M> Type of the read map.
+     * @return Map.
+     */
+    // TODO: IGNITE-26329 — switch to the new readMap method without the linked flag parameter
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean linked);
+        MessageCollectionItemType valType, boolean linked, boolean compress);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}
@@ -270,6 +310,11 @@ public interface MessageReader {
      * Increments read state.
      */
     public void incrementState();
+
+    /**
+     * Decrements read state.
+     */
+    public void decrementState();
 
     /**
      * Callback called before inner message is read.

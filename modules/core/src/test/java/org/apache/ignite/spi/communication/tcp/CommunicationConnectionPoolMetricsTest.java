@@ -80,6 +80,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     private volatile long maxConnIdleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
 
     /** */
+    private int ackSendThreshold = TcpCommunicationSpi.DFLT_ACK_SND_THRESHOLD;
+
+    /** */
     private volatile int createClientDelay;
 
     /** */
@@ -126,6 +129,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         communicationSpi.setConnectionsPerNode(connsPerNode)
             .setUsePairedConnections(pairedConns)
             .setIdleConnectionTimeout(maxConnIdleTimeout)
+            .setAckSendThreshold(ackSendThreshold)
             .setMessageQueueLimit(msgQueueLimit);
 
         cfg.setCommunicationSpi(communicationSpi);
@@ -139,6 +143,10 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     @Test
     public void testRemovedConnectionMetrics() throws Exception {
         maxConnIdleTimeout = 500;
+
+        // Prevents keeping connections idle by lazy sending of the unacknowledged messages.
+        if (pairedConns)
+            ackSendThreshold = 1;
 
         Ignite srvr = startGridsMultiThreaded(2);
         Ignite cli = startClientGrid(G.allGrids().size());
@@ -241,8 +249,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? cli : srvr;
 
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
-        MetricRegistryImpl mreg0 = metricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
+        GridMetricManager ldrMetricsMgr = ((IgniteEx)ldr).context().metric();
+        MetricRegistryImpl mreg0 = ldrMetricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
 
         assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_NAME_POOL_SIZE).value());
         assertEquals(pairedConns, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
@@ -271,7 +279,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             UUID nodeId = node.cluster().localNode().id();
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(nodeId));
+            MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
 
             // We assume that entire pool was used at least once.
             assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(METRIC_NAME_CUR_CNT).value(),
@@ -295,6 +303,10 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         dumpMetrics(ldr);
 
+        // Stop the loading, free the messages queue to prevent the connection recreation attempts.
+        runFlag.set(false);
+        loadFut.get(getTestTimeout());
+
         // Check node metrics are cleared if a node stops.
         for (Ignite node : G.allGrids()) {
             if (node == ldr)
@@ -306,17 +318,23 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             UUID nodeId = node.cluster().localNode().id();
 
-            assertTrue(G.stop(node.name(), true));
+            // Wait until there is no messages to this node.
+            assertTrue(waitForCondition(() -> {
+                MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
+
+                assert mreg != null;
+
+                return mreg.<IntMetric>findMetric(METRIC_NAME_MSG_QUEUE_SIZE).value() == 0;
+            }, getTestTimeout(), 100));
+
+            assertTrue(G.stop(node.name(), false));
 
             assertTrue(waitForCondition(() -> {
-                MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(nodeId));
+                MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
 
                 return mreg == null || !mreg.iterator().hasNext();
             }, getTestTimeout()));
         }
-
-        runFlag.set(false);
-        loadFut.get(getTestTimeout());
 
         // Ensure that all the possible nodes are stopped.
         assertTrue(waitForCondition(() -> ldr.cluster().nodes().size() == (clientLdr ? 2 : 1), getTestTimeout()));

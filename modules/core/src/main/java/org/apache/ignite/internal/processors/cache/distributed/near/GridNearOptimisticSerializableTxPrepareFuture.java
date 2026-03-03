@@ -271,7 +271,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param remap Remap flag.
      */
     @Override protected void prepare0(boolean remap, boolean topLocked) {
-        boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
+        boolean txStateCheck = remap ? tx.state() == PREPARING || tx.state() == PREPARED : tx.state(PREPARING);
 
         if (!txStateCheck) {
             if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
@@ -536,7 +536,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
-            tx.activeCachesDeploymentEnabled(),
             tx.txState().recovery());
 
         for (IgniteTxEntry txEntry : writes) {

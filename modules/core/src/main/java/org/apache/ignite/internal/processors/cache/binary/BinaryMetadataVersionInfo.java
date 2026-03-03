@@ -17,7 +17,13 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
@@ -25,27 +31,41 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
  */
-final class BinaryMetadataVersionInfo implements Serializable {
+public final class BinaryMetadataVersionInfo implements Serializable, Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 505;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** The actual binary metadata. */
-    private final BinaryMetadata metadata;
+    private BinaryMetadata metadata;
+
+    /** Serialized binary metadata. */
+    @Order(0)
+    transient byte[] metadataBytes;
 
     /**
      * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
      * for this type. When a metadata update is proposed, this version is incremented.
      */
-    private final int pendingVer;
+    @Order(1)
+    int pendingVer;
 
     /**
      * The version of metadata that has been accepted by the entire cluster.
      * This represents the number of updates that have been confirmed across all nodes.
      */
-    private final int acceptedVer;
+    @Order(2)
+    int acceptedVer;
 
     /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;
+
+    /** Constructor. */
+    public BinaryMetadataVersionInfo() {
+        removing = false;
+    }
 
     /**
      * @param metadata Metadata.
@@ -86,23 +106,23 @@ final class BinaryMetadataVersionInfo implements Serializable {
     }
 
     /**
-     *
+     * @return Binary metadata.
      */
     BinaryMetadata metadata() {
         return metadata;
     }
 
     /**
-     *
+     * @return The version of metadata that has been proposed for update.
      */
-    int pendingVersion() {
+    public int pendingVersion() {
         return pendingVer;
     }
 
     /**
-     *
+     * @return The version of metadata that has been accepted by the entire cluster.
      */
-    int acceptedVersion() {
+    public int acceptedVersion() {
         return acceptedVer;
     }
 
@@ -113,6 +133,30 @@ final class BinaryMetadataVersionInfo implements Serializable {
         return removing;
     }
 
+    /**
+     * Marshals binary metadata to byte array.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void marshalMetadata() throws IgniteCheckedException {
+        if (metadataBytes == null)
+            metadataBytes = U.marshal(jdk(), metadata);
+    }
+
+    /**
+     * Unmarshals binary metadata from byte array.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void unmarshalMetadata() throws IgniteCheckedException {
+        if (metadata == null && metadataBytes != null) {
+            metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
+
+            // It is not required anymore.
+            metadataBytes = null;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return "[typeId=" + metadata.typeId() +
@@ -120,5 +164,10 @@ final class BinaryMetadataVersionInfo implements Serializable {
             ", acceptedVer=" + acceptedVer +
             ", removing=" + removing +
             "]";
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

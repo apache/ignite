@@ -40,26 +40,26 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
-    @Order(5)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Error message. */
-    @Order(value = 6, method = "errorMessage")
-    @Nullable private volatile ErrorMessage errMsg;
+    @Order(2)
+    @Nullable volatile ErrorMessage errMsg;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
-    @Order(7)
-    private List<KeyCacheObject> missedKeys;
+    @Order(3)
+    List<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
-    @Order(value = 8, method = "forcedInfos")
-    private List<GridCacheEntryInfo> infos;
+    @Order(4)
+    List<GridCacheEntryInfo> infos;
 
     /**
      * Empty constructor.
@@ -72,16 +72,14 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId) {
         assert futId != null;
         assert miniId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
-        this.addDepInfo = addDepInfo;
     }
 
     /**

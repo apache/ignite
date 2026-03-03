@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -42,7 +40,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -475,8 +472,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /**  */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
@@ -490,8 +486,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }
 
-            if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(sock, out, msg, timeout);
+            if (ses.socket().getSoTimeout() >= writeToSocketDelay)
+                super.writeMessage(ses, msg, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }
@@ -521,14 +517,14 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout)
+        @Override protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout)
             throws IOException, IgniteCheckedException {
             long currTimeout = getLocalNode().isClient() ?
                 clientFailureDetectionTimeout() : failureDetectionTimeout();
 
             if (readDelay < currTimeout) {
                 try {
-                    return super.readMessage(sock, in, timeout);
+                    return super.readMessage(ses, timeout);
                 }
                 catch (Exception e) {
                     err = e;
@@ -537,7 +533,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }
             else {
-                T msg = super.readMessage(sock, in, timeout);
+                T msg = super.readMessage(ses, timeout);
 
                 if (msg instanceof TcpDiscoveryPingRequest) {
                     try {

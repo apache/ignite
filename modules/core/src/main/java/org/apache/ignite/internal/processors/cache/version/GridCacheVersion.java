@@ -44,16 +44,16 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
-    @Order(value = 0, method = "topologyVersion")
-    private int topVer;
+    @Order(0)
+    int topVer;
 
     /** Node order (used as global order) and DR ID. */
-    @Order(value = 1, method = "nodeOrderAndDrIdRaw")
-    private int nodeOrderDrId;
+    @Order(1)
+    int nodeOrderDrId;
 
     /** Order. */
     @Order(2)
-    private long order;
+    long order;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -105,13 +105,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(int topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * Gets combined node order and DR ID.
      *
      * @return Combined integer for node order and DR ID.
@@ -121,24 +114,10 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
-     * New combined node order and DR ID.
-     */
-    public void nodeOrderAndDrIdRaw(int nodeOrderDrId) {
-        this.nodeOrderDrId = nodeOrderDrId;
-    }
-
-    /**
      * @return Version order.
      */
     @Override public long order() {
         return order;
-    }
-
-    /**
-     * @param order New order.
-     */
-    public void order(long order) {
-        this.order = order;
     }
 
     /** {@inheritDoc} */
@@ -192,14 +171,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
      */
     public boolean isLess(GridCacheVersion ver) {
         return compareTo(ver) < 0;
-    }
-
-    /**
-     * @param ver Version.
-     * @return {@code True} if this version is less or equal.
-     */
-    public boolean isLessEqual(GridCacheVersion ver) {
-        return compareTo(ver) <= 0;
     }
 
     /**

@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.CacheObjectUnsafeUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -86,7 +87,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectUtils.putValue(addr, cacheObjectType(), val);
+        return CacheObjectUnsafeUtils.putValue(addr, cacheObjectType(), val);
     }
 
     /** {@inheritDoc} */

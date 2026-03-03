@@ -495,12 +495,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public int onUndeploy(ClassLoader ldr) {
-        // TODO: GG-11141.
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
         // TODO GG-10884.
         return 0;
@@ -949,7 +943,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         Set<Integer> missing = new HashSet<>();
 
-        for (Integer p : parts.full()) {
+        for (Integer p : parts.fullSet()) {
             GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
 
             if (partIter == null) {

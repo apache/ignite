@@ -544,6 +544,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean nearCache
     ) {
@@ -616,6 +617,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             -1L,
                             null,
                             skipStore,
+                            skipReadThrough,
                             keepBinary,
                             nearCache);
 
@@ -659,6 +661,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 createTtl,
                 accessTtl,
                 skipStore,
+                skipReadThrough,
                 keepBinary);
         }
         catch (IgniteCheckedException e) {
@@ -677,6 +680,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -688,6 +692,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final long createTtl,
         final long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
@@ -718,6 +723,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             createTtl,
             accessTtl,
             skipStore,
+            skipReadThrough,
             keepBinary);
 
         return new GridEmbeddedFuture<>(

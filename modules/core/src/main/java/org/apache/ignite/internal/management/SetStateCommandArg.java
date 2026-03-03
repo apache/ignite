@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -35,6 +32,7 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument
     @EnumDescription(
@@ -49,28 +47,16 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
             "Activate cluster. Cache updates are denied"
         }
     )
-    private ClusterState state;
+    ClusterState state;
 
     /** */
+    @Order(1)
     @Argument(optional = true, description = "If true, cluster deactivation will be forced")
-    private boolean force;
+    boolean force;
 
     /** */
-    private String clusterName;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, state);
-        out.writeBoolean(force);
-        U.writeString(out, clusterName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        state = U.readEnum(in, ClusterState.class);
-        force = in.readBoolean();
-        clusterName = U.readString(in);
-    }
+    @Order(2)
+    String clusterName;
 
     /** */
     public ClusterState state() {
