@@ -186,19 +186,35 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
                 waitForTopology(3);
 
-                assertTrue("Client node should survive test scenario",
-                    G.allGrids()
-                        .stream()
-                        .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
-                        .count() == 1);
+                checkClientIsAvailable();
             }
-            else
+            else {
                 waitForTopology(2);
+
+                checkFultyNode(FAULTY_NODE_IDX);
+            }
         }
         else
             checkKeysOnFaultyNode(keysOnFaultyNode);
 
         checkKeysOnHealthyNodes(keysOnFaultyNode);
+    }
+
+    /** Check client node availability. */
+    private void checkClientIsAvailable() {
+        assertTrue("Client node should survive test scenario",
+            G.allGrids()
+                .stream()
+                .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
+                .count() == 1);
+    }
+
+    /** Check that faulty node is absent in current topology. */
+    private void checkFultyNode(int faultyNodeIdx) {
+        assertTrue("Faulty node should survive test scenario, idx=" + faultyNodeIdx,
+            G.allGrids()
+                .stream()
+                .noneMatch(ignite -> ignite.name().equals(getTestIgniteInstanceName(faultyNodeIdx))));
     }
 
     /** */

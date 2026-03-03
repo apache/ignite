@@ -74,7 +74,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
-    /** */
+    /** Cached flag, {@code True} if {@link CacheStoreManager#isWriteThrough()} enabled for all caches involved. */
     @GridToStringInclude
     private Boolean storeWriteThrough;
 

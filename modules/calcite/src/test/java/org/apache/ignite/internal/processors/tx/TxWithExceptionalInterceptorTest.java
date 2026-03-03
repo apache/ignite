@@ -55,7 +55,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /** Check per node data consistency after exceptionally interceptor method call. */
@@ -343,14 +342,12 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
         assertTrue(grids.get(0).name().contains(CLIENT_NAME));
 
         for (Ignite node : grids) {
-            if (!writeThrough && txCoord == TxCoordNodeRole.PRIMARY) {
-                getSqlResultByKey(node, processedCacheName, primaryKey, true);
-                getKVResultByKey(node, processedCacheName, primaryKey, true);
-
-                continue;
-            }
-
             if (txCoord == TxCoordNodeRole.PRIMARY) {
+                if (!writeThrough) {
+                    getSqlResultByKey(node, processedCacheName, primaryKey, true);
+                    getKVResultByKey(node, processedCacheName, primaryKey, true);
+                }
+
                 getSqlResultByKey(node, commonCacheName, primaryKey, true);
                 getKVResultByKey(node, commonCacheName, primaryKey, true);
 
@@ -440,8 +437,8 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
                 cacheName + " WHERE id = ?").setArgs(key)).getAll();
 
         if (checkResIsEmpty) {
-            assertTrue(resCalcite.isEmpty());
-            assertTrue(resIdx.isEmpty());
+            assertTrue("Expect empty result", resCalcite.isEmpty());
+            assertTrue("Expect empty result", resIdx.isEmpty());
 
             return null;
         }
