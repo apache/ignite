@@ -63,7 +63,7 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Me
      * @param acceptedVer Accepted version.
      */
     MetadataUpdateAcceptedMessage(int typeId, int acceptedVer) {
-        this.id = IgniteUuid.randomUuid();
+        id = IgniteUuid.randomUuid();
         this.typeId = typeId;
         this.acceptedVer = acceptedVer;
     }
