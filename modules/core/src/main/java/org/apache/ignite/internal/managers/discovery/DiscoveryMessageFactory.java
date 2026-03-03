@@ -19,6 +19,10 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
+import org.apache.ignite.internal.processors.cache.WalStateFinishMessageSerializer;
+import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
+import org.apache.ignite.internal.processors.cache.WalStateProposeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
@@ -139,5 +143,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
         factory.register((short)504, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
         factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
+        factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
+        factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
     }
 }
