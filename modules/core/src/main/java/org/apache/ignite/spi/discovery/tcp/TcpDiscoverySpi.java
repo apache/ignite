@@ -2122,6 +2122,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             new MessageFactoryProvider[] { new DiscoveryMessageFactory() });
 
         impl.spiStart(igniteInstanceName);
+
+        if (ipFinder instanceof TcpDiscoveryMulticastIpFinder)
+            throw new IllegalStateException("Multicast IP finder is used");
     }
 
     /**
