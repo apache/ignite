@@ -27,6 +27,10 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessageSerializer;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessageSerializer;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -131,8 +135,10 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)21, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
         factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
-        factory.register((short)23, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
-        factory.register((short)24, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
+        factory.register((short)23, DistributedMetaStorageUpdateMessage::new, new DistributedMetaStorageUpdateMessageSerializer());
+        factory.register((short)24, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
+        factory.register((short)25, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
+        factory.register((short)26, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
