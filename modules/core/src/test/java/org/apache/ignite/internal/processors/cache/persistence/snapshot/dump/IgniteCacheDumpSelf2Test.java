@@ -1222,19 +1222,24 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testDumpReaderLogsGroupName() throws Exception {
+    public void testDumpReaderDebugLogsGroupName() throws Exception {
         String id = "test";
+        setLoggerDebugLevel();
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        // Listen for the error log that includes the group name
-        LogListener grpNameLsnr = LogListener.matches("Error consuming partition .*grpName=" + GRP + ".*")
+        LogListener errLsnr = LogListener.matches("Error consuming partition")
+                .andMatches("grpName=" + GRP)
                 .build();
-        testLog.registerListener(grpNameLsnr);
+        LogListener cnsmLsnr = LogListener.matches("Consuming partition")
+                .andMatches("grpName=" + GRP)
+                .build();
+        testLog.registerListener(errLsnr);
+        testLog.registerListener(cnsmLsnr);
 
         try {
             IgniteEx ign0 = startGrid(getConfiguration(id)
                     .setConsistentId(id)
-                    .setGridLogger(testLog));   // optional, not strictly needed
+                    .setGridLogger(testLog));
 
             ign0.cluster().state(ClusterState.ACTIVE);
 
@@ -1242,17 +1247,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                     .setName(CACHE_0)
                     .setGroupName(GRP)
                     .setBackups(1)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(16))
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(3))
             );
 
             IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
             ign0.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
-            // Consumer that throws an exception on the first partition
             TestDumpConsumer cnsmr = new TestDumpConsumer() {
                 @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                    throw new RuntimeException("Intentional exception to trigger error log");
+                    throw new RuntimeException("trigger error log");
                 }
             };
 
@@ -1265,13 +1269,13 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                                 cnsmr,
                                 DFLT_THREAD_CNT,
                                 DFLT_TIMEOUT,
-                                true,           // keepBinary
-                                true,           // keepRaw
-                                false,          // skipCopies (not needed for this test)
+                                true,
+                                true,
+                                false,
                                 new String[]{GRP},
-                                null,           // cacheNames
-                                true,           // failFast
-                                null            // encryptionSpi
+                                null,
+                                true,
+                                null
                         ),
                         testLog
                 ).run();
@@ -1281,10 +1285,105 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 assertTrue("exeptionZZZZZZZZZZZZZZZZZZZZZz", true);
             }
 
-            assertTrue("Log with group name not found", grpNameLsnr.check());
+            assertTrue("Log with group name not found", errLsnr.check());
+            assertTrue("Consuming with group name not found", cnsmLsnr.check());
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderSkipCopiesLogsGroupName() throws Exception {
+        int parts = 4;
+
+        File snapshotPath = Files.createTempDirectory("snapshots").toFile();
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener skipLsnr = LogListener.matches("Skip copy partition")
+                .times(parts)
+                .andMatches("grpName=" + GRP)
+                .build();
+        testLog.registerListener(skipLsnr);
+
+        try {
+            IgniteEx node0 = startGrid(getConfiguration("node0")
+                    .setConsistentId("node0")
+                    .setSnapshotPath(snapshotPath.getAbsolutePath())
+                    .setGridLogger(testLog));
+
+            IgniteEx node1 = startGrid(getConfiguration("node1")
+                    .setConsistentId("node1")
+                    .setSnapshotPath(snapshotPath.getAbsolutePath())
+                    .setGridLogger(testLog));
+
+            node0.cluster().state(ClusterState.ACTIVE);
+            node1.cluster().state(ClusterState.ACTIVE);
+
+            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
+                    .setName(DEFAULT_CACHE_NAME)
+                    .setGroupName(GRP)
+                    .setBackups(1)
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(parts));
+
+            IgniteCache<Integer, Integer> cache = node0.createCache(ccfg);
+
+            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+            node0.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
+
+            DumpConsumer dummyConsumer = new DumpConsumer() {
+                @Override public void start() {
+                    // No-op.
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    // No-op.
+                }
+
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    // No-op.
+                }
+
+                @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                    // No-op.
+                }
+
+                @Override public void onPartition(int grpId, int partId, Iterator<DumpEntry> data) {
+                    while (data.hasNext())
+                        data.next();
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+            };
+
+            new DumpReader(
+                new DumpReaderConfiguration(
+                    null,
+                    new File(snapshotPath, DMP_NAME).getAbsolutePath(),
+                    null,
+                    dummyConsumer,
+                    DFLT_THREAD_CNT,
+                    DFLT_TIMEOUT,
+                    false,
+                    true,
+                    true,
+                    new String[]{GRP},
+                    null,
+                    false,
+                    null
+                ),
+                    testLog
+            ).run();
+
+            assertTrue(skipLsnr.check());
+        }
+        finally {
+            stopAllGrids();
+            U.delete(snapshotPath);
         }
     }
 

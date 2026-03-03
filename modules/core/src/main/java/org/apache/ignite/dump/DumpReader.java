@@ -129,11 +129,12 @@ public class DumpReader implements Runnable {
 
                 for (Map.Entry<Integer, List<String>> e : grpsCfgs.grpToNodes.entrySet()) {
                     int grp = e.getKey();
+                    String grpName = grpsCfgs.grpIdToName.get(grp);
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
                             if (grps != null && !grps.get(grp).add(part)) {
-                                log.info("Skip copy partition [node=" + node + ", grpName=" + grpsCfgs.grpIdToName.get(grp) +
+                                log.info("Skip copy partition [node=" + node + ", grpName=" + grpName +
                                     ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
@@ -143,7 +144,7 @@ public class DumpReader implements Runnable {
                                 if (skip.get()) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Skip partition due to previous error [node=" + node +
-                                            ", grpName=" + grpsCfgs.grpIdToName.get(grp) + ", grp=" + grp + ", part=" + part + ']');
+                                            ", grpName=" + grpName + ", grp=" + grp + ", part=" + part + ']');
                                     }
 
                                     return;
@@ -151,7 +152,7 @@ public class DumpReader implements Runnable {
 
                                 try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, grpsCfgs.cacheIds)) {
                                     if (log.isDebugEnabled()) {
-                                        log.debug("Consuming partition [node=" + node + ", grpName=" + grpsCfgs.grpIdToName.get(grp) +
+                                        log.debug("Consuming partition [node=" + node + ", grpName=" + grpName +
                                             ", grp=" + grp + ", part=" + part + ']');
                                     }
 
@@ -160,7 +161,7 @@ public class DumpReader implements Runnable {
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
 
-                                    log.error("Error consuming partition [node=" + node + ", grpName=" + grpsCfgs.grpIdToName.get(grp) +
+                                    log.error("Error consuming partition [node=" + node + ", grpName=" + grpName +
                                         ", grp=" + grp + ", part=" + part + ']', ex);
 
                                     throw new IgniteException(ex);
