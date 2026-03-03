@@ -41,9 +41,6 @@ public class CacheObjectContext extends AbstractCacheObjectContext {
     /** */
     private final boolean storeVal;
 
-    /** */
-    private final boolean addDepInfo;
-
     /** Binary enabled flag. */
     private final boolean binaryEnabled;
 
@@ -52,7 +49,6 @@ public class CacheObjectContext extends AbstractCacheObjectContext {
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
-     * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
      * @param binaryEnabled Binary enabled flag.
      */
     @SuppressWarnings("deprecation")
@@ -62,7 +58,6 @@ public class CacheObjectContext extends AbstractCacheObjectContext {
         boolean customAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean addDepInfo,
         boolean binaryEnabled) {
         super(kernalCtx);
         this.cacheName = cacheName;
@@ -70,7 +65,6 @@ public class CacheObjectContext extends AbstractCacheObjectContext {
         this.customAffMapper = customAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
-        this.addDepInfo = addDepInfo;
         this.binaryEnabled = binaryEnabled;
     }
 
@@ -83,7 +77,7 @@ public class CacheObjectContext extends AbstractCacheObjectContext {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
+        return false;
     }
 
     /** {@inheritDoc} */
