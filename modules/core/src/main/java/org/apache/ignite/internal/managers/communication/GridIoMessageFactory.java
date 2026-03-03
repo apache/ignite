@@ -278,6 +278,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessageSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequestSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponseSerializer;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
@@ -434,7 +435,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)58, GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer());
         factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
         factory.register((short)61, GridContinuousMessage::new, new GridContinuousMessageSerializer());
-        factory.register((short)62, DataStreamerRequest::new);
+        factory.register((short)62, DataStreamerRequest::new, new DataStreamerRequestSerializer());
         factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
         factory.register((short)77, GridTaskResultResponse::new, new GridTaskResultResponseSerializer());
