@@ -42,21 +42,21 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(11)
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
     @GridToStringInclude
-    @Order(12)
+    @Order(1)
     protected CacheObject val;
 
     /** Previous value. */
     @GridToStringInclude
-    @Order(13)
+    @Order(2)
     protected CacheObject prevVal;
 
     /** Partition. */
-    @Order(14)
+    @Order(3)
     protected long updateCntr;
 
     /**

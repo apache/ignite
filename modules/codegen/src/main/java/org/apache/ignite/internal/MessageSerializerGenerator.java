@@ -88,6 +88,10 @@ public class MessageSerializerGenerator {
     /** */
     static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
 
+    /** */
+    private static final String COMPRESSED_MSG_ERROR = "CompressedMessage should not be used explicitly. " +
+        "To compress the required field use the @Compress annotation.";
+
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
 
@@ -320,6 +324,11 @@ public class MessageSerializerGenerator {
 
         TypeMirror type = field.asType();
 
+        boolean compress = field.getAnnotation(Compress.class) != null;
+
+        if (compress)
+            checkTypeForCompress(type);
+
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
@@ -371,9 +380,15 @@ public class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, field, "writer.writeMap", getExpr,
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+                List<String> args = new ArrayList<>();
+                args.add(getExpr);
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+
+                if (compress)
+                    args.add("true"); // the value of the compress argument in the MessageWriter#writeMap method
+
+                returnFalseIfWriteFailed(write, field, "writer.writeMap", args.toArray(String[]::new));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
@@ -385,8 +400,15 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, field, "writer.writeGridLongList", getExpr);
 
-            else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfWriteFailed(write, field, "writer.writeMessage", getExpr);
+            else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                    throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
+
+                if (compress)
+                    returnFalseIfWriteFailed(write, field, "writer.writeMessage", getExpr, "true");
+                else
+                    returnFalseIfWriteFailed(write, field, "writer.writeMessage", getExpr);
+            }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -530,6 +552,11 @@ public class MessageSerializerGenerator {
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
         TypeMirror type = field.asType();
 
+        boolean compress = field.getAnnotation(Compress.class) != null;
+
+        if (compress)
+            checkTypeForCompress(type);
+
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
@@ -602,9 +629,15 @@ public class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 2;
 
-                returnFalseIfReadFailed(field, "reader.readMap",
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
+                List<String> args = new ArrayList<>();
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+                args.add("false"); // the value of the linked argument in the MessageReader#readMap method
+
+                if (compress)
+                    args.add("true"); // the value of the compress argument in the MessageReader#readMap method
+
+                returnFalseIfReadFailed(field, "reader.readMap", args.toArray(String[]::new));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
@@ -616,8 +649,15 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(field, "reader.readGridLongList");
 
-            else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfReadFailed(field, "reader.readMessage");
+            else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                    throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
+
+                if (compress)
+                    returnFalseIfReadFailed(field, "reader.readMessage", "true");
+                else
+                    returnFalseIfReadFailed(field, "reader.readMessage");
+            }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -703,6 +743,9 @@ public class MessageSerializerGenerator {
 
             if (primitiveType != null)
                 return primitiveType.getKind().toString();
+
+            if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
@@ -953,5 +996,16 @@ public class MessageSerializerGenerator {
         sb.deleteCharAt(sb.length() - 1);
 
         return sb.toString();
+    }
+
+    /** Checks that the Compress annotation is used only for supported types: Map and Message. */
+    private void checkTypeForCompress(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            if (assignableFrom(erasedType(type), type(Map.class.getName())) ||
+                assignableFrom(type, type(MESSAGE_INTERFACE)))
+                return;
+        }
+
+        throw new IllegalArgumentException("Compress annotation is used for an unsupported type: " + type);
     }
 }

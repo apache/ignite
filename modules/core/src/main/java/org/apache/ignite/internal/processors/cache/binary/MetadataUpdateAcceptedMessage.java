@@ -37,7 +37,7 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Me
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short DIRECT_TYPE = 501;
+    public static final short DIRECT_TYPE = 504;
 
     /** */
     @Order(0)

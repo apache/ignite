@@ -42,27 +42,27 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
-    @Order(4)
+    @Order(0)
     boolean finished;
 
     /** */
-    @Order(5)
+    @Order(1)
     long reqId;
 
     /** */
-    @Order(6)
+    @Order(2)
     @Nullable ErrorMessage errMsg;
 
     /** */
-    @Order(7)
+    @Order(3)
     boolean fields;
 
     /** */
-    @Order(8)
+    @Order(4)
     IndexQueryResultMeta idxQryMetadata;
 
     /** */
-    @Order(9)
+    @Order(5)
     Collection<byte[]> dataBytes;
 
     /** */
