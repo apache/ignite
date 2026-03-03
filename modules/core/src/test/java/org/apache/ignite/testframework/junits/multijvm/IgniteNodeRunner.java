@@ -116,8 +116,10 @@ public class IgniteNodeRunner {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
-            if (resetDiscovery)
-                cfg0.setDiscoverySpi(null);
+            if (resetDiscovery) {
+                if (cfg0.getDiscoverySpi() instanceof TcpDiscoverySpi)
+                    cfg0.setDiscoverySpi(null);
+            }
 
             cfg0.setWorkDirectory(U.defaultWorkDirectory());
             cfg0.setMBeanServer(null);
