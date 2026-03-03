@@ -99,6 +99,6 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 505;
+        return 507;
     }
 }
