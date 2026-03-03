@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -28,31 +29,22 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
+/** */
 public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAbstractTest {
-    /**
-     *
-     */
-    @Before
-    public void before() throws Exception {
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
     }
 
-    /**
-     *
-     */
-    @After
-    public void after() throws Exception {
+    /** {@inheritDoc} */
+    @Override public void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -75,53 +67,24 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
         for (int k = 0; k < 64; k++)
             crd.cache(CACHE_NAME).put(k, k);
 
-        TestRecordingCommunicationSpi clientCommSpi = new TestRecordingCommunicationSpi();
+        CountDownLatch cliDiscoSpiUnblockedLatch = new CountDownLatch(1);
 
-        // Delay client join process.
-        clientCommSpi.blockMessages((node, msg) -> {
-            if (!(msg instanceof GridDhtPartitionsSingleMessage))
-                return false;
+        IgniteConfiguration cliCfg = getConfiguration(3, createBlockingDiscoverySpi(cliDiscoSpiUnblockedLatch));
 
-            GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
+        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi)cliCfg.getCommunicationSpi();
 
-            return Optional.ofNullable(singleMsg.exchangeId())
-                .map(GridDhtPartitionExchangeId::topologyVersion)
-                .filter(topVer -> topVer.equals(new AffinityTopologyVersion(4, 0)))
-                .isPresent();
-        });
+        blockSingleMessage(commSpi);
 
-        communicationSpiSupplier = () -> clientCommSpi;
-
-        CustomMessageInterceptingDiscoverySpi clientDiscoSpi = new CustomMessageInterceptingDiscoverySpi();
-
-        CountDownLatch clientDiscoSpiBlock = new CountDownLatch(1);
-
-        // Delay cache destroying on client node.
-        clientDiscoSpi.interceptor = (msg) -> {
-            if (!(msg instanceof DynamicCacheChangeBatch))
-                return;
-
-            DynamicCacheChangeBatch cacheChangeBatch = (DynamicCacheChangeBatch)msg;
-
-            boolean hasCacheStopReq = cacheChangeBatch.requests().stream()
-                .anyMatch(req -> req.stop() && req.cacheName().equals(CACHE_NAME));
-
-            if (hasCacheStopReq)
-                U.awaitQuiet(clientDiscoSpiBlock);
-        };
-
-        discoverySpiSupplier = () -> clientDiscoSpi;
-
-        IgniteInternalFuture<IgniteEx> clientStartFut = GridTestUtils.runAsync(() -> startClientGrid(3));
+        IgniteInternalFuture<IgniteEx> clientStartFut = GridTestUtils.runAsync(() -> startClientGrid(cliCfg));
 
         // Wait till client node starts join process.
-        clientCommSpi.waitForBlocked();
+        commSpi.waitForBlocked();
 
         // Destroy cache on server nodes.
         crd.destroyCache(CACHE_NAME);
 
         // Resume client join.
-        clientCommSpi.stopBlock();
+        commSpi.stopBlock();
 
         // Client join should succeed.
         IgniteEx client = clientStartFut.get();
@@ -143,7 +106,7 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
         }
         finally {
             // Resume processing cache destroy on client node.
-            clientDiscoSpiBlock.countDown();
+            cliDiscoSpiUnblockedLatch.countDown();
         }
 
         // Wait till cache destroyed on client node.
@@ -156,5 +119,37 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
         }, 5_000); // Reasonable timeout.
 
         Assert.assertNull("Cache should be destroyed on client node", client.cache(CACHE_NAME));
+    }
+
+    /** */
+    private TcpDiscoverySpi createBlockingDiscoverySpi(CountDownLatch discoSpiUnblockedLatch) {
+        return CustomMessageInterceptingDiscoverySpi.create(msg -> {
+            if (!(msg instanceof DynamicCacheChangeBatch))
+                return;
+
+            DynamicCacheChangeBatch cacheChangeBatch = (DynamicCacheChangeBatch)msg;
+
+            boolean hasCacheStopReq = cacheChangeBatch.requests().stream()
+                .anyMatch(req -> req.stop() && req.cacheName().equals(CACHE_NAME));
+
+            if (hasCacheStopReq)
+                U.awaitQuiet(discoSpiUnblockedLatch);
+        });
+    }
+
+    /** */
+    private void blockSingleMessage(TestRecordingCommunicationSpi commSpi) {
+        // Delay client join process.
+        commSpi.blockMessages((node, msg) -> {
+            if (!(msg instanceof GridDhtPartitionsSingleMessage))
+                return false;
+
+            GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
+
+            return Optional.ofNullable(singleMsg.exchangeId())
+                .map(GridDhtPartitionExchangeId::topologyVersion)
+                .filter(topVer -> topVer.equals(new AffinityTopologyVersion(4, 0)))
+                .isPresent();
+        });
     }
 }

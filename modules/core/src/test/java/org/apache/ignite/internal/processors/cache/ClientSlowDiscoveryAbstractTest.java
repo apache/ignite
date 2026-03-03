@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.function.Supplier;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,66 +24,72 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/**
- *
- */
-public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+
+/** */
+abstract class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
     /** Cache name. */
     protected static final String CACHE_NAME = "cache";
 
-    /** Cache configuration. */
-    private final CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
-        .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-        .setReadFromBackup(false)
-        .setBackups(1)
-        .setAffinity(new RendezvousAffinityFunction(false, 64));
-
-    /** Communication SPI supplier. */
-    protected Supplier<CommunicationSpi> communicationSpiSupplier = TestRecordingCommunicationSpi::new;
-
-    /** Discovery SPI supplier. */
-    protected Supplier<DiscoverySpi> discoverySpiSupplier = TcpDiscoverySpi::new;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setConsistentId(igniteInstanceName);
-        cfg.setCacheConfiguration(ccfg);
-        cfg.setCommunicationSpi(communicationSpiSupplier.get());
-        cfg.setDiscoverySpi(discoverySpiSupplier.get());
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setConsistentId(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
+            .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)
+                .setAtomicityMode(TRANSACTIONAL)
+                .setReadFromBackup(false)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false, 64)));
     }
 
-    /**
-     *
-     */
+    /** */
+    protected IgniteConfiguration getConfiguration(int nodeIdx, TcpDiscoverySpi discoSpi) throws Exception {
+        return getConfiguration(getTestIgniteInstanceName(nodeIdx))
+            .setDiscoverySpi(discoSpi);
+    }
+
+    /** */
     static class NodeJoinInterceptingDiscoverySpi extends TcpDiscoverySpi {
         /** Interceptor. */
-        protected volatile IgniteInClosure<TcpDiscoveryNodeAddFinishedMessage> interceptor;
+        private final IgniteInClosure<TcpDiscoveryNodeAddFinishedMessage> interceptor;
+
+        /** */
+        private NodeJoinInterceptingDiscoverySpi(IgniteInClosure<TcpDiscoveryNodeAddFinishedMessage> interceptor) {
+            this.interceptor = interceptor;
+        }
 
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage && interceptor != null)
                 interceptor.apply((TcpDiscoveryNodeAddFinishedMessage)msg);
         }
+
+        /** */
+        static NodeJoinInterceptingDiscoverySpi create(IgniteInClosure<TcpDiscoveryNodeAddFinishedMessage> interceptor) {
+            NodeJoinInterceptingDiscoverySpi spi = new NodeJoinInterceptingDiscoverySpi(interceptor);
+
+            spi.setIpFinder(sharedStaticIpFinder);
+
+            return spi;
+        }
     }
 
-    /**
-     *
-     */
+    /** */
     static class CustomMessageInterceptingDiscoverySpi extends TcpDiscoverySpi {
         /** Interceptor. */
-        protected volatile IgniteInClosure<DiscoveryCustomMessage> interceptor;
+        private final IgniteInClosure<DiscoveryCustomMessage> interceptor;
+
+        /** */
+        private CustomMessageInterceptingDiscoverySpi(IgniteInClosure<DiscoveryCustomMessage> interceptor) {
+            this.interceptor = interceptor;
+        }
 
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
@@ -105,6 +109,15 @@ public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
 
             if (interceptor != null)
                 interceptor.apply(U.unwrapCustomMessage(cm.message()));
+        }
+
+        /** */
+        static CustomMessageInterceptingDiscoverySpi create(IgniteInClosure<DiscoveryCustomMessage> interceptor) {
+            CustomMessageInterceptingDiscoverySpi spi = new CustomMessageInterceptingDiscoverySpi(interceptor);
+
+            spi.setIpFinder(sharedStaticIpFinder);
+
+            return spi;
         }
     }
 }
