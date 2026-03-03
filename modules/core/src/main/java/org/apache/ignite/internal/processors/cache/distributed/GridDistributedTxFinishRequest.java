@@ -56,47 +56,47 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     protected static final int STORE_ENABLED_FLAG_MASK = 0x20;
 
     /** Topology version. */
-    @Order(7)
+    @Order(0)
     public AffinityTopologyVersion topVer;
 
     /** Future ID. */
-    @Order(8)
+    @Order(1)
     public IgniteUuid futId;
 
     /** Thread ID. */
-    @Order(9)
+    @Order(2)
     public long threadId;
 
     /** Commit version. */
-    @Order(10)
+    @Order(3)
     public GridCacheVersion commitVer;
 
     /** Invalidate flag. */
-    @Order(11)
+    @Order(4)
     public boolean invalidate;
 
     /** Commit flag. */
-    @Order(12)
+    @Order(5)
     public boolean commit;
 
     /** Min version used as base for completed versions. */
-    @Order(13)
+    @Order(6)
     public GridCacheVersion baseVer;
 
     /** IO policy. */
-    @Order(14)
+    @Order(7)
     public byte plc;
 
     /** Task name hash. */
-    @Order(15)
+    @Order(8)
     public int taskNameHash;
 
     /** */
-    @Order(16)
+    @Order(9)
     public byte flags;
 
     /** Write synchronization mode. */
-    @Order(17)
+    @Order(10)
     public CacheWriteSynchronizationMode syncMode;
 
     /** Transient TX state. */

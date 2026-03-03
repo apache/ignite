@@ -32,11 +32,11 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** Remote node addresses. */
-    @Order(5)
+    @Order(0)
     Collection<String> addrs;
 
     /** Remote node host names. */
-    @Order(6)
+    @Order(1)
     Collection<String> hostNames;
 
     /** */

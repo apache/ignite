@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
@@ -29,8 +28,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Response to remote DML request.
@@ -38,23 +35,26 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     /** Request id. */
     @GridToStringInclude
-    private long reqId;
+    @Order(0)
+    long reqId;
 
     /** Number of updated rows. */
     @GridToStringInclude
-    private long updCnt;
+    @Order(1)
+    long updCnt;
 
     /** Error message. */
     @GridToStringInclude
-    private String err;
+    @Order(2)
+    String err;
 
     /** Keys that failed. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Object[] errKeys;
+    Object[] errKeys;
 
     /** Keys that failed (after marshalling). */
-    private byte[] errKeysBytes;
+    @Order(3)
+    byte[] errKeysBytes;
 
     /**
      * Default constructor.
@@ -134,89 +134,6 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridH2DmlResponse.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(err))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(errKeysBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeLong(updCnt))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                err = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errKeysBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                updCnt = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
