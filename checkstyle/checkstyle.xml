@@ -24,6 +24,7 @@
 
     <property name="fileExtensions" value="java, properties, xml"/>
 
+    <!-- Suppressions. See: https://checkstyle.sourceforge.io/filters/suppressionfilter.html -->
     <module name="SuppressionFilter">
         <property name="file" value="checkstyle/checkstyle-suppressions.xml"/>
     </module>
@@ -37,6 +38,7 @@
     <module name="NewlineAtEndOfFile"/>
 
     <module name="TreeWalker">
+        <!-- Suppressions. See: https://checkstyle.sourceforge.io/filters/suppressionxpathfilter.html -->
         <module name="SuppressionXpathFilter">
             <property name="file" value="checkstyle/checkstyle-xpath-suppressions.xml"/>
         </module>
