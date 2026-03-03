@@ -85,7 +85,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param err Error.
      * @param clientRemapVer {@code True} if client node should remap lock request. If {@code compatibleRemapVer} is
      * {@code true} when first request is not remapped, but all subsequent will use remap version.
-     * @param addDepInfo Deployment info.
      * @param compatibleRemapVer {@code True} if remap version is compatible with lock version.
      */
     public GridNearLockResponse(
@@ -97,10 +96,9 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         int cnt,
         Throwable err,
         AffinityTopologyVersion clientRemapVer,
-        boolean addDepInfo,
         boolean compatibleRemapVer
     ) {
-        super(cacheId, lockVer, futId, cnt, err, addDepInfo);
+        super(cacheId, lockVer, futId, cnt, err);
 
         assert miniId != 0;
 
