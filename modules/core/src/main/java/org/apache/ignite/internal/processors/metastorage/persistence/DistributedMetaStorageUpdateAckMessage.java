@@ -58,6 +58,11 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
         return id;
     }
 
+    /** */
+    public UUID requestId() {
+        return reqId;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return null;
