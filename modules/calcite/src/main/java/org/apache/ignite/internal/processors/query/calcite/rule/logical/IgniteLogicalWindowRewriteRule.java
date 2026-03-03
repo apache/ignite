@@ -38,6 +38,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexWindowBound;
@@ -102,6 +103,7 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         RelNode input = win.getInput();
         RexBuilder rexBuilder = win.getCluster().getRexBuilder();
         RelDataTypeFactory typeFactory = win.getCluster().getTypeFactory();
+        RelNode aggInput = appendConstants(input, win.getConstants());
 
         List<AggregateCall> aggCalls = new ArrayList<>(grp.aggCalls.size());
 
@@ -112,7 +114,7 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         ImmutableBitSet grpSet = grp.keys;
 
         RelNode agg = LogicalAggregate.create(
-            input,
+            aggInput,
             grpSet,
             null,
             aggCalls
@@ -138,6 +140,34 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         );
 
         call.transformTo(project);
+    }
+
+    /**
+     * Appends LogicalWindow constants to input as additional projection columns.
+     *
+     * @param input Input relation.
+     * @param constants Window constants.
+     * @return Input relation augmented with constants.
+     */
+    private static RelNode appendConstants(RelNode input, List<RexLiteral> constants) {
+        if (constants.isEmpty())
+            return input;
+
+        RexBuilder rexBuilder = input.getCluster().getRexBuilder();
+        int inputFieldCnt = input.getRowType().getFieldCount();
+
+        List<RexNode> projects = new ArrayList<>(inputFieldCnt + constants.size());
+        List<String> names = new ArrayList<>(input.getRowType().getFieldNames());
+
+        for (int i = 0; i < inputFieldCnt; i++)
+            projects.add(rexBuilder.makeInputRef(input, i));
+
+        projects.addAll(constants);
+
+        for (int i = 0; i < constants.size(); i++)
+            names.add("_w_const$" + i);
+
+        return LogicalProject.create(input, List.of(), projects, names, ImmutableSet.of());
     }
 
     /**
