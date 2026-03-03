@@ -2257,7 +2257,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             sendLocalPartitions(oldestNode);
         }
         catch (ClusterTopologyCheckedException e) {
-            log.warning("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
+            log.warning("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
                 ", exchId=" + exchId + ']', e);
         }
         catch (IgniteCheckedException e) {

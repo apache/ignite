@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -86,7 +85,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     private ListeningTestLogger testLog;
 
     /** */
-    private volatile Supplier<TcpCommunicationSpi> spiFactory = CustomTcpCommunicationSpi::new;
+    private Supplier<TcpCommunicationSpi> spiSupp = CustomTcpCommunicationSpi::new;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -108,10 +107,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         if (testLog != null)
             testLog.clearListeners();
 
-        spiFactory = CustomTcpCommunicationSpi::new;
-
+        spiSupp = CustomTcpCommunicationSpi::new;
         testLog = null;
-
         lifecycleBean = null;
 
         stopAllGrids();
@@ -121,7 +118,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCommunicationSpi(spiFactory.get());
+        cfg.setCommunicationSpi(spiSupp.get());
 
         if (testLog != null)
             cfg.setGridLogger(testLog);
@@ -145,17 +142,18 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
      */
     @Test
     public void testSingleMessageErrorWarnings() throws Exception {
-        final long waitingTimeout = 5_000;
+        long waitingTimeout = 5_000;
+        String logSubstr = "Failed to send local partitions [nodeId=";
 
-        LogListener logListener = LogListener.matches("Failed to send local partitions").atLeast(1).build();
+        LogListener logListener = LogListener.matches(logSubstr).atLeast(1).build();
         testLog = new ListeningTestLogger(log, logListener);
 
-        final CountDownLatch beforeSend = new CountDownLatch(1);
-        final CountDownLatch proceed = new CountDownLatch(1);
+        CountDownLatch beforeSendLatch = new CountDownLatch(1);
+        CountDownLatch proceedLatch = new CountDownLatch(1);
 
-        final AtomicReference<UUID> crdIdRef = new AtomicReference<>();
+        AtomicReference<UUID> crdIdRef = new AtomicReference<>();
 
-        spiFactory = () -> new TcpCommunicationSpi() {
+        spiSupp = () -> new TcpCommunicationSpi() {
             @Override public void sendMessage(
                     ClusterNode node,
                     Message msg,
@@ -164,11 +162,11 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                 boolean isSingleMsg = ((GridIoMessage)msg).message() instanceof GridDhtPartitionsSingleMessage;
                 UUID crdId = crdIdRef.get();
 
-                if (isSingleMsg && node != null && crdId != null && crdId.equals(node.id()) ) {
-                    beforeSend.countDown();
+                if (isSingleMsg && node != null && crdId != null && crdId.equals(node.id())) {
+                    beforeSendLatch.countDown();
 
                     try {
-                        if (!proceed.await(waitingTimeout, TimeUnit.MILLISECONDS))
+                        if (!proceedLatch.await(waitingTimeout, TimeUnit.MILLISECONDS))
                             throw new IgniteSpiException("Test timeout waiting to proceed");
                     }
                     catch (InterruptedException e) {
@@ -183,22 +181,22 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
         IgniteEx crd = startGrid(0);
         IgniteEx node1 = startGrid(1);
+
         awaitPartitionMapExchange();
 
         crdIdRef.set(crd.localNode().id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            node1.context().cache().context().exchange().refreshPartitions();
-        });
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
+            node1.context().cache().context().exchange().refreshPartitions());
 
         boolean entered = false;
         try {
-            assertTrue("Did not enter sendMessage() in time",
-                    entered = beforeSend.await(waitingTimeout, TimeUnit.MILLISECONDS));
+            assertTrue("Did not enter sendMessage() in time", entered =
+                    beforeSendLatch.await(waitingTimeout, TimeUnit.MILLISECONDS));
 
             stopGrid(0);
 
-            proceed.countDown();
+            proceedLatch.countDown();
 
             fut.get(waitingTimeout);
 
@@ -206,8 +204,9 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                     GridTestUtils.waitForCondition(logListener::check, waitingTimeout));
         }
         finally {
-            proceed.countDown();
-            if (!entered) beforeSend.countDown();
+            proceedLatch.countDown();
+
+            if (!entered) beforeSendLatch.countDown();
         }
     }
 
