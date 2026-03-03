@@ -137,7 +137,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpd
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
@@ -4138,7 +4137,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         Collection<TcpDiscoveryAbstractMessage> msgs = msgHist.messages(null, node);
 
                         if (msgs != null) {
-                            reconMsg.pendingMsgsMsg = new TcpDiscoveryCollectionMessage(msgs);
+                            reconMsg.pendingMessages(msgs);
 
                             reconMsg.success(true);
                         }
@@ -5078,9 +5077,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
-
-                            if (!F.isEmpty(msg.topologyHistory()))
-                                topHist.putAll(msg.topologyHistory());
+                            topHist.putAll(msg.topologyHistory());
 
                             pendingMsgs.reset(msg.messages());
                         }
@@ -7371,7 +7368,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (pending != null) {
                             msg.verifierNodeId(locNodeId);
-                            msg.pendingMsgsMsg = new TcpDiscoveryCollectionMessage(pending);
+                            msg.pendingMessages(pending);
                             msg.success(true);
 
                             if (log.isDebugEnabled()) {

@@ -112,20 +112,18 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         assert clientDiscoData == null || !clientDiscoData.hasDataFromNode(nodeId);
     }
 
-    /** @return Client attributes. */
-    public @Nullable Map<String, Object> clientNodeAttributes() {
+    /**
+     * @return Client node attributes.
+     */
+    public Map<String, Object> clientNodeAttributes() {
         return clientNodeAttrs;
     }
 
     /**
-     * Sets new client attributes and ensures that thet will be serialized.
-     *
-     * @param attrs Client attributes.
+     * @param clientNodeAttrs New client node attributes.
      */
-    public void clientNodeAttributes(@Nullable Map<String, Object> attrs) {
-        clientNodeAttrs = F.isEmpty(attrs) ? null : attrs;
-        // Ensure new data will be serialized.
-        clientNodeAttrsBytes = null;
+    public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
+        this.clientNodeAttrs = clientNodeAttrs;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +133,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
                 clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal client node attributes", e);
+                throw new IgniteException("Failed to marshal client node attributes.", e);
             }
         }
     }
@@ -149,7 +147,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
                 clientNodeAttrsBytes = null;
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal client node attributes", e);
+                throw new IgniteException("Failed to unmarshal client node attributes.", e);
             }
         }
     }

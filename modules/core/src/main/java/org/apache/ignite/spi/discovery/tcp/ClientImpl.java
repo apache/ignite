@@ -2239,7 +2239,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        if (!F.isEmpty(msg.topologyHistory()))
+                        if (msg.topologyHistory() != null)
                             topHist.putAll(msg.topologyHistory());
                     }
                     else {
@@ -2544,10 +2544,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                Collection<TcpDiscoveryAbstractMessage> pendingMsgs = msg.pendingMsgsMsg == null
-                    ? Collections.emptyList()
-                    : msg.pendingMsgsMsg.messages();
-
                 if (reconnector != null) {
                     assert msg.success() : msg;
 
@@ -2558,7 +2554,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     reconnector = null;
 
-                    for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
+                    for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
                         if (log.isDebugEnabled())
                             log.debug("Process pending message on reconnect [msg=" + pendingMsg + ']');
 
@@ -2568,7 +2564,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     if (joinLatch.getCount() > 0) {
                         if (msg.success()) {
-                            for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
+                            for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
                                 if (log.isDebugEnabled())
                                     log.debug("Process pending message on connect [msg=" + pendingMsg + ']');
 

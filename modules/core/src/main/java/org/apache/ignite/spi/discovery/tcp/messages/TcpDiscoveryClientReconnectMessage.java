@@ -17,34 +17,42 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Message telling that client node is reconnecting to topology.
  */
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage implements TcpDiscoveryMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
     @Order(0)
-    public UUID routerNodeId;
+    UUID routerNodeId;
 
     /** Last message ID. */
     @Order(1)
-    public IgniteUuid lastMsgId;
+    IgniteUuid lastMsgId;
 
-    /** Pending messages holder. */
+    /** Pending messages. */
+    @GridToStringExclude
+    private Collection<TcpDiscoveryAbstractMessage> msgs;
+
+    /** Srialized bytes of {@link #msgs}. */
     @Order(2)
-    @Nullable public TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    byte[] msgsBytes;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientReconnectMessage() {
@@ -78,6 +86,20 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
+     * @param msgs Pending messages.
+     */
+    public void pendingMessages(Collection<TcpDiscoveryAbstractMessage> msgs) {
+        this.msgs = msgs;
+    }
+
+    /**
+     * @return Pending messages.
+     */
+    public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
+        return msgs;
+    }
+
+    /**
      * @param success Success flag.
      */
     public void success(boolean success) {
@@ -104,6 +126,32 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         return Objects.equals(creatorNodeId(), other.creatorNodeId()) &&
             Objects.equals(routerNodeId, other.routerNodeId) &&
             Objects.equals(lastMsgId, other.lastMsgId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
+        if (msgs != null && msgsBytes == null) {
+            try {
+                msgsBytes = U.marshal(marsh, msgs);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal the pending messages.", e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        if (msgsBytes != null && msgs == null) {
+            try {
+                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+
+                msgsBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal the pending messages.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
