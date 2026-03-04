@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MessageProcessor;
@@ -40,7 +41,10 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * <p>If the message serialization fails, wraps this error with own one.
  */
 @SuppressWarnings({"NullableProblems", "unused"})
-public class ErrorMessage implements Message {
+public class ErrorMessage implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Serialization and deserealization call holder. */
     @Order(value = 0, method = "errorBytes")
     @GridToStringExclude
