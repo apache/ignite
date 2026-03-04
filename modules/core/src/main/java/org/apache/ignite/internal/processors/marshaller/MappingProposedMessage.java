@@ -49,9 +49,6 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
     }
 
     /** */
-    public static final short DIRECT_TYPE = 516;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
@@ -166,7 +163,7 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return DIRECT_TYPE;
+        return 510;
     }
 
     /** {@inheritDoc} */

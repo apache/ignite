@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
-import org.apache.ignite.internal.processors.marshaller.MappingProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
@@ -33,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
@@ -155,7 +155,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
-        factory.register(MappingProposedMessage.DIRECT_TYPE, MappingProposedMessage::new, new MappingProposedMessageSerializer());
-
+        factory.register((short)510, MappingProposedMessage::new, new MappingProposedMessageSerializer());
     }
 }
