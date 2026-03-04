@@ -920,7 +920,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             prepErr,
             null,
             tx.onePhaseCommit(),
-            tx.activeCachesDeploymentEnabled());
+            false);
 
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
@@ -1428,7 +1428,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 true,
                 tx.onePhaseCommit(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
@@ -1539,7 +1538,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     true,
                     tx.onePhaseCommit(),
                     tx.taskNameHash(),
-                    tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
                     null);

@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class TxLocksResponse extends GridCacheMessage {
     /** Future ID. */
-    @Order(3)
+    @Order(0)
     long futId;
 
     /** Locks for near txKeys of near transactions. */
@@ -48,17 +48,17 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(4)
+    @Order(1)
     IgniteTxKey[] nearTxKeysArr;
 
     /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(5)
+    @Order(2)
     IgniteTxKey[] txKeysArr;
 
     /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(6)
+    @Order(3)
     TxLockList[] locksArr;
 
     /**

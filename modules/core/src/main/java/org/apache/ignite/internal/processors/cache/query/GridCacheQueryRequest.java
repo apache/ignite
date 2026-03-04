@@ -59,19 +59,19 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11;
 
     /** */
-    @Order(4)
+    @Order(0)
     long id;
 
     /** */
-    @Order(5)
+    @Order(1)
     String cacheName;
 
     /** */
-    @Order(6)
+    @Order(2)
     GridCacheQueryType type;
 
     /** */
-    @Order(7)
+    @Order(3)
     @GridToStringInclude(sensitive = true)
     String clause;
 
@@ -79,87 +79,87 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private IndexQueryDesc idxQryDesc;
 
     /** */
-    @Order(8)
+    @Order(4)
     byte[] idxQryDescBytes;
 
     /** */
-    @Order(9)
+    @Order(5)
     int limit;
 
     /** */
-    @Order(10)
+    @Order(6)
     String clsName;
 
     /** */
     private IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
-    @Order(11)
+    @Order(7)
     byte[] keyValFilterBytes;
 
     /** */
     private IgniteReducer<Object, Object> rdc;
 
     /** */
-    @Order(12)
+    @Order(8)
     byte[] rdcBytes;
 
     /** */
     private IgniteClosure<?, ?> trans;
 
     /** */
-    @Order(13)
+    @Order(9)
     byte[] transBytes;
 
     /** */
     private Object[] args;
 
     /** */
-    @Order(14)
+    @Order(10)
     byte[] argsBytes;
 
     /** */
-    @Order(15)
+    @Order(11)
     int pageSize;
 
     /** */
-    @Order(16)
+    @Order(12)
     boolean incBackups;
 
     /** */
-    @Order(17)
+    @Order(13)
     boolean cancel;
 
     /** */
-    @Order(18)
+    @Order(14)
     boolean incMeta;
 
     /** */
-    @Order(19)
+    @Order(15)
     boolean all;
 
     /** */
-    @Order(20)
+    @Order(16)
     boolean keepBinary;
 
     /** */
-    @Order(21)
+    @Order(17)
     int taskHash;
 
     /** Partition. */
-    @Order(22)
+    @Order(18)
     int part = -1;
 
     /** */
-    @Order(value = 23, method = "topologyVersion")
+    @Order(value = 19, method = "topologyVersion")
     AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
-    @Order(24)
+    @Order(20)
     Collection<KeyCacheObject> skipKeys;
 
     /** */
-    @Order(25)
+    @Order(21)
     byte flags;
 
     /**
@@ -206,7 +206,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            deployFilterOrTransformer,
             qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
@@ -230,7 +230,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
             qry.isDataPageScanEnabled());
     }
 
@@ -243,8 +243,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId) {
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
-            cctx.affinity().affinityTopologyVersion(),
-            cctx.deploymentEnabled());
+            cctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -253,18 +252,15 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param cacheId Cache ID.
      * @param id Request to cancel.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info flag.
      */
     private GridCacheQueryRequest(
         int cacheId,
         long id,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         this.cacheId = cacheId;
         this.id = id;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
 
         cancel = true;
     }

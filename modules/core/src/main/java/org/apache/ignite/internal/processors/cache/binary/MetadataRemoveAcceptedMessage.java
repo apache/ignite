@@ -17,37 +17,48 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Acknowledge message for {@link MetadataRemoveProposedMessage}: see its javadoc for detailed description of protocol.
- *
+ * <p>
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataRemoveAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
-public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage {
+public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final int typeId;
+    @Order(1)
+    int typeId;
 
     /** */
-    private boolean duplicated;
+    @Order(2)
+    boolean duplicated;
+
+    /** Constructor. */
+    public MetadataRemoveAcceptedMessage() {
+        // No-op.
+    }
 
     /**
      * @param typeId Type id.
      */
     MetadataRemoveAcceptedMessage(int typeId) {
+        id = IgniteUuid.randomUuid();
         this.typeId = typeId;
     }
 
@@ -92,5 +103,10 @@ public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MetadataRemoveAcceptedMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 502;
     }
 }

@@ -32,11 +32,11 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     private GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** */
-    @Order(4)
+    @Order(0)
     int partId;
 
     /** */
-    @Order(5)
+    @Order(1)
     long futId;
 
     /**
