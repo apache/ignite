@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,7 +51,7 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
     @Order(3)
     boolean isInit;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** */
     public TxTimeoutOnPartitionMapExchangeChangeMessage() {
         // No-op.
     }
