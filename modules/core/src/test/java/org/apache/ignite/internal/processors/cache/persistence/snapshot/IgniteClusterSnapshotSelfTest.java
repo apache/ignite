@@ -1309,6 +1309,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
 
+        // Wait for partition map exchange to finish after node left.
+        awaitPartitionMapExchange();
+
         // Check that client node is alive.
         assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
     }
