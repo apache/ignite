@@ -107,9 +107,9 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         if (testLog != null)
             testLog.clearListeners();
 
-        spiSupp = CustomTcpCommunicationSpi::new;
         testLog = null;
         lifecycleBean = null;
+        spiSupp = CustomTcpCommunicationSpi::new;
 
         stopAllGrids();
     }
@@ -143,7 +143,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     @Test
     public void testSingleMessageErrorWarnings() throws Exception {
         long waitingTimeout = 5_000;
-        String logSubstr = "Failed to send local partitions [nodeId=";
+        String logSubstr = "Failed to send local partitions to node because it left grid [nodeId=";
 
         LogListener logListener = LogListener.matches(logSubstr).atLeast(1).build();
         testLog = new ListeningTestLogger(log, logListener);
@@ -156,7 +156,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         spiSupp = () -> new TcpCommunicationSpi() {
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
-                    throws IgniteSpiException {
+                throws IgniteSpiException {
                 boolean isSingleMsg = ((GridIoMessage)msg).message() instanceof GridDhtPartitionsSingleMessage;
                 UUID crdId = crdIdRef.get();
 
@@ -191,7 +191,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         boolean entered = false;
         try {
             assertTrue("Did not enter sendMessage() in time", entered =
-                    beforeSendLatch.await(waitingTimeout, TimeUnit.MILLISECONDS));
+                beforeSendLatch.await(waitingTimeout, TimeUnit.MILLISECONDS));
 
             stopGrid(0);
 
