@@ -27,6 +27,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Window;
@@ -42,7 +43,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexWindowBound;
-import org.apache.calcite.sql.ExplicitOperatorBinding;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -105,13 +105,13 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         RelDataTypeFactory typeFactory = win.getCluster().getTypeFactory();
         RelNode aggInput = appendConstants(input, win.getConstants());
 
+        ImmutableBitSet grpSet = grp.keys;
+
         List<AggregateCall> aggCalls = new ArrayList<>(grp.aggCalls.size());
 
         for (Window.RexWinAggCall winAggCall : grp.aggCalls) {
-            aggCalls.add(toAggregateCall(winAggCall, typeFactory));
+            aggCalls.add(toAggregateCall(winAggCall, typeFactory, grpSet.cardinality()));
         }
-
-        ImmutableBitSet grpSet = grp.keys;
 
         RelNode agg = LogicalAggregate.create(
             aggInput,
@@ -288,11 +288,13 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
      *
      * @param winAggCall Window aggregate call.
      * @param typeFactory Type factory.
+     * @param grpKeyCnt Partition key count.
      * @return AggregateCall for LogicalAggregate.
      */
     private static AggregateCall toAggregateCall(
         Window.RexWinAggCall winAggCall,
-        RelDataTypeFactory typeFactory
+        RelDataTypeFactory typeFactory,
+        int grpKeyCnt
     ) {
         List<Integer> argList = new ArrayList<>(winAggCall.getOperands().size());
 
@@ -313,7 +315,7 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
 
         SqlAggFunction agg = (SqlAggFunction)winAggCall.getOperator();
 
-        SqlOperatorBinding binding = new ExplicitOperatorBinding(typeFactory, agg, operandTypes);
+        SqlOperatorBinding binding = new Aggregate.AggCallBinding(typeFactory, agg, operandTypes, grpKeyCnt, false);
 
         RelDataType inferredType = agg.inferReturnType(binding);
 

@@ -2,6 +2,17 @@
 # description: Test window aggregates with unbounded frame
 # group: [window]
 
+# test scalar window functions
+query R
+SELECT avg(42) OVER ()
+----
+42.000000
+
+query I
+SELECT COUNT(DISTINCT 42) OVER ()
+----
+1
+
 statement ok
 CREATE TABLE win_emp(emp_id INTEGER, dept_id INTEGER, salary INTEGER);
 
