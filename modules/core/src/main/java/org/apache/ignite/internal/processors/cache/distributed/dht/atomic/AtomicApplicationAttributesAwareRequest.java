@@ -29,11 +29,11 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
     public static final short TYPE_CODE = 180;
 
     /** Original update message. */
-    @Order(4)
+    @Order(0)
     GridNearAtomicAbstractUpdateRequest payload;
 
     /** Application attributes. */
-    @Order(5)
+    @Order(1)
     Map<String, String> appAttrs;
 
     /** */

@@ -38,39 +38,39 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** */
-    @Order(4)
+    @Order(0)
     long futId;
 
     /** Topology version. */
-    @Order(5)
+    @Order(1)
     AffinityTopologyVersion topVer;
 
     /** */
     private List<List<UUID>> affAssignmentIds;
 
     /** */
-    @Order(6)
+    @Order(2)
     byte[] affAssignmentIdsBytes;
 
     /** */
     private List<List<UUID>> idealAffAssignment;
 
     /** Affinity assignment bytes. */
-    @Order(7)
+    @Order(3)
     byte[] idealAffAssignmentBytes;
 
     /** */
     private GridDhtPartitionFullMap partMap;
 
     /** */
-    @Order(8)
+    @Order(4)
     byte[] partBytes;
 
     /** Indicates that getting required affinity assignments has been failed. */
     private IgniteCheckedException affAssignmentErr;
 
     /** Serialized error. */
-    @Order(9)
+    @Order(5)
     byte[] affAssignmentErrBytes;
 
     /**

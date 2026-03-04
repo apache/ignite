@@ -73,7 +73,8 @@
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.9.0</curator.version>
-        <guava.version>32.1.2-jre</guava.version>
+        <guava.version>33.5.0-jre</guava.version>
+        <failureaccess.version>1.0.1</failureaccess.version>
         <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
@@ -104,7 +105,7 @@
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
         <postgres.connector.version>42.7.3</postgres.connector.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
         <spring.version>5.3.39</spring.version>
         <surefire.version>3.1.2</surefire.version>

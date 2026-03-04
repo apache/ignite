@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -25,27 +26,37 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * WAL state change abstract message.
  */
-public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage {
+public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage, Message {
     /** Message ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Unique operation ID. */
-    private final UUID opId;
+    @Order(1)
+    UUID opId;
 
     /** Group ID. */
-    private int grpId;
+    @Order(2)
+    int grpId;
 
     /** Group deployment ID. */
-    private IgniteUuid grpDepId;
+    @Order(3)
+    IgniteUuid grpDepId;
 
     /** Message that should be processed through exchange thread. */
     @GridToStringExclude
     private transient WalStateProposeMessage exchangeMsg;
+
+    /** Constructor. */
+    protected WalStateAbstractMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -55,6 +66,7 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
      * @param grpDepId Group deployment ID.
      */
     protected WalStateAbstractMessage(UUID opId, int grpId, IgniteUuid grpDepId) {
+        id = IgniteUuid.randomUuid();
         this.opId = opId;
         this.grpId = grpId;
         this.grpDepId = grpDepId;

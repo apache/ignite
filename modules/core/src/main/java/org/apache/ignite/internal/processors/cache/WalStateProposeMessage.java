@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -30,23 +31,29 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Cache names which are expected to be in the group along with their deployment IDs. */
-    private Map<String, IgniteUuid> caches;
+    @Order(0)
+    Map<String, IgniteUuid> caches;
 
     /** Whether WAL should be enabled or disabled. */
-    private final boolean enable;
+    @Order(1)
+    boolean enable;
 
     /** Whether message is being handled on cache affinity node. */
     private transient boolean affNode;
 
+    /** Constructor. */
+    public WalStateProposeMessage() {
+        // No-op.
+    }
+
     /**
      * Constructor.
      *
-     * @param opId Operation IDs.
+     * @param opId Operation ID.
      * @param grpId Expected group ID.
      * @param grpDepId Expected group deployment ID.
      * @param nodeId Node ID.
      * @param caches Expected cache names and their relevant deployment IDs.
-     *
      * @param enable WAL state flag.
      */
     public WalStateProposeMessage(UUID opId, int grpId, IgniteUuid grpDepId, UUID nodeId,
@@ -88,5 +95,10 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WalStateProposeMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 507;
     }
 }

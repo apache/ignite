@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 import org.h2.value.Value;
 import org.h2.value.ValueTimestamp;
 
@@ -29,10 +27,12 @@ import org.h2.value.ValueTimestamp;
  */
 public class GridH2Timestamp extends GridH2ValueMessage {
     /** */
-    private long date;
+    @Order(0)
+    long date;
 
     /** */
-    private long nanos;
+    @Order(1)
+    long nanos;
 
     /**
      *
@@ -56,67 +56,6 @@ public class GridH2Timestamp extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) {
         return ValueTimestamp.fromDateValueAndNanos(date, nanos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong(date))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(nanos))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                date = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                nanos = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

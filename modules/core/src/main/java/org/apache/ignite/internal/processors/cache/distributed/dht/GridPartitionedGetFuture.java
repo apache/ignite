@@ -662,7 +662,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
                 false,
                 skipVals,
-                cctx.deploymentEnabled(),
                 recovery,
                 txLbl
             );
