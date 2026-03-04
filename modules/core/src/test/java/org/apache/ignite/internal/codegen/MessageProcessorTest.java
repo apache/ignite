@@ -219,7 +219,7 @@ public class MessageProcessorTest {
      */
     @Test
     public void testCustomMapperEnumFieldsMessage() {
-        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java");
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationEnumMapper.java");
 
         assertThat(compilation).succeeded();
 
@@ -228,13 +228,9 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
     }
 
-    /**
-     * Positive test for custom EnumMapper implementation for enum field: codegeneration tool
-     * generates a serializer using provided EnumMapper implementation.
-     * Generated serializer compiles successfully.
-     */
+    /** */
     @Test
-    public void testMarshallableMessage() throws Exception {
+    public void testMarshallableMessage() {
         Compilation compilation = compile("TestMarshallableMessage.java");
 
         assertThat(compilation).succeeded();

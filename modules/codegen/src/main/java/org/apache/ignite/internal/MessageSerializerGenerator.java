@@ -57,7 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_INTERFACE;
-import static org.apache.ignite.internal.MessageProcessor.EXTERNALIZABLE_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /**
@@ -109,7 +109,7 @@ public class MessageSerializerGenerator {
     /** */
     private final ProcessingEnvironment env;
 
-    /** */
+    /** The marshallable message type. */
     private final TypeMirror marshallableMsgType;
 
     /** */
@@ -119,7 +119,7 @@ public class MessageSerializerGenerator {
     MessageSerializerGenerator(ProcessingEnvironment env) {
         this.env = env;
 
-        marshallableMsgType = env.getElementUtils().getTypeElement(EXTERNALIZABLE_MESSAGE_INTERFACE).asType();
+        marshallableMsgType = env.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE).asType();
     }
 
     /** */
@@ -262,9 +262,8 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        // TODO: revise
-        // code.add(identedLine("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        //code.add(EMPTY);
+        code.add(identedLine("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
+        code.add(EMPTY);
 
         if (write) {
             code.add(identedLine("if (!writer.isHeaderWritten()) {"));
@@ -969,10 +968,6 @@ public class MessageSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
 
-        // TODO: revise
-//        writer.write("public class " + serClsName + " implements MessageSerializer<"
-//            + (marshallableMsg ? "MarshallableMessage" : "Message")
-//            + "> {" + NL);
         writer.write("public class " + serClsName + " implements MessageSerializer<"+type.getSimpleName()+"> {" + NL);
     }
 
