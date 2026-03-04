@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
     /** */
-    public static final short DIRECT_TYPE = 515;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
@@ -64,10 +61,10 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
      * @param item Item.
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
-        this.id = IgniteUuid.randomUuid();
-        this.platformId = item.platformId();
-        this.typeId = item.typeId();
-        this.clsName = item.className();
+        id = IgniteUuid.randomUuid();
+        platformId = item.platformId();
+        typeId = item.typeId();
+        clsName = item.className();
     }
 
     /** {@inheritDoc} */
@@ -98,7 +95,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return DIRECT_TYPE;
+        return 510;
     }
 
     /** {@inheritDoc} */
