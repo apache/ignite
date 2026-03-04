@@ -384,8 +384,7 @@ final class BinaryMetadataTransport {
 
     /** */
     void onDisconnected() {
-        cancelFutures(MetadataUpdateResult.createFailureResult(
-                new BinaryObjectException("Failed to update or wait for metadata, client node disconnected")));
+        cancelFutures(MetadataUpdateResult.createFailureResult("Failed to update or wait for metadata, client node disconnected"));
     }
 
     /**
@@ -945,7 +944,7 @@ final class BinaryMetadataTransport {
 
             if (msg.rejected()) {
                 if (fut != null)
-                    fut.onDone(MetadataUpdateResult.createFailureResult(msg.rejectionError()));
+                    fut.onDone(MetadataUpdateResult.createFailureResult(msg.rejectionErrorMessage()));
             }
             else {
                 if (fut != null)
