@@ -50,8 +50,8 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
      * @param id Id.
      */
     protected AbstractContinuousMessage(UUID id) {
-        this.id = IgniteUuid.randomUuid();
         routineId = id;
+        this.id = IgniteUuid.randomUuid();
     }
 
     /** {@inheritDoc} */
