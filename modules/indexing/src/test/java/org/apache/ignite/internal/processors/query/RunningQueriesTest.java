@@ -165,8 +165,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
                 DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
@@ -194,7 +193,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
                 super.sendCustomEvent(msg);
             }
-        });
+        };
+
+        cfg.setDiscoverySpi(discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
