@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAccepted
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
@@ -147,6 +149,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
         factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
         factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
+        factory.register((short)508, MetadataUpdateAcceptedMessage::new,
+            new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)508, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
     }
