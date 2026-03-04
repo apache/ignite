@@ -20,9 +20,9 @@ package org.apache.ignite.plugin.extensions.communication;
 import org.apache.ignite.marshaller.Marshaller;
 
 /** {@link MarshallableMessage} aware message marshaller. */
-abstract class AbstractMarshallableMessageSerializer implements MessageSerializer {
+abstract class AbstractMarshallableMessageSerializer<AM extends MarshallableMessage> implements MessageSerializer<AM> {
     /** */
-    private final MessageSerializer delegate;
+    private final MessageSerializer<AM> delegate;
 
     /** */
     private final Marshaller marshaller;
@@ -31,37 +31,37 @@ abstract class AbstractMarshallableMessageSerializer implements MessageSerialize
     private final ClassLoader clsLdr;
 
     /** */
-    private boolean marshMsgWrite;
+    private boolean writeBegun;
 
     /** */
-    protected AbstractMarshallableMessageSerializer(MessageSerializer delegate, Marshaller marshaller, ClassLoader clsLdr) {
+    protected AbstractMarshallableMessageSerializer(MessageSerializer<AM> delegate, Marshaller marshaller, ClassLoader clsLdr) {
         this.delegate = delegate;
         this.marshaller = marshaller;
         this.clsLdr = clsLdr;
     }
 
     /** */
-    @Override public boolean writeTo(Message msg, MessageWriter writer) {
-        if (msg instanceof MarshallableMessage && !marshMsgWrite) {
-            marshMsgWrite = true;
+    @Override public boolean writeTo(AM msg, MessageWriter writer) {
+        if (!writeBegun) {
+            writeBegun = true;
 
-            ((MarshallableMessage)msg).prepareMarshal(marshaller);
+            msg.prepareMarshal(marshaller);
         }
 
         boolean res = delegate.writeTo(msg, writer);
 
-        if (res && marshMsgWrite)
-            marshMsgWrite = false;
+        if (res)
+            writeBegun = false;
 
         return res;
     }
 
     /** */
-    @Override public boolean readFrom(Message msg, MessageReader reader) {
+    @Override public boolean readFrom(AM msg, MessageReader reader) {
         boolean res = delegate.readFrom(msg, reader);
 
-        if (res && msg instanceof MarshallableMessage)
-            ((MarshallableMessage)msg).finishUnmarshal(marshaller, clsLdr);
+        if (res)
+            msg.finishUnmarshal(marshaller, clsLdr);
 
         return res;
     }

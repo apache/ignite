@@ -234,14 +234,14 @@ public class MessageProcessorTest {
      * Generated serializer compiles successfully.
      */
     @Test
-    public void testMarshallableMessage() {
-        Compilation compilation = compile("TestMarshallableMessage.java", "TransactionIsolationEnumMapper.java");
+    public void testMarshallableMessage() throws Exception {
+        Compilation compilation = compile("TestMarshallableMessage.java");
 
         assertThat(compilation).succeeded();
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageSerializer.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshallableSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshallableSerializer.java"));
     }
 
     /**

@@ -68,6 +68,12 @@ public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
 
+    /** Compressed message. */
+    static final String COMPRESSED_MESSAGE_INTERFACE = "org.apache.ignite.internal.managers.communication.CompressedMessage";
+
+    /** Externalizable message. */
+    static final String EXTERNALIZABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.MarshallableMessage";
+
     /** This is the only message with zero fields. A serializer must be generated due to restrictions in our communication process. */
     static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
 
