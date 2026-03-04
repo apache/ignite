@@ -38,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message {
     /** */
-    public static final short DIRECT_TYPE = 511;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Discovery custom message ID. */
@@ -179,7 +176,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message 
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return DIRECT_TYPE;
+        return 510;
     }
 
     /** {@inheritDoc} */

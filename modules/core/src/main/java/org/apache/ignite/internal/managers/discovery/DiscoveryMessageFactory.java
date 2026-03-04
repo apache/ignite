@@ -155,7 +155,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
-        factory.register(DynamicCacheChangeBatch.DIRECT_TYPE, DynamicCacheChangeBatch::new, new DynamicCacheChangeBatchSerializer());
+        factory.register((short)510, DynamicCacheChangeBatch::new, new DynamicCacheChangeBatchSerializer());
 
     }
 }
