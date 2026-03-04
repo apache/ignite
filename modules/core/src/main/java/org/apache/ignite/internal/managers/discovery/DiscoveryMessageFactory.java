@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.authentication.UserProposedMessageS
 import org.apache.ignite.internal.processors.authentication.UserSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
@@ -160,6 +162,10 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
         factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
         factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
+        factory.register((short)508, MetadataUpdateAcceptedMessage::new,
+            new MetadataUpdateAcceptedMessageSerializer());
+        factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
+            new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
         factory.register((short)508, MetadataUpdateAcceptedMessage::new, new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)509, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
         factory.register((short)510, UserProposedMessage::new, new UserProposedMessageSerializer());
