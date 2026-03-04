@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheStatisticsClearMessage implements DiscoveryCustomMessage, Message {
     /** */
-    public static final short DIRECT_TYPE = 501;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Initial message flag mask. */
@@ -113,7 +110,7 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage, Mess
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 507;
+        return 510;
     }
 
     /**
