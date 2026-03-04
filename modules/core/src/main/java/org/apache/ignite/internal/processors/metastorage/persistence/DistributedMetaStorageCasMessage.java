@@ -27,7 +27,7 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
     private final byte[] expectedVal;
 
     /** */

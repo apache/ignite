@@ -28,7 +28,7 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(2)
+    @Order(0)
     boolean updated;
 
     /** Empty constructor of {@link DiscoveryMessageFactory}. */

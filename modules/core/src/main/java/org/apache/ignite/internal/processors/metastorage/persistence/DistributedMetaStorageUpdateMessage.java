@@ -43,7 +43,7 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     @GridToStringInclude
     private final String key;
 
-    /** */
+    /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
     private final byte[] valBytes;
 
     /** */
