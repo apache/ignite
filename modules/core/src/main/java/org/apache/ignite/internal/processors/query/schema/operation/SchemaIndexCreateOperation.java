@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 
 /**
  * Schema index create operation.
@@ -31,17 +36,27 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     private static final long serialVersionUID = 0L;
 
     /** Table name. */
-    private final String tblName;
+    @Order(0)
+    String tblName;
 
     /** Index. */
     @GridToStringInclude
-    private final QueryIndex idx;
+    private QueryIndex idx;
+
+    /** Serialized form of 'query index'. */
+    @Order(value = 1, method = "queryIndexBytes")
+    byte[] qryIdxBytes;
 
     /** Ignore operation if index exists. */
-    private final boolean ifNotExists;
+    @Order(2)
+    boolean ifNotExists;
 
     /** Index creation parallelism level */
-    private final int parallel;
+    @Order(3)
+    int parallel;
+
+    /** */
+    public SchemaIndexCreateOperation() {}
 
     /**
      * Constructor.
@@ -99,8 +114,35 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
         return parallel;
     }
 
+    /** */
+    byte[] queryIndexBytes() {
+        try {
+            return U.marshal(Marshallers.jdk(), idx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshall query index", e);
+        }
+    }
+
+    /** */
+    void queryIndexBytes(byte[] qryIdxBytes) {
+        if (qryIdxBytes != null) {
+            try {
+                idx = U.unmarshal(Marshallers.jdk(), qryIdxBytes, U.gridClassLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaIndexCreateOperation.class, this, "parent", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -114;
     }
 }

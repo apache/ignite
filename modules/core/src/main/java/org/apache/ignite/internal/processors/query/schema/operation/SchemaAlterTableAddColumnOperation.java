@@ -19,27 +19,32 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema index drop operation.
  */
-public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTableOperation {
+public class SchemaAlterTableAddColumnOperation extends SchemaAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Target table name. */
-    private final String tblName;
+    @Order(0)
+    String tblName;
 
     /** Columns to add. */
-    private final List<QueryField> cols;
+    @Order(1)
+    List<QueryField> cols;
 
     /** Ignore operation if target table doesn't exist. */
-    private final boolean ifTblExists;
+    @Order(2)
+    boolean ifTblExists;
 
     /** Ignore operation if column exists. */
-    private final boolean ifNotExists;
+    @Order(3)
+    boolean ifNotExists;
 
     /**
      * Constructor.
@@ -60,6 +65,9 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
         this.ifTblExists = ifTblExists;
         this.ifNotExists = ifNotExists;
     }
+
+    /** */
+    public SchemaAlterTableAddColumnOperation() {}
 
     /**
      * @return Ignore operation if table doesn't exist.
@@ -92,5 +100,10 @@ public class SchemaAlterTableAddColumnOperation extends SchemaAbstractAlterTable
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaAlterTableAddColumnOperation.class, this, "parent", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -115;
     }
 }

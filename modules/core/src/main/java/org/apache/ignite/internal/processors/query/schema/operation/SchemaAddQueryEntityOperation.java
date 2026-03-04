@@ -19,7 +19,13 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Enabling indexing on cache operation.
@@ -29,13 +35,22 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Collection<QueryEntity> entities;
+    private Collection<QueryEntity> entities;
+
+    /** Serialized form of query entities. */
+    @Order(value = 0, method = "queryEntitiesBytes")
+    byte[] qryEntitiesBytes;
 
     /** */
-    private final int qryParallelism;
+    @Order(1)
+    int qryParallelism;
 
     /** */
-    private final boolean sqlEscape;
+    @Order(2)
+    boolean sqlEscape;
+
+    /** */
+    public SchemaAddQueryEntityOperation() {}
 
     /**
      * @param opId Operation ID.
@@ -78,5 +93,36 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
      */
     public boolean isSqlEscape() {
         return sqlEscape;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -111;
+    }
+
+    /**
+     * @return Serialized form of query entities.
+     */
+    byte[] queryEntitiesBytes() {
+        try {
+            return U.marshal(jdk(), entities);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshall query entities", e);
+        }
+    }
+
+    /**
+     * @param qryEntitiesBytes New serialized form of query entities.
+     */
+    void queryEntitiesBytes(byte[] qryEntitiesBytes) {
+        if (qryEntitiesBytes != null) {
+            try {
+                entities = U.unmarshal(jdk(), qryEntitiesBytes, U.gridClassLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 }
