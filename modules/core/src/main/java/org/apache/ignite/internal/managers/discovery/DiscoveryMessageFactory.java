@@ -19,14 +19,26 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
+import org.apache.ignite.internal.processors.cache.WalStateFinishMessageSerializer;
+import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
+import org.apache.ignite.internal.processors.cache.WalStateProposeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -137,7 +149,15 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)501, SecurityAwareCustomMessageWrapper::new, new SecurityAwareCustomMessageWrapperSerializer());
         factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
-        factory.register((short)504, StopRoutineAckDiscoveryMessage::new, new StopRoutineAckDiscoveryMessageSerializer());
-        factory.register((short)505, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
+        factory.register((short)504, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
+        factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
+        factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
+        factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
+        factory.register((short)508, MetadataUpdateAcceptedMessage::new,
+            new MetadataUpdateAcceptedMessageSerializer());
+        factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
+            new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
+        factory.register((short)510, StopRoutineAckDiscoveryMessage::new, new StopRoutineAckDiscoveryMessageSerializer());
+        factory.register((short)511, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
     }
 }

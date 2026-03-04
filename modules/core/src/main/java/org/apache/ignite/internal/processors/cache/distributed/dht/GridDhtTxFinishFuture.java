@@ -373,7 +373,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
@@ -466,7 +465,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
@@ -536,7 +534,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
                     tx.taskNameHash(),
-                    tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
                     null);
