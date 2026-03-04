@@ -22,35 +22,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Annotates fields that required custom reading / writing.
- */
-@Retention(RetentionPolicy.RUNTIME)
+/** This annotation indicates that this field will be compressed during serialization. */
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
-public @interface GridCodegenConverter {
-    /**
-     * Converter code. Replace original field value by converted.
-     *
-     * @return Code to get field value.
-     */
-    String get() default "";
-
-    /**
-     * Converter code. A raw read value is available at $val$ placeholder
-     *
-     * @return Code to set field value.
-     */
-    String set() default "";
-
-    /**
-     * @return Result type. Use this type to read / write the converted value.
-     */
-    Class<?> type() default Default.class;
-
-    /**
-     * Used as the default value for converter type
-     */
-    class Default {
-        // No-op.
-    }
+public @interface Compress {
+    // No-op.
 }

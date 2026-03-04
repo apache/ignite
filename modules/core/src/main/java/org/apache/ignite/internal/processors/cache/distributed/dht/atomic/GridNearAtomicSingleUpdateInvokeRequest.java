@@ -49,14 +49,14 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(12)
+    @Order(0)
     @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
     private @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** Entry processors bytes. */
-    @Order(13)
+    @Order(1)
     @Nullable byte[] entryProcBytes;
 
     /**
@@ -78,7 +78,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
      * @param invokeArgs Optional arguments for entry processor.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateInvokeRequest(
         int cacheId,
@@ -89,8 +88,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(
             cacheId,
@@ -100,8 +98,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
 
         assert op == TRANSFORM : op;
@@ -160,26 +157,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     /** {@inheritDoc} */
     @Nullable @Override public Object[] invokeArguments() {
         return invokeArgs;
-    }
-
-    /** */
-    public @Nullable byte[] entryProcessorBytes() {
-        return entryProcBytes;
-    }
-
-    /** */
-    public void entryProcessorBytes(@Nullable byte[] entryProcBytes) {
-        this.entryProcBytes = entryProcBytes;
-    }
-
-    /** */
-    public @Nullable List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /** */
-    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
     }
 
     /** {@inheritDoc} */

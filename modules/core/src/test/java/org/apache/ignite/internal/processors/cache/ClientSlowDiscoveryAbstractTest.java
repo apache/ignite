@@ -94,22 +94,17 @@ public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
 
             TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-            DiscoveryCustomMessage delegate;
-
             try {
-                DiscoveryCustomMessage custMsg = cm.message(marshaller(),
-                    U.resolveClassLoader(ignite().configuration()));
+                cm.finishUnmarhal(marshaller(), U.resolveClassLoader(ignite().configuration()));
 
-                assertNotNull(custMsg);
-
-                delegate = U.unwrapCustomMessage(custMsg);
+                assertNotNull(cm.message());
             }
             catch (Throwable throwable) {
                 throw new RuntimeException(throwable);
             }
 
             if (interceptor != null)
-                interceptor.apply(delegate);
+                interceptor.apply(U.unwrapCustomMessage(cm.message()));
         }
     }
 }

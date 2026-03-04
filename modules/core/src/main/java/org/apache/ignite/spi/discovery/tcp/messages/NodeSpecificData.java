@@ -54,13 +54,6 @@ public class NodeSpecificData implements Message, Serializable {
         return nodeSpecificData;
     }
 
-    /**
-     * @param nodeSpecificData New node specific data.
-     */
-    public void nodeSpecificData(Map<Integer, byte[]> nodeSpecificData) {
-        this.nodeSpecificData = nodeSpecificData;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return -107;

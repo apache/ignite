@@ -34,15 +34,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
-    @Order(18)
+    @Order(0)
     UUID nearNodeId;
 
     /** Mini future ID. */
-    @Order(19)
+    @Order(1)
     int miniId;
 
     /** */
-    @Order(20)
+    @Order(2)
     Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
@@ -69,7 +69,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param taskNameHash Task name hash.
-     * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
      * @param updCntrs Update counters for Tx.
@@ -91,7 +90,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int taskNameHash,
-        boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
         Collection<PartitionUpdateCountersMessage> updCntrs
@@ -109,8 +107,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             baseVer,
             committedVers,
             rolledbackVers,
-            taskNameHash,
-            addDepInfo);
+            taskNameHash);
 
         assert miniId != 0;
         assert nearNodeId != null;
@@ -132,24 +129,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
-     * @param miniId Mini ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
      * @return Near node ID.
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @param nearNodeId Near node ID.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
     }
 
     /**
@@ -213,13 +196,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Partition counters update deferred until transaction commit.
-     */
-    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread.pool;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;

@@ -153,12 +153,22 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
+        var serializer = msgFactory.serializer(e0.directType());
+        assertNotNull("Serializer not found for message type " + e0.directType(), serializer);
+
+        writer.setBuffer(buf);
+
         // Skip write class header.
         writer.onHeaderWritten();
-        e0.writeTo(buf, writer);
+        serializer.writeTo(e0, writer);
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
-        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory, null));
+
+        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+
+        reader.setBuffer(ByteBuffer.wrap(buf.array()));
+
+        serializer.readFrom(e1, reader);
 
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());
