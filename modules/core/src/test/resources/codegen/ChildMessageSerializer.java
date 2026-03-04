@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.AbstractMessage;
 import org.apache.ignite.internal.ChildMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -29,11 +27,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class ChildMessageSerializer implements MessageSerializer {
+public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
     /** */
-    @Override public boolean writeTo(Message m, MessageWriter writer) {
-        ChildMessage msg = (ChildMessage)m;
-
+    @Override public boolean writeTo(ChildMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -43,13 +39,13 @@ public class ChildMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(((AbstractMessage)msg).id))
+                if (!writer.writeInt(msg.id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString(((ChildMessage)msg).str))
+                if (!writer.writeString(msg.str))
                     return false;
 
                 writer.incrementState();
@@ -59,12 +55,10 @@ public class ChildMessageSerializer implements MessageSerializer {
     }
 
     /** */
-    @Override public boolean readFrom(Message m, MessageReader reader) {
-        ChildMessage msg = (ChildMessage)m;
-
+    @Override public boolean readFrom(ChildMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                ((AbstractMessage)msg).id = reader.readInt();
+                msg.id = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -72,7 +66,7 @@ public class ChildMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                ((ChildMessage)msg).str = reader.readString();
+                msg.str = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;

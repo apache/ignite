@@ -126,8 +126,6 @@ public class MessageSerializerGenerator {
     void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         generateMethods(type, fields);
 
-        SystemViewRowAttributeWalkerProcessor.superclasses(env, type).forEach(el -> imports.add(el.toString()));
-
         String serClsName = type.getSimpleName() + (marshallableMessage(type) ? "Marshallable" : "") + "Serializer";
         String serFqnClsName = env.getElementUtils().getPackageOf(type) + "." + serClsName;
         String serCode = generateSerializerCode(type, serClsName);
@@ -948,6 +946,8 @@ public class MessageSerializerGenerator {
 
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
+
+        imports.add(type.toString());
 
         if (marshallableMessage(type))
             imports.add("org.apache.ignite.marshaller.Marshaller");
