@@ -112,6 +112,6 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage, Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 509;
+        return 510;
     }
 }

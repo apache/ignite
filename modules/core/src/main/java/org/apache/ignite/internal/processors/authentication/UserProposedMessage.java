@@ -101,6 +101,6 @@ public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage, Me
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 510;
+        return 511;
     }
 }
