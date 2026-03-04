@@ -65,24 +65,10 @@ public class UserAuthenticateResponseMessage implements Message {
     }
 
     /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @return Request ID.
      */
     public IgniteUuid id() {
         return id;
-    }
-
-    /**
-     * @param id New request ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
     }
 
     /** {@inheritDoc} */

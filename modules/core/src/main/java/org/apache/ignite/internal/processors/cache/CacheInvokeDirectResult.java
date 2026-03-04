@@ -98,13 +98,6 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param key Key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
      * @return Result.
      */
     public CacheObject result() {
@@ -112,31 +105,10 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param res Result.
-     */
-    public void result(CacheObject res) {
-        this.res = res;
-    }
-
-    /**
      * @return Error.
      */
     @Nullable public Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /**

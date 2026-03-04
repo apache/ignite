@@ -293,41 +293,6 @@ public class GridCacheReturn implements Message {
     }
 
     /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /**
-     * @return Cache object.
-     */
-    public @Nullable CacheObject cacheObject() {
-        return cacheObj;
-    }
-
-    /**
-     * @param cacheObj Cache object.
-     */
-    public void cacheObject(@Nullable CacheObject cacheObj) {
-        this.cacheObj = cacheObj;
-    }
-
-    /**
-     * @return Invoke direct results.
-     */
-    public @Nullable Collection<CacheInvokeDirectResult> invokeDirectResults() {
-        return invokeResCol;
-    }
-
-    /**
-     * @param invokeResCol Invoke direct results.
-     */
-    public void invokeDirectResults(@Nullable Collection<CacheInvokeDirectResult> invokeResCol) {
-        this.invokeResCol = invokeResCol;
-    }
-
-    /**
      * @param other Other result to merge with.
      */
     public synchronized void mergeEntryProcessResults(GridCacheReturn other) {

@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     /** Lock or transaction versions. */
     @GridToStringInclude
-    @Order(3)
+    @Order(0)
     protected Collection<GridCacheVersion> vers;
 
     /**
@@ -53,13 +53,6 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
      */
     public Collection<GridCacheVersion> versions() {
         return vers;
-    }
-
-    /**
-     * @param vers Lock or transaction versions.
-     */
-    public void versions(Collection<GridCacheVersion> vers) {
-        this.vers = vers;
     }
 
     /** {@inheritDoc} */

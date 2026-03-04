@@ -39,6 +39,7 @@ import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
 import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
+import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
 import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
 import org.apache.ignite.internal.managers.communication.IndexKeyTypeMessageTest;
@@ -154,6 +155,7 @@ import org.junit.runners.Suite;
     DefaultEnumMapperTest.class,
     IndexKeyTypeMessageTest.class,
     IgniteDataTransferObjectProcessorTest.class,
+    CompressedMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }

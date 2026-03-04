@@ -266,14 +266,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @param depInfo Preset deployment info.
-     * @see GridCacheDeployable#deployInfo()
-     */
-    public void deployInfo(GridDeploymentInfoBean depInfo) {
-        this.depInfo = depInfo;
-    }
-
-    /**
      * This method is called before the whole message is serialized
      * and is responsible for pre-marshalling state.
      *
@@ -636,7 +628,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
-            col.add(bytes == null ? null : U.<T>unmarshal(marsh, bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
+            col.add(bytes == null ? null : U.unmarshal(marsh, bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
 
         return col;
     }

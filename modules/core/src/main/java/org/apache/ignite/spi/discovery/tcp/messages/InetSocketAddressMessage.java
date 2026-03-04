@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /** Socket address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetSocketAddressMessage extends InetAddressMessage {
     /** */
-    @Order(2)
+    @Order(0)
     int port;
 
     /**
@@ -50,11 +50,6 @@ public class InetSocketAddressMessage extends InetAddressMessage {
     /** @return Port. */
     public int port() {
         return port;
-    }
-
-    /** @param port Port. */
-    public void port(int port) {
-        this.port = port;
     }
 
     /** {@inheritDoc} */
