@@ -30,11 +30,11 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     public static final short TYPE_CODE = 181;
 
     /** Original transaction prepare message. */
-    @Order(3)
+    @Order(0)
     GridDistributedTxPrepareRequest payload;
 
     /** Application attributes. */
-    @Order(4)
+    @Order(1)
     Map<String, String> appAttrs;
 
     /** */
@@ -55,19 +55,9 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
         return payload;
     }
 
-    /** @param payload Original update message. */
-    public void payload(GridDistributedTxPrepareRequest payload) {
-        this.payload = payload;
-    }
-
     /** @return Application attributes. */
     public Map<String, String> applicationAttributes() {
         return appAttrs;
-    }
-
-    /** @param appAttrs Application attributes. */
-    public void applicationAttributes(Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */

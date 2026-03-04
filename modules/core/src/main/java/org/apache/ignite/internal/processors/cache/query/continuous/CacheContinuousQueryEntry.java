@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.nio.ByteBuffer;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridCodegenConverter;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -32,8 +30,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,62 +46,52 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private static final byte KEEP_BINARY = 0b0100;
 
     /** */
-    private static final EventType[] EVT_TYPE_VALS = EventType.values();
+    @Order(0)
+    EventType evtType;
 
-    /**
-     * @param ord Event type ordinal value.
-     * @return Event type.
-     */
-    @Nullable public static EventType eventTypeFromOrdinal(int ord) {
-        return ord >= 0 && ord < EVT_TYPE_VALS.length ? EVT_TYPE_VALS[ord] : null;
-    }
-
-    /** */
-    @GridCodegenConverter(
-        type = byte.class,
-        get = "evtType != null ? (byte)evtType.ordinal() : -1",
-        set = "eventTypeFromOrdinal($val$)"
-    )
-    private EventType evtType;
+    /** Flags. */
+    @Order(1)
+    byte flags;
 
     /** Key. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : key")
-    private KeyCacheObject key;
+    @Order(value = 2, method = "serializedKey")
+    KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
-    private CacheObject newVal;
+    @Order(value = 3, method = "serializedNewValue")
+    CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
-    private CacheObject oldVal;
+    @Order(value = 4, method = "serializedOldValue")
+    CacheObject oldVal;
 
     /** Cache name. */
-    private int cacheId;
+    @Order(5)
+    int cacheId;
 
     /** Deployment info. */
     @GridToStringExclude
-    @GridDirectTransient
     private GridDeploymentInfo depInfo;
 
     /** Partition. */
-    private int part;
+    @Order(6)
+    int part;
 
     /** Update counter. */
-    private long updateCntr;
-
-    /** Flags. */
-    private byte flags;
+    @Order(7)
+    long updateCntr;
 
     /** */
     @GridToStringInclude
-    private AffinityTopologyVersion topVer;
+    @Order(8)
+    AffinityTopologyVersion topVer;
 
     /** */
-    private long filteredCnt;
+    @Order(9)
+    long filteredCnt;
 
     /**
      * Empty constructor.
@@ -242,13 +228,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @param topVer Topology version.
-     */
-    void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @param filteredCnt Number of entries filtered before this entry.
      */
     void filteredCount(long filteredCnt) {
@@ -346,6 +325,16 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         return key;
     }
 
+    /** */
+    KeyCacheObject serializedKey() {
+        return isFiltered() ? null : key;
+    }
+
+    /** */
+    void serializedKey(KeyCacheObject key) {
+        this.key = key;
+    }
+
     /**
      * @return New value.
      */
@@ -353,11 +342,31 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         return newVal;
     }
 
+    /** */
+    CacheObject serializedNewValue() {
+        return isFiltered() ? null : newVal;
+    }
+
+    /** */
+    void serializedNewValue(CacheObject newVal) {
+        this.newVal = newVal;
+    }
+
     /**
      * @return Old value.
      */
     CacheObject oldValue() {
         return oldVal;
+    }
+
+    /** */
+    CacheObject serializedOldValue() {
+        return isFiltered() ? null : oldVal;
+    }
+
+    /** */
+    void serializedOldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
     }
 
     /** {@inheritDoc} */
@@ -373,173 +382,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 96;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(evtType != null ? (byte)evtType.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(filteredCnt))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeKeyCacheObject(isFiltered() ? null : key))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeCacheObject(isFiltered() ? null : newVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCacheObject(isFiltered() ? null : oldVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt(part))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(updateCntr))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                evtType = eventTypeFromOrdinal(reader.readByte());
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                filteredCnt = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                key = reader.readKeyCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                newVal = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                oldVal = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                part = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                updateCntr = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

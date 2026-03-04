@@ -63,16 +63,6 @@ public class CachePartitionFullCountersMap implements Message {
     }
 
     /**
-     * Gets an initial update counter by the partition ID.
-     *
-     * @param p Partition ID.
-     * @return Initial update counter for the partition with the given ID.
-     */
-    public long initialUpdateCounter(int p) {
-        return initUpdCntrs[p];
-    }
-
-    /**
      * Gets an update counter by the partition ID.
      *
      * @param p Partition ID.
@@ -130,24 +120,10 @@ public class CachePartitionFullCountersMap implements Message {
     }
 
     /**
-     * @param initUpdCntrs Initial update counters.
-     */
-    public void initialUpdateCounters(long[] initUpdCntrs) {
-        this.initUpdCntrs = initUpdCntrs;
-    }
-
-    /**
      * @return Update counters.
      */
     public long[] updateCounters() {
         return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Update counters.
-     */
-    public void updateCounters(long[] updCntrs) {
-        this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */

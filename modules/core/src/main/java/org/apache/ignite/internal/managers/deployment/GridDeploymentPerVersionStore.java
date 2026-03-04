@@ -1321,8 +1321,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                 ClassLoader ldr = classLoader();
 
-                ctx.cache().onUndeployed(ldr);
-
                // Clear static class cache.
                 U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
 

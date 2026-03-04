@@ -21,30 +21,45 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Full partition map from all nodes.
  */
 public class GridDhtPartitionFullMap
-    extends HashMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable {
+    extends AbstractMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable, Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 519;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
     /** Node order. */
-    private long nodeOrder;
+    @Order(1)
+    long nodeOrder;
 
     /** Update sequence number. */
-    private long updateSeq;
+    @Order(2)
+    long updateSeq;
+
+    /** Partition map. */
+    @Order(3)
+    Map<UUID, GridDhtPartitionMap> map;
 
     /**
      * @param nodeId Node ID.
@@ -59,6 +74,7 @@ public class GridDhtPartitionFullMap
         this.nodeId = nodeId;
         this.nodeOrder = nodeOrder;
         this.updateSeq = updateSeq;
+        map = new HashMap<>();
     }
 
     /**
@@ -77,6 +93,7 @@ public class GridDhtPartitionFullMap
         this.nodeId = nodeId;
         this.nodeOrder = nodeOrder;
         this.updateSeq = updateSeq;
+        map = new HashMap<>();
 
         for (Map.Entry<UUID, GridDhtPartitionMap> e : m.entrySet()) {
             GridDhtPartitionMap part = e.getValue();
@@ -96,7 +113,7 @@ public class GridDhtPartitionFullMap
      * @param updateSeq Update sequence.
      */
     public GridDhtPartitionFullMap(GridDhtPartitionFullMap m, long updateSeq) {
-        super(m);
+        map = new HashMap<>(m);
 
         nodeId = m.nodeId;
         nodeOrder = m.nodeOrder;
@@ -107,7 +124,7 @@ public class GridDhtPartitionFullMap
      * Empty constructor required for {@link Externalizable}.
      */
     public GridDhtPartitionFullMap() {
-        // No-op.
+        map = new HashMap<>();
     }
 
     /**
@@ -185,7 +202,7 @@ public class GridDhtPartitionFullMap
         out.writeLong(nodeOrder);
         out.writeLong(updateSeq);
 
-        U.writeMap(out, this);
+        U.writeMap(out, map);
     }
 
     /** {@inheritDoc} */
@@ -195,7 +212,12 @@ public class GridDhtPartitionFullMap
         nodeOrder = in.readLong();
         updateSeq = in.readLong();
 
-        putAll(U.<UUID, GridDhtPartitionMap>readMap(in));
+        map = new HashMap<>();
+
+        Map<UUID, GridDhtPartitionMap> map0 = U.readMap(in);
+
+        if (map0 != null)
+            map.putAll(map0);
     }
 
     /** {@inheritDoc} */
@@ -259,5 +281,70 @@ public class GridDhtPartitionFullMap
         assert nodeId.equals(o.nodeId);
 
         return Long.compare(updateSeq, o.updateSeq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtPartitionMap put(UUID key, GridDhtPartitionMap val) {
+        return map.put(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void putAll(Map<? extends UUID, ? extends GridDhtPartitionMap> m) {
+        map.putAll(m);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtPartitionMap get(Object key) {
+        return map.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtPartitionMap remove(Object key) {
+        return map.remove(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return map.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsValue(Object val) {
+        return map.containsValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsKey(Object key) {
+        return map.containsKey(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        map.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull Set<UUID> keySet() {
+        return map.keySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull Collection<GridDhtPartitionMap> values() {
+        return map.values();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull Set<Entry<UUID, GridDhtPartitionMap>> entrySet() {
+        return map.entrySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

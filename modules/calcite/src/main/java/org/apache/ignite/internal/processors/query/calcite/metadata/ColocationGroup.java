@@ -124,21 +124,6 @@ public class ColocationGroup implements CalciteMessage {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
     }
 
-    /** */
-    public void nodeIds(List<UUID> nodeIds) {
-        this.nodeIds = nodeIds;
-    }
-
-    /** */
-    public long[] sourceIds() {
-        return srcIds;
-    }
-
-    /** */
-    public void sourceIds(long[] srcIds) {
-        this.srcIds = srcIds;
-    }
-
     /**
      * @return List of partitions (index) and nodes (items) having an appropriate partition in
      * {@link GridDhtPartitionState#OWNING} state, calculated for distributed tables, involved in query execution.

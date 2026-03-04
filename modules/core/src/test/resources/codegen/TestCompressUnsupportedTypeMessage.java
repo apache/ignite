@@ -15,23 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal;
 
-import java.util.concurrent.Executor;
-import org.jetbrains.annotations.NotNull;
+import java.util.List;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-public class SameThreadExecutor implements Executor {
-    /** */
-    public static final Executor INSTANCE = new SameThreadExecutor();
+public class TestCompressUnsupportedTypeMessage implements Message {
+    @Order(0)
+    @Compress
+    List<String> message;
 
-    /** */
-    private SameThreadExecutor() {}
-
-    /** {@inheritDoc} */
-    @Override public void execute(@NotNull Runnable command) {
-        command.run();
+    public short directType() {
+        return 0;
     }
 }

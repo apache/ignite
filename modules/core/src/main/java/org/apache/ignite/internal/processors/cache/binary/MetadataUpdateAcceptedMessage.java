@@ -16,12 +16,14 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,27 +32,35 @@ import org.jetbrains.annotations.Nullable;
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataUpdateAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
-public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
+public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final int typeId;
+    @Order(1)
+    int typeId;
 
     /** */
-    private final int acceptedVer;
+    @Order(2)
+    int acceptedVer;
 
     /** */
-    private boolean duplicated;
+    @Order(3)
+    boolean duplicated;
+
+    /** */
+    public MetadataUpdateAcceptedMessage() {}
 
     /**
      * @param typeId Type id.
      * @param acceptedVer Accepted version.
      */
     MetadataUpdateAcceptedMessage(int typeId, int acceptedVer) {
+        id = IgniteUuid.randomUuid();
         this.typeId = typeId;
         this.acceptedVer = acceptedVer;
     }
@@ -96,6 +106,11 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
      */
     public void duplicated(boolean duplicated) {
         this.duplicated = duplicated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 508;
     }
 
     /** {@inheritDoc} */

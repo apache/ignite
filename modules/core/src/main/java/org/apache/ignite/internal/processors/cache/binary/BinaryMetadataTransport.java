@@ -384,8 +384,7 @@ final class BinaryMetadataTransport {
 
     /** */
     void onDisconnected() {
-        cancelFutures(MetadataUpdateResult.createFailureResult(
-                new BinaryObjectException("Failed to update or wait for metadata, client node disconnected")));
+        cancelFutures(MetadataUpdateResult.createFailureResult("Failed to update or wait for metadata, client node disconnected"));
     }
 
     /**
@@ -922,23 +921,18 @@ final class BinaryMetadataTransport {
 
             if (msg.isOnCoordinator()) {
                 if (metaVerInfo == null)
-                    msg.markRejected(new BinaryObjectException("Type not found [typeId=" + typeId + ']'));
+                    msg.markRejected("Type not found [typeId=" + typeId + ']');
 
                 if (metaVerInfo.pendingVersion() != metaVerInfo.acceptedVersion()) {
-                    msg.markRejected(new BinaryObjectException(
-                        "Remove type failed. " +
-                            "Type is being updated now [typeId=" + typeId
-                            + ", pendingVersion=" + metaVerInfo.pendingVersion()
-                            + ", acceptedVersion=" + metaVerInfo.acceptedVersion()
-                            + ']'));
+                    msg.markRejected("Remove type failed. " +
+                        "Type is being updated now [typeId=" + typeId
+                        + ", pendingVersion=" + metaVerInfo.pendingVersion()
+                        + ", acceptedVersion=" + metaVerInfo.acceptedVersion()
+                        + ']');
                 }
 
-                if (metaVerInfo.removing()) {
-                    msg.markRejected(new BinaryObjectException(
-                        "Remove type failed. " +
-                            "Type is being removed now [typeId=" + typeId
-                            + ']'));
-                }
+                if (metaVerInfo.removing())
+                    msg.markRejected("Remove type failed. Type is being removed now [typeId=" + typeId + ']');
 
                 msg.setOnCoordinator(false);
             }
@@ -950,7 +944,7 @@ final class BinaryMetadataTransport {
 
             if (msg.rejected()) {
                 if (fut != null)
-                    fut.onDone(MetadataUpdateResult.createFailureResult(msg.rejectionError()));
+                    fut.onDone(MetadataUpdateResult.createFailureResult(msg.rejectionErrorMessage()));
             }
             else {
                 if (fut != null)

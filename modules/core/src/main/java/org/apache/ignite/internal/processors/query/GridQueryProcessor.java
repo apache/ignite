@@ -909,9 +909,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            // Propose message will be used from exchange thread to
-            msg.proposeMessage(proposeMsg);
-
             if (exchangeReady) {
                 SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
 
@@ -1930,7 +1927,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCoordinatorFinished(SchemaAbstractOperation op, @Nullable SchemaOperationException err, boolean nop) {
         synchronized (stateMux) {
-            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, err, nop);
+            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, nop);
+
+            if (err != null)
+                msg.onError(err);
 
             try {
                 ctx.discovery().sendCustomEvent(msg);

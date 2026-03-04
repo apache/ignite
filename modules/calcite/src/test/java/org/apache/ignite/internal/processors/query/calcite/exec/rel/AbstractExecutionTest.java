@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDesc
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -248,7 +249,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** Task reordering executor. */
-    private static class IgniteTestStripedThreadPoolExecutor extends org.apache.ignite.thread.IgniteStripedThreadPoolExecutor {
+    private static class IgniteTestStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
         /** */
         final Deque<T2<Runnable, Integer>> tasks = new ArrayDeque<>();
 

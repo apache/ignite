@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -116,7 +117,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -506,11 +506,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
             if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
             else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
 
             Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
@@ -521,6 +519,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             // This root span will be parent both from local and remote nodes.
             msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
+            msg.prepareMarshal(spi.marshaller());
 
             sockWriter.sendMessage(msg);
 
@@ -2600,8 +2600,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoveryCustomMessage msgObj = msg.message(spi.marshaller(),
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                            msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                            DiscoveryCustomMessage msgObj = msg.message();
 
                             notifyDiscovery(
                                 EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj, msg.spanContainer());
