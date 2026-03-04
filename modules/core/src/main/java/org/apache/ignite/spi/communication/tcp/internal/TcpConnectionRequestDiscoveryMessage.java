@@ -31,7 +31,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message to support new communication connection via discovery protocol.
+ * Message is part of communication via discovery protocol.
+ *
  * It is used when a node (say node A) cannot establish a communication connection to other node (node B) in topology
  * due to firewall or network configuration and sends this message requesting inverse connection:
  * node B receives request and opens communication connection to node A
@@ -48,12 +49,12 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     /** Receiver node id. */
     @Order(1)
     @GridToStringInclude
-    public UUID receiverNodeId;
+    UUID receiverNodeId;
 
     /** Connection index. */
     @Order(2)
     @GridToStringInclude
-    public int connIdx;
+    int connIdx;
 
     /**
      * @param receiverNodeId Receiver node id.
@@ -73,6 +74,16 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
+    }
+
+    /** */
+    public UUID receiverNodeId() {
+        return receiverNodeId;
+    }
+
+    /** */
+    public int connectionIndex() {
+        return connIdx;
     }
 
     /** {@inheritDoc} */

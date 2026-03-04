@@ -4353,10 +4353,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
          * inverse connection request arrives.
          */
         private CustomEventListener<TcpConnectionRequestDiscoveryMessage> discoConnReqLsnr = (topVer, snd, msg) -> {
-            if (!locNodeId.equals(msg.receiverNodeId))
+            if (!locNodeId.equals(msg.receiverNodeId()))
                 return;
 
-            int connIdx = msg.connIdx;
+            int connIdx = msg.connectionIndex();
 
             if (log.isInfoEnabled())
                 log.info("Received inverse communication request from " + snd + " for connection index " + connIdx);
