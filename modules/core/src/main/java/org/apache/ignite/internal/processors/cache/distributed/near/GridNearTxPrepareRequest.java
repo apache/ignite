@@ -107,7 +107,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
      * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
@@ -126,7 +125,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         int taskNameHash,
         boolean firstClientReq,
         boolean allowWaitTopFut,
-        boolean addDepInfo,
         boolean recovery
     ) {
         super(tx,
@@ -136,8 +134,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             txNodes,
             retVal,
             last,
-            onePhaseCommit,
-            addDepInfo);
+            onePhaseCommit);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;
