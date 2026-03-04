@@ -62,7 +62,7 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
      * @param req Request message.
      */
     public TxTimeoutOnPartitionMapExchangeChangeMessage(TxTimeoutOnPartitionMapExchangeChangeMessage req) {
-        this.id = IgniteUuid.randomUuid();
+        id = IgniteUuid.randomUuid();
         this.reqId = req.reqId;
         this.timeout = req.timeout;
         this.isInit = false;
@@ -75,7 +75,7 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
      * @param timeout Transaction timeout on partition map exchange in milliseconds.
      */
     public TxTimeoutOnPartitionMapExchangeChangeMessage(UUID reqId, long timeout) {
-        this.id = IgniteUuid.randomUuid();
+        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.timeout = timeout;
         this.isInit = true;
