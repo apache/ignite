@@ -1,5 +1,5 @@
-# name: test/sql/aggregate/window/test_window_unbounded_over.test
-# description: Test window aggregates with unbounded frame
+# name: test/sql/window/test_window_unbounded_over.test
+# description: Test window with unbounded frame
 # group: [window]
 
 # test scalar window functions

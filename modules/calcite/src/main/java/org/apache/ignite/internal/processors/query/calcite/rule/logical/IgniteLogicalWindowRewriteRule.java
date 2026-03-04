@@ -387,9 +387,7 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         Config DEFAULT = ImmutableIgniteLogicalWindowRewriteRule.Config.builder()
             .withRuleFactory(IgniteLogicalWindowRewriteRule::new)
             .withDescription("IgniteLogicalWindowRewriteRule: rewrites LogicalWindow to LogicalAggregate LogicalJoin LogicalProject")
-            .withOperandSupplier(b -> {
-                return b.operand(LogicalWindow.class).anyInputs();
-            })
+            .withOperandSupplier(b -> b.operand(LogicalWindow.class).anyInputs())
             .build();
 
         /**

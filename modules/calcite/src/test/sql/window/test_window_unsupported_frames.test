@@ -1,5 +1,5 @@
-# name: test/sql/aggregate/window/test_window_unsupported_frames.test
-# description: Test unsupported window frame definitions for aggregate window functions
+# name: test/sql/window/test_window_unsupported_frames.test
+# description: Test unsupported window frame definitions for window functions
 # group: [window]
 
 statement ok
