@@ -1224,73 +1224,59 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testDumpReaderDebugLogsGroupName() throws Exception {
         String id = "test";
+
         setLoggerDebugLevel();
+
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        LogListener errLsnr = LogListener.matches("Error consuming partition")
-            .andMatches("grpName=" + GRP)
-            .build();
-        LogListener cnsmLsnr = LogListener.matches("Consuming partition")
-            .andMatches("grpName=" + GRP)
-            .build();
+        LogListener errLsnr = LogListener.matches("Error consuming partition").andMatches("grp=" + GRP).build();
+        LogListener cnsmLsnr = LogListener.matches("Consuming partition").andMatches("grp=" + GRP).build();
+
         testLog.registerListener(errLsnr);
         testLog.registerListener(cnsmLsnr);
 
-        try {
-            IgniteEx ign0 = startGrid(getConfiguration(id)
-                .setConsistentId(id)
-                .setGridLogger(testLog));
+        IgniteEx ign0 = startGrid(getConfiguration(id).setConsistentId(id).setGridLogger(testLog));
 
-            ign0.cluster().state(ClusterState.ACTIVE);
+        ign0.cluster().state(ClusterState.ACTIVE);
 
-            IgniteCache<Integer, Integer> cache = ign0.createCache(new CacheConfiguration<Integer, Integer>()
-                .setName(CACHE_0)
-                .setGroupName(GRP)
-                .setBackups(1)
-                .setAffinity(new RendezvousAffinityFunction().setPartitions(3))
-            );
+        IgniteCache<Integer, Integer> cache = ign0.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(CACHE_0)
+            .setGroupName(GRP)
+            .setBackups(1)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(3))
+        );
 
-            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+        IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
-            ign0.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
+        ign0.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
-            TestDumpConsumer cnsmr = new TestDumpConsumer() {
-                @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                    throw new RuntimeException("trigger error log");
-                }
-            };
-
-            try {
-                new DumpReader(
-                    new DumpReaderConfiguration(
-                        DMP_NAME,
-                        null,
-                        ign0.configuration(),
-                        cnsmr,
-                        DFLT_THREAD_CNT,
-                        DFLT_TIMEOUT,
-                        true,
-                        true,
-                        false,
-                        new String[]{GRP},
-                        null,
-                        false,
-                        null
-                    ),
-                    testLog
-                ).run();
-                fail("Expected IgniteException");
+        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                throw new RuntimeException("trigger error log");
             }
-            catch (IgniteException ignored) {
-                // No-op.
-            }
+        };
 
-            assertTrue("Log with group name not found", errLsnr.check());
-            assertTrue("Consuming with group name not found", cnsmLsnr.check());
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertThrows(null, () -> new DumpReader(
+            new DumpReaderConfiguration(
+                DMP_NAME,
+                null,
+                ign0.configuration(),
+                cnsmr,
+                DFLT_THREAD_CNT,
+                DFLT_TIMEOUT,
+                true,
+                true,
+                false,
+                new String[]{GRP},
+                null,
+                false,
+                null
+            ),
+            testLog
+        ).run(), RuntimeException.class, "trigger error log");
+
+        assertTrue("Log with group name not found", errLsnr.check());
+        assertTrue("Consuming with group name not found", cnsmLsnr.check());
     }
 
     /** */
@@ -1308,8 +1294,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         LogListener skipLsnr = LogListener.matches("Skip copy partition")
             .times(parts)
-            .andMatches("grpName=" + GRP)
+            .andMatches("grp=" + GRP)
             .build();
+
         testLog.registerListener(skipLsnr);
 
         try {
@@ -1324,7 +1311,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 .setGridLogger(testLog));
 
             node0.cluster().state(ClusterState.ACTIVE);
-            node1.cluster().state(ClusterState.ACTIVE);
 
             CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
                 .setName(DEFAULT_CACHE_NAME)
@@ -1366,8 +1352,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 }
 
                 @Override public void onPartition(int grpId, int partId, Iterator<DumpEntry> data) {
-                    while (data.hasNext())
-                        data.next();
+                    // No-op.
                 }
 
                 @Override public void stop() {
@@ -1397,7 +1382,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             assertTrue(skipLsnr.check());
         }
         finally {
-            stopAllGrids();
             U.delete(snapshotPath0);
             U.delete(snapshotPath1);
             U.delete(combinedDumpDir);
