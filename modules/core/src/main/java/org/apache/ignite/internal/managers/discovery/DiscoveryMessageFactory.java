@@ -151,7 +151,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
         factory.register((short)508, MetadataUpdateAcceptedMessage::new,
             new MetadataUpdateAcceptedMessageSerializer());
-        factory.register((short)508, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
+        factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
     }
 }

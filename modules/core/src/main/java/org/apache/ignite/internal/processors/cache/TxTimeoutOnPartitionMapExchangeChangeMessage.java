@@ -136,6 +136,6 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 508;
+        return 509;
     }
 }
