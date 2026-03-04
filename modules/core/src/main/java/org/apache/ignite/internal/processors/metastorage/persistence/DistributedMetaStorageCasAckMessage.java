@@ -43,9 +43,14 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
         this.updated = updated;
     }
 
+    /** */
+    public boolean updated() {
+        return updated;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 24;
+        return 26;
     }
 
     /** {@inheritDoc} */
