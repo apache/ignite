@@ -1,0 +1,117 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Check Protected Classes
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-protected-classes:
+    runs-on: ubuntu-latest
+    name: Check protected classes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Check for protected class modifications
+        id: check
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          CHANGED=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA"..."$HEAD_SHA" -- '*.java')
+          [ -z "$CHANGED" ] && exit 0
+
+          HITS=""
+          while IFS= read -r file; do
+            FQN=$(echo "$file" | sed -n 's|.*/src/main/java/||p' | sed 's|/|.|g; s|\.java$||')
+            [ -z "$FQN" ] && continue
+            if grep -q "^${FQN}$" .github/protected-classes.txt 2>/dev/null; then
+              HITS="${HITS}${file}\n"
+            elif grep -qE '@Order\(|@Argument\(' "$file" 2>/dev/null; then
+              HITS="${HITS}${file} (new, not in registry)\n"
+            fi
+          done <<< "$CHANGED"
+
+          if [ -n "$HITS" ]; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            printf '%b' "$HITS" > /tmp/protected-hits.txt
+          fi
+
+      - name: Comment on PR
+        if: steps.check.outputs.affected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const hits = fs.readFileSync('/tmp/protected-hits.txt', 'utf8').trim();
+            const body = [
+              '## Protected Classes Review Required',
+              '',
+              'This PR modifies protected classes (Message/IgniteDataTransferObject hierarchy).',
+              'Changes to these classes can break rolling upgrade compatibility.',
+              '',
+              '**Affected files:**',
+              hits.split('\n').map(f => '- `' + f.trim() + '`').join('\n'),
+              '',
+              '**Checklist:**',
+              '- [ ] New fields added at the end (highest `@Order`)',
+              '- [ ] No existing fields removed or reordered',
+              '- [ ] `directType()` not changed',
+              '- [ ] Field types not changed in binary-incompatible way',
+              '- [ ] Rolling upgrade test covers this change',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes('Protected Classes Review Required'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Add label
+        if: steps.check.outputs.affected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['protected-classes'],
+            });
