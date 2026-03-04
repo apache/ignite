@@ -108,11 +108,18 @@ public class MessageSerializerGenerator {
     private final ProcessingEnvironment env;
 
     /** */
+    private final TypeMirror marshallableMsgType;
+
+    /** */
     private int indent;
 
     /** */
     MessageSerializerGenerator(ProcessingEnvironment env) {
         this.env = env;
+
+        marshallableMsgType = env.getElementUtils()
+            .getTypeElement("org.apache.ignite.plugin.extensions.communication.MarshallableMessage")
+            .asType();
     }
 
     /** */
@@ -153,7 +160,7 @@ public class MessageSerializerGenerator {
     /** Generates full code for a serializer class. */
     private String generateSerializerCode(TypeElement type) throws IOException {
         try (Writer writer = new StringWriter()) {
-            writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), type.getSimpleName() + "Serializer");
+            writeClassHeader(type, writer, env.getElementUtils().getPackageOf(type).toString(), type.getSimpleName() + "Serializer");
 
             writeClassFields(writer);
 
@@ -891,7 +898,7 @@ public class MessageSerializerGenerator {
     }
 
     /** Write header of serializer class: license, imports, class declaration. */
-    private void writeClassHeader(Writer writer, String pkgName, String serClsName) throws IOException {
+    private void writeClassHeader(TypeElement type, Writer writer, String pkgName, String serClsName) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 
@@ -903,10 +910,13 @@ public class MessageSerializerGenerator {
                 out.println(line);
         }
 
+        boolean marshallableMsg = env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
+
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
 
-        imports.add("org.apache.ignite.plugin.extensions.communication.Message");
+        imports.add("org.apache.ignite.plugin.extensions.communication." +
+            (marshallableMsg ? "MarshallableMessage" : "Message"));
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
@@ -917,7 +927,9 @@ public class MessageSerializerGenerator {
         writer.write(NL);
         writer.write(CLS_JAVADOC);
         writer.write(NL);
-        writer.write("public class " + serClsName + " implements MessageSerializer {" + NL);
+
+        writer.write("public class " + serClsName
+            + (marshallableMsg ? " extends AbstractMarshallableMessageSerializer {" : " implements MessageSerializer {") + NL);
     }
 
     /** */
