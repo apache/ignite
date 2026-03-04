@@ -188,10 +188,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
             node1.context().cache().context().exchange().refreshPartitions());
 
-        boolean entered = false;
         try {
-            assertTrue("Did not enter sendMessage() in time", entered =
-                beforeSend.await(waitingTimeout, TimeUnit.MILLISECONDS));
+            assertTrue("Did not enter sendMessage() in time", beforeSend.await(waitingTimeout, TimeUnit.MILLISECONDS));
 
             stopGrid(0);
 
@@ -202,9 +200,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
             assertTrue("Expected log not found", GridTestUtils.waitForCondition(logListener::check, waitingTimeout));
         }
         finally {
+            beforeSend.countDown();
             proceed.countDown();
-
-            if (!entered) beforeSend.countDown();
         }
     }
 
