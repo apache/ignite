@@ -44,16 +44,6 @@ public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseIn
         this.topVer = topVer;
     }
 
-    /** */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /** */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return -63;

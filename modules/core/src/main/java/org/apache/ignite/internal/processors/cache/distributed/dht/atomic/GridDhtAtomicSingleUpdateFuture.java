@@ -90,7 +90,6 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 topVer,
                 updateReq.taskNameHash(),
-                cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
                 updateReq.skipStore(),
                 readRepairRecovery);
@@ -104,7 +103,6 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 topVer,
                 updateReq.taskNameHash(),
                 null,
-                cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
                 updateReq.skipStore(),
                 false,

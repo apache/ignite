@@ -61,24 +61,10 @@ public class GridQueryKillResponse implements Message {
     }
 
     /**
-     * @param reqId New request id.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Error text or {@code null} if no error.
      */
     public String error() {
         return errMsg;
-    }
-
-    /**
-     * @param errMsg New error text.
-     */
-    public void error(String errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

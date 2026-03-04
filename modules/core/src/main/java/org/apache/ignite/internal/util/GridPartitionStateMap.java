@@ -24,16 +24,21 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Grid partition state map. States are encoded using bits.
  * <p>
  * Null values are prohibited.
  */
-public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartitionState> implements Serializable {
+public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartitionState> implements Serializable, Message {
     /** Empty map. */
     public static final GridPartitionStateMap EMPTY = new GridPartitionStateMap(0);
+
+    /** Type code. */
+    public static final short TYPE_CODE = 517;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -55,10 +60,12 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      * The first element takes the first {@link GridPartitionStateMap#BITS} bits in reverse order,
      * the second element next {@link GridPartitionStateMap#BITS} bits in reverse order, etc.
      */
-    private final BitSet states;
+    @Order(0)
+    BitSet states;
 
     /** */
-    private int size;
+    @Order(1)
+    int size;
 
     /** {@inheritDoc} */
     @Override public Set<Entry<Integer, GridDhtPartitionState>> entrySet() {
@@ -242,5 +249,10 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * states.hashCode() + size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }
