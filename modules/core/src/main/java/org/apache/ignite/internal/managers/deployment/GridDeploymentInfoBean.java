@@ -50,8 +50,11 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Order(2)
     String userVer;
 
-    /** */
-    @Deprecated // Left for backward compatibility only.
+    /**
+     *  TODO Left for backward compatibility only.
+     *  https://issues.apache.org/jira/browse/IGNITE-28063
+     *  */
+    @Deprecated(forRemoval = true)
     @Order(3)
     boolean locDepOwner;
 
