@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class TxLocksResponse extends GridCacheMessage {
     /** Future ID. */
-    @Order(3)
+    @Order(0)
     long futId;
 
     /** Locks for near txKeys of near transactions. */
@@ -48,17 +48,17 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(4)
+    @Order(1)
     IgniteTxKey[] nearTxKeysArr;
 
     /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(5)
+    @Order(2)
     IgniteTxKey[] txKeysArr;
 
     /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(6)
+    @Order(3)
     TxLockList[] locksArr;
 
     /**
@@ -80,48 +80,6 @@ public class TxLocksResponse extends GridCacheMessage {
      */
     public void futureId(long futId) {
         this.futId = futId;
-    }
-
-    /**
-     * @return Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] nearTxKeysArray() {
-        return nearTxKeysArr;
-    }
-
-    /**
-     * @param nearTxKeysArr Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public void nearTxKeysArray(IgniteTxKey[] nearTxKeysArr) {
-        this.nearTxKeysArr = nearTxKeysArr;
-    }
-
-    /**
-     * @return Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] txKeysArray() {
-        return txKeysArr;
-    }
-
-    /**
-     * @param txKeysArr Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public void txKeysArray(IgniteTxKey[] txKeysArr) {
-        this.txKeysArr = txKeysArr;
-    }
-
-    /**
-     * @return Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public TxLockList[] locksArray() {
-        return locksArr;
-    }
-
-    /**
-     * @param locksArr Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public void locksArray(TxLockList[] locksArr) {
-        this.locksArr = locksArr;
     }
 
     /**

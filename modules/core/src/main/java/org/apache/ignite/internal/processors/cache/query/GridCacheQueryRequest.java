@@ -59,19 +59,19 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11;
 
     /** */
-    @Order(4)
+    @Order(0)
     long id;
 
     /** */
-    @Order(5)
+    @Order(1)
     String cacheName;
 
     /** */
-    @Order(6)
+    @Order(2)
     GridCacheQueryType type;
 
     /** */
-    @Order(7)
+    @Order(3)
     @GridToStringInclude(sensitive = true)
     String clause;
 
@@ -79,87 +79,87 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private IndexQueryDesc idxQryDesc;
 
     /** */
-    @Order(8)
+    @Order(4)
     byte[] idxQryDescBytes;
 
     /** */
-    @Order(9)
+    @Order(5)
     int limit;
 
     /** */
-    @Order(10)
+    @Order(6)
     String clsName;
 
     /** */
     private IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
-    @Order(11)
+    @Order(7)
     byte[] keyValFilterBytes;
 
     /** */
     private IgniteReducer<Object, Object> rdc;
 
     /** */
-    @Order(12)
+    @Order(8)
     byte[] rdcBytes;
 
     /** */
     private IgniteClosure<?, ?> trans;
 
     /** */
-    @Order(13)
+    @Order(9)
     byte[] transBytes;
 
     /** */
     private Object[] args;
 
     /** */
-    @Order(14)
+    @Order(10)
     byte[] argsBytes;
 
     /** */
-    @Order(15)
+    @Order(11)
     int pageSize;
 
     /** */
-    @Order(16)
+    @Order(12)
     boolean incBackups;
 
     /** */
-    @Order(17)
+    @Order(13)
     boolean cancel;
 
     /** */
-    @Order(18)
+    @Order(14)
     boolean incMeta;
 
     /** */
-    @Order(19)
+    @Order(15)
     boolean all;
 
     /** */
-    @Order(20)
+    @Order(16)
     boolean keepBinary;
 
     /** */
-    @Order(21)
+    @Order(17)
     int taskHash;
 
     /** Partition. */
-    @Order(22)
+    @Order(18)
     int part = -1;
 
     /** */
-    @Order(value = 23, method = "topologyVersion")
+    @Order(value = 19, method = "topologyVersion")
     AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
-    @Order(24)
+    @Order(20)
     Collection<KeyCacheObject> skipKeys;
 
     /** */
-    @Order(25)
+    @Order(21)
     byte flags;
 
     /**
@@ -206,7 +206,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            deployFilterOrTransformer,
             qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
@@ -230,7 +230,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
             qry.isDataPageScanEnabled());
     }
 
@@ -243,8 +243,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId) {
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
-            cctx.affinity().affinityTopologyVersion(),
-            cctx.deploymentEnabled());
+            cctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -253,18 +252,15 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param cacheId Cache ID.
      * @param id Request to cancel.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info flag.
      */
     private GridCacheQueryRequest(
         int cacheId,
         long id,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         this.cacheId = cacheId;
         this.id = id;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
 
         cancel = true;
     }
@@ -525,24 +521,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param id Request ID.
-     */
-    public void id(long id) {
-        this.id = id;
-    }
-
-    /**
      * @return Cache name.
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
     }
 
     /**
@@ -553,13 +535,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param type Query type.
-     */
-    public void type(GridCacheQueryType type) {
-        this.type = type;
-    }
-
-    /**
      * @return Query limit.
      */
     public int limit() {
@@ -567,24 +542,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param limit Limit.
-     */
-    public void limit(int limit) {
-        this.limit = limit;
-    }
-
-    /**
      * @return Query clause.
      */
     public String clause() {
         return clause;
-    }
-
-    /**
-     * @param clause Query clause.
-     */
-    public void clause(String clause) {
-        this.clause = clause;
     }
 
     /**
@@ -602,13 +563,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param clsName Class name.
-     */
-    public void className(String clsName) {
-        this.clsName = clsName;
-    }
-
-    /**
      * @return Flag indicating whether to include backups.
      */
     public boolean includeBackups() {
@@ -616,24 +570,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param incBackups Flag indicating whether to include backups.
-     */
-    public void includeBackups(boolean incBackups) {
-        this.incBackups = incBackups;
-    }
-
-    /**
      * @return Flag indicating that this is cancel request.
      */
     public boolean cancel() {
         return cancel;
-    }
-
-    /**
-     * @param cancel Flag indicating that this is cancel request.
-     */
-    public void cancel(boolean cancel) {
-        this.cancel = cancel;
     }
 
     /**
@@ -665,13 +605,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param pageSize Page size.
-     */
-    public void pageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    /**
      * @return Arguments.
      */
     public Object[] arguments() {
@@ -686,24 +619,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param incMeta Include meta data or not.
-     */
-    public void includeMetaData(boolean incMeta) {
-        this.incMeta = incMeta;
-    }
-
-    /**
      * @return Whether to load all pages.
      */
     public boolean allPages() {
         return all;
-    }
-
-    /**
-     * @param all Whether to load all pages.
-     */
-    public void allPages(boolean all) {
-        this.all = all;
     }
 
     /**
@@ -714,24 +633,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param keepBinary Whether to keep binary.
-     */
-    public void keepBinary(boolean keepBinary) {
-        this.keepBinary = keepBinary;
-    }
-
-    /**
      * @return Task hash.
      */
     public int taskHash() {
         return taskHash;
-    }
-
-    /**
-     * @param taskHash Task hash.
-     */
-    public void taskHash(int taskHash) {
-        this.taskHash = taskHash;
     }
 
     /**
@@ -755,108 +660,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param skipKeys Set of keys that must be skiped during iteration.
-     */
-    public void skipKeys(Collection<KeyCacheObject> skipKeys) {
-        this.skipKeys = skipKeys;
-    }
-
-    /**
      * @return Partition.
      */
     @Override public int partition() {
         return part;
-    }
-
-    /**
-     * @param part Partition.
-     */
-    public void partition(int part) {
-        this.part = part;
-    }
-
-    /**
-     * @return Index query description bytes.
-     */
-    public byte[] indexQueryDescriptionBytes() {
-        return idxQryDescBytes;
-    }
-
-    /**
-     * @param idxQryDescBytes Index query description bytes.
-     */
-    public void indexQueryDescriptionBytes(byte[] idxQryDescBytes) {
-        this.idxQryDescBytes = idxQryDescBytes;
-    }
-
-    /**
-     * @return Key-value filter bytes.
-     */
-    public byte[] keyValueFilterBytes() {
-        return keyValFilterBytes;
-    }
-
-    /**
-     * @param keyValFilterBytes Key-value filter bytes.
-     */
-    public void keyValueFilterBytes(byte[] keyValFilterBytes) {
-        this.keyValFilterBytes = keyValFilterBytes;
-    }
-
-    /**
-     * @return Reducer bytes.
-     */
-    public byte[] reducerBytes() {
-        return rdcBytes;
-    }
-
-    /**
-     * @param rdcBytes Reducer bytes.
-     */
-    public void reducerBytes(byte[] rdcBytes) {
-        this.rdcBytes = rdcBytes;
-    }
-
-    /**
-     * @return Transformer bytes.
-     */
-    public byte[] transformerBytes() {
-        return transBytes;
-    }
-
-    /**
-     * @param transBytes Transformer bytes.
-     */
-    public void transformerBytes(byte[] transBytes) {
-        this.transBytes = transBytes;
-    }
-
-    /**
-     * @return Arguments bytes.
-     */
-    public byte[] argumentsBytes() {
-        return argsBytes;
-    }
-
-    /**
-     * @param argsBytes Arguments bytes.
-     */
-    public void argumentsBytes(byte[] argsBytes) {
-        this.argsBytes = argsBytes;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /** {@inheritDoc} */

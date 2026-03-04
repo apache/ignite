@@ -73,10 +73,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
     boolean forceChangeBaselineTopology;
 
     /** */
-    @Order(7)
-    long timestamp;
-
-    /** */
     @GridToStringExclude
     private ExchangeActions exchangeActions;
 
@@ -123,7 +119,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
         this.forceDeactivation = forceDeactivation;
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
-        this.timestamp = timestamp;
     }
 
     /**
@@ -230,13 +225,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
      */
     public boolean forceDeactivation() {
         return forceDeactivation;
-    }
-
-    /**
-     * @return Timestamp.
-     */
-    public long timestamp() {
-        return timestamp;
     }
 
     /**

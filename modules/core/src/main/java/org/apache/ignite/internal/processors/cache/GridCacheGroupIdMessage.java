@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
     /** Cache group ID. */
     @GridToStringInclude
-    @Order(3)
+    @Order(0)
     public int grpId;
 
     /**
@@ -38,13 +38,6 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
      */
     public int groupId() {
         return grpId;
-    }
-
-    /**
-     * @param grpId Cache group ID.
-     */
-    public void groupId(int grpId) {
-        this.grpId = grpId;
     }
 
     /** {@inheritDoc} */

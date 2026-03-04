@@ -53,49 +53,49 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Keys to update. */
-    @Order(10)
+    @Order(0)
     @GridToStringInclude
     List<KeyCacheObject> keys;
 
     /** Values to update. */
-    @Order(11)
+    @Order(1)
     List<CacheObject> vals;
 
     /** Entry processors. */
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
-    @Order(12)
+    @Order(2)
     @Nullable List<byte[]> entryProcessorsBytes;
 
     /** Conflict versions. */
-    @Order(13)
+    @Order(3)
     @Nullable List<GridCacheVersion> conflictVers;
 
     /** Conflict TTLs. */
-    @Order(14)
+    @Order(4)
     GridLongList conflictTtls;
 
     /** Conflict expire times. */
-    @Order(15)
+    @Order(5)
     GridLongList conflictExpireTimes;
 
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(16)
+    @Order(6)
     @Nullable List<byte[]> invokeArgsBytes;
 
     /** Expiry policy. */
     private @Nullable ExpiryPolicy expiryPlc;
 
     /** Expiry policy bytes. */
-    @Order(17)
+    @Order(7)
     @Nullable byte[] expiryPlcBytes;
 
     /** Filter. */
-    @Order(18)
+    @Order(8)
     @Nullable CacheEntryPredicate[] filter;
 
     /** Maximum possible size of inner collections. */
@@ -122,7 +122,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @param filter Optional filter for atomic check.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
     GridNearAtomicFullUpdateRequest(
@@ -137,7 +136,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
         short flags,
-        boolean addDepInfo,
         int maxEntryCnt
     ) {
         super(cacheId,
@@ -147,8 +145,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo);
+            flags);
 
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;
@@ -238,13 +235,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return keys;
     }
 
-    /**
-     * @param keys Keys to update.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
     /** {@inheritDoc} */
     @Override public int size() {
         assert keys != null;
@@ -289,13 +279,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return conflictVers;
     }
 
-    /**
-     * @param conflictVers Conflict versions.
-     */
-    public void conflictVersions(@Nullable List<GridCacheVersion> conflictVers) {
-        this.conflictVers = conflictVers;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
@@ -337,13 +320,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override @Nullable public CacheEntryPredicate[] filter() {
         return filter;
-    }
-
-    /**
-     * @param filter Filter.
-     */
-    public void filter(@Nullable CacheEntryPredicate[] filter) {
-        this.filter = filter;
     }
 
     /** {@inheritDoc} */
@@ -426,90 +402,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         assert !F.isEmpty(keys);
 
         return keys.get(0).partition();
-    }
-
-    /**
-     * @return Values to update.
-     */
-    public List<CacheObject> valuesToUpdate() {
-        return vals;
-    }
-
-    /**
-     * @param vals Values to update.
-     */
-    public void valuesToUpdate(List<CacheObject> vals) {
-        this.vals = vals;
-    }
-
-    /**
-     * @return Entry processors bytes.
-     */
-    public @Nullable List<byte[]> entryProcessorsBytes() {
-        return entryProcessorsBytes;
-    }
-
-    /**
-     * @param entryProcessorsBytes Entry processors bytes.
-     */
-    public void entryProcessorsBytes(@Nullable List<byte[]> entryProcessorsBytes) {
-        this.entryProcessorsBytes = entryProcessorsBytes;
-    }
-
-    /**
-     * @return Conflict TTLs.
-     */
-    public GridLongList conflictTtls() {
-        return conflictTtls;
-    }
-
-    /**
-     * @param conflictTtls Conflict TTLs.
-     */
-    public void conflictTtls(GridLongList conflictTtls) {
-        this.conflictTtls = conflictTtls;
-    }
-
-    /**
-     * @return Conflict expire times.
-     */
-    public GridLongList conflictExpireTimes() {
-        return conflictExpireTimes;
-    }
-
-    /**
-     * @param conflictExpireTimes Conflict expire times.
-     */
-    public void conflictExpireTimes(GridLongList conflictExpireTimes) {
-        this.conflictExpireTimes = conflictExpireTimes;
-    }
-
-    /**
-     * @return Entry processor arguments bytes.
-     */
-    public @Nullable List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /**
-     * @param invokeArgsBytes Entry processor arguments bytes.
-     */
-    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
-    }
-
-    /**
-     * @return Expiry policy bytes.
-     */
-    public @Nullable byte[] expiryPolicyBytes() {
-        return expiryPlcBytes;
-    }
-
-    /**
-     * @param expiryPlcBytes Expiry policy bytes.
-     */
-    public void expiryPolicyBytes(@Nullable byte[] expiryPlcBytes) {
-        this.expiryPlcBytes = expiryPlcBytes;
     }
 
     /** {@inheritDoc} */

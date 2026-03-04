@@ -47,36 +47,36 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
     /** Topology version. */
-    @Order(20)
+    @Order(0)
     AffinityTopologyVersion topVer;
 
     /** Mini future ID. */
-    @Order(21)
+    @Order(1)
     int miniId;
 
     /** Array of mapped DHT versions for this entry. */
-    @Order(22)
+    @Order(2)
     @GridToStringInclude
     GridCacheVersion[] dhtVers;
 
     /** Task name hash. */
-    @Order(23)
+    @Order(3)
     int taskNameHash;
 
     /** TTL for create operation. */
-    @Order(24)
+    @Order(4)
     long createTtl;
 
     /** TTL for read operation. */
-    @Order(25)
+    @Order(5)
     long accessTtl;
 
     /** */
-    @Order(26)
+    @Order(6)
     byte flags;
 
     /** Transaction label. */
-    @Order(27)
+    @Order(7)
     String txLbl;
 
     /**
@@ -107,7 +107,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
-     * @param addDepInfo Deployment info flag.
      * @param txLbl Transaction label.
      */
     public GridNearLockRequest(
@@ -134,7 +133,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean keepBinary,
         boolean firstClientReq,
         boolean nearCache,
-        boolean addDepInfo,
         @Nullable String txLbl
     ) {
         super(
@@ -153,8 +151,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             skipReadThrough,
-            keepBinary,
-            addDepInfo);
+            keepBinary);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
@@ -229,13 +226,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Sync commit flag.
      */
     public boolean syncCommit() {
@@ -278,20 +268,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Array of mapped DHT versions for this entry.
-     */
-    public GridCacheVersion[] dhtVersions() {
-        return dhtVers;
-    }
-
-    /**
-     * @param dhtVers Array of mapped DHT versions for this entry.
-     */
-    public void dhtVersions(GridCacheVersion[] dhtVers) {
-        this.dhtVers = dhtVers;
-    }
-
-    /**
      * @param idx Index of the key.
      * @return DHT version for key at given index.
      */
@@ -307,13 +283,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
-     */
-    public void createTtl(long createTtl) {
-        this.createTtl = createTtl;
-    }
-
-    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
@@ -321,38 +290,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param accessTtl TTL for read operation.
-     */
-    public void accessTtl(long accessTtl) {
-        this.accessTtl = accessTtl;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte nearFlags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void nearFlags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param txLbl Transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
     }
 
     /** {@inheritDoc} */

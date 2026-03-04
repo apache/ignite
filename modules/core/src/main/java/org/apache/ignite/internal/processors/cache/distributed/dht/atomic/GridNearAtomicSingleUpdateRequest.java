@@ -49,11 +49,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(10)
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
-    @Order(11)
+    @Order(1)
     protected CacheObject val;
 
     /**
@@ -74,7 +74,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param op Cache update operation.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateRequest(
         int cacheId,
@@ -84,8 +83,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(cacheId,
             nodeId,
@@ -94,8 +92,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
     }
 
@@ -145,20 +142,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return Collections.singletonList(key);
     }
 
-    /**
-     * @param key Key to update.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
-     * @return Key to update.
-     */
-    public KeyCacheObject key() {
-        return key;
-    }
-
     /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
@@ -169,20 +152,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     /** {@inheritDoc} */
     @Override public List<?> values() {
         return Collections.singletonList(val);
-    }
-
-    /**
-     * @return Cache object value to update.
-     */
-    public CacheObject value() {
-        return val;
-    }
-
-    /**
-     * @param val Cache object value to update.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
     }
 
     /** {@inheritDoc} */

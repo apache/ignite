@@ -229,7 +229,7 @@ public class GridCacheEntryInfo implements Message {
         if (expireTime == 0)
             expireTime = -1;
         else {
-            expireTime = expireTime - U.currentTimeMillis();
+            expireTime -= U.currentTimeMillis();
 
             if (expireTime < 0)
                 expireTime = 0;

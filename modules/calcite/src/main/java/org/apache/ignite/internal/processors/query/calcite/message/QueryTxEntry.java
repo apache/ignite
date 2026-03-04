@@ -80,23 +80,9 @@ public class QueryTxEntry implements CalciteMessage {
         return cacheId;
     }
 
-    /**
-     * @param cacheId New cache id.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
     /** @return Entry key. */
     public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @param key New entry key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
     }
 
     /** @return Entry value. */
@@ -104,23 +90,9 @@ public class QueryTxEntry implements CalciteMessage {
         return val;
     }
 
-    /**
-     * @param val New entry value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
-    }
-
     /** @return Entry version. */
     public GridCacheVersion version() {
         return ver;
-    }
-
-    /**
-     * @param ver New entry version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
     }
 
     /** */

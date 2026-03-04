@@ -31,11 +31,11 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    @Order(5)
+    @Order(0)
     @Nullable UUID nodeToPing;
 
     /** */
-    @Order(6)
+    @Order(1)
     boolean res;
 
     /** */
@@ -63,24 +63,10 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
     }
 
     /**
-     * @param nodeToPing Pinged client node ID.
-     */
-    public void nodeToPing(@Nullable UUID nodeToPing) {
-        this.nodeToPing = nodeToPing;
-    }
-
-    /**
      * @return Result of ping.
      */
     public boolean result() {
         return res;
-    }
-
-    /**
-     * @param res Result of ping.
-     */
-    public void result(boolean res) {
-        this.res = res;
     }
 
     /** {@inheritDoc} */

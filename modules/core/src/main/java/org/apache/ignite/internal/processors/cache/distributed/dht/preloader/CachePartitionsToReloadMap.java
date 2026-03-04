@@ -33,20 +33,6 @@ public class CachePartitionsToReloadMap implements Message {
     Map<Integer, PartitionsToReload> map;
 
     /**
-     * @return Partition reload map for cache.
-     */
-    public Map<Integer, PartitionsToReload> cachePartitions() {
-        return map;
-    }
-
-    /**
-     * @param map Partition reload map for cache.
-     */
-    public void cachePartitions(Map<Integer, PartitionsToReload> map) {
-        this.map = map;
-    }
-
-    /**
      * @param cacheId Cache id.
      * @return Partitions to reload for this cache.
      */
