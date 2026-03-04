@@ -21,6 +21,8 @@ import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
@@ -151,6 +153,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
         factory.register((short)508, MetadataUpdateAcceptedMessage::new,
             new MetadataUpdateAcceptedMessageSerializer());
-
+        factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
+            new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
     }
 }
