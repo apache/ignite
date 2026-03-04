@@ -51,7 +51,6 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -963,7 +962,7 @@ public class MessageSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
 
-        writer.write("public class " + serClsName + " implements MessageSerializer<"+type.getSimpleName()+"> {" + NL);
+        writer.write("public class " + serClsName + " implements MessageSerializer<" + type.getSimpleName() + "> {" + NL);
     }
 
     /** */
