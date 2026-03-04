@@ -238,8 +238,6 @@ public class MessageSerializerGenerator {
      * Generates start of write/read methods:
      * <pre>
      *     public boolean writeTo(Message m, MessageWriter writer) {
-     *         TestMessage msg = (TestMessage)m;
-     *
      *         if (!writer.isHeaderWritten()) {
      *             if (!writer.writeHeader(msg.directType()))
      *                 return false;
@@ -261,9 +259,6 @@ public class MessageSerializerGenerator {
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
-
-        code.add(identedLine("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        code.add(EMPTY);
 
         if (write) {
             code.add(identedLine("if (!writer.isHeaderWritten()) {"));
