@@ -155,9 +155,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
-     // DiscoveryCustomMessages (500+)
-        factory.register(ChangeGlobalStateMessage.DIRECT_TYPE, ChangeGlobalStateMessage::new,
-            new ChangeGlobalStateMessageSerializer());
+        factory.register((short)510, ChangeGlobalStateMessage::new, new ChangeGlobalStateMessageSerializer());
 
     }
 }

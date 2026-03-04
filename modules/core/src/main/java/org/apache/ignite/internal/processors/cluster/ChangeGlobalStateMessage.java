@@ -39,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message {
     /** */
-    public static final short DIRECT_TYPE = 506;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
@@ -81,7 +78,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
     @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
     /** If {@code true}, cluster deactivation will be forced. */
-    @Order(8)
+    @Order(7)
     boolean forceDeactivation;
 
     /** No-arg constructor for deserialization. */
@@ -111,7 +108,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
         assert reqId != null;
         assert initiatingNodeId != null;
 
-        this.id = IgniteUuid.randomUuid();
+        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
@@ -236,7 +233,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return DIRECT_TYPE;
+        return 510;
     }
 
     /** {@inheritDoc} */
