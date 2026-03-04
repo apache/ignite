@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatchSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
@@ -153,5 +155,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
+        factory.register((short)510, DynamicCacheChangeBatch::new, new DynamicCacheChangeBatchSerializer());
+
     }
 }
