@@ -154,11 +154,9 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         AtomicReference<UUID> crdIdRef = new AtomicReference<>();
 
         spiSupp = () -> new TcpCommunicationSpi() {
-            @Override public void sendMessage(
-                    ClusterNode node,
-                    Message msg,
-                    IgniteInClosure<IgniteException> ackC
-            ) throws IgniteSpiException {
+            /** {@inheritDoc} */
+            @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
+                    throws IgniteSpiException {
                 boolean isSingleMsg = ((GridIoMessage)msg).message() instanceof GridDhtPartitionsSingleMessage;
                 UUID crdId = crdIdRef.get();
 
@@ -171,6 +169,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
+
                         throw new IgniteSpiException("Interrupted while waiting to proceed", e);
                     }
                 }
@@ -200,8 +199,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
             fut.get(waitingTimeout);
 
-            assertTrue("Expected log not found",
-                    GridTestUtils.waitForCondition(logListener::check, waitingTimeout));
+            assertTrue("Expected log not found", GridTestUtils.waitForCondition(logListener::check, waitingTimeout));
         }
         finally {
             proceedLatch.countDown();
