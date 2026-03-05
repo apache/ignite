@@ -54,6 +54,6 @@ public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage imple
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 511;
+        return 513;
     }
 }
