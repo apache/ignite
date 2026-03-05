@@ -428,8 +428,12 @@ public class DumpReader implements Runnable {
         public final Map<Integer, String> grpIdToName;
 
         /** */
-        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs, Set<Integer> cacheIds,
-            Map<Integer, String> grpIdToName) {
+        public GroupsConfigs(
+            Map<Integer, List<String>> grpToNodes,
+            Collection<StoredCacheData> cacheCfgs,
+            Set<Integer> cacheIds,
+            Map<Integer, String> grpIdToName
+        ) {
             this.grpToNodes = grpToNodes;
             this.cacheCfgs = cacheCfgs;
             this.cacheIds = cacheIds;
