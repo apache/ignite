@@ -242,7 +242,9 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                 ))
                 .collect(Collectors.toMap(
                     TransactionsHashRecord::remoteConsistentId,
-                    Function.identity()
+                    Function.identity(),
+                    (a, b) -> a,
+                    HashMap::new
                 ));
 
             Map<PartitionKey, PartitionHashRecord> partHashRes = partMap.entrySet().stream()
@@ -256,7 +258,9 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                         0,
                         null,
                         new VerifyPartitionContext(e.getValue())
-                    )
+                    ),
+                    (a, b) -> a,
+                    HashMap::new
                 ));
 
             if (log.isInfoEnabled()) {
