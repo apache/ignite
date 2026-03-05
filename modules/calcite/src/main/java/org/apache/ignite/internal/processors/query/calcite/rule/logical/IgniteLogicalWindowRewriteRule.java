@@ -73,9 +73,10 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalWindow win = call.rel(0);
 
+        RelDataTypeFactory typeFactory = win.getCluster().getTypeFactory();
+
         if (win.groups.size() > 1) {
             RelNode input = win.getInput();
-            RelDataTypeFactory typeFactory = win.getCluster().getTypeFactory();
 
             for (LogicalWindow.Group grp : win.groups) {
                 RelDataType joinRowType = buildWindowRowType(typeFactory, input, grp);
@@ -102,7 +103,6 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
 
         RelNode input = win.getInput();
         RexBuilder rexBuilder = win.getCluster().getRexBuilder();
-        RelDataTypeFactory typeFactory = win.getCluster().getTypeFactory();
         RelNode aggInput = appendConstants(input, win.getConstants());
 
         ImmutableBitSet grpSet = grp.keys;
@@ -120,7 +120,7 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
             aggCalls
         );
 
-        RexNode condition = buildPartitionJoinCondition(rexBuilder, typeFactory, input, agg, grpSet);
+        RexNode condition = buildPartitionJoinCondition(rexBuilder, input, agg, grpSet);
 
         RelNode join = LogicalJoin.create(
             input,
@@ -157,17 +157,13 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         int inputFieldCnt = input.getRowType().getFieldCount();
 
         List<RexNode> projects = new ArrayList<>(inputFieldCnt + constants.size());
-        List<String> names = new ArrayList<>(input.getRowType().getFieldNames());
 
         for (int i = 0; i < inputFieldCnt; i++)
             projects.add(rexBuilder.makeInputRef(input, i));
 
         projects.addAll(constants);
 
-        for (int i = 0; i < constants.size(); i++)
-            names.add("_w_const$" + i);
-
-        return LogicalProject.create(input, List.of(), projects, names, ImmutableSet.of());
+        return LogicalProject.create(input, List.of(), projects, (List<String>) null, ImmutableSet.of());
     }
 
     /**
@@ -202,10 +198,9 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
 
     /**
      * Builds a join condition between input and aggregate results using partition keys.
-     * Returns TRUE for an empty partition set (cross join).
+     * Returns literal TRUE for an empty partition set (cross join).
      *
      * @param rexBuilder Rex builder.
-     * @param typeFactory Type factory.
      * @param input Input relation.
      * @param agg Aggregate relation.
      * @param groupSet Partition keys.
@@ -213,7 +208,6 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
      */
     private static RexNode buildPartitionJoinCondition(
         RexBuilder rexBuilder,
-        RelDataTypeFactory typeFactory,
         RelNode input,
         RelNode agg,
         ImmutableBitSet groupSet
@@ -224,18 +218,13 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
         int inputFieldCnt = input.getRowType().getFieldCount();
         List<Integer> keys = groupSet.asList();
 
-        RelDataType joinRowType = typeFactory.builder()
-            .addAll(input.getRowType().getFieldList())
-            .addAll(agg.getRowType().getFieldList())
-            .build();
-
         List<RexNode> conditions = new ArrayList<>(keys.size());
 
         for (int i = 0; i < keys.size(); i++) {
             int keyIdx = keys.get(i);
 
-            RexNode left = rexBuilder.makeInputRef(joinRowType, keyIdx);
-            RexNode right = rexBuilder.makeInputRef(joinRowType, inputFieldCnt + i);
+            RexNode left = rexBuilder.makeInputRef(input.getRowType(), keyIdx);
+            RexNode right = rexBuilder.makeInputRef(agg.getRowType(), inputFieldCnt + i);
 
             conditions.add(rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, left, right));
         }
