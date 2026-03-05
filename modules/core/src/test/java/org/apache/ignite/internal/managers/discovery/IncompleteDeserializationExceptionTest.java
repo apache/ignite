@@ -22,7 +22,6 @@ import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -106,12 +105,6 @@ public class IncompleteDeserializationExceptionTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override public boolean isMutable() {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            return null;
         }
     }
 

@@ -21,10 +21,8 @@ import java.util.Arrays;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -197,12 +195,6 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public boolean isMutable() {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            return null;
         }
     }
 }

@@ -19,13 +19,13 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-class ZkNoServersMessage extends DiscoverySpiCustomMessage implements ZkInternalMessage {
+class ZkNoServersMessage implements DiscoveryCustomMessage, ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,8 +40,8 @@ class ZkNoServersMessage extends DiscoverySpiCustomMessage implements ZkInternal
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
+    @Override public IgniteUuid id() {
+        return null;
     }
 
     /** {@inheritDoc} */

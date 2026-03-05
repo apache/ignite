@@ -19,10 +19,7 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -80,12 +77,6 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
     }
 
     /** @return Process id. */

@@ -20,13 +20,12 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Zk Communication Error Resolve Start Message.
  */
-public class ZkCommunicationErrorResolveStartMessage extends DiscoverySpiCustomMessage implements ZkInternalMessage {
+public class ZkCommunicationErrorResolveStartMessage extends AbstractZkDiscoveryCustomMessage implements ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

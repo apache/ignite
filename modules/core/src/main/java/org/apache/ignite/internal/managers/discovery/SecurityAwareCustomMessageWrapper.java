@@ -23,15 +23,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** Custom message wrapper with ID of security subject that initiated the current message. */
-public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage implements Message {
+public class SecurityAwareCustomMessageWrapper implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -86,6 +86,11 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
      */
     public DiscoveryCustomMessage delegate() {
         return msg != null ? (DiscoveryCustomMessage)msg : delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return null;
     }
 
     /** {@inheritDoc} */

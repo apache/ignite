@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
@@ -105,6 +106,9 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @param topVer New topology version.
      * @param discoCache Current discovery cache.
      * @return Reused discovery cache.
+     * @see GridCacheProcessor#onCustomEvent
      */
-    public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache);
+    default DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
+    }
 }
