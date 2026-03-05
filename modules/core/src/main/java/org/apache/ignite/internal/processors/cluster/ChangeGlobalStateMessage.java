@@ -233,7 +233,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 510;
+        return 512;
     }
 
     /** {@inheritDoc} */
