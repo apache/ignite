@@ -41,6 +41,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot metadata file.
+ * <p>
+ * All changes must be made with the respect of RU rules.
  */
 public class SnapshotMetadata implements Serializable {
     /** Serial version uid. */
