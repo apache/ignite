@@ -86,9 +86,11 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     @Override public void close() {
         if (closeGuard.compareAndSet(false, true)) {
             assert cur != null;
-            cur.close();
-
-            ctx.decrementCursors();
+            try {
+                cur.close();
+            } finally {
+                ctx.decrementCursors();
+            }
         }
     }
 }
