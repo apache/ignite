@@ -63,6 +63,8 @@ import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermi
 import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.enrichWithConnectionArguments;
 import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_DISABLE;
+import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
@@ -184,7 +186,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                     ALL_PERMISSIONS,
                     false,
                     new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
-                    new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, systemPermissions(ADMIN_OPS), new Permissions()))
+                    new TestSecurityData(TEST_LOGIN, DEFAULT_PWD,
+                        systemPermissions(ADMIN_OPS, EVENTS_ENABLE, EVENTS_DISABLE), new Permissions()))
             );
         }
 
