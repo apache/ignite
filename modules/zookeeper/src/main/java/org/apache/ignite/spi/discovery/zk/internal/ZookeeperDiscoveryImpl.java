@@ -216,6 +216,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final ZookeeperDiscoveryStatistics stats;
 
+    /** */
+    private final DiscoveryMessageParser msgParser;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -262,6 +265,8 @@ public class ZookeeperDiscoveryImpl {
         this.evtsAckThreshold = evtsAckThreshold;
 
         this.stats = stats;
+
+        msgParser = new DiscoveryMessageParser(marsh);
     }
 
     /**
@@ -666,14 +671,7 @@ public class ZookeeperDiscoveryImpl {
         if (!hasServerNode)
             throw new IgniteException("Failed to send custom message: no server nodes in topology.");
 
-        byte[] msgBytes;
-
-        try {
-            msgBytes = marshalZip(msg);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to marshal custom message: " + msg, e);
-        }
+        byte[] msgBytes = msgParser.marshalZip(msg);
 
         while (!busyLock.enterBusy())
             checkState();
@@ -1486,6 +1484,8 @@ public class ZookeeperDiscoveryImpl {
             new ZkNoServersMessage(),
             null);
 
+        evtData.prepareMarshal(msgParser);
+
         Collection<ZookeeperClusterNode> nodesToAck = Collections.emptyList();
 
         evtsData.addEvent(nodesToAck, evtData);
@@ -1514,11 +1514,13 @@ public class ZookeeperDiscoveryImpl {
             if (evtData instanceof ZkDiscoveryCustomEventData) {
                 ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
 
+                evtData0.finishUnmarshal(msgParser);
+
                 // It is possible previous coordinator failed before finished cleanup.
-                if (evtData0.msg instanceof ZkCommunicationErrorResolveFinishMessage) {
+                if (evtData0.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
                     try {
                         ZkCommunicationErrorResolveFinishMessage msg =
-                            (ZkCommunicationErrorResolveFinishMessage)evtData0.msg;
+                            (ZkCommunicationErrorResolveFinishMessage)evtData0.resolvedMsg;
 
                         ZkCommunicationErrorResolveResult res = unmarshalZip(
                             ZkDistributedCollectDataFuture.readResult(rtState.zkClient, zkPaths, msg.futId));
@@ -2472,7 +2474,7 @@ public class ZookeeperDiscoveryImpl {
                 DiscoveryCustomMessage msg;
 
                 try {
-                    msg = unmarshalZip(evtBytes);
+                    msg = msgParser.unmarshalZip(evtBytes);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to unmarshal custom discovery message: " + e, e);
@@ -2746,19 +2748,16 @@ public class ZookeeperDiscoveryImpl {
                         if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
                             break;
 
-                        DiscoveryCustomMessage msg;
+                        evtData0.finishUnmarshal(msgParser);
 
-                        if (rtState.crd) {
+                        if (rtState.crd)
                             assert evtData0.resolvedMsg != null : evtData0;
-
-                            msg = evtData0.resolvedMsg;
-                        }
                         else {
-                            if (evtData0.msg == null) {
+                            if (evtData0.resolvedMsg == null) {
                                 if (evtData0.ackEvent()) {
                                     String path = zkPaths.ackEventDataPath(evtData0.origEvtId);
 
-                                    msg = unmarshalZip(zkClient.getData(path));
+                                    evtData0.resolvedMsg = msgParser.unmarshalZip(zkClient.getData(path));
                                 }
                                 else {
                                     assert evtData0.evtPath != null : evtData0;
@@ -2767,19 +2766,15 @@ public class ZookeeperDiscoveryImpl {
                                         evtData0.evtPath,
                                         evtData0.sndNodeId);
 
-                                    msg = unmarshalZip(msgBytes);
+                                    evtData0.resolvedMsg = msgParser.unmarshalZip(msgBytes);
                                 }
                             }
-                            else
-                                msg = evtData0.msg;
-
-                            evtData0.resolvedMsg = msg;
                         }
 
-                        if (msg instanceof ZkInternalMessage)
-                            processInternalMessage(evtData0, (ZkInternalMessage)msg);
+                        if (evtData0.resolvedMsg instanceof ZkInternalMessage)
+                            processInternalMessage(evtData0, (ZkInternalMessage)evtData0.resolvedMsg);
                         else {
-                            notifyCustomEvent(evtData0, msg);
+                            notifyCustomEvent(evtData0, evtData0.resolvedMsg);
 
                             if (!evtData0.ackEvent())
                                 updateNodeInfo = true;
@@ -3455,7 +3450,7 @@ public class ZookeeperDiscoveryImpl {
             msg,
             null);
 
-        evtData.resolvedMsg = msg;
+        evtData.prepareMarshal(msgParser);
 
         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
@@ -3770,7 +3765,7 @@ public class ZookeeperDiscoveryImpl {
 
         long evtId = rtState.evtsData.evtIdGen;
 
-        byte[] ackBytes = marshalZip(ack);
+        byte[] ackBytes = msgParser.marshalZip(ack);
 
         String path = zkPaths.ackEventDataPath(origEvt.eventId());
 
