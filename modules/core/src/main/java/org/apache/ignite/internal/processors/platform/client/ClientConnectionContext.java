@@ -267,7 +267,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /**
-     * Increments the cursor count.
+     * Decrement the cursor count.
      */
     public void decrementCursors() {
         curCnt.decrementAndGet();
