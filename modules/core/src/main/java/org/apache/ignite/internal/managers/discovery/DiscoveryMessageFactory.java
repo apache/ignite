@@ -170,7 +170,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
         factory.register((short)510, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
         factory.register((short)511, UserProposedMessage::new, new UserProposedMessageSerializer());
-        factory.register((short)510, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
-
+        factory.register((short)512, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
     }
 }

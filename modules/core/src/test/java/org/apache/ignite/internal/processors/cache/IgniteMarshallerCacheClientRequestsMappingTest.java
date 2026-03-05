@@ -168,7 +168,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                             DiscoveryCustomMessage delegate = U.unwrapCustomMessage(evtMsg.message());
 
                             if (delegate instanceof MappingAcceptedMessage) {
-                                MarshallerMappingItem item = ((MappingAcceptedMessage) delegate).getMappingItem();
+                                MarshallerMappingItem item = ((MappingAcceptedMessage)delegate).getMappingItem();
 
                                 if (item.className().equals(PERSON_CLASS_NAME) ||
                                     item.className().equals(ORGANIZATION_CLASS_NAME) ||
