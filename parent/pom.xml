@@ -884,6 +884,7 @@
                                         <exclude>docs/_docs/images/**</exclude>
                                         <exclude>docs/Gemfile</exclude>
                                         <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
+                                        <exclude>.github/protected-classes.txt</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
