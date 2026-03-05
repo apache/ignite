@@ -19,12 +19,13 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Zk Force Node Fail Message.
  */
-public class ZkForceNodeFailMessage extends AbstractZkDiscoveryCustomMessage implements ZkInternalMessage {
+public class ZkForceNodeFailMessage implements DiscoveryCustomMessage, ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,6 +42,11 @@ public class ZkForceNodeFailMessage extends AbstractZkDiscoveryCustomMessage imp
     ZkForceNodeFailMessage(long nodeInternalId, String warning) {
         this.nodeInternalId = nodeInternalId;
         this.warning = warning;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return null;
     }
 
     /** {@inheritDoc} */
