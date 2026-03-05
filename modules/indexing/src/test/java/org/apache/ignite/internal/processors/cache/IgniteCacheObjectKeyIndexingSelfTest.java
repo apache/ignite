@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -42,11 +43,25 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test index behavior when key is of plain Object type per indexing settings.
  */
+@RunWith(Parameterized.class)
 public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameter
+    public int idx;
+
+    /** */
+    @Parameters(name = "idx={0}")
+    public static Object[] testData() {
+        return IntStream.range(0, 100).boxed().toArray();
+    }
+
     /** */
     private static final int CACHE_SIZE = 20_000;
 
