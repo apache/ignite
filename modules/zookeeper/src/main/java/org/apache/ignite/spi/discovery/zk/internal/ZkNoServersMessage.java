@@ -35,11 +35,6 @@ class ZkNoServersMessage implements DiscoveryCustomMessage, ZkInternalMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return null;
     }

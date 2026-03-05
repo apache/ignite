@@ -76,11 +76,6 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /** @return Process id. */
     public UUID processId() {
         return processId;

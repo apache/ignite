@@ -77,11 +77,6 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage, Message {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /**
      * @return User operation ID.
      */

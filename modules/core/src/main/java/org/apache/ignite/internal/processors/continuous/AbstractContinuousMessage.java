@@ -52,9 +52,4 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
     public UUID routineId() {
         return routineId;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
 }

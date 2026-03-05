@@ -74,11 +74,6 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpConnectionRequestDiscoveryMessage.class, this);
     }

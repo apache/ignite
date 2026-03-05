@@ -59,16 +59,6 @@ class ZkCommunicationErrorResolveFinishMessage implements DiscoveryCustomMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ZkCommunicationErrorResolveFinishMessage.class, this);
     }

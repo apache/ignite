@@ -73,11 +73,6 @@ public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage, Me
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /**
      * @return User operation.
      */

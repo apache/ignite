@@ -74,11 +74,6 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /** @return Process id. */
     public UUID processId() {
         return procId;

@@ -99,11 +99,6 @@ public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServiceClusterDeploymentResultBatch.class, this);
     }

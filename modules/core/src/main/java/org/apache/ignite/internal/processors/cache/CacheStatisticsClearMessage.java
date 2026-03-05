@@ -74,11 +74,6 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return initial() ? new CacheStatisticsClearMessage(this) : null;
     }

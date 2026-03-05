@@ -88,11 +88,6 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
         return isInit() ? new TxTimeoutOnPartitionMapExchangeChangeMessage(this) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /**
      * Gets request ID.
      *

@@ -239,11 +239,6 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return null;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
     }
 
     /** */

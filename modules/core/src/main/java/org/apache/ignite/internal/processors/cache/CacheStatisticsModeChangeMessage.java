@@ -108,11 +108,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
         return initial() ? new CacheStatisticsModeChangeMessage(this) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /**
      * @return Cache names.
      */

@@ -104,11 +104,6 @@ public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartiti
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClientCacheChangeDummyDiscoveryMessage.class, this,
             "startCaches", (startReqs != null ? startReqs.keySet() : ""));

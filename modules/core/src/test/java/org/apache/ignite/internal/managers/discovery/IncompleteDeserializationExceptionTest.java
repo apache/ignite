@@ -101,11 +101,6 @@ public class IncompleteDeserializationExceptionTest extends GridCommonAbstractTe
         @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return null;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
     }
 
     // Commented lines were used to prepare serialized object

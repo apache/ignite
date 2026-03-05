@@ -54,11 +54,6 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
     /** */
     MarshallerMappingItem getMappingItem() {
         return item;

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.jetbrains.annotations.Nullable;
@@ -89,8 +90,11 @@ public interface DiscoveryCustomMessage extends Serializable {
 
     /**
      * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
+     * @see DiscoverySpiMutableCustomMessageSupport
      */
-    public boolean isMutable();
+    default boolean isMutable() {
+        return false;
+    }
 
     /**
      * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.

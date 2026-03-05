@@ -308,10 +308,5 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         @Nullable @Override public DiscoveryCustomMessage ackMessage() {
             return null;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
     }
 }
