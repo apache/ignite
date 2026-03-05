@@ -746,7 +746,7 @@
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
-                                 <configuration>
+                                <configuration>
                                     <inputExcludes>
                                         <inputExclude>work/**</inputExclude>
                                         <inputExclude>**/target/**</inputExclude>
