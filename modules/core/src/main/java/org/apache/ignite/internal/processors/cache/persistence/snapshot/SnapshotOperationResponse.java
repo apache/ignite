@@ -17,55 +17,40 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Result of local processing on the node. In addition to the result received from the handler, it also includes
- * information about the error (if any) and the node on which this result was received.
- *
- * @param <T> Type of the local processing result.
- */
-public class SnapshotHandlerResult<T extends Message> implements Message {
-    /** Result of local processing. */
-    @Order(0)
-    Message data;
-
-    /** Processing error. */
-    @Order(1)
-    ErrorMessage errMsg;
+/** */
+public class SnapshotOperationResponse implements Message {
+    /** Results of single-node handlers execution. */
+    @Order(value = 0, method = "handlerResults")
+    private Map<String, SnapshotHandlerResult<Message>> hndResults;
 
     /** Default constructor for {@link GridIoMessageFactory}. */
-    public SnapshotHandlerResult() {
+    public SnapshotOperationResponse() {
         // No-op.
     }
 
-    /**
-     * @param data Result of local processing.
-     * @param err Processing error.
-     */
-    public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err) {
-        this.data = data;
-
-        if (err != null)
-            errMsg = new ErrorMessage(err);
+    /** @param hndResults Results of single-node handlers execution.  */
+    public SnapshotOperationResponse(Map<String, SnapshotHandlerResult<Message>> hndResults) {
+        this.hndResults = hndResults;
     }
 
-    /** @return Result of local processing. */
-    public @Nullable T data() {
-        return (T)data;
+    /** @return Results of single-node handlers execution. */
+    public @Nullable Map<String, SnapshotHandlerResult<Message>> handlerResults() {
+        return hndResults;
     }
 
-    /** @return Processing error. */
-    public @Nullable Exception error() {
-        return (Exception)ErrorMessage.error(errMsg);
+    /** @param hndResults Results of single-node handlers execution. */
+    public void handlerResults(Map<String, SnapshotHandlerResult<Message>> hndResults) {
+        this.hndResults = hndResults;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 521;
+        return 520;
     }
 }

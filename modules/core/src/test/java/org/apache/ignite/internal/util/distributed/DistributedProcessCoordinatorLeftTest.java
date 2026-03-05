@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.util.distributed;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.MessagesPluginProvider.MessagesInjectedTcpDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -86,6 +86,9 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
             }
         });
 
+        cfg.setPluginProviders(new MessagesPluginProvider());
+        cfg.setDiscoverySpi(new MessagesInjectedTcpDiscoverySpi());
+
         return cfg;
     }
 
@@ -109,14 +112,15 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
         CountDownLatch startLatch = new CountDownLatch(NODES_CNT);
         CountDownLatch finishLatch = new CountDownLatch(NODES_CNT - 1);
 
-        HashMap<String, DistributedProcess<Integer, Integer>> processes = new HashMap<>();
+        HashMap<String, DistributedProcess<Integer, TestIntegerMessage>> processes = new HashMap<>();
 
         int procRes = 1;
 
         for (Ignite grid : G.allGrids()) {
-            DistributedProcess<Integer, Integer> dp = new DistributedProcess<>(((IgniteEx)grid).context(), TEST_PROCESS,
+            DistributedProcess<Integer, TestIntegerMessage> dp = new DistributedProcess<>(((IgniteEx)grid).context(),
+                TEST_PROCESS,
                 req -> {
-                    IgniteInternalFuture<Integer> fut = runAsync(() -> {
+                    IgniteInternalFuture<TestIntegerMessage> fut = runAsync(() -> {
                         try {
                             nodeLeftLatch.await();
                         }
@@ -124,7 +128,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                             fail("Unexpected interrupt.");
                         }
 
-                        return req;
+                        return new TestIntegerMessage(req);
                     });
 
                     // A single message will be sent before this latch released.
@@ -137,7 +141,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                     return fut;
                 },
                 (uuid, res, err) -> {
-                    if (res.values().size() == NODES_CNT - 1 && res.values().stream().allMatch(i -> i == procRes))
+                    if (res.values().size() == NODES_CNT - 1 && res.values().stream().allMatch(i -> i.value() == procRes))
                         finishLatch.countDown();
                     else
                         fail("Unexpected process result [res=" + res + ", err=" + err + ']');
