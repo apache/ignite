@@ -51,7 +51,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     private static final int CACHE_SIZE = 20_000;
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         Ignition.stopAll(true);
 
         cleanPersistenceDir();
@@ -116,9 +116,9 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testObjectKeyHandlingDuringRebalance() throws Exception {
-        startGrid(getTestIgniteInstanceName(0), createIgniteCfg(0));
+        startGrid(createIgniteCfg(0));
 
-        Ignite ign1 = startGrid(getTestIgniteInstanceName(1), createIgniteCfg(1));
+        Ignite ign1 = startGrid(createIgniteCfg(1));
 
         ign1.cluster().state(ClusterState.ACTIVE);
 
@@ -132,7 +132,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
 
         cleanPersistenceDir("node_1");
 
-        startGrid(getTestIgniteInstanceName(1), createIgniteCfg(1));
+        startGrid(createIgniteCfg(1));
 
         grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
 
@@ -199,17 +199,13 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     }
 
     /** */
-    private IgniteConfiguration createIgniteCfg(int id) {
-        return new IgniteConfiguration()
-            .setGridLogger(log)
+    private IgniteConfiguration createIgniteCfg(int id) throws Exception {
+        return getConfiguration(getTestIgniteInstanceName(id))
             .setConsistentId("node_" + id)
             .setRebalanceBatchSize(64)
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setPersistenceEnabled(true)
-                    )
-            );
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)));
     }
 
     /** */
