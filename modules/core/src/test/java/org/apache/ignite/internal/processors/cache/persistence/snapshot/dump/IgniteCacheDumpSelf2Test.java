@@ -1221,8 +1221,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testDumpReaderDebugLogsGroupName() throws Exception {
+    private void CheckDumpReaderDebugLogsGroupName(String[] grpNames) throws Exception {
         String id = "test";
 
         setLoggerDebugLevel();
@@ -1257,26 +1256,38 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         };
 
         assertThrows(null, () -> new DumpReader(
-            new DumpReaderConfiguration(
-                DMP_NAME,
-                null,
-                ign0.configuration(),
-                cnsmr,
-                DFLT_THREAD_CNT,
-                DFLT_TIMEOUT,
-                true,
-                true,
-                false,
-                new String[]{GRP},
-                null,
-                false,
-                null
-            ),
-            testLog
+                new DumpReaderConfiguration(
+                        DMP_NAME,
+                        null,
+                        ign0.configuration(),
+                        cnsmr,
+                        DFLT_THREAD_CNT,
+                        DFLT_TIMEOUT,
+                        true,
+                        true,
+                        false,
+                        grpNames,
+                        null,
+                        false,
+                        null
+                ),
+                testLog
         ).run(), RuntimeException.class, "trigger error log");
 
         assertTrue("Log with group name not found", errLsnr.check());
         assertTrue("Consuming with group name not found", cnsmLsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderDebugLogsGroupName() throws Exception {
+        CheckDumpReaderDebugLogsGroupName(new String[]{GRP});
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderDebugLogsGroupNameNull() throws Exception {
+        CheckDumpReaderDebugLogsGroupName(null);
     }
 
     /** */

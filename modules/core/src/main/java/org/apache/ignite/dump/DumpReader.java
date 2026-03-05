@@ -142,7 +142,7 @@ public class DumpReader implements Runnable {
                             Runnable consumePart = () -> {
                                 if (skip.get()) {
                                     if (log.isDebugEnabled()) {
-                                        log.debug("Skip partition due to previous error [node=" + node + ", grpName=" + grpName +
+                                        log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grpName +
                                             ", part=" + part + ']');
                                     }
 
@@ -151,7 +151,7 @@ public class DumpReader implements Runnable {
 
                                 try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, grpsCfgs.cacheIds)) {
                                     if (log.isDebugEnabled()) {
-                                        log.debug("Consuming partition [node=" + node + ", grpName=" + grpName +
+                                        log.debug("Consuming partition [node=" + node + ", grp=" + grpName +
                                             ", part=" + part + ']');
                                     }
 
@@ -160,7 +160,7 @@ public class DumpReader implements Runnable {
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
 
-                                    log.error("Error consuming partition [node=" + node + ", grpName=" + grpName +
+                                    log.error("Error consuming partition [node=" + node + ", grp=" + grpName +
                                         ", part=" + part + ']', ex);
 
                                     throw new IgniteException(ex);
