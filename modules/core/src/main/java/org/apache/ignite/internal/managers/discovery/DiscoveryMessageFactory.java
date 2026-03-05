@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.managers.communication.ErrorMessageSerializer;
+import org.apache.ignite.internal.processors.authentication.User;
+import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
+import org.apache.ignite.internal.processors.authentication.UserAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperation;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperationSerializer;
+import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
+import org.apache.ignite.internal.processors.authentication.UserProposedMessageSerializer;
+import org.apache.ignite.internal.processors.authentication.UserSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
@@ -106,6 +116,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-109, User::new, new UserSerializer());
+        factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
         factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
         factory.register((short)-105, TcpDiscoveryNodeFullMetricsMessage::new,
@@ -115,6 +127,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
 
         // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
@@ -155,6 +168,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new MetadataUpdateAcceptedMessageSerializer());
         factory.register((short)509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
+        factory.register((short)510, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
+        factory.register((short)511, UserProposedMessage::new, new UserProposedMessageSerializer());
         factory.register((short)510, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
 
     }
