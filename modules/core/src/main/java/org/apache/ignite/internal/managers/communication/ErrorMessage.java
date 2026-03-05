@@ -41,6 +41,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * <p>If the message serialization fails, wraps this error with own one.
  */
 @SuppressWarnings({"NullableProblems", "unused"})
+// TODO Remove Serializable once https://issues.apache.org/jira/browse/IGNITE-27627 is completed.
 public class ErrorMessage implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
