@@ -89,7 +89,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
     }
 
     /** */
-    MarshallerMappingItem getMappingItem() {
+    public MarshallerMappingItem getMappingItem() {
         return new MarshallerMappingItem(platformId, typeId, clsName);
     }
 
