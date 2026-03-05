@@ -163,7 +163,7 @@ public class IgniteLogicalWindowRewriteRule extends RelRule<IgniteLogicalWindowR
 
         projects.addAll(constants);
 
-        return LogicalProject.create(input, List.of(), projects, (List<String>) null, ImmutableSet.of());
+        return LogicalProject.create(input, List.of(), projects, (List<String>)null, ImmutableSet.of());
     }
 
     /**
