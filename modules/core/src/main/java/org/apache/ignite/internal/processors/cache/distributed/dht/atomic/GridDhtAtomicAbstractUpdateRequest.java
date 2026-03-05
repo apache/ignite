@@ -114,7 +114,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
         boolean readRepairRecovery
@@ -127,7 +126,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.writeVer = writeVer;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
-        this.addDepInfo = addDepInfo;
 
         if (skipStore)
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);
