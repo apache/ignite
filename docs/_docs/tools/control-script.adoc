@@ -699,6 +699,15 @@ The command may not work on some special/unique configurations or even cause a c
 Command execution MUST be checked on the test environment using the data/configuration similar to the production before the execution on the real production environment.
 ====
 
+[WARNING]
+====
+[discrete]
+===  Events configuration
+The command uses special link:https://ignite.apache.org/releases/ignite2/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Consistency Violation Event] to detect the consistency violations. This event must be enabled before the command execution. If the event is not enabled by configuration, it will be automatically enabled before the command execution and disabled after the command execution.
+
+Please, refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
+====
+
 `idle_verify` command provides the inconsistent cache group names and partitions list as a result.
 The `repair` command allows performing cache consistency check and repair (when possible) using the link:key-value-api/read-repair[Read Repair] approach for every inconsistent partition found by `idle_verify`.
 

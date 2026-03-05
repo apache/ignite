@@ -102,6 +102,11 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
+            boolean evtEnabled = ignite.context().event().isRecordable(EVT_CONSISTENCY_VIOLATION);
+
+            if (!evtEnabled)
+                ignite.events().enableLocal(EVT_CONSISTENCY_VIOLATION);
+
             Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partitions())
                 .mapToObj(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
@@ -116,6 +121,10 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
                 })
                 .filter(t -> t.get2() != null)
                 .collect(Collectors.groupingBy(t -> t.get2().startsWith(PROCESSED_PREFIX)));
+
+            // Restore event state. Assume no concurrent consistency repair task can be run.
+            if (!evtEnabled)
+                ignite.events().disableLocal(EVT_CONSISTENCY_VIOLATION);
 
             if (err.get() != null || isCancelled())
                 throw new IgniteException("Consistency task was interrupted.", err.get());
@@ -159,8 +168,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
                 else
                     throw new IgniteException("Cache (or cache group) not found [name=" + cacheOrGrpName + "]");
 
-            if (!ignite.context().event().isRecordable(EVT_CONSISTENCY_VIOLATION))
-                throw new UnsupportedOperationException("Consistency violation events recording is disabled on cluster.");
+            assert ignite.context().event().isRecordable(EVT_CONSISTENCY_VIOLATION);
 
             GridDhtLocalPartition part = grpCtx.topology().localPartition(p);
 

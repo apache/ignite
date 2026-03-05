@@ -76,7 +76,6 @@ import static org.apache.ignite.events.EventType.EVT_BASELINE_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
-import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -528,7 +527,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             case EVT_CLUSTER_DEACTIVATED:
             case EVT_BASELINE_CHANGED:
             case EVT_CLUSTER_STATE_CHANGED:
-            case EVT_CONSISTENCY_VIOLATION:
                 return true;
 
             default:
