@@ -69,7 +69,7 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
      * @param closedCaches Closed caches.
      */
     public ClientCacheChangeDiscoveryMessage(Map<Integer, Boolean> startedCaches, Set<Integer> closedCaches) {
-        this.id = IgniteUuid.randomUuid();
+        id = IgniteUuid.randomUuid();
         this.startedCaches = startedCaches;
         this.closedCaches = closedCaches;
     }
