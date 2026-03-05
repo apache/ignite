@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,9 +34,22 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** */
+@RunWith(Parameterized.class)
 public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAbstractTest {
+    /** */
+    @Parameterized.Parameter
+    public int idx;
+
+    /** */
+    @Parameterized.Parameters(name = "idx={0}")
+    public static Object[] testData() {
+        return IntStream.range(0, 100).boxed().toArray();
+    }
+
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
         stopAllGrids();

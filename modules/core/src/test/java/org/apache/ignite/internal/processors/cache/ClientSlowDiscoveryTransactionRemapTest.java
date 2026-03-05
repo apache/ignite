@@ -60,7 +60,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 @RunWith(Parameterized.class)
 public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscoveryAbstractTest {
     /** */
-    @Parameterized.Parameters(name = "isolation = {0}, concurrency = {1}, operation = {2}")
+    @Parameterized.Parameter(3)
+    public int idx;
+
+    /** */
+    @Parameterized.Parameters(name = "isolation = {0}, concurrency = {1}, operation = {2}, idx = {3}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
@@ -74,13 +78,15 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         operations.add(new NamedClosure<>(putAllRemoveAllDifferentKeys, "putAllRemoveAllDifferentKeys"));
         operations.add(new NamedClosure<>(randomOperation, "random"));
 
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                if (!shouldBeTested(concurrency, isolation))
-                    continue;
+        for (int i = 0; i < 30; i++) {
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    if (!shouldBeTested(concurrency, isolation))
+                        continue;
 
-                for (IgniteInClosure<TestTransaction<Integer, Integer>> operation : operations)
-                    params.add(new Object[] {concurrency, isolation, operation});
+                    for (IgniteInClosure<TestTransaction<Integer, Integer>> operation : operations)
+                        params.add(new Object[] {concurrency, isolation, operation, i});
+                }
             }
         }
 
