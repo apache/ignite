@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -116,8 +115,8 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     }
 
     /** */
-    BinaryObjectException rejectionError() {
-        return new BinaryObjectException(errMsg);
+    String rejectionErrorMessage() {
+        return errMsg;
     }
 
     /** */

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettingsS
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBeanSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
@@ -245,6 +246,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuerySerial
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAckSerializer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntrySerializer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntrySerializer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -278,6 +280,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessageSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequestSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponseSerializer;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
@@ -352,7 +355,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
-        factory.register((short)-100, ErrorMessage::new, new ErrorMessageSerializer());
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
         factory.register((short)-65, TxInfo::new, new TxInfoSerializer());
         factory.register((short)-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());
         factory.register((short)-63, ExchangeInfo::new, new ExchangeInfoSerializer());
@@ -386,7 +389,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
         factory.register((short)8, GridIoMessage::new, new GridIoMessageSerializer());
         factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
-        factory.register((short)10, GridDeploymentInfoBean::new);
+        factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
         factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
         factory.register((short)13, GridEventStorageMessage::new, new GridEventStorageMessageSerializer());
@@ -434,7 +437,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)58, GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer());
         factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
         factory.register((short)61, GridContinuousMessage::new, new GridContinuousMessageSerializer());
-        factory.register((short)62, DataStreamerRequest::new);
+        factory.register((short)62, DataStreamerRequest::new, new DataStreamerRequestSerializer());
         factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
         factory.register((short)77, GridTaskResultResponse::new, new GridTaskResultResponseSerializer());
@@ -452,7 +455,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)93, CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer());
         factory.register((short)94, IgniteTxKey::new, new IgniteTxKeySerializer());
         factory.register((short)95, DataStreamerEntry::new);
-        factory.register((short)96, CacheContinuousQueryEntry::new);
+        factory.register((short)96, CacheContinuousQueryEntry::new, new CacheContinuousQueryEntrySerializer());
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
         factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
         factory.register((short)100, IgniteTxEntry::new, new IgniteTxEntrySerializer());
