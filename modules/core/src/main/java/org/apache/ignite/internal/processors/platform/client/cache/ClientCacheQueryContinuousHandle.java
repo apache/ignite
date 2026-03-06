@@ -88,7 +88,8 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
             assert cur != null;
             try {
                 cur.close();
-            } finally {
+            }
+            finally {
                 ctx.decrementCursors();
             }
         }

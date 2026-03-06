@@ -35,6 +35,10 @@ public class ClientResourceRegistry {
     /** Logger. */
     private final IgniteLogger log;
 
+    /**
+     * Logger for cleanup errors logging.
+     * @param log Logger.
+     */
     public ClientResourceRegistry(IgniteLogger log) {
         this.log = log;
     }
