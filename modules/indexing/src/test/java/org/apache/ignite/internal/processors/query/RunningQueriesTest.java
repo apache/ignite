@@ -228,23 +228,23 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testCloseRunningQueriesOnNodeStop() throws Exception {
-        IgniteEx ign = startGrid(super.getConfiguration("TST"));
+        IgniteEx ign = startGrid(getConfiguration("TST"));
 
-        IgniteCache<Integer, Integer> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("TST")
-            .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
-        );
+        try (ign) {
+            IgniteCache<Integer, Integer> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+                .setName("TST")
+                .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
+            );
 
-        for (int i = 0; i < 10000; i++)
-            cache.put(i, i);
+            for (int i = 0; i < 10000; i++)
+                cache.put(i, i);
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+            cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
 
-        Assert.assertEquals("Should be one running query",
-            1,
-            ign.context().query().runningQueries(-1).size());
-
-        ign.close();
+            Assert.assertEquals("Should be one running query",
+                1,
+                ign.context().query().runningQueries(-1).size());
+        }
 
         Assert.assertEquals(0, ign.context().query().runningQueries(-1).size());
     }
