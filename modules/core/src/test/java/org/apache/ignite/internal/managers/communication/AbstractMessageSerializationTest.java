@@ -29,9 +29,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
@@ -291,23 +293,17 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
+        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
             return writeField(Object[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType) {
+        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
             return writeField(Collection.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
-            return writeField(Set.class);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-            MessageCollectionItemType valType, boolean compress) {
+        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType keyType, boolean compress) {
             return writeField(Map.class);
         }
 
@@ -551,29 +547,22 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
+        @Override public <T> T[] readObjectArray(MessageArrayType type) {
             readField(Object[].class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
-            readField(Collection.class);
+        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+            readField(type.set() ? Set.class : Collection.class);
 
             return null;
         }
 
-        /** {@inheritDoc} */
-        @Override public <S extends Set<?>> S readSet(MessageCollectionItemType itemType) {
-            readField(Set.class);
-
-            return null;
-        }
 
         /** {@inheritDoc} */
-        @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-            MessageCollectionItemType valType, boolean linked, boolean compress) {
+        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
             readField(Map.class);
 
             return null;

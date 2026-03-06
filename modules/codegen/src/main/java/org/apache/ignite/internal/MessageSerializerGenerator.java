@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -349,10 +350,7 @@ public class MessageSerializerGenerator {
                 return;
             }
 
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
-
-            returnFalseIfWriteFailed(write, field, "writer.writeObjectArray", getExpr,
-                "MessageCollectionItemType." + messageCollectionItemType(componentType));
+            returnFalseIfWriteFailed(write, field, "writer.writeObjectArray", getExpr, messageCollectionItemTypes(type));
 
             return;
         }
@@ -374,16 +372,10 @@ public class MessageSerializerGenerator {
                 returnFalseIfWriteFailed(write, field, "writer.writeAffinityTopologyVersion", getExpr);
 
             else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
-                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
-
-                assert typeArgs.size() == 2;
-
-                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
-
                 List<String> args = new ArrayList<>();
+
                 args.add(getExpr);
-                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
-                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+                args.add(messageCollectionItemTypes(type));
 
                 if (compress)
                     args.add("true"); // the value of the compress argument in the MessageWriter#writeMap method
@@ -410,20 +402,8 @@ public class MessageSerializerGenerator {
                     returnFalseIfWriteFailed(write, field, "writer.writeMessage", getExpr);
             }
 
-            else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
-                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
-
-                assert typeArgs.size() == 1;
-
-                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
-
-                String collectionWriter = assignableFrom(erasedType(type), type(Set.class.getName()))
-                    ? "writer.writeSet"
-                    : "writer.writeCollection";
-
-                returnFalseIfWriteFailed(write, field, collectionWriter, getExpr,
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
-            }
+            else if (assignableFrom(erasedType(type), type(Collection.class.getName())))
+                returnFalseIfWriteFailed(write, field, "writer.writeCollection", getExpr, messageCollectionItemTypes(type));
 
             else if (enumType(env, type)) {
                 Element element = env.getTypeUtils().asElement(type);
@@ -578,13 +558,7 @@ public class MessageSerializerGenerator {
             }
 
             if (componentType.getKind() == TypeKind.ARRAY) {
-                TypeMirror ctype = ((ArrayType)componentType).getComponentType();
-
-                assert ctype.getKind().isPrimitive();
-
-                returnFalseIfReadFailed(field, "reader.readObjectArray",
-                    "MessageCollectionItemType." + messageCollectionItemType(ctype),
-                    ctype.getKind().name().toLowerCase() + "[].class");
+                returnFalseIfReadFailed(field, "reader.readObjectArray", messageCollectionItemTypes(type));
 
                 return;
             }
@@ -592,11 +566,7 @@ public class MessageSerializerGenerator {
             if (componentType.getKind() == TypeKind.DECLARED) {
                 Element componentElement = ((DeclaredType)componentType).asElement();
 
-                String cls = componentElement.getSimpleName().toString();
-
-                returnFalseIfReadFailed(field, "reader.readObjectArray",
-                    "MessageCollectionItemType." + messageCollectionItemType(componentType),
-                    cls + ".class");
+                returnFalseIfReadFailed(field, "reader.readObjectArray", messageCollectionItemTypes(type));
 
                 if (!"java.lang".equals(env.getElementUtils().getPackageOf(componentElement).getQualifiedName().toString())) {
                     String importCls = ((QualifiedNameable)componentElement).getQualifiedName().toString();
@@ -630,9 +600,8 @@ public class MessageSerializerGenerator {
                 assert typeArgs.size() == 2;
 
                 List<String> args = new ArrayList<>();
-                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
-                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
-                args.add("false"); // the value of the linked argument in the MessageReader#readMap method
+
+                args.add(messageCollectionItemTypes(type));
 
                 if (compress)
                     args.add("true"); // the value of the compress argument in the MessageReader#readMap method
@@ -660,16 +629,7 @@ public class MessageSerializerGenerator {
             }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
-                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
-
-                assert typeArgs.size() == 1;
-
-                String collectionReader = assignableFrom(erasedType(type), type(Set.class.getName()))
-                    ? "reader.readSet"
-                    : "reader.readCollection";
-
-                returnFalseIfReadFailed(field, collectionReader,
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+                returnFalseIfReadFailed(field, "reader.readCollection", messageCollectionItemTypes(type));
             }
             else if (enumType(env, type)) {
                 String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());
@@ -689,6 +649,70 @@ public class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
+    }
+
+    /** */
+    private String messageCollectionItemTypes(TypeMirror type) throws Exception {
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+        if (type.getKind() == TypeKind.ARRAY) {
+            ArrayType arrType = (ArrayType)type;
+            TypeMirror componentType = arrType.getComponentType();
+
+            String clazz;
+
+            if (componentType.getKind() == TypeKind.ARRAY) {
+                TypeMirror ctype = ((ArrayType)componentType).getComponentType();
+
+                assert ctype.getKind().isPrimitive();
+
+                clazz = ctype.getKind().name().toLowerCase() + "[].class";
+            }
+            else if (componentType.getKind() == TypeKind.DECLARED) {
+                Element componentElement = ((DeclaredType)componentType).asElement();
+
+                clazz = componentElement.getSimpleName() + ".class";
+            }
+            else {
+                assert componentType.getKind().isPrimitive();
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageItemType");
+
+                return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(componentType) + "_ARR)";
+            }
+
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageArrayType");
+
+            return "new MessageArrayType(" + messageCollectionItemTypes(componentType) + ", " + clazz + ")";
+        }
+        else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageMapType");
+
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+            assert typeArgs.size() == 2;
+
+            return "new MessageMapType(" +
+                messageCollectionItemTypes(typeArgs.get(0)) + ", " +
+                messageCollectionItemTypes(typeArgs.get(1)) + ", " +
+                assignableFrom(erasedType(type), type(LinkedHashMap.class.getName())) + ")";
+        }
+        else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionType");
+
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+            assert typeArgs.size() == 1;
+
+            return "new MessageCollectionType(" +
+                messageCollectionItemTypes(typeArgs.get(0)) + ", " +
+                assignableFrom(erasedType(type), type(Set.class.getName())) + ")";
+        }
+        else {
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageItemType");
+
+            return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(type) + ")";
+        }
     }
 
     /**

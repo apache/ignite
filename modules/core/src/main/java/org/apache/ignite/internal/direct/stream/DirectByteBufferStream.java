@@ -17,46 +17,48 @@
 
 package org.apache.ignite.internal.direct.stream;
 
-import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.RandomAccess;
-import java.util.Set;
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.managers.communication.CompressedMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
+ import java.lang.reflect.Array;
+ import java.nio.ByteBuffer;
+ import java.util.ArrayList;
+ import java.util.BitSet;
+ import java.util.Collection;
+ import java.util.HashSet;
+ import java.util.Iterator;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.RandomAccess;
+ import java.util.UUID;
+ import org.apache.ignite.IgniteCheckedException;
+ import org.apache.ignite.IgniteException;
+ import org.apache.ignite.internal.managers.communication.CompressedMessage;
+ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+ import org.apache.ignite.internal.processors.cache.CacheObject;
+ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+ import org.apache.ignite.internal.util.GridLongList;
+ import org.apache.ignite.internal.util.GridUnsafe;
+ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+ import org.apache.ignite.internal.util.typedef.internal.S;
+ import org.apache.ignite.internal.util.typedef.internal.U;
+ import org.apache.ignite.lang.IgniteUuid;
+ import org.apache.ignite.plugin.extensions.communication.Message;
+ import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
+ import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+ import org.apache.ignite.plugin.extensions.communication.MessageMapType;
+ import org.apache.ignite.plugin.extensions.communication.MessageReader;
+ import org.apache.ignite.plugin.extensions.communication.MessageType;
+ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+ import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
-import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+ import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
+ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 /**
  * Direct marshalling I/O stream.
@@ -938,10 +940,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param arr Array.
-     * @param itemType Component type.
+     * @param type Type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageArrayType type, MessageWriter writer) {
         if (arr != null) {
             int len = arr.length;
 
@@ -958,7 +960,7 @@ public class DirectByteBufferStream {
                 if (arrCur == NULL)
                     arrCur = arr[arrPos++];
 
-                write(itemType, arrCur, writer);
+                write(type.valueType(), arrCur, writer);
 
                 if (!lastFinished)
                     return;
@@ -974,13 +976,13 @@ public class DirectByteBufferStream {
 
     /**
      * @param col Collection.
-     * @param itemType Component type.
+     * @param type Type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageCollectionType type, MessageWriter writer) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
-                writeRandomAccessList((List<T>)col, itemType, writer);
+                writeRandomAccessList((List<T>)col, type, writer);
             else {
                 if (it == null) {
                     writeInt(col.size());
@@ -995,7 +997,7 @@ public class DirectByteBufferStream {
                     if (cur == NULL)
                         cur = it.next();
 
-                    write(itemType, cur, writer);
+                    write(type.valueType(), cur, writer);
 
                     if (!lastFinished)
                         return;
@@ -1012,10 +1014,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param list List.
-     * @param itemType Component type.
+     * @param type Type.
      * @param writer Writer.
      */
-    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer) {
+    private <T> void writeRandomAccessList(List<T> list, MessageCollectionType type, MessageWriter writer) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
@@ -1033,7 +1035,7 @@ public class DirectByteBufferStream {
             if (arrCur == NULL)
                 arrCur = list.get(arrPos++);
 
-            write(itemType, arrCur, writer);
+            write(type.valueType(), arrCur, writer);
 
             if (!lastFinished)
                 return;
@@ -1046,11 +1048,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param map Map.
-     * @param keyType Key type.
-     * @param valType Value type.
+     * @param type Type.
      * @param writer Writer.
      */
-    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType, MessageWriter writer) {
+    public <K, V> void writeMap(Map<K, V> map, MessageMapType type, MessageWriter writer) {
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -1070,7 +1071,7 @@ public class DirectByteBufferStream {
                 e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
-                    write(keyType, e.getKey(), writer);
+                    write(type.keyType(), e.getKey(), writer);
 
                     if (!lastFinished)
                         return;
@@ -1078,7 +1079,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(valType, e.getValue(), writer);
+                write(type.valueType(), e.getValue(), writer);
 
                 if (!lastFinished)
                     return;
@@ -1597,12 +1598,11 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemType Item type.
-     * @param itemCls Item class.
+     * @param type Item type.
      * @param reader Reader.
      * @return Array.
      */
-    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader) {
+    public <T> T[] readObjectArray(MessageArrayType type, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1614,10 +1614,10 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = itemCls != null ? (Object[])Array.newInstance(itemCls, readSize) : new Object[readSize];
+                objArr = type.clazz() != null ? (Object[])Array.newInstance(type.clazz(), readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType, reader);
+                Object item = read(type.valueType(), reader);
 
                 if (!lastFinished)
                     return null;
@@ -1640,36 +1640,13 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * Reads collection as an {@link ArrayList}.
-     *
-     * @param itemType Item type.
-     * @param reader Reader.
-     * @return {@link ArrayList}.
-     */
-    public <L extends List<?>> L readList(MessageCollectionItemType itemType, MessageReader reader) {
-        return readCollection(itemType, reader, false);
-    }
-
-    /**
-     * Reads collection as a {@link HashSet}.
-     *
-     * @param itemType Item type.
-     * @param reader Reader.
-     * @return {@link HashSet}.
-     */
-    public <SET extends Set<?>> SET readSet(MessageCollectionItemType itemType, MessageReader reader) {
-        return readCollection(itemType, reader, true);
-    }
-
-    /**
      * Reads collection eather as a {@link ArrayList} or a {@link HashSet}.
      *
-     * @param itemType Item type.
+     * @param type Item type.
      * @param reader Reader.
-     * @param set Read-as-Set flag.
      * @return {@link ArrayList} or a {@link HashSet}.
      */
-    private <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader, boolean set) {
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1681,10 +1658,10 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = set ? U.newHashSet(readSize) : new ArrayList<>(readSize);
+                col = type.set() ? U.newHashSet(readSize) : new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType, reader);
+                Object item = read(type.valueType(), reader);
 
                 if (!lastFinished)
                     return null;
@@ -1707,14 +1684,11 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @param linked Whether linked map should be created.
+     * @param type Value type.
      * @param reader Reader.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
-                                           boolean linked, MessageReader reader) {
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1726,11 +1700,11 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (map == null)
-                map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
+                map = type.linked() ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(keyType, reader);
+                    Object key = read(type.keyType(), reader);
 
                     if (!lastFinished)
                         return null;
@@ -1739,7 +1713,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(valType, reader);
+                Object val = read(type.valueType(), reader);
 
                 if (!lastFinished)
                     return null;
@@ -2020,8 +1994,8 @@ public class DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
-        switch (type) {
+    protected <K, V> void write(MessageType type, Object val, MessageWriter writer) {
+        switch (type.type()) {
             case BYTE:
                 writeByte((Byte)val);
 
@@ -2142,6 +2116,21 @@ public class DirectByteBufferStream {
 
                 break;
 
+            case MAP:
+                writeMap((Map<K, V>)val, (MessageMapType)type, writer);
+
+                break;
+
+            case COLLECTION:
+                writeCollection((Collection<V>)val, (MessageCollectionType)type, writer);
+
+                break;
+
+            case ARRAY:
+                writeObjectArray((V[])val, (MessageArrayType)type, writer);
+
+                break;
+
             case MSG:
                 try {
                     if (val != null)
@@ -2166,8 +2155,8 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return Value.
      */
-    protected Object read(MessageCollectionItemType type, MessageReader reader) {
-        switch (type) {
+    protected Object read(MessageType type, MessageReader reader) {
+        switch (type.type()) {
             case BYTE:
                 return readByte();
 
@@ -2239,6 +2228,15 @@ public class DirectByteBufferStream {
 
             case GRID_LONG_LIST:
                 return readGridLongList();
+
+            case MAP:
+                return readMap((MessageMapType)type, reader);
+
+            case COLLECTION:
+                return readCollection((MessageCollectionType)type, reader);
+
+            case ARRAY:
+                return readObjectArray((MessageArrayType)type, reader);
 
             case MSG:
                 return readMessage(reader);

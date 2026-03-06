@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.UserSerializer;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
@@ -168,5 +170,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
         factory.register((short)510, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
         factory.register((short)511, UserProposedMessage::new, new UserProposedMessageSerializer());
+        factory.register((short)512, CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
     }
 }

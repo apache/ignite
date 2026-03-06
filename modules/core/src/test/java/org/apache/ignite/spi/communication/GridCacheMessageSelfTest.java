@@ -42,8 +42,10 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -268,7 +270,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeCollection(entries, MessageCollectionItemType.MSG))
+                    if (!writer.writeCollection(entries, new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false)))
                         return false;
 
                     writer.incrementState();
@@ -287,7 +289,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (reader.state()) {
                 case 3:
-                    entries = reader.readCollection(MessageCollectionItemType.MSG);
+                    entries = reader.readCollection(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false));
 
                     if (!reader.isLastRead())
                         return false;
