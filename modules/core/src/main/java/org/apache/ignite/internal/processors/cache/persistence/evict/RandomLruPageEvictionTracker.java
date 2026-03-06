@@ -190,7 +190,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected int getFragmentLink(int pageTrackingIdx) {
         int link = GridUnsafe.getIntVolatile(null, trackingArrPtr + pageTrackingIdx * 4L);
 
-        assert link <= 0 : "[link=" + link + "]";
+        assert link <= 0 : "[link=" + link + ", ptr=" + trackingArrPtr + ", idx=" + pageTrackingIdx + ']';
 
         return -link;
     }

@@ -17,28 +17,35 @@
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /** */
 public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommonAbstractTest {
     /** Offheap size for memory policy. */
-    private static final int SIZE = 90 * 1024 * 1024;
+    private static final int SIZE = 150 * 1024 * 1024;
 
     /** Offheap size for memory policy. */
-    private static final long MAX_SIZE = 10L * 1024 * 1024 * 1024;
+    private static final long MAX_SIZE = 2L * 1024 * 1024 * 1024;
 
     /** Record size. */
-    private static final int RECORD_SIZE = 24 * 1024 * 1024;
+    private static final int RECORD_SIZE = 5 * 4096;
 
     /** Number of entries. */
     static final int ENTRIES = 50;
@@ -94,12 +101,17 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setInitialSize(SIZE)
                     .setMaxSize(MAX_SIZE)
-                    .setEmptyPagesPoolSize(1000)
+//                    .setEmptyPagesPoolSize(1000)
                     .setPersistenceEnabled(false)
                     .setMetricsEnabled(true)
                     .setEvictionThreshold(0.8)
                 )
                 .setPageSize(DFLT_PAGE_SIZE)
+                .setCheckpointFrequency(60000)
+                .setMaxWalArchiveSize(10737418240L)
+                .setWalMode(WALMode.LOG_ONLY)
+                .setWalBufferSize(5242880)
+                .setWalCompactionEnabled(true)
             );
     }
 
@@ -116,11 +128,31 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
     public void testPutLargeObjects() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
-        IgniteCache<Integer, Object> cache = ignite.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Long, TestObject> cache = ignite.createCache(DEFAULT_CACHE_NAME);
 
         Random rnd = new Random();
 
-        while(true)
-            cache.put(rnd.nextInt(), new TestObject(RECORD_SIZE));
+        AtomicBoolean run = new AtomicBoolean(true);
+        AtomicLong idx = new AtomicLong();
+        boolean sleep = false;
+
+        IgniteInternalFuture<?> fut = runMultiThreadedAsync(() -> {
+            try {
+                while (run.get()) {
+                    if (rnd.nextInt(100) < 50)
+                        cache.put(idx.incrementAndGet(), new TestObject(RECORD_SIZE));
+                    else if (idx.get() > 0)
+                        cache.get(idx.get());
+
+                    if (sleep)
+                        Thread.sleep(rnd.nextInt(10));
+                }
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+        }, 8, "ldr");
+
+        fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
     }
 }
