@@ -69,7 +69,6 @@ public class DataStreamerRequest implements Message {
     boolean keepBinary;
 
     /** */
-    // TODO: DeploymentMode enum is serialized as byte ordinal - consider refactoring to use enum serialization
     @Order(8)
     DeploymentMode depMode;
 
