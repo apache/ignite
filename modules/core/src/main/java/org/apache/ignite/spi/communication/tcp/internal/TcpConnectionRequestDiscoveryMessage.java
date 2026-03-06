@@ -18,10 +18,13 @@
 package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,25 +35,37 @@ import org.jetbrains.annotations.Nullable;
  * node B receives request and opens communication connection to node A
  * thus allowing both nodes to communicate to each other.
  */
-public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage {
+public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    /** Message id. */
+    @Order(0)
+    IgniteUuid id;
 
-    /** */
+    /** Receiver node id. */
+    @Order(1)
     @GridToStringInclude
-    private final UUID receiverNodeId;
+    UUID receiverNodeId;
 
-    /** */
+    /** Connection index. */
+    @Order(2)
     @GridToStringInclude
-    private final int connIdx;
+    int connIdx;
 
-    /** */
+    /**
+     * @param receiverNodeId Receiver node id.
+     * @param connIdx Connection index.
+     */
     public TcpConnectionRequestDiscoveryMessage(UUID receiverNodeId, int connIdx) {
+        id = IgniteUuid.randomUuid();
         this.receiverNodeId = receiverNodeId;
         this.connIdx = connIdx;
+    }
+
+    /** Constructor for {@link DiscoveryMessageFactory}. */
+    public TcpConnectionRequestDiscoveryMessage() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -71,6 +86,11 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 23;
     }
 
     /** {@inheritDoc} */
