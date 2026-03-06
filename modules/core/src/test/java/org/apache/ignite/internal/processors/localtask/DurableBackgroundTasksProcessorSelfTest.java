@@ -49,6 +49,7 @@ import static org.apache.ignite.internal.processors.localtask.DurableBackgroundT
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Class for testing the {@link DurableBackgroundTasksProcessor}.
@@ -345,7 +346,10 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         n = startGrid(0);
 
-        assertEquals(3, tasks(n).size());
+        int tasks = tasks(n).size();
+
+        assertTrue("Expected 3 tasks after restore, or 2 if completed converted task was already cleaned by checkpoint",
+            tasks == 2 || tasks == 3);
 
         checkStateAndMetaStorage(n, t0, COMPLETED, true, true, false);
         checkStateAndMetaStorage(n, t1, INIT, true, false, false);
@@ -535,7 +539,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         if (expState == null)
             assertNull(taskState);
         else {
-            assertEquals(expState, taskState.state());
+            assertTrue(waitForCondition(() -> expState == taskState.state(), 1_000));
             assertEquals(expSaved, taskState.saved());
             assertEquals(expDone, taskState.outFuture().isDone());
 
