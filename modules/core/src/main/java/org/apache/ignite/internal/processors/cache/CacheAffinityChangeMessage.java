@@ -209,7 +209,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage, Messa
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 512;
+        return 515;
     }
 
     /** {@inheritDoc} */
