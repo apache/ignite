@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
@@ -46,55 +45,55 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap(((TestMapMessage)msg).booleanArrayBoxedLongMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.BOOLEAN), boolean.class), new MessageItemType(MessageCollectionItemType.LONG), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).booleanArrayBoxedLongMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), new MessageItemType(MessageCollectionItemType.LONG), false)))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap(((TestMapMessage)msg).byteArrayBooleanArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.BYTE), byte.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.BOOLEAN), boolean.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).byteArrayBooleanArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMap(((TestMapMessage)msg).shortArrayByteArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.SHORT), short.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.BYTE), byte.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).shortArrayByteArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), new MessageItemType(MessageCollectionItemType.BYTE_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMap(((TestMapMessage)msg).intArrayShortArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT), int.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.SHORT), short.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).intArrayShortArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.INT_ARR), new MessageItemType(MessageCollectionItemType.SHORT_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap(((TestMapMessage)msg).longArrayIntArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.LONG), long.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT), int.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).longArrayIntArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG_ARR), new MessageItemType(MessageCollectionItemType.INT_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMap(((TestMapMessage)msg).charArrayLongArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.CHAR), char.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.LONG), long.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).charArrayLongArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), new MessageItemType(MessageCollectionItemType.LONG_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMap(((TestMapMessage)msg).floatArrayCharArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.FLOAT), float.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.CHAR), char.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).floatArrayCharArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), new MessageItemType(MessageCollectionItemType.CHAR_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMap(((TestMapMessage)msg).doubleArrayFloatArrayMap, new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.DOUBLE), double.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.FLOAT), float.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).doubleArrayFloatArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false)))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMap(((TestMapMessage)msg).stringDoubleArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageArrayType(new MessageItemType(MessageCollectionItemType.DOUBLE), double.class), false)))
+                if (!writer.writeMap(((TestMapMessage)msg).stringDoubleArrayMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false)))
                     return false;
 
                 writer.incrementState();
@@ -199,7 +198,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
         switch (reader.state()) {
             case 0:
-                ((TestMapMessage)msg).booleanArrayBoxedLongMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.BOOLEAN), boolean.class), new MessageItemType(MessageCollectionItemType.LONG), false));
+                ((TestMapMessage)msg).booleanArrayBoxedLongMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), new MessageItemType(MessageCollectionItemType.LONG), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -207,7 +206,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                ((TestMapMessage)msg).byteArrayBooleanArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.BYTE), byte.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.BOOLEAN), boolean.class), false));
+                ((TestMapMessage)msg).byteArrayBooleanArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -215,7 +214,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 2:
-                ((TestMapMessage)msg).shortArrayByteArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.SHORT), short.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.BYTE), byte.class), false));
+                ((TestMapMessage)msg).shortArrayByteArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), new MessageItemType(MessageCollectionItemType.BYTE_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -223,7 +222,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 3:
-                ((TestMapMessage)msg).intArrayShortArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT), int.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.SHORT), short.class), false));
+                ((TestMapMessage)msg).intArrayShortArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.INT_ARR), new MessageItemType(MessageCollectionItemType.SHORT_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -231,7 +230,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 4:
-                ((TestMapMessage)msg).longArrayIntArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.LONG), long.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT), int.class), false));
+                ((TestMapMessage)msg).longArrayIntArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG_ARR), new MessageItemType(MessageCollectionItemType.INT_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -239,7 +238,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 5:
-                ((TestMapMessage)msg).charArrayLongArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.CHAR), char.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.LONG), long.class), false));
+                ((TestMapMessage)msg).charArrayLongArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), new MessageItemType(MessageCollectionItemType.LONG_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -247,7 +246,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 6:
-                ((TestMapMessage)msg).floatArrayCharArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.FLOAT), float.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.CHAR), char.class), false));
+                ((TestMapMessage)msg).floatArrayCharArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), new MessageItemType(MessageCollectionItemType.CHAR_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -255,7 +254,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 7:
-                ((TestMapMessage)msg).doubleArrayFloatArrayMap = reader.readMap(new MessageMapType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.DOUBLE), double.class), new MessageArrayType(new MessageItemType(MessageCollectionItemType.FLOAT), float.class), false));
+                ((TestMapMessage)msg).doubleArrayFloatArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;
@@ -263,7 +262,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 8:
-                ((TestMapMessage)msg).stringDoubleArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageArrayType(new MessageItemType(MessageCollectionItemType.DOUBLE), double.class), false));
+                ((TestMapMessage)msg).stringDoubleArrayMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false));
 
                 if (!reader.isLastRead())
                     return false;

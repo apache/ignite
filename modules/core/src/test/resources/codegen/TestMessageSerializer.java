@@ -70,7 +70,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeObjectArray(((TestMessage)msg).intMatrix, new MessageArrayType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT), int.class), int[].class)))
+                if (!writer.writeObjectArray(((TestMessage)msg).intMatrix, new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class)))
                     return false;
 
                 writer.incrementState();
@@ -177,7 +177,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 4:
-                ((TestMessage)msg).intMatrix = reader.readObjectArray(new MessageArrayType(new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT), int.class), int[].class));
+                ((TestMessage)msg).intMatrix = reader.readObjectArray(new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class));
 
                 if (!reader.isLastRead())
                     return false;

@@ -664,8 +664,6 @@ public class MessageSerializerGenerator {
             if (componentType.getKind() == TypeKind.ARRAY) {
                 TypeMirror ctype = ((ArrayType)componentType).getComponentType();
 
-                assert ctype.getKind().isPrimitive();
-
                 clazz = ctype.getKind().name().toLowerCase() + "[].class";
             }
             else if (componentType.getKind() == TypeKind.DECLARED) {
