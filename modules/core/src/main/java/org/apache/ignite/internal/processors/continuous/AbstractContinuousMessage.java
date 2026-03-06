@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -29,16 +30,24 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
     private static final long serialVersionUID = 2781778657738703012L;
 
     /** Routine ID. */
-    protected final UUID routineId;
+    @Order(0)
+    UUID routineId;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(1)
+    IgniteUuid id;
+
+    /** */
+    protected AbstractContinuousMessage() {
+        // No-op.
+    }
 
     /**
      * @param id Id.
      */
     protected AbstractContinuousMessage(UUID id) {
         routineId = id;
+        this.id = IgniteUuid.randomUuid();
     }
 
     /** {@inheritDoc} */
