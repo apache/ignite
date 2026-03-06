@@ -44,7 +44,7 @@ public class MessageCollectionType implements MessageType {
         return MessageCollectionItemType.COLLECTION;
     }
 
-    /** */
+    /** @return Is set. */
     public boolean set() {
         return set;
     }
