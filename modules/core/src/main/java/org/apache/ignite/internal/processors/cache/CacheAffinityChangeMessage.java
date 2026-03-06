@@ -89,7 +89,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage, Messa
      * @param cacheDeploymentIds Cache deployment ID.
      */
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer, Map<Integer, IgniteUuid> cacheDeploymentIds) {
-        this.id = IgniteUuid.randomUuid();
+        id = IgniteUuid.randomUuid();
         this.topVer = topVer;
         this.cacheDeploymentIds = cacheDeploymentIds;
     }
