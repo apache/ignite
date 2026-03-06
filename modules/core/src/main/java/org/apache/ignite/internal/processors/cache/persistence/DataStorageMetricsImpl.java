@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -172,6 +173,9 @@ public class DataStorageMetricsImpl {
 
     /** Total size of the compressed segments in bytes. */
     private final LongAdderMetric walCompressedBytes;
+
+    /** Supplier for the eviction-started flag. */
+    private volatile BooleanSupplier evictionsStartedSupplier = () -> false;
 
     /**
      * @param mmgr Metrics manager.
@@ -372,6 +376,12 @@ public class DataStorageMetricsImpl {
             "Used checkpoint buffer size in bytes.");
 
         mreg.register("CheckpointBufferSize", this::checkpointBufferSize, "Checkpoint buffer size in bytes.");
+
+        mreg.register(
+            "EvictionsStarted",
+            this::evictionsStarted,
+            "True if page eviction was triggered due to data region memory pressure."
+        );
     }
 
     /** @return Current number of WAL segments in the WAL archive. */
@@ -809,5 +819,15 @@ public class DataStorageMetricsImpl {
             return;
 
         walCompressedBytes.add(size);
+    }
+
+    /** @param supplier Supplier for the eviction-started flag. */
+    public void setEvictionsStartedSupplier(BooleanSupplier supplier) {
+        evictionsStartedSupplier = (supplier == null) ? () -> false : supplier;
+    }
+
+    /** @return {@code true} if page eviction was triggered due to data region memory pressure. */
+    private boolean evictionsStarted() {
+        return evictionsStartedSupplier.getAsBoolean();
     }
 }

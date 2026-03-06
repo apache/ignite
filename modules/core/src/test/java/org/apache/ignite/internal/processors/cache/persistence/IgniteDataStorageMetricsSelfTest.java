@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -63,14 +64,17 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
+import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -137,7 +141,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                     .setMaxSize(maxRegionSize)
                     .setPersistenceEnabled(false)
                     .setMetricsEnabled(true)
-                    .setName(NO_PERSISTENCE))
+                    .setName(NO_PERSISTENCE)
+                    .setPageEvictionMode(RANDOM_LRU))
             .setWalMode(WALMode.LOG_ONLY)
             .setMetricsEnabled(true);
 
@@ -503,6 +508,37 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         disableWal(n, true);
 
         checkWalArchiveAndTotalSize(n, false);
+    }
+
+    /** Verifies that the 'EvictionsStarted' metric becomes {@code true} after page eviction is triggered. */
+    @Test
+    public void testEvicstionsStartedMetric() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        String msg = "Page-based evictions started. Consider increasing 'maxSize' on Data Region configuration";
+
+        LogListener lsnr = LogListener.matches(msg).build();
+
+        listeningLog.registerListener(lsnr);
+
+        IgniteCache<Object, Object> cacheNp = ignite.cache("cache-np");
+
+        String big = repeat('X', 256 * 1024);
+
+        for (int i = 0; i < 1_000_000 && !lsnr.check(); i++)
+            cacheNp.put(i, new Person("first-" + i + "-" + big, "last-" + i + "-" + big));
+
+        assertTrue(lsnr.check());
+
+        MetricRegistry metrics = ignite.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+        assertNotNull(metrics);
+
+        BooleanGauge evictStarted = metrics.findMetric("EvictionsStarted");
+        assertNotNull(evictStarted);
+
+        assertTrue(evictStarted.value());
     }
 
     /**
