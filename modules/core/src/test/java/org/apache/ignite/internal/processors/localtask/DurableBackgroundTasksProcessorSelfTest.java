@@ -536,7 +536,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         if (expState == null)
             assertNull(taskState);
         else {
-            assertTrue(waitForCondition(() -> expState.equals(taskState.state()), getTestTimeout()));
+            assertTrue(waitForCondition(() -> expState == taskState.state(), getTestTimeout()));
             assertEquals(expSaved, taskState.saved());
             assertEquals(expDone, taskState.outFuture().isDone());
 
