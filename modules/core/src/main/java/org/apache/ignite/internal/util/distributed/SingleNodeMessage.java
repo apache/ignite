@@ -55,6 +55,7 @@ public class SingleNodeMessage<R extends Message> implements Message {
 
     /** Default constructor for {@link GridIoMessageFactory}. */
     public SingleNodeMessage() {
+        // No-op.
     }
 
     /**
