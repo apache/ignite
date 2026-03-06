@@ -20,6 +20,8 @@ package org.apache.ignite.internal.managers.communication;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -303,8 +305,8 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType keyType, boolean compress) {
-            return writeField(Map.class);
+        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
+            return writeField(type.linked() ? LinkedHashMap.class : HashMap.class);
         }
 
         /** {@inheritDoc} */
@@ -563,7 +565,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
-            readField(Map.class);
+            readField(type.linked() ? LinkedHashMap.class : HashMap.class);
 
             return null;
         }
