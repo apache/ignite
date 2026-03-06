@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -51,6 +52,9 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -65,6 +69,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -72,6 +77,9 @@ import static org.apache.ignite.util.IdleVerifyCheckWithWriteThroughTest.MapCach
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 /** */
 public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClusterPerMethodAbstractTest {
@@ -191,27 +199,31 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         GridMessageListener lsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof GridNearTxPrepareResponse) {
-                    Collection<IgniteInternalTx> txs = nodeBackup.context().cache().context().tm().activeTransactions();
+                    IgniteTxManager txManager = nodeBackup.context().cache().context().tm();
+                    Collection<IgniteInternalTx> txs = txManager.activeTransactions();
 
                     assertEquals(1, txs.size());
-                    assertFalse(txs.iterator().next().local());
+                    IgniteInternalTx idleTx = txs.iterator().next();
+                    assertFalse(idleTx.local());
+
+                    IgniteTxRemoteEx spiedTx = (IgniteTxRemoteEx)spy(idleTx);
+                    Map<GridCacheVersion, IgniteInternalTx> activeTx = GridTestUtils.getFieldValue(txManager, "idMap");
+                    assertEquals(1, activeTx.size());
+                    GridCacheVersion prevKey = activeTx.keySet().iterator().next();
+                    activeTx.put(prevKey, spiedTx);
 
                     nodeKillLatch.countDown();
 
-                    //U.awaitQuiet(MapCacheStore.salvagedLatch);
-                    while (nodeBackup.context().cache().context().tm().salvageNoCommit.get() == 0)
-                        doSleep(100);
+                    try {
+                        verify(spiedTx, timeout(5_000)).commitRemoteTx();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    // todo remove !!!!
+                    doSleep(1000);
 
                     txCoordStoreLatch.countDown();
-
-/*                    try {
-                        assertTrue(waitForCondition(() ->
-                            !nodeBackup.context().cache().context().tm().hackMap1.isEmpty(), 5_000));
-                        txCoordStoreLatch.countDown();
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new RuntimeException(e);
-                    }*/
                 }
             }
         };

@@ -419,15 +419,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @throws IgniteCheckedException If commit failed.
      */
     private void commitIfLocked() throws IgniteCheckedException {
-        if (finalizationStatus() == RECOVERY_FINISH_WT) {
-            //System.err.println("!!!pre salvaged not commited: " + cctx.localNode().consistentId());
-            //System.err.println("!!!pre salvaged not commited: " + cctx.tm().hackMap1.get(nearXidVersion()));
-            cctx.tm().salvageNoCommit.incrementAndGet();
-        }
-
-        boolean writes = !writeEntries().isEmpty();
-
-        if (writes && finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
+        if (finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
             Object res = cctx.tm().hackMap1.putIfAbsent(nearXidVersion(), new T2<>(xidVersion(), this));
             if (res == null || res instanceof T2) {
                 // already known

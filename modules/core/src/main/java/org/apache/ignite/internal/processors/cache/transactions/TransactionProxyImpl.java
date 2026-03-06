@@ -330,9 +330,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
                 if (async)
                     saveFuture(commitFut);
-                else {
+                else
                     commitFut.get();
-                }
             }
             catch (IgniteCheckedException e) {
                 ex = U.convertException(e);

@@ -238,11 +238,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = newMap();
 
     /** Per-ID map for near transactions. */
-    public final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
+    private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
 
     /** */
     public final ConcurrentMap<GridCacheVersion, Object> hackMap1 = newMap();
-    public final AtomicInteger salvageNoCommit = new AtomicInteger();
 
     /** Deadlock detection futures. */
     private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
