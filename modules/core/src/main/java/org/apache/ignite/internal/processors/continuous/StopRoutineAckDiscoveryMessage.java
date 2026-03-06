@@ -54,6 +54,6 @@ public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage im
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 512;
+        return 513;
     }
 }
