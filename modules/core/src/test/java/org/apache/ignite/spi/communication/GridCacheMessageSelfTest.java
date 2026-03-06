@@ -270,7 +270,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeCollection(entries, new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false)))
+                    if (!writer.writeCollection(entries,
+                        new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false)))
                         return false;
 
                     writer.incrementState();

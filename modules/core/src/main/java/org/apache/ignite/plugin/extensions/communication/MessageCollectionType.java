@@ -25,18 +25,21 @@ public class MessageCollectionType implements MessageType {
     /** */
     private final boolean set;
 
-    /** */
+    /**
+     * @param valueType Value type.
+     * @param set Is set.
+     */
     public MessageCollectionType(MessageType valueType, boolean set) {
         this.valueType = valueType;
         this.set = set;
     }
 
-    /** */
+    /** @return Value type. */
     public MessageType valueType() {
         return valueType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public MessageCollectionItemType type() {
         return MessageCollectionItemType.COLLECTION;
     }

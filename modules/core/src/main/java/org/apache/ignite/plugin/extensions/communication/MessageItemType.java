@@ -22,12 +22,14 @@ public class MessageItemType implements MessageType {
     /** */
     private final MessageCollectionItemType type;
 
-    /** */
+    /**
+     @param type Type.
+     */
     public MessageItemType(MessageCollectionItemType type) {
         this.type = type;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public MessageCollectionItemType type() {
         return type;
     }

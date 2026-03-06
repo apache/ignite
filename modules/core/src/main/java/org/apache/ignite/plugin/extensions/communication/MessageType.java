@@ -19,5 +19,8 @@ package org.apache.ignite.plugin.extensions.communication;
 
 /** */
 public interface MessageType {
+    /**
+     * @return Type.
+     */
     public MessageCollectionItemType type();
 }

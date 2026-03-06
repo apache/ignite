@@ -25,23 +25,26 @@ public class MessageArrayType implements MessageType {
     /** */
     private final Class clazz;
 
-    /** */
+    /**
+     * @param valueType Value type.
+     * @param clazz Class.
+     */
     public MessageArrayType(MessageType valueType, Class clazz) {
         this.valueType = valueType;
         this.clazz = clazz;
     }
 
-    /** */
+    /** @return Value type. */
     public MessageType valueType() {
         return valueType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public MessageCollectionItemType type() {
         return MessageCollectionItemType.ARRAY;
     }
 
-    /** */
+    /** @return Class. */
     public Class clazz() {
         return clazz;
     }

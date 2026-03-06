@@ -28,29 +28,33 @@ public class MessageMapType implements MessageType {
     /** */
     private final boolean linked;
 
-    /** */
+    /**
+     * @param keyType Key type.
+     * @param valueType Value type.
+     * @param linked Is linked hash map.
+     */
     public MessageMapType(MessageType keyType, MessageType valueType, boolean linked) {
         this.keyType = keyType;
         this.valueType = valueType;
         this.linked = linked;
     }
 
-    /** */
+    /** @return Key type. */
     public MessageType keyType() {
         return keyType;
     }
 
-    /** */
+    /** @return Value type. */
     public MessageType valueType() {
         return valueType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public MessageCollectionItemType type() {
         return MessageCollectionItemType.MAP;
     }
 
-    /** */
+    /** @return Is linked hash map. */
     public boolean linked() {
         return linked;
     }
