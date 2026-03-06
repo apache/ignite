@@ -17,7 +17,9 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -25,8 +27,12 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * <b>MetadataUpdateProposedMessage</b> and {@link MetadataUpdateAcceptedMessage} messages make a basis for
@@ -70,33 +76,50 @@ import org.jetbrains.annotations.Nullable;
  * it gets blocked until {@link MetadataUpdateAcceptedMessage} arrives with <b>accepted version</b>
  * equals to <b>pending version</b> of this metadata to the moment when is was initially read by the thread.
  */
-public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage {
+public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Node UUID which initiated metadata update. */
-    private final UUID origNodeId;
+    @Order(1)
+    UUID origNodeId;
 
     /** */
     private BinaryMetadata metadata;
 
+    /** Serialized {@link #metadata}. */
+    @Order(value = 2, method = "metadataBytes")
+    @SuppressWarnings("unused")
+    byte[] metadataBytesHolder;
+
     /** Metadata type id. */
-    private final int typeId;
+    @Order(3)
+    int typeId;
 
     /** Metadata version which is pending for update. */
-    private int pendingVer;
+    @Order(4)
+    int pendingVer;
 
     /** Metadata version which is already accepted by entire cluster. */
-    private int acceptedVer;
+    @Order(5)
+    int acceptedVer;
 
     /** Message acceptance status. */
-    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
+    @Order(6)
+    boolean rejected;
 
     /** */
-    private BinaryObjectException err;
+    @Order(7)
+    String errMsg;
+
+    /** Constructor. */
+    public MetadataUpdateProposedMessage() {
+        // No-op.
+    }
 
     /**
      * @param metadata   {@link BinaryMetadata} requested to be updated.
@@ -106,6 +129,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         assert origNodeId != null;
         assert metadata != null;
 
+        id = IgniteUuid.randomUuid();
         this.origNodeId = origNodeId;
 
         this.metadata = metadata;
@@ -123,7 +147,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      * {@inheritDoc}
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return (status == ProposalStatus.SUCCESSFUL) ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
+        return !rejected ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
     }
 
     /**
@@ -140,25 +164,25 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     }
 
     /**
-     * @param err Error caused this update to be rejected.
+     * @param errMsg Error message caused this update to be rejected.
      */
-    void markRejected(BinaryObjectException err) {
-        status = ProposalStatus.REJECTED;
-        this.err = err;
+    void markRejected(String errMsg) {
+        rejected = true;
+        this.errMsg = errMsg;
     }
 
     /**
      *
      */
     boolean rejected() {
-        return status == ProposalStatus.REJECTED;
+        return rejected;
     }
 
     /**
      *
      */
-    BinaryObjectException rejectionError() {
-        return err;
+    String rejectionErrorMessage() {
+        return errMsg;
     }
 
     /**
@@ -211,19 +235,41 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     }
 
     /**
+     * @return Serialized binary metadata.
+     */
+    public byte[] metadataBytes() {
+        try {
+            return U.marshal(jdk(), metadata);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshal binary metadata", e);
+        }
+    }
+
+    /**
+     * @param metadataBytes Serialized binary metadata.
+     */
+    public void metadataBytes(byte[] metadataBytes) {
+        if (metadataBytes != null && metadata == null) {
+            try {
+                metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal binary metadata", e);
+            }
+        }
+    }
+
+    /**
      *
      */
     public int typeId() {
         return typeId;
     }
 
-    /** Message acceptance status. */
-    private enum ProposalStatus {
-        /** */
-        SUCCESSFUL,
-
-        /** */
-        REJECTED
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 512;
     }
 
     /** {@inheritDoc} */
