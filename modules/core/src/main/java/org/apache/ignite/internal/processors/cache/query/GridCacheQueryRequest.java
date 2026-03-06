@@ -206,7 +206,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            deployFilterOrTransformer,
             qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
@@ -230,7 +230,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
             qry.isDataPageScanEnabled());
     }
 
@@ -243,8 +243,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId) {
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
-            cctx.affinity().affinityTopologyVersion(),
-            cctx.deploymentEnabled());
+            cctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -253,18 +252,15 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param cacheId Cache ID.
      * @param id Request to cancel.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info flag.
      */
     private GridCacheQueryRequest(
         int cacheId,
         long id,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         this.cacheId = cacheId;
         this.id = id;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
 
         cancel = true;
     }

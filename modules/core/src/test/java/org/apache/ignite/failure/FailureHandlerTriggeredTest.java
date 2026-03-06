@@ -128,6 +128,10 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
                 @Override public boolean isMutable() {
                     return false;
                 }
+
+                @Override public short directType() {
+                    return 0;
+                }
             });
         }
 
