@@ -299,7 +299,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
-            return writeField(Collection.class);
+            return writeField(type.set() ? Set.class : Collection.class);
         }
 
         /** {@inheritDoc} */
