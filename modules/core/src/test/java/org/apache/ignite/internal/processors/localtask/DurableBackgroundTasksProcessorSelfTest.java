@@ -346,7 +346,10 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         n = startGrid(0);
 
-        assertEquals(3, tasks(n).size());
+        int tasks = tasks(n).size();
+
+        assertTrue("Expected 3 tasks after restore, or 2 if completed converted task was already cleaned by checkpoint",
+            tasks == 2 || tasks == 3);
 
         checkStateAndMetaStorage(n, t0, COMPLETED, true, true, false);
         checkStateAndMetaStorage(n, t1, INIT, true, false, false);
