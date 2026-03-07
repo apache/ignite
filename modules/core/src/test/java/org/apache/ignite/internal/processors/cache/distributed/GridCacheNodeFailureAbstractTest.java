@@ -26,8 +26,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
@@ -73,15 +71,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     protected GridCacheNodeFailureAbstractTest() {
         super(false /*start grid. */);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        c.setDeploymentMode(DeploymentMode.SHARED);
-
-        return c;
     }
 
     /**

@@ -38,7 +38,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Tests off heap storage when both offheaped and swapped entries exists.
@@ -49,8 +48,6 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(2000);
-
-        cfg.setDeploymentMode(SHARED);
 
         return cfg;
     }

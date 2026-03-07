@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -66,7 +65,6 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
 
         c.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         c.setIncludeProperties();
-        c.setDeploymentMode(DeploymentMode.SHARED);
         c.setNetworkTimeout(10000);
         c.setConnectorConfiguration(null);
 

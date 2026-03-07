@@ -95,7 +95,6 @@ public class ClassLoadingProblemExceptionTest extends GridCommonAbstractTest imp
         cfg
             .setClientMode(igniteInstanceName.startsWith(CLIENT_PREFIX))
             .setPeerClassLoadingEnabled(true)
-            .setDeploymentMode(SHARED)
             .setCommunicationSpi(new TestCommunicationSpi());
 
         return cfg;

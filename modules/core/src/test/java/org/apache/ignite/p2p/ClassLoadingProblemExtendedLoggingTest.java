@@ -33,7 +33,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static com.google.common.primitives.Ints.asList;
-import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -65,7 +64,6 @@ public class ClassLoadingProblemExtendedLoggingTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setPeerClassLoadingEnabled(true)
-            .setDeploymentMode(SHARED)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setGridLogger(listeningLog)
             .setNetworkTimeout(1000);

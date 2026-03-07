@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedEx
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheP2PDisableExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCachePrivateExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheReplicatedExecutionContextTest;
-import org.apache.ignite.internal.processors.cache.context.IgniteCacheSharedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheTxExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCrossCacheTxStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheGetStoreErrorSelfTest;
@@ -150,7 +149,6 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheIsolatedExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2PDisableExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePrivateExecutionContextTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheSharedExecutionContextTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, StoreArrayKeyTest.class, ignoredTests);
 

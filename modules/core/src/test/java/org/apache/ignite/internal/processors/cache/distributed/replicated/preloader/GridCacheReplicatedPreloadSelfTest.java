@@ -57,7 +57,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -101,8 +100,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         cfg.setRebalanceThreadPoolSize(2);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        cfg.setDeploymentMode(CONTINUOUS);
 
         cfg.setUserAttributes(F.asMap("EVEN", !igniteInstanceName.endsWith("0") && !igniteInstanceName.endsWith("2")));
 
