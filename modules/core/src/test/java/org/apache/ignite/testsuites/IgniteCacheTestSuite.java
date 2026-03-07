@@ -74,10 +74,7 @@ import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmen
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
-import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
-import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheP2PDisableExecutionContextTest;
-import org.apache.ignite.internal.processors.cache.context.IgniteCachePrivateExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheReplicatedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheTxExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCrossCacheTxStoreSelfTest;
@@ -145,10 +142,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheReplicatedExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxExecutionContextTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheContinuousExecutionContextTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheIsolatedExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2PDisableExecutionContextTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCachePrivateExecutionContextTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, StoreArrayKeyTest.class, ignoredTests);
 
