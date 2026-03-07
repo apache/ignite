@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
@@ -368,17 +367,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "IgniteConfiguration.setLocalHost(String) method. However, this system property has bigger priority and " +
         "overrides the settings set via IgniteConfiguration", type = String.class)
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
-
-    /**
-     * System property to override deployment mode configuration parameter.
-     * Valid values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.
-     *
-     * @see org.apache.ignite.configuration.DeploymentMode
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getDeploymentMode()
-     */
-    @SystemProperty(value = "Sets deployment mode configuration parameter. Valid " +
-        "values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS", type = DeploymentMode.class)
-    public static final String IGNITE_DEP_MODE_OVERRIDE = "IGNITE_DEPLOYMENT_MODE_OVERRIDE";
 
     /**
      * Property controlling size of buffer holding completed transaction versions. Such buffer

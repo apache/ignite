@@ -35,7 +35,6 @@ import org.apache.ignite.internal.SqlPlanHistoryConfigTest;
 import org.apache.ignite.internal.metric.RegexpMetricFilterTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
 import org.apache.ignite.internal.processors.resource.GridTransformSpringInjectionSelfTest;
-import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
@@ -59,7 +58,6 @@ import org.junit.runners.Suite;
     IgniteExcludeInConfigurationTest.class,
 
     // Tests moved to this suite since they require Spring functionality.
-    GridP2PUserVersionChangeSelfTest.class,
 
     IgniteDynamicCacheConfigTest.class,
 
