@@ -419,10 +419,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @throws IgniteCheckedException If commit failed.
      */
     private void commitIfLocked() throws IgniteCheckedException {
-        synchronized (cctx.tm().uncommitedSalvageTx) {
-            System.err.println("!!!SIZE: " + cctx.tm().uncommitedSalvageTx.size());
-        }
-
         if (finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
             synchronized (cctx.tm().uncommitedSalvageTx) {
                 if (cctx.tm().uncommitedSalvageTx.contains(nearXidVersion())) {
@@ -437,10 +433,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     return;
                 }
             }
-        }
-
-        synchronized (cctx.tm().uncommitedSalvageTx) {
-            System.err.println("!!!0SIZE: " + cctx.tm().uncommitedSalvageTx.size());
         }
 
         if (finalizationStatus() == RECOVERY_FINISH_WT) {
@@ -467,6 +459,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                     ", tx=" + this + ']');
 
                             System.err.println("JOPA2");
+                            new Exception().printStackTrace();
                             return;
                         }
 
