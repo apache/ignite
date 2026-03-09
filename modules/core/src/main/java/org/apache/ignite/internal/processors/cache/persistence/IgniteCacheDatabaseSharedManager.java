@@ -198,8 +198,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 DFLT_SUB_INTERVALS
             );
         }
-
-        dsMetrics.setEvictionsStartedSupplier(this::evictionsStarted);
     }
 
     /** {@inheritDoc} */
@@ -1248,6 +1246,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return;
 
         while (memPlc.evictionTracker().evictionRequired()) {
+            memPlc.metrics().onPageEvictionsStarted();
+
             warnFirstEvict(memPlc.config());
 
             memPlc.evictionTracker().evictDataPage();
@@ -1661,13 +1661,5 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
         // No-op.
-    }
-
-    /**
-     * @return Value of the {@link IgniteCacheDatabaseSharedManager#firstEvictWarn} flag, where {@code true} indicates
-     * that the eviction process has started.
-     */
-    public boolean evictionsStarted() {
-        return firstEvictWarn;
     }
 }
