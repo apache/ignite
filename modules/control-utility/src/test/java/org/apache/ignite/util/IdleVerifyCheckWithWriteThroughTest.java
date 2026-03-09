@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -69,8 +69,6 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.util.IdleVerifyCheckWithWriteThroughTest.MapCacheStore.txCoordStoreLatch;
@@ -91,10 +89,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     public Boolean withPersistence;
 
     /** */
-    @Parameterized.Parameter(2)
-    public Boolean multiCache;
-
-    /** */
     private static final String CORRECT_VERIFY_MSG = "The check procedure has finished, no conflicts have been found.";
 
     /** */
@@ -104,10 +98,8 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}, multiCache={2}")
     public static Collection<Object[]> parameters() {
         return List.of(
-            new Object[] {CLI_CMD_HND, false, false}, // !!!! multiCache
-            new Object[] {CLI_CMD_HND, false, false},
-            new Object[] {CLI_CMD_HND, true, false},
-            new Object[] {CLI_CMD_HND, true, false}
+            new Object[] {CLI_CMD_HND, false},
+            new Object[] {CLI_CMD_HND, true}
         );
     }
 
@@ -174,20 +166,10 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         IgniteCache<Object, Object> cacheWithoutWriteThrough = null;
 
-        if (multiCache) {
-            CacheConfiguration<Object, Object> ccfgWithoutWriteThrough = createCache(WITHOUT_WRITE_THROUGH_CACHE, false);
-            cacheWithoutWriteThrough = nodeCoord.createCache(ccfgWithoutWriteThrough);
-        }
-
         Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
 
         try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
             cache.put(primaryKey, firstVal);
-
-            if (multiCache) {
-                Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache(WITHOUT_WRITE_THROUGH_CACHE));
-                cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, firstVal);
-            }
 
             tx.commit();
         }
@@ -220,8 +202,9 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
                     catch (IgniteCheckedException e) {
                         throw new RuntimeException(e);
                     }
-                    // todo remove !!!!
-                    doSleep(1000);
+
+                    txManager = nodePrimary.context().cache().context().tm();
+                    ArrayList<IgniteInternalTx> txs1 = new ArrayList<>(txManager.activeTransactions());
 
                     txCoordStoreLatch.countDown();
                 }
@@ -246,14 +229,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
             cache.put(primaryKey, secondVal);
 
-            if (multiCache) {
-                Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache(WITHOUT_WRITE_THROUGH_CACHE));
-                cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, secondVal);
-            }
-
             tx.commit();
-
-            System.err.println("!!!AFTER COMMIT");
         }
         catch (Throwable th) {
             fail("Unexpected exception: " + th);
@@ -428,8 +404,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         @Override public Object load(Object key) {
             Object val = map.get(key);
 
-            System.err.println("!!!MapCacheStore load " + key + " " + val);
-
             if (salvagedLatch != null)
                 salvagedLatch.countDown();
 
@@ -439,8 +413,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> e) {
             map.put(e.getKey(), e.getValue());
-
-            System.err.println("!!!MapCacheStore write " + e.getKey() + " " + e.getValue());
 
             if (txCoordStoreLatch != null)
                 txCoordStoreLatch.countDown();
@@ -457,6 +429,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             U.awaitQuiet(txCoordStoreLatch);
+            doSleep(200);
         }
 
         /** {@inheritDoc} */

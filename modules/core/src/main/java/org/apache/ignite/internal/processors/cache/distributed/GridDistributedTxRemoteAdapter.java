@@ -419,29 +419,33 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @throws IgniteCheckedException If commit failed.
      */
     private void commitIfLocked() throws IgniteCheckedException {
-        if (finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
-            Object res = cctx.tm().hackMap1.putIfAbsent(nearXidVersion(), new T2<>(xidVersion(), this));
-            if (res == null || res instanceof T2) {
-                // already known
+        synchronized (cctx.tm().uncommitedSalvageTx) {
+            System.err.println("!!!SIZE: " + cctx.tm().uncommitedSalvageTx.size());
+        }
 
-                if (res instanceof T2) {
-                    GridDhtTxRemote res0 = (GridDhtTxRemote) (((T2)res).get2());
-                    if (!res0.megaFlag) {
-                        //System.err.println("!!!salvaged not commited: " + nearXidVersion() + " " + xidVersion());
-                        cctx.tm().hackMap1.remove(nearXidVersion());
+        if (finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
+            synchronized (cctx.tm().uncommitedSalvageTx) {
+                if (cctx.tm().uncommitedSalvageTx.contains(nearXidVersion())) {
+                    GridDhtTxRemote dht = (GridDhtTxRemote)this;
+                    if (!dht.megaFlag)
                         return;
-                    }
-                    else {
-                        System.err.println("!found mega flag: " + nearXidVersion() + " " + state());
-                        cctx.tm().hackMap1.remove(nearXidVersion());
-                    }
+                    else
+                        cctx.tm().uncommitedSalvageTx.remove(nearXidVersion());
                 }
                 else {
-                    System.err.println("!!!salvaged not commited: " + nearXidVersion() + " " + xidVersion());
-                    if (res == null)
-                        return;
+                    cctx.tm().uncommitedSalvageTx.add(nearXidVersion());
+                    return;
                 }
             }
+        }
+
+        synchronized (cctx.tm().uncommitedSalvageTx) {
+            System.err.println("!!!0SIZE: " + cctx.tm().uncommitedSalvageTx.size());
+        }
+
+        if (finalizationStatus() == RECOVERY_FINISH_WT) {
+            System.err.println("finishWithSalvaged2 " + hashCode());
+            //new Exception().printStackTrace();
         }
 
         if (state() == COMMITTING) {
@@ -462,6 +466,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                 log.debug("Transaction does not own lock for entry (will wait) [entry=" + entry +
                                     ", tx=" + this + ']');
 
+                            System.err.println("JOPA2");
                             return;
                         }
 
@@ -848,7 +853,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                 cctx.tm().commitTx(this);
 
                 state(COMMITTED);
-            }
+            } else
+                System.err.println("!!!JOPA");
         }
     }
 
@@ -882,6 +888,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
             if (finalizationStatus() == RECOVERY_FINISH_WT && state() != COMMITTING)
                 return;
                 //assert state() == COMMITTING : state();
+
+            if (finalizationStatus() == RECOVERY_FINISH_WT) {
+                System.err.println("finishWithSalvaged1 " + hashCode());
+                //new Exception().printStackTrace();
+            }
 
             commitIfLocked();
         }

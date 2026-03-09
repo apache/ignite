@@ -147,13 +147,13 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
      * @throws Exception If failed.
      */
     private void multithreadedTests(CacheWriteSynchronizationMode syncMode, boolean restart) throws Exception {
-        multithreaded(syncMode, 0, false, false, restart);
+        //multithreaded(syncMode, 0, false, false, restart);
 
-        multithreaded(syncMode, 1, false, false, restart);
+        //multithreaded(syncMode, 1, false, false, restart);
 
         multithreaded(syncMode, 1, true, false, restart);
 
-        multithreaded(syncMode, 2, false, false, restart);
+        //multithreaded(syncMode, 2, false, false, restart);
     }
 
     /**

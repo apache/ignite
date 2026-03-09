@@ -84,7 +84,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -116,7 +115,6 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_DHT_PREPARE_RESP;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -1354,37 +1352,31 @@ public class IgniteTxHandler {
             assert nodeId != null;
             assert req != null;
 
-            GridDhtTxRemote salvNotCommited = null;
-
-            GridDhtTxRemote removeMe = null;
-
             if (req.commit() && req.checkCommitted()) {
-                Object obj = ctx.tm().hackMap1.putIfAbsent(req.version(), new Object());
+                synchronized (ctx.tm().uncommitedSalvageTx) {
+                    if (ctx.tm().uncommitedSalvageTx.contains(req.version())) {
+                        Collection<IgniteInternalTx> activeTx = ctx.tm().activeTransactions();
 
-                System.err.println("!!! processDhtTxFinishRequest " + req.version() + " !! " + ctx.localNode().consistentId() + " " + obj + " " + req.checkCommitted());
+                        boolean already = false;
 
-                if (obj instanceof GridDhtTxRemote || obj instanceof T2) {
-                    GridCacheVersion k = (GridCacheVersion) ((T2)obj).get1();
+                        for (IgniteInternalTx active : activeTx) {
+                            if (active.nearXidVersion().equals(req.version())) {
+                                assert !already;
 
-                    @Nullable IgniteInternalTx tx0 = ctx.tm().tx(k);
+                                GridDhtTxRemote salvagedTx = (GridDhtTxRemote)active;
+                                System.err.println("!!!tx state: " + salvagedTx.state());
+                                if (salvagedTx.finalizationStatus() == RECOVERY_FINISH_WT) {
+                                    salvagedTx.megaFlag = true;
+                                    System.err.println("finishWithSalvaged0");
+                                    finishWithSalvaged(salvagedTx);
+                                }
 
-                    if (tx0 != null) {
-                        salvNotCommited = (GridDhtTxRemote) tx0;
-                        removeMe = salvNotCommited;
-                        salvNotCommited.megaFlag = true;
-                        assert salvNotCommited.finalizationStatus() == RECOVERY_FINISH_WT;
+                                already = true;
+                            }
+                        }
                     }
                 }
-
-                if (salvNotCommited != null) {
-                    System.err.println("finish(salvNotCommited " + req.version() + " " + salvNotCommited.state());
-                    finish0(salvNotCommited);
-                }
             }
-
-
-
-
 
             if (req.checkCommitted()) {
                 boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
@@ -1407,9 +1399,6 @@ public class IgniteTxHandler {
 
             GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
             GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
-
-            if (removeMe != null && dhtTx != null)
-                assert false;
 
             IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);
 
@@ -1454,12 +1443,13 @@ public class IgniteTxHandler {
         }
     }
 
-    protected void finish0(IgniteTxRemoteEx tx) {
+    /** Finish with uncommited tx. */
+    private void finishWithSalvaged(GridDistributedTxRemoteAdapter tx) {
         try {
             tx.commitRemoteTx();
         }
-        catch (IgniteCheckedException e) {
-            assert false;
+        catch (IgniteCheckedException ex) {
+            U.error(log, "Failed to commit salvaged transaction: " + tx, ex);
         }
     }
 

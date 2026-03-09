@@ -199,6 +199,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Uncommited tx states. */
     private Set<GridCacheVersion> uncommitedTx = new HashSet<>();
 
+    /** Uncommited salvaged tx states. */
+    public final Set<GridCacheVersion> uncommitedSalvageTx = new HashSet<>();
+
     /** One phase commit deferred ack request timeout. */
     public static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
         Integer.getInteger(IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT,
@@ -239,9 +242,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
-
-    /** */
-    public final ConcurrentMap<GridCacheVersion, Object> hackMap1 = newMap();
 
     /** Deadlock detection futures. */
     private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
@@ -3144,7 +3144,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     boolean localInMaster = tx.masterNodeIds().contains(cctx.localNodeId());
 
                     // Invalidate transactions.
-                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))) {
+                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId)) || tx.eventNodeId().equals(evtNodeId)) {
                         salvageTx(tx, RECOVERY_FINISH);
                     }
                     else if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) {
@@ -3153,6 +3153,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         else {
                             boolean fullSyncedOp = tx.writeEntries().stream().map(e ->
                                 cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
+
+                            System.err.println("FAILED: " + evtNodeId);
+                            System.err.println("FAIL: " + tx.eventNodeId());
+                            System.err.println("FAIL: " + tx.originatingNodeId());
+
+                            assert !tx.eventNodeId().equals(evtNodeId);
 
                             if (fullSyncedOp)
                                 salvageTx(tx, RECOVERY_FINISH_WT);
