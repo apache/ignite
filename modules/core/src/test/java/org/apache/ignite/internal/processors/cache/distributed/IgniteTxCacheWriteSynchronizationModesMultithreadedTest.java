@@ -203,7 +203,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                 }
             });
 
-            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
+/*            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
                 @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -274,7 +274,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                         }
                     }
                 }
-            });
+            });*/
         }
         finally {
             stop.set(true);

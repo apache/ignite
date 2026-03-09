@@ -199,8 +199,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Uncommited tx states. */
     private Set<GridCacheVersion> uncommitedTx = new HashSet<>();
 
+    public final Object RECOVERED = new Object();
+    public final Object SALVAGED = new Object();
     /** Uncommited salvaged tx states. */
-    public final Set<GridCacheVersion> uncommitedSalvageTx = new HashSet<>();
+    public final ConcurrentMap<GridCacheVersion, Object> uncommitedSalvageTx = new ConcurrentHashMap<>();
 
     /** One phase commit deferred ack request timeout. */
     public static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -3160,8 +3162,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                             assert !tx.eventNodeId().equals(evtNodeId);
 
-                            if (fullSyncedOp)
+                            if (fullSyncedOp && tx.isolation() == TransactionIsolation.READ_COMMITTED && tx.concurrency() == TransactionConcurrency.OPTIMISTIC) {
                                 salvageTx(tx, RECOVERY_FINISH_WT);
+                            }
                             else
                                 salvageTx(tx, RECOVERY_FINISH);
                         }

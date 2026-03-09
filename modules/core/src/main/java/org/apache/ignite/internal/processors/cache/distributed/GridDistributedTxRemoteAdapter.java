@@ -419,24 +419,30 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @throws IgniteCheckedException If commit failed.
      */
     private void commitIfLocked() throws IgniteCheckedException {
-        if (finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
-            synchronized (cctx.tm().uncommitedSalvageTx) {
-                if (cctx.tm().uncommitedSalvageTx.contains(nearXidVersion())) {
-                    GridDhtTxRemote dht = (GridDhtTxRemote)this;
-                    if (!dht.megaFlag)
-                        return;
-                    else
-                        cctx.tm().uncommitedSalvageTx.remove(nearXidVersion());
-                }
-                else {
-                    cctx.tm().uncommitedSalvageTx.add(nearXidVersion());
-                    return;
-                }
+/*        synchronized (cctx.tm().uncommitedSalvageTx) {
+            System.err.println("uncommitedSalvageTx " + cctx.tm().uncommitedSalvageTx.size());
+        }*/
+/*        boolean skip = false;
+        if (this instanceof GridDhtTxRemote) {
+            skip = ((GridDhtTxRemote)this).megaFlag;
+            if (skip) {
+                System.err.println("skip");
+                cctx.tm().uncommitedSalvageTx.remove(nearXidVersion());
             }
+        }*/
+
+        if (finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
+            Object res1 = cctx.tm().uncommitedSalvageTx.putIfAbsent(nearXidVersion(), cctx.tm().SALVAGED);
+
+            if (res1 == null || res1 == cctx.tm().SALVAGED) {
+                System.err.println("need return1");
+                return;
+            } else
+                cctx.tm().uncommitedSalvageTx.remove(nearXidVersion());
         }
 
         if (finalizationStatus() == RECOVERY_FINISH_WT) {
-            System.err.println("finishWithSalvaged2 " + hashCode());
+            System.err.println("finishWithSalvaged2 " + cctx.tm().uncommitedSalvageTx.size() + " " + cctx.localNode().consistentId());
             //new Exception().printStackTrace();
         }
 
@@ -458,8 +464,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                 log.debug("Transaction does not own lock for entry (will wait) [entry=" + entry +
                                     ", tx=" + this + ']');
 
-                            System.err.println("JOPA2");
-                            new Exception().printStackTrace();
                             return;
                         }
 
@@ -533,7 +537,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
                             // Prevent stale updates.
                             GridDhtLocalPartition locPart =
-                                    cacheCtx.group().topology().localPartition(txEntry.cached().partition());
+                                cacheCtx.group().topology().localPartition(txEntry.cached().partition());
 
                             if (!near()) {
                                 if (locPart == null)
@@ -846,7 +850,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                 cctx.tm().commitTx(this);
 
                 state(COMMITTED);
-            } else
+            }
+            else
                 System.err.println("!!!JOPA");
         }
     }

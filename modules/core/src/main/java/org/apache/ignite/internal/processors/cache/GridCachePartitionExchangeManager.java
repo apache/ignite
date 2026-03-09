@@ -2317,6 +2317,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (tm != null) {
             boolean first = true;
 
+            synchronized (tm.uncommitedSalvageTx) {
+                if (!tm.uncommitedSalvageTx.isEmpty()) {
+                    U.warn(diagnosticLog, "uncommitedSalvageTx:");
+                    for (GridCacheVersion ver : tm.uncommitedSalvageTx.keySet()) {
+                        U.warn(diagnosticLog, cctx.localNode().consistentId() + ">>> " + ver);
+                    }
+                }
+            }
+
             for (IgniteInternalTx tx : tm.activeTransactions()) {
                 if (first) {
                     U.warn(diagnosticLog, "Pending transactions:");
@@ -3165,7 +3174,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             IgniteConfiguration cfg = cctx.gridConfig();
 
-                            final long dumpTimeout = 2 * cfg.getNetworkTimeout();
+                            final long dumpTimeout = /*2 * */cfg.getNetworkTimeout();
 
                             long nextDumpTime = 0;
 

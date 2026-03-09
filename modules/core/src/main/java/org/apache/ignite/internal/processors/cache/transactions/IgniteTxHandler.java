@@ -1354,7 +1354,10 @@ public class IgniteTxHandler {
 
             if (req.commit() && req.checkCommitted()) {
                 synchronized (ctx.tm().uncommitedSalvageTx) {
-                    if (ctx.tm().uncommitedSalvageTx.contains(req.version())) {
+                    System.err.println("!!!processDhtTxFinishRequest" + " " + req.version() + " " + ctx.localNode().consistentId());
+                    Object res = ctx.tm().uncommitedSalvageTx.put(req.version(), ctx.tm().RECOVERED);
+                    if (res == ctx.tm().SALVAGED) {
+                        System.err.println("!!!processDhtTxFinishRequest contains");
                         Collection<IgniteInternalTx> activeTx = ctx.tm().activeTransactions();
 
                         boolean already = false;
