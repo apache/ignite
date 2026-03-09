@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDa
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -1799,7 +1800,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (row != null) {
                 row.key(key);
 
-                grp.dataRegion().evictionTracker().touchPage(row.link());
+                for (int i = 0; i < 100000; ++i)
+                    grp.dataRegion().evictionTracker().touchPage(row.link());
             }
         }
 

@@ -17,6 +17,8 @@
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +30,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheEvictionManager;
+import org.apache.ignite.internal.processors.cache.GridCacheEvictionManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -39,60 +44,13 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 /** */
 public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommonAbstractTest {
     /** Offheap size for memory policy. */
-    private static final int SIZE = 150 * 1024 * 1024;
+    private static final int SIZE = 128 * 1024 * 1024;
 
     /** Offheap size for memory policy. */
-    private static final long MAX_SIZE = 2L * 1024 * 1024 * 1024;
+    private static final long MAX_SIZE = 256 * 1024 * 1024;
 
     /** Record size. */
-    private static final int RECORD_SIZE = 5 * 4096;
-
-    /** Number of entries. */
-    static final int ENTRIES = 50;
-
-    /**
-     -Xms15g
-     -Xmx15g
-     -ea
-     -server
-     -XX:+ScavengeBeforeFullGC
-     -XX:+AlwaysPreTouch
-     -XX:+UnlockDiagnosticVMOptions
-     -XX:+ExitOnOutOfMemoryError
-     -XX:+HeapDumpOnOutOfMemoryError
-     -XX:ErrorFile=/home/fmj/tmp/ignite/logs/crash-dump-%p.err
-     -XX:HeapDumpPath=/home/fmj/tmp/ignite/logs
-     -XX:+PerfDisableSharedMem
-     -XX:+UnlockExperimentalVMOptions
-     -XX:-OmitStackTraceInFastThrow
-     -XX:+LogVMOutput
-     -XX:LogFile=/home/fmj/tmp/ignite/logs/hotspot_pid%p.log
-     -Dfile.encoding=UTF-8
-     -Djava.io.tmpdir=/home/fmj/tmp/ignite/tmp
-     -Djava.net.preferIPv4Stack=true
-     -Dnetworkaddress.cache.ttl=-1
-     -DIGNITE_CLUSTER_NAME=ignite
-     -DIGNITE_CLUSTER_TYPE=prom
-     -DIGNITE_QUIET=false
-     -DIGNITE.DEPLOYMENT.ADDITIONAL.CHECK=true
-     -DIGNITE_EXCHANGE_HISTORY_SIZE=100
-     -DIGNITE_TO_STRING_INCLUDE_SENSITIVE=true
-     -DIGNITE_MBEAN_APPEND_CLASS_LOADER_ID=false
-     -DIGNITE_REUSE_MEMORY_ON_DEACTIVATE=true
-     -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true
-     -DIGNITE_USE_ASYNC_FILE_IO_FACTORY=true
-     -DIGNITE_EXCHANGE_HISTORY_SIZE=100
-     -DIGNITE_AFFINITY_HISTORY_SIZE=50
-     -DIGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING=true
-     -DIGNITE_DUMP_THREADS_ON_FAILURE=false
-     -DIGNITE_ENABLE_FORCIBLE_NODE_KILL=true
-     -DIGNITE_DIAGNOSTIC_ENABLED=false
-     -DIGNITE_UPDATE_NOTIFIER=false
-     --add-opens
-     jdk.management/com.sun.management.internal=ALL-UNNAMED
-     -Xlog:gc*=debug,safepoint:file=/home/fmj/tmp/ignite/logs/gc-safepoint.log:time,uptime,tags:filecount=50,filesize=50M
-     -Dlog4j2.formatMsgNoLookups=true
-     */
+    private static final int RECORD_SIZE = 50 * 4096;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -101,17 +59,17 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setInitialSize(SIZE)
                     .setMaxSize(MAX_SIZE)
-//                    .setEmptyPagesPoolSize(1000)
+                    .setEmptyPagesPoolSize(1000)
                     .setPersistenceEnabled(false)
                     .setMetricsEnabled(true)
                     .setEvictionThreshold(0.8)
                 )
-                .setPageSize(DFLT_PAGE_SIZE)
-                .setCheckpointFrequency(60000)
-                .setMaxWalArchiveSize(10737418240L)
-                .setWalMode(WALMode.LOG_ONLY)
-                .setWalBufferSize(5242880)
-                .setWalCompactionEnabled(true)
+//                .setPageSize(DFLT_PAGE_SIZE)
+//                .setCheckpointFrequency(60000)
+//                .setMaxWalArchiveSize(10737418240L)
+//                .setWalMode(WALMode.LOG_ONLY)
+//                .setWalBufferSize(5242880)
+//                .setWalCompactionEnabled(true)
             );
     }
 
@@ -126,33 +84,50 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
     @Test
     @WithSystemProperty(key = "IGNITE_DUMP_THREADS_ON_FAILURE", value = "false")
     public void testPutLargeObjects() throws Exception {
-        Ignite ignite = startGridsMultiThreaded(2);
+        IgniteEx ignite = startGrids(1);
 
         IgniteCache<Long, TestObject> cache = ignite.createCache(DEFAULT_CACHE_NAME);
-
-        Random rnd = new Random();
-
-        AtomicBoolean run = new AtomicBoolean(true);
         AtomicLong idx = new AtomicLong();
-        boolean sleep = false;
+        AtomicBoolean run = new AtomicBoolean(true);
 
-        IgniteInternalFuture<?> fut = runMultiThreadedAsync(() -> {
-            try {
-                while (run.get()) {
-                    if (rnd.nextInt(100) < 50)
-                        cache.put(idx.incrementAndGet(), new TestObject(RECORD_SIZE));
-                    else if (idx.get() > 0)
-                        cache.get(idx.get());
+        IgniteInternalFuture<?> getFut = runMultiThreadedAsync(() -> {
+            Random rnd = new Random();
 
-                    if (sleep)
-                        Thread.sleep(rnd.nextInt(10));
-                }
+            while (run.get()) {
+                if (idx.get() > 0)
+                    cache.get(rnd.nextLong(idx.get()));
             }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
-        }, 8, "ldr");
+        }, 4, "get");
 
-        fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        TestObject loadObj = new TestObject(RECORD_SIZE);
+        Set<Long> loadedKeys = ConcurrentHashMap.newKeySet();
+
+        IgniteInternalFuture<?> ldrFut = runMultiThreadedAsync(() -> {
+            while (run.get()) {
+                Long k = idx.incrementAndGet();
+
+                cache.put(k, loadObj);
+
+                //loadedKeys.add(k);
+            }
+
+        }, 2, "ldr");
+
+        IgniteInternalFuture<?> evicFut = runAsync(() -> {
+            CacheEvictionManager evictMgr = grid(0).cachex(DEFAULT_CACHE_NAME).context().evicts();
+
+            while (run.get()) {
+                if (loadedKeys.isEmpty())
+                    continue;
+
+                evictMgr.batchEvict(loadedKeys, null);
+
+                loadedKeys.clear();
+            }
+        });
+
+        ldrFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        getFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        evicFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
     }
 }
