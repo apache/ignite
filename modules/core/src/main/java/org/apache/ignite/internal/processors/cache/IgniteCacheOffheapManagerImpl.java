@@ -1783,29 +1783,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), null, CacheDataRowAdapter.RowData.NO_KEY, null);
+            return dataTree.findOne(
+                new SearchRow(cacheId, key),
+                null,
+                CacheDataRowAdapter.RowData.NO_KEY,
+                (pageId, row) -> {
+                    if (row != null) {
+                        grp.dataRegion().evictionTracker().touchPage(row.link());
 
-            if (row != null) {
-                row.key(key);
-
-                for(int i=0; i<1000000; ++i)
-                    grp.dataRegion().evictionTracker().touchPage(row.link());
-            }
-
-            return row;
-
-//            return dataTree.findOne(
-//                new SearchRow(cacheId, key),
-//                null,
-//                CacheDataRowAdapter.RowData.NO_KEY,
-//                (pageId, row) -> {
-//                    if (row != null) {
-//                        grp.dataRegion().evictionTracker().touchPage(row.link());
-//
-//                        ((CacheDataRow)row).key(key);
-//                    }
-//                }
-//            );
+                        ((CacheDataRow)row).key(key);
+                    }
+                }
+            );
         }
 
         /** {@inheritDoc} */

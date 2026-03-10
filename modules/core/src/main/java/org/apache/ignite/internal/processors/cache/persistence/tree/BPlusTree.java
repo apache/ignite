@@ -1502,7 +1502,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (c == null) {
                 g = new GetOne(null, null, null, true);
 
-                doFind(g, null);
+                doFind(g);
 
                 return (T)g.row;
             }
@@ -1536,7 +1536,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param row Lookup row for exact match.
      * @param c Filter closure.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @param foundPageLsnr Found data listener.
+     * @param foundLsnr Found row listener. If not {@code null}, is called when a row is found under a page-read-lock.
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
@@ -1544,14 +1544,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         L row,
         @Nullable TreeRowClosure<L, T> c,
         Object x,
-        @Nullable BiConsumer<Long, L> foundPageLsnr
+        @Nullable BiConsumer<Long, L> foundLsnr
     ) throws IgniteCheckedException {
         checkDestroyed();
 
         GetOne g = new GetOne(row, c, x, false);
 
         try {
-            doFind(g, foundPageLsnr);
+            doFind(g, foundLsnr);
 
             return (R)g.row;
         }
@@ -1580,16 +1580,24 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param g Get.
-     * @param foundPageLsnr Found data fistener.
      * @throws IgniteCheckedException If failed.
      */
-    private void doFind(Get g, @Nullable BiConsumer<Long, L> foundPageLsnr) throws IgniteCheckedException {
+    private void doFind(Get g) throws IgniteCheckedException {
+        doFind(g, null);
+    }
+
+    /**
+     * @param g Get.
+     * @param foundLsnr Found row listener. If not {@code null}, is called when a row is found under a page-read-lock.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doFind(Get g, @Nullable BiConsumer<Long, L> foundLsnr) throws IgniteCheckedException {
         assert !sequentialWriteOptsEnabled;
 
         for (;;) { // Go down with retries.
             g.init();
 
-            switch (findDown(g, g.rootId, 0L, g.rootLvl, foundPageLsnr)) {
+            switch (findDown(g, g.rootId, 0L, g.rootLvl, foundLsnr)) {
                 case RETRY:
                 case RETRY_ROOT:
                     checkDestroyed();
@@ -1608,7 +1616,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param pageId Page ID.
      * @param fwdId Expected forward page ID.
      * @param lvl Level.
-     * @param foundLsnr Found row listener.
+     * @param foundLsnr Found row listener. If not {@code null}, is called when a row is found under a page-read-lock.
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
@@ -3466,7 +3474,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             while (retry) {
                 row = row0;
 
-                doFind(this, null);
+                doFind(this);
             }
 
             return row0;
@@ -3709,7 +3717,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     cnt = io.getCount(pageAddr);
 
                     // Last item from backward row goes up.
-                   L moveUpRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+                    L moveUpRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
 
                     if (!io.isLeaf()) { // Leaf pages must contain all the links, inner pages remove moveUpLink.
                         io.setCount(pageAddr, cnt - 1);
@@ -5564,7 +5572,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final void find() throws IgniteCheckedException {
             assert lowerBound != null;
 
-            doFind(getCursor = new GetCursor(lowerBound, lowerShift, this), null);
+            doFind(getCursor = new GetCursor(lowerBound, lowerShift, this));
         }
 
         /**
