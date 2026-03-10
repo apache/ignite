@@ -62,19 +62,19 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future ID on primary. */
-    @Order(4)
+    @Order(0)
     protected long futId;
 
     /** Write version. */
-    @Order(5)
+    @Order(1)
     protected GridCacheVersion writeVer;
 
     /** Topology version. */
-    @Order(6)
+    @Order(2)
     protected AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(7)
+    @Order(3)
     protected int taskNameHash;
 
     /** Node ID. */
@@ -84,15 +84,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     private boolean onRes;
 
     /** */
-    @Order(8)
+    @Order(4)
     UUID nearNodeId;
 
     /** */
-    @Order(9)
+    @Order(5)
     long nearFutId;
 
     /** Additional flags. */
-    @Order(10)
+    @Order(6)
     protected byte flags;
 
     /**
@@ -114,7 +114,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
         boolean readRepairRecovery
@@ -127,7 +126,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.writeVer = writeVer;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
-        this.addDepInfo = addDepInfo;
 
         if (skipStore)
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);

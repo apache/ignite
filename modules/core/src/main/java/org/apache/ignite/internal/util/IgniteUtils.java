@@ -263,7 +263,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
@@ -4183,22 +4182,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Detects class loader for given object's class.
-     *
-     * @param obj Object to find class loader for class of.
-     * @return Class loader for given object (possibly {@code null}).
-     */
-    @Nullable public static ClassLoader detectObjectClassLoader(@Nullable Object obj) {
-        if (obj == null)
-            return null;
-
-        if (obj instanceof GridPeerDeployAware)
-            return ((GridPeerDeployAware)obj).classLoader();
-
-        return detectClassLoader(obj.getClass());
-    }
-
-    /**
      * Gets the peer deploy aware instance for the object with the widest class loader.
      * If collection is {@code null}, empty or contains only {@code null}s - the peer
      * deploy aware object based on system class loader will be returned.
@@ -8115,7 +8098,7 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static String validateRamUsage(GridKernalContext ctx) {
-        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+        long ram = getTotalMemoryAvailable();
 
         if (ram != -1) {
             String macs = ctx.discovery().localNode().attribute(ATTR_MACS);

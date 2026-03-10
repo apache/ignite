@@ -50,47 +50,47 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
 
     /** Sender node ID. */
-    @Order(7)
+    @Order(0)
     public UUID nodeId;
 
     /** Near transaction version. */
-    @Order(8)
+    @Order(1)
     public GridCacheVersion nearXidVer;
 
     /** Thread ID. */
-    @Order(9)
+    @Order(2)
     public long threadId;
 
     /** Future ID. */
-    @Order(10)
+    @Order(3)
     public IgniteUuid futId;
 
     /** Max wait timeout. */
-    @Order(11)
+    @Order(4)
     public long timeout;
 
     /** Indicates whether lock is obtained within a scope of transaction. */
-    @Order(12)
+    @Order(5)
     public boolean isInTx;
 
     /** Invalidate flag for transactions. */
-    @Order(13)
+    @Order(6)
     public boolean isInvalidate;
 
     /** Indicates whether implicit lock so for read or write operation. */
-    @Order(14)
+    @Order(7)
     public boolean isRead;
 
     /** Transaction isolation level. */
-    @Order(15)
+    @Order(8)
     public TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
-    @Order(16)
+    @Order(9)
     public List<KeyCacheObject> keys;
 
     /** Array indicating whether value should be returned for a key. */
-    @Order(17)
+    @Order(10)
     @GridToStringInclude
     public boolean[] retVals;
 
@@ -98,11 +98,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     protected int idx;
 
     /** Key count. */
-    @Order(18)
+    @Order(11)
     public int txSize;
 
     /** Additional flags. */
-    @Order(19)
+    @Order(12)
     public byte flags;
 
     /**
@@ -127,7 +127,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -145,10 +144,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean keepBinary,
-        boolean addDepInfo
+        boolean keepBinary
     ) {
-        super(lockVer, keyCnt, addDepInfo);
+        super(lockVer, keyCnt, false);
 
         assert keyCnt > 0;
         assert futId != null;

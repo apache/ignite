@@ -50,11 +50,6 @@ public class ZkForceNodeFailMessage extends DiscoverySpiCustomMessage implements
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean stopProcess() {
         return false;
     }
