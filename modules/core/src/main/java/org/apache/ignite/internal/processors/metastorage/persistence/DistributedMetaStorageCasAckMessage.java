@@ -28,7 +28,7 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(2)
+    @Order(0)
     boolean updated;
 
     /** Empty constructor of {@link DiscoveryMessageFactory}. */
@@ -43,9 +43,14 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
         this.updated = updated;
     }
 
+    /** */
+    public boolean updated() {
+        return updated;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 24;
+        return 27;
     }
 
     /** {@inheritDoc} */
