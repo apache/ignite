@@ -33,7 +33,7 @@ public class MessageMapType implements MessageType {
      * @param valueType Value type.
      * @param linked Is linked hash map.
      */
-    public MessageMapType(MessageType keyType, MessageType valueType, boolean linked) {
+    public MessageMapType(MessageType keyType, MessageType valType, boolean linked) {
         this.keyType = keyType;
         this.valueType = valueType;
         this.linked = linked;
