@@ -34,15 +34,12 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -204,9 +201,9 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
     /**
      * Interface to work with cache operations within transaction.
      */
-    private static interface TestTransaction<K, V> {
+    private interface TestTransaction<K, V> {
         /** Possible operations. */
-        static int POSSIBLE_OPERATIONS = 5;
+        int POSSIBLE_OPERATIONS = 5;
 
         /**
          * @param key Key.
@@ -347,7 +344,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
     public IgniteInClosure<TestTransaction<?, ?>> operation;
 
     /** Client disco spi block. */
-    private CountDownLatch clientDiscoSpiBlock;
+    private CountDownLatch cliDiscoSpiUnblockedLatch;
 
     /** Client node to perform operations. */
     private IgniteEx clnt;
@@ -368,34 +365,25 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         cleanPersistenceDir();
     }
 
-    /** */
-    @Before
-    public void before() throws Exception {
-        NodeJoinInterceptingDiscoverySpi clientDiscoSpi = new NodeJoinInterceptingDiscoverySpi();
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        cliDiscoSpiUnblockedLatch = new CountDownLatch(1);
 
-        clientDiscoSpiBlock = new CountDownLatch(1);
+        NodeJoinInterceptingDiscoverySpi clientDiscoSpi = new NodeJoinInterceptingDiscoverySpi(msg -> {
+            if (msg.nodeId().toString().endsWith("2"))
+                U.awaitQuiet(cliDiscoSpiUnblockedLatch);
+        });
 
-        // Delay node join of second client.
-        clientDiscoSpi.interceptor = msg -> {
-            if (msg.nodeId.toString().endsWith("2"))
-                U.awaitQuiet(clientDiscoSpiBlock);
-        };
-
-        discoverySpiSupplier = () -> clientDiscoSpi;
-
-        clnt = startClientGrid(1);
+        clnt = startClientGrid(getConfiguration(1, clientDiscoSpi));
 
         for (int k = 0; k < 64; k++)
             clnt.cache(CACHE_NAME).put(k, 0);
 
-        discoverySpiSupplier = TcpDiscoverySpi::new;
-
         startClientGrid(2);
     }
 
-    /** */
-    @After
-    public void after() throws Exception {
+    /** {@inheritDoc} */
+    @Override public void afterTest() throws Exception {
         // Stop client nodes.
         stopGrid(1);
         stopGrid(2);
@@ -421,7 +409,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
             // Expected.
         }
         finally {
-            clientDiscoSpiBlock.countDown();
+            cliDiscoSpiUnblockedLatch.countDown();
         }
 
         // After resume second client join, transaction should succesfully await new affinity and commit.
@@ -451,7 +439,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
             // Expected.
         }
         finally {
-            clientDiscoSpiBlock.countDown();
+            cliDiscoSpiUnblockedLatch.countDown();
         }
 
         // After resume second client join, transaction should be timed out and rolled back.

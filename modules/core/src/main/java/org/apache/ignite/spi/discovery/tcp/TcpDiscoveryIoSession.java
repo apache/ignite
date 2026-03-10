@@ -84,7 +84,7 @@ public class TcpDiscoveryIoSession {
     private final Socket sock;
 
     /** */
-    final DirectMessageWriter msgWriter;
+    private final DirectMessageWriter msgWriter;
 
     /** */
     private final DirectMessageReader msgReader;
@@ -96,7 +96,7 @@ public class TcpDiscoveryIoSession {
     private final CompositeInputStream in;
 
     /** Intermediate buffer for serializing discovery messages. */
-    final ByteBuffer msgBuf;
+    private final ByteBuffer msgBuf;
 
     /** */
     final MessageFactory msgFactory;

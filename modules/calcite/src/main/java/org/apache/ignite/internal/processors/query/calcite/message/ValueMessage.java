@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /** */
-public interface ValueMessage extends MarshalableMessage {
+public interface ValueMessage extends CalciteMarshalableMessage {
     /**
      * @return Wrapped value.
      */

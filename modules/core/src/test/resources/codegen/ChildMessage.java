@@ -21,6 +21,9 @@ import java.lang.String;
 import java.nio.ByteBuffer;
 
 public class ChildMessage extends AbstractMessage {
-    @Order(1)
+    @Order(0)
     String str;
+
+    @Order(1)
+    byte flags;
 }

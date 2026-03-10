@@ -100,7 +100,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TestBlockingDiscoverySpi());
+        TestBlockingDiscoverySpi discoSpi = new TestBlockingDiscoverySpi();
+
+        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+
+        cfg.setDiscoverySpi(discoSpi);
         cfg.setUserAttributes(Collections.singletonMap(ATTR_NODE_IDX, getTestIgniteInstanceIndex(igniteInstanceName)));
 
         return cfg;

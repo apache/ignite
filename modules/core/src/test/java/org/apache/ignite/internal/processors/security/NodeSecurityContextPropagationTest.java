@@ -28,18 +28,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -57,6 +53,7 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -186,20 +183,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                DiscoveryCustomMessage customMsg = U.field(msg, "msg");
-
-                if (customMsg == null) {
-                    try {
-                        customMsg = U.unmarshal(
-                            ignite.context().marshallerContext().jdkMarshaller(),
-                            (byte[])U.field(msg, "msgBytes"),
-                            U.resolveClassLoader(ignite.configuration())
-                        );
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail(e.getMessage());
-                    }
-                }
+                DiscoveryCustomMessage customMsg = getFieldValue(msg, "serMsg");
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 
@@ -254,20 +238,6 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(
-            GridDiscoveryManager mgr,
-            AffinityTopologyVersion topVer,
-            DiscoCache discoCache
-        ) {
-            throw new UnsupportedOperationException();
         }
     }
 

@@ -24,6 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new DiscoveryMessageFactory();
+        return new DiscoveryMessageFactory(null, null);
     }
 }

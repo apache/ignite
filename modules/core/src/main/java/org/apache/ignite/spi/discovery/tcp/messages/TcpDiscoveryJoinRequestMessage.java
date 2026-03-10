@@ -23,6 +23,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -32,7 +33,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,11 +42,11 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
     /** Serialized {@link #node}. */
     // TODO Remove the field after completing https://issues.apache.org/jira/browse/IGNITE-27899.
-    @Order(6)
+    @Order(0)
     byte[] nodeBytes;
 
     /** Discovery data container. */
-    @Order(7)
+    @Order(1)
     DiscoveryDataPacket dataPacket;
 
     /** Constructor. */

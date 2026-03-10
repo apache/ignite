@@ -78,11 +78,6 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);

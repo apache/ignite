@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.util.GridCommandHandlerTest.OfflineTestCommandArg;
+import org.apache.ignite.util.GridCommandHandlerTest.TestOfflineTestCommandArg;
 
 /**
  * This class is implements {@link IgniteDataTransferObjectSerializer}.
@@ -34,14 +34,14 @@ import org.apache.ignite.util.GridCommandHandlerTest.OfflineTestCommandArg;
  *
  * @see org.apache.ignite.internal.codegen.idto.IDTOSerializerFactory
  */
-public class OfflineTestCommandArgSerializer implements IgniteDataTransferObjectSerializer<OfflineTestCommandArg> {
+public class OfflineTestCommandArgSerializer implements IgniteDataTransferObjectSerializer<TestOfflineTestCommandArg> {
     /** {@inheritDoc} */
-    @Override public void writeExternal(OfflineTestCommandArg obj, ObjectOutput out) throws IOException {
+    @Override public void writeExternal(TestOfflineTestCommandArg obj, ObjectOutput out) throws IOException {
         U.writeString(out, obj.input);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(OfflineTestCommandArg obj, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(TestOfflineTestCommandArg obj, ObjectInput in) throws IOException, ClassNotFoundException {
         obj.input = U.readString(in);
     }
 }

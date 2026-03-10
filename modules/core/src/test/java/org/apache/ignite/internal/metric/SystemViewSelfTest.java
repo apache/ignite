@@ -2572,17 +2572,15 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testConfigurationView() throws Exception {
-        IgniteConfiguration icfg = new IgniteConfiguration();
-
         long expMaxSize = 10 * MB;
 
         String expName = "my-instance";
 
         String expDrName = "my-dr";
 
-        icfg.setIgniteInstanceName(expName)
-            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
-        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
+        IgniteConfiguration icfg = getConfiguration(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setLazyMemoryAllocation(false))
