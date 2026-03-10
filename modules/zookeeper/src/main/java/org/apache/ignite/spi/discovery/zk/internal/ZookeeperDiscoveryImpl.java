@@ -2561,10 +2561,8 @@ public class ZookeeperDiscoveryImpl {
             0L,
             evtsData.topVer,
             sndNode.id(),
-            null,
+            msg,
             evtPath);
-
-        evtData.resolvedMsg = msg;
 
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
@@ -3783,10 +3781,8 @@ public class ZookeeperDiscoveryImpl {
             origEvt.eventId(),
             rtState.evtsData.topVer, // Use actual topology version because topology version must be growing.
             locNode.id(),
-            null,
+            ack,
             null);
-
-        ackEvtData.resolvedMsg = ack;
 
         if (log.isDebugEnabled()) {
             log.debug("Generated CUSTOM event ack [origEvtId=" + origEvt.eventId() +
