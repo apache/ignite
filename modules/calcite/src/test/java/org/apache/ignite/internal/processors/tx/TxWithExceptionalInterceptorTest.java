@@ -82,10 +82,10 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
     private static final AtomicInteger exceptionRaised = new AtomicInteger();
 
     /** Cache with or without writeThrough configured. */
-    private static final String processedCacheName = "processedCache";
+    private static final String PROC_CACHE_NAME = "PROC_CACHE";
 
     /** Tx involved cache. */
-    private static final String commonCacheName = "commonCache";
+    private static final String COMMON_CACHE_NAME = "COMMON_CACHE";
 
     /** Default client name. */
     private static final String CLIENT_NAME = "client";
@@ -155,12 +155,12 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
                     ));
         }
 
-        CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>(processedCacheName);
+        CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>(PROC_CACHE_NAME);
         ccfg1.setAtomicityMode(TRANSACTIONAL);
         ccfg1.setCacheMode(REPLICATED);
 
         ccfg1.setInterceptor(new CustomInterceptor(writeThrough, txCoord, getTestIgniteInstanceName(0)));
-        ccfg1.setQueryEntities(List.of(queryEntity(processedCacheName)));
+        ccfg1.setQueryEntities(List.of(queryEntity(PROC_CACHE_NAME)));
 
         // All server nodes besides zero-indexed
         if (txCoord == TxCoordNodeRole.COORDINATOR_NO_DATA)
@@ -173,10 +173,10 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
             ccfg1.setCacheStoreFactory(storeFactory);
         }
 
-        CacheConfiguration<Integer, Integer> ccfg2 = new CacheConfiguration<>(commonCacheName);
+        CacheConfiguration<Integer, Integer> ccfg2 = new CacheConfiguration<>(COMMON_CACHE_NAME);
         ccfg2.setAtomicityMode(TRANSACTIONAL);
         ccfg2.setCacheMode(REPLICATED);
-        ccfg2.setQueryEntities(List.of(queryEntity(commonCacheName)));
+        ccfg2.setQueryEntities(List.of(queryEntity(COMMON_CACHE_NAME)));
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
@@ -253,7 +253,9 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterPut(Cache.Entry<Integer, Integer> entry) {}
+        @Override public void onAfterPut(Cache.Entry<Integer, Integer> entry) {
+            // No-op.
+        }
 
         /** {@inheritDoc} */
         @Override public @Nullable IgniteBiTuple<Boolean, Integer> onBeforeRemove(Cache.Entry<Integer, Integer> entry) {
@@ -261,7 +263,9 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterRemove(Cache.Entry<Integer, Integer> entry) {}
+        @Override public void onAfterRemove(Cache.Entry<Integer, Integer> entry) {
+            // No-op.
+        }
     }
 
     /** */
@@ -292,11 +296,11 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
 
         ignite0.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Integer> processedCache = txNode.cache(processedCacheName);
-        IgniteCache<Integer, Integer> commonCache = txNode.cache(commonCacheName);
+        IgniteCache<Integer, Integer> processedCache = txNode.cache(PROC_CACHE_NAME);
+        IgniteCache<Integer, Integer> commonCache = txNode.cache(COMMON_CACHE_NAME);
 
-        Integer primaryKey = primaryKeyCoordAware(processedCacheName);
-        Integer primaryKeyCommon = primaryKeyCoordAware(processedCacheName);
+        Integer primaryKey = primaryKeyCoordAware(PROC_CACHE_NAME);
+        Integer primaryKeyCommon = primaryKeyCoordAware(PROC_CACHE_NAME);
 
         try (Transaction tx = txNode.transactions().txStart()) {
             processedCache.put(primaryKey, 1);
@@ -344,24 +348,24 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
         for (Ignite node : grids) {
             if (txCoord == TxCoordNodeRole.PRIMARY) {
                 if (!writeThrough) {
-                    getSqlResultByKey(node, processedCacheName, primaryKey, true);
-                    getKVResultByKey(node, processedCacheName, primaryKey, true);
+                    getSqlResultByKey(node, PROC_CACHE_NAME, primaryKey, true);
+                    getKVResultByKey(node, PROC_CACHE_NAME, primaryKey, true);
                 }
 
-                getSqlResultByKey(node, commonCacheName, primaryKey, true);
-                getKVResultByKey(node, commonCacheName, primaryKey, true);
+                getSqlResultByKey(node, COMMON_CACHE_NAME, primaryKey, true);
+                getKVResultByKey(node, COMMON_CACHE_NAME, primaryKey, true);
 
                 continue;
             }
 
             // obtain sql results first, kv api can eventually recover results, thus for more clear test - let`s check sql first
-            Object sqlVal = getSqlResultByKey(node, processedCacheName, primaryKey, false);
+            Object sqlVal = getSqlResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
 
             if (kvVal == null)
-                kvVal = getKVResultByKey(grid(1), processedCacheName, primaryKey, false);
+                kvVal = getKVResultByKey(grid(1), PROC_CACHE_NAME, primaryKey, false);
 
             if (writeThrough) {
-                kvVal = getKVResultByKey(node, processedCacheName, primaryKey, false);
+                kvVal = getKVResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
                 // TODO: IGNITE-28005 Interceptor is not called if coordinator is not a primary or backup node
                 if (txCoord == TxCoordNodeRole.BACKUP) {
                     assertEquals("node: " + node.name() + ", storeVal=" + storeVal + ", cacheVal=" + kvVal,
@@ -371,7 +375,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
                 }
             }
             else {
-                Object cacheVal = getKVResultByKey(node, processedCacheName, primaryKey, false);
+                Object cacheVal = getKVResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
 
                 assertEquals("node: " + node.name() + ", refVal=" + kvVal + ", cacheVal=" + cacheVal,
                     kvVal, cacheVal);
@@ -380,8 +384,8 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
                     kvVal, sqlVal);
             }
 
-            Object commonSqlRes = getSqlResultByKey(node, commonCacheName, primaryKey, false);
-            Object commonKvRes = getKVResultByKey(node, commonCacheName, primaryKey, false);
+            Object commonSqlRes = getSqlResultByKey(node, COMMON_CACHE_NAME, primaryKey, false);
+            Object commonKvRes = getKVResultByKey(node, COMMON_CACHE_NAME, primaryKey, false);
 
             assertEquals("node: " + node.name() + ", commonSqlRes=" + commonSqlRes + ", commonKvRes=" + commonKvRes,
                 commonSqlRes, commonKvRes);
