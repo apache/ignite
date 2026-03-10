@@ -30,7 +30,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 
 /**
  * Multithreaded tests for replicated cache preloader.
@@ -59,7 +58,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         cacheCfg.setRebalanceBatchSize(10000);
 
         cfg.setCacheConfiguration(cacheCfg);
-        cfg.setDeploymentMode(CONTINUOUS);
 
         return cfg;
     }
