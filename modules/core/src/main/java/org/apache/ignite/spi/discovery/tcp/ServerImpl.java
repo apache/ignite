@@ -1879,27 +1879,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.topology(topToSnd);
 
+                Collection<TcpDiscoveryAbstractMessage> msgs0 = null;
+
                 if (msgs != null) {
-                    Collection<TcpDiscoveryAbstractMessage> msgs0 = new ArrayList<>(msgs.size());
+                    msgs0 = new ArrayList<>(msgs.size());
 
                     for (PendingMessage pendingMsg : msgs) {
-                        if (pendingMsg.msg == null)
-                            continue;
-
-                        if (pendingMsg.msg == nodeAddedMsg) {
-                            TcpDiscoveryNodeAddedMessage msg0 = (TcpDiscoveryNodeAddedMessage)pendingMsg.msg;
-                            msg0 = new TcpDiscoveryNodeAddedMessage(msg0);
-                            // Prevents infinite write/read message cycles and stack overflow.
-                            msg0.messages(null);
-
-                            msgs0.add(msg0);
-                        }
-                        else
+                        if (pendingMsg.msg != null)
                             msgs0.add(pendingMsg.msg);
                     }
-
-                    nodeAddedMsg.messages(msgs0);
                 }
+
+                nodeAddedMsg.messages(msgs0);
 
                 Map<Long, Collection<ClusterNode>> hist;
 
