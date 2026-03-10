@@ -43,7 +43,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.events.EventType.EVTS_CACHE_REBALANCE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
@@ -91,7 +90,6 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         //cacheCfg.setRebalanceThreadPoolSize(1);
 
         cfg.setCacheConfiguration(cacheCfg);
-        cfg.setDeploymentMode(CONTINUOUS);
 
         return cfg;
     }

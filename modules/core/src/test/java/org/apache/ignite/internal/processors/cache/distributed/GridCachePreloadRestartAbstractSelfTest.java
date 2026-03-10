@@ -32,7 +32,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
@@ -94,8 +93,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        c.setDeploymentMode(CONTINUOUS);
 
         // Cache.
         CacheConfiguration cc = defaultCacheConfiguration();
