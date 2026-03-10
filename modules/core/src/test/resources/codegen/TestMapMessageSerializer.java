@@ -187,7 +187,7 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeMap(((TestMapMessage)msg).gridlistDoubleMapUuidMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false)))
+                if (!writer.writeMap(msg.gridlistDoubleMapUuidMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false)))
                     return false;
 
                 writer.incrementState();
@@ -392,7 +392,7 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
                 reader.incrementState();
 
             case 24:
-                ((TestMapMessage)msg).gridlistDoubleMapUuidMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false));
+                msg.gridlistDoubleMapUuidMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false));
 
                 if (!reader.isLastRead())
                     return false;
