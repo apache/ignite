@@ -35,7 +35,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
 /**
@@ -95,7 +94,6 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             c.setLifecycleBeans(lbean);
 
         c.setCacheConfiguration(cc);
-        c.setDeploymentMode(CONTINUOUS);
         c.setNetworkTimeout(netTimeout);
 
         return c;

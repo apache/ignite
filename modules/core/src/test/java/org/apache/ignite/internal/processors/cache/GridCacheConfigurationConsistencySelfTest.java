@@ -35,7 +35,6 @@ import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -56,8 +55,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
-import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  *
@@ -72,9 +69,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
     /** */
     private CacheMode cacheMode = REPLICATED;
-
-    /** */
-    private DeploymentMode depMode = SHARED;
 
     /** */
     private C1<CacheConfiguration, Void> initCache;
@@ -104,8 +98,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             strLog = new GridStringLogger(false, cfg.getGridLogger());
             cfg.setGridLogger(strLog);
         }
-
-        cfg.setDeploymentMode(depMode);
 
         if (cacheEnabled) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -185,7 +177,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "myCache";
         cacheMode = null;
-        depMode = SHARED;
 
         assert startGrid(1).cache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == DFLT_CACHE_MODE;
     }
@@ -197,7 +188,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testWithCacheAndWithoutCache() throws Exception {
         // 1st grid without cache.
         cacheEnabled = false;
-        depMode = SHARED;
 
         startGrid(2);
 
@@ -205,7 +195,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "myCache";
         cacheMode = REPLICATED;
-        depMode = SHARED;
 
         startGrid(1);
     }
@@ -219,7 +208,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "myCache";
         cacheMode = REPLICATED;
-        depMode = SHARED;
 
         startGrid(1);
 
@@ -227,7 +215,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "myCache";
         cacheMode = PARTITIONED;
-        depMode = SHARED;
 
         try {
             startGrid(2);
@@ -248,7 +235,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "replicated";
         cacheMode = REPLICATED;
-        depMode = SHARED;
 
         startGrid(2);
 
@@ -256,7 +242,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "partitioned";
         cacheMode = PARTITIONED;
-        depMode = SHARED;
 
         startGrid(3);
 
@@ -264,35 +249,8 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheEnabled = true;
         cacheName = "partitioned";
         cacheMode = null;
-        depMode = SHARED;
 
         startGrid(4);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDifferentDeploymentModes() throws Exception {
-        // 1st grid with SHARED mode.
-        cacheEnabled = true;
-        cacheName = "partitioned";
-        cacheMode = PARTITIONED;
-        depMode = SHARED;
-
-        startGrid(1);
-
-        // 2nd grid with CONTINUOUS mode.
-        cacheEnabled = true;
-        cacheName = "partitioned";
-        cacheMode = PARTITIONED;
-        depMode = CONTINUOUS;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(2);
-            }
-        }, IgniteCheckedException.class, null);
     }
 
     /**
