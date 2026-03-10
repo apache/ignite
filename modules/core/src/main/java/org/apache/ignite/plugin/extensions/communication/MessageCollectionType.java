@@ -20,7 +20,7 @@ package org.apache.ignite.plugin.extensions.communication;
 /** */
 public class MessageCollectionType implements MessageType {
     /** */
-    private final MessageType valueType;
+    private final MessageType valType;
 
     /** */
     private final boolean set;
