@@ -57,7 +57,11 @@ import org.jetbrains.annotations.Nullable;
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
+ *
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
+@Deprecated(forRemoval = true)
 public interface DeploymentSpi extends IgniteSpi {
     /**
      * Finds class loader for the given class.

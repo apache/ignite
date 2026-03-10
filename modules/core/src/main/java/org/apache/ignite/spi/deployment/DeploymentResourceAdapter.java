@@ -21,7 +21,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Simple adapter for {@link DeploymentResource} interface.
+ *
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
+@Deprecated(forRemoval = true)
 public class DeploymentResourceAdapter implements DeploymentResource {
     /** */
     private final String name;
