@@ -37,7 +37,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -1003,12 +1002,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             Ignite ignite0 = ignite;
 
-            if (ignite == null)
+            if (ignite0 == null)
                 throw new IgniteSpiException("The node is not yet started");
 
-            assert ignite0 instanceof IgniteKernal;
-
-            return ((IgniteEx)ignite).context();
+            return ((IgniteEx)ignite0).context();
         }
     }
 }
