@@ -82,7 +82,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPage(long pageId) throws IgniteCheckedException {
+    @Override public void touchPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         long res = compactTimestamp(U.currentTimeMillis());
@@ -190,7 +190,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected int getFragmentLink(int pageTrackingIdx) {
         int link = GridUnsafe.getIntVolatile(null, trackingArrPtr + pageTrackingIdx * 4L);
 
-        assert link <= 0 : "[link=" + link + ", ptr=" + trackingArrPtr + ", idx=" + pageTrackingIdx + ']';
+        assert link <= 0 : "[link=" + link + "]";
 
         return -link;
     }

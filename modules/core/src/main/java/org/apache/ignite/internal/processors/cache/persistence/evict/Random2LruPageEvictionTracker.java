@@ -80,7 +80,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPage(long pageId) throws IgniteCheckedException {
+    @Override public void touchPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         long latestTs = compactTimestamp(U.currentTimeMillis());

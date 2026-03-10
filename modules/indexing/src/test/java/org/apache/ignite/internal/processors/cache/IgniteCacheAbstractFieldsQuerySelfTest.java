@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCache;
@@ -782,7 +783,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /**
      * Verifies that exactly one record is found when we have equality comparison in where clause (which is supposed
-     * to use {@link BPlusTree#findOne(Object, Object)} instead of {@link BPlusTree#find(Object, Object, Object)}.
+     * to use {@link BPlusTree#findOne(Object, BPlusTree.TreeRowClosure, Object, Consumer)} instead of
+     * {@link BPlusTree#find(Object, Object, Object)}.
      *
      * @throws Exception If failed.
      */
@@ -801,8 +803,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /**
      * Verifies that zero records are found when we have equality comparison in where clause (which is supposed
-     * to use {@link BPlusTree#findOne(Object, Object)} instead of {@link BPlusTree#find(Object, Object, Object)}
-     * and the key is not in the cache.
+     * to use {@link BPlusTree#findOne(Object, BPlusTree.TreeRowClosure, Object, Consumer)} instead of
+     * {@link BPlusTree#find(Object, Object, Object)} and the key is not in the cache.
      *
      * @throws Exception If failed.
      */

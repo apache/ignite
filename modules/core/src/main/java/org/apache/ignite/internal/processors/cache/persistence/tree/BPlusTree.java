@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1501,7 +1502,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (c == null) {
                 g = new GetOne(null, null, null, true);
 
-                doFind(g);
+                doFind(g, null);
 
                 return (T)g.row;
             }
@@ -1533,27 +1534,24 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param row Lookup row for exact match.
+     * @param c Filter closure.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @return Found result or {@code null}
-     * @throws IgniteCheckedException If failed.
-     */
-    public final <R> R findOne(L row, Object x) throws IgniteCheckedException {
-        return findOne(row, null, x);
-    }
-
-    /**
-     * @param row Lookup row for exact match.
-     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @param foundPageLsnr Found data listener.
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    public final <R> R findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+    public final <R> R findOne(
+        L row,
+        @Nullable TreeRowClosure<L, T> c,
+        Object x,
+        @Nullable BiConsumer<Long, L> foundPageLsnr
+    ) throws IgniteCheckedException {
         checkDestroyed();
 
         GetOne g = new GetOne(row, c, x, false);
 
         try {
-            doFind(g);
+            doFind(g, foundPageLsnr);
 
             return (R)g.row;
         }
@@ -1577,20 +1575,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     @Override public final T findOne(L row) throws IgniteCheckedException {
-        return findOne(row, null, null);
+        return findOne(row, null, null, null);
     }
 
     /**
      * @param g Get.
+     * @param foundPageLsnr Found data fistener.
      * @throws IgniteCheckedException If failed.
      */
-    private void doFind(Get g) throws IgniteCheckedException {
+    private void doFind(Get g, @Nullable BiConsumer<Long, L> foundPageLsnr) throws IgniteCheckedException {
         assert !sequentialWriteOptsEnabled;
 
         for (;;) { // Go down with retries.
             g.init();
 
-            switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
+            switch (findDown(g, g.rootId, 0L, g.rootLvl, foundPageLsnr)) {
                 case RETRY:
                 case RETRY_ROOT:
                     checkDestroyed();
@@ -1609,10 +1608,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param pageId Page ID.
      * @param fwdId Expected forward page ID.
      * @param lvl Level.
+     * @param foundLsnr Found row listener.
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
-    private Result findDown(final Get g, final long pageId, final long fwdId, final int lvl)
+    private Result findDown(Get g, long pageId, long fwdId, int lvl, @Nullable BiConsumer<Long, L> foundLsnr)
         throws IgniteCheckedException {
         long page = acquirePage(pageId);
 
@@ -1633,7 +1633,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         assert g.fwdId != fwdId || fwdId == 0;
 
                         // Go down recursively.
-                        res = findDown(g, g.pageId, g.fwdId, lvl - 1);
+                        res = findDown(g, g.pageId, g.fwdId, lvl - 1, foundLsnr);
 
                         switch (res) {
                             case RETRY:
@@ -1649,6 +1649,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         assert lvl == 0 : lvl;
 
                         g.row = null; // Mark not found result.
+
+                        return res;
+
+                    case FOUND:
+                        if (foundLsnr != null)
+                            foundLsnr.accept(pageId, g.row);
 
                         return res;
 
@@ -3460,7 +3466,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             while (retry) {
                 row = row0;
 
-                doFind(this);
+                doFind(this, null);
             }
 
             return row0;
@@ -3703,7 +3709,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     cnt = io.getCount(pageAddr);
 
                     // Last item from backward row goes up.
-                    L moveUpRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+                   L moveUpRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
 
                     if (!io.isLeaf()) { // Leaf pages must contain all the links, inner pages remove moveUpLink.
                         io.setCount(pageAddr, cnt - 1);
@@ -5558,7 +5564,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final void find() throws IgniteCheckedException {
             assert lowerBound != null;
 
-            doFind(getCursor = new GetCursor(lowerBound, lowerShift, this));
+            doFind(getCursor = new GetCursor(lowerBound, lowerShift, this), null);
         }
 
         /**

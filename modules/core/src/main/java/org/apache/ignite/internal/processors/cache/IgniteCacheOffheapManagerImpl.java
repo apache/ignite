@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDa
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -1784,25 +1783,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
+            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), null, CacheDataRowAdapter.RowData.NO_KEY, null);
 
-            afterRowFound(row, key);
-
-            return row;
-        }
-
-        /**
-         * @param row Row.
-         * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        private void afterRowFound(@Nullable CacheDataRow row, KeyCacheObject key) throws IgniteCheckedException {
             if (row != null) {
                 row.key(key);
 
-                for (int i = 0; i < 100000; ++i)
+                for(int i=0; i<1000000; ++i)
                     grp.dataRegion().evictionTracker().touchPage(row.link());
             }
+
+            return row;
+
+//            return dataTree.findOne(
+//                new SearchRow(cacheId, key),
+//                null,
+//                CacheDataRowAdapter.RowData.NO_KEY,
+//                (pageId, row) -> {
+//                    if (row != null) {
+//                        grp.dataRegion().evictionTracker().touchPage(row.link());
+//
+//                        ((CacheDataRow)row).key(key);
+//                    }
+//                }
+//            );
         }
 
         /** {@inheritDoc} */

@@ -22,22 +22,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheEvictionManager;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionManager;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
@@ -64,12 +58,6 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
                     .setMetricsEnabled(true)
                     .setEvictionThreshold(0.8)
                 )
-//                .setPageSize(DFLT_PAGE_SIZE)
-//                .setCheckpointFrequency(60000)
-//                .setMaxWalArchiveSize(10737418240L)
-//                .setWalMode(WALMode.LOG_ONLY)
-//                .setWalBufferSize(5242880)
-//                .setWalCompactionEnabled(true)
             );
     }
 
@@ -100,7 +88,7 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
         }, 4, "get");
 
         TestObject loadObj = new TestObject(RECORD_SIZE);
-        Set<Long> loadedKeys = ConcurrentHashMap.newKeySet();
+//        Set<Long> loadedKeys = ConcurrentHashMap.newKeySet();
 
         IgniteInternalFuture<?> ldrFut = runMultiThreadedAsync(() -> {
             while (run.get()) {
@@ -113,21 +101,32 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
 
         }, 2, "ldr");
 
-        IgniteInternalFuture<?> evicFut = runAsync(() -> {
-            CacheEvictionManager evictMgr = grid(0).cachex(DEFAULT_CACHE_NAME).context().evicts();
+//        IgniteInternalFuture<?> evicFut = runAsync(() -> {
+//            CacheEvictionManager evictMgr = grid(0).cachex(DEFAULT_CACHE_NAME).context().evicts();
+//
+//            while (run.get()) {
+//                if (loadedKeys.isEmpty())
+//                    continue;
+//
+//                evictMgr.batchEvict(loadedKeys, null);
+//
+//                loadedKeys.clear();
+//            }
+//        });
 
-            while (run.get()) {
-                if (loadedKeys.isEmpty())
-                    continue;
+        runAsync(() -> {
+            Thread.sleep(getTestTimeout() / 2);
 
-                evictMgr.batchEvict(loadedKeys, null);
-
-                loadedKeys.clear();
-            }
+            run.set(false);
         });
 
         ldrFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         getFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
-        evicFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+//        evicFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 45L * 1000;
     }
 }

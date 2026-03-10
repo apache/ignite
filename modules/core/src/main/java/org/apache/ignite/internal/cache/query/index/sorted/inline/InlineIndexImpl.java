@@ -109,7 +109,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         try {
             // If it is known that only one row will be returned an optimization is employed
             if (isSingleRowLookup(lower, upper)) {
-                IndexRowImpl row = segments[segment].findOne(lower, closure, null);
+                IndexRowImpl row = segments[segment].findOne(lower, closure, null, null);
 
                 if (row == null || isExpired(row))
                     return IndexValueCursor.EMPTY;

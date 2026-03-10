@@ -185,7 +185,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     }
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) throws IgniteCheckedException {
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
         // Do nothing if called for tail page.
         if (prevPageId == 0)
             return;
