@@ -716,11 +716,11 @@ public class MessageSerializerGenerator {
 
     /** */
     private String messageCollectionItemTypes(VariableElement field, TypeMirror type) throws Exception {
-        String itemTypes = messageCollectionItemTypeDescriptor(type);
+        String itemDesc = messageCollectionItemTypeDescriptor(type);
         String descName = field.getSimpleName() + "CollDesc";
-        String typeName = itemTypes.substring(itemTypes.indexOf(' ') + 1,  itemTypes.indexOf('('));
+        String typeName = itemDesc.substring(itemDesc.indexOf(' ') + 1,  itemDesc.indexOf('('));
 
-        fields.add("private final static " + typeName + " " + descName + " = " + itemTypes + ";");
+        fields.add("private final static " + typeName + " " + descName + " = " + itemDesc + ";");
 
         return descName;
     }
