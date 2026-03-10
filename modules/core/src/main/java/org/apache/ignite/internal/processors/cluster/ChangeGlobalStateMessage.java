@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -29,47 +32,72 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message represent request for change cluster global state.
  */
-public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
+public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Request ID */
-    private UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** Initiator node ID. */
-    private UUID initiatingNodeId;
+    @Order(2)
+    UUID initiatingNodeId;
 
     /** Cluster state */
-    private ClusterState state;
+    @Order(3)
+    ClusterState state;
 
     /** Configurations read from persistent store. */
     private List<StoredCacheData> storedCfgs;
 
+    /**
+     *  JDK Serialized version of storedCfgs
+     */
+    @Order(value = 4, method = "storedCacheConfigurationsBytes")
+    byte[] storedCfgsBytes;
+
     /** */
     @Nullable private BaselineTopology baselineTopology;
 
+    /**
+     *  JDK Serialized version of baselineTopology
+     */
+    @Order(value = 5, method = "baselineTopologyBytes")
+    byte[] baselineTopologyBytes;
+
     /** */
-    private boolean forceChangeBaselineTopology;
+    @Order(6)
+    boolean forceChangeBaselineTopology;
 
     /** */
     @GridToStringExclude
-    private transient ExchangeActions exchangeActions;
+    private ExchangeActions exchangeActions;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
+    @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
     /** If {@code true}, cluster deactivation will be forced. */
-    private boolean forceDeactivation;
+    @Order(7)
+    boolean forceDeactivation;
+
+    /** No-arg constructor for deserialization. */
+    public ChangeGlobalStateMessage() {
+    }
 
     /**
      * @param reqId State change request ID.
@@ -94,6 +122,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         assert reqId != null;
         assert initiatingNodeId != null;
 
+        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
@@ -104,10 +133,38 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Configurations read from persistent store..
+     * @return Configurations read from persistent store.
      */
     @Nullable public List<StoredCacheData> storedCacheConfigurations() {
-        return storedCfgs;
+        if (storedCfgs != null) {
+            return storedCfgs;
+        }
+
+        try {
+            return (storedCfgsBytes != null) ? (storedCfgs = U.unmarshal(Marshallers.jdk(), storedCfgsBytes, null)) : null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal schema operation", e);
+        }
+    }
+
+    /** */
+    byte[] storedCacheConfigurationsBytes() {
+        if (storedCfgsBytes != null) {
+            return storedCfgsBytes;
+        }
+
+        try {
+            return (storedCfgs != null) ? U.marshal(Marshallers.jdk(), storedCfgs) : null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshal schema operation", e);
+        }
+    }
+
+    /** */
+    byte[] storedCacheConfigurationsBytes(byte[] storedCfgsBytes) {
+        return this.storedCfgsBytes = storedCfgsBytes;
     }
 
     /**
@@ -193,7 +250,37 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @return Baseline topology.
      */
     @Nullable public BaselineTopology baselineTopology() {
-        return baselineTopology;
+        if (baselineTopology != null) {
+            return baselineTopology;
+        }
+
+        try {
+            return (baselineTopologyBytes != null) ?
+                (baselineTopology = U.unmarshal(Marshallers.jdk(), baselineTopologyBytes, null)) :
+                null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal schema operation", e);
+        }
+    }
+
+    /** */
+    byte[] baselineTopologyBytes() {
+        if (baselineTopologyBytes != null) {
+            return baselineTopologyBytes;
+        }
+
+        try {
+            return (baselineTopology != null) ? U.marshal(Marshallers.jdk(), baselineTopology) : null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshal schema operation", e);
+        }
+    }
+
+    /** */
+    void baselineTopologyBytes(byte[] baselineTopologyBytes) {
+        this.baselineTopologyBytes = baselineTopologyBytes;
     }
 
     /**
@@ -209,6 +296,11 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public UUID requestId() {
         return reqId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 515;
     }
 
     /** {@inheritDoc} */
