@@ -176,9 +176,7 @@ public class MessageSerializerGenerator {
 
             writeClassFields(writer);
 
-            ++indent;
             writeConstructor(writer, serClsName);
-            --indent;
 
             // Write #writeTo method.
             for (String w: write)
@@ -205,11 +203,14 @@ public class MessageSerializerGenerator {
         if (!marshallableMessage())
             return;
 
+        ++indent;
+
         writer.write(identedLine(METHOD_JAVADOC));
         writer.write(NL);
         writer.write(identedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
 
         writer.write(NL);
+
         ++indent;
 
         writer.write(identedLine("this.marshaller = marshaller;"));
@@ -217,10 +218,13 @@ public class MessageSerializerGenerator {
         writer.write(identedLine("this.clsLdr = clsLdr;"));
 
         --indent;
+
         writer.write(NL);
 
         writer.write(identedLine("}"));
         writer.write(NL);
+
+        --indent;
     }
 
     /** Generates code for {@code writeTo} and {@code readFrom}. */
