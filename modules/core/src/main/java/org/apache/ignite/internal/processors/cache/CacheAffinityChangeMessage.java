@@ -105,6 +105,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage, Messa
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsFullMessage partsMsg,
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
+        id = IgniteUuid.randomUuid();
         this.exchId = exchId;
         this.partsMsg = partsMsg;
         this.assignmentChange = assignmentChange;
