@@ -29,7 +29,7 @@ public class MessageCollectionType implements MessageType {
      * @param valueType Value type.
      * @param set Is set.
      */
-    public MessageCollectionType(MessageType valueType, boolean set) {
+    public MessageCollectionType(MessageType valType, boolean set) {
         this.valueType = valueType;
         this.set = set;
     }
