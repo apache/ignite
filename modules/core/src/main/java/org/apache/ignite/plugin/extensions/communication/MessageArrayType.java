@@ -45,7 +45,7 @@ public class MessageArrayType implements MessageType {
     }
 
     /** @return Class. */
-    public Class clazz() {
+    public Class<?> clazz() {
         return clazz;
     }
 }
