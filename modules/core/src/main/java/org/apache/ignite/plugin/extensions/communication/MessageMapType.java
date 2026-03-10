@@ -35,7 +35,7 @@ public class MessageMapType implements MessageType {
      */
     public MessageMapType(MessageType keyType, MessageType valType, boolean linked) {
         this.keyType = keyType;
-        this.valueType = valueType;
+        this.valType = valType;
         this.linked = linked;
     }
 
