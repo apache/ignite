@@ -23,14 +23,14 @@ public class MessageMapType implements MessageType {
     private final MessageType keyType;
 
     /** */
-    private final MessageType valueType;
+    private final MessageType valType;
 
     /** */
     private final boolean linked;
 
     /**
      * @param keyType Key type.
-     * @param valueType Value type.
+     * @param valType Value type.
      * @param linked Is linked hash map.
      */
     public MessageMapType(MessageType keyType, MessageType valType, boolean linked) {
