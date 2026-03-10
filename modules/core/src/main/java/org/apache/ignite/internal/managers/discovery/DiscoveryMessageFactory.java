@@ -43,6 +43,10 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAccepted
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessageSerializer;
+import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
@@ -199,5 +203,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)510, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
         factory.register((short)511, UserProposedMessage::new, new UserProposedMessageSerializer());
         factory.register((short)512, ChangeGlobalStateFinishMessage::new, new ChangeGlobalStateFinishMessageSerializer());
+        factory.register((short)513, StopRoutineAckDiscoveryMessage::new, new StopRoutineAckDiscoveryMessageSerializer());
+        factory.register((short)514, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
     }
 }
