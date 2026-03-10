@@ -38,19 +38,19 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     public static final short TYPE_CODE = 178;
 
     /** Snapshot operation request ID. */
-    @Order(1)
+    @Order(0)
     UUID reqId;
 
     /** Snapshot name to request. */
-    @Order(2)
+    @Order(1)
     String snpName;
 
     /** Snapshot directory path. */
-    @Order(3)
+    @Order(2)
     String snpPath;
 
     /** Map of cache group ids and corresponding set of its partition ids. */
-    @Order(4)
+    @Order(3)
     Map<Integer, int[]> parts;
 
     /**
@@ -100,31 +100,10 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @return The demanded cache group partitions per each cache group.
-     */
-    public Map<Integer, int[]> partitions() {
-        return parts;
-    }
-
-    /**
-     * @param parts The demanded cache group partitions per each cache group.
-     */
-    public void partitions(Map<Integer, int[]> parts) {
-        this.parts = parts;
-    }
-
-    /**
      * @return Requested snapshot name.
      */
     public String snapshotName() {
         return snpName;
-    }
-
-    /**
-     * @param snpName Requested snapshot name.
-     */
-    public void snapshotName(String snpName) {
-        this.snpName = snpName;
     }
 
     /**
@@ -135,24 +114,10 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param snpPath Snapshot directory path.
-     */
-    public void snapshotPath(String snpPath) {
-        this.snpPath = snpPath;
-    }
-
-    /**
      * @return Snapshot operation request ID.
      */
     public UUID requestId() {
         return reqId;
-    }
-
-    /**
-     * @param reqId Snapshot operation request ID.
-     */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
     }
 
     /** {@inheritDoc} */

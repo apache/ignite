@@ -120,13 +120,6 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param pendingVer The version of metadata that has been proposed for update.
-     */
-    public void pendingVersion(int pendingVer) {
-        this.pendingVer = pendingVer;
-    }
-
-    /**
      * @return The version of metadata that has been accepted by the entire cluster.
      */
     public int acceptedVersion() {
@@ -134,31 +127,10 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param acceptedVer The version of metadata that has been accepted by the entire cluster.
-     */
-    public void acceptedVersion(int acceptedVer) {
-        this.acceptedVer = acceptedVer;
-    }
-
-    /**
      * @return {@code true} is the metadata is removing now.
      */
     boolean removing() {
         return removing;
-    }
-
-    /**
-     * @return Serialized binary metadata.
-     */
-    public byte[] metadataBytes() {
-        return metadataBytes;
-    }
-
-    /**
-     * @param metadataBytes Serialized binary metadata.
-     */
-    public void metadataBytes(byte[] metadataBytes) {
-        this.metadataBytes = metadataBytes;
     }
 
     /**

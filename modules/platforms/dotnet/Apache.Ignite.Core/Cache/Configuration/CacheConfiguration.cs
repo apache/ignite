@@ -828,18 +828,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public ICollection<ICachePluginConfiguration> PluginConfigurations { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the <see cref="MemoryPolicyConfiguration"/> for this cache.
-        /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
-        /// </summary>
-        [Obsolete("Use DataRegionName.")]
-        [XmlIgnore]
-        public string MemoryPolicyName
-        {
-            get { return DataRegionName; }
-            set { DataRegionName = value; }
-        }
-
-        /// <summary>
         /// Gets or sets the name of the data region, see <see cref="DataRegionConfiguration"/>.
         /// </summary>
         public string DataRegionName { get; set; }

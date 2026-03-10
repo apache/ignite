@@ -29,13 +29,6 @@ public class CacheEntryInfoCollection implements Message {
     List<GridCacheEntryInfo> infos = new ArrayList<>();
 
     /**
-     * Sets entries.
-     */
-    public void infos(List<GridCacheEntryInfo> infos) {
-        this.infos = infos;
-    }
-
-    /**
      * @return Entries.
      */
     public List<GridCacheEntryInfo> infos() {

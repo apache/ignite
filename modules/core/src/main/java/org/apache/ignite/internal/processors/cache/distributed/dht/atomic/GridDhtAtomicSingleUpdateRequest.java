@@ -42,21 +42,21 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(11)
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
     @GridToStringInclude
-    @Order(12)
+    @Order(1)
     protected CacheObject val;
 
     /** Previous value. */
     @GridToStringInclude
-    @Order(13)
+    @Order(2)
     protected CacheObject prevVal;
 
     /** Partition. */
-    @Order(14)
+    @Order(3)
     protected long updateCntr;
 
     /**
@@ -75,7 +75,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param writeVer Write version for cache values.
      * @param topVer Topology version.
      * @param taskNameHash Task name hash code.
-     * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
      * @param readRepairRecovery Recovery on Read Repair flag.
@@ -87,7 +86,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
         boolean readRepairRecovery
@@ -98,7 +96,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             writeVer,
             topVer,
             taskNameHash,
-            addDepInfo,
             keepBinary,
             skipStore,
             readRepairRecovery);
@@ -210,20 +207,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return near() ? null : key;
     }
 
-    /**
-     * @return Key to update.
-     */
-    public KeyCacheObject key() {
-        return key;
-    }
-
-    /**
-     * @param key New key to update.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
     /** {@inheritDoc} */
     @Override public int obsoleteNearKeysSize() {
         return isFlag(DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK) ? 1 : 0;
@@ -252,20 +235,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return updateCntr;
     }
 
-    /**
-     * @return Update counter.
-     */
-    public long updateCounter() {
-        return updateCntr;
-    }
-
-    /**
-     * @param updateCntr Update counter.
-     */
-    public void updateCounter(long updateCntr) {
-        this.updateCntr = updateCntr;
-    }
-
     /** {@inheritDoc} */
     @Override public KeyCacheObject nearKey(int idx) {
         assert idx == 0 : idx;
@@ -280,39 +249,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return near() ? null : val;
     }
 
-    /**
-     * @return Cache object value.
-     */
-    public CacheObject value() {
-        return val;
-    }
-
-    /**
-     * @param val Cache object value to update.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject previousValue(int idx) {
         assert idx == 0 : idx;
 
         return prevVal;
-    }
-
-    /**
-     * @return Previous value.
-     */
-    public CacheObject previousValue() {
-        return prevVal;
-    }
-
-    /**
-     * @param prevVal New previous value.
-     */
-    public void previousValue(CacheObject prevVal) {
-        this.prevVal = prevVal;
     }
 
     /** {@inheritDoc} */

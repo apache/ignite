@@ -38,16 +38,16 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** Future ID. */
-    @Order(7)
+    @Order(0)
     public IgniteUuid futId;
 
     /** Error. */
-    @Order(8)
+    @Order(1)
     public ErrorMessage errMsg;
 
     /** Values. */
     @GridToStringInclude
-    @Order(9)
+    @Order(2)
     public List<CacheObject> vals;
 
     /**
@@ -62,14 +62,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param cnt Key count.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        int cnt,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        int cnt) {
+        super(lockVer, cnt, false);
 
         assert futId != null;
 
@@ -84,14 +82,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock ID.
      * @param futId Future ID.
      * @param err Error.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        Throwable err,
-        boolean addDepInfo) {
-        super(lockVer, 0, addDepInfo);
+        Throwable err) {
+        super(lockVer, 0, false);
 
         assert futId != null;
 
@@ -106,15 +102,13 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param futId Future ID.
      * @param cnt Count.
      * @param err Error.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
-        Throwable err,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        Throwable err) {
+        super(lockVer, cnt, false);
 
         assert futId != null;
 

@@ -28,11 +28,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     /** Request id. */
-    @Order(3)
+    @Order(0)
     UUID reqId;
 
     /** Activation error message. */
-    @Order(4)
+    @Order(1)
     ErrorMessage errMsg;
 
     /**
@@ -61,31 +61,10 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     }
 
     /**
-     * @param reqId Request id.
-     */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Activation error.
      */
     public @Nullable Throwable getError() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

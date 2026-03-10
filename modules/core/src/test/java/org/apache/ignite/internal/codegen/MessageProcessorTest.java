@@ -270,6 +270,40 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
     }
 
+    /**
+     * Negative test that verifies the compilation failed if the CompressedMessage type is used in Message.
+     */
+    @Test
+    public void testCompressedMessageExplicitUsageFails() {
+        String errMsg = "CompressedMessage should not be used explicitly. To compress the required field use the @Compress annotation.";
+
+        Compilation compilation = compile("TestCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestCollectionsCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestMapCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Negative test that verifies the compilation failed if the Compress annotation is used for unsupported types.
+     */
+    @Test
+    public void testCompressAnnotationFailsForUnsupportedTypes() {
+        Compilation compilation = compile("TestCompressUnsupportedTypeMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Compress annotation is used for an unsupported type: java.util.List");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

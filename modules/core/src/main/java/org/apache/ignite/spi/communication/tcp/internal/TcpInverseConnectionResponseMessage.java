@@ -46,13 +46,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         return connIdx;
     }
 
-    /**
-     * @param connIdx New connection index.
-     */
-    public void connectionIndex(int connIdx) {
-        this.connIdx = connIdx;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 177;

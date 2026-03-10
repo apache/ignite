@@ -82,11 +82,6 @@ public class IndexQueryResultMeta implements Message {
         return keyTypeSettings;
     }
 
-    /** */
-    public void keyTypeSettings(IndexKeyTypeSettings keyTypeSettings) {
-        this.keyTypeSettings = keyTypeSettings;
-    }
-
     /** @return Map of index definitions with proper order. */
     public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
         if (F.isEmpty(idxNames) && F.isEmpty(idxDefs))
@@ -103,23 +98,4 @@ public class IndexQueryResultMeta implements Message {
         return idxDefsMap;
     }
 
-    /** @return Index names with proper order. */
-    public @Nullable String[] orderedIndexNames() {
-        return idxNames;
-    }
-
-    /** Stores index names with proper order to build the linked map later. */
-    public void orderedIndexNames(@Nullable String[] idxNames) {
-        this.idxNames = idxNames;
-    }
-
-    /** @return Index definitions with proper order. */
-    public @Nullable IndexKeyDefinition[] orderedIndexDefinitions() {
-        return idxDefs;
-    }
-
-    /** Process the index definitions with proper order and buils the linked map. */
-    public void orderedIndexDefinitions(@Nullable IndexKeyDefinition[] idxDefs) {
-        this.idxDefs = idxDefs;
-    }
 }

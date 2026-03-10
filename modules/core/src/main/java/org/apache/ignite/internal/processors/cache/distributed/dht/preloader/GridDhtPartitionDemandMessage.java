@@ -28,23 +28,23 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** Rebalance id. */
-    @Order(4)
+    @Order(0)
     long rebalanceId;
 
     /** Partitions map. */
-    @Order(5)
+    @Order(1)
     IgniteDhtDemandedPartitionsMap parts;
 
     /** Timeout. */
-    @Order(6)
+    @Order(2)
     long timeout;
 
     /** Worker ID. */
-    @Order(7)
+    @Order(3)
     int workerId = -1;
 
     /** Topology version. */
-    @Order(8)
+    @Order(4)
     AffinityTopologyVersion topVer;
 
     /**
@@ -102,13 +102,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * @param parts Partitions.
-     */
-    public void partitions(IgniteDhtDemandedPartitionsMap parts) {
-        this.parts = parts;
-    }
-
-    /**
      * @param updateSeq Update sequence.
      */
     public void rebalanceId(long updateSeq) {
@@ -137,31 +130,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * @return Worker ID.
-     */
-    public int workerId() {
-        return workerId;
-    }
-
-    /**
-     * @param workerId Worker ID.
-     */
-    public void workerId(int workerId) {
-        this.workerId = workerId;
-    }
-
-    /**
      * @return Topology version for which demand message is sent.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version for which demand message is sent.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

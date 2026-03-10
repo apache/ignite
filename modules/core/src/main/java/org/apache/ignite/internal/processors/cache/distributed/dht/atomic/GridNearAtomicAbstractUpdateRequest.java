@@ -76,28 +76,28 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected UUID nodeId;
 
     /** Future version. */
-    @Order(4)
+    @Order(0)
     protected long futId;
 
     /** Topology version. */
-    @Order(5)
+    @Order(1)
     protected AffinityTopologyVersion topVer;
 
     /** Cache update operation. */
-    @Order(6)
+    @Order(2)
     protected GridCacheOperation op;
 
     /** Write synchronization mode. */
-    @Order(7)
+    @Order(3)
     protected CacheWriteSynchronizationMode syncMode;
 
     /** Task name hash. */
-    @Order(8)
+    @Order(4)
     protected int taskNameHash;
 
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
-    @Order(9)
+    @Order(5)
     protected short flags;
 
     /** */
@@ -121,7 +121,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param op Cache update operation.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     protected GridNearAtomicAbstractUpdateRequest(
         int cacheId,
@@ -131,8 +130,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -142,7 +140,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.syncMode = syncMode;
         this.taskNameHash = taskNameHash;
         this.flags = flags;
-        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -215,11 +212,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
-    /** Sets new topology version. */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
     /** {@inheritDoc} */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
@@ -278,50 +270,15 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * Sets task name hash code.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
-     * @return Compressed boolean flags.
-     */
-    public short flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags New compressed boolean flags.
-     */
-    public void flags(short flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return Cache update operation.
      */
     public GridCacheOperation operation() {
         return op;
     }
 
-    /**
-     * @param op Cache update operation.
-     */
-    public void operation(GridCacheOperation op) {
-        this.op = op;
-    }
-
     /** @return Write synchronization mode. */
     public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
-    }
-
-    /**
-     * @param syncMode Write synchronization mode.
-     */
-    public void writeSynchronizationMode(CacheWriteSynchronizationMode syncMode) {
-        this.syncMode = syncMode;
     }
 
     /**
@@ -336,13 +293,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * Sets near node future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /**

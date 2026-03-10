@@ -76,13 +76,6 @@ public class SchemaOperationStatusMessage implements Message {
     }
 
     /**
-     * @param opId Operation ID.
-     */
-    public void operationId(UUID opId) {
-        this.opId = opId;
-    }
-
-    /**
      * @return Error code.
      */
     public int errorCode() {
@@ -90,24 +83,10 @@ public class SchemaOperationStatusMessage implements Message {
     }
 
     /**
-     * @param errCode Error code.
-     */
-    public void errorCode(int errCode) {
-        this.errCode = errCode;
-    }
-
-    /**
      * @return Error message.
      */
     @Nullable public String errorMessage() {
         return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(String errMsg) {
-        this.errMsg = errMsg;
     }
 
     /**
@@ -129,13 +108,6 @@ public class SchemaOperationStatusMessage implements Message {
      */
     public boolean nop() {
         return nop;
-    }
-
-    /**
-     * @param nop <code>True</code> if message is no-op.
-     */
-    public void nop(boolean nop) {
-        this.nop = nop;
     }
 
     /** {@inheritDoc} */

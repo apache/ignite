@@ -50,13 +50,6 @@ public class GridQueryCancelRequest implements Message {
         return qryReqId;
     }
 
-    /**
-     * @param qryReqId Query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryCancelRequest.class, this);

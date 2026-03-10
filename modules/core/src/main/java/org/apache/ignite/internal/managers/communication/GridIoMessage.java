@@ -119,13 +119,6 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param plc Policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Topic.
      */
     Object topic() {
@@ -140,31 +133,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @return Topic bytes.
-     */
-    public byte[] topicBytes() {
-        return topicBytes;
-    }
-
-    /**
-     * @param topicBytes Topic bytes.
-     */
-    public void topicBytes(byte[] topicBytes) {
-        this.topicBytes = topicBytes;
-    }
-
-    /**
      * @return Topic ordinal.
      */
     public int topicOrdinal() {
         return topicOrd;
-    }
-
-    /**
-     * @param topicOrd Topic ordinal.
-     */
-    public void topicOrdinal(int topicOrd) {
-        this.topicOrd = topicOrd;
     }
 
     /**
@@ -175,24 +147,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param msg Message.
-     */
-    public void message(Message msg) {
-        this.msg = msg;
-    }
-
-    /**
      * @return Message timeout.
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout Message timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
     }
 
     /**
@@ -203,24 +161,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param skipOnTimeout Whether message can be skipped on timeout.
-     */
-    public void skipOnTimeout(boolean skipOnTimeout) {
-        this.skipOnTimeout = skipOnTimeout;
-    }
-
-    /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
     public boolean isOrdered() {
         return ordered;
-    }
-
-    /**
-     * @param ordered {@code True} if message is ordered, {@code false} otherwise.
-     */
-    public void isOrdered(boolean ordered) {
-        this.ordered = ordered;
     }
 
     /** {@inheritDoc} */

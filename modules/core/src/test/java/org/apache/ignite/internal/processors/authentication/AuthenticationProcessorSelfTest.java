@@ -29,8 +29,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -190,7 +190,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int nodeIdx = i;
 
-            try (OperationSecurityContext ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
+            try (Scope ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
                 GridTestUtils.assertThrows(log, () -> {
                     grid(nodeIdx).context().security().createUser("test1", "test1".toCharArray());
 
@@ -462,7 +462,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i < NODES_COUNT; i++) {
             IgniteSecurity security = ignite(i).context().security();
 
-            try (OperationSecurityContext ignored = security.withContext(subj.id())) {
+            try (Scope ignored = security.withContext(subj.id())) {
                 SecuritySubject rmtSubj = security.securityContext().subject();
 
                 assertEquals(subj.id(), rmtSubj.id());
@@ -545,7 +545,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(secCtx);
 
-            try (OperationSecurityContext ignored = ignite.context().security().withContext(secCtx)) {
+            try (Scope ignored = ignite.context().security().withContext(secCtx)) {
                 action.accept(ignite.context().security());
             }
         }

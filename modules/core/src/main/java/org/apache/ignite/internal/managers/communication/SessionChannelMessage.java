@@ -56,13 +56,6 @@ public class SessionChannelMessage implements Message {
         return sesId;
     }
 
-    /**
-     * @param sesId The unique session id for the channel.
-     */
-    public void sesId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;

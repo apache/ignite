@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -30,26 +30,26 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Error. */
-    private final SchemaOperationException err;
-
-    /** Original propose message. */
-    private transient SchemaProposeDiscoveryMessage proposeMsg;
-
     /** No-op flag. */
-    private final boolean nop;
+    @Order(0)
+    boolean nop;
+
+    /**
+     * Constructor.
+     */
+    public SchemaFinishDiscoveryMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
      *
      * @param op Original operation.
-     * @param err Error.
      * @param nop No-op flag.
      */
-    public SchemaFinishDiscoveryMessage(SchemaAbstractOperation op, SchemaOperationException err, boolean nop) {
+    public SchemaFinishDiscoveryMessage(SchemaAbstractOperation op, boolean nop) {
         super(op);
 
-        this.err = err;
         this.nop = nop;
     }
 
@@ -59,41 +59,8 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean exchange() {
         return false;
-    }
-
-    /**
-     * @return {@code True} if error was reported during init.
-     */
-    public boolean hasError() {
-        return err != null;
-    }
-
-    /**
-     * @return Error message (if any).
-     */
-    @Nullable public SchemaOperationException error() {
-        return err;
-    }
-
-    /**
-     * @return Propose message.
-     */
-    public SchemaProposeDiscoveryMessage proposeMessage() {
-        return proposeMsg;
-    }
-
-    /**
-     * @param proposeMsg Propose message.
-     */
-    public void proposeMessage(SchemaProposeDiscoveryMessage proposeMsg) {
-        this.proposeMsg = proposeMsg;
     }
 
     /**
@@ -106,5 +73,10 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaFinishDiscoveryMessage.class, this, "parent", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 505;
     }
 }

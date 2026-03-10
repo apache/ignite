@@ -19,8 +19,9 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.jetbrains.annotations.Nullable;
@@ -89,12 +90,13 @@ public interface DiscoveryCustomMessage extends Serializable {
 
     /**
      * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
+     * @see DiscoverySpiMutableCustomMessageSupport
      */
-    public boolean isMutable();
+    default boolean isMutable() {
+        return false;
+    }
 
     /**
-     * See {@link DiscoverySpiCustomMessage#stopProcess()}.
-     *
      * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.
      */
     public default boolean stopProcess() {
@@ -108,6 +110,9 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @param topVer New topology version.
      * @param discoCache Current discovery cache.
      * @return Reused discovery cache.
+     * @see GridCacheProcessor#onCustomEvent
      */
-    public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache);
+    default DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
+    }
 }

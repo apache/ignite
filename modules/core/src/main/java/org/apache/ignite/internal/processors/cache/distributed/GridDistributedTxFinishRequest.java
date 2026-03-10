@@ -56,47 +56,47 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     protected static final int STORE_ENABLED_FLAG_MASK = 0x20;
 
     /** Topology version. */
-    @Order(7)
+    @Order(0)
     public AffinityTopologyVersion topVer;
 
     /** Future ID. */
-    @Order(8)
+    @Order(1)
     public IgniteUuid futId;
 
     /** Thread ID. */
-    @Order(9)
+    @Order(2)
     public long threadId;
 
     /** Commit version. */
-    @Order(10)
+    @Order(3)
     public GridCacheVersion commitVer;
 
     /** Invalidate flag. */
-    @Order(11)
+    @Order(4)
     public boolean invalidate;
 
     /** Commit flag. */
-    @Order(12)
+    @Order(5)
     public boolean commit;
 
     /** Min version used as base for completed versions. */
-    @Order(13)
+    @Order(6)
     public GridCacheVersion baseVer;
 
     /** IO policy. */
-    @Order(14)
+    @Order(7)
     public byte plc;
 
     /** Task name hash. */
-    @Order(15)
+    @Order(8)
     public int taskNameHash;
 
     /** */
-    @Order(16)
+    @Order(9)
     public byte flags;
 
     /** Write synchronization mode. */
-    @Order(17)
+    @Order(10)
     public CacheWriteSynchronizationMode syncMode;
 
     /** Transient TX state. */
@@ -121,7 +121,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
@@ -136,10 +135,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash,
-        boolean addDepInfo
+        int taskNameHash
     ) {
-        super(xidVer, 0, addDepInfo);
+        super(xidVer, 0, false);
 
         assert xidVer != null;
         assert syncMode != null;
@@ -166,13 +164,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param syncMode Transaction write synchronization mode.
-     */
-    public void syncMode(CacheWriteSynchronizationMode syncMode) {
-        this.syncMode = syncMode;
-    }
-
-    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -193,31 +184,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return Task name hash.
-     */
-    public final int taskNameHash() {
-        return taskNameHash;
-    }
-
-    /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -228,24 +198,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param plc IO policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Future ID.
      */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**
@@ -256,13 +212,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param threadId Thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
      * @return Commit version.
      */
     public GridCacheVersion commitVersion() {
@@ -270,24 +219,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param commitVer Commit version.
-     */
-    public void commitVersion(GridCacheVersion commitVer) {
-        this.commitVer = commitVer;
-    }
-
-    /**
      * @return Commit flag.
      */
     public boolean commit() {
         return commit;
-    }
-
-    /**
-     * @param commit Commit flag.
-     */
-    public void commit(boolean commit) {
-        this.commit = commit;
     }
 
     /**
@@ -299,38 +234,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @param invalidate Invalidate flag.
-     */
-    public void isInvalidate(boolean invalidate) {
-        this.invalidate = invalidate;
-    }
-
-    /**
      * @return Base version.
      */
     public GridCacheVersion baseVersion() {
         return baseVer;
-    }
-
-    /**
-     * @param baseVer Base version.
-     */
-    public void baseVersion(GridCacheVersion baseVer) {
-        this.baseVer = baseVer;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /**

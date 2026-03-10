@@ -63,24 +63,10 @@ public class CacheVersionedValue implements Message {
     }
 
     /**
-     * @param ver New cache version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
-    }
-
-    /**
      * @return Cache object.
      */
     public CacheObject value() {
         return val;
-    }
-
-    /**
-     * @param val New value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
     }
 
     /**

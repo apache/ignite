@@ -27,9 +27,9 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,15 +47,16 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                if (msg instanceof CustomMessageWrapper
-                    && ((CustomMessageWrapper)msg).delegate() instanceof MetadataUpdateProposedMessage)
-                    metadataUpdateProposedMessages.add(((CustomMessageWrapper)msg).delegate());
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+                if (U.unwrapCustomMessage(msg) instanceof MetadataUpdateProposedMessage)
+                    metadataUpdateProposedMessages.add(U.unwrapCustomMessage(msg));
 
                 super.sendCustomEvent(msg);
             }
-        });
+        };
+
+        cfg.setDiscoverySpi(discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
 
         return cfg;
     }

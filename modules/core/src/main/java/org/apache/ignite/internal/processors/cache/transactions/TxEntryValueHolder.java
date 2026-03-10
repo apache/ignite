@@ -92,13 +92,6 @@ public class TxEntryValueHolder implements Message {
     }
 
     /**
-     * @param val Stored value.
-     */
-    public void value(@Nullable CacheObject val) {
-        this.val = val;
-    }
-
-    /**
      * Used only in serializer.
      *
      * @return Stored value or null.
@@ -135,13 +128,6 @@ public class TxEntryValueHolder implements Message {
      */
     public boolean hasWriteValue() {
         return hasWriteVal;
-    }
-
-    /**
-     * @param hasWriteVal Flag indicating that value has been set for write.
-     */
-    public void hasWriteValue(boolean hasWriteVal) {
-        this.hasWriteVal = hasWriteVal;
     }
 
     /**

@@ -17,22 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Query table descriptor.
  */
 public class QueryTable implements Message {
     /** Schema. */
-    private String schema;
+    @Order(0)
+    String schema;
 
     /** Table. */
-    private String tbl;
+    @Order(1)
+    String tbl;
 
     /**
      * Default constructor.
@@ -64,61 +64,6 @@ public class QueryTable implements Message {
      */
     public String table() {
         return tbl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(schema))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString(tbl))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                schema = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                tbl = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

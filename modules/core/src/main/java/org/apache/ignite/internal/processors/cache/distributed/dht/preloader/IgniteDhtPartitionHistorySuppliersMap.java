@@ -58,7 +58,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
      */
     public synchronized List<UUID> getSupplier(int grpId, int partId, long cntrSince) {
         if (map == null)
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
 
         List<UUID> suppliers = new ArrayList<>();
 
@@ -112,20 +112,6 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
      */
     public synchronized void putAll(IgniteDhtPartitionHistorySuppliersMap that) {
         map = that.map;
-    }
-
-    /**
-     * @return Partition history suppliers map.
-     */
-    public Map<UUID, PartitionReservationsMap> historySuppliers() {
-        return map;
-    }
-
-    /**
-     * @param map Partition history suppliers map.
-     */
-    public void historySuppliers(Map<UUID, PartitionReservationsMap> map) {
-        this.map = map;
     }
 
     /** {@inheritDoc} */

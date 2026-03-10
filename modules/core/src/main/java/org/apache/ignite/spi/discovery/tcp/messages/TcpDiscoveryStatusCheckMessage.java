@@ -47,15 +47,15 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     public static final int STATUS_RECON = 2;
 
     /** Creator node addresses. */
-    @Order(5)
+    @Order(0)
     @Nullable Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs;
 
     /** Failed node id. */
-    @Order(6)
+    @Order(1)
     @Nullable UUID failedNodeId;
 
     /** Creator node status (initialized by coordinator). */
-    @Order(7)
+    @Order(2)
     int status;
 
     /** Empty constructor for {@link DiscoveryMessageFactory}. */
@@ -99,39 +99,12 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
-     * Gets creator node addresses.
-     *
-     * @return Creator node addresses.
-     */
-    public @Nullable Collection<InetSocketAddressMessage> creatorNodeAddressesMessages() {
-        return creatorNodeAddrsMsgs;
-    }
-
-    /**
-     * Sets creator node addresses.
-     *
-     * @param creatorNodeAddrsMsgs Creator node addresses.
-     */
-    public void creatorNodeAddressesMessages(@Nullable Collection<InetSocketAddressMessage> creatorNodeAddrsMsgs) {
-        this.creatorNodeAddrsMsgs = creatorNodeAddrsMsgs;
-    }
-
-    /**
      * Gets failed node id.
      *
      * @return Failed node id.
      */
     public @Nullable UUID failedNodeId() {
         return failedNodeId;
-    }
-
-    /**
-     * Sets failed node id.
-     *
-     * @param failedNodeId Failed node id.
-     */
-    public void failedNodeId(@Nullable UUID failedNodeId) {
-        this.failedNodeId = failedNodeId;
     }
 
     /**

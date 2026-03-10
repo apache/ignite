@@ -45,23 +45,23 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
-    @Order(9)
+    @Order(0)
     @Nullable Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
-    @Order(10)
+    @Order(1)
     IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(11)
+    @Order(2)
     int miniId;
 
     /** DHT version. */
-    @Order(12)
+    @Order(3)
     GridCacheVersion dhtVer;
 
     /** Write version. */
-    @Order(13)
+    @Order(4)
     GridCacheVersion writeVer;
 
     /** Map of owned values to set on near node. */
@@ -69,27 +69,27 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
     /** OwnedVals' keys for marshalling. */
-    @Order(14)
+    @Order(5)
     @Nullable Collection<IgniteTxKey> ownedValKeys;
 
     /** OwnedVals' values for marshalling. */
-    @Order(15)
+    @Order(6)
     @Nullable Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
-    @Order(16)
+    @Order(7)
     GridCacheReturn retVal;
 
     /** Keys that did not pass the filter. */
-    @Order(17)
+    @Order(8)
     @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(18)
+    @Order(9)
     @Nullable AffinityTopologyVersion clientRemapVer;
 
     /** One-phase commit on primary flag. */
-    @Order(19)
+    @Order(10)
     boolean onePhaseCommit;
 
     /**

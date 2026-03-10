@@ -63,13 +63,6 @@ public class UserAuthenticateRequestMessage implements Message {
     }
 
     /**
-     * @param name New username.
-     */
-    public void name(String name) {
-        this.name = name;
-    }
-
-    /**
      * @return User password.
      */
     public String password() {
@@ -77,24 +70,10 @@ public class UserAuthenticateRequestMessage implements Message {
     }
 
     /**
-     * @param passwd New user password.
-     */
-    public void password(String passwd) {
-        this.passwd = passwd;
-    }
-
-    /**
      * @return Request ID.
      */
     public IgniteUuid id() {
         return id;
-    }
-
-    /**
-     * @param id New request ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
     }
 
     /** {@inheritDoc} */

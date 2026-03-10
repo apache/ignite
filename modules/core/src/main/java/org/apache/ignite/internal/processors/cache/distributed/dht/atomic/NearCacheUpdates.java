@@ -65,41 +65,6 @@ public class NearCacheUpdates implements Message {
     }
 
     /**
-     * @param nearVals values.
-     */
-    public void nearValues(List<CacheObject> nearVals) {
-        this.nearVals = nearVals;
-    }
-
-    /**
-     * @return Near TTLs.
-     */
-    public GridLongList nearTtls() {
-        return nearTtls;
-    }
-
-    /**
-     * @param nearTtls Near TTLs.
-     */
-    public void nearTtls(GridLongList nearTtls) {
-        this.nearTtls = nearTtls;
-    }
-
-    /**
-     * @return Near expire times.
-     */
-    public GridLongList nearExpireTimes() {
-        return nearExpireTimes;
-    }
-
-    /**
-     * @param nearExpireTimes Near expire times.
-     */
-    public void nearExpireTimes(GridLongList nearExpireTimes) {
-        this.nearExpireTimes = nearExpireTimes;
-    }
-
-    /**
      * Adds value to be put in near cache on originating node.
      *
      * @param keyIdx Key index.
@@ -215,24 +180,10 @@ public class NearCacheUpdates implements Message {
     }
 
     /**
-     * @param nearSkipIdxs Indexes of keys for which update was skipped
-     */
-    public void skippedIndexes(List<Integer> nearSkipIdxs) {
-        this.nearSkipIdxs = nearSkipIdxs;
-    }
-
-    /**
      * @return Indexes of keys for which values were generated on primary node.
      */
     public @Nullable List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
-    }
-
-    /**
-     * @param nearValsIdxs Indexes of keys for which values were generated on primary node.
-     */
-    public void nearValuesIndexes(List<Integer> nearValsIdxs) {
-        this.nearValsIdxs = nearValsIdxs;
     }
 
     /**

@@ -39,13 +39,6 @@ public class PartitionsToReload implements Message {
     }
 
     /**
-     * @param parts Set of partitions to reload.
-     */
-    public void partitions(Set<Integer> parts) {
-        this.parts = parts;
-    }
-
-    /**
      * @param partId Partition ID.
      */
     public void add(int partId) {

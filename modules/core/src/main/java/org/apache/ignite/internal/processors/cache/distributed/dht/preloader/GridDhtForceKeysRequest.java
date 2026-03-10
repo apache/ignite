@@ -37,20 +37,20 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(4)
+    @Order(0)
     IgniteUuid futId;
 
     /** Mini-future ID. */
-    @Order(5)
+    @Order(1)
     IgniteUuid miniId;
 
     /** Keys to request. */
-    @Order(6)
+    @Order(2)
     @GridToStringInclude
     Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    @Order(7)
+    @Order(3)
     AffinityTopologyVersion topVer;
 
     /**
@@ -66,15 +66,13 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info.
      */
     GridDhtForceKeysRequest(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -85,7 +83,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         this.miniId = miniId;
         this.keys = keys;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -96,24 +93,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini-future ID.
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini-future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -124,24 +107,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param keys Keys.
-     */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Topology version for which keys are requested.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version for which keys are requested.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

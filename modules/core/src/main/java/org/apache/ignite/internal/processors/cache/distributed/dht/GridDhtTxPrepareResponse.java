@@ -40,23 +40,23 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Evicted readers. */
     @GridToStringInclude
-    @Order(9)
+    @Order(0)
     @Nullable Collection<IgniteTxKey> nearEvicted;
 
     /** Future ID.  */
-    @Order(10)
+    @Order(1)
     IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(11)
+    @Order(2)
     int miniId;
 
     /** Invalid partitions by cache ID. */
-    @Order(12)
+    @Order(3)
     @Nullable Map<Integer, int[]> invalidParts;
 
     /** Preload entries found on backup node. */
-    @Order(13)
+    @Order(4)
     @Nullable List<GridCacheEntryInfo> preloadEntries;
 
     /**

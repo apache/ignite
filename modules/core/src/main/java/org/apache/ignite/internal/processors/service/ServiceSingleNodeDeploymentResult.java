@@ -63,13 +63,6 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     }
 
     /**
-     * @param cnt Count of service's instances.
-     */
-    public void count(int cnt) {
-        this.cnt = cnt;
-    }
-
-    /**
      * @return Serialized exceptions.
      */
     @NotNull public Collection<byte[]> errors() {

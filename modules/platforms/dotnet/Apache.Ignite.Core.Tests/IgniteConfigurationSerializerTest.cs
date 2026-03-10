@@ -52,15 +52,11 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin.Cache;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
-    using CheckpointWriteOrder = Apache.Ignite.Core.PersistentStore.CheckpointWriteOrder;
-    using DataPageEvictionMode = Apache.Ignite.Core.Cache.Configuration.DataPageEvictionMode;
-    using WalMode = Apache.Ignite.Core.PersistentStore.WalMode;
 
     /// <summary>
     /// Tests <see cref="IgniteConfiguration"/> serialization.
@@ -237,26 +233,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
             Assert.AreEqual(129, eventStorage.MaxEventCount);
 
-            var memCfg = cfg.MemoryConfiguration;
-            Assert.IsNotNull(memCfg);
-            Assert.AreEqual(3, memCfg.ConcurrencyLevel);
-            Assert.AreEqual("dfPlc", memCfg.DefaultMemoryPolicyName);
-            Assert.AreEqual(45, memCfg.PageSize);
-            Assert.AreEqual(67, memCfg.SystemCacheInitialSize);
-            Assert.AreEqual(68, memCfg.SystemCacheMaxSize);
-
-            var memPlc = memCfg.MemoryPolicies.Single();
-            Assert.AreEqual(1, memPlc.EmptyPagesPoolSize);
-            Assert.AreEqual(0.2, memPlc.EvictionThreshold);
-            Assert.AreEqual("dfPlc", memPlc.Name);
-            Assert.AreEqual(DataPageEvictionMode.RandomLru, memPlc.PageEvictionMode);
-            Assert.AreEqual("abc", memPlc.SwapFilePath);
-            Assert.AreEqual(89, memPlc.InitialSize);
-            Assert.AreEqual(98, memPlc.MaxSize);
-            Assert.IsTrue(memPlc.MetricsEnabled);
-            Assert.AreEqual(9, memPlc.SubIntervals);
-            Assert.AreEqual(TimeSpan.FromSeconds(62), memPlc.RateTimeInterval);
-
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
 
             var sql = cfg.SqlConnectorConfiguration;
@@ -283,30 +259,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
             Assert.AreEqual(20, client.ThinClientConfiguration.MaxActiveTxPerConnection);
             Assert.AreEqual(21, client.ThinClientConfiguration.MaxActiveComputeTasksPerConnection);
-
-            var pers = cfg.PersistentStoreConfiguration;
-
-            Assert.AreEqual(true, pers.AlwaysWriteFullPages);
-            Assert.AreEqual(TimeSpan.FromSeconds(1), pers.CheckpointingFrequency);
-            Assert.AreEqual(2, pers.CheckpointingPageBufferSize);
-            Assert.AreEqual(3, pers.CheckpointingThreads);
-            Assert.AreEqual(TimeSpan.FromSeconds(4), pers.LockWaitTime);
-            Assert.AreEqual("foo", pers.PersistentStorePath);
-            Assert.AreEqual(5, pers.TlbSize);
-            Assert.AreEqual("bar", pers.WalArchivePath);
-            Assert.AreEqual(TimeSpan.FromSeconds(6), pers.WalFlushFrequency);
-            Assert.AreEqual(7, pers.WalFsyncDelayNanos);
-            Assert.AreEqual(8, pers.WalHistorySize);
-            Assert.AreEqual(WalMode.None, pers.WalMode);
-            Assert.AreEqual(9, pers.WalRecordIteratorBufferSize);
-            Assert.AreEqual(10, pers.WalSegments);
-            Assert.AreEqual(11, pers.WalSegmentSize);
-            Assert.AreEqual("baz", pers.WalStorePath);
-            Assert.IsTrue(pers.MetricsEnabled);
-            Assert.AreEqual(3, pers.SubIntervals);
-            Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
-            Assert.AreEqual(CheckpointWriteOrder.Random, pers.CheckpointWriteOrder);
-            Assert.IsTrue(pers.WriteThrottlingEnabled);
 
             var listeners = cfg.LocalEventListeners;
             Assert.AreEqual(2, listeners.Count);
@@ -805,7 +757,6 @@ namespace Apache.Ignite.Core.Tests
                         {
                             new MyPluginConfiguration()
                         },
-                        MemoryPolicyName = "somePolicy",
                         PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
                         GroupName = "abc",
                         SqlIndexMaxInlineSize = 24,
@@ -917,38 +868,6 @@ namespace Apache.Ignite.Core.Tests
                     ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
                     MaxEventCount = 257
                 },
-                MemoryConfiguration = new MemoryConfiguration
-                {
-                    ConcurrencyLevel = 3,
-                    DefaultMemoryPolicyName = "somePolicy",
-                    PageSize = 4,
-                    SystemCacheInitialSize = 5,
-                    SystemCacheMaxSize = 6,
-                    MemoryPolicies = new[]
-                    {
-                        new MemoryPolicyConfiguration
-                        {
-                            Name = "myDefaultPlc",
-                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
-                            InitialSize = 245 * 1024 * 1024,
-                            MaxSize = 345 * 1024 * 1024,
-                            EvictionThreshold = 0.88,
-                            EmptyPagesPoolSize = 77,
-                            SwapFilePath = "myPath1",
-                            RateTimeInterval = TimeSpan.FromSeconds(22),
-                            SubIntervals = 99
-                        },
-                        new MemoryPolicyConfiguration
-                        {
-                            Name = "customPlc",
-                            PageEvictionMode = DataPageEvictionMode.RandomLru,
-                            EvictionThreshold = 0.77,
-                            EmptyPagesPoolSize = 66,
-                            SwapFilePath = "somePath2",
-                            MetricsEnabled = true
-                        }
-                    }
-                },
                 PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
                 ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
@@ -969,30 +888,6 @@ namespace Apache.Ignite.Core.Tests
                         MaxActiveTxPerConnection = 8,
                         MaxActiveComputeTasksPerConnection = 9
                     }
-                },
-                PersistentStoreConfiguration = new PersistentStoreConfiguration
-                {
-                    AlwaysWriteFullPages = true,
-                    CheckpointingFrequency = TimeSpan.FromSeconds(25),
-                    CheckpointingPageBufferSize = 28 * 1024 * 1024,
-                    CheckpointingThreads = 2,
-                    LockWaitTime = TimeSpan.FromSeconds(5),
-                    PersistentStorePath = Path.GetTempPath(),
-                    TlbSize = 64 * 1024,
-                    WalArchivePath = Path.GetTempPath(),
-                    WalFlushFrequency = TimeSpan.FromSeconds(3),
-                    WalFsyncDelayNanos = 3,
-                    WalHistorySize = 10,
-                    WalMode = WalMode.Background,
-                    WalRecordIteratorBufferSize = 32 * 1024 * 1024,
-                    WalSegments = 6,
-                    WalSegmentSize = 5 * 1024 * 1024,
-                    WalStorePath = Path.GetTempPath(),
-                    SubIntervals = 25,
-                    MetricsEnabled = true,
-                    RateTimeInterval = TimeSpan.FromDays(1),
-                    CheckpointWriteOrder = CheckpointWriteOrder.Random,
-                    WriteThrottlingEnabled = true
                 },
                 IsActiveOnStart = false,
                 ConsistentId = "myId123",

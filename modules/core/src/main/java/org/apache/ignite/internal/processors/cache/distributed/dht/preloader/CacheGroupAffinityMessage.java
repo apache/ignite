@@ -235,45 +235,10 @@ public class CacheGroupAffinityMessage implements Message {
     }
 
     /**
-     * @return Assignment.
-     */
-    public List<GridLongList> assignments() {
-        return assigns;
-    }
-
-    /**
-     * @param assigns Assignment.
-     */
-    public void assignments(List<GridLongList> assigns) {
-        this.assigns = assigns;
-    }
-
-    /**
-     * @return Ideal assignment.
-     */
-    public List<GridLongList> idealAssignments() {
-        return idealAssigns;
-    }
-
-    /**
-     * @param idealAssigns Ideal assignment.
-     */
-    public void idealAssignments(List<GridLongList> idealAssigns) {
-        this.idealAssigns = idealAssigns;
-    }
-
-    /**
      * @return Difference with ideal affinity assignment.
      */
     public Map<Integer, GridLongList> assignmentsDiff() {
         return assignsDiff;
-    }
-
-    /**
-     * @param assignsDiff Difference with ideal affinity assignment.
-     */
-    public void assignmentsDiff(Map<Integer, GridLongList> assignsDiff) {
-        this.assignsDiff = assignsDiff;
     }
 
     /** {@inheritDoc} */
