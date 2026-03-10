@@ -997,13 +997,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
         /** */
         private GridKernalContext context() {
-            if (isStopping())
-                throw new IgniteSpiException("The node is stopping");
-
             Ignite ignite0 = ignite;
 
             if (ignite0 == null)
-                throw new IgniteSpiException("The node is not yet started");
+                throw new IgniteSpiException(isStopping() ? "The node is stopping" : "The node is not yet started");
 
             return ((IgniteEx)ignite0).context();
         }
