@@ -788,8 +788,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
 
-                    joinReqMsg.prepareMarshal(spi.marshaller());
-
                     TcpDiscoveryNode nodef = node;
 
                     joinReqMsg.spanContainer().span(
@@ -2309,8 +2307,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         delayDiscoData.clear();
                     }
-
-                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
 

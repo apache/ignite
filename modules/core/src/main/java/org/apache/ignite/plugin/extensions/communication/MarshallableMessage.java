@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.marshaller.Marshaller;
 
-/** */
-public interface ValueMessage extends CalciteMarshalableMessage {
-    /**
-     * @return Wrapped value.
-     */
-    Object value();
-
-    /** {@inheritDoc} */
-    @Override default void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        // No-op
+/** A {@link Message} which still requires external custom pre-marshalling and post-unmarshalling. */
+public interface MarshallableMessage extends Message {
+    /** @param marsh External custom marshaller. */
+    public default void prepareMarshal(Marshaller marsh) {
+        throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
-    @Override default void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        // No-op
+    /**
+     * @param marsh External custom marshaller.
+     * @param clsLdr External class loader to post-unmarshall.
+     */
+    public default void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        throw new UnsupportedOperationException();
     }
 }
