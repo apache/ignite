@@ -184,8 +184,7 @@ class WebSessionV2 implements HttpSession {
     /**
      * @deprecated Legacy {@link HttpSession} API. Always returns an empty context.
      */
-    @Override
-    @Deprecated public HttpSessionContext getSessionContext() {
+    @Override @Deprecated public HttpSessionContext getSessionContext() {
         return EMPTY_SES_CTX;
     }
 
@@ -220,8 +219,7 @@ class WebSessionV2 implements HttpSession {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttribute(String)}.
      */
-    @Override
-    @Deprecated public Object getValue(final String name) {
+    @Override @Deprecated public Object getValue(final String name) {
         return getAttribute(name);
     }
 
@@ -238,8 +236,7 @@ class WebSessionV2 implements HttpSession {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #setAttribute(String, Object)}.
      */
-    @Override
-    @Deprecated public void putValue(final String name, final Object val) {
+    @Override @Deprecated public void putValue(final String name, final Object val) {
         setAttribute(name, val);
     }
 
@@ -273,8 +270,7 @@ class WebSessionV2 implements HttpSession {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttributeNames()}.
      */
-    @Override
-    @Deprecated public String[] getValueNames() {
+    @Override @Deprecated public String[] getValueNames() {
         assertValid();
 
         final Set<String> names = attributeNames();
@@ -292,8 +288,7 @@ class WebSessionV2 implements HttpSession {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #removeAttribute(String)}.
      */
-    @Override
-    @Deprecated public void removeValue(final String name) {
+    @Override @Deprecated public void removeValue(final String name) {
         removeAttribute(name);
     }
 
