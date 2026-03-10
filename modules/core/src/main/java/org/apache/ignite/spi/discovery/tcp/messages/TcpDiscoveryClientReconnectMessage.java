@@ -157,7 +157,7 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 24;
+        return 28;
     }
 
     /** {@inheritDoc} */
