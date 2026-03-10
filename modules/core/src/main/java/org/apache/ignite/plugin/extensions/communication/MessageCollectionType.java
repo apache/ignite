@@ -36,7 +36,7 @@ public class MessageCollectionType implements MessageType {
 
     /** @return Value type. */
     public MessageType valueType() {
-        return valueType;
+        return valType;
     }
 
     /** {@inheritDoc} */
