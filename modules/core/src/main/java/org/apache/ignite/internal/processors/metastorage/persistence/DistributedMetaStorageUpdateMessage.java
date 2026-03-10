@@ -19,11 +19,8 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -95,15 +92,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(
-        GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer,
-        DiscoCache discoCache
-    ) {
-        throw new UnsupportedOperationException("createDiscoCache");
     }
 
     /** {@inheritDoc} */
