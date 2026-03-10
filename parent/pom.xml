@@ -756,7 +756,7 @@
                         <configuration>
                             <config>${maven.multiModuleProjectDirectory}/parent/rat-config.xml</config>
                             <!-- Disable SCM ignore file parsing to avoid RAT 0.17 race condition
-                                 with temporary NameSet files in parallel builds (CREADUR-RAT-311) -->
+                                 with temporary NameSet files in parallel builds -->
                             <parseSCMIgnoresAsExcludes>false</parseSCMIgnoresAsExcludes>
                         </configuration>
                         <executions>
