@@ -165,7 +165,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
         factory.register((short)23, TcpConnectionRequestDiscoveryMessage::new, new TcpConnectionRequestDiscoveryMessageSerializer());
-        factory.register((short)24, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
+        factory.register((short)24, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
         factory.register((short)25, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
 
         // DiscoveryCustomMessage
