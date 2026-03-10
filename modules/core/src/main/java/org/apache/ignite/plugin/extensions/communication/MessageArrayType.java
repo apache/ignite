@@ -30,7 +30,7 @@ public class MessageArrayType implements MessageType {
      * @param clazz Class.
      */
     public MessageArrayType(MessageType valType, Class<?> clazz) {
-        this.valueType = valueType;
+        this.valType = valType;
         this.clazz = clazz;
     }
 
