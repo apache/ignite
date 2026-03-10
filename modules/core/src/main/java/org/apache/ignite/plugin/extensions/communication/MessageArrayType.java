@@ -20,7 +20,7 @@ package org.apache.ignite.plugin.extensions.communication;
 /** */
 public class MessageArrayType implements MessageType {
     /** */
-    private final MessageType valueType;
+    private final MessageType valType;
 
     /** */
     private final Class<?> clazz;
