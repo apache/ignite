@@ -54,7 +54,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
             GridTestUtils.setFieldValue(this, TcpDiscoverySpi.class, "msgFactory", new IgniteMessageFactoryImpl(
-                new MessageFactoryProvider[] { new DiscoveryMessageFactory(), FACTORY_PROVIDER}));
+                new MessageFactoryProvider[] { new DiscoveryMessageFactory(null, null), FACTORY_PROVIDER}));
 
             super.initLocalNode(srvPort, addExtAddrAttr);
         }

@@ -113,7 +113,7 @@ public class FullMessage<R extends Message> implements DiscoveryCustomMessage, M
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 24;
+        return 29;
     }
 
     /** {@inheritDoc} */

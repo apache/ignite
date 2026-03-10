@@ -226,7 +226,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
         factory.register((short)28, TcpDiscoveryClientReconnectMessage::new,
             new TcpDiscoveryClientReconnectMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
-        factory.register((short)24, FullMessage::new, new FullMessageSerializer());
+        factory.register((short)29, FullMessage::new, new FullMessageSerializer());
 
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
 
