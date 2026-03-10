@@ -91,7 +91,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** */
     @Parameterized.Parameter(2)
-    public boolean withFaulireHnd;
+    public boolean withFailureHnd;
 
     /** */
     @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
@@ -140,7 +140,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return withFaulireHnd ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
+        return withFailureHnd ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -182,7 +182,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         else
             updateKeysInTx(txCoordinator, keysOnFaultyNode);
 
-        if (withFaulireHnd) {
+        if (withFailureHnd) {
             if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
                 waitForTopology(3);
 
@@ -191,7 +191,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             else {
                 waitForTopology(2);
 
-                checkFultyNode(FAULTY_NODE_IDX);
+                checkFаultyNodeLeftTopology(FAULTY_NODE_IDX);
             }
         }
         else
@@ -210,8 +210,8 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** Check that faulty node is absent in current topology. */
-    private void checkFultyNode(int faultyNodeIdx) {
-        assertTrue("Faulty node should survive test scenario, idx=" + faultyNodeIdx,
+    private void checkFаultyNodeLeftTopology(int faultyNodeIdx) {
+        assertTrue("Faulty node should not survive test scenario, idx=" + faultyNodeIdx,
             G.allGrids()
                 .stream()
                 .noneMatch(ignite -> ignite.name().equals(getTestIgniteInstanceName(faultyNodeIdx))));
