@@ -251,6 +251,7 @@ class WebSession implements HttpSession, Externalizable {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttribute(String)}.
      */
+    @Override
     @Deprecated public Object getValue(String name) {
         return getAttribute(name);
     }
@@ -266,6 +267,7 @@ class WebSession implements HttpSession, Externalizable {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttributeNames()}.
      */
+    @Override
     @Deprecated public String[] getValueNames() {
         if (!isValid)
             throw new IllegalStateException("Call on invalidated session!");
@@ -287,6 +289,7 @@ class WebSession implements HttpSession, Externalizable {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #setAttribute(String, Object)}.
      */
+    @Override
     @Deprecated public void putValue(String name, Object val) {
         setAttribute(name, val);
     }
@@ -305,6 +308,7 @@ class WebSession implements HttpSession, Externalizable {
     /**
      * @deprecated Legacy {@link HttpSession} API. Use {@link #removeAttribute(String)}.
      */
+    @Override
     @Deprecated public void removeValue(String name) {
         removeAttribute(name);
     }
@@ -336,6 +340,7 @@ class WebSession implements HttpSession, Externalizable {
     /**
      * @deprecated Legacy {@link HttpSession} API. Always returns an empty context.
      */
+    @Override
     @Deprecated public HttpSessionContext getSessionContext() {
         return EMPTY_SES_CTX;
     }
