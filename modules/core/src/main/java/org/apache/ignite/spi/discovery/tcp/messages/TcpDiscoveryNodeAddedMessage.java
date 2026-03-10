@@ -27,66 +27,73 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO: Revise serialization of the {@link TcpDiscoveryNode} fields after https://issues.apache.org/jira/browse/IGNITE-27899
+ * TODO: Use NodeMessage for {@link TcpDiscoveryNode} and {@link ClusterNode} after https://issues.apache.org/jira/browse/IGNITE-27899
  * Message telling nodes that new node should be added to topology.
  * When newly added node receives the message it connects to its next and finishes
  * join process.
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    public TcpDiscoveryNode node;
+    private TcpDiscoveryNode node;
 
     /** Marshalled {@link #node}. */
-    @Order(6)
+    @Order(0)
     @GridToStringExclude
     byte[] nodeBytes;
 
     /** */
-    @Order(7)
-    public DiscoveryDataPacket dataPacket;
+    @Order(1)
+    DiscoveryDataPacket dataPacket;
 
-    /** Pending messages containner. */
-    @Order(8)
-    public @Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    /** Pending messages from previous node. */
+    private Collection<TcpDiscoveryAbstractMessage> msgs;
+
+    /**
+     * TODO: Use direct messages or a message container after https://issues.apache.org/jira/browse/IGNITE-25883
+     * Marshalled {@link #msgs}.
+     */
+    @Order(2)
+    @GridToStringExclude
+    byte[] msgsBytes;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    public @Nullable Collection<TcpDiscoveryNode> top;
+    private Collection<TcpDiscoveryNode> top;
 
     /** Marshalled {@link #top}. */
-    @Order(9)
+    @Order(3)
     @GridToStringExclude
     @Nullable byte[] topBytes;
 
     /** */
     @GridToStringInclude
-    public transient Collection<TcpDiscoveryNode> clientTop;
+    private transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
-    public Map<Long, Collection<ClusterNode>> topHist;
+    private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Marshalled {@link #topHist}. */
-    @Order(10)
+    @Order(4)
     @GridToStringExclude
     @Nullable byte[] topHistBytes;
 
     /** Start time of the first grid node. */
-    @Order(11)
-    public long gridStartTime;
+    @Order(5)
+    long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeAddedMessage() {
@@ -124,7 +131,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         node = msg.node;
         nodeBytes = msg.nodeBytes;
-        pendingMsgsMsg = msg.pendingMsgsMsg;
+        msgs = msg.msgs;
+        msgsBytes = msg.msgsBytes;
         top = msg.top;
         topBytes = msg.topBytes;
         clientTop = msg.clientTop;
@@ -135,15 +143,40 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
+     * Gets newly added node.
+     *
+     * @return New node.
+     */
+    public TcpDiscoveryNode node() {
+        return node;
+    }
+
+    /**
+     * Gets pending messages sent to new node by its previous.
+     *
+     * @return Pending messages from previous node.
+     */
+    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
+        return msgs;
+    }
+
+    /**
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        assert F.isEmpty(msgs) || msgs.stream().noneMatch(m -> m == this)
-            : "Adding current message to its pending messages may issue infinite write/read message cycles and stack overflow.";
+        this.msgs = msgs;
+        msgsBytes = null;
+    }
 
-        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
+    /**
+     * Gets topology.
+     *
+     * @return Current topology.
+     */
+    @Nullable public Collection<TcpDiscoveryNode> topology() {
+        return top;
     }
 
     /**
@@ -157,6 +190,31 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /**
+     * @param top Topology at the moment when client joined.
+     */
+    public void clientTopology(Collection<TcpDiscoveryNode> top) {
+        assert top != null && !top.isEmpty() : top;
+
+        clientTop = top;
+    }
+
+    /**
+     * @return Topology at the moment when client joined.
+     */
+    public Collection<TcpDiscoveryNode> clientTopology() {
+        return clientTop;
+    }
+
+    /**
+     * Gets topology snapshots history.
+     *
+     * @return Map with topology snapshots history.
+     */
+    public Map<Long, Collection<ClusterNode>> topologyHistory() {
+        return topHist;
+    }
+
+    /**
      * Sets topology snapshots history.
      *
      * @param topHist Map with topology snapshots history.
@@ -164,6 +222,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
         this.topHist = topHist;
         topHistBytes = null;
+    }
+
+    /**
+     * @return {@link DiscoveryDataPacket} carried by this message.
+     */
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
     }
 
     /**
@@ -182,6 +247,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             dataPacket.clearUnmarshalledJoiningNodeData();
     }
 
+    /**
+     * @return First grid node start time.
+     */
+    public long gridStartTime() {
+        return gridStartTime;
+    }
+
     /** @param marsh marshaller. */
     @Override public void prepareMarshal(Marshaller marsh) {
         if (node != null && nodeBytes == null) {
@@ -190,6 +262,15 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal cluster node.", e);
+            }
+        }
+
+        if (msgs != null && msgsBytes == null) {
+            try {
+                msgsBytes = U.marshal(marsh, msgs);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal pending messages.", e);
             }
         }
 
@@ -225,6 +306,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             }
         }
 
+        if (msgsBytes != null && msgs == null) {
+            try {
+                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+
+                msgsBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal pending messages.", e);
+            }
+        }
+        
         if (topBytes != null && top == null) {
             try {
                 top = U.unmarshal(marsh, topBytes, clsLdr);
@@ -251,7 +343,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 24;
+        return 29;
     }
 
     /** {@inheritDoc} */

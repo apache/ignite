@@ -163,7 +163,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage finishedMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
-                    UUID nodeId = finishedMsg.nodeId;
+                    UUID nodeId = finishedMsg.nodeId();
 
                     if (nodeId.equals(node2Id)) {
                         Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
@@ -202,7 +202,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                     TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                    if (addedMsg.node.discoveryPort() == 47503)
+                    if (addedMsg.node().discoveryPort() == 47503)
                         throw new RuntimeException("Stop node1 exception by new node added msg");
                 }
             }

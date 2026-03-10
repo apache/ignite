@@ -2214,16 +2214,16 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
-            TcpDiscoveryNode node = msg.node;
+            TcpDiscoveryNode node = msg.node();
 
             UUID newNodeId = node.id();
 
             if (getLocalNodeId().equals(newNodeId)) {
                 if (joining()) {
-                    Collection<TcpDiscoveryNode> top = msg.top;
+                    Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
-                        spi.gridStartTime = msg.gridStartTime;
+                        spi.gridStartTime = msg.gridStartTime();
 
                         if (disconnected())
                             rmtNodes.clear();
@@ -2239,8 +2239,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        if (!F.isEmpty(msg.topHist))
-                            topHist.putAll(msg.topHist);
+                        if (msg.topologyHistory() != null)
+                            topHist.putAll(msg.topologyHistory());
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -2259,7 +2259,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
 
-                        DiscoveryDataPacket dataPacket = msg.dataPacket;
+                        DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
                         if (dataPacket != null && dataPacket.hasJoiningNodeData()) {
                             if (joining())
@@ -2294,9 +2294,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (getLocalNodeId().equals(msg.nodeId)) {
+            if (getLocalNodeId().equals(msg.nodeId())) {
                 if (joining()) {
-                    DiscoveryDataPacket dataContainer = msg.clientDiscoData;
+                    DiscoveryDataPacket dataContainer = msg.clientDiscoData();
 
                     if (dataContainer != null)
                         spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
@@ -2351,7 +2351,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (nodeAdded()) {
-                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId);
+                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
 
                     if (node == null) {
                         if (log.isDebugEnabled())

@@ -521,7 +521,7 @@ public class DirectMessageReader implements MessageReader {
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
          */
-        public StateItem(MessageFactory msgFactory, @Nullable IgniteCacheObjectProcessor cacheObjProc) {
+        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
             stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
         }
 
