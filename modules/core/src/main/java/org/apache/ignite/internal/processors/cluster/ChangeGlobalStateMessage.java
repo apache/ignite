@@ -166,11 +166,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Message
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(
         GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer,
