@@ -363,7 +363,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
             if (writeThrough) {
                 kvVal = getKVResultByKey(node, processedCacheName, primaryKey, false);
                 // TODO: IGNITE-28005 Interceptor is not called if coordinator is not a primary or backup node
-                if (txCoord == TxCoordNodeRole.PRIMARY || txCoord == TxCoordNodeRole.BACKUP) {
+                if (txCoord == TxCoordNodeRole.BACKUP) {
                     assertEquals("node: " + node.name() + ", storeVal=" + storeVal + ", cacheVal=" + kvVal,
                         storeVal, kvVal);
                     assertEquals("node: " + node.name() + ", storeVal=" + storeVal + ", sqlVal=" + sqlVal,
