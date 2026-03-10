@@ -228,6 +228,18 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
     }
 
+    /** */
+    @Test
+    public void testMarshallableMessage() {
+        Compilation compilation = compile("TestMarshallableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshallableSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshallableSerializer.java"));
+    }
+
     /**
      * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
      */

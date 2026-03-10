@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 /**
  *
  */
-public interface MarshalableMessage extends CalciteMessage {
+public interface CalciteMarshalableMessage extends CalciteMessage {
     /**
      * Prepares the message before sending.
      *
