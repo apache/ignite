@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -38,8 +37,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
 
@@ -379,10 +380,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
+    @Override public <T> T[] readObjectArray(MessageArrayType type) {
         DirectByteBufferStream stream = state.item().stream;
 
-        T[] msg = stream.readObjectArray(itemType, itemCls, this);
+        T[] msg = stream.readObjectArray(type, this);
 
         lastRead = stream.lastFinished();
 
@@ -390,10 +391,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
+    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
         DirectByteBufferStream stream = state.item().stream;
 
-        C col = stream.readList(itemType, this);
+        C col = stream.readCollection(type, this);
 
         lastRead = stream.lastFinished();
 
@@ -401,19 +402,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <SET extends Set<?>> SET readSet(MessageCollectionItemType itemType) {
-        DirectByteBufferStream stream = state.item().stream;
-
-        SET set = stream.readSet(itemType, this);
-
-        lastRead = stream.lastFinished();
-
-        return set;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean linked, boolean compress) {
+    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         M map;
@@ -421,10 +410,10 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             map = readCompressedMessageAndDeserialize(
                 stream,
-                tmpReader -> tmpReader.state.item().stream.readMap(keyType, valType, linked, tmpReader)
+                tmpReader -> tmpReader.state.item().stream.readMap(type, tmpReader)
             );
         else {
-            map = stream.readMap(keyType, valType, linked, this);
+            map = stream.readMap(type, this);
 
             lastRead = stream.lastFinished();
         }

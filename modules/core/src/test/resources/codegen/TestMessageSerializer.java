@@ -19,7 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -59,13 +61,13 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeObjectArray(msg.strArr, MessageCollectionItemType.STRING))
+                if (!writer.writeObjectArray(msg.strArr, new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class)))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeObjectArray(msg.intMatrix, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeObjectArray(msg.intMatrix, new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class)))
                     return false;
 
                 writer.incrementState();
@@ -77,7 +79,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeObjectArray(msg.verArr, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(msg.verArr, new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class)))
                     return false;
 
                 writer.incrementState();
@@ -162,7 +164,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 reader.incrementState();
 
             case 3:
-                msg.strArr = reader.readObjectArray(MessageCollectionItemType.STRING, String.class);
+                msg.strArr = reader.readObjectArray(new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class));
 
                 if (!reader.isLastRead())
                     return false;
@@ -170,7 +172,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 reader.incrementState();
 
             case 4:
-                msg.intMatrix = reader.readObjectArray(MessageCollectionItemType.INT, int[].class);
+                msg.intMatrix = reader.readObjectArray(new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class));
 
                 if (!reader.isLastRead())
                     return false;
@@ -186,7 +188,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 reader.incrementState();
 
             case 6:
-                msg.verArr = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
+                msg.verArr = reader.readObjectArray(new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class));
 
                 if (!reader.isLastRead())
                     return false;
