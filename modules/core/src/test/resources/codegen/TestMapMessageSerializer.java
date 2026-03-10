@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -184,6 +185,12 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
             case 23:
                 if (!writer.writeMap(((TestMapMessage)msg).gridLongListIntegerMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageItemType(MessageCollectionItemType.INT), false)))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeMap(((TestMapMessage)msg).gridlistDoubleMapUuidMap, new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false)))
                     return false;
 
                 writer.incrementState();
@@ -383,6 +390,14 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
             case 23:
                 ((TestMapMessage)msg).gridLongListIntegerMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageItemType(MessageCollectionItemType.INT), false));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                ((TestMapMessage)msg).gridlistDoubleMapUuidMap = reader.readMap(new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false));
 
                 if (!reader.isLastRead())
                     return false;
