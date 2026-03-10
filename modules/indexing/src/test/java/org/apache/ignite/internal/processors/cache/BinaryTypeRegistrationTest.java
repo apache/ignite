@@ -47,14 +47,16 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
                 if (U.unwrapCustomMessage(msg) instanceof MetadataUpdateProposedMessage)
                     metadataUpdateProposedMessages.add(U.unwrapCustomMessage(msg));
 
                 super.sendCustomEvent(msg);
             }
-        });
+        };
+
+        cfg.setDiscoverySpi(discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
 
         return cfg;
     }

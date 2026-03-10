@@ -23,10 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
 public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final short DIRECT_TYPE = 508;
 
     /** */
     @Order(0)
@@ -59,7 +53,7 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     Set<Integer> closedCaches;
 
     /** Update timeout object, used to batch multiple starts/close into single discovery message. */
-    private transient ClientCacheUpdateTimeout updateTimeoutObj;
+    private ClientCacheUpdateTimeout updateTimeoutObj;
 
     /** */
     public ClientCacheChangeDiscoveryMessage() {}
@@ -180,19 +174,8 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
-        return DIRECT_TYPE;
+        return 515;
     }
 
     /** {@inheritDoc} */

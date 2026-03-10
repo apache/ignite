@@ -2119,7 +2119,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
         msgFactory = new IgniteMessageFactoryImpl(
-            new MessageFactoryProvider[] { new DiscoveryMessageFactory() });
+            new MessageFactoryProvider[] { new DiscoveryMessageFactory(marshaller(), U.resolveClassLoader(ignite().configuration())) });
 
         impl.spiStart(igniteInstanceName);
     }
