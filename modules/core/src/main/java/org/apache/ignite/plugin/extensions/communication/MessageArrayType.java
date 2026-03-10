@@ -23,7 +23,7 @@ public class MessageArrayType implements MessageType {
     private final MessageType valueType;
 
     /** */
-    private final Class clazz;
+    private final Class<?> clazz;
 
     /**
      * @param valueType Value type.
