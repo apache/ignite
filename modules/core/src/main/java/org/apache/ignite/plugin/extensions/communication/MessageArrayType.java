@@ -26,7 +26,7 @@ public class MessageArrayType implements MessageType {
     private final Class<?> clazz;
 
     /**
-     * @param valueType Value type.
+     * @param valType Value type.
      * @param clazz Class.
      */
     public MessageArrayType(MessageType valType, Class<?> clazz) {
