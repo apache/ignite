@@ -561,8 +561,7 @@ public abstract class AbstractMessageSerializationTest {
 
             return null;
         }
-
-
+        
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
             readField(type.linked() ? LinkedHashMap.class : HashMap.class);
