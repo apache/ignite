@@ -26,7 +26,7 @@ public class MessageCollectionType implements MessageType {
     private final boolean set;
 
     /**
-     * @param valueType Value type.
+     * @param valType Value type.
      * @param set Is set.
      */
     public MessageCollectionType(MessageType valType, boolean set) {
