@@ -373,8 +373,7 @@ public class DumpReader implements Runnable {
                 .map(grpName -> {
                     int grpId = CU.cacheId(grpName);
 
-                    if (!grpIdToName.containsKey(grpId))
-                        grpIdToName.put(grpId, grpName);
+                    grpIdToName.put(grpId, grpName);
 
                     return grpId;
                 })
@@ -404,8 +403,7 @@ public class DumpReader implements Runnable {
 
                 grpsToNodes.get(grp).add(meta.folderName());
 
-                if (!grpIdToName.containsKey(grp))
-                    grpIdToName.put(grp, grpCaches.get(0).configuration().getGroupName());
+                grpIdToName.put(grp, grpCaches.get(0).configuration().getGroupName());
             }
         }
 
