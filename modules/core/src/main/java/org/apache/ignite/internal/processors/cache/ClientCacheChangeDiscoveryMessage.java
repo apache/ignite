@@ -175,7 +175,7 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 515;
+        return 516;
     }
 
     /** {@inheritDoc} */
