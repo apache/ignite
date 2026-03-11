@@ -37,28 +37,28 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     /** Entries keys. */
     @GridToStringInclude
-    @Order(4)
+    @Order(0)
     List<KeyCacheObject> keys;
 
     /** Entries versions. */
-    @Order(5)
+    @Order(1)
     List<GridCacheVersion> vers;
 
     /** Near entries keys. */
     @GridToStringInclude
-    @Order(6)
+    @Order(2)
     List<KeyCacheObject> nearKeys;
 
     /** Near entries versions. */
-    @Order(7)
+    @Order(3)
     List<GridCacheVersion> nearVers;
 
     /** New TTL. */
-    @Order(8)
+    @Order(4)
     long ttl;
 
     /** Topology version. */
-    @Order(9)
+    @Order(5)
     AffinityTopologyVersion topVer;
 
     /**

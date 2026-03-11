@@ -1061,8 +1061,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < servers + clients; ++i) {
             IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
 
-            cfg.setDiscoverySpi(new BlockingCustomMessageDiscoverySpi());
-
             if (i >= servers)
                 cfg.setClientMode(true);
 

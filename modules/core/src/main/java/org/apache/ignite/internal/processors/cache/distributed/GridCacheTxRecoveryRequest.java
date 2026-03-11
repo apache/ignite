@@ -30,27 +30,27 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     /** Future ID. */
-    @Order(7)
+    @Order(0)
     IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(8)
+    @Order(1)
     IgniteUuid miniId;
 
     /** Near transaction ID. */
-    @Order(9)
+    @Order(2)
     GridCacheVersion nearXidVer;
 
     /** Expected number of transactions on node. */
-    @Order(10)
+    @Order(3)
     int txNum;
 
     /** System transaction flag. */
-    @Order(11)
+    @Order(4)
     boolean sys;
 
     /** {@code True} if should check only tx on near node. */
-    @Order(12)
+    @Order(5)
     boolean nearTxCheck;
 
     /**
@@ -66,16 +66,14 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
      * @param nearTxCheck {@code True} if should check only tx on near node.
      * @param futId Future ID.
      * @param miniId Mini future ID.
-     * @param addDepInfo Deployment info flag.
      */
     public GridCacheTxRecoveryRequest(IgniteInternalTx tx,
         int txNum,
         boolean nearTxCheck,
         IgniteUuid futId,
-        IgniteUuid miniId,
-        boolean addDepInfo
+        IgniteUuid miniId
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(tx.xidVersion(), 0, false);
 
         nearXidVer = tx.nearXidVersion();
         sys = tx.system();

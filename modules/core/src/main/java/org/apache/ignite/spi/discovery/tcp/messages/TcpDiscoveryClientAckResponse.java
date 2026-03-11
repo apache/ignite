@@ -31,7 +31,7 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(5)
+    @Order(0)
     IgniteUuid msgId;
 
     /** */

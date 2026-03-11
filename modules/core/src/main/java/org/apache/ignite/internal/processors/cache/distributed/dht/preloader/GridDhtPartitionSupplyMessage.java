@@ -43,32 +43,32 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** An unique (per demander) rebalance id. */
-    @Order(4)
+    @Order(0)
     long rebalanceId;
 
     /** Topology version for which demand message is sent. */
-    @Order(5)
+    @Order(1)
     AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
-    @Order(6)
+    @Order(2)
     Map<Integer, Long> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
-    @Order(7)
+    @Order(3)
     Collection<Integer> missed;
 
     /** Entries. */
-    @Order(8)
+    @Order(4)
     Map<Integer, CacheEntryInfoCollection> infos;
 
     /** Message size. */
-    @Order(9)
+    @Order(5)
     int msgSize;
 
     /** Supplying process error message. */
-    @Order(10)
+    @Order(6)
     @Nullable ErrorMessage errMsg;
 
     /**

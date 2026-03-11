@@ -1023,9 +1023,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         else
                             exchange = cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
                     }
-
-                    if (exchId.isLeft())
-                        onLeft();
                 }
                 else {
                     exchange = firstDiscoEvt.eventNode().isClient() ? onClientNodeEvent() :
@@ -1499,11 +1496,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private ExchangeType onClientNodeEvent() throws IgniteCheckedException {
         assert firstDiscoEvt.eventNode().isClient() : this;
 
-        if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) {
-            onLeft();
-
+        if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             assert !firstDiscoEvt.eventNode().isLocal() : firstDiscoEvt;
-        }
         else
             assert firstDiscoEvt.type() == EVT_NODE_JOINED || firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : firstDiscoEvt;
 
@@ -1528,8 +1522,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) {
-            onLeft();
-
             exchCtx.events().warnNoAffinityNodes(cctx);
 
             centralizedAff = cctx.affinity().onCentralizedAffinityChange(this, crd);
@@ -1551,8 +1543,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchCtx.exchangeFreeSwitch();
 
         keepRebalanced(); // Still rebalanced.
-
-        onLeft();
 
         exchCtx.events().warnNoAffinityNodes(cctx);
 
@@ -2025,24 +2015,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         timeBag.finishGlobalStage("Wait partitions release latch [latch=" + latchId + "]");
-    }
-
-    /**
-     *
-     */
-    private void onLeft() {
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            grp.preloader().pause();
-
-            try {
-                grp.unwindUndeploys();
-            }
-            finally {
-                grp.preloader().resume();
-            }
-
-            cctx.exchange().exchangerUpdateHeartbeat();
-        }
     }
 
     /**

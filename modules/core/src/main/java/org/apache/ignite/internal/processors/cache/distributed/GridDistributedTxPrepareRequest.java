@@ -75,37 +75,37 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = UUIDCollectionMessage::uuids;
 
     /** Thread ID. */
-    @Order(7)
+    @Order(0)
     @GridToStringInclude
     public long threadId;
 
     /** Transaction concurrency. */
-    @Order(8)
+    @Order(1)
     @GridToStringInclude
     public TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
-    @Order(9)
+    @Order(2)
     @GridToStringInclude
     public TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
-    @Order(10)
+    @Order(3)
     @GridToStringInclude
     public GridCacheVersion writeVer;
 
     /** Transaction timeout. */
-    @Order(11)
+    @Order(4)
     @GridToStringInclude
     public long timeout;
 
     /** Transaction read set. */
-    @Order(12)
+    @Order(5)
     @GridToStringInclude
     public Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
-    @Order(13)
+    @Order(6)
     @GridToStringInclude
     public Collection<IgniteTxEntry> writes;
 
@@ -114,33 +114,33 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
-    @Order(14)
+    @Order(7)
     public Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @Order(15)
+    @Order(8)
     public Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
-    @Order(16)
+    @Order(9)
     public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
     private Map<UUID, Collection<UUID>> txNodes;
 
     /** Tx nodes direct marshallable message. */
-    @Order(17)
+    @Order(10)
     public Map<UUID, UUIDCollectionMessage> txNodesMsg;
 
     /** IO policy. */
-    @Order(18)
+    @Order(11)
     public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
 
     /** */
-    @Order(19)
+    @Order(12)
     @GridToStringExclude
     public byte flags;
 
@@ -164,7 +164,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param retVal Return value flag.
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -174,10 +173,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
-        boolean onePhaseCommit,
-        boolean addDepInfo
+        boolean onePhaseCommit
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(tx.xidVersion(), 0, false);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();

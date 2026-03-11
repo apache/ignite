@@ -31,15 +31,15 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    @Order(3)
+    @Order(0)
     public GridCacheVersion txId;
 
     /** Future ID. */
-    @Order(4)
+    @Order(1)
     public IgniteUuid futId;
 
     /** Partition ID this message is targeted to. */
-    @Order(5)
+    @Order(2)
     public int part;
 
     /**

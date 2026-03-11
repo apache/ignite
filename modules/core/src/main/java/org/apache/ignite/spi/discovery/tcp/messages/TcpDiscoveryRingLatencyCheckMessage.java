@@ -31,11 +31,11 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
     private static final long serialVersionUID = 0L;
 
     /** Maximal hops number. */
-    @Order(5)
+    @Order(0)
     int maxHops;
 
     /** Current hops reached. */
-    @Order(6)
+    @Order(1)
     int curHops;
 
     /** Empty constructor for {@link DiscoveryMessageFactory}. */

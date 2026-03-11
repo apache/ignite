@@ -42,21 +42,21 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(11)
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
     @GridToStringInclude
-    @Order(12)
+    @Order(1)
     protected CacheObject val;
 
     /** Previous value. */
     @GridToStringInclude
-    @Order(13)
+    @Order(2)
     protected CacheObject prevVal;
 
     /** Partition. */
-    @Order(14)
+    @Order(3)
     protected long updateCntr;
 
     /**
@@ -75,7 +75,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param writeVer Write version for cache values.
      * @param topVer Topology version.
      * @param taskNameHash Task name hash code.
-     * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
      * @param readRepairRecovery Recovery on Read Repair flag.
@@ -87,7 +86,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
         boolean readRepairRecovery
@@ -98,7 +96,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             writeVer,
             topVer,
             taskNameHash,
-            addDepInfo,
             keepBinary,
             skipStore,
             readRepairRecovery);

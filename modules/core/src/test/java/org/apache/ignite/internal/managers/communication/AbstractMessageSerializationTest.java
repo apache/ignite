@@ -435,7 +435,8 @@ public abstract class AbstractMessageSerializationTest {
         @Override public byte[] readByteArray() {
             readField(byte[].class);
 
-            return new byte[0];
+            // Messages may try to post-marshall non-null byte data.
+            return null;
         }
 
         /** {@inheritDoc} */

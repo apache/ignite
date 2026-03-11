@@ -2388,7 +2388,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         FilePageStore pageStore
     ) throws IgniteCheckedException {
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
-            false, false, false, false);
+            false, false, false);
 
         GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
 

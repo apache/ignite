@@ -29,11 +29,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     /** Routine ID. */
-    @Order(4)
+    @Order(0)
     UUID routineId;
 
     /** Update counters. */
-    @Order(5)
+    @Order(1)
     @GridToStringInclude
     Map<Integer, Long> updateCntrs;
 

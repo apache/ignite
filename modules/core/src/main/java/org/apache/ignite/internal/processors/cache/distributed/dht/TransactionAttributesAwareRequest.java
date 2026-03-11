@@ -30,11 +30,11 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     public static final short TYPE_CODE = 181;
 
     /** Original transaction prepare message. */
-    @Order(3)
+    @Order(0)
     GridDistributedTxPrepareRequest payload;
 
     /** Application attributes. */
-    @Order(4)
+    @Order(1)
     Map<String, String> appAttrs;
 
     /** */

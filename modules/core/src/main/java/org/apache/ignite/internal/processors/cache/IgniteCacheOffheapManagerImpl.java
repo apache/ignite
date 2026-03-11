@@ -495,12 +495,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public int onUndeploy(ClassLoader ldr) {
-        // TODO: GG-11141.
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
         // TODO GG-10884.
         return 0;

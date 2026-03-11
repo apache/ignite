@@ -46,11 +46,6 @@ public class ZkCommunicationErrorResolveStartMessage extends DiscoverySpiCustomM
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean stopProcess() {
         return false;
     }

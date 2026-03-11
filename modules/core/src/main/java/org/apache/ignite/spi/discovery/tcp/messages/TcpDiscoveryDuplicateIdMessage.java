@@ -31,7 +31,7 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** ID of the node with duplicate ID. */
-    @Order(5)
+    @Order(0)
     UUID nodeId;
 
     /** */

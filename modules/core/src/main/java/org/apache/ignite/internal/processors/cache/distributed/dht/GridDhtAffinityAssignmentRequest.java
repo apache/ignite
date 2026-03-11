@@ -30,15 +30,15 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     private static final int SND_PART_STATE_MASK = 0x01;
 
     /** */
-    @Order(4)
+    @Order(0)
     byte flags;
 
     /** */
-    @Order(5)
+    @Order(1)
     long futId;
 
     /** Topology version being queried. */
-    @Order(6)
+    @Order(2)
     AffinityTopologyVersion topVer;
 
     /**

@@ -56,6 +56,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /**
@@ -107,23 +109,35 @@ public class MessageSerializerGenerator {
     /** */
     private final ProcessingEnvironment env;
 
+    /** Stored type of the message being processed. */
+    private TypeElement type;
+
+    /** The marshallable message type. */
+    private final TypeMirror marshallableMsgType;
+
     /** */
     private int indent;
 
     /** */
     MessageSerializerGenerator(ProcessingEnvironment env) {
         this.env = env;
+
+        marshallableMsgType = env.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE).asType();
     }
 
     /** */
     void generate(TypeElement type, List<VariableElement> fields) throws Exception {
-        generateMethods(type, fields);
+        assert this.type == null : "Message serializer generator isn't stateless and is supposed to be single-use.";
+
+        this.type = type;
+
+        generateMethods(fields);
 
         SystemViewRowAttributeWalkerProcessor.superclasses(env, type).forEach(el -> imports.add(el.toString()));
 
-        String serClsName = type.getSimpleName() + "Serializer";
+        String serClsName = type.getSimpleName() + (marshallableMessage() ? "Marshallable" : "") + "Serializer";
         String serFqnClsName = env.getElementUtils().getPackageOf(type) + "." + serClsName;
-        String serCode = generateSerializerCode(type);
+        String serCode = generateSerializerCode(serClsName);
 
         try {
             JavaFileObject file = env.getFiler().createSourceFile(serFqnClsName);
@@ -151,11 +165,18 @@ public class MessageSerializerGenerator {
     }
 
     /** Generates full code for a serializer class. */
-    private String generateSerializerCode(TypeElement type) throws IOException {
+    private String generateSerializerCode(String serClsName) throws IOException {
+        if (marshallableMessage()) {
+            fields.add("private final Marshaller marshaller;");
+            fields.add("private final ClassLoader clsLdr;");
+        }
+
         try (Writer writer = new StringWriter()) {
-            writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), type.getSimpleName() + "Serializer");
+            writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
 
             writeClassFields(writer);
+
+            writeConstructor(writer, serClsName);
 
             // Write #writeTo method.
             for (String w: write)
@@ -177,10 +198,39 @@ public class MessageSerializerGenerator {
         }
     }
 
+    /** */
+    private void writeConstructor(Writer writer, String serClsName) throws IOException {
+        if (!marshallableMessage())
+            return;
+
+        ++indent;
+
+        writer.write(identedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(identedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
+
+        writer.write(NL);
+
+        ++indent;
+
+        writer.write(identedLine("this.marshaller = marshaller;"));
+        writer.write(NL);
+        writer.write(identedLine("this.clsLdr = clsLdr;"));
+
+        --indent;
+
+        writer.write(NL);
+
+        writer.write(identedLine("}"));
+        writer.write(NL);
+
+        --indent;
+    }
+
     /** Generates code for {@code writeTo} and {@code readFrom}. */
-    private void generateMethods(TypeElement type, List<VariableElement> fields) throws Exception {
-        start(type, write, true);
-        start(type, read, false);
+    private void generateMethods(List<VariableElement> fields) throws Exception {
+        start(write, true);
+        start(read, false);
 
         indent++;
 
@@ -191,16 +241,14 @@ public class MessageSerializerGenerator {
 
         indent--;
 
-        finish(write);
-        finish(read);
+        finish(write, false, false);
+        finish(read, true, marshallableMessage());
     }
 
     /**
      * Generates start of write/read methods:
      * <pre>
      *     public boolean writeTo(Message m, MessageWriter writer) {
-     *         TestMessage msg = (TestMessage)m;
-     *
      *         if (!writer.isHeaderWritten()) {
      *             if (!writer.writeHeader(msg.directType()))
      *                 return false;
@@ -212,19 +260,16 @@ public class MessageSerializerGenerator {
      * @param code Code lines.
      * @param write Whether write code is generated.
      */
-    private void start(TypeElement type, Collection<String> code, boolean write) {
+    private void start(Collection<String> code, boolean write) {
         indent = 1;
 
         code.add(identedLine(METHOD_JAVADOC));
 
-        code.add(identedLine("@Override public boolean %s(Message m, %s) {",
+        code.add(identedLine("@Override public boolean %s(" + type.getSimpleName() + " msg, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
-
-        code.add(identedLine("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        code.add(EMPTY);
 
         if (write) {
             code.add(identedLine("if (!writer.isHeaderWritten()) {"));
@@ -232,6 +277,12 @@ public class MessageSerializerGenerator {
             indent++;
 
             returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
+
+            if (write && marshallableMessage()) {
+                code.add(EMPTY);
+
+                code.add(identedLine("msg.prepareMarshal(marshaller);"));
+            }
 
             code.add(EMPTY);
             code.add(identedLine("writer.onHeaderWritten();"));
@@ -401,7 +452,7 @@ public class MessageSerializerGenerator {
                 returnFalseIfWriteFailed(write, field, "writer.writeGridLongList", getExpr);
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
-                if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                if (sameType(type, COMPRESSED_MESSAGE_INTERFACE))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
                 if (compress)
@@ -508,8 +559,14 @@ public class MessageSerializerGenerator {
 
         String methodName = field.getAnnotation(Order.class).method();
 
-        if (Objects.equals(methodName, ""))
-            code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+        if (Objects.equals(methodName, "")) {
+            if (type.equals(field.getEnclosingElement()))
+                code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+            else {
+                // Field has to be requested from a super class object.
+                code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+            }
+        }
         else
             code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
 
@@ -531,9 +588,15 @@ public class MessageSerializerGenerator {
         String fieldGetterCall) {
         String methodName = field.getAnnotation(Order.class).method();
 
-        if (Objects.equals(methodName, ""))
-            code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
-                writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
+        if (Objects.equals(methodName, "")) {
+            if (type.equals(field.getEnclosingElement()))
+                code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+            else {
+                // Field has to be requested from a super class object.
+                code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
+                    writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
+            }
+        }
         else
             code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
 
@@ -650,7 +713,7 @@ public class MessageSerializerGenerator {
                 returnFalseIfReadFailed(field, "reader.readGridLongList");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
-                if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+                if (sameType(type, COMPRESSED_MESSAGE_INTERFACE))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
                 if (compress)
@@ -744,7 +807,7 @@ public class MessageSerializerGenerator {
             if (primitiveType != null)
                 return primitiveType.getKind().toString();
 
-            if (sameType(type, "org.apache.ignite.internal.managers.communication.CompressedMessage"))
+            if (sameType(type, COMPRESSED_MESSAGE_INTERFACE))
                 throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
         }
 
@@ -781,9 +844,15 @@ public class MessageSerializerGenerator {
 
         String methodName = field.getAnnotation(Order.class).method();
 
-        if (Objects.equals(methodName, ""))
-            read.add(identedLine("((%s)msg).%s = %s(%s);",
-                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
+        if (Objects.equals(methodName, "")) {
+            if (type.equals(field.getEnclosingElement()))
+                read.add(identedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
+            else {
+                // Field has to be requested from a super class object.
+                read.add(identedLine("((%s)msg).%s = %s(%s);",
+                    field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
+            }
+        }
         else
             read.add(identedLine("msg.%s(%s(%s));", methodName, mtd, argsStr));
 
@@ -813,9 +882,15 @@ public class MessageSerializerGenerator {
 
         String methodName = field.getAnnotation(Order.class).method();
 
-        if (Objects.equals(methodName, ""))
-            read.add(identedLine("((%s)msg).%s = %s;",
-                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
+        if (Objects.equals(methodName, "")) {
+            if (type.equals(field.getEnclosingElement()))
+                read.add(identedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
+            else {
+                // Field has to be requested from a super class object.
+                read.add(identedLine("((%s)msg).%s = %s;",
+                    field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
+            }
+        }
         else
             read.add(identedLine("msg.%s(%s);", methodName, readOp));
 
@@ -831,7 +906,7 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private void finish(List<String> code) {
+    private void finish(List<String> code, boolean read, boolean marshallable) {
         String lastLine = code.get(code.size() - 1);
 
         if (EMPTY.equals(lastLine))
@@ -839,6 +914,12 @@ public class MessageSerializerGenerator {
 
         code.add(identedLine("}"));
         code.add(EMPTY);
+
+        if (read && marshallable) {
+            code.add(identedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+
+            code.add(EMPTY);
+        }
 
         code.add(identedLine("return true;"));
     }
@@ -906,18 +987,28 @@ public class MessageSerializerGenerator {
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
 
-        imports.add("org.apache.ignite.plugin.extensions.communication.Message");
+        imports.add(type.toString());
+
+        if (marshallableMessage())
+            imports.add("org.apache.ignite.marshaller.Marshaller");
+
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
 
-        for (String regularImport: imports)
+        for (String regularImport : imports)
             writer.write("import " + regularImport + ";" + NL);
 
         writer.write(NL);
         writer.write(CLS_JAVADOC);
         writer.write(NL);
-        writer.write("public class " + serClsName + " implements MessageSerializer {" + NL);
+
+        writer.write("public class " + serClsName + " implements MessageSerializer<" + type.getSimpleName() + "> {" + NL);
+    }
+
+    /** */
+    private boolean marshallableMessage() {
+        return env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
     }
 
     /** */

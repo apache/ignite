@@ -53,49 +53,49 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Keys to update. */
-    @Order(10)
+    @Order(0)
     @GridToStringInclude
     List<KeyCacheObject> keys;
 
     /** Values to update. */
-    @Order(11)
+    @Order(1)
     List<CacheObject> vals;
 
     /** Entry processors. */
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
-    @Order(12)
+    @Order(2)
     @Nullable List<byte[]> entryProcessorsBytes;
 
     /** Conflict versions. */
-    @Order(13)
+    @Order(3)
     @Nullable List<GridCacheVersion> conflictVers;
 
     /** Conflict TTLs. */
-    @Order(14)
+    @Order(4)
     GridLongList conflictTtls;
 
     /** Conflict expire times. */
-    @Order(15)
+    @Order(5)
     GridLongList conflictExpireTimes;
 
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(16)
+    @Order(6)
     @Nullable List<byte[]> invokeArgsBytes;
 
     /** Expiry policy. */
     private @Nullable ExpiryPolicy expiryPlc;
 
     /** Expiry policy bytes. */
-    @Order(17)
+    @Order(7)
     @Nullable byte[] expiryPlcBytes;
 
     /** Filter. */
-    @Order(18)
+    @Order(8)
     @Nullable CacheEntryPredicate[] filter;
 
     /** Maximum possible size of inner collections. */
@@ -122,7 +122,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @param filter Optional filter for atomic check.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
     GridNearAtomicFullUpdateRequest(
@@ -137,7 +136,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
         short flags,
-        boolean addDepInfo,
         int maxEntryCnt
     ) {
         super(cacheId,
@@ -147,8 +145,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo);
+            flags);
 
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;

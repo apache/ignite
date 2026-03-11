@@ -52,35 +52,35 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     public static final int RECOVERY_FLAG_MASK = 0x20;
 
     /** Future ID. */
-    @Order(4)
+    @Order(0)
     long futId;
 
     /** */
-    @Order(5)
+    @Order(1)
     KeyCacheObject key;
 
     /** Flags. */
-    @Order(6)
+    @Order(2)
     byte flags;
 
     /** Topology version. */
-    @Order(7)
+    @Order(3)
     AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(8)
+    @Order(4)
     int taskNameHash;
 
     /** TTL for read operation. */
-    @Order(9)
+    @Order(5)
     long createTtl;
 
     /** TTL for read operation. */
-    @Order(10)
+    @Order(6)
     long accessTtl;
 
     /** Transaction label. */
-    @Order(11)
+    @Order(7)
     @Nullable String txLbl;
 
     /**
@@ -103,7 +103,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
-     * @param addDepInfo Deployment info.
      * @param txLbl Transaction label.
      */
     public GridNearSingleGetRequest(
@@ -118,7 +117,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean skipVals,
         boolean addReader,
         boolean needVer,
-        boolean addDepInfo,
         boolean recovery,
         @Nullable String txLbl
     ) {
@@ -131,7 +129,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
-        this.addDepInfo = addDepInfo;
         this.txLbl = txLbl;
 
         if (readThrough)

@@ -38,20 +38,20 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future version. */
-    @Order(4)
+    @Order(0)
     long futId;
 
     /** */
-    @Order(5)
+    @Order(1)
     UpdateErrors errs;
 
     /** Evicted readers. */
     @GridToStringInclude
-    @Order(6)
+    @Order(2)
     List<KeyCacheObject> nearEvicted;
 
     /** */
-    @Order(7)
+    @Order(3)
     int partId;
 
     /**
@@ -65,13 +65,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
      * @param cacheId Cache ID.
      * @param partId Partition.
      * @param futId Future ID.
-     * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId, boolean addDepInfo) {
+    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId) {
         this.cacheId = cacheId;
         this.partId = partId;
         this.futId = futId;
-        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */

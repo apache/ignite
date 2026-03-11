@@ -44,12 +44,12 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
 
     /** Serialized message bytes. */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    @Order(6)
+    @Order(0)
     volatile @Nullable byte[] msgBytes;
 
     /** {@link Message} representation of original message. */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    @Order(7)
+    @Order(1)
     volatile @Nullable Message serMsg;
 
     /**

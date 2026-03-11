@@ -17,27 +17,33 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Message holding new node that wants to join the topology. */
-    @Order(6)
-    public TcpDiscoveryNodeMessage nodeMsg;
+    @Order(0)
+    TcpDiscoveryNodeMessage nodeMsg;
 
     /** Discovery data container. */
-    @Order(7)
-    public DiscoveryDataPacket dataPacket;
+    @Order(1)
+    DiscoveryDataPacket dataPacket;
 
     /** Constructor. */
     public TcpDiscoveryJoinRequestMessage() {
@@ -74,6 +80,32 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
      */
     public void responded(boolean responded) {
         setFlag(RESPONDED_FLAG_POS, responded);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
+        if (node != null && nodeBytes == null) {
+            try {
+                nodeBytes = U.marshal(marsh, node);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal TcpDiscoveryNode object", e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        if (nodeBytes != null && node == null) {
+            try {
+                node = U.unmarshal(marsh, nodeBytes, clsLdr);
+
+                nodeBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal TcpDiscoveryNode object", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

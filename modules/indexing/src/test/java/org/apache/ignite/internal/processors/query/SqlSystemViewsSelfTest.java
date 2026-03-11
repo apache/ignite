@@ -1157,9 +1157,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(testSnapname0, res.get(0).get(0));
 
-        String expCacheGrps = F.concat(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME), ",");
+        Set<String> expCacheGrps = Set.of(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME);
 
-        assertEquals(expCacheGrps, res.get(0).get(1));
+        String cacheGrpRes = (String)res.get(0).get(1);
+
+        Set<String> cacheGrps = Arrays.stream(cacheGrpRes.split(",")).map(String::trim).collect(toSet());
+
+        assertEquals(expCacheGrps.size(), cacheGrps.size());
+        assertTrue(expCacheGrps.containsAll(cacheGrps));
     }
 
     /** {@inheritDoc} */
@@ -1753,24 +1758,20 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testConfigurationView() throws Exception {
-        IgniteConfiguration icfg = new IgniteConfiguration();
-
         long expMaxSize = 10 * MB;
 
         String expName = "my-instance";
 
         String expDrName = "my-dr";
 
-        icfg.setIgniteInstanceName(expName)
-            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
-        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setLazyMemoryAllocation(false))
-            .setDataRegionConfigurations(
-                new DataRegionConfiguration()
-                    .setName(expDrName)
-                    .setMaxSize(expMaxSize)));
+        IgniteConfiguration icfg = getConfiguration(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setLazyMemoryAllocation(false))
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(expDrName)
+                .setMaxSize(expMaxSize)));
 
         try (IgniteEx srv = startGrid(icfg)) {
             srv.createCache(DEFAULT_CACHE_NAME);

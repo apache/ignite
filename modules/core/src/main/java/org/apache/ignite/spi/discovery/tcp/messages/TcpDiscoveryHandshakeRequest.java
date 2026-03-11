@@ -32,11 +32,11 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(5)
+    @Order(0)
     @Nullable UUID prevNodeId;
 
     /** */
-    @Order(6)
+    @Order(1)
     @Nullable String dcId;
 
     /**

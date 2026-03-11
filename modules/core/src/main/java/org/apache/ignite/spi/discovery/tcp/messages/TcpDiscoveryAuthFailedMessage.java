@@ -32,11 +32,11 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     private static final long serialVersionUID = 0L;
 
     /** Creator address. */
-    @Order(5)
+    @Order(0)
     InetAddressMessage creatorAddrMsg;
 
     /** Node id for which authentication was failed. */
-    @Order(6)
+    @Order(1)
     UUID targetNodeId;
 
     /** Default constructor for {@link DiscoveryMessageFactory}. */

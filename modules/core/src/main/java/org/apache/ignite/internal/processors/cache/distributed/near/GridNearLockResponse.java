@@ -36,36 +36,36 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearLockResponse extends GridDistributedLockResponse {
     /** Pending versions that are less than {@link #version()}. */
     @GridToStringInclude
-    @Order(10)
+    @Order(0)
     Collection<GridCacheVersion> pending;
 
     /** Mini future ID. */
-    @Order(11)
+    @Order(1)
     int miniId;
 
     /** DHT versions. */
     @GridToStringInclude
-    @Order(12)
+    @Order(2)
     GridCacheVersion[] dhtVers;
 
     /** DHT candidate versions. */
     @GridToStringInclude
-    @Order(13)
+    @Order(3)
     GridCacheVersion[] mappedVers;
 
     /** Filter evaluation results for fast-commit transactions. */
-    @Order(14)
+    @Order(4)
     boolean[] filterRes;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(15)
+    @Order(5)
     AffinityTopologyVersion clientRemapVer;
 
     /**
      * Flag, indicating whether remap version is compatible with current version.
      * Used together with clientRemapVer.
      */
-    @Order(16)
+    @Order(6)
     boolean compatibleRemapVer;
 
     /**
@@ -85,7 +85,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param err Error.
      * @param clientRemapVer {@code True} if client node should remap lock request. If {@code compatibleRemapVer} is
      * {@code true} when first request is not remapped, but all subsequent will use remap version.
-     * @param addDepInfo Deployment info.
      * @param compatibleRemapVer {@code True} if remap version is compatible with lock version.
      */
     public GridNearLockResponse(
@@ -97,10 +96,9 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         int cnt,
         Throwable err,
         AffinityTopologyVersion clientRemapVer,
-        boolean addDepInfo,
         boolean compatibleRemapVer
     ) {
-        super(cacheId, lockVer, futId, cnt, err, addDepInfo);
+        super(cacheId, lockVer, futId, cnt, err);
 
         assert miniId != 0;
 

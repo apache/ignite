@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,28 +35,27 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements TcpDiscoveryMarshallableMessage {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Added node ID. */
-    @Order(6)
-    public UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
     /**
      * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
      * TcpDiscoveryNodeAddFinishedMessage.
      */
-    @Order(7)
-    @GridToStringExclude
-    public DiscoveryDataPacket clientDiscoData;
+    @Order(1)
+    @GridToStringExclude DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude
     private Map<String, Object> clientNodeAttrs;
 
     /** Serialized client node attributes. */
-    @Order(8)
+    @Order(2)
     @Nullable byte[] clientNodeAttrsBytes;
 
     /** Constructor. */
@@ -84,6 +84,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         nodeId = msg.nodeId;
         clientDiscoData = msg.clientDiscoData;
         clientNodeAttrs = msg.clientNodeAttrs;
+        clientNodeAttrsBytes = msg.clientNodeAttrsBytes;
     }
 
     /**
@@ -103,11 +104,12 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
-     * @param clientNodeAttrs New client node attributes.
+     * @param clientDiscoData Discovery data for joined client.
      */
-    public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
-        this.clientNodeAttrs = clientNodeAttrs;
-        clientNodeAttrsBytes = null;
+    public void clientDiscoData(DiscoveryDataPacket clientDiscoData) {
+        this.clientDiscoData = clientDiscoData;
+
+        assert clientDiscoData == null || !clientDiscoData.hasDataFromNode(nodeId);
     }
 
     /**
@@ -117,6 +119,14 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         return clientNodeAttrs;
     }
 
+    /**
+     * @param clientNodeAttrs New client node attributes.
+     */
+    public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
+        this.clientNodeAttrs = clientNodeAttrs;
+        clientNodeAttrsBytes = null;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) {
         if (clientNodeAttrs != null && clientNodeAttrsBytes == null) {
@@ -124,7 +134,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
                 clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal client node attributes", e);
+                throw new IgniteException("Failed to marshal client node attributes.", e);
             }
         }
     }
@@ -138,7 +148,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
                 clientNodeAttrsBytes = null;
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal client node attributes", e);
+                throw new IgniteException("Failed to unmarshal client node attributes.", e);
             }
         }
     }

@@ -306,7 +306,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (!ctx.clientNode())
             metadataFileStore.restoreMetadata(meta -> metadataLocCache.put(meta.typeId(), new BinaryMetadataVersionInfo(meta)));
 
-        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false, false);
+        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false);
     }
 
     /** {@inheritDoc} */
@@ -1111,7 +1111,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
-            false,
             notSysCache
         );
     }

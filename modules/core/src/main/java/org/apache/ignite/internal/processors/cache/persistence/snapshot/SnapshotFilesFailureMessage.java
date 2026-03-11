@@ -29,7 +29,7 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     public static final short TYPE_CODE = 179;
 
     /** Exception message which is occurred during snapshot request processing. */
-    @Order(1)
+    @Order(0)
     String errMsg;
 
     /**

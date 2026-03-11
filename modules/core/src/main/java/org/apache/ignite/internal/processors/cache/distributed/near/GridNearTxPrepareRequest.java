@@ -58,28 +58,28 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private static final int RECOVERY_FLAG_MASK = 0x40;
 
     /** Future ID. */
-    @Order(20)
+    @Order(0)
     IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(21)
+    @Order(1)
     int miniId;
 
     /** Topology version. */
-    @Order(22)
+    @Order(2)
     AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(23)
+    @Order(3)
     int taskNameHash;
 
     /** */
-    @Order(24)
+    @Order(4)
     @GridToStringExclude
     byte flags;
 
     /** Transaction label. */
-    @Order(25)
+    @Order(5)
     @GridToStringInclude
     @Nullable String txLbl;
 
@@ -107,7 +107,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
      * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
@@ -126,7 +125,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         int taskNameHash,
         boolean firstClientReq,
         boolean allowWaitTopFut,
-        boolean addDepInfo,
         boolean recovery
     ) {
         super(tx,
@@ -136,8 +134,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             txNodes,
             retVal,
             last,
-            onePhaseCommit,
-            addDepInfo);
+            onePhaseCommit);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;
