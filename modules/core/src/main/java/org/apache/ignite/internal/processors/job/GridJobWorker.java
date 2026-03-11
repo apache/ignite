@@ -748,23 +748,21 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     public void cancel(boolean sys) {
         try {
-            final ComputeJob job0 = job;
+            if (log.isDebugEnabled())
+                log.debug("Cancelling job: " + ses);
+
+            status = CANCELLED;
 
             if (sys)
                 sysCancelled = true;
 
-            if (job0 != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Cancelling job: " + ses);
+            final ComputeJob job0 = job;
 
-                status = CANCELLED;
-
-                U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
-                    try (Scope ignored = ctx.security().withContext(secCtx)) {
-                        job0.cancel();
-                    }
-                });
-            }
+            U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
+                try (Scope ignored = ctx.security().withContext(secCtx)) {
+                    job0.cancel();
+                }
+            });
 
             // Interrupting only when all 'cancelled' flags are set.
             // This allows the 'job' to determine it's a cancellation.
@@ -1089,6 +1087,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert jobId != null;
 
         return jobId.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCancelled() {
+        return status == CANCELLED;
     }
 
     /** {@inheritDoc} */
