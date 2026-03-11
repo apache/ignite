@@ -131,7 +131,7 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
-    /** @serial Partitions count. */
+    /** @serial Affinity configuration. */
     private ClientAffinityConfiguration affCfg;
 
     /**
