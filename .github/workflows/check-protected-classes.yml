@@ -14,8 +14,8 @@
 # limitations under the License.
 
 name: Check Protected Classes
-on:
-  pull_request:
+
+on: pull_request
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -66,9 +66,9 @@ jobs:
             const fs = require('fs');
             const hits = fs.readFileSync('/tmp/protected-hits.txt', 'utf8').trim();
             const body = [
-              '## Protected Classes Review Required',
+              '## Possible compatibility issues. Please, check rolling upgrade cases',
               '',
-              'This PR modifies protected classes (with @Order annotation).',
+              'This PR modifies protected classes (with **Order** annotation).',
               'Changes to these classes can break rolling upgrade compatibility.',
               '',
               '**Affected files:**',
@@ -82,7 +82,7 @@ jobs:
               issue_number: context.issue.number,
             });
 
-            const existing = comments.find(c => c.body.includes('Protected Classes Review Required'));
+            const existing = comments.find(c => c.body.includes('Possible compatibility issues. Please, check rolling upgrade cases'));
 
             if (existing) {
               await github.rest.issues.updateComment({
@@ -109,5 +109,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['protected-classes'],
+              labels: ['compatibility'],
             });
