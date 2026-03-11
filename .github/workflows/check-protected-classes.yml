@@ -15,7 +15,7 @@
 
 name: Check Protected Classes
 
-on: pull_request
+on: pull_request_target
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -25,6 +25,9 @@ jobs:
   check-protected-classes:
     runs-on: ubuntu-latest
     name: Check protected classes
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
         with:
