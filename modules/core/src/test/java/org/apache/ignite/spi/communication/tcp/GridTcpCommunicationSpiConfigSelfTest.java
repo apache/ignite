@@ -252,7 +252,8 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
         MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
-        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory}));
+        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
+            new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory}));
 
         ctx.setLocalNode(node);
 

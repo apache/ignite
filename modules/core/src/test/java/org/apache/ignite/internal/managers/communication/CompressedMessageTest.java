@@ -46,7 +46,8 @@ public class CompressedMessageTest {
     /** */
     @Test
     public void testWriteReadHugeMessage() {
-        MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory(jdk(), U.gridClassLoader())});
+        MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
+            new GridIoMessageFactory(jdk(), U.gridClassLoader())});
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 

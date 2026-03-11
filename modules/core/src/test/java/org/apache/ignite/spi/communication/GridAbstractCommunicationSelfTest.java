@@ -161,7 +161,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                 }
             };
 
-            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory}));
+            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
+                new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory}));
 
             ctx.setLocalNode(node);
 
