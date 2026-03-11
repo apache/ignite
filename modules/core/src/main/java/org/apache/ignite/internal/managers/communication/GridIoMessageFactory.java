@@ -57,6 +57,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponseSerializer;
+import org.apache.ignite.internal.managers.deployment.T1TopicMessage;
+import org.apache.ignite.internal.managers.deployment.T1TopicMessageSerializer;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
@@ -355,6 +357,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
+        factory.register((short)-67, T1TopicMessage::new, new T1TopicMessageSerializer());
         factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
         factory.register((short)-65, TxInfo::new, new TxInfoSerializer());
         factory.register((short)-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());

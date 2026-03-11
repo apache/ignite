@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.deployment.T1TopicMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -177,7 +178,7 @@ public enum GridTopic {
      * @param id Topic ID.
      * @return Grid message topic with specified ID.
      */
-    public Object topic(IgniteUuid id) {
+    public T1 topic(IgniteUuid id) {
         return new T1(this, id);
     }
 
@@ -253,16 +254,7 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T1 implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private GridTopic topic;
-
-        /** */
-        private IgniteUuid id;
-
+    public static class T1 extends T1TopicMessage {
         /**
          * No-arg constructor needed for {@link Serializable}.
          */
@@ -274,14 +266,13 @@ public enum GridTopic {
          * @param topic Topic.
          * @param id ID.
          */
-        private T1(GridTopic topic, IgniteUuid id) {
-            this.topic = topic;
-            this.id = id;
+        public T1(GridTopic topic, IgniteUuid id) {
+            super(topic, id);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id.hashCode();
+            return topic().ordinal() + id().hashCode();
         }
 
         /** {@inheritDoc} */
@@ -289,22 +280,10 @@ public enum GridTopic {
             if (obj.getClass() == T1.class) {
                 T1 that = (T1)obj;
 
-                return topic == that.topic && id.equals(that.id);
+                return topic() == that.topic() && id().equals(that.id());
             }
 
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(topic.ordinal());
-            U.writeIgniteUuid(out, id);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            topic = fromOrdinal(in.readByte());
-            id = U.readIgniteUuid(in);
         }
 
         /** {@inheritDoc} */
