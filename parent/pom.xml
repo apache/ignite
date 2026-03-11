@@ -812,6 +812,7 @@
                                         <inputExclude>**/MIGRATION_GUIDE*</inputExclude>
                                         <inputExclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</inputExclude><!-- Apache 2.0 license -->
                                         <inputExclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</inputExclude><!--auto generated files-->
+                                        <inputExclude>src/main/java/org/apache/ignite/internal/processors/query/stat/hll/**</inputExclude><!-- Apache 2.0 license, copyright Aggregate Knowledge, Inc. -->
                                         <inputExclude>src/main/java/org/jsr166/*.java</inputExclude>
                                         <inputExclude>src/main/java/org/mindrot/*.java</inputExclude>
                                         <inputExclude>src/test/java/org/apache/ignite/p2p/p2p.properties</inputExclude><!--test depends on file content-->
