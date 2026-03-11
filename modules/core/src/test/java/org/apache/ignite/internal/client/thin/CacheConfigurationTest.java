@@ -31,6 +31,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.ClientAffinityConfiguration;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.Comparers;
@@ -133,21 +135,25 @@ public class CacheConfigurationTest extends AbstractThinClientTest {
             String cacheName = "test";
 
             // Client to server propagation.
-            client.createCache(new ClientCacheConfiguration().setName(cacheName).setPartitions(100));
+            client.createCache(new ClientCacheConfiguration().setName(cacheName).setAffinityConfiguration(
+                new ClientAffinityConfiguration().setPartitions(100).setExcludeNeighbors(true)));
 
             assertEquals(100, ignite.cache(cacheName)
                 .getConfiguration(CacheConfiguration.class).getAffinity().partitions());
 
+            assertEquals(true, ((RendezvousAffinityFunction)ignite.cache(cacheName)
+                .getConfiguration(CacheConfiguration.class).getAffinity()).isExcludeNeighbors());
+
             // Server to client propagation.
-            assertEquals(100, client.cache(cacheName).getConfiguration().getPartitions());
+            assertEquals(100, client.cache(cacheName).getConfiguration().getAffinityConfiguration().getPartitions());
 
             // Implicit partitions count test.
             cacheName = "test2";
 
             client.createCache(new ClientCacheConfiguration().setName(cacheName));
 
-            assertEquals(ignite.cache(cacheName).getConfiguration(CacheConfiguration.class)
-                .getAffinity().partitions(), client.cache(cacheName).getConfiguration().getPartitions());
+            assertEquals(ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getAffinity().partitions(),
+                client.cache(cacheName).getConfiguration().getAffinityConfiguration().getPartitions());
         }
     }
 }

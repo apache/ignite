@@ -47,6 +47,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientAffinityConfiguration;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -62,7 +63,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.CACHE_CFG_PARTITIONS;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.CACHE_AFFINITY_CFG;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.CACHE_STORAGES;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.QRY_INITIATOR_ID;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE;
@@ -383,10 +384,14 @@ public final class ClientUtils {
             else if (!F.isEmpty(cfg.getStoragePaths()) || !F.isEmpty(cfg.getIndexPath()))
                 throw new ClientFeatureNotSupportedByServerException("Cache storages are not supported by the server");
 
-            if (protocolCtx.isFeatureSupported(CACHE_CFG_PARTITIONS))
-                itemWriter.accept(CfgItem.PARTITIONS, w -> w.writeInt(cfg.getPartitions()));
-            else if (cfg.getPartitions() > 0)
-                throw new ClientProtocolError("Partitions configuration by thin client is not supported by the server");
+            if (protocolCtx.isFeatureSupported(CACHE_AFFINITY_CFG) && cfg.getAffinityConfiguration() != null) {
+                itemWriter.accept(CfgItem.AFFINITY_CFG, w -> {
+                    w.writeInt(cfg.getAffinityConfiguration().getPartitions());
+                    w.writeBoolean(cfg.getAffinityConfiguration().isExcludeNeighbors());
+                });
+            }
+            else if (cfg.getAffinityConfiguration() != null)
+                throw new ClientProtocolError("Affinity configuration by thin client is not supported by the server");
 
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
             writer.writeInt(origPos + 4, propCnt.get()); // properties count
@@ -525,8 +530,18 @@ public final class ClientUtils {
                 .setIndexPath(!protocolCtx.isFeatureSupported(CACHE_STORAGES)
                     ? null
                     : reader.readString())
-                .setPartitions(!protocolCtx.isFeatureSupported(CACHE_CFG_PARTITIONS) ? null : reader.readInt());
+                .setAffinityConfiguration(!protocolCtx.isFeatureSupported(CACHE_AFFINITY_CFG) ? null
+                    : affinityConfiguration(reader));
         }
+    }
+
+    /** Deserialize affinity configuration from stream. */
+    private ClientAffinityConfiguration affinityConfiguration(BinaryReaderEx reader) {
+        int parts = reader.readInt();
+        boolean exclNeighbors = reader.readBoolean();
+
+        return parts > 0 ? new ClientAffinityConfiguration().setPartitions(parts).setExcludeNeighbors(exclNeighbors)
+            : null;
     }
 
     /** Serialize SQL field query to stream. */
@@ -807,8 +822,8 @@ public final class ClientUtils {
         /** Index path. */
         IDX_PATH(409),
 
-        /** Partitions count. */
-        PARTITIONS(410);
+        /** Affinity configuration. */
+        AFFINITY_CFG(410);
 
         /** Code. */
         private final short code;

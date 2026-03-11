@@ -1643,11 +1643,20 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param partitions Partitions count.
-     * @return Default affinity function with predefined partitions count.
+     * @param parts Total number of partitions.
+     * @return Default affinity function with predefined parameters.
      */
-    public static AffinityFunction createDefaultAffinity(int partitions) {
-        return new RendezvousAffinityFunction(false, partitions);
+    public static AffinityFunction createDefaultAffinity(int parts) {
+        return createDefaultAffinity(false, parts);
+    }
+
+    /**
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @param parts Total number of partitions.
+     * @return Default affinity function with predefined parametrers.
+     */
+    public static AffinityFunction createDefaultAffinity(boolean exclNeighbors, int parts) {
+        return new RendezvousAffinityFunction(exclNeighbors, parts);
     }
 
     /**

@@ -34,6 +34,7 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -151,7 +152,7 @@ public class ClientCacheConfigurationSerializer {
     private static final short IDX_PATH = 409;
 
     /** */
-    private static final short PARTITIONS = 410;
+    private static final short AFFINITY_CFG = 410;
 
     /**
      * Writes the cache configuration.
@@ -231,9 +232,11 @@ public class ClientCacheConfigurationSerializer {
             writer.writeString(cfg.getIndexPath());
         }
 
-        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_CFG_PARTITIONS)) {
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_AFFINITY_CFG)) {
             AffinityFunction aff = cfg.getAffinity();
             writer.writeInt(aff == null ? -1 : aff.partitions());
+            writer.writeBoolean(aff instanceof RendezvousAffinityFunction
+                && ((RendezvousAffinityFunction)aff).isExcludeNeighbors());
         }
 
         // Write length (so that part of the config can be skipped).
@@ -482,11 +485,11 @@ public class ClientCacheConfigurationSerializer {
                     cfg.setIndexPath(reader.readString());
                     break;
 
-                case PARTITIONS:
-                    int partitions = reader.readInt();
+                case AFFINITY_CFG:
+                    int parts = reader.readInt();
+                    boolean exclNeighbors = reader.readBoolean();
 
-                    if (partitions > 0)
-                        cfg.setAffinity(CU.createDefaultAffinity(partitions));
+                    cfg.setAffinity(CU.createDefaultAffinity(exclNeighbors, parts));
 
                     break;
             }

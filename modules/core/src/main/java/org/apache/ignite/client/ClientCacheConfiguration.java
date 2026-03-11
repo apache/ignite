@@ -132,7 +132,7 @@ public final class ClientCacheConfiguration implements Serializable {
     private ExpiryPolicy expiryPlc;
 
     /** @serial Partitions count. */
-    private int partitions = -1;
+    private ClientAffinityConfiguration affCfg;
 
     /**
      * Root directories where partition files are stored.
@@ -196,7 +196,7 @@ public final class ClientCacheConfiguration implements Serializable {
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         storagePaths = ccfg.getStoragePaths();
         idxPath = ccfg.getIndexPath();
-        partitions = ccfg.getPartitions();
+        affCfg = ccfg.getAffinityConfiguration();
     }
 
     /**
@@ -798,22 +798,22 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets partitions count.
+     * Gets affinity configuration.
      *
-     * @return Partitions count.
+     * @return Affinity configuration.
      */
-    public int getPartitions() {
-        return partitions;
+    public ClientAffinityConfiguration getAffinityConfiguration() {
+        return affCfg;
     }
 
     /**
-     * Sets partitions count.
+     * Sets affinity configuration.
      *
-     * @param partitions Partitions count.
+     * @param affCfg Affinity configuration.
      * @return {@code this} for chaining.
      */
-    public ClientCacheConfiguration setPartitions(int partitions) {
-        this.partitions = partitions;
+    public ClientCacheConfiguration setAffinityConfiguration(ClientAffinityConfiguration affCfg) {
+        this.affCfg = affCfg;
 
         return this;
     }
