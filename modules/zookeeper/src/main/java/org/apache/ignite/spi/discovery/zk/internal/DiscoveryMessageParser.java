@@ -66,7 +66,7 @@ public class DiscoveryMessageParser {
     public DiscoveryMessageParser(Marshaller marsh) {
         this.marsh = marsh;
         this.msgFactory = new IgniteMessageFactoryImpl(
-            new MessageFactoryProvider[] { new DiscoveryMessageFactory() });
+            new MessageFactoryProvider[] { new DiscoveryMessageFactory(null, null) });
     }
 
     /** Marshals discovery message to bytes array. */
