@@ -48,20 +48,20 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    @Order(6)
+    @Order(0)
     public TcpDiscoveryNodeMessage nodeMsg;
 
     /** */
-    @Order(7)
+    @Order(1)
     public DiscoveryDataPacket dataPacket;
 
     /** Pending messages containner. */
-    @Order(8)
+    @Order(2)
     public @Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    @Order(9)
+    @Order(3)
     public @Nullable Collection<TcpDiscoveryNodeMessage> topMsgs;
 
     /** */
@@ -69,11 +69,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
-    @Order(10)
+    @Order(4)
     public Map<Long, ClusterNodeCollectionMessage> topHistMsgs;
 
     /** Start time of the first grid node. */
-    @Order(11)
+    @Order(5)
     public long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */

@@ -205,6 +205,6 @@ public class ClusterNodeMessage implements TcpDiscoveryMarshallableMessage, Clus
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -110;
+        return -111;
     }
 }

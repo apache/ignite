@@ -87,6 +87,6 @@ public class IgniteProductVersionMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -109;
+        return -110;
     }
 }
