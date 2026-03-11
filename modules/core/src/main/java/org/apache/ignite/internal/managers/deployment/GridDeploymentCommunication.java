@@ -138,7 +138,7 @@ class GridDeploymentCommunication {
         try {
             GridDeploymentRequest req = (GridDeploymentRequest)msg;
 
-            if (req.isUndeploy())
+            if (req.undeploy())
                 processUndeployRequest(nodeId, req);
             else {
                 assert activeReqNodeIds.get() == null;

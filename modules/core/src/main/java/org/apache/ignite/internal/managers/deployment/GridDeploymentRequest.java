@@ -32,19 +32,24 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDeploymentRequest implements Message {
     /** Response topic. Response should be sent back to this topic. */
+    /** */
     @Order(0)
-    @Nullable T1TopicMessage topicMsg;
+    @Nullable GridTopic topic;
+
+    /** */
+    @Order(1)
+    @Nullable IgniteUuid topicId;
 
     /** Requested class name. */
-    @Order(1)
+    @Order(2)
     String rsrcName;
 
     /** Class loader ID. */
-    @Order(2)
+    @Order(3)
     @Nullable IgniteUuid ldrId;
 
     /** Nodes participating in request (chain). */
-    @Order(3)
+    @Order(4)
     @GridToStringInclude
     Collection<UUID> nodeIds;
 
@@ -63,7 +68,8 @@ public class GridDeploymentRequest implements Message {
      * @param rsrcName Resource name that should be found and sent back.
      */
     GridDeploymentRequest(GridTopic.T1 topic, IgniteUuid ldrId, String rsrcName) {
-        topicMsg = new T1TopicMessage(topic.topic(), topic.id());
+        this.topic = topic.topic();
+        topicId = topic.id();
         this.ldrId = ldrId;
         this.rsrcName = rsrcName;
     }
@@ -83,7 +89,9 @@ public class GridDeploymentRequest implements Message {
      * @return Response topic name.
      */
     @Nullable GridTopic.T1 responseTopic() {
-        return topicMsg == null ? null : new GridTopic.T1(topicMsg.topic, topicMsg.id);
+        assert topic == null && topicId == null || topic != null && topicId != null;
+
+        return topic == null ? null : new GridTopic.T1(topic, topicId);
     }
 
     /**
@@ -109,8 +117,10 @@ public class GridDeploymentRequest implements Message {
      *
      * @return Property undeploy.
      */
-    public boolean isUndeploy() {
-        return topicMsg == null;
+    public boolean undeploy() {
+        assert topic == null && topicId == null || topic != null && topicId != null;
+
+        return topic == null;
     }
 
     /**

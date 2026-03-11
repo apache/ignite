@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.deployment.T1TopicMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -251,28 +250,36 @@ public enum GridTopic {
         return new T7(this, UUID.nameUUIDFromBytes(id1.getBytes(DFLT_CHARSET)), id2, id3, id4);
     }
 
-    /**
-     *
-     */
-    public static class T1 extends T1TopicMessage {
-        /**
-         * No-arg constructor needed for {@link Serializable}.
-         */
-        public T1() {
-            // No-op.
-        }
+    /** */
+    public static class T1 {
+        /** */
+        private GridTopic topic;
+
+        /** */
+        private IgniteUuid id;
 
         /**
          * @param topic Topic.
          * @param id ID.
          */
         public T1(GridTopic topic, IgniteUuid id) {
-            super(topic, id);
+            this.topic = topic;
+            this.id = id;
+        }
+
+        /** */
+        public GridTopic topic() {
+            return topic;
+        }
+
+        /** */
+        public IgniteUuid id() {
+            return id;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic().ordinal() + id().hashCode();
+            return topic.ordinal() + id.hashCode();
         }
 
         /** {@inheritDoc} */
@@ -280,7 +287,7 @@ public enum GridTopic {
             if (obj.getClass() == T1.class) {
                 T1 that = (T1)obj;
 
-                return topic() == that.topic() && id().equals(that.id());
+                return topic == that.topic && id.equals(that.id);
             }
 
             return false;
