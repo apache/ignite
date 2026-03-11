@@ -125,7 +125,6 @@ public class DiscoveryMessageParser {
         boolean finished;
 
         do {
-            // Should be cleared before first operation.
             msgBuf.clear();
 
             finished = msgSer.writeTo(m, msgWriter);
