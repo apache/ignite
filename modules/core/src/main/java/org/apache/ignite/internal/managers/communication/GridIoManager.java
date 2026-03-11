@@ -449,7 +449,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new GridIoMessageFactory());
+        compMsgs.add(new GridIoMessageFactory(marsh, U.resolveClassLoader(ctx.config())));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();

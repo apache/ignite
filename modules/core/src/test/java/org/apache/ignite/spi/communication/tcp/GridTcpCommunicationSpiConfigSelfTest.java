@@ -58,6 +58,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_COMM_SET_ATTR_
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.IgniteUtils.spiAttribute;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_HOST_NAMES;
 import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
 
@@ -251,7 +252,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
         MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
-        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory(), testMsgFactory}));
+        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory}));
 
         ctx.setLocalNode(node);
 

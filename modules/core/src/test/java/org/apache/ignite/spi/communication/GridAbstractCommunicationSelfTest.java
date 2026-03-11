@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Super class for all communication self tests.
@@ -160,7 +161,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                 }
             };
 
-            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory}));
+            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory}));
 
             ctx.setLocalNode(node);
 
