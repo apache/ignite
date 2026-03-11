@@ -51,7 +51,10 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     @GridToStringExclude
     private Collection<TcpDiscoveryAbstractMessage> msgs;
 
-    /** Srialized bytes of {@link #msgs}. */
+    /**
+     * TODO: Use direct messages or a message container after https://issues.apache.org/jira/browse/IGNITE-25883
+     * Srialized bytes of {@link #msgs}.
+     */
     @Order(2)
     byte[] msgsBytes;
 
