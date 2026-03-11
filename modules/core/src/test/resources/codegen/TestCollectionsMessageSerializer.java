@@ -18,8 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestCollectionsMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -29,11 +30,60 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestCollectionsMessageSerializer implements MessageSerializer {
+public class TestCollectionsMessageSerializer implements MessageSerializer<TestCollectionsMessage> {
     /** */
-    @Override public boolean writeTo(Message m, MessageWriter writer) {
-        TestCollectionsMessage msg = (TestCollectionsMessage)m;
+    private final static MessageCollectionType affTopVersionListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
+    /** */
+    private final static MessageCollectionType bitSetListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BIT_SET), false);
+    /** */
+    private final static MessageCollectionType bitSetSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BIT_SET), true);
+    /** */
+    private final static MessageCollectionType booleanArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false);
+    /** */
+    private final static MessageCollectionType boxedBooleanListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BOOLEAN), false);
+    /** */
+    private final static MessageCollectionType boxedByteListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE), false);
+    /** */
+    private final static MessageCollectionType boxedCharListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR), false);
+    /** */
+    private final static MessageCollectionType boxedDoubleListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false);
+    /** */
+    private final static MessageCollectionType boxedFloatListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.FLOAT), false);
+    /** */
+    private final static MessageCollectionType boxedIntListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT), false);
+    /** */
+    private final static MessageCollectionType boxedIntegerSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT), true);
+    /** */
+    private final static MessageCollectionType boxedLongListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG), false);
+    /** */
+    private final static MessageCollectionType boxedShortListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT), false);
+    /** */
+    private final static MessageCollectionType byteArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
+    /** */
+    private final static MessageCollectionType charArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
+    /** */
+    private final static MessageCollectionType doubleArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false);
+    /** */
+    private final static MessageCollectionType floatArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false);
+    /** */
+    private final static MessageCollectionType gridLongListListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), false);
+    /** */
+    private final static MessageCollectionType igniteUuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
+    /** */
+    private final static MessageCollectionType intArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT_ARR), false);
+    /** */
+    private final static MessageCollectionType longArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
+    /** */
+    private final static MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
+    /** */
+    private final static MessageCollectionType shortArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
+    /** */
+    private final static MessageCollectionType stringListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.STRING), false);
+    /** */
+    private final static MessageCollectionType uuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.UUID), false);
 
+    /** */
+    @Override public boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -43,151 +93,151 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).booleanArrayList, MessageCollectionItemType.BOOLEAN_ARR))
+                if (!writer.writeCollection(msg.booleanArrayList, booleanArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).byteArrayList, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(msg.byteArrayList, byteArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).shortArrayList, MessageCollectionItemType.SHORT_ARR))
+                if (!writer.writeCollection(msg.shortArrayList, shortArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).intArrayList, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeCollection(msg.intArrayList, intArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).longArrayList, MessageCollectionItemType.LONG_ARR))
+                if (!writer.writeCollection(msg.longArrayList, longArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).charArrayList, MessageCollectionItemType.CHAR_ARR))
+                if (!writer.writeCollection(msg.charArrayList, charArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).floatArrayList, MessageCollectionItemType.FLOAT_ARR))
+                if (!writer.writeCollection(msg.floatArrayList, floatArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).doubleArrayList, MessageCollectionItemType.DOUBLE_ARR))
+                if (!writer.writeCollection(msg.doubleArrayList, doubleArrayListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).stringList, MessageCollectionItemType.STRING))
+                if (!writer.writeCollection(msg.stringList, stringListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).uuidList, MessageCollectionItemType.UUID))
+                if (!writer.writeCollection(msg.uuidList, uuidListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).bitSetList, MessageCollectionItemType.BIT_SET))
+                if (!writer.writeCollection(msg.bitSetList, bitSetListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).igniteUuidList, MessageCollectionItemType.IGNITE_UUID))
+                if (!writer.writeCollection(msg.igniteUuidList, igniteUuidListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).affTopVersionList, MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION))
+                if (!writer.writeCollection(msg.affTopVersionList, affTopVersionListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedBooleanList, MessageCollectionItemType.BOOLEAN))
+                if (!writer.writeCollection(msg.boxedBooleanList, boxedBooleanListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedByteList, MessageCollectionItemType.BYTE))
+                if (!writer.writeCollection(msg.boxedByteList, boxedByteListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedShortList, MessageCollectionItemType.SHORT))
+                if (!writer.writeCollection(msg.boxedShortList, boxedShortListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedIntList, MessageCollectionItemType.INT))
+                if (!writer.writeCollection(msg.boxedIntList, boxedIntListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedLongList, MessageCollectionItemType.LONG))
+                if (!writer.writeCollection(msg.boxedLongList, boxedLongListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedCharList, MessageCollectionItemType.CHAR))
+                if (!writer.writeCollection(msg.boxedCharList, boxedCharListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedFloatList, MessageCollectionItemType.FLOAT))
+                if (!writer.writeCollection(msg.boxedFloatList, boxedFloatListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).boxedDoubleList, MessageCollectionItemType.DOUBLE))
+                if (!writer.writeCollection(msg.boxedDoubleList, boxedDoubleListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).messageList, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(msg.messageList, messageListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeCollection(((TestCollectionsMessage)msg).gridLongListList, MessageCollectionItemType.GRID_LONG_LIST))
+                if (!writer.writeCollection(msg.gridLongListList, gridLongListListCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeSet(((TestCollectionsMessage)msg).boxedIntegerSet, MessageCollectionItemType.INT))
+                if (!writer.writeCollection(msg.boxedIntegerSet, boxedIntegerSetCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeSet(((TestCollectionsMessage)msg).bitSetSet, MessageCollectionItemType.BIT_SET))
+                if (!writer.writeCollection(msg.bitSetSet, bitSetSetCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -197,12 +247,10 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
     }
 
     /** */
-    @Override public boolean readFrom(Message m, MessageReader reader) {
-        TestCollectionsMessage msg = (TestCollectionsMessage)m;
-
+    @Override public boolean readFrom(TestCollectionsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                ((TestCollectionsMessage)msg).booleanArrayList = reader.readCollection(MessageCollectionItemType.BOOLEAN_ARR);
+                msg.booleanArrayList = reader.readCollection(booleanArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -210,7 +258,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                ((TestCollectionsMessage)msg).byteArrayList = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
+                msg.byteArrayList = reader.readCollection(byteArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -218,7 +266,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 2:
-                ((TestCollectionsMessage)msg).shortArrayList = reader.readCollection(MessageCollectionItemType.SHORT_ARR);
+                msg.shortArrayList = reader.readCollection(shortArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -226,7 +274,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 3:
-                ((TestCollectionsMessage)msg).intArrayList = reader.readCollection(MessageCollectionItemType.INT_ARR);
+                msg.intArrayList = reader.readCollection(intArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -234,7 +282,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 4:
-                ((TestCollectionsMessage)msg).longArrayList = reader.readCollection(MessageCollectionItemType.LONG_ARR);
+                msg.longArrayList = reader.readCollection(longArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -242,7 +290,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 5:
-                ((TestCollectionsMessage)msg).charArrayList = reader.readCollection(MessageCollectionItemType.CHAR_ARR);
+                msg.charArrayList = reader.readCollection(charArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -250,7 +298,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 6:
-                ((TestCollectionsMessage)msg).floatArrayList = reader.readCollection(MessageCollectionItemType.FLOAT_ARR);
+                msg.floatArrayList = reader.readCollection(floatArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -258,7 +306,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 7:
-                ((TestCollectionsMessage)msg).doubleArrayList = reader.readCollection(MessageCollectionItemType.DOUBLE_ARR);
+                msg.doubleArrayList = reader.readCollection(doubleArrayListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -266,7 +314,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 8:
-                ((TestCollectionsMessage)msg).stringList = reader.readCollection(MessageCollectionItemType.STRING);
+                msg.stringList = reader.readCollection(stringListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -274,7 +322,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 9:
-                ((TestCollectionsMessage)msg).uuidList = reader.readCollection(MessageCollectionItemType.UUID);
+                msg.uuidList = reader.readCollection(uuidListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -282,7 +330,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 10:
-                ((TestCollectionsMessage)msg).bitSetList = reader.readCollection(MessageCollectionItemType.BIT_SET);
+                msg.bitSetList = reader.readCollection(bitSetListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -290,7 +338,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 11:
-                ((TestCollectionsMessage)msg).igniteUuidList = reader.readCollection(MessageCollectionItemType.IGNITE_UUID);
+                msg.igniteUuidList = reader.readCollection(igniteUuidListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -298,7 +346,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 12:
-                ((TestCollectionsMessage)msg).affTopVersionList = reader.readCollection(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION);
+                msg.affTopVersionList = reader.readCollection(affTopVersionListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +354,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 13:
-                ((TestCollectionsMessage)msg).boxedBooleanList = reader.readCollection(MessageCollectionItemType.BOOLEAN);
+                msg.boxedBooleanList = reader.readCollection(boxedBooleanListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +362,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 14:
-                ((TestCollectionsMessage)msg).boxedByteList = reader.readCollection(MessageCollectionItemType.BYTE);
+                msg.boxedByteList = reader.readCollection(boxedByteListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -322,7 +370,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 15:
-                ((TestCollectionsMessage)msg).boxedShortList = reader.readCollection(MessageCollectionItemType.SHORT);
+                msg.boxedShortList = reader.readCollection(boxedShortListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -330,7 +378,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 16:
-                ((TestCollectionsMessage)msg).boxedIntList = reader.readCollection(MessageCollectionItemType.INT);
+                msg.boxedIntList = reader.readCollection(boxedIntListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -338,7 +386,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 17:
-                ((TestCollectionsMessage)msg).boxedLongList = reader.readCollection(MessageCollectionItemType.LONG);
+                msg.boxedLongList = reader.readCollection(boxedLongListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -346,7 +394,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 18:
-                ((TestCollectionsMessage)msg).boxedCharList = reader.readCollection(MessageCollectionItemType.CHAR);
+                msg.boxedCharList = reader.readCollection(boxedCharListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -354,7 +402,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 19:
-                ((TestCollectionsMessage)msg).boxedFloatList = reader.readCollection(MessageCollectionItemType.FLOAT);
+                msg.boxedFloatList = reader.readCollection(boxedFloatListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -362,7 +410,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 20:
-                ((TestCollectionsMessage)msg).boxedDoubleList = reader.readCollection(MessageCollectionItemType.DOUBLE);
+                msg.boxedDoubleList = reader.readCollection(boxedDoubleListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -370,7 +418,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 21:
-                ((TestCollectionsMessage)msg).messageList = reader.readCollection(MessageCollectionItemType.MSG);
+                msg.messageList = reader.readCollection(messageListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -378,7 +426,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 22:
-                ((TestCollectionsMessage)msg).gridLongListList = reader.readCollection(MessageCollectionItemType.GRID_LONG_LIST);
+                msg.gridLongListList = reader.readCollection(gridLongListListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -386,7 +434,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 23:
-                ((TestCollectionsMessage)msg).boxedIntegerSet = reader.readSet(MessageCollectionItemType.INT);
+                msg.boxedIntegerSet = reader.readCollection(boxedIntegerSetCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -394,7 +442,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 24:
-                ((TestCollectionsMessage)msg).bitSetSet = reader.readSet(MessageCollectionItemType.BIT_SET);
+                msg.bitSetSet = reader.readCollection(bitSetSetCollDesc);
 
                 if (!reader.isLastRead())
                     return false;

@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class QueryStartRequest implements MarshalableMessage, ExecutionContextAware {
+public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;

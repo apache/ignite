@@ -20,7 +20,7 @@ package org.apache.ignite.plugin.extensions.communication;
 /**
  * Interface for message serialization logic.
  */
-public interface MessageSerializer {
+public interface MessageSerializer<M extends Message> {
     /**
      * Writes this message to provided byte buffer.
      *
@@ -28,7 +28,7 @@ public interface MessageSerializer {
      * @param writer Writer.
      * @return Whether message was fully written.
      */
-    public boolean writeTo(Message msg, MessageWriter writer);
+    public boolean writeTo(M msg, MessageWriter writer);
 
     /**
      * Reads this message from provided byte buffer.
@@ -37,5 +37,5 @@ public interface MessageSerializer {
      * @param reader Reader.
      * @return Whether message was fully read.
      */
-    public boolean readFrom(Message msg, MessageReader reader);
+    public boolean readFrom(M msg, MessageReader reader);
 }

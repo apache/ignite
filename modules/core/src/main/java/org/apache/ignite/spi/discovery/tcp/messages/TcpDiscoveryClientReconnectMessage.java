@@ -20,27 +20,45 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Message telling that client node is reconnecting to topology.
  */
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    private final UUID routerNodeId;
+    @Order(0)
+    UUID routerNodeId;
 
     /** Last message ID. */
-    private final IgniteUuid lastMsgId;
+    @Order(1)
+    IgniteUuid lastMsgId;
 
     /** Pending messages. */
     @GridToStringExclude
     private Collection<TcpDiscoveryAbstractMessage> msgs;
+
+    /** Srialized bytes of {@link #msgs}. */
+    @Order(2)
+    byte[] msgsBytes;
+
+    /** Constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryClientReconnectMessage() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -109,6 +127,37 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         return Objects.equals(creatorNodeId(), other.creatorNodeId()) &&
             Objects.equals(routerNodeId, other.routerNodeId) &&
             Objects.equals(lastMsgId, other.lastMsgId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
+        if (msgs != null && msgsBytes == null) {
+            try {
+                msgsBytes = U.marshal(marsh, msgs);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal the pending messages.", e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        if (msgsBytes != null && msgs == null) {
+            try {
+                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+
+                msgsBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshal the pending messages.", e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 28;
     }
 
     /** {@inheritDoc} */

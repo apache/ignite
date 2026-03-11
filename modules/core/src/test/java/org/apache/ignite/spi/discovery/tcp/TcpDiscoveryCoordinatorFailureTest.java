@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -209,7 +208,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         @Override protected Socket openSocket(
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        ) throws IOException, IgniteCheckedException {
             checkStall();
 
             return super.openSocket(sockAddr, timeoutHelper);
@@ -220,7 +219,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             Socket sock,
             InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        ) throws IOException, IgniteCheckedException {
             checkStall();
 
             return super.openSocket(sock, remAddr, timeoutHelper);
@@ -292,7 +291,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
-        ) throws IOException {
+        ) throws IOException, IgniteCheckedException {
             if (isDrop(msg)) {
                 // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
                 // connRecoveryTimeout.
@@ -323,7 +322,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             Socket sock,
             int res,
             long timeout
-        ) throws IOException {
+        ) throws IOException, IgniteCheckedException {
             if (isDrop(msg)) {
                 // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
                 // connRecoveryTimeout.

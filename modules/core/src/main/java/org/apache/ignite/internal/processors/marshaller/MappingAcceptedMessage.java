@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.marshaller;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -77,17 +75,6 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
     /** */
     public MarshallerMappingItem getMappingItem() {
         return new MarshallerMappingItem(platformId, typeId, clsName);
@@ -95,7 +82,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 512;
+        return 517;
     }
 
     /** {@inheritDoc} */
