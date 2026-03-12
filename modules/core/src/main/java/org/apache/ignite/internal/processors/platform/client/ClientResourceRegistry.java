@@ -101,9 +101,6 @@ public class ClientResourceRegistry {
             Long id = e.getKey();
             Object obj = e.getValue();
 
-            // Delete from registry before close, to avoid keeping references after clean.
-            res.remove(id, obj);
-
             try {
                 closeIfNeeded(obj);
             }
@@ -112,6 +109,9 @@ public class ClientResourceRegistry {
                     log.debug("Failed to close client resource on disconnect [id=" + id +
                         ", res=" + obj +
                         ", err=" + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ']');
+            }
+            finally {
+                res.remove(id, obj);
             }
         }
     }
