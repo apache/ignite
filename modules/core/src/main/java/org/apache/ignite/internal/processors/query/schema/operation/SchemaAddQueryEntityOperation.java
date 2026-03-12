@@ -95,14 +95,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         return sqlEscape;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -111;
-    }
-
-    /**
-     * @return Serialized form of query entities.
-     */
+    /** */
     byte[] queryEntitiesBytes() {
         try {
             return U.marshal(jdk(), entities);
@@ -112,9 +105,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         }
     }
 
-    /**
-     * @param qryEntitiesBytes New serialized form of query entities.
-     */
+    /** */
     void queryEntitiesBytes(byte[] qryEntitiesBytes) {
         if (qryEntitiesBytes != null) {
             try {
@@ -124,5 +115,10 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -111;
     }
 }
