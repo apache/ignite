@@ -131,7 +131,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
                 idx = U.unmarshal(Marshallers.jdk(), qryIdxBytes, U.gridClassLoader());
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw new IgniteException("Failed to unmarshall query index", e);
             }
         }
     }
