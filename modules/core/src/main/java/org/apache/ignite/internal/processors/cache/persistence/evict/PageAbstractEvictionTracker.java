@@ -186,13 +186,14 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /** {@inheritDoc} */
     @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        if (isHeadPage)
+            initPage(pageId);
+
         // Do nothing if called for tail page.
         if (prevPageId == 0)
             return;
 
         if (isHeadPage) {
-            initPage(pageId);
-
             // Store link to head fragment page in tail fragment page.
             linkFragmentPages(tailPageTrackingIdx(prevPageId), trackingIdx(PageIdUtils.pageIndex(pageId)));
         }
