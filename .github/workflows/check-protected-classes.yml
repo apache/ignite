@@ -1,0 +1,116 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Check Protected Classes
+
+on: pull_request_target
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-protected-classes:
+    runs-on: ubuntu-latest
+    name: Check protected classes
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Check for protected class modifications
+        id: check
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          HITS=""
+
+          # New and deleted files: check diff content for @Order annotation.
+          for file in $(git diff --name-only --no-renames --diff-filter=AD "$BASE_SHA"..."$HEAD_SHA" -- '*.java'); do
+            if git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | grep -q 'org.apache.ignite.internal.Order'; then
+              HITS="${HITS}${file}\n"
+            fi
+          done
+
+          # Modified files: check base version content for @Order annotation.
+          for file in $(git diff --name-only --no-renames --diff-filter=M "$BASE_SHA"..."$HEAD_SHA" -- '*.java'); do
+            if git show "${BASE_SHA}:${file}" 2>/dev/null | grep -q 'org.apache.ignite.internal.Order'; then
+              HITS="${HITS}${file}\n"
+            fi
+          done
+
+          if [ -n "$HITS" ]; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            printf '%b' "$HITS" > /tmp/protected-hits.txt
+          fi
+
+      - name: Comment on PR
+        if: steps.check.outputs.affected == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const hits = fs.readFileSync('/tmp/protected-hits.txt', 'utf8').trim();
+            const body = [
+              '## Possible compatibility issues. Please, check rolling upgrade cases',
+              '',
+              'This PR modifies protected classes (with **Order** annotation).',
+              'Changes to these classes can break rolling upgrade compatibility.',
+              '',
+              '**Affected files:**',
+              hits.split('\n').map(f => '- `' + f.trim() + '`').join('\n'),
+              '',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes('Possible compatibility issues. Please, check rolling upgrade cases'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Add label
+        if: steps.check.outputs.affected == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['compatibility'],
+            });

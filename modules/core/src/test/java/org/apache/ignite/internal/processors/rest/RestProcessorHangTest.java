@@ -72,7 +72,12 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
 
         // Discovery spi that never allows connecting.
         TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi() {
-            @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout) throws IOException {
+            @Override protected void writeToSocket(
+                TcpDiscoveryAbstractMessage msg,
+                Socket sock,
+                int res,
+                long timeout
+            ) throws IOException, IgniteCheckedException {
                 try {
                     // Wait until request is added to rest processor.
                     latch.await();

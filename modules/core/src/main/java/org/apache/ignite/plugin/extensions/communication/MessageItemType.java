@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+package org.apache.ignite.plugin.extensions.communication;
 
 /** */
-public interface ValueMessage extends CalciteMarshalableMessage {
-    /**
-     * @return Wrapped value.
-     */
-    Object value();
+public class MessageItemType implements MessageType {
+    /** */
+    private final MessageCollectionItemType type;
 
-    /** {@inheritDoc} */
-    @Override default void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        // No-op
+    /**
+     @param type Type.
+     */
+    public MessageItemType(MessageCollectionItemType type) {
+        this.type = type;
     }
 
     /** {@inheritDoc} */
-    @Override default void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        // No-op
+    @Override public MessageCollectionItemType type() {
+        return type;
     }
 }
