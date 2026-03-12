@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +36,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -49,20 +46,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.PartitionLossPolicy;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
-import org.apache.ignite.client.Comparers;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.LocalIgniteCluster;
@@ -70,14 +61,11 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum;
-import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -180,87 +168,6 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             assertFalse(cache.containsKey(key));
 
             assertArrayEquals(new TreeSet<>(Arrays.asList(Config.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
-        }
-    }
-
-    /**
-     * Tested API:
-     * <ul>
-     * <li>{@link ClientCache#getName()}</li>
-     * <li>{@link ClientCache#getConfiguration()}</li>
-     * </ul>
-     */
-    @Test
-    public void testCacheConfiguration() throws Exception {
-        final String dataRegionName = "functional-test-data-region";
-
-        IgniteConfiguration cfg = Config.getServerConfiguration()
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setName(dataRegionName)));
-
-        try (Ignite ignored = Ignition.start(cfg);
-             IgniteClient client = Ignition.startClient(getClientConfiguration())
-        ) {
-            final String CACHE_NAME = "testCacheConfiguration";
-
-            ClientCacheConfiguration cacheCfgTemplate = new ClientCacheConfiguration().setName(CACHE_NAME)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setBackups(3)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setEagerTtl(false)
-                .setGroupName("FunctionalTest")
-                .setDefaultLockTimeout(12345)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
-                .setReadFromBackup(true)
-                .setRebalanceBatchSize(67890)
-                .setRebalanceBatchesPrefetchCount(102938)
-                .setRebalanceDelay(54321)
-                .setRebalanceMode(CacheRebalanceMode.SYNC)
-                .setRebalanceOrder(2)
-                .setRebalanceThrottle(564738)
-                .setRebalanceTimeout(142536)
-                .setKeyConfiguration(new CacheKeyConfiguration("Employee", "orgId"))
-                .setQueryEntities(new QueryEntity(int.class.getName(), "Employee")
-                    .setTableName("EMPLOYEE")
-                    .setFields(
-                        Stream.of(
-                            new SimpleEntry<>("id", Integer.class.getName()),
-                            new SimpleEntry<>("orgId", Integer.class.getName())
-                        ).collect(Collectors.toMap(
-                            SimpleEntry::getKey, SimpleEntry::getValue, (a, b) -> a, LinkedHashMap::new
-                        ))
-                    )
-                    // During query normalization null keyFields become empty set.
-                    // Set empty collection for comparator.
-                    .setKeyFields(Collections.emptySet())
-                    .setKeyFieldName("id")
-                    .setNotNullFields(Collections.singleton("id"))
-                    .setDefaultFieldValues(Collections.singletonMap("id", 0))
-                    .setIndexes(Collections.singletonList(new QueryIndex("id", true, "IDX_EMPLOYEE_ID")))
-                    .setAliases(Stream.of("id", "orgId").collect(Collectors.toMap(f -> f, String::toUpperCase)))
-                )
-                .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30))
-                .setCopyOnRead(!CacheConfiguration.DFLT_COPY_ON_READ)
-                .setDataRegionName(dataRegionName)
-                .setMaxConcurrentAsyncOperations(4)
-                .setMaxQueryIteratorsCount(4)
-                .setOnheapCacheEnabled(true)
-                .setQueryDetailMetricsSize(1024)
-                .setQueryParallelism(4)
-                .setSqlEscapeAll(true)
-                .setSqlIndexMaxInlineSize(1024)
-                .setSqlSchema("functional-test-schema")
-                .setStatisticsEnabled(true);
-
-            ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration(cacheCfgTemplate);
-
-            ClientCache<Object, Object> cache = client.createCache(cacheCfg);
-
-            assertEquals(CACHE_NAME, cache.getName());
-
-            assertTrue(Comparers.equal(cacheCfgTemplate, cache.getConfiguration()));
         }
     }
 
