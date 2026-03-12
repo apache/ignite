@@ -105,7 +105,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected void initPage(long pageId) {
         int ts = (int)compactTimestamp(U.currentTimeMillis());
 
-        GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, 0, ts);
+        GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, ts, 0);
     }
 
     /** {@inheritDoc} */
