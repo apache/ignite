@@ -63,7 +63,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
@@ -734,38 +733,32 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sys System flag.
      */
     public void cancel(boolean sys) {
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Cancelling job: " + ses);
+        if (log.isDebugEnabled())
+            log.debug("Cancelling job: " + ses);
 
-            boolean firstCancel = isCancelled.compareAndSet(false, true);
+        boolean firstCancel = isCancelled.compareAndSet(false, true);
 
-            isCancelledBySystem = sys;
+        isCancelledBySystem = sys;
 
-            status = CANCELLED;
+        status = CANCELLED;
 
-            final ComputeJob job0 = job;
+        final ComputeJob job0 = job;
 
-            U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
-                try (Scope ignored = ctx.security().withContext(secCtx)) {
-                    job0.cancel();
-                }
-            });
-
-            // Interrupting only when all 'cancelled' flags are set.
-            // This allows the 'job' to determine it's a cancellation.
-            onCancel(firstCancel);
-
-            if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
-                recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
+        try (Scope ignored = ctx.security().withContext(secCtx)) {
+            U.wrapThreadLoader(dep.classLoader(), job0::cancel);
         }
-        // Catch throwable to protect against bad user code.
-        catch (Throwable e) {
+        catch (Throwable e) { // Catch throwable to protect against bad user code.
             U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
                 ", ses=" + ses + ']', e);
 
             if (e instanceof Error)
                 throw e;
+        }
+        finally {
+            onCancel(firstCancel);
+
+            if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
+                recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
         }
     }
 
