@@ -191,6 +191,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             return;
 
         if (isHeadPage) {
+            initPage(pageId);
+
             // Store link to head fragment page in tail fragment page.
             linkFragmentPages(tailPageTrackingIdx(prevPageId), trackingIdx(PageIdUtils.pageIndex(pageId)));
         }
@@ -199,6 +201,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             linkFragmentPages(trackingIdx(PageIdUtils.pageIndex(pageId)), tailPageTrackingIdx(prevPageId));
         }
     }
+
+    /** */
+    protected abstract void initPage(long pageId);
 
     /**
      * Determine tail page tracking index given page id of previously written fragment.

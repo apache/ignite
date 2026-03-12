@@ -55,6 +55,11 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
+    @Override protected void initPage(long pageId) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized void touchPage(long pageId) {
         pageUsageList.addLast(PageIdUtils.pageIndex(pageId));
     }

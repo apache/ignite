@@ -103,19 +103,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         } while (!success);
     }
 
-    /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
-        if (prevPageId != 0 && isHeadPage)
-            forceTouchPage(pageId);
-
-        super.trackFragmentPage(pageId, prevPageId, isHeadPage);
-    }
-
     /** */
-    private void forceTouchPage(long pageId)  {
+    @Override protected void initPage(long pageId) {
         int ts = (int)compactTimestamp(U.currentTimeMillis());
 
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, ts);
+        GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, 0, ts);
     }
 
     /** {@inheritDoc} */
