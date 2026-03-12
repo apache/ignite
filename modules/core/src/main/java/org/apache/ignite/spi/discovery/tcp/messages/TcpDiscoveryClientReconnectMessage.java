@@ -130,12 +130,14 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        msgsBytes = U.marshal(marsh, msgs);
+        if (msgs != null)
+            msgsBytes = U.marshal(marsh, msgs);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+        if (msgsBytes != null)
+            msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
