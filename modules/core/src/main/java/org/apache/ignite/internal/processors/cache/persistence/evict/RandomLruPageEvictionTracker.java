@@ -83,13 +83,39 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void touchPage(long pageId) {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
+        long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L;
 
-        long res = compactTimestamp(U.currentTimeMillis());
+        boolean success;
+        int trackingData;
+        long ts;
 
-        assert res >= 0 && res < Integer.MAX_VALUE;
+        do {
+            trackingData = GridUnsafe.getIntVolatile(null, trackingPtr);
 
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4L, (int)res);
+            if (trackingData <= 0) // Concurrently evicted.
+                return;
+
+            ts = compactTimestamp(U.currentTimeMillis());
+
+            assert ts >= 0 && ts < Integer.MAX_VALUE;
+
+            success = GridUnsafe.compareAndSwapInt(null, trackingPtr, trackingData, (int)ts);
+        } while (!success);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        if (prevPageId != 0 && isHeadPage)
+            forceTouchPage(pageId);
+
+        super.trackFragmentPage(pageId, prevPageId, isHeadPage);
+    }
+
+    /** */
+    private void forceTouchPage(long pageId)  {
+        int ts = (int)compactTimestamp(U.currentTimeMillis());
+
+        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, ts);
     }
 
     /** {@inheritDoc} */

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
@@ -1790,18 +1792,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            return dataTree.findOne(
-                new SearchRow(cacheId, key),
-                null,
-                CacheDataRowAdapter.RowData.NO_KEY,
-                row -> {
-                    if (row != null) {
-                        grp.dataRegion().evictionTracker().touchPage(row.link());
+            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
 
-                        ((CacheDataRow)row).key(key);
-                    }
-                }
-            );
+            if (row != null) {
+                row.key(key);
+
+                grp.dataRegion().evictionTracker().touchPage(row.link());
+            }
+
+            return row;
         }
 
         /** {@inheritDoc} */

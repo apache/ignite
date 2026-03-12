@@ -82,33 +82,55 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     /** {@inheritDoc} */
     @Override public void touchPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        long latestTs = compactTimestamp(U.currentTimeMillis());
-
-        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
+        int trackingIdx = trackingIdx(pageIdx);
+        long trackingPtr = trackingArrPtr + trackingIdx * 8L;
 
         boolean success;
+        long trackingData;
+        long newTrackingData;
+        long ts;
+        int firstTs;
+        int secondTs;
 
         do {
-            int trackingIdx = trackingIdx(pageIdx);
+            trackingData = GridUnsafe.getLongVolatile(null, trackingPtr);
 
-            long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+            firstTs = first(trackingData);
 
-            int firstTs = first(trackingData);
+            if (firstTs <= 0) // Concurrently evicted.
+                return;
 
-            assert firstTs >= 0 : "[firstTs=" + firstTs + ", trackingData=" + trackingData + "]";
+            ts = compactTimestamp(U.currentTimeMillis());
 
-            int secondTs = second(trackingData);
+            assert ts >= 0 && ts < Integer.MAX_VALUE;
 
-            long newTrackingData;
+            secondTs = second(trackingData);
 
             if (firstTs <= secondTs)
-                newTrackingData = U.toLong((int)latestTs, secondTs);
+                newTrackingData = U.toLong((int)ts, secondTs);
             else
-                newTrackingData = U.toLong(firstTs, (int)latestTs);
+                newTrackingData = U.toLong(firstTs, (int)ts);
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
-        } while (!success);
+            success = GridUnsafe.compareAndSwapLong(null, trackingPtr, trackingData, newTrackingData);
+        }
+        while (!success);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        if (prevPageId != 0 && isHeadPage)
+            forceTouchPage(pageId);
+
+        super.trackFragmentPage(pageId, prevPageId, isHeadPage);
+    }
+
+    /** */
+    private void forceTouchPage(long pageId)  {
+        int ts = (int)compactTimestamp(U.currentTimeMillis());
+
+        long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 8L;
+
+        GridUnsafe.putLongVolatile(null, trackingPtr, U.toLong(ts, ts));
     }
 
     /** {@inheritDoc} */
