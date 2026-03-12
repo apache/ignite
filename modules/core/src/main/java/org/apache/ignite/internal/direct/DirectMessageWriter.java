@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -37,8 +36,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -360,41 +361,35 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
+    @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeObjectArray(arr, itemType, this);
+        stream.writeObjectArray(arr, type, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType) {
+    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeCollection(col, itemType, this);
+        stream.writeCollection(col, type, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
-        return writeCollection(set, itemType);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean compress) {
+    @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         if (compress)
             writeCompressedMessage(
-                tmpWriter -> tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter),
+                tmpWriter -> tmpWriter.state.item().stream.writeMap(map, type, tmpWriter),
                 map == null,
                 stream
             );
         else
-            stream.writeMap(map, keyType, valType, this);
+            stream.writeMap(map, type, this);
 
         return stream.lastFinished();
     }
