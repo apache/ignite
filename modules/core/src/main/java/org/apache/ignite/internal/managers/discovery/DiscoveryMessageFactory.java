@@ -19,6 +19,10 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.ErrorMessageMarshallableSerializer;
+import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
+import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequestSerializer;
+import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
+import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequestSerializer;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessageSerializer;
@@ -55,18 +59,28 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponseMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcessRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcessRequestSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponseMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequestSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequestSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponseMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequestSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -107,6 +121,8 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexD
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperationSerializer;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.FullMessageSerializer;
+import org.apache.ignite.internal.util.distributed.InitMessage;
+import org.apache.ignite.internal.util.distributed.InitMessageSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -263,6 +279,14 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)29, TcpDiscoveryNodeAddedMessage::new,
             new TcpDiscoveryNodeAddedMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)30, FullMessage::new, new FullMessageSerializer());
+        factory.register((short)31, InitMessage::new, new InitMessageSerializer());
+        factory.register((short)32, SnapshotStartDiscoveryMessage::new, new SnapshotStartDiscoveryMessageSerializer());
+        factory.register((short)33, SnapshotCheckProcessRequest::new, new SnapshotCheckProcessRequestSerializer());
+        factory.register((short)34, SnapshotOperationRequest::new, new SnapshotOperationRequestSerializer());
+        factory.register((short)35, MasterKeyChangeRequest::new, new MasterKeyChangeRequestSerializer());
+        factory.register((short)36, SnapshotOperationEndRequest::new, new SnapshotOperationEndRequestSerializer());
+        factory.register((short)37, SnapshotRestoreStartRequest::new, new SnapshotRestoreStartRequestSerializer());
+        factory.register((short)38, ChangeCacheEncryptionRequest::new, new ChangeCacheEncryptionRequestSerializer());
 
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -72,7 +71,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
  * @see InitMessage
  * @see FullMessage
  */
-public class DistributedProcess<I extends Serializable, R extends Message> {
+public class DistributedProcess<I extends Message, R extends Message> {
     /** Process type. */
     private final DistributedProcessType type;
 

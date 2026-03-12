@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
@@ -76,7 +75,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
     /** Rotate performance statistics process. */
-    private DistributedProcess<Serializable, Message> rotateProc;
+    private DistributedProcess<Message, Message> rotateProc;
 
     /** Whether performance statistics collection is running. */
     private volatile boolean isRunning;

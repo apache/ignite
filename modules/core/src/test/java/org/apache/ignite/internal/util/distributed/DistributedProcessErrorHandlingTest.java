@@ -137,16 +137,16 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
 
     /** */
     private void checkDistributedProcess(
-        BiFunction<IgniteEx, CountDownLatch, DistributedProcess<Integer, Message>> processFactory
+        BiFunction<IgniteEx, CountDownLatch, DistributedProcess<Message, Message>> processFactory
     ) throws Exception {
-        DistributedProcess<Integer, Message> proc = null;
+        DistributedProcess<Message, Message> proc = null;
 
         CountDownLatch latch = new CountDownLatch(SRV_NODES + 1);
 
         for (Ignite g: G.allGrids())
             proc = processFactory.apply((IgniteEx)g, latch);
 
-        proc.start(UUID.randomUUID(), 0);
+        proc.start(UUID.randomUUID(), null);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 

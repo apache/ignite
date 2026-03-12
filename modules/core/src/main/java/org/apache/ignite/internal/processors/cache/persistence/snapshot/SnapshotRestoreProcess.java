@@ -137,19 +137,19 @@ public class SnapshotRestoreProcess {
     private final DistributedProcess<SnapshotOperationRequest, SnapshotRestoreOperationResponse> prepareRestoreProc;
 
     /** Cache group restore preload partitions phase. */
-    private final DistributedProcess<UUID, Message> preloadProc;
+    private final DistributedProcess<SnapshotRestoreStartRequest, Message> preloadProc;
 
     /** Cache group restore cache start phase. */
-    private final DistributedProcess<UUID, Message> cacheStartProc;
+    private final DistributedProcess<SnapshotRestoreStartRequest, Message> cacheStartProc;
 
     /** Cache group restore cache stop phase. */
-    private final DistributedProcess<UUID, Message> cacheStopProc;
+    private final DistributedProcess<SnapshotRestoreStartRequest, Message> cacheStopProc;
 
     /** Incremental snapshot restore phase. */
-    private final DistributedProcess<UUID, Message> incSnpRestoreProc;
+    private final DistributedProcess<SnapshotRestoreStartRequest, Message> incSnpRestoreProc;
 
     /** Cache group restore rollback phase. */
-    private final DistributedProcess<UUID, Message> rollbackRestoreProc;
+    private final DistributedProcess<SnapshotRestoreStartRequest, Message> rollbackRestoreProc;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -861,7 +861,7 @@ public class SnapshotRestoreProcess {
         opCtx0.cfgs = globalCfgs;
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            preloadProc.start(reqId, reqId);
+            preloadProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -909,18 +909,20 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param reqId Request id.
+     * @param req Request.
      * @return Future which will be completed when the preload ends.
      */
-    private IgniteInternalFuture<Message> preload(UUID reqId) {
+    private IgniteInternalFuture<Message> preload(SnapshotRestoreStartRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
         SnapshotRestoreContext opCtx0 = opCtx;
         GridFutureAdapter<Message> retFut = new GridFutureAdapter<>();
 
-        if (opCtx0 == null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot restore process has incorrect restore state: " + reqId));
+        if (opCtx0 == null) {
+            return new GridFinishedFuture<>(new IgniteCheckedException(
+                "Snapshot restore process has incorrect restore state: " + req.requestId()));
+        }
 
         if (opCtx0.dirs.isEmpty())
             return new GridFinishedFuture<>();
@@ -940,7 +942,7 @@ public class SnapshotRestoreProcess {
 
             if (log.isInfoEnabled()) {
                 log.info("Starting snapshot preload operation to restore cache groups " +
-                    "[reqId=" + reqId +
+                    "[reqId=" + req.requestId() +
                     ", snapshot=" + opCtx0.snpName +
                     ", caches=" + F.transform(opCtx0.dirs.values(), s -> NodeFileTree.cacheName(s.get(0))) + ']');
             }
@@ -1057,7 +1059,7 @@ public class SnapshotRestoreProcess {
 
                         if (log.isInfoEnabled()) {
                             log.info("The snapshot was taken on the same cluster topology. The index will be copied to " +
-                                "restoring cache group if necessary [reqId=" + reqId + ", snapshot=" + opCtx0.snpName +
+                                "restoring cache group if necessary [reqId=" + req.requestId() + ", snapshot=" + opCtx0.snpName +
                                 ", dir=" + e.getValue().get(0).getName() + ']');
                         }
 
@@ -1093,7 +1095,7 @@ public class SnapshotRestoreProcess {
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
                     if (log.isInfoEnabled()) {
                         log.info("Trying to request partitions from remote node " +
-                            "[reqId=" + reqId +
+                            "[reqId=" + req.requestId() +
                             ", snapshot=" + opCtx0.snpName +
                             ", nodeId=" + m.getKey() +
                             ", grpParts=" + partitionsMapToString(m.getValue(), cacheGrpNames) + "]");
@@ -1248,20 +1250,20 @@ public class SnapshotRestoreProcess {
 
         if (failure != null) {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
-                rollbackRestoreProc.start(reqId, reqId);
+                rollbackRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
 
             return;
         }
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStartProc.start(reqId, reqId);
+            cacheStartProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
-     * @param reqId Request ID.
+     * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> cacheStart(UUID reqId) {
+    private IgniteInternalFuture<Message> cacheStart(SnapshotRestoreStartRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -1285,7 +1287,7 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId))
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(req.requestId()))
             .chain(fut -> {
                 if (fut.error() != null)
                     throw F.wrap(fut.error());
@@ -1311,7 +1313,7 @@ public class SnapshotRestoreProcess {
         if (failure == null) {
             if (opCtx0.incIdx > 0) {
                 if (U.isLocalNodeCoordinator(ctx.discovery()))
-                    incSnpRestoreProc.start(reqId, reqId);
+                    incSnpRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
 
                 return;
             }
@@ -1324,18 +1326,18 @@ public class SnapshotRestoreProcess {
         opCtx0.err.compareAndSet(null, failure);
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStopProc.start(reqId, reqId);
+            cacheStopProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
-     * @param reqId Request ID.
+     * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> cacheStop(UUID reqId) {
+    private IgniteInternalFuture<Message> cacheStop(SnapshotRestoreStartRequest req) {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
-        assert opCtx.reqId == reqId;
+        assert opCtx.reqId == req.requestId();
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
@@ -1345,7 +1347,7 @@ public class SnapshotRestoreProcess {
             .collect(Collectors.toSet());
 
         if (log.isInfoEnabled())
-            log.info("Stopping caches [reqId=" + reqId + ", caches=" + stopCaches + ']');
+            log.info("Stopping caches [reqId=" + req.requestId() + ", caches=" + stopCaches + ']');
 
         // Skip deleting cache files as they will be removed during rollback.
         return ctx.cache().dynamicDestroyCaches(stopCaches, false, false)
@@ -1373,16 +1375,16 @@ public class SnapshotRestoreProcess {
         }
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            rollbackRestoreProc.start(reqId, reqId);
+            rollbackRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
      * Inits restoring incremental snapshot.
      *
-     * @param reqId Request ID.
+     * @param req Request ID.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> incrementalSnapshotRestore(UUID reqId) {
+    private IgniteInternalFuture<Message> incrementalSnapshotRestore(Message req) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (ctx.clientNode() || opCtx0 == null || !opCtx0.nodes().contains(ctx.localNodeId()))
@@ -1575,7 +1577,7 @@ public class SnapshotRestoreProcess {
         opCtx0.err.compareAndSet(null, failure);
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStopProc.start(reqId, reqId);
+            cacheStopProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1647,10 +1649,10 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param reqId Request ID.
+     * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> rollback(UUID reqId) {
+    private IgniteInternalFuture<Message> rollback(SnapshotRestoreStartRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -1668,7 +1670,7 @@ public class SnapshotRestoreProcess {
         try {
             ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
                 if (log.isInfoEnabled()) {
-                    log.info("Removing restored cache directories [reqId=" + reqId +
+                    log.info("Removing restored cache directories [reqId=" + req.requestId() +
                         ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs.values() + ']');
                 }
 
@@ -1680,14 +1682,14 @@ public class SnapshotRestoreProcess {
 
                         if (tmpCacheDir.exists() && !U.delete(tmpCacheDir)) {
                             log.error("Unable to perform rollback routine completely, cannot remove temp directory " +
-                                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + tmpCacheDir + ']');
+                                "[reqId=" + req.requestId() + ", snapshot=" + opCtx0.snpName + ", dir=" + tmpCacheDir + ']');
 
                             ex = new IgniteCheckedException("Unable to remove temporary cache directory " + cacheDir);
                         }
 
                         if (cacheDir.exists() && !U.delete(cacheDir)) {
                             log.error("Unable to perform rollback routine completely, cannot remove cache directory " +
-                                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + cacheDir + ']');
+                                "[reqId=" + req.requestId() + ", snapshot=" + opCtx0.snpName + ", dir=" + cacheDir + ']');
 
                             ex = new IgniteCheckedException("Unable to remove cache directory " + cacheDir);
                         }
@@ -1702,7 +1704,7 @@ public class SnapshotRestoreProcess {
         }
         catch (RejectedExecutionException e) {
             log.error("Unable to perform rollback routine, task has been rejected " +
-                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ']');
+                "[reqId=" + req.requestId() + ", snapshot=" + opCtx0.snpName + ']');
 
             retFut.onDone(e);
         }

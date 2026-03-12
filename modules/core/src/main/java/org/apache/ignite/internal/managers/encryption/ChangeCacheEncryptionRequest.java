@@ -17,32 +17,41 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
-import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Change cache group encryption key request.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class ChangeCacheEncryptionRequest implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class ChangeCacheEncryptionRequest implements Message {
     /** Request ID. */
-    private final UUID reqId = UUID.randomUUID();
+    @Order(0)
+    UUID reqId;
 
     /** Cache group IDs. */
-    private final int[] grpIds;
+    @Order(1)
+    int[] grpIds;
 
     /** Encryption keys. */
-    private final byte[][] keys;
+    @Order(2)
+    byte[][] keys;
 
     /** Key identifiers. */
-    private final byte[] keyIds;
+    @Order(3)
+    byte[] keyIds;
 
     /** Master key digest. */
-    private final byte[] masterKeyDigest;
+    @Order(4)
+    byte[] masterKeyDigest;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ChangeCacheEncryptionRequest() {
+        // No-op.
+    }
 
     /**
      * @param grpIds Cache group IDs.
@@ -51,6 +60,7 @@ public class ChangeCacheEncryptionRequest implements Serializable {
      * @param masterKeyDigest Master key digest.
      */
     public ChangeCacheEncryptionRequest(int[] grpIds, byte[][] keys, byte[] keyIds, byte[] masterKeyDigest) {
+        this.reqId = UUID.randomUUID();
         this.grpIds = grpIds;
         this.keys = keys;
         this.keyIds = keyIds;
@@ -101,6 +111,11 @@ public class ChangeCacheEncryptionRequest implements Serializable {
             return false;
 
         return Objects.equals(reqId, ((ChangeCacheEncryptionRequest)o).reqId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 38;
     }
 
     /** {@inheritDoc} */

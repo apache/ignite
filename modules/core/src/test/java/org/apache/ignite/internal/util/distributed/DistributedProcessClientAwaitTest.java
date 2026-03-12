@@ -104,7 +104,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
     public void testSkipWaitingFailedClient() throws Exception {
         finishLatchRef.set(new CountDownLatch(NODES_CNT));
 
-        List<DistributedProcess<Integer, Message>> processes = new ArrayList<>(NODES_CNT + 1);
+        List<DistributedProcess<Message, Message>> processes = new ArrayList<>(NODES_CNT + 1);
 
         TestRecordingCommunicationSpi clnCommSpi = TestRecordingCommunicationSpi.spi(grid(NODES_CNT));
         clnCommSpi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
@@ -115,13 +115,13 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
             nodeIdsRes.add(grid(i).localNode().id());
 
         for (int n = 0; n < NODES_CNT + 1; n++) {
-            DistributedProcess<Integer, Message> dp = new TestDistributedProcess(
+            DistributedProcess<Message, Message> dp = new TestDistributedProcess(
                 nodeIdsRes, grid(n).context(), (id, req) -> new InitMessage<>(id, TEST_PROCESS, req, true));
 
             processes.add(dp);
         }
 
-        processes.get(0).start(UUID.randomUUID(), 0);
+        processes.get(0).start(UUID.randomUUID(), null);
 
         clnCommSpi.waitForBlocked();
 
@@ -137,7 +137,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
     public void testChangedCoordinatorAwaitsClientResult() throws Exception {
         finishLatchRef.set(new CountDownLatch(NODES_CNT));
 
-        List<DistributedProcess<Integer, Message>> processes = new ArrayList<>(NODES_CNT + 1);
+        List<DistributedProcess<Message, Message>> processes = new ArrayList<>(NODES_CNT + 1);
 
         TestRecordingCommunicationSpi clnCommSpi = TestRecordingCommunicationSpi.spi(grid(NODES_CNT));
         clnCommSpi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
@@ -148,13 +148,13 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
             nodeIdsRes.add(grid(i).localNode().id());
 
         for (int n = 0; n < NODES_CNT + 1; n++) {
-            DistributedProcess<Integer, Message> dp = new TestDistributedProcess(
+            DistributedProcess<Message, Message> dp = new TestDistributedProcess(
                 nodeIdsRes, grid(n).context(), (id, req) -> new InitMessage<>(id, TEST_PROCESS, req, true));
 
             processes.add(dp);
         }
 
-        processes.get(0).start(UUID.randomUUID(), 0);
+        processes.get(0).start(UUID.randomUUID(), null);
 
         clnCommSpi.waitForBlocked();
 
@@ -172,12 +172,12 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
     /** */
     private void checkExpectedResults(
         Set<UUID> expNodeIdRes,
-        BiFunction<UUID, Integer, ? extends InitMessage<Integer>> initMsgFactory
+        BiFunction<UUID, Message, ? extends InitMessage<Message>> initMsgFactory
     ) throws Exception {
-        List<DistributedProcess<Integer, Message>> processes = new ArrayList<>(NODES_CNT + 1);
+        List<DistributedProcess<Message, Message>> processes = new ArrayList<>(NODES_CNT + 1);
 
         for (int n = 0; n < NODES_CNT + 1; n++) {
-            DistributedProcess<Integer, Message> dp = new TestDistributedProcess(
+            DistributedProcess<Message, Message> dp = new TestDistributedProcess(
                 expNodeIdRes, grid(n).context(), initMsgFactory);
 
             processes.add(dp);
@@ -187,7 +187,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
             failRef.set(null);
             finishLatchRef.set(new CountDownLatch(NODES_CNT + 1));
 
-            processes.get(n).start(UUID.randomUUID(), 0);
+            processes.get(n).start(UUID.randomUUID(), null);
 
             finishLatchRef.get().await(getTestTimeout(), MILLISECONDS);
 
@@ -196,12 +196,12 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestDistributedProcess extends DistributedProcess<Integer, Message> {
+    private static class TestDistributedProcess extends DistributedProcess<Message, Message> {
         /** */
         public TestDistributedProcess(
             Set<UUID> expNodeIdsRes,
             GridKernalContext ctx,
-            BiFunction<UUID, Integer, ? extends InitMessage<Integer>> initMsgFactory
+            BiFunction<UUID, Message, ? extends InitMessage<Message>> initMsgFactory
         ) {
             super(
                 ctx,

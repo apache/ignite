@@ -112,12 +112,12 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
         CountDownLatch startLatch = new CountDownLatch(NODES_CNT);
         CountDownLatch finishLatch = new CountDownLatch(NODES_CNT - 1);
 
-        HashMap<String, DistributedProcess<Integer, TestIntegerMessage>> processes = new HashMap<>();
+        HashMap<String, DistributedProcess<TestIntegerMessage, TestIntegerMessage>> processes = new HashMap<>();
 
         int procRes = 1;
 
         for (Ignite grid : G.allGrids()) {
-            DistributedProcess<Integer, TestIntegerMessage> dp = new DistributedProcess<>(((IgniteEx)grid).context(),
+            DistributedProcess<TestIntegerMessage, TestIntegerMessage> dp = new DistributedProcess<>(((IgniteEx)grid).context(),
                 TEST_PROCESS,
                 req -> {
                     IgniteInternalFuture<TestIntegerMessage> fut = runAsync(() -> {
@@ -128,7 +128,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                             fail("Unexpected interrupt.");
                         }
 
-                        return new TestIntegerMessage(req);
+                        return new TestIntegerMessage(req.value());
                     });
 
                     // A single message will be sent before this latch released.
@@ -151,7 +151,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
             processes.put(grid.name(), dp);
         }
 
-        processes.get(grid(STOP_NODE_IDX).name()).start(UUID.randomUUID(), procRes);
+        processes.get(grid(STOP_NODE_IDX).name()).start(UUID.randomUUID(), new TestIntegerMessage(procRes));
 
         assertTrue(startLatch.await(TIMEOUT, MILLISECONDS));
 

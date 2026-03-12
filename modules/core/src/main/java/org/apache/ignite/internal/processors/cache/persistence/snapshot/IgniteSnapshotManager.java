@@ -4123,41 +4123,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** Snapshot operation start message. */
-    private static class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperationRequest>
-        implements SnapshotDiscoveryMessage {
-        /** Serial version UID. */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final boolean needExchange;
-
-        /**
-         * @param procId Unique process id.
-         * @param req Snapshot initial request.
-         */
-        public SnapshotStartDiscoveryMessage(UUID procId, SnapshotOperationRequest req) {
-            super(procId, START_SNAPSHOT, req, req.incremental());
-
-            needExchange = !req.incremental();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needExchange() {
-            return needExchange;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needAssignPartitions() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SnapshotStartDiscoveryMessage.class, this, super.toString());
-        }
-    }
-
     /** */
     public static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
         /** Unique snapshot request id. */

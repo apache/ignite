@@ -17,33 +17,41 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation end request for {@link DistributedProcessType#END_SNAPSHOT} initiate message.
  */
-public class SnapshotOperationEndRequest implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class SnapshotOperationEndRequest implements Message {
     /** Request ID. */
     @GridToStringInclude
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Exception occurred during snapshot operation processing. */
-    @Nullable private final Throwable err;
+    @Order(1)
+    @Nullable ErrorMessage err;
 
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
      * the operation status 'not OK' if no other error occurred.
      */
-    @Nullable private final List<String> warnings;
+    @Order(2)
+    @Nullable List<String> warnings;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public SnapshotOperationEndRequest() {
+        // No-op.
+    }
 
     /**
      * @param id Request ID.
@@ -52,7 +60,7 @@ public class SnapshotOperationEndRequest implements Serializable {
      */
     public SnapshotOperationEndRequest(UUID id, @Nullable Throwable err, @Nullable List<String> warnings) {
         reqId = id;
-        this.err = err;
+        this.err = new ErrorMessage(err);
         this.warnings = warnings;
     }
 
@@ -63,12 +71,17 @@ public class SnapshotOperationEndRequest implements Serializable {
 
     /** @return Exception occurred during snapshot operation processing. */
     @Nullable public Throwable error() {
-        return err;
+        return ErrorMessage.error(err);
     }
 
     /** @return Warnings of snapshot operation. */
     @Nullable public List<String> warnings() {
         return warnings;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 36;
     }
 
     /** {@inheritDoc} */
