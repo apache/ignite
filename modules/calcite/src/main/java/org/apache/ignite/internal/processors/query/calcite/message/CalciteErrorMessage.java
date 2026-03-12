@@ -90,11 +90,13 @@ public class CalciteErrorMessage implements CalciteMarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        errBytes = U.marshal(ctx.marshaller(), err);
+        if (err != null)
+            errBytes = U.marshal(ctx.marshaller(), err);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        err = U.unmarshal(ctx.marshaller(), errBytes, U.resolveClassLoader(ctx.cache().context().gridConfig()));
+        if (errBytes != null)
+            err = U.unmarshal(ctx.marshaller(), errBytes, U.resolveClassLoader(ctx.cache().context().gridConfig()));
     }
 }
