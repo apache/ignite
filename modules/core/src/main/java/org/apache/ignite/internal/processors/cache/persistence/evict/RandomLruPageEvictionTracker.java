@@ -86,16 +86,14 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L;
 
         boolean success;
-        int trackingData;
-        long ts;
 
         do {
-            trackingData = GridUnsafe.getIntVolatile(null, trackingPtr);
+            int trackingData = GridUnsafe.getIntVolatile(null, trackingPtr);
 
             if (trackingData <= 0) // Concurrently evicted.
                 return;
 
-            ts = compactTimestamp(U.currentTimeMillis());
+            long ts = compactTimestamp(U.currentTimeMillis());
 
             assert ts >= 0 && ts < Integer.MAX_VALUE;
 

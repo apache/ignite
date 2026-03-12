@@ -86,25 +86,22 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         long trackingPtr = trackingArrPtr + trackingIdx * 8L;
 
         boolean success;
-        long trackingData;
-        long newTrackingData;
-        long ts;
-        int firstTs;
-        int secondTs;
 
         do {
-            trackingData = GridUnsafe.getLongVolatile(null, trackingPtr);
+            long trackingData = GridUnsafe.getLongVolatile(null, trackingPtr);
 
-            firstTs = first(trackingData);
+            int firstTs = first(trackingData);
 
             if (firstTs <= 0) // Concurrently evicted.
                 return;
 
-            ts = compactTimestamp(U.currentTimeMillis());
+            long ts = compactTimestamp(U.currentTimeMillis());
 
             assert ts >= 0 && ts < Integer.MAX_VALUE;
 
-            secondTs = second(trackingData);
+            int secondTs = second(trackingData);
+
+            long newTrackingData;
 
             if (firstTs <= secondTs)
                 newTrackingData = U.toLong((int)ts, secondTs);
@@ -122,7 +119,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 8L;
 
-        GridUnsafe.compareAndSwapLong(null, trackingPtr, 0, U.toLong(ts, ts));
+        GridUnsafe.compareAndSwapLong(null, trackingPtr, 0, U.toLong(ts, 0));
     }
 
     /** {@inheritDoc} */
