@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Test for cache swap.
@@ -53,8 +52,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setIndexedTypes(Integer.class, CacheValue.class);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        cfg.setDeploymentMode(SHARED);
 
         return cfg;
     }

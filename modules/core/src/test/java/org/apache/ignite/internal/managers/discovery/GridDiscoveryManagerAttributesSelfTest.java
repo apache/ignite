@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.marshaller.Marshallers;
@@ -30,8 +29,6 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
-import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Tests for node attributes consistency checks.
@@ -39,9 +36,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
-
-    /** */
-    private static DeploymentMode mode;
 
     /** */
     private static boolean p2pEnabled;
@@ -54,7 +48,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeProperties(PREFER_IPV4);
-        cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
         if (secEnabled)
@@ -65,8 +58,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        mode = SHARED;
-
         p2pEnabled = false;
     }
 
@@ -312,28 +303,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
                 System.setProperty(prop, backup);
             else
                 System.clearProperty(prop);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDifferentDeploymentModes() throws Exception {
-        IgniteEx g = startGrid(0);
-
-        checkIsClientFlag(g);
-
-        mode = CONTINUOUS;
-
-        try {
-            startClientGrid(1);
-
-            fail();
-        }
-        catch (IgniteCheckedException e) {
-            if (!e.getCause().getMessage().startsWith("Remote node has deployment mode different from"))
-                throw e;
         }
     }
 

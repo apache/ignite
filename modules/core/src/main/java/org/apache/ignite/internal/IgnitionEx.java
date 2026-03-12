@@ -62,7 +62,6 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -128,7 +127,6 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
@@ -1877,29 +1875,6 @@ public class IgnitionEx {
                     myCfg.setClientMode(IgniteSystemProperties.getBoolean(IGNITE_CACHE_CLIENT, false));
                 else
                     myCfg.setClientMode(threadClient);
-            }
-
-            // Check for deployment mode override.
-            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
-
-            if (!F.isEmpty(depModeName)) {
-                if (!F.isEmpty(myCfg.getCacheConfiguration())) {
-                    U.quietAndInfo(log, "Skipping deployment mode override for caches (custom closure " +
-                        "execution may not work for console Visor)");
-                }
-                else {
-                    try {
-                        DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
-
-                        if (myCfg.getDeploymentMode() != depMode)
-                            myCfg.setDeploymentMode(depMode);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new IgniteCheckedException("Failed to override deployment mode using system property " +
-                            "(are there any misspellings?)" +
-                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
-                    }
-                }
             }
 
             if (myCfg.getUserAttributes() == null)

@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
@@ -48,8 +47,7 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPeerClassLoadingEnabled(true)
-            .setDeploymentMode(DeploymentMode.SHARED);
+            .setPeerClassLoadingEnabled(true);
     }
 
     /**

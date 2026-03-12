@@ -41,7 +41,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
@@ -109,7 +108,6 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         }
 
         cfg.setCacheConfiguration(cacheCfgs);
-        cfg.setDeploymentMode(CONTINUOUS);
 
         return cfg;
     }
