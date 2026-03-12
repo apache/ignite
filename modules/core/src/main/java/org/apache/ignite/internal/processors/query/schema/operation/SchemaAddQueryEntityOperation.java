@@ -39,7 +39,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
 
     /** Serialized form of query entities. */
     @Order(value = 0, method = "queryEntitiesBytes")
-    byte[] qryEntitiesBytes;
+    transient byte[] qryEntitiesBytes;
 
     /** */
     @Order(1)

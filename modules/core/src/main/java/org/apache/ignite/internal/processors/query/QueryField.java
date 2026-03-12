@@ -54,7 +54,7 @@ public class QueryField implements Serializable, Message {
 
     /** Serialized form of 'default value'. */
     @Order(value = 4, method = "defaultValueBytes")
-    byte[] dfltValBytes;
+    transient byte[] dfltValBytes;
 
     /** Precision. */
     @Order(5)

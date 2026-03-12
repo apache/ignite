@@ -45,11 +45,11 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
 
     /** Error message. */
     @Order(2)
-    String errMsg;
+    transient String errMsg;
 
     /** Error code. */
     @Order(3)
-    int errCode;
+    transient int errCode;
 
     /** Error. */
     SchemaOperationException err;

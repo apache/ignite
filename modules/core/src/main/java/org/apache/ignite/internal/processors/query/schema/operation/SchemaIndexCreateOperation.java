@@ -45,7 +45,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
 
     /** Serialized form of 'query index'. */
     @Order(value = 1, method = "queryIndexBytes")
-    byte[] qryIdxBytes;
+    transient byte[] qryIdxBytes;
 
     /** Ignore operation if index exists. */
     @Order(2)
