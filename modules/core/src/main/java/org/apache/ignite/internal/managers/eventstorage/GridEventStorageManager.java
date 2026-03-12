@@ -1025,15 +1025,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 GridEventStorageMessage res = (GridEventStorageMessage)msg;
 
-                try {
-                    res.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), null);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal events query response: " + msg, e);
-
-                    return;
-                }
-
                 synchronized (qryMux) {
                     if (uids.remove(nodeId)) {
                         if (res.events() != null)
@@ -1216,7 +1207,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
-                    req.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    req.finishUnmarshalFilters(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                     filter = (IgnitePredicate<Event>)req.filter();
 
