@@ -1794,7 +1794,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 new SearchRow(cacheId, key),
                 null,
                 CacheDataRowAdapter.RowData.NO_KEY,
-                (pageId, row) -> {
+                row -> {
                     if (row != null) {
                         grp.dataRegion().evictionTracker().touchPage(row.link());
 
