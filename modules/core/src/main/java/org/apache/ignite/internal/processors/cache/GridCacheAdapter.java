@@ -5900,8 +5900,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 0,
                 ver.conflictVersion());
 
-            e.prepareDirectMarshal(ctx.cacheObjectContext());
-
             col.add(e);
 
             if (col.size() == ldr.perNodeBufferSize()) {
