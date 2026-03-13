@@ -240,7 +240,7 @@ public class IndexKeyTypeMessageTest {
                     catch (IgniteCheckedException e) {
                         throw new RuntimeException(e);
                     }
-            }, IllegalArgumentException.class);
+                }, IllegalArgumentException.class);
 
             assertEquals("Unknown index key type code: " + c0, t.getMessage());
         }
