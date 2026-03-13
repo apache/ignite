@@ -328,6 +328,63 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         assertEquals(testStr, outer.str7);
     }
 
+    /** */
+    private static class TestClassWithGenericAnnotationSet {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private Ignite igniteBySetter;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** */
+        private IgniteLogger logBySetter;
+
+        /**
+         * @param ignite Ignite instance.
+         */
+        @IgniteInstanceResource
+        public void setIgniteBySetter(Ignite ignite) {
+            igniteBySetter = ignite;
+        }
+
+        /**
+         * @param log Logger instance.
+         */
+        @LoggerResource
+        public void setLogBySetter(IgniteLogger log) {
+            logBySetter = log;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInjectAndCleanupGenericAnnotationSet() throws Exception {
+        TestClassWithGenericAnnotationSet target = new TestClassWithGenericAnnotationSet();
+
+        ctx.resource().injectGeneric(target);
+
+        assertNotNull(target.ignite);
+        assertNotNull(target.igniteBySetter);
+        assertNotNull(target.log);
+        assertNotNull(target.logBySetter);
+
+        ctx.resource().cleanupGeneric(target);
+
+        assertNull(target.ignite);
+        assertNull(target.igniteBySetter);
+
+        // Logger instances shouldn't be cleaned.
+        assertNotNull(target.log);
+        assertNotNull(target.logBySetter);
+    }
+
     /**
      * Test task.
      */
