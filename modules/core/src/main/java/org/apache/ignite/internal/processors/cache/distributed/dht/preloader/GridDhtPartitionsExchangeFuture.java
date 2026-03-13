@@ -3827,6 +3827,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.versions().onExchange(lastVer.get().order());
 
+            cctx.tm().clearSalvagedTx();
+
             GridDhtPartitionsFullMessage msg = createPartitionsMessage();
 
             if (!cctx.affinity().rebalanceRequired() && !deactivateCluster())
@@ -4280,6 +4282,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     return;
                 }
+
+                cctx.tm().clearSalvagedTx();
 
                 processFullMessage(true, node, msg);
             }

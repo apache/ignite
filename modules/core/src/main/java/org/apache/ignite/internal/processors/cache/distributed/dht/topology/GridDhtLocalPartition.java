@@ -1198,7 +1198,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (true) {
             long state = this.state.get();
 
-            assert getPartState(state) != EVICTED;
+            GridDhtPartitionState partState = getPartState(state);
+
+            assert partState != EVICTED : partState;
 
             if (this.state.compareAndSet(state, setSize(state, getSize(state) - 1)))
                 return;

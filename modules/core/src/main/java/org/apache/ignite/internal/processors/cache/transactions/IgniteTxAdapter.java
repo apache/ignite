@@ -102,6 +102,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -604,6 +605,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 break;
 
+            case RECOVERY_FINISH_WT:
             case RECOVERY_FINISH:
                 res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, status) || finalizing == status;
 
@@ -628,7 +630,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Finalization status.
      */
-    @Override @Nullable public FinalizationStatus finalizationStatus() {
+    @Override public FinalizationStatus finalizationStatus() {
         return finalizing;
     }
 
@@ -1607,6 +1609,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheContext<?, ?> cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
+
+        // Special state for suspended for commit tx, this state can be enriched only on backup node with enabled writeThrough.
+        if (finalizationStatus() == RECOVERY_FINISH_WT) {
+            assert cacheCtx.writeThrough();
+            return F.t(RELOAD, null);
+        }
 
         if (isSystemInvalidate())
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);

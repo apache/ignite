@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -140,6 +141,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -197,6 +199,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Uncommited tx states. */
     private Set<GridCacheVersion> uncommitedTx = new HashSet<>();
+
+    /** Uncommited salvaged tx states. */
+    private final ConcurrentMap<GridCacheVersion, WTSalvagedTxState> uncommitedSalvageTx = new ConcurrentHashMap<>();
 
     /** One phase commit deferred ack request timeout. */
     public static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -1272,10 +1277,64 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Salvaged transaction state with writeThrough enabled.
+     *
+     * @see CacheConfiguration#setWriteThrough(boolean)
+     */
+    private enum WTSalvagedTxState {
+        /** */
+        SALVAGED,
+        /** */
+        RECOVERY
+    }
+
+    /**
+     * Check possibility to commit transaction.
+     *
+     * @param ver Global transaction identifier within cluster, assigned by transaction coordinator.
+     * @return {@code true} if commit need to be skipped.
+     */
+    public boolean skipCommitSalvagedTx(@Nullable GridCacheVersion ver) {
+        if (ver == null)
+            return false;
+
+        Object res = uncommitedSalvageTx.putIfAbsent(ver, WTSalvagedTxState.SALVAGED);
+        return res == null || res == WTSalvagedTxState.SALVAGED;
+    }
+
+    /** Clear possibly write-through related pending versions. */
+    public void clearSalvagedTx() {
+        uncommitedSalvageTx.clear();
+    }
+
+    /**
+     * Check the need for recovery previously deferred transaction commit.
+     *
+     * @param ver Global transaction identifier within cluster, assigned by transaction coordinator.
+     * @return {@code true} if commit recovery is required.
+     */
+    public boolean recoveryUncommitedSalvagedTx(GridCacheVersion ver) {
+        Object res = uncommitedSalvageTx.put(ver, WTSalvagedTxState.RECOVERY);
+        return res == WTSalvagedTxState.SALVAGED;
+    }
+
+    /**
+     * Removes uncommited transaction versions from store.
+     *
+     * @param ver Global transaction identifier within cluster, assigned by transaction coordinator.
+     */
+    public void removeUncommitedSalvagedTx(@Nullable GridCacheVersion ver) {
+        if (ver != null)
+            uncommitedSalvageTx.remove(ver);
+    }
+
+    /**
      * @param tx Tx to remove.
      */
     public void removeCommittedTx(IgniteInternalTx tx) {
         completedVersHashMap.remove(tx.xidVersion(), true);
+
+        removeUncommitedSalvagedTx(tx.nearXidVersion());
 
         if (tx.needsCompletedVersions())
             completedVersSorted.remove(tx.xidVersion(), true);
@@ -1629,6 +1688,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Rolling back from TM [locNodeId=" + cctx.localNodeId() + ", tx=" + tx + ']');
+
+        removeUncommitedSalvagedTx(tx.nearXidVersion());
 
         // 1. Record transaction version to avoid duplicates.
         if (!skipCompletedVers)
@@ -3137,10 +3198,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         ", failedNodeId=" + evtNodeId + ']');
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
-                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
-                        // Invalidate transactions.
+                    boolean locInMaster = tx.masterNodeIds().contains(cctx.localNodeId());
+
+                    // Invalidate transactions.
+                    if (tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId)) {
                         salvageTx(tx, RECOVERY_FINISH);
+                    }
+                    else if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) {
+                        if (locInMaster || tx.eventNodeId().equals(evtNodeId))
+                            salvageTx(tx, RECOVERY_FINISH);
+                        else {
+                            assert !tx.eventNodeId().equals(evtNodeId);
+
+                            if (tx.isolation() == TransactionIsolation.READ_COMMITTED) {
+                                boolean fullSyncedOp = tx.writeEntries().stream().map(e ->
+                                    cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
+
+                                if (fullSyncedOp)
+                                    salvageTx(tx, RECOVERY_FINISH_WT);
+                                else
+                                    salvageTx(tx, RECOVERY_FINISH);
+                            }
+                            else
+                                salvageTx(tx, RECOVERY_FINISH);
+                        }
                     }
                     else {
                         // Check prepare only if originating node ID failed. Otherwise, parent node will finish this tx.
