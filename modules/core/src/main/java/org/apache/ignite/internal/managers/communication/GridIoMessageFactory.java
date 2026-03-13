@@ -346,7 +346,6 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessageSerializer;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessageSerializer;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Message factory implementation.
