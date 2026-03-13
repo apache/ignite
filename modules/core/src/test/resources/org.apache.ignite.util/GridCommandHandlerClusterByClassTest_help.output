@@ -504,6 +504,24 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
 
+  Enable events:
+    control.(sh|bat) --event enable event1[,...,eventN]
+
+    Parameters:
+      event1[,...,eventN]  - Comma separated list of events.
+
+  Disable events:
+    control.(sh|bat) --event disable event1[,...,eventN]
+
+    Parameters:
+      event1[,...,eventN]  - Comma separated list of events.
+
+  Status of enabled events:
+    control.(sh|bat) --event status
+
+  List of all supported events:
+    control.(sh|bat) --event list
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

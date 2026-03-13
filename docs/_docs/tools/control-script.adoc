@@ -1628,3 +1628,18 @@ Parameters:
 |--node-id | A list of nodes to rebuild indexes on. If not specified, schedules rebuild on all nodes.
 |--cache-names | Comma-separated list of cache names, optionally with indexes. If indexes are not specified, all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
 |--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.
+
+
+== Events subscription management
+
+By default, almost all link:events/events[Ignite events] are disabled (except for a few that are implicitly enabled because they are required by the system).
+To use event listeners, you must explicitly enable each event type you're interested in. This can be done either statically via `IgniteConfiguration` (as described in the link:events/listening-to-events[Working with Events] section), or dynamically during runtime using the control utility.
+The control utility provides commands to enable events, disable events, check the status of enabled events and get a list of supported by the Ignite events.
+
+[source, shell]
+----
+control.sh|bat --event enable event1[,...,eventN]
+control.sh|bat --event disable event1[,...,eventN]
+control.sh|bat --event status
+control.sh|bat --event list
+----

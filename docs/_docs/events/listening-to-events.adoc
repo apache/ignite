@@ -45,6 +45,8 @@ include::code-snippets/dotnet/WorkingWithEvents.cs[tag=enablingEvents,indent=0]
 tab:C++[unsupported]
 --
 
+Events can also be enabled/disabled in runtime by the link:tools/control-script[control utility].
+
 == Getting the Events Interface
 
 The events functionality is available through the events interface, which provides methods for listening to cluster events. The events interface can be obtained from an instance of `Ignite` as follows:
