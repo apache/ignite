@@ -2395,7 +2395,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long delta = expireTime - U.currentTimeMillis();
 
             if (delta <= 0) {
-                removeValue();
+                cctx.shared().database().checkpointReadLock();
+
+                try {
+                    removeValue();
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
+                }
 
                 return true;
             }
@@ -3535,8 +3542,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue() throws IgniteCheckedException {
         assert lock.isHeldByCurrentThread();
 
-        // Removals are possible from RENTING partition on clearing/evicting.
-        cctx.offheap().remove(cctx, key, partition(), localPartition());
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            // Removals are possible from RENTING partition on clearing/evicting.
+            cctx.offheap().remove(cctx, key, partition(), localPartition());
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /** {@inheritDoc} */
