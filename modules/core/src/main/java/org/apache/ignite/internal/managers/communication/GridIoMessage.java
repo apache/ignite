@@ -217,18 +217,13 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
         return null;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (topic != null && topicBytes == null)
             topicBytes = U.marshal(marsh, topic);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
+    /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         if (topicBytes != null && topic == null) {
             topic = U.unmarshal(marsh, topicBytes, ldr);
