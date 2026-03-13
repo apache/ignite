@@ -4418,8 +4418,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.io().send(node, res, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
+                log.warning("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send partitions message [node=" + node + ", msg=" + msg + ']', e);

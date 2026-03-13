@@ -142,7 +142,6 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
      */
     @Test
     public void testSingleMessageErrorWarnings() throws Exception {
-        long waitingTimeout = 5_000;
         String logSubstr = "Failed to send local partitions to node because it left grid [nodeId=";
 
         LogListener logListener = LogListener.matches(logSubstr).atLeast(1).build();
@@ -164,7 +163,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                     singleMsgLatch.countDown();
 
                     try {
-                       nodeStopLatch.await();
+                        nodeStopLatch.await();
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -194,13 +193,13 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
             nodeStopLatch.countDown();
 
-            fut.get(waitingTimeout);
-
             assertTrue("Expected log not found", GridTestUtils.waitForCondition(logListener::check, getTestTimeout()));
         }
         finally {
-            beforeSend.countDown();
-            proceed.countDown();
+            singleMsgLatch.countDown();
+            nodeStopLatch.countDown();
+
+            fut.cancel();
         }
     }
 
