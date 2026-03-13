@@ -189,6 +189,22 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |===
 
 
+== LOCAL_CACHE_GROUPS_IO
+
+
+The LOCAL_CACHE_GROUPS_IO view contains information about local node IO statistics for cache groups.
+
+[{table_opts}]
+|===
+|Column|Data Type|Description
+
+|CACHE_GROUP_ID|INT | The ID of the cache group.
+|CACHE_GROUP_NAME | VARCHAR | The name of the cache group.
+|PHYSICAL_READS | BIGINT | Physical reads.
+|LOGICAL_READS | BIGINT | Logical reads.
+|===
+
+
 
 == TASKS
 
@@ -651,6 +667,8 @@ The TABLES view contains information about the SQL tables.
 |Column|Data Type|Description
 
 |AFFINITY_KEY_COLUMN | string |  Affinity key column name
+|CACHE_GROUP_ID|int | The ID of the cache group.
+|CACHE_GROUP_NAME | string | The name of the cache group.
 |CACHE_ID | int | Cache id for the table
 |CACHE_NAME | string |  Cache name for the table
 |IS_INDEX_REBUILD_IN_PROGRESS | boolean | True if some index rebuild for this table in progress
@@ -720,6 +738,8 @@ The INDEXES view contains information about SQL indexes.
 [{table_opts}]
 |===
 |Column|Data Type|Description
+|CACHE_GROUP_ID|int | The ID of the cache group.
+|CACHE_GROUP_NAME | string | The name of the cache group.
 |INDEX_NAME | string |  Name of the index
 |INDEX_TYPE | string |  Type of the index
 |COLUMNS | string |  Columns included in index
