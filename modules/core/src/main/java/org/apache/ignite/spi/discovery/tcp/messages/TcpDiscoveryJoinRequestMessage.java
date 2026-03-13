@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -96,29 +95,15 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) {
-        if (node != null && nodeBytes == null) {
-            try {
-                nodeBytes = U.marshal(marsh, node);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal TcpDiscoveryNode object", e);
-            }
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (node != null)
+            nodeBytes = U.marshal(marsh, node);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (nodeBytes != null && node == null) {
-            try {
-                node = U.unmarshal(marsh, nodeBytes, clsLdr);
-
-                nodeBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal TcpDiscoveryNode object", e);
-            }
-        }
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (nodeBytes != null)
+            node = U.unmarshal(marsh, nodeBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

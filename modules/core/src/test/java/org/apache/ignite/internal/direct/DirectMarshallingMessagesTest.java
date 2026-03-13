@@ -23,6 +23,7 @@ import java.util.function.Function;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -30,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Messages marshalling test.
@@ -37,7 +39,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     /** Message factory. */
     private final MessageFactory msgFactory =
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory()});
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory(jdk(), U.gridClassLoader())});
 
     /** */
     @Test

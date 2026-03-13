@@ -280,9 +280,29 @@ public class MessageSerializerGenerator {
             returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
             if (write && marshallableMessage()) {
+                imports.add("org.apache.ignite.IgniteCheckedException");
+                imports.add("org.apache.ignite.IgniteException");
+
                 code.add(EMPTY);
 
+                code.add(identedLine("try {"));
+
+                indent++;
+
                 code.add(identedLine("msg.prepareMarshal(marshaller);"));
+
+                indent--;
+
+                code.add(identedLine("}"));
+                code.add(identedLine("catch (IgniteCheckedException e) {"));
+
+                indent++;
+
+                code.add(identedLine("throw new IgniteException(\"Failed to marshal object\" + msg.getClass().getSimpleName(), e);"));
+
+                indent--;
+
+                code.add(identedLine("}"));
             }
 
             code.add(EMPTY);
@@ -949,7 +969,27 @@ public class MessageSerializerGenerator {
         code.add(EMPTY);
 
         if (read && marshallable) {
+            imports.add("org.apache.ignite.IgniteCheckedException");
+            imports.add("org.apache.ignite.IgniteException");
+
+            code.add(identedLine("try {"));
+
+            indent++;
+
             code.add(identedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+
+            indent--;
+
+            code.add(identedLine("}"));
+            code.add(identedLine("catch (IgniteCheckedException e) {"));
+
+            indent++;
+
+            code.add(identedLine("throw new IgniteException(\"Failed to unmarshal object\" + msg.getClass().getSimpleName(), e);"));
+
+            indent--;
+
+            code.add(identedLine("}"));
 
             code.add(EMPTY);
         }
