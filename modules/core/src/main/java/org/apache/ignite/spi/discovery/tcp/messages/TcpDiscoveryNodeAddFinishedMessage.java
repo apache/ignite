@@ -123,6 +123,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
      */
     public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
         this.clientNodeAttrs = clientNodeAttrs;
+        clientNodeAttrsBytes = null;
     }
 
     /** {@inheritDoc} */
@@ -135,6 +136,8 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (clientNodeAttrsBytes != null)
             clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
+
+        clientNodeAttrsBytes = null;
     }
 
     /** {@inheritDoc} */
