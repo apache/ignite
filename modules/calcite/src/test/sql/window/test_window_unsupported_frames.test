@@ -1,0 +1,25 @@
+# name: test/sql/window/test_window_unsupported_frames.test
+# description: Test unsupported window frame definitions for window functions
+# group: [window]
+
+statement ok
+CREATE TABLE win_emp_bounds(emp_id INTEGER, dept_id INTEGER, salary INTEGER);
+
+statement ok
+INSERT INTO win_emp_bounds VALUES (1, 10, 100), (2, 10, 200), (3, 20, 50);
+
+# ORDER BY with bounded frame is not supported.
+statement error
+SELECT emp_id,
+       SUM(salary) OVER (PARTITION BY dept_id ORDER BY emp_id)
+FROM win_emp_bounds;
+----
+<REGEX>:.*ORDER BY with bounded frame is not supported yet.*
+
+# Explicit frame bounds are not supported.
+statement error
+SELECT emp_id,
+       SUM(salary) OVER (PARTITION BY dept_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+FROM win_emp_bounds;
+----
+<REGEX>:.*Window frame bounds are not supported yet.*

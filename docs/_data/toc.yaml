@@ -238,6 +238,8 @@
       url: sql-reference/operational-commands
     - title: Aggregate functions
       url: sql-reference/aggregate-functions
+    - title: Window Functions
+      url: sql-reference/window-functions
     - title: Numeric Functions
       url: sql-reference/numeric-functions
     - title: String Functions
