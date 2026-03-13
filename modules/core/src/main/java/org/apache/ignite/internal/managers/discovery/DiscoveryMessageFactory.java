@@ -94,6 +94,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRespon
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponseSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessageMarshallableSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -154,6 +156,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-110, TcpDiscoveryCollectionMessage::new,
+            new TcpDiscoveryCollectionMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)-109, User::new, new UserSerializer());
         factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
