@@ -394,6 +394,7 @@ Register name: `io.dataregion.{data_region_name}`
 |DirtyPages |  long|    Number of pages in memory not yet synchronized with persistent storage.
 |EmptyDataPages|  long|    Calculates empty data pages count for region. It counts only totally free pages that can be reused (e. g. pages that are contained in reuse bucket of free list).
 |EvictionRate|    hitrate|    Eviction rate (pages per second).
+|EvictionsStarted | boolean |   True if page eviction was triggered due to data region memory pressure.
 |LargeEntriesPagesCount|  long|    Count of pages that fully ocupied by large entries that go beyond page size
 |OffHeapSize| long|    Offheap size in bytes.
 |OffheapUsedSize| long|    Offheap used size in bytes.
