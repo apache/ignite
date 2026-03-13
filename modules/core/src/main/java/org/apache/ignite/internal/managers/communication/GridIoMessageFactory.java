@@ -353,18 +353,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridIoMessageFactory implements MessageFactoryProvider {
     /** Custom data marshaller. */
-    private final @Nullable Marshaller cstDataMarshall;
+    private final Marshaller cstDataMarshall;
 
     /** Class loader for the custom data marshalling. */
-    private final @Nullable ClassLoader cstDataMarshallClsLdr;
+    private final ClassLoader cstDataMarshallClsLdr;
 
     /**
      * @param cstDataMarshall Custom data marshaller.
      * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
      */
-    public GridIoMessageFactory(@Nullable Marshaller cstDataMarshall, @Nullable ClassLoader cstDataMarshallClsLdr) {
-        assert cstDataMarshall == null && cstDataMarshallClsLdr == null || cstDataMarshall != null && cstDataMarshallClsLdr != null;
-
+    public GridIoMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
         this.cstDataMarshall = cstDataMarshall;
         this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
     }

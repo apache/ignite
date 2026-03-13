@@ -96,12 +96,14 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        nodeBytes = U.marshal(marsh, node);
+        if (node != null)
+            nodeBytes = U.marshal(marsh, node);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        node = U.unmarshal(marsh, nodeBytes, clsLdr);
+        if (nodeBytes != null)
+            node = U.unmarshal(marsh, nodeBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

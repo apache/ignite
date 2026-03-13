@@ -55,12 +55,24 @@ public class ErrorMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        errBytes = U.marshal(marsh, err);
+        try {
+            if (err != null)
+                errBytes = U.marshal(marsh, err);
+        }
+        catch (IgniteCheckedException e) {
+            IgniteCheckedException wrappedErr = new IgniteCheckedException(err.getMessage());
+
+            wrappedErr.setStackTrace(err.getStackTrace());
+            wrappedErr.addSuppressed(e);
+
+            errBytes = U.marshal(marsh, wrappedErr);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        err = U.unmarshal(marsh, errBytes, clsLdr);
+        if (errBytes != null)
+            err = U.unmarshal(marsh, errBytes, clsLdr);
     }
 
     /** */
@@ -69,8 +81,6 @@ public class ErrorMessage implements MarshallableMessage {
     }
 
     /**
-     * Error.
-     *
      * @param errorMsg Error message.
      * @return Error containing in the message.
      */

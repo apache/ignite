@@ -127,12 +127,14 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
+        if (clientNodeAttrs != null)
+            clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
+        if (clientNodeAttrsBytes != null)
+            clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
