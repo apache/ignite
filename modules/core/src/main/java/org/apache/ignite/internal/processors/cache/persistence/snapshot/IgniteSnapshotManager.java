@@ -535,6 +535,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return task == null ? -1 : task.processedSize();
         }, "Processed size of current cluster snapshot in bytes on this node.");
 
+        mreg.register("CurrentDumpTotalPartitions", () -> {
+            CreateDumpFutureTask task = currentSnapshotTask(CreateDumpFutureTask.class);
+
+            return task == null ? -1 : task.totalPartitions();
+        }, "Total number of partitions to be processed on this node.");
+
+        mreg.register("CurrentDumpProcessedPartitions", () -> {
+            CreateDumpFutureTask task = currentSnapshotTask(CreateDumpFutureTask.class);
+
+            return task == null ? -1 : task.processedPartitions();
+        }, "Total number of partitions that have been processed on this node.");
+
+        mreg.register("CurrentDumpProcessedEntries", () -> {
+            CreateDumpFutureTask task = currentSnapshotTask(CreateDumpFutureTask.class);
+
+            return task == null ? -1 : task.storedEntries();
+        }, "Total number of processed entries on this node.");
+
         MetricRegistry incSnpMReg = cctx.kernalContext().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
 
         incSnpMReg.register("snapshotName",
