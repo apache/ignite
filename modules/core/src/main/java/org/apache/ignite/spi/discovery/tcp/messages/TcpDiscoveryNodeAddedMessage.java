@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
@@ -108,7 +107,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param dataPacket container for collecting discovery data across the cluster.
      * @param gridStartTime Start time of the first grid node.
      */
-    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
+    public TcpDiscoveryNodeAddedMessage(
+        UUID creatorNodeId,
         TcpDiscoveryNode node,
         DiscoveryDataPacket dataPacket,
         long gridStartTime
@@ -255,89 +255,36 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
     /** @param marsh marshaller. */
-    @Override public void prepareMarshal(Marshaller marsh) {
-        if (node != null && nodeBytes == null) {
-            try {
-                nodeBytes = U.marshal(marsh, node);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal cluster node.", e);
-            }
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        nodeBytes = U.marshal(marsh, node);
 
-        if (msgs != null && msgsBytes == null) {
-            try {
-                msgsBytes = U.marshal(marsh, msgs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal pending messages.", e);
-            }
-        }
+        if (msgs != null)
+            msgsBytes = U.marshal(marsh, msgs);
 
-        if (top != null && topBytes == null) {
-            try {
-                topBytes = U.marshal(marsh, top);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal topology nodes.", e);
-            }
-        }
+        if (top != null)
+            topBytes = U.marshal(marsh, top);
 
-        if (topHist != null && topHistBytes == null) {
-            try {
-                topHistBytes = U.marshal(marsh, topHist);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal topology history.", e);
-            }
-        }
+        if (topHist != null)
+            topHistBytes = U.marshal(marsh, topHist);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (nodeBytes != null && node == null) {
-            try {
-                node = U.unmarshal(marsh, nodeBytes, clsLdr);
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        node = U.unmarshal(marsh, nodeBytes, clsLdr);
 
-                nodeBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal cluster node.", e);
-            }
-        }
+        if (msgsBytes != null)
+            msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
 
-        if (msgsBytes != null && msgs == null) {
-            try {
-                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+        if (topBytes != null)
+            top = U.unmarshal(marsh, topBytes, clsLdr);
 
-                msgsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal pending messages.", e);
-            }
-        }
-        
-        if (topBytes != null && top == null) {
-            try {
-                top = U.unmarshal(marsh, topBytes, clsLdr);
+        if (topHistBytes != null)
+            topHist = U.unmarshal(marsh, topHistBytes, clsLdr);
 
-                topBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal topology nodes.", e);
-            }
-        }
-
-        if (topHistBytes != null && topHist == null) {
-            try {
-                topHist = U.unmarshal(marsh, topHistBytes, clsLdr);
-
-                topHistBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal topology history.", e);
-            }
-        }
+        nodeBytes = null;
+        topBytes = null;
+        topHistBytes = null;
+        msgsBytes = null;
     }
 
 
