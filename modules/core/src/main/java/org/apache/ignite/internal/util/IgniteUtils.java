@@ -706,6 +706,15 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * Gets known grid events with names.
+     *
+     * @return Map of event types to names.
+     */
+    public static Map<Integer, String> gridEventNames() {
+        return Collections.unmodifiableMap(GRID_EVT_NAMES);
+    }
+
+    /**
      * Gets all event types.
      *
      * @param excl Optional exclude events.
