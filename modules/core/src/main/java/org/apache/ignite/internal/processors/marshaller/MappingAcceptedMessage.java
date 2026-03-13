@@ -39,15 +39,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
 
     /** */
     @Order(1)
-    byte platformId;
-
-    /** */
-    @Order(2)
-    int typeId;
-
-    /** */
-    @Order(3)
-    String clsName;
+    MarshallerMappingItem item;
 
     /** */
     public MappingAcceptedMessage() {
@@ -59,9 +51,6 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
         id = IgniteUuid.randomUuid();
-        platformId = item.platformId();
-        typeId = item.typeId();
-        clsName = item.className();
     }
 
     /** {@inheritDoc} */
@@ -76,7 +65,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
 
     /** */
     public MarshallerMappingItem getMappingItem() {
-        return new MarshallerMappingItem(platformId, typeId, clsName);
+        return item;
     }
 
     /** {@inheritDoc} */

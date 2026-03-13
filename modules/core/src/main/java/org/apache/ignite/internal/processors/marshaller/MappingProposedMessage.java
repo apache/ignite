@@ -58,22 +58,14 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
 
     /** */
     @Order(2)
-    byte platformId;
+    MarshallerMappingItem mappingItem;
 
     /** */
     @Order(3)
-    int typeId;
-
-    /** */
-    @Order(4)
-    String clsName;
-
-    /** */
-    @Order(5)
     ProposalStatus status;
 
     /** */
-    @Order(6)
+    @Order(4)
     String conflictingClsName;
 
     /** */
@@ -89,9 +81,7 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
         assert origNodeId != null;
 
         id = IgniteUuid.randomUuid();
-        platformId = mappingItem.platformId();
-        typeId = mappingItem.typeId();
-        clsName = mappingItem.className();
+        this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
         status = ProposalStatus.SUCCESSFUL;
     }
@@ -118,7 +108,7 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
 
     /** */
     MarshallerMappingItem mappingItem() {
-        return new MarshallerMappingItem(platformId, typeId, clsName);
+        return mappingItem;
     }
 
     /** */
