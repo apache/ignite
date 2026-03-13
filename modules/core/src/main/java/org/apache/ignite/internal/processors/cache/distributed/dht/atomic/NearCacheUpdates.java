@@ -25,13 +25,13 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class NearCacheUpdates implements Message {
+public class NearCacheUpdates extends AbstractMessage {
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
     @Order(0)
     List<Integer> nearValsIdxs;
@@ -192,11 +192,6 @@ public class NearCacheUpdates implements Message {
      */
     @Nullable CacheObject nearValue(int idx) {
         return nearVals.get(idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -51;
     }
 
     /** {@inheritDoc} */

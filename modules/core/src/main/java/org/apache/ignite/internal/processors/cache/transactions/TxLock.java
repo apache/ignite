@@ -22,14 +22,14 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Corresponds to one {@link GridCacheMvccCandidate} from local MVCC candidates queue.
  * There is one exclusion: {@link TxLock} instance with {@link #OWNERSHIP_REQUESTED} corresponds to lock request
  * to remote node from near node that isn't primary node for key.
  */
-public class TxLock implements Message {
+public class TxLock extends AbstractMessage {
     /** Ownership owner. */
     static final byte OWNERSHIP_OWNER = 1;
 
@@ -122,10 +122,4 @@ public class TxLock implements Message {
     @Override public String toString() {
         return S.toString(TxLock.class, this);
     }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -25;
-    }
-
 }

@@ -71,11 +71,6 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 26;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DistributedMetaStorageCasMessage.class, this, super.toString());
     }

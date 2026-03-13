@@ -23,10 +23,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
-public class InetAddressMessage implements Message {
+public class InetAddressMessage extends AbstractMessage {
     /** */
     @Order(0)
     String hostName;
@@ -54,11 +54,6 @@ public class InetAddressMessage implements Message {
         catch (UnknownHostException e) {
             throw new IgniteException("Failed to read host address.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -100;
     }
 
     /** {@inheritDoc} */

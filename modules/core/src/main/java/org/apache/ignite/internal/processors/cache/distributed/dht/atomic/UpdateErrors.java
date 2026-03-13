@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class UpdateErrors implements Message {
+public class UpdateErrors extends AbstractMessage {
     /** Failed keys. */
     @GridToStringInclude
     @Order(0)
@@ -123,11 +123,6 @@ public class UpdateErrors implements Message {
     /** */
     void finishUnmarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx, ClassLoader ldr) throws IgniteCheckedException {
         msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -49;
     }
 
     /** {@inheritDoc} */

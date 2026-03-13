@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.function.Supplier;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ExchangeInfo;
-import org.apache.ignite.internal.ExchangeInfoSerializer;
 import org.apache.ignite.internal.GridJobCancelRequest;
-import org.apache.ignite.internal.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.GridJobExecuteRequest;
-import org.apache.ignite.internal.GridJobExecuteRequestSerializer;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobExecuteResponseSerializer;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
@@ -34,19 +33,14 @@ import org.apache.ignite.internal.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.GridTaskSessionRequestSerializer;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
-import org.apache.ignite.internal.IgniteDiagnosticRequestSerializer;
 import org.apache.ignite.internal.IgniteDiagnosticResponse;
-import org.apache.ignite.internal.IgniteDiagnosticResponseSerializer;
 import org.apache.ignite.internal.TxEntriesInfo;
-import org.apache.ignite.internal.TxEntriesInfoSerializer;
 import org.apache.ignite.internal.TxInfo;
-import org.apache.ignite.internal.TxInfoSerializer;
 import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
 import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessageSerializer;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMetaSerializer;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinitionSerializer;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettingsSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
@@ -160,9 +154,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrorsSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
@@ -256,7 +248,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHold
 import org.apache.ignite.internal.processors.cache.transactions.TxLock;
 import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
 import org.apache.ignite.internal.processors.cache.transactions.TxLockListSerializer;
-import org.apache.ignite.internal.processors.cache.transactions.TxLockSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequestSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
@@ -267,13 +258,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.CacheMetricsMessageSerializer;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
-import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessageSerializer;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessageSerializer;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
@@ -300,7 +287,6 @@ import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponseSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessageSerializer;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnDataSerializer;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage;
@@ -330,8 +316,11 @@ import org.apache.ignite.internal.util.GridPartitionStateMapSerializer;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequestSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -350,28 +339,33 @@ import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMess
  * Message factory implementation.
  */
 public class GridIoMessageFactory implements MessageFactoryProvider {
+    /** Temporary Message factory holder to do some work with. */
+    private MessageFactory factory;
+
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        this.factory = factory;
+
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
-        factory.register((short)-65, TxInfo::new, new TxInfoSerializer());
-        factory.register((short)-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());
-        factory.register((short)-63, ExchangeInfo::new, new ExchangeInfoSerializer());
-        factory.register((short)-62, IgniteDiagnosticResponse::new, new IgniteDiagnosticResponseSerializer());
-        factory.register((short)-61, IgniteDiagnosticRequest::new, new IgniteDiagnosticRequestSerializer());
-        factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
-        factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
+        register(ErrorMessage.class);
+        register(TxInfo.class);
+        register(TxEntriesInfo.class);
+        register(ExchangeInfo.class);
+        register(IgniteDiagnosticResponse.class);
+        register(IgniteDiagnosticRequest.class);
+        register(SchemaOperationStatusMessage.class);
+        register(NearCacheUpdates.class);
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer());
-        factory.register((short)-49, UpdateErrors::new, new UpdateErrorsSerializer());
+        register(UpdateErrors.class);
         factory.register((short)-48, GridDhtAtomicNearResponse::new, new GridDhtAtomicNearResponseSerializer());
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new, new GridChangeGlobalStateMessageResponseSerializer());
         factory.register((short)-43, IgniteIoTestMessage::new);
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer());
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
         factory.register((short)-26, TxLockList::new, new TxLockListSerializer());
-        factory.register((short)-25, TxLock::new, new TxLockSerializer());
+        register(TxLock.class);
         factory.register((short)-24, TxLocksRequest::new, new TxLocksRequestSerializer());
         factory.register((short)-23, TxLocksResponse::new, new TxLocksResponseSerializer());
         factory.register(TcpCommunicationSpi.NODE_ID_MSG_TYPE, NodeIdMessage::new, new NodeIdMessageSerializer());
@@ -379,8 +373,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new RecoveryLastReceivedMessageSerializer());
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new, new HandshakeMessageSerializer());
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer());
-        factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
-        factory.register((short)1, GridJobExecuteRequest::new, new GridJobExecuteRequestSerializer());
+        register(GridJobCancelRequest.class);
+        register(GridJobExecuteRequest.class);
         factory.register((short)2, GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer());
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
         factory.register((short)4, GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer());
@@ -468,7 +462,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
         factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
         factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
-        factory.register((short)113, IndexKeyDefinition::new, new IndexKeyDefinitionSerializer());
+        register(IndexKeyDefinition.class);
         factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer());
         factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
@@ -484,13 +478,12 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)130, UserManagementOperationFinishedMessage::new, new UserManagementOperationFinishedMessageSerializer());
         factory.register((short)131, UserAuthenticateRequestMessage::new, new UserAuthenticateRequestMessageSerializer());
         factory.register((short)132, UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer());
-        factory.register(ClusterMetricsUpdateMessage.TYPE_CODE, ClusterMetricsUpdateMessage::new,
-            new ClusterMetricsUpdateMessageSerializer());
+        register(ClusterMetricsUpdateMessage.class);
         factory.register((short)134, ContinuousRoutineStartResultMessage::new, new ContinuousRoutineStartResultMessageSerializer());
         factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
-        factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
-        factory.register(NodeMetricsMessage.TYPE_CODE, NodeMetricsMessage::new, new NodeMetricsMessageSerializer());
-        factory.register(NodeFullMetricsMessage.TYPE_CODE, NodeFullMetricsMessage::new, new NodeFullMetricsMessageSerializer());
+        register(CacheMetricsMessage.class);
+        register(NodeMetricsMessage.class);
+        register(NodeFullMetricsMessage.class);
         factory.register((short)157, PartitionUpdateCountersMessage::new, new PartitionUpdateCountersMessageSerializer());
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new, new GenerateEncryptionKeyResponseSerializer());
@@ -555,5 +548,33 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.
+        this.factory = null;
+    }
+
+    /** */
+    private void register(Class<? extends AbstractMessage> msgCls) {
+        assert factory != null;
+
+        Supplier<Message> msgSupp = () -> {
+            try {
+                AbstractMessage msg = msgCls.getConstructor().newInstance();
+
+                return msg;
+            }
+            catch (Exception e) {
+                throw new IgniteException("Unable to create message of type " + msgCls.getSimpleName(), e);
+            }
+        };
+
+        MessageSerializer msgSerr;
+
+        try {
+            msgSerr = (MessageSerializer)Class.forName(msgCls.getName() + "Serializer").getConstructor().newInstance();
+        }
+        catch (Exception e) {
+            throw new IgniteException("Unable to create message serializer for message of type " + msgCls.getSimpleName(), e);
+        }
+
+        factory.register(msgSupp.get().directType(), msgSupp, msgSerr);
     }
 }

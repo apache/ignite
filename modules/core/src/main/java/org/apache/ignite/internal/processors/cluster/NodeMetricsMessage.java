@@ -25,17 +25,14 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /** */
-public class NodeMetricsMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 137;
-
+public class NodeMetricsMessage extends AbstractMessage {
     /** */
     @Order(0)
     public long lastUpdateTime = -1;
@@ -1338,11 +1335,6 @@ public class NodeMetricsMessage implements Message {
         }
 
         return curGcCpuLoad;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /** */

@@ -30,13 +30,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse implements Message {
+public class GridJobExecuteResponse extends AbstractMessage {
     /** */
     @Order(0)
     UUID nodeId;
@@ -303,11 +303,6 @@ public class GridJobExecuteResponse implements Message {
 
         if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
             U.error(log, msg, e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 2;
     }
 
     /** {@inheritDoc} */
