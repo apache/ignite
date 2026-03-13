@@ -136,18 +136,18 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** Custom data marshaller. */
-    private final Marshaller cstDataMarshall;
+    private final Marshaller marsh;
 
     /** Class loader for the custom data marshalling. */
-    private final ClassLoader cstDataMarshallClsLdr;
+    private final ClassLoader clsLdr;
 
     /**
-     * @param cstDataMarshall Custom data marshaller.
-     * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
+     * @param marsh Custom data marshaller.
+     * @param clsLdr Class loader for the custom data marshalling.
      */
-    public DiscoveryMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
-        this.cstDataMarshall = cstDataMarshall;
-        this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
+    public DiscoveryMessageFactory(Marshaller marsh, ClassLoader clsLdr) {
+        this.marsh = marsh;
+        this.clsLdr = clsLdr;
     }
 
     /** {@inheritDoc} */
@@ -163,7 +163,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr));
 
         // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
@@ -186,9 +186,9 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageSerializer());
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new,
-            new TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)20, TcpDiscoveryJoinRequestMessage::new,
-            new TcpDiscoveryJoinRequestMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new TcpDiscoveryJoinRequestMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)21, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
         factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
@@ -198,11 +198,12 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)26, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
         factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
         factory.register((short)28, TcpDiscoveryClientReconnectMessage::new,
-            new TcpDiscoveryClientReconnectMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new TcpDiscoveryClientReconnectMessageMarshallableSerializer(marsh, clsLdr));
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
-        factory.register((short)501, SecurityAwareCustomMessageWrapper::new, new SecurityAwareCustomMessageWrapperSerializer());
+        factory.register((short)501, SecurityAwareCustomMessageWrapper::new,
+            new SecurityAwareCustomMessageWrapperMarshallableSerializer(marsh, clsLdr));
         factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
         factory.register((short)504, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
