@@ -51,6 +51,12 @@ import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryM
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItemSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
@@ -223,5 +229,9 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)514, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
         factory.register((short)515, CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
         factory.register((short)516, ClientCacheChangeDiscoveryMessage::new, new ClientCacheChangeDiscoveryMessageSerializer());
+        factory.register((short)517, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
+        factory.register((short)518, MappingProposedMessage::new, new MappingProposedMessageSerializer());
+        factory.register((short)519, MarshallerMappingItem::new, new MarshallerMappingItemSerializer());
+
     }
 }

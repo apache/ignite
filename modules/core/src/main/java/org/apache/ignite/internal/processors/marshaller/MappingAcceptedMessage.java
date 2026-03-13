@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -27,21 +29,28 @@ import org.jetbrains.annotations.Nullable;
  *
  * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
-public class MappingAcceptedMessage implements DiscoveryCustomMessage {
+public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final MarshallerMappingItem item;
+    @Order(1)
+    MarshallerMappingItem item;
+
+    /** */
+    public MappingAcceptedMessage() {
+        // No-op.
+    }
 
     /**
      * @param item Item.
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
-        this.item = item;
+        id = IgniteUuid.randomUuid();
     }
 
     /** {@inheritDoc} */
@@ -55,8 +64,13 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    MarshallerMappingItem getMappingItem() {
+    public MarshallerMappingItem getMappingItem() {
         return item;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 517;
     }
 
     /** {@inheritDoc} */

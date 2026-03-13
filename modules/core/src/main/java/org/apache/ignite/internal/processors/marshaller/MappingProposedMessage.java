@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,9 +34,9 @@ import org.jetbrains.annotations.Nullable;
  * When it completes a pass around the cluster ring with no conflicts observed,
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
-public class MappingProposedMessage implements DiscoveryCustomMessage {
+public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
     /** */
-    private enum ProposalStatus {
+    enum ProposalStatus {
         /** */
         SUCCESSFUL,
         /** */
@@ -48,20 +49,29 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final UUID origNodeId;
+    @Order(1)
+    UUID origNodeId;
 
     /** */
-    @GridToStringInclude
-    private final MarshallerMappingItem mappingItem;
+    @Order(2)
+    MarshallerMappingItem mappingItem;
 
     /** */
-    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
+    @Order(3)
+    ProposalStatus status;
 
     /** */
-    private String conflictingClsName;
+    @Order(4)
+    String conflictingClsName;
+
+    /** */
+    public MappingProposedMessage() {
+        // No-op.
+    }
 
     /**
      * @param mappingItem Mapping item.
@@ -70,8 +80,10 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
         assert origNodeId != null;
 
+        id = IgniteUuid.randomUuid();
         this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
+        status = ProposalStatus.SUCCESSFUL;
     }
 
     /** {@inheritDoc} */
@@ -84,7 +96,7 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         if (status == ProposalStatus.SUCCESSFUL)
-            return new MappingAcceptedMessage(mappingItem);
+            return new MappingAcceptedMessage(mappingItem());
         else
             return null;
     }
@@ -128,6 +140,11 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     /** */
     String conflictingClassName() {
         return conflictingClsName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 518;
     }
 
     /** {@inheritDoc} */
