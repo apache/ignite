@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -203,10 +204,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
      * finish process.
      */
-    private DistributedProcess<MasterKeyChangeRequest, EmptyResult> prepareMKChangeProc;
+    private DistributedProcess<MasterKeyChangeRequest, Message> prepareMKChangeProc;
 
     /** Process to perform the master key change. Changes master key and reencrypt group keys. */
-    private DistributedProcess<MasterKeyChangeRequest, EmptyResult> performMKChangeProc;
+    private DistributedProcess<MasterKeyChangeRequest, Message> performMKChangeProc;
 
     /**
      * A two-phase distributed process that rotates the encryption keys of specified cache groups and initiates
@@ -1488,7 +1489,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<EmptyResult> prepareMasterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<Message> prepareMasterKeyChange(MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The previous change was not completed."));
@@ -1524,7 +1525,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 ctx.localNodeId() + ']', e));
         }
 
-        return new GridFinishedFuture<>(new EmptyResult());
+        return new GridFinishedFuture<>();
     }
 
     /**
@@ -1534,7 +1535,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
+    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, Message> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (masterKeyChangeRequest != null && masterKeyChangeRequest.requestId().equals(id))
                 masterKeyChangeRequest = null;
@@ -1551,7 +1552,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<EmptyResult> performMasterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<Message> performMasterKeyChange(MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest == null || !masterKeyChangeRequest.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 
@@ -1569,7 +1570,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         masterKeyDigest = req.digest();
 
-        return new GridFinishedFuture<>(new EmptyResult());
+        return new GridFinishedFuture<>();
     }
 
     /**
@@ -1579,7 +1580,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
+    private void finishPerformMasterKeyChange(UUID id, Map<UUID, Message> res, Map<UUID, Throwable> err) {
         completeMasterKeyChangeFuture(id, err);
     }
 
@@ -1816,12 +1817,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         @Override public String toString() {
             return S.toString(MasterKeyChangeRequest.class, this);
         }
-    }
-
-    /** */
-    protected static class EmptyResult implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
     }
 
     /** */
