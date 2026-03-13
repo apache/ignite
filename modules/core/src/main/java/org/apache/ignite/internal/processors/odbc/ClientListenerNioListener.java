@@ -377,7 +377,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(8), null);
+        BinaryWriterEx writer = BinaryUtils.writerWithoutSchemaHolder(null, BinaryStreams.outputStream(8));
 
         byte clientType = reader.readByte();
 

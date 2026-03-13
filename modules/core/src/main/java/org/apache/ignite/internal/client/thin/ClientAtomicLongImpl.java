@@ -134,7 +134,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
      * @param out Output channel.
      */
     private void writeName(PayloadOutputChannel out) {
-        try (BinaryWriterEx w = BinaryUtils.writer(null, out.out(), null)) {
+        try (BinaryWriterEx w = BinaryUtils.writerWithoutSchemaHolder(null, out.out())) {
             w.writeString(name);
             w.writeString(groupName);
         }

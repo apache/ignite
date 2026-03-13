@@ -174,7 +174,7 @@ public class ClientCacheAffinityMapping {
             out.writeBoolean(customMappingsRequired);
 
         if (ctx.isFeatureSupported(DC_AWARE)) {
-            try (BinaryWriterEx w = BinaryUtils.writer(null, out, null)) {
+            try (BinaryWriterEx w = BinaryUtils.writerWithoutSchemaHolder(null, out)) {
                 w.writeString(dcId);
             }
         }
