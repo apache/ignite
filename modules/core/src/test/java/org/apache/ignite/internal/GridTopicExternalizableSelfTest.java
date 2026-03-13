@@ -53,9 +53,11 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
 
             for (GridTopic topic : GridTopic.values()) {
-                Externalizable msgOut = (Externalizable)topic.topic(A_IGNITE_UUID);
+                if (topic.topic(A_IGNITE_UUID) instanceof Externalizable) {
+                    Externalizable msgOut = (Externalizable)topic.topic(A_IGNITE_UUID);
 
-                assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
+                    assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
+                }
             }
         }
     }

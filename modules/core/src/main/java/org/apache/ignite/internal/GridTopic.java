@@ -177,7 +177,7 @@ public enum GridTopic {
      * @param id Topic ID.
      * @return Grid message topic with specified ID.
      */
-    public Object topic(IgniteUuid id) {
+    public T1 topic(IgniteUuid id) {
         return new T1(this, id);
     }
 
@@ -250,13 +250,8 @@ public enum GridTopic {
         return new T7(this, UUID.nameUUIDFromBytes(id1.getBytes(DFLT_CHARSET)), id2, id3, id4);
     }
 
-    /**
-     *
-     */
-    private static class T1 implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
+    /** */
+    public static class T1 {
         /** */
         private GridTopic topic;
 
@@ -264,19 +259,22 @@ public enum GridTopic {
         private IgniteUuid id;
 
         /**
-         * No-arg constructor needed for {@link Serializable}.
-         */
-        public T1() {
-            // No-op.
-        }
-
-        /**
          * @param topic Topic.
          * @param id ID.
          */
-        private T1(GridTopic topic, IgniteUuid id) {
+        public T1(GridTopic topic, IgniteUuid id) {
             this.topic = topic;
             this.id = id;
+        }
+
+        /** */
+        public GridTopic topic() {
+            return topic;
+        }
+
+        /** */
+        public IgniteUuid id() {
+            return id;
         }
 
         /** {@inheritDoc} */
@@ -293,18 +291,6 @@ public enum GridTopic {
             }
 
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(topic.ordinal());
-            U.writeIgniteUuid(out, id);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            topic = fromOrdinal(in.readByte());
-            id = U.readIgniteUuid(in);
         }
 
         /** {@inheritDoc} */
