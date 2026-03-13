@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.function.Supplier;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ExchangeInfo;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobExecuteRequest;
@@ -313,11 +311,7 @@ import org.apache.ignite.internal.util.GridPartitionStateMapSerializer;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequestSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -335,14 +329,9 @@ import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMess
 /**
  * Message factory implementation.
  */
-public class GridIoMessageFactory implements MessageFactoryProvider {
-    /** Temporary Message factory holder to do some work with. */
-    private MessageFactory factory;
-
+public class GridIoMessageFactory extends AbstractMessageFactory {
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
-        this.factory = factory;
-
+    @Override protected void doRegisterAllMessages(MessageFactory factory) {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
@@ -545,33 +534,5 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.
-        this.factory = null;
-    }
-
-    /** */
-    private void register(Class<? extends AbstractMessage> msgCls) {
-        assert factory != null;
-
-        Supplier<Message> msgSupp = () -> {
-            try {
-                AbstractMessage msg = msgCls.getConstructor().newInstance();
-
-                return msg;
-            }
-            catch (Exception e) {
-                throw new IgniteException("Unable to create message of type " + msgCls.getSimpleName(), e);
-            }
-        };
-
-        MessageSerializer msgSerr;
-
-        try {
-            msgSerr = (MessageSerializer)Class.forName(msgCls.getName() + "Serializer").getConstructor().newInstance();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Unable to create message serializer for message of type " + msgCls.getSimpleName(), e);
-        }
-
-        factory.register(msgSupp.get().directType(), msgSupp, msgSerr);
     }
 }

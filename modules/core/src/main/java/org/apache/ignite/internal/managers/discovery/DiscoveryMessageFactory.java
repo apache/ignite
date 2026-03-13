@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.util.function.Supplier;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.AbstractMessageFactory;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
@@ -61,11 +60,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -123,15 +118,12 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** Message factory for discovery messages. */
-public class DiscoveryMessageFactory implements MessageFactoryProvider {
+public class DiscoveryMessageFactory extends AbstractMessageFactory {
     /** Custom data marshaller. */
     private final @Nullable Marshaller cstDataMarshall;
 
     /** Class loader for the custom data marshalling. */
     private final @Nullable ClassLoader cstDataMarshallClsLdr;
-
-    /** Temporary Message factory holder to do some work with. */
-    private MessageFactory factory;
 
     /**
      * @param cstDataMarshall Custom data marshaller.
@@ -145,9 +137,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
-        this.factory = factory;
-
+    @Override protected void doRegisterAllMessages(MessageFactory factory) {
         register(User.class);
         register(UserManagementOperation.class);
         register(NodeSpecificData.class);
@@ -215,34 +205,5 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)514, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
         factory.register((short)515, CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
         factory.register((short)516, ClientCacheChangeDiscoveryMessage::new, new ClientCacheChangeDiscoveryMessageSerializer());
-
-        this.factory = null;
-    }
-
-    /** */
-    private void register(Class<? extends AbstractMessage> msgCls) {
-        assert factory != null;
-
-        Supplier<Message> msgSupp = () -> {
-            try {
-                AbstractMessage msg = msgCls.getConstructor().newInstance();
-
-                return msg;
-            }
-            catch (Exception e) {
-                throw new IgniteException("Unable to create message of type " + msgCls.getSimpleName(), e);
-            }
-        };
-
-        MessageSerializer msgSerr;
-
-        try {
-            msgSerr = (MessageSerializer)Class.forName(msgCls.getName() + "Serializer").getConstructor().newInstance();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Unable to create message serializer for message of type " + msgCls.getSimpleName(), e);
-        }
-
-        factory.register(msgSupp.get().directType(), msgSupp, msgSerr);
     }
 }
