@@ -305,6 +305,14 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
+        log.info(">>>>> Creating index ["
+                + "schemaName=" + schemaName
+                + ", tblName=" + tblName
+                + ", idxName=" + idxName
+                + ", idxCollation=" + idxCollation
+                + "]");
+
+        // TODO: IGNITE-xxxx-rowid-poc Похоже тут надо добавить
         IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, idxDesc.index(), tbl);
         tbl.addIndex(idx);
     }
