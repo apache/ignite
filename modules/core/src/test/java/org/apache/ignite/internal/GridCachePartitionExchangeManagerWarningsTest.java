@@ -148,8 +148,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         LogListener logListener = LogListener.matches(logSubstr).atLeast(1).build();
         testLog = new ListeningTestLogger(log, logListener);
 
-        CountDownLatch beforeSend = new CountDownLatch(1);
-        CountDownLatch proceed = new CountDownLatch(1);
+        CountDownLatch singleMsgLatch = new CountDownLatch(1);
+        CountDownLatch nodeStopLatch = new CountDownLatch(1);
 
         AtomicReference<UUID> crdIdRef = new AtomicReference<>();
 
@@ -161,11 +161,10 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                 UUID crdId = crdIdRef.get();
 
                 if (isSingleMsg && node != null && crdId != null && crdId.equals(node.id())) {
-                    beforeSend.countDown();
+                    singleMsgLatch.countDown();
 
                     try {
-                        if (!proceed.await(waitingTimeout, TimeUnit.MILLISECONDS))
-                            throw new IgniteSpiException("Test timeout waiting to proceed");
+                       nodeStopLatch.await();
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -189,15 +188,15 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
             node1.context().cache().context().exchange().refreshPartitions());
 
         try {
-            assertTrue("Did not enter sendMessage() in time", beforeSend.await(waitingTimeout, TimeUnit.MILLISECONDS));
+            singleMsgLatch.await();
 
             stopGrid(0);
 
-            proceed.countDown();
+            nodeStopLatch.countDown();
 
             fut.get(waitingTimeout);
 
-            assertTrue("Expected log not found", GridTestUtils.waitForCondition(logListener::check, waitingTimeout));
+            assertTrue("Expected log not found", GridTestUtils.waitForCondition(logListener::check, getTestTimeout()));
         }
         finally {
             beforeSend.countDown();
