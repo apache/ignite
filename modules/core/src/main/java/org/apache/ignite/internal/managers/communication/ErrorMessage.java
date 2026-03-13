@@ -81,8 +81,6 @@ public class ErrorMessage implements MarshallableMessage {
     }
 
     /**
-     * Error.
-     *
      * @param errorMsg Error message.
      * @return Error containing in the message.
      */
