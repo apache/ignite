@@ -2117,15 +2117,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.io().send(node, msg, SYSTEM_POOL);
             }
-            catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled()) {
-                    log.debug(
-                        "Failed to send local partitions on exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']'
-                    );
-                }
+            catch (ClusterTopologyCheckedException e) {
+                long retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
+
+                log.warning(
+                    "Failed to send local partitions on exchange (node left) [nodeId=" + node.id() +
+                        ", exchId=" + exchId + ", retryDelay=" + retryDelay + "ms]", e
+                );
 
                 if (cctx.discovery().alive(node.id())) {
-                    U.sleep(cctx.gridConfig().getNetworkSendRetryDelay());
+                    U.sleep(retryDelay);
 
                     continue;
                 }
@@ -2255,10 +2256,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             sendLocalPartitions(oldestNode);
         }
-        catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
-                    ", exchId=" + exchId + ']');
+        catch (ClusterTopologyCheckedException e) {
+            log.warning("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
+                ", exchId=" + exchId + ']', e);
         }
         catch (IgniteCheckedException e) {
             if (reconnectOnError(e))
@@ -4418,8 +4418,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.io().send(node, res, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
+                log.warning("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send partitions message [node=" + node + ", msg=" + msg + ']', e);
