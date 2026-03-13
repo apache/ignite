@@ -59,9 +59,11 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         final String valType,
         final Map<UUID, NodePageStream<R>> pageStreams,
         final GridCacheContext<?, ?> cctx,
-        final CompletableFuture<IndexQueryResultMeta> meta
+        final CompletableFuture<IndexQueryResultMeta> meta,
+        int limit,
+        int pageSize
     ) {
-        super(pageStreams);
+        super(pageStreams, limit, pageSize);
 
         this.valType = valType;
         this.metaFut = meta;
