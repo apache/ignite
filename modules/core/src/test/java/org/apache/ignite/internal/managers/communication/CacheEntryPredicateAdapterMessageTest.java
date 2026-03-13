@@ -49,7 +49,8 @@ public class CacheEntryPredicateAdapterMessageTest {
         }
     }
 
-    byte prepare(CacheEntryPredicateAdapter msg){
+    /** */
+    byte prepare(CacheEntryPredicateAdapter msg) {
         try {
             msg.prepareMarshal(jdk());
         }

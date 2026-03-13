@@ -68,14 +68,15 @@ public class IndexKeyTypeMessageTest {
             assertTrue(prepare(new IndexKeyTypeMessage(keyType)) != IndexKeyTypeMessage.NULL_VALUE_CODE);
     }
 
-    byte prepare(IndexKeyTypeMessage msg){
+    /** */
+    byte prepare(IndexKeyTypeMessage msg) {
         try {
             msg.prepareMarshal(jdk());
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
         }
-        
+
         return msg.code();
     }
 
@@ -192,7 +193,8 @@ public class IndexKeyTypeMessageTest {
         msg.finishUnmarshal(jdk(), U.gridClassLoader());
         assertSame(IndexKeyType.ENUM, msg.value());
 
-        Throwable t = assertThrowsWithCause(() -> {
+        Throwable t = assertThrowsWithCause(
+            () -> {
                 msg.code((byte)23);
 
                 try {
@@ -209,7 +211,8 @@ public class IndexKeyTypeMessageTest {
         for (byte c = 26; c >= 26 && c <= Byte.MAX_VALUE; ++c) {
             byte c0 = c;
 
-            t = assertThrowsWithCause(() -> {
+            t = assertThrowsWithCause(
+                () -> {
                     msg.code(c0);
 
                     try {
@@ -227,15 +230,16 @@ public class IndexKeyTypeMessageTest {
         for (byte c = (byte)(IndexKeyTypeMessage.NULL_VALUE_CODE + 1); c < -1; ++c) {
             byte c0 = c;
 
-            t = assertThrowsWithCause(() -> {
-                msg.code(c0);
+            t = assertThrowsWithCause(
+                () -> {
+                    msg.code(c0);
 
-                try {
-                    msg.finishUnmarshal(jdk(), U.gridClassLoader());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
+                    try {
+                        msg.finishUnmarshal(jdk(), U.gridClassLoader());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new RuntimeException(e);
+                    }
             }, IllegalArgumentException.class);
 
             assertEquals("Unknown index key type code: " + c0, t.getMessage());
