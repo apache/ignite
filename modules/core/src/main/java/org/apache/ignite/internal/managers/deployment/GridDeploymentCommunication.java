@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteNotPeerDeployable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -72,9 +71,6 @@ class GridDeploymentCommunication {
     /** */
     private final GridBusyLock busyLock = new GridBusyLock();
 
-    /** */
-    private final Marshaller marsh;
-
     /**
      * Creates new instance of deployment communication.
      *
@@ -92,8 +88,6 @@ class GridDeploymentCommunication {
                 processDeploymentRequest(nodeId, msg);
             }
         };
-
-        marsh = ctx.marshaller();
     }
 
     /**
@@ -185,18 +179,6 @@ class GridDeploymentCommunication {
     private void processResourceRequest(UUID nodeId, GridDeploymentRequest req) {
         if (log.isDebugEnabled())
             log.debug("Received peer class/resource loading request [originatingNodeId=" + nodeId + ", req=" + req + ']');
-
-        if (req.responseTopic() == null) {
-            try {
-                req.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to process deployment request (will ignore) [" +
-                    "originatingNodeId=" + nodeId + ", req=" + req + ']', e);
-
-                return;
-            }
-        }
 
         GridDeploymentResponse res = new GridDeploymentResponse();
 
@@ -416,9 +398,6 @@ class GridDeploymentCommunication {
             ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
             long start = U.currentTimeMillis();
-
-            if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
-                req.prepareMarshal(marsh);
 
             ctx.io().sendToGridTopic(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 

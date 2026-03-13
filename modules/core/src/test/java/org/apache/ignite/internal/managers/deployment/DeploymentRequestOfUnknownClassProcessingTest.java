@@ -127,8 +127,6 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
         GridDeploymentRequest req = new GridDeploymentRequest(TEST_TOPIC_NAME, locDep.classLoaderId(),
             UNKNOWN_CLASS_NAME, false);
 
-        req.prepareMarshal(locNode.context().marshaller());
-
         locNode.context().io().sendToGridTopic(remNode.localNode(), TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 
         // Сhecks that the expected response has been received.
