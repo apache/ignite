@@ -31,7 +31,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
 
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Carries discovery data in marshalled form
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
-public class DiscoveryDataPacket implements Serializable, Message {
+public class DiscoveryDataPacket extends AbstractMessage implements Serializable {
     /** Local file header signature (read as a little-endian number). */
     private static final int ZIP_HEADER_SIGNATURE = 0x04034b50;
 
@@ -472,10 +472,5 @@ public class DiscoveryDataPacket implements Serializable, Message {
      */
     public void clearUnmarshalledJoiningNodeData() {
         unmarshalledJoiningNodeData = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -106;
     }
 }

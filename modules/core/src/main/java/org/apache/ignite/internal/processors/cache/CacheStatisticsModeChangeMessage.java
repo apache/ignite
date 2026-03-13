@@ -25,13 +25,13 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage, Message {
+public class CacheStatisticsModeChangeMessage extends AbstractMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -139,10 +139,5 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheStatisticsModeChangeMessage.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 500;
     }
 }

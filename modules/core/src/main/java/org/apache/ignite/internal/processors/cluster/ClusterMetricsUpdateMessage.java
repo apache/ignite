@@ -25,14 +25,11 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public final class ClusterMetricsUpdateMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 133;
-
+public final class ClusterMetricsUpdateMessage extends AbstractMessage {
     /** Single node metrics message. */
     @Order(0)
     @Nullable NodeFullMetricsMessage singleNodeMetricsMsg;
@@ -73,11 +70,6 @@ public final class ClusterMetricsUpdateMessage implements Message {
         assert (singleNodeMetricsMsg == null && allNodesMetrics != null) || (singleNodeMetricsMsg != null && allNodesMetrics == null);
 
         return singleNodeMetricsMsg != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */

@@ -53,11 +53,6 @@ public class InetSocketAddressMessage extends InetAddressMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return -101;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(InetSocketAddressMessage.class, this);
     }

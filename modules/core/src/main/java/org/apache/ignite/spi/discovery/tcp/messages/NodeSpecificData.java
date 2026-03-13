@@ -22,12 +22,12 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * A wrapper message that holds the mapping of discovery data belonging to a cluster node and is sent to the joining node.
  */
-public class NodeSpecificData implements Message, Serializable {
+public class NodeSpecificData extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,11 +52,6 @@ public class NodeSpecificData implements Message, Serializable {
      */
     public Map<Integer, byte[]> nodeSpecificData() {
         return nodeSpecificData;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -107;
     }
 
     /** {@inheritDoc} */

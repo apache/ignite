@@ -19,11 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class IgniteDiagnosticResponse implements Message {
+public class IgniteDiagnosticResponse extends AbstractMessage {
     /** */
     @Order(0)
     long futId;
@@ -60,11 +60,6 @@ public class IgniteDiagnosticResponse implements Message {
     /** */
     public @Nullable String responseInfo() {
         return respInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -62;
     }
 
     /** {@inheritDoc} */

@@ -23,11 +23,11 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage, Message {
+public class DistributedMetaStorageUpdateAckMessage extends AbstractMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,11 +63,6 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 25;
     }
 
     /** {@inheritDoc} */

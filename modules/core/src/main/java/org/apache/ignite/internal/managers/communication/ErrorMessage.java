@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +42,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  */
 @SuppressWarnings({"NullableProblems", "unused"})
 // TODO Remove Serializable once https://issues.apache.org/jira/browse/IGNITE-27627 is completed.
-public class ErrorMessage implements Message, Serializable {
+public class ErrorMessage extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -132,11 +132,6 @@ public class ErrorMessage implements Message, Serializable {
      */
     public static @Nullable Throwable error(@Nullable ErrorMessage errorMsg) {
         return errorMsg == null ? null : errorMsg.error();
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -66;
     }
 
     /** {@inheritDoc} */

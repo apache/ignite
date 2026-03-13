@@ -17,20 +17,17 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.managers.communication.AbstractMessageFactory;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperation;
-import org.apache.ignite.internal.processors.authentication.UserManagementOperationSerializer;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessageSerializer;
-import org.apache.ignite.internal.processors.authentication.UserSerializer;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
-import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
@@ -45,41 +42,32 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessageSerializer;
+import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
-import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
-import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
-import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
-import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
-import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
-import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificDataSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCacheMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCacheMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
@@ -87,7 +75,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckRespons
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
@@ -116,12 +103,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
@@ -135,7 +118,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** Message factory for discovery messages. */
-public class DiscoveryMessageFactory implements MessageFactoryProvider {
+public class DiscoveryMessageFactory extends AbstractMessageFactory {
     /** Custom data marshaller. */
     private final @Nullable Marshaller cstDataMarshall;
 
@@ -154,19 +137,18 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-109, User::new, new UserSerializer());
-        factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
-        factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
-        factory.register((short)-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
-        factory.register((short)-105, TcpDiscoveryNodeFullMetricsMessage::new,
-            new TcpDiscoveryNodeFullMetricsMessageSerializer());
-        factory.register((short)-104, TcpDiscoveryClientNodesMetricsMessage::new, new TcpDiscoveryClientNodesMetricsMessageSerializer());
-        factory.register((short)-103, TcpDiscoveryCacheMetricsMessage::new, new TcpDiscoveryCacheMetricsMessageSerializer());
-        factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
-        factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
-        factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
+    @Override protected void doRegisterAllMessages(MessageFactory factory) {
+        register(User.class);
+        register(UserManagementOperation.class);
+        register(NodeSpecificData.class);
+        register(DiscoveryDataPacket.class);
+        register(NodeFullMetricsMessage.class);
+        register(TcpDiscoveryClientNodesMetricsMessage.class);
+        register(CacheMetricsMessage.class);
+        register(NodeMetricsMessage.class);
+        register(InetSocketAddressMessage.class);
+        register(InetAddressMessage.class);
+        register(ErrorMessage.class);
 
         // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
@@ -195,16 +177,16 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)21, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
         factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
-        factory.register((short)23, TcpConnectionRequestDiscoveryMessage::new, new TcpConnectionRequestDiscoveryMessageSerializer());
-        factory.register((short)24, DistributedMetaStorageUpdateMessage::new, new DistributedMetaStorageUpdateMessageSerializer());
-        factory.register((short)25, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
-        factory.register((short)26, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
-        factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
+        register(TcpConnectionRequestDiscoveryMessage.class);
+        register(DistributedMetaStorageUpdateMessage.class);
+        register(DistributedMetaStorageUpdateAckMessage.class);
+        register(DistributedMetaStorageCasMessage.class);
+        register(DistributedMetaStorageCasAckMessage.class);
         factory.register((short)28, TcpDiscoveryClientReconnectMessage::new,
             new TcpDiscoveryClientReconnectMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
 
         // DiscoveryCustomMessage
-        factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
+        register(CacheStatisticsModeChangeMessage.class);
         factory.register((short)501, SecurityAwareCustomMessageWrapper::new, new SecurityAwareCustomMessageWrapperSerializer());
         factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());

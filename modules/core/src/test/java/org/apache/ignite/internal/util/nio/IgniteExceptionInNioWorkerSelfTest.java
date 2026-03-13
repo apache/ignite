@@ -69,22 +69,20 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class BrokenMessage extends IgniteDiagnosticRequest {
         /** */
         private boolean fail = true;
 
         /** {@inheritDoc} */
-        @Override public short directType() {
+        @Override protected short replaceMessageType(short type) {
             if (fail) {
                 fail = false;
 
                 return (byte)242;
             }
 
-            return super.directType();
+            return type;
         }
     }
 }

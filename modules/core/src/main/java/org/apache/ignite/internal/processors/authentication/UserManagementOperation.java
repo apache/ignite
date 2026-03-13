@@ -22,12 +22,12 @@ import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
-public class UserManagementOperation implements Serializable, Message {
+public class UserManagementOperation extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -102,11 +102,6 @@ public class UserManagementOperation implements Serializable, Message {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return id.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -108;
     }
 
     /**

@@ -37,7 +37,7 @@ public enum MessageType {
     QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
 
     /** */
-    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
+    QUERY_ERROR_MESSAGE(new CalciteErrorMessage().directType(), CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
 
     /** */
     QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new, new QueryBatchMessageSerializer()),

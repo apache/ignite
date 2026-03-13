@@ -23,13 +23,13 @@ import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job siblings response.
  */
-public class GridJobSiblingsResponse implements Message {
+public class GridJobSiblingsResponse extends AbstractMessage {
     /** */
     private @Nullable Collection<ComputeJobSibling> siblings;
 
@@ -82,11 +82,6 @@ public class GridJobSiblingsResponse implements Message {
 
             siblingsBytes = null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 4;
     }
 
     /** {@inheritDoc} */

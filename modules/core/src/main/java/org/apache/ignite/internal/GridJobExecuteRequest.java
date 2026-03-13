@@ -34,13 +34,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution request.
  */
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
-public class GridJobExecuteRequest implements ExecutorAwareMessage {
+public class GridJobExecuteRequest extends AbstractMessage implements ExecutorAwareMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;
@@ -440,11 +441,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 1;
     }
 
     /** {@inheritDoc} */

@@ -26,13 +26,13 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class IgniteDiagnosticRequest implements Message {
+public class IgniteDiagnosticRequest extends AbstractMessage {
     /** */
     @Order(0)
     long futId;
@@ -137,17 +137,12 @@ public class IgniteDiagnosticRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return -61;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDiagnosticRequest.class, this);
     }
 
     /** */
-    public abstract static class DiagnosticBaseInfo implements Message {
+    public abstract static class DiagnosticBaseInfo extends AbstractMessage {
         /**
          * @param other Another info of the same type.
          */

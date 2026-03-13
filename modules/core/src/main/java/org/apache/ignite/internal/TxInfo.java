@@ -50,11 +50,6 @@ public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return -65;
-    }
-
-    /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
         sb.append(U.nl())
             .append("Related transactions [dhtVer=").append(dhtVer)

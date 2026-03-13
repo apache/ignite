@@ -21,14 +21,15 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Holds map of thick client or server metrics messages per node id. */
-public class TcpDiscoveryClientNodesMetricsMessage implements Message {
+public class TcpDiscoveryClientNodesMetricsMessage extends AbstractMessage {
     /** Map of nodes metrics messages per node id. */
     @Order(0)
-    Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs;
+    Map<UUID, NodeMetricsMessage> nodesMetricsMsgs;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientNodesMetricsMessage() {
@@ -36,18 +37,13 @@ public class TcpDiscoveryClientNodesMetricsMessage implements Message {
     }
 
     /** @return Map of nodes metrics messages per node id. */
-    public Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMessages() {
+    public Map<UUID, NodeMetricsMessage> nodesMetricsMessages() {
         return nodesMetricsMsgs;
     }
 
     /** @param nodesMetricsMsgs Map of nodes metrics messages per node id. */
-    public void nodesMetricsMessages(Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs) {
+    public void nodesMetricsMessages(Map<UUID, NodeMetricsMessage> nodesMetricsMsgs) {
         this.nodesMetricsMsgs = nodesMetricsMsgs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -104;
     }
 
     /** {@inheritDoc} */
