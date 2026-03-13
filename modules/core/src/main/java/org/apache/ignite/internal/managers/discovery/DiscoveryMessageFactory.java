@@ -132,21 +132,20 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustom
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessageSerializer;
-import org.jetbrains.annotations.NotNull;
 
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** Custom data marshaller. */
-    private final @NotNull Marshaller cstDataMarshall;
+    private final Marshaller cstDataMarshall;
 
     /** Class loader for the custom data marshalling. */
-    private final @NotNull ClassLoader cstDataMarshallClsLdr;
+    private final ClassLoader cstDataMarshallClsLdr;
 
     /**
      * @param cstDataMarshall Custom data marshaller.
      * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
      */
-    public DiscoveryMessageFactory(@NotNull Marshaller cstDataMarshall, @NotNull ClassLoader cstDataMarshallClsLdr) {
+    public DiscoveryMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
         this.cstDataMarshall = cstDataMarshall;
         this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
     }
