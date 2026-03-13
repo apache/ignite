@@ -581,9 +581,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void start() throws IgniteCheckedException {
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(recovery);
-        ctx.internalSubscriptionProcessor().registerDatabaseListener(recovery);
-
         cachesInfo = new ClusterCachesInfo(ctx);
 
         DeploymentMode depMode = ctx.config().getDeploymentMode();
@@ -598,6 +595,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CU.startStoreSessionListeners(ctx, ctx.config().getCacheStoreSessionListenerFactories());
 
         sharedCtx = createSharedContext(ctx, sesListeners);
+
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(recovery);
+        ctx.internalSubscriptionProcessor().registerDatabaseListener(recovery);
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
