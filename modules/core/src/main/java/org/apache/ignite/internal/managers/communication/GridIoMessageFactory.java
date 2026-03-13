@@ -54,7 +54,7 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequestSeria
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBeanSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestSerializer;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestMarshallableSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -62,7 +62,7 @@ import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyReque
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponseSerializer;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessageSerializer;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
@@ -403,12 +403,15 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
         factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
-        factory.register((short)8, GridIoMessage::new, new GridIoMessageSerializer());
+        factory.register((short)8, GridIoMessage::new,
+            new GridIoMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
         factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
-        factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
+        factory.register((short)11, GridDeploymentRequest::new,
+            new GridDeploymentRequestMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
-        factory.register((short)13, GridEventStorageMessage::new, new GridEventStorageMessageSerializer());
+        factory.register((short)13, GridEventStorageMessage::new,
+            new GridEventStorageMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)16, GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer());
         factory.register((short)17, GridCacheTxRecoveryResponse::new, new GridCacheTxRecoveryResponseSerializer());
         factory.register((short)18, IndexQueryResultMeta::new, new IndexQueryResultMetaSerializer());
@@ -515,7 +518,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer());
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new, new GridQueryKillRequestSerializer());
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new, new GridQueryKillResponseSerializer());
-        factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new, new GridIoSecurityAwareMessageSerializer());
+        factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new,
+            new GridIoSecurityAwareMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
         factory.register((short)177, TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer());

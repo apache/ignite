@@ -26,12 +26,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Deployment request.
  */
-public class GridDeploymentRequest implements Message {
+public class GridDeploymentRequest implements MarshallableMessage {
     /** Response topic. Response should be sent back to this topic. */
     private Object resTopic;
 
@@ -134,19 +134,14 @@ public class GridDeploymentRequest implements Message {
         this.nodeIds = nodeIds;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (resTopic != null && resTopicBytes == null)
             resTopicBytes = U.marshal(marsh, resTopic);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         if (resTopicBytes != null && resTopic == null) {
             resTopic = U.unmarshal(marsh, resTopicBytes, ldr);
 

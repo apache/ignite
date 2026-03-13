@@ -32,13 +32,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Event storage message.
  */
-public class GridEventStorageMessage implements Message {
+public class GridEventStorageMessage implements MarshallableMessage {
     /** */
     private Object resTopic;
 
@@ -205,10 +205,8 @@ public class GridEventStorageMessage implements Message {
         return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (resTopic != null && resTopicBytes == null)
             resTopicBytes = U.marshal(marsh, resTopic);
 
@@ -219,28 +217,30 @@ public class GridEventStorageMessage implements Message {
             evtsBytes = U.marshal(marsh, evts);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     * @param filterClsLdr Class loader for filter.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr, ClassLoader filterClsLdr) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         if (resTopicBytes != null && resTopic == null) {
             resTopic = U.unmarshal(marsh, resTopicBytes, ldr);
 
             resTopicBytes = null;
         }
 
-        if (filterBytes != null && filter == null && filterClsLdr != null) {
-            filter = U.unmarshal(marsh, filterBytes, filterClsLdr);
-
-            filterBytes = null;
-        }
-
         if (evtsBytes != null && evts == null) {
             evts = U.unmarshal(marsh, evtsBytes, ldr);
 
             evtsBytes = null;
+        }
+    }
+
+    /**
+     * @param marsh Marshaller.
+     * @param filterClsLdr Class loader for filter.
+     */
+    public void finishUnmarshalFilters(Marshaller marsh, ClassLoader filterClsLdr) throws IgniteCheckedException {
+        if (filterBytes != null && filter == null) {
+            filter = U.unmarshal(marsh, filterBytes, filterClsLdr);
+
+            filterBytes = null;
         }
     }
 
