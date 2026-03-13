@@ -346,23 +346,22 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessageSerializer;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessageSerializer;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Message factory implementation.
  */
 public class GridIoMessageFactory implements MessageFactoryProvider {
     /** Custom data marshaller. */
-    private final @NotNull Marshaller cstDataMarshall;
+    private final Marshaller cstDataMarshall;
 
     /** Class loader for the custom data marshalling. */
-    private final @NotNull ClassLoader cstDataMarshallClsLdr;
+    private final ClassLoader cstDataMarshallClsLdr;
 
     /**
      * @param cstDataMarshall Custom data marshaller.
      * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
      */
-    public GridIoMessageFactory(@NotNull Marshaller cstDataMarshall, @NotNull ClassLoader cstDataMarshallClsLdr) {
+    public GridIoMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
         this.cstDataMarshall = cstDataMarshall;
         this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
     }
