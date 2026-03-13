@@ -28,6 +28,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -46,7 +47,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlCallRewriteTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
@@ -70,6 +72,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             .convertletTable(new ConvertletTable())
                             .operatorTable(SqlOperatorTables.chain(
                                 new OperatorTable().init(), CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable()))
+                            .sqlValidatorConfig(
+                                ((IgniteSqlValidator.Config)CalciteQueryProcessor.FRAMEWORK_CONFIG.getSqlValidatorConfig())
+                                    .withSqlNodeRewriter(new SqlRewriter()))
                             .build();
 
                         return (T)cfg;
@@ -102,10 +107,6 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             RexImpTable.FALSE_EXPR
                         ), NullPolicy.ARG0, false
                     ));
-
-                    // Tests operator extension via SQL rewrite.
-                    IgniteSqlCallRewriteTable.INSTANCE.register("LTRIM",
-                        OperatorsExtensionIntegrationTest::rewriteLtrim);
                 }
             });
     }
@@ -215,6 +216,17 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 return rexBuilder.makeCall(SqlStdOperatorTable.FLOOR,
                     ImmutableList.of(cx.convertExpression(call.operand(0)), day));
             }
+        }
+    }
+
+    /** Extended SQL rewriter. */
+    private static class SqlRewriter implements IgniteSqlNodeRewriter {
+        /** {@inheritDoc} */
+        @Override public SqlNode rewrite(SqlValidator validator, SqlNode node) {
+            if (node instanceof SqlCall && "LTRIM".equals(((SqlCall)node).getOperator().getName()))
+                node = rewriteLtrim(validator, (SqlCall)node);
+
+            return node;
         }
     }
 }

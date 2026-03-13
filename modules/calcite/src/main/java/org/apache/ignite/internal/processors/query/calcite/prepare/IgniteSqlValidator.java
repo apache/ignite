@@ -53,6 +53,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
+import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
@@ -73,11 +74,13 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
+import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Validator. */
+@Value.Enclosing
 public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Decimal of Integer.MAX_VALUE for fetch/offset bounding. */
     private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
@@ -345,8 +348,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         node = super.performUnconditionalRewrites(node, underFrom);
 
-        if (node instanceof SqlCall)
-            node = IgniteSqlCallRewriteTable.INSTANCE.rewrite(this, (SqlCall)node);
+        if (config() instanceof Config && ((Config)config()).sqlNodeRewriter() != null)
+            node = ((Config)config()).sqlNodeRewriter().rewrite(this, node);
 
         return node;
     }
@@ -656,5 +659,29 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             throw newValidationError(call, RESOURCE.invalidArgCount(call.getOperator().getName(), 1));
 
         super.validateUnnest(call, scope, targetRowType);
+    }
+
+    /**
+     * Interface to define extension to the configuration for a IgniteSqlValidator.
+     */
+    @Value.Immutable(singleton = false)
+    public interface Config extends SqlValidator.Config {
+        /** Default configuration. */
+        Config DFLT = ImmutableIgniteSqlValidator.Config.builder().from(DEFAULT).build();
+
+        /** Gets custom call rewriter. */
+        @Value.Default
+        @Nullable default IgniteSqlNodeRewriter sqlNodeRewriter() {
+            return null;
+        }
+
+        /** Sets custom call rewriter. */
+        Config withSqlNodeRewriter(@Nullable IgniteSqlNodeRewriter rewriter);
+
+        /** Ovverride due to lost @Nullable annotation from the super-class by immutables generator. */
+        @Override @Nullable SqlTypeCoercionRule typeCoercionRules();
+
+        /** Ovverride due to lost @Nullable annotation from the super-class by immutables generator. */
+        @Override Config withTypeCoercionRules(@Nullable SqlTypeCoercionRule rules);
     }
 }
