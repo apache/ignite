@@ -121,6 +121,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.A
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.GRP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
@@ -1294,6 +1295,185 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 "Config only supported only for dump"
             );
         }
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderDebugLogsGroupName() throws Exception {
+        checkDumpReaderDebugLogsGroupName(new String[]{GRP});
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderDebugLogsNullableGroupName() throws Exception {
+        checkDumpReaderDebugLogsGroupName(null);
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderSkipCopiesLogsGroupName() throws Exception {
+        int parts = 4;
+        String dumpName0 = "dump0";
+        String dumpName1 = "dump1";
+
+        File snapshotPath0 = Files.createTempDirectory("snapshots0").toFile();
+        File snapshotPath1 = Files.createTempDirectory("snapshots1").toFile();
+        File combinedDumpDir = Files.createTempDirectory("combined_dump").toFile();
+
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener skipLsnr = LogListener.matches("Skip copy partition")
+            .times(parts)
+            .andMatches("grp=" + GRP)
+            .build();
+
+        testLog.registerListener(skipLsnr);
+
+        try {
+            IgniteEx node0 = startGrid(getConfiguration("node0")
+                .setConsistentId("node0")
+                .setSnapshotPath(snapshotPath0.getAbsolutePath())
+                .setGridLogger(testLog));
+
+            IgniteEx node1 = startGrid(getConfiguration("node1")
+                .setConsistentId("node1")
+                .setSnapshotPath(snapshotPath1.getAbsolutePath())
+                .setGridLogger(testLog));
+
+            node0.cluster().state(ClusterState.ACTIVE);
+
+            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
+                .setName(DEFAULT_CACHE_NAME)
+                .setGroupName(GRP)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(parts));
+
+            IgniteCache<Integer, Integer> cache = node0.createCache(ccfg);
+
+            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+            node0.snapshot().createDump(dumpName0, null).get(getTestTimeout());
+
+            U.sleep(100);
+
+            node1.snapshot().createDump(dumpName1, null).get(getTestTimeout());
+
+            File dumpDir0 = new File(snapshotPath0, dumpName0);
+            File dumpDir1 = new File(snapshotPath1, dumpName1);
+
+            U.copy(dumpDir0, combinedDumpDir, true);
+            U.copy(dumpDir1, combinedDumpDir, true);
+
+            DumpConsumer dummyConsumer = new DumpConsumer() {
+                @Override public void start() {
+                    // No-op.
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    // No-op.
+                }
+
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    // No-op.
+                }
+
+                @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                    // No-op.
+                }
+
+                @Override public void onPartition(int grpId, int partId, Iterator<DumpEntry> data) {
+                    // No-op.
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+            };
+
+            new DumpReader(
+                new DumpReaderConfiguration(
+                    null,
+                    combinedDumpDir.getAbsolutePath(),
+                    null,
+                    dummyConsumer,
+                    DFLT_THREAD_CNT,
+                    DFLT_TIMEOUT,
+                    false,
+                    true,
+                    true,
+                    new String[]{GRP},
+                    null,
+                    true,
+                    null
+                ),
+                testLog
+            ).run();
+
+            assertTrue(skipLsnr.check());
+        }
+        finally {
+            U.delete(snapshotPath0);
+            U.delete(snapshotPath1);
+            U.delete(combinedDumpDir);
+        }
+    }
+
+    /** */
+    private void checkDumpReaderDebugLogsGroupName(String[] grpNames) throws Exception {
+        String id = "test";
+
+        setLoggerDebugLevel();
+
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener errLsnr = LogListener.matches("Error consuming partition").andMatches("grp=" + GRP).build();
+        LogListener cnsmLsnr = LogListener.matches("Consuming partition").andMatches("grp=" + GRP).build();
+
+        testLog.registerListener(errLsnr);
+        testLog.registerListener(cnsmLsnr);
+
+        IgniteEx ign = startGrid(getConfiguration(id).setConsistentId(id).setGridLogger(testLog));
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(CACHE_0)
+            .setGroupName(GRP)
+            .setBackups(1)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(3))
+        );
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+        ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
+
+        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                throw new RuntimeException("trigger error log");
+            }
+        };
+
+        assertThrows(null, () -> new DumpReader(
+            new DumpReaderConfiguration(
+                DMP_NAME,
+                null,
+                ign.configuration(),
+                cnsmr,
+                DFLT_THREAD_CNT,
+                DFLT_TIMEOUT,
+                true,
+                true,
+                false,
+                grpNames,
+                null,
+                false,
+                null
+            ),
+            testLog
+        ).run(), RuntimeException.class, "trigger error log");
+
+        assertTrue("Log with group name not found", errLsnr.check());
+        assertTrue("Consuming with group name not found", cnsmLsnr.check());
     }
 
     /** */
