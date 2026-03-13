@@ -306,9 +306,12 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
+@Deprecated(forRemoval = true)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /**

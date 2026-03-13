@@ -62,9 +62,12 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
  * configuration parameters.
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgnoreIfPeerClassLoadingDisabled
+@Deprecated(forRemoval = true)
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /** Enables additional check for resource name on resources removal. */
     @SystemProperty(value = "Enables an additional check of a resource name on resources removal")
