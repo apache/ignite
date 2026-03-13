@@ -114,8 +114,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             F.asList(1, 4), // Connections per node.
             F.asList(false, true), // Paired connections.
             F.asList(0, 100), // Message queue limit.
-            F.asList(true), // Use client as a load.
-            IntStream.range(0, 50).boxed().collect(Collectors.toList())
+            F.asList(true, false), // Use client as a load.
+            IntStream.range(0, 20).boxed().collect(Collectors.toList())
         );
     }
 
