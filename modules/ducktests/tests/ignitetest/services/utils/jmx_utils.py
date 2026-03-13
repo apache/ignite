@@ -180,6 +180,13 @@ class DiscoveryInfo:
         val = self.__find__("intOrder=(\\d+),")
         return int(val) if val else -1
 
+    @property
+    def is_coordinator(self):
+        """
+        :return: True if node is coordinator. False otherwise.
+        """
+        return self.coordinator == self.node_id
+
     def __find__(self, pattern):
         res = re.search(pattern, self._local_raw)
         return res.group(1) if res else None
