@@ -251,12 +251,22 @@ public enum GridTopic {
     }
 
     /** */
-    public static class T1 {
+    public static class T1 implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridTopic topic;
 
         /** */
         private IgniteUuid id;
+
+        /**
+         * No-arg constructor needed for {@link Serializable}.
+         */
+        public T1() {
+            // No-op.
+        }
 
         /**
          * @param topic Topic.
@@ -291,6 +301,18 @@ public enum GridTopic {
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeByte(topic.ordinal());
+            U.writeIgniteUuid(out, id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            topic = fromOrdinal(in.readByte());
+            id = U.readIgniteUuid(in);
         }
 
         /** {@inheritDoc} */
