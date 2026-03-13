@@ -58,7 +58,6 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -213,7 +212,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Test
-    @Ignore
     public void testIdleRemovedConnectionMetricsUnderLazyLoad() throws Exception {
         maxConnIdleTimeout = 10;
 
@@ -256,7 +254,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Test
-    @Ignore
     public void testMetricsBasics() throws Exception {
         int preloadCnt = 300;
         int srvrCnt = 3;
@@ -359,7 +356,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** Simulates delay/concurrency of connections acquire. */
     @Test
-    @Ignore
     public void testAcquiringThreadsCntMetric() throws Exception {
         // Forces quick connection removing and recreating.
         maxConnIdleTimeout = 1;
@@ -402,7 +398,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Test
-    @Ignore
     public void testPendingMessagesMetric() throws Exception {
         int preloadCnt = 500;
 
