@@ -31,6 +31,18 @@ ducker_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # The absolute path to the root Ignite directory
 ignite_dir="$( cd "${ducker_dir}/../../../.." && pwd )"
 
+# Container-side base directory for the ducker user
+container_ducker_dir="/home/ducker"
+
+# Container-side path where tests of ducktests module are mounted for ducktape tests visibility
+container_ducker_test_dir="${container_ducker_dir}/ducktests"
+
+# Container-side path where Ignite source/code is mounted for Ignite start-up
+container_ignite_dir="/opt/ignite-dev"
+
+# Container-side path where Ignite source/code is mounted for Ignite start-up
+container_ignite_ext_dir="/opt/ignite-extensions"
+
 # The memory consumption to allow during the docker build.
 # This does not include swap.
 docker_build_memory_limit="8000m"
@@ -256,6 +268,7 @@ ducker_build_image() {
     # Tip: if you are scratching your head for some dependency problems that are referring to an old code version
     # (for example java.lang.NoClassDefFoundError), add --no-cache flag to the build shall give you a clean start.
     must_do -v -o docker build --memory="${docker_build_memory_limit}" \
+        --build-arg "HOST_UID=$(id -u)" --build-arg "HOST_GID=$(id -g)" \
         --build-arg "ducker_creator=${user_name}" --build-arg "jdk_version=${jdk_version}" -t "${image_name}" \
         -f "${docker_context}/Dockerfile" -- "${docker_context}"
     docker_status=$?
@@ -308,7 +321,7 @@ docker_run() {
     local mount_ignite_ext=""
     if [[ -d "${ignite_dir}/../ignite-extensions" ]]; then
         local ignite_ext_dir="$( cd "${ignite_dir}/../ignite-extensions" && pwd )"
-        mount_ignite_ext="--mount type=bind,source="${ignite_ext_dir}",target=/opt/ignite-extensions,consistency=delegated"
+        mount_ignite_ext="--mount type=bind,source="${ignite_ext_dir}",target=${container_ignite_ext_dir},consistency=delegated"
     fi
 
     # Invoke docker-run. We need privileged mode to be able to run iptables
@@ -321,7 +334,8 @@ docker_run() {
         --network ducknet ${expose_ports} \
         --memory=${docker_run_memory_limit} \
         --memory-swappiness=1 \
-        --mount type=bind,source="${ignite_dir}",target=/opt/ignite-dev,consistency=delegated \
+        --mount type=bind,source="${ignite_dir}",target=${container_ignite_dir},consistency=delegated \
+        --mount type=bind,source="${ducker_dir}/../",target=${container_ducker_test_dir},consistency=delegated \
         "${mount_ignite_ext}" \
         $DOCKER_OPTIONS \
         --name "${node}" \
@@ -338,7 +352,7 @@ setup_custom_ducktape() {
     local running_container
     running_container=$(docker ps -f=network=ducknet -q)
     must_do -v -o docker cp "${custom_ducktape}" "${running_container}:/opt/ducktape"
-    docker exec --user=root ducker01 bash -c 'set -x && cd /opt/ignite-dev/modules/ducktests/tests && sudo python ./setup.py develop install && cd /opt/ducktape && sudo python ./setup.py develop install'
+    docker exec --user=root ducker01 bash -c "set -x && cd ${container_ducker_test_dir} && sudo python ./setup.py develop install && cd /opt/ducktape && sudo python ./setup.py develop install"
     [[ $? -ne 0 ]] && die "failed to install the new ducktape."
     must_do -v -o docker commit ducker01 "${image_name}"
     must_do -v docker kill "${running_container}"
@@ -408,7 +422,7 @@ attempting to start new ones."
     for n in $(seq -f %02g 1 ${num_nodes}); do
         local node="ducker${n}"
         docker exec --user=root "${node}" \
-            bash -c "grep -v ${node} /opt/ignite-dev/modules/ducktests/tests/docker/build/node_hosts >> /etc/hosts"
+            bash -c "grep -v ${node} ${container_ducker_test_dir}/docker/build/node_hosts >> /etc/hosts"
         [[ $? -ne 0 ]] && die "failed to append to the /etc/hosts file on ${node}"
     done
 
@@ -466,7 +480,7 @@ cat<<EOF >&3
       "ssh_config": {
         "host": "${node}",
         "hostname": "${node}",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
+        "identityfile": "${container_ducker_dir}/.ssh/id_rsa",
         "password": "",
         "port": 22,
         "user": "ducker"
@@ -493,7 +507,7 @@ ducker_test() {
         local regex=".*\/ignitetest\/(.*)"
         if [[ $arg =~ $regex ]]; then
             local ignpath=${BASH_REMATCH[1]}
-            args="${args} ./modules/ducktests/tests/ignitetest/${ignpath}"
+            args="${args} ${container_ducker_test_dir}/ignitetest/${ignpath}"
         else
             args="${args} ${arg}"
         fi
@@ -510,7 +524,7 @@ ducker_test() {
         wait_jobs
         [[ $? -ne 0 ]] && die "failed to execute extra ducktape setup."
     fi
-    cmd="cd /opt/ignite-dev && ducktape --cluster-file /opt/ignite-dev/modules/ducktests/tests/docker/build/cluster.json $args"
+    cmd="cd ${container_ducker_dir} && ducktape --results-root ${container_ducker_dir} --cluster-file ${container_ducker_test_dir}/docker/build/cluster.json $args"
     echo "docker exec ducker01 bash -c \"${cmd}\""
     exec docker exec --user=ducker ducker01 bash -c "${cmd}"
 }
