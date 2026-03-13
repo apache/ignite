@@ -19,12 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Job siblings request.
  */
-public class GridJobSiblingsRequest implements Message {
+public class GridJobSiblingsRequest extends AbstractMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;
@@ -63,11 +63,6 @@ public class GridJobSiblingsRequest implements Message {
      */
     public long topicId() {
         return topicId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 3;
     }
 
     /** {@inheritDoc} */
