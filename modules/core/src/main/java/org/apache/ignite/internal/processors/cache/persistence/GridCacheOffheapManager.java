@@ -617,8 +617,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             || partitionStatesRestored)
             return;
 
-        for (int p = 0; p < grp.affinity().partitions(); p++)
-            restoreStateOfPartition(p, null);
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            ctx.database().checkpointReadLock();
+
+            try {
+                restoreStateOfPartition(p, null);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
+
+        }
 
         confirmPartitionStatesRestored();
     }
