@@ -1246,6 +1246,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return;
 
         while (memPlc.evictionTracker().evictionRequired()) {
+            memPlc.metrics().onPageEvictionsStarted();
+
             warnFirstEvict(memPlc.config());
 
             memPlc.evictionTracker().evictDataPage();

@@ -35,8 +35,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -952,22 +952,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
         /** {@inheritDoc} */
         @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
-            Ignite ignite0 = ignite;
-
-            if (!(ignite0 instanceof IgniteKernal))
-                throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
-
-            ((IgniteEx)ignite0).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
+            context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
         @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
-            Ignite ignite0 = ignite;
-
-            if (!(ignite0 instanceof IgniteKernal))
-                throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
-
-            ((IgniteEx)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+            context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
@@ -1003,6 +993,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
             // No-op.
+        }
+
+        /** */
+        private GridKernalContext context() {
+            Ignite ignite0 = ignite;
+
+            if (ignite0 == null)
+                throw new IgniteSpiException(isStopping() ? "The node is stopping" : "The node is not yet started");
+
+            return ((IgniteEx)ignite0).context();
         }
     }
 }

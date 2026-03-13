@@ -35,7 +35,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.NUMERIC_ROUNDING_MODE;
 import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.convertToBigDecimal;

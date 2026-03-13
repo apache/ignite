@@ -330,6 +330,7 @@ import org.apache.ignite.internal.util.GridPartitionStateMapSerializer;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -350,12 +351,27 @@ import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMess
  * Message factory implementation.
  */
 public class GridIoMessageFactory implements MessageFactoryProvider {
+    /** Custom data marshaller. */
+    private final Marshaller cstDataMarshall;
+
+    /** Class loader for the custom data marshalling. */
+    private final ClassLoader cstDataMarshallClsLdr;
+
+    /**
+     * @param cstDataMarshall Custom data marshaller.
+     * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
+     */
+    public GridIoMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
+        this.cstDataMarshall = cstDataMarshall;
+        this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
+    }
+
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)-65, TxInfo::new, new TxInfoSerializer());
         factory.register((short)-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());
         factory.register((short)-63, ExchangeInfo::new, new ExchangeInfoSerializer());

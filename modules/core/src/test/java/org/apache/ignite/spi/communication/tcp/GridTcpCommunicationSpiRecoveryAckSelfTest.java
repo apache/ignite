@@ -55,6 +55,8 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
 
+import static org.apache.ignite.marshaller.Marshallers.jdk;
+
 /**
  *
  */
@@ -404,7 +406,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             };
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory})
             );
 
             ctx.setLocalNode(node);

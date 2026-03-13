@@ -409,8 +409,12 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            TcpDiscoveryAbstractMessage msg,
+            Socket sock,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
 
             if (msg instanceof TcpDiscoveryJoinRequestMessage && failJoinReqRes.getAndDecrement() > 0)
                 res = RES_WAIT;

@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
-/** Serialization test for discovery messages. */
-public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
-    /** {@inheritDoc} */
-    @Override protected MessageFactoryProvider messageFactory() {
-        return new DiscoveryMessageFactory(jdk(), U.gridClassLoader());
-    }
+/** */
+public interface MessageType {
+    /**
+     * @return Type.
+     */
+    public MessageCollectionItemType type();
 }

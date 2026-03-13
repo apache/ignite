@@ -15,18 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+/** */
+public class MessageCollectionType implements MessageType {
+    /** */
+    private final MessageType valType;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
+    /** */
+    private final boolean set;
 
-/** Serialization test for discovery messages. */
-public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
+    /**
+     * @param valType Value type.
+     * @param set Is set.
+     */
+    public MessageCollectionType(MessageType valType, boolean set) {
+        this.valType = valType;
+        this.set = set;
+    }
+
+    /** @return Value type. */
+    public MessageType valueType() {
+        return valType;
+    }
+
     /** {@inheritDoc} */
-    @Override protected MessageFactoryProvider messageFactory() {
-        return new DiscoveryMessageFactory(jdk(), U.gridClassLoader());
+    @Override public MessageCollectionItemType type() {
+        return MessageCollectionItemType.COLLECTION;
+    }
+
+    /** @return Is set. */
+    public boolean set() {
+        return set;
     }
 }

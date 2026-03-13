@@ -1573,9 +1573,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return Opened socket.
      * @throws IOException If failed.
      * @throws IgniteSpiOperationTimeoutException In case of timeout.
+     * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
-        throws IOException, IgniteSpiOperationTimeoutException {
+    protected Socket openSocket(
+        InetSocketAddress sockAddr,
+        IgniteSpiOperationTimeoutHelper timeoutHelper
+    ) throws IOException, IgniteSpiOperationTimeoutException, IgniteCheckedException {
         return openSocket(createSocket(), sockAddr, timeoutHelper);
     }
 
@@ -1588,10 +1591,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return Connected socket.
      * @throws IOException If failed.
      * @throws IgniteSpiOperationTimeoutException In case of timeout.
+     * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected Socket openSocket(Socket sock, InetSocketAddress remAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
-        throws IOException, IgniteSpiOperationTimeoutException {
-
+    protected Socket openSocket(
+        Socket sock,
+        InetSocketAddress remAddr,
+        IgniteSpiOperationTimeoutHelper timeoutHelper
+    ) throws IOException, IgniteSpiOperationTimeoutException, IgniteCheckedException {
         assert remAddr != null;
 
         try {
@@ -1608,7 +1614,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             return sock;
         }
-        catch (IOException | IgniteSpiOperationTimeoutException e) {
+        catch (IOException | IgniteCheckedException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
@@ -1686,8 +1692,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
+    protected void writeToSocket(
+        Socket sock,
+        TcpDiscoveryAbstractMessage msg,
+        byte[] data,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
         assert sock != null;
         assert data != null;
 
@@ -1771,9 +1783,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param res Integer response.
      * @param timeout Socket timeout.
      * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
-        throws IOException {
+    protected void writeToSocket(
+        TcpDiscoveryAbstractMessage msg,
+        Socket sock,
+        int res,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
         assert sock != null;
 
         try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
@@ -1799,8 +1816,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or read timed out.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException,
-        IgniteCheckedException {
+    protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
         Socket sock = ses.socket();
 
         assert sock != null;
@@ -2445,12 +2461,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** Starts a timer for a socket operation. */
-    private SocketTimeoutObject startTimer(Socket sock, long timeout) {
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
+    private SocketTimeoutObject startTimer(Socket sock, long timeout) throws IgniteCheckedException {
+        try {
+            SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
 
-        addTimeoutObject(obj);
+            addTimeoutObject(obj);
 
-        return obj;
+            return obj;
+        }
+        catch (IgniteSpiException e) {
+            throw new IgniteCheckedException("Failed to perform socket operation", e);
+        }
     }
 
     /**

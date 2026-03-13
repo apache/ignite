@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -128,29 +127,15 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) {
-        if (clientNodeAttrs != null && clientNodeAttrsBytes == null) {
-            try {
-                clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal client node attributes.", e);
-            }
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (clientNodeAttrs != null)
+            clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (clientNodeAttrsBytes != null && clientNodeAttrs == null) {
-            try {
-                clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
-
-                clientNodeAttrsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal client node attributes.", e);
-            }
-        }
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (clientNodeAttrsBytes != null)
+            clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
