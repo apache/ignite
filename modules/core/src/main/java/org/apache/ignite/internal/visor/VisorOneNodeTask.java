@@ -31,6 +31,8 @@ public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R>
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<A> arg) {
         Collection<UUID> nodes = super.jobNodes(arg);
 
+        System.out.println("nodes = " + nodes);
+
         assert nodes.size() == 1 : nodes;
 
         return nodes;
