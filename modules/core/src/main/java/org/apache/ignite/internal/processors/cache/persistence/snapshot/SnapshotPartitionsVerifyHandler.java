@@ -327,7 +327,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             closeAllComponents(snpCtx);
         }
 
-        return res;
+        return Collections.unmodifiableMap(res);
     }
 
     /** */
@@ -386,7 +386,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 )
             );
 
-            return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
+            return partitionHashRecords.stream().collect(Collectors.toUnmodifiableMap(PartitionHashRecord::partitionKey, r -> r));
         }
         catch (Throwable t) {
             log.error("Error executing handler: ", t);

@@ -379,6 +379,11 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             spi(ignite).stopBlock(true);
     }
 
+    /** Return list of blocked messages. */
+    public List<BlockedMessageDescriptor> blockedMessages() {
+        return blockedMsgs;
+    }
+
     /**
      * @param grpId Group id.
      */
