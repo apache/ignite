@@ -115,8 +115,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     private RelDataType tableRowType;
 
     /** */
-    public CacheTableDescriptorImpl(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc,
-        Object affinityIdentity) {
+    public CacheTableDescriptorImpl(
+        GridCacheContextInfo<?, ?> cacheInfo,
+        GridQueryTypeDescriptor typeDesc,
+        Object affinityIdentity,
+        VirtualColumnProvider virtColProv
+    ) {
         this.cacheInfo = cacheInfo;
         this.typeDesc = typeDesc;
         this.affinityIdentity = affinityIdentity;
@@ -149,6 +153,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), false, QueryUtils.VAL_COL));
 
         int fldIdx = QueryUtils.VAL_COL + 1;
+
+        List<CacheColumnDescriptor> virtCols = virtColProv.provideVirtualColumns(fldIdx);
+        descriptors.addAll(virtCols);
+        fldIdx += virtCols.size();
+        virtCols.forEach(c -> virtualFields.set(c.fieldIndex()));
 
         int keyField = QueryUtils.KEY_COL;
         int valField = QueryUtils.VAL_COL;
