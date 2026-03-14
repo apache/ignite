@@ -34,14 +34,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution request.
  */
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
-public class GridJobExecuteRequest implements ExecutorAwareMessage, MarshallableMessage {
+public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;
@@ -453,8 +452,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, Marshallable
         return S.toString(GridJobExecuteRequest.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    /**
+     * @param marsh Marshaller.
+     */
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         jobBytes = U.marshal(marsh, job);
         topPredBytes = U.marshal(marsh, topPred);
         siblingsBytes = U.marshal(marsh, siblings);
@@ -462,8 +463,11 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, Marshallable
         jobAttrsBytes = U.marshal(marsh, jobAttrs);
     }
 
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+    /**
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     */
+    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         assert top != null || topPredBytes != null;
         assert sesAttrsBytes != null || !sesFullSup;
 

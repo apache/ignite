@@ -22,7 +22,7 @@ import org.apache.ignite.internal.ExchangeInfoSerializer;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.GridJobExecuteRequest;
-import org.apache.ignite.internal.GridJobExecuteRequestMarshallableSerializer;
+import org.apache.ignite.internal.GridJobExecuteRequestSerializer;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobExecuteResponseSerializer;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
@@ -396,8 +396,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new, new HandshakeMessageSerializer());
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer());
         factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
-        factory.register((short)1, GridJobExecuteRequest::new,
-            new GridJobExecuteRequestMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)1, GridJobExecuteRequest::new, new GridJobExecuteRequestSerializer());
         factory.register((short)2, GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer());
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
         factory.register((short)4, GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer());
