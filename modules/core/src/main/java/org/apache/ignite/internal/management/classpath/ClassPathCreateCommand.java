@@ -97,6 +97,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         printer.accept("New classpath registered [uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
         printer.accept("Starting to upload files:");
 
+        // TODO: add pretty print here.
         for (Path file : files) {
             printer.accept(String.valueOf(file.toAbsolutePath()));
             cli.uploadClasspathFile(uploadNode, icpID, file);
