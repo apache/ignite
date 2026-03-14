@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -49,9 +50,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** */
 public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVerifyResult> {
@@ -265,11 +268,32 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                     ", walSegments=" + procSegCnt.get() + ']');
             }
 
-            return new IncrementalSnapshotVerifyResult(
+            IncrementalSnapshotVerifyResult r = new IncrementalSnapshotVerifyResult(
                 txHashRes,
                 partHashRes,
                 partiallyCommittedTxs,
                 exceptions);
+
+            try {
+                r.prepareMarshal(jdk());
+                r.finishUnmarshal(jdk(), U.gridClassLoader());
+            }
+            catch (Exception e) {
+                System.out.println("MY ERROR");
+                System.out.println("MY txHashRes=" + ToStringBuilder.reflectionToString(txHashRes));
+                System.out.println("MY partHashRes=" + ToStringBuilder.reflectionToString(partHashRes));
+                System.out.println("MY nodesTxHash=" + ToStringBuilder.reflectionToString(nodesTxHash));
+                System.out.println("MY txHashRes=" + txHashRes);
+                System.out.println("MY txHashRes=" + partHashRes);
+                System.out.println("MY txHashRes=" + nodesTxHash);
+                System.out.println("MY txHashRes.size()=" + txHashRes.size());
+                System.out.println("MY partHashRes.size()=" + partHashRes.size());
+                System.out.println("MY nodesTxHash.size()=" + nodesTxHash.size());
+
+                throw e;
+            }
+
+            return r;
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
