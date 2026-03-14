@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.commons.lang3.builder.MultilineRecursiveToStringStyle;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
@@ -32,6 +34,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** */
 public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
@@ -97,6 +101,24 @@ public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         txHashResBytes = U.marshal(marsh, txHashRes);
         partHashResBytes = U.marshal(marsh, partHashRes);
+
+        try {
+            finishUnmarshal(jdk(), U.gridClassLoader());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("MY ERROR");
+            System.out.println("MY txHashRes=" + ToStringBuilder.reflectionToString(txHashRes,
+                new MultilineRecursiveToStringStyle()));
+            System.out.println("MY partHashRes=" + ToStringBuilder.reflectionToString(partHashRes,
+                new MultilineRecursiveToStringStyle()));
+            System.out.println("MY txHashRes=" + txHashRes);
+            System.out.println("MY txHashRes=" + partHashRes);
+            System.out.println("MY txHashRes.size()=" + txHashRes.size());
+            System.out.println("MY partHashRes.size()=" + partHashRes.size());
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
