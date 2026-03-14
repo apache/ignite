@@ -280,6 +280,7 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                 r.finishUnmarshal(jdk(), U.gridClassLoader());
             }
             catch (Exception e) {
+                e.printStackTrace();
                 System.out.println("MY ERROR");
                 System.out.println("MY txHashRes=" + ToStringBuilder.reflectionToString(txHashRes,
                     new MultilineRecursiveToStringStyle()));
