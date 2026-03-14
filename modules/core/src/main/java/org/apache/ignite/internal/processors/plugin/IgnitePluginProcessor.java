@@ -152,6 +152,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         return createComponentOrDefault0(cls, dflt);
     }
 
+    /** */
     private <T> @Nullable T createComponentOrDefault0(Class<T> cls, @Nullable T dflt) {
         for (PluginProvider<?> plugin : plugins.values()) {
             PluginContext ctx = pluginContextForProvider(plugin);
