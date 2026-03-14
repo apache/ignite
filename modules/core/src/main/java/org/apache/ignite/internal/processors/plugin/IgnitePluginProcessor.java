@@ -128,21 +128,42 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Creates an instance of a component from the {@link PluginProvider plugin} (first of
+     * {@link IgniteConfiguration#getPluginProviders()} that did not return {@code null}).
+     *
      * @param cls Component class.
      * @param <T> Component type.
      * @return Component class instance or {@code null} if no one plugin override this component.
      */
-    public <T> T createComponent(Class<T> cls) {
-        for (PluginProvider plugin : plugins.values()) {
+    public <T> @Nullable T createComponent(Class<T> cls) {
+        return createComponentOrDefault0(cls, null);
+    }
+
+    /**
+     * Creates an instance of a component from the {@link PluginProvider plugin} (first of
+     * {@link IgniteConfiguration#getPluginProviders()} that did not return {@code null}).
+     *
+     * @param cls Component class.
+     * @param dflt Default component instance.
+     * @param <T> Component type.
+     * @return Component class instance or {@code dflt} if no one plugin override this component.
+     */
+    public <T> T createComponentOrDefault(Class<T> cls, T dflt) {
+        return createComponentOrDefault0(cls, dflt);
+    }
+
+    /** */
+    private <T> @Nullable T createComponentOrDefault0(Class<T> cls, @Nullable T dflt) {
+        for (PluginProvider<?> plugin : plugins.values()) {
             PluginContext ctx = pluginContextForProvider(plugin);
 
-            T comp = (T)plugin.createComponent(ctx, cls);
+            T comp = plugin.createComponent(ctx, cls);
 
             if (comp != null)
                 return comp;
         }
 
-        return null;
+        return dflt;
     }
 
     /** {@inheritDoc} */

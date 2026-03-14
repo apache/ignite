@@ -542,7 +542,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private boolean isSystemFieldName(String alias) {
         return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
+            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias)
+            // TODO: IGNITE-28223 Похоже что тут надо будет поменять
+            || "KEY_TO_STRING".equalsIgnoreCase(alias);
     }
 
     /** {@inheritDoc} */

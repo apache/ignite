@@ -254,8 +254,12 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo
     ) {
-        CacheTableDescriptorImpl desc =
-            new CacheTableDescriptorImpl(cacheInfo, typeDesc, affinityIdentity(cacheInfo.config()));
+        CacheTableDescriptorImpl desc = new CacheTableDescriptorImpl(
+            cacheInfo,
+            typeDesc,
+            affinityIdentity(cacheInfo.config()),
+            ctx.plugins().createComponentOrDefault(VirtualColumnProvider.class, VirtualColumnProvider.EMPTY)
+        );
 
         return new CacheTableImpl(ctx, desc);
     }
