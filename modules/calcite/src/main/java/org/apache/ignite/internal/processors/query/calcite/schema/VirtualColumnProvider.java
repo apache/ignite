@@ -28,6 +28,7 @@ import org.apache.ignite.plugin.PluginProvider;
  */
 @FunctionalInterface
 public interface VirtualColumnProvider {
+    /** */
     VirtualColumnProvider EMPTY = nextColumnIndex -> List.of();
 
     /**

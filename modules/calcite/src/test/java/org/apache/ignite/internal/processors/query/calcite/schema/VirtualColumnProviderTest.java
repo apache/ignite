@@ -103,7 +103,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
             if (VirtualColumnProvider.class.equals(cls)) {
-                return (T) (VirtualColumnProvider) nxtColIdx -> List.of(new KeyToStingVirtualColumn(nxtColIdx));
+                return (T)(VirtualColumnProvider)nxtColIdx -> List.of(new KeyToStingVirtualColumn(nxtColIdx));
             }
 
             return super.createComponent(ctx, cls);
