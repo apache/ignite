@@ -1009,7 +1009,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
-            startProcessor(new ClassPathProcessor(ctx));
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
@@ -1020,6 +1019,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Start the encryption manager after assigning the discovery manager to context, so it will be
             // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
+            startProcessor(new ClassPathProcessor(ctx));
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 

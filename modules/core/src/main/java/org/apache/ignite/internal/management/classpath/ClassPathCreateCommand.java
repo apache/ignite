@@ -103,6 +103,8 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
             cli.uploadClasspathFile(uploadNode, icpID, file);
             printer.accept("DONE");
         }
+
+        CommandUtils.execute(client, null, ClassPathDistributeTask.class, icpID, Collections.singletonList(uploadNode));
     }
 
     /** */
