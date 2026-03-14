@@ -281,9 +281,12 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
             }
             catch (Exception e) {
                 System.out.println("MY ERROR");
-                System.out.println("MY txHashRes=" + ToStringBuilder.reflectionToString(txHashRes, new MultilineRecursiveToStringStyle()));
-                System.out.println("MY partHashRes=" + ToStringBuilder.reflectionToString(partHashRes, new MultilineRecursiveToStringStyle()));
-                System.out.println("MY nodesTxHash=" + ToStringBuilder.reflectionToString(nodesTxHash, new MultilineRecursiveToStringStyle()));
+                System.out.println("MY txHashRes=" + ToStringBuilder.reflectionToString(txHashRes,
+                    new MultilineRecursiveToStringStyle()));
+                System.out.println("MY partHashRes=" + ToStringBuilder.reflectionToString(partHashRes,
+                    new MultilineRecursiveToStringStyle()));
+                System.out.println("MY nodesTxHash=" + ToStringBuilder.reflectionToString(nodesTxHash,
+                    new MultilineRecursiveToStringStyle()));
                 System.out.println("MY txHashRes=" + txHashRes);
                 System.out.println("MY txHashRes=" + partHashRes);
                 System.out.println("MY txHashRes=" + nodesTxHash);
