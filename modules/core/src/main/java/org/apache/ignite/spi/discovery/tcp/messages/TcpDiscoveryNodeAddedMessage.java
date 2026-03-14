@@ -44,6 +44,9 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Added node. */
     private TcpDiscoveryNode node;
 

@@ -33,6 +33,9 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage implements Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** New router nodeID. */
     @Order(0)
     UUID routerNodeId;
