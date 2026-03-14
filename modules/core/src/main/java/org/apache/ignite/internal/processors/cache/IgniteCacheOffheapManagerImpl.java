@@ -1792,22 +1792,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
 
-            afterRowFound(row, key);
-
-            return row;
-        }
-
-        /**
-         * @param row Row.
-         * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        private void afterRowFound(@Nullable CacheDataRow row, KeyCacheObject key) throws IgniteCheckedException {
             if (row != null) {
                 row.key(key);
 
                 grp.dataRegion().evictionTracker().touchPage(row.link());
             }
+
+            return row;
         }
 
         /** {@inheritDoc} */

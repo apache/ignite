@@ -80,35 +80,46 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPage(long pageId) throws IgniteCheckedException {
+    @Override public void touchPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        long latestTs = compactTimestamp(U.currentTimeMillis());
-
-        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
+        int trackingIdx = trackingIdx(pageIdx);
+        long trackingPtr = trackingArrPtr + trackingIdx * 8L;
 
         boolean success;
 
         do {
-            int trackingIdx = trackingIdx(pageIdx);
-
-            long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+            long trackingData = GridUnsafe.getLongVolatile(null, trackingPtr);
 
             int firstTs = first(trackingData);
 
-            assert firstTs >= 0 : "[firstTs=" + firstTs + ", trackingData=" + trackingData + "]";
+            if (firstTs <= 0) // Concurrently evicted.
+                return;
+
+            long ts = compactTimestamp(U.currentTimeMillis());
+
+            assert ts >= 0 && ts < Integer.MAX_VALUE;
 
             int secondTs = second(trackingData);
 
             long newTrackingData;
 
             if (firstTs <= secondTs)
-                newTrackingData = U.toLong((int)latestTs, secondTs);
+                newTrackingData = U.toLong((int)ts, secondTs);
             else
-                newTrackingData = U.toLong(firstTs, (int)latestTs);
+                newTrackingData = U.toLong(firstTs, (int)ts);
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
-        } while (!success);
+            success = GridUnsafe.compareAndSwapLong(null, trackingPtr, trackingData, newTrackingData);
+        }
+        while (!success);
+    }
+
+    /** */
+    @Override protected void initPage(long pageId) {
+        int ts = (int)compactTimestamp(U.currentTimeMillis());
+
+        long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 8L;
+
+        GridUnsafe.compareAndSwapLong(null, trackingPtr, 0, U.toLong(ts, 0));
     }
 
     /** {@inheritDoc} */

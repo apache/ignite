@@ -185,7 +185,10 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     }
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) throws IgniteCheckedException {
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        if (isHeadPage)
+            initPage(pageId);
+
         // Do nothing if called for tail page.
         if (prevPageId == 0)
             return;
@@ -199,6 +202,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             linkFragmentPages(trackingIdx(PageIdUtils.pageIndex(pageId)), tailPageTrackingIdx(prevPageId));
         }
     }
+
+    /** */
+    protected abstract void initPage(long pageId);
 
     /**
      * Determine tail page tracking index given page id of previously written fragment.
