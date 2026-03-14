@@ -388,7 +388,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                 )
             );
 
-            return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
+            return partitionHashRecords.stream().collect(
+                Collectors.toMap(PartitionHashRecord::partitionKey, Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         }
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
