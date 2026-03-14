@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
@@ -55,6 +60,7 @@ import org.apache.ignite.client.events.ClientFailEvent;
 import org.apache.ignite.client.events.ClientLifecycleEventListener;
 import org.apache.ignite.client.events.ClientStartEvent;
 import org.apache.ignite.client.events.ClientStopEvent;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
@@ -623,6 +629,52 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         marsh.setBinaryConfiguration(resCfg);
+    }
+
+    /**
+     * @param node Node to upload file to.
+     * @param icpID Classpath ID.
+     * @param file File to upload.
+     */
+    public void uploadClasspathFile(ClusterNode node, UUID icpID, Path file) throws IOException {
+        List<UUID> uploadNode = Collections.singletonList(node.id());
+
+        String name = file.getFileName().toString();
+        byte[] batch = new byte[(int)(U.MB)];
+
+        try (InputStream fis = Files.newInputStream(file)) {
+            long[] offset = new long[] {0};
+            int[] bytesCnt = new int[1];
+
+            // We want to create empty file on the server side.
+            bytesCnt[0] = fis.read(batch);
+
+            do {
+                ch.service(
+                    ClientOperation.FILE_UPLOAD,
+                    ch -> {
+                        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), ch.out(), null)) {
+                            w.writeUuid(node.id());
+                            w.writeUuid(icpID);
+                            w.writeString(name);
+                            w.writeLong(offset[0]);
+                            w.writeInt(bytesCnt[0]);
+                            w.writeByteArray(batch);
+                        }
+                    },
+                    in -> null,
+                    uploadNode // Request can still be sent to a random (default) node.
+                );
+
+                offset[0] += bytesCnt[0];
+                bytesCnt[0] = fis.read(batch);
+            }
+            while (bytesCnt[0] > 0);
+
+            // Check all data read and sent.
+            if (offset[0] != Files.size(file))
+                throw new IOException("Can't read all data from file");
+        }
     }
 
     /**

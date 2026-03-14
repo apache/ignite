@@ -42,6 +42,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -367,6 +368,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private RollingUpgradeProcessor rollUpProc;
 
+    /** Classpath processor. */
+    @GridToStringExclude
+    private ClassPathProcessor classPathProc;
+
     /** */
     private Thread.UncaughtExceptionHandler hnd;
 
@@ -603,6 +608,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof RollingUpgradeProcessor)
             rollUpProc = (RollingUpgradeProcessor)comp;
+        else if (comp instanceof ClassPathProcessor)
+            classPathProc = (ClassPathProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -1115,6 +1122,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public RollingUpgradeProcessor rollingUpgrade() {
         return rollUpProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassPathProcessor classPath() {
+        return classPathProc;
     }
 
     /** {@inheritDoc} */

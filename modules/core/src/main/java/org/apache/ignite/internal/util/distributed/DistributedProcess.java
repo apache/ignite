@@ -508,6 +508,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Snapshot partitions validation.
          */
-        CHECK_SNAPSHOT_PARTS
+        CHECK_SNAPSHOT_PARTS,
+
+        /**
+         * Deploy new classpath to all nodes.
+         */
+        CLASSPATH_DEPLOY_TO_ALL;
     }
 }

@@ -90,6 +90,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -1018,6 +1019,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Start the encryption manager after assigning the discovery manager to context, so it will be
             // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
+            startProcessor(new ClassPathProcessor(ctx));
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 

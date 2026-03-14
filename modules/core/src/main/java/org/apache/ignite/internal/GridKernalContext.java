@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -647,6 +648,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Rolling upgrade processor.
      */
     public RollingUpgradeProcessor rollingUpgrade();
+
+    /**
+     * @return Class path processor.
+     */
+    public ClassPathProcessor classPath();
 
     /**
      * Executor that is in charge of processing user async continuations.
