@@ -19,21 +19,18 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** */
-public class SnapshotMetadataResponse implements Message {
+public class SnapshotMetadataResponse implements MarshallableMessage {
     /** */
-    @Order(value = 0, method = "metadataBytes")
+    @Order(0)
     @SuppressWarnings("unused")
-    private byte[] metadataBytes;
+    byte[] metadataBytes;
 
     /** */
     private List<SnapshotMetadata> metadata;
@@ -53,30 +50,14 @@ public class SnapshotMetadataResponse implements Message {
         return metadata;
     }
 
-    /** */
-    public byte[] metadataBytes() {
-        if (metadataBytes != null)
-            return metadataBytes;
-
-        try {
-            return metadataBytes = U.marshal(jdk(), metadata);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        metadataBytes = U.marshal(marsh, metadata);
     }
 
-    /** */
-    public void metadataBytes(byte[] metadataBytes) {
-        if (F.isEmpty(metadataBytes))
-            return;
-
-        try {
-            metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        metadata = U.unmarshal(marsh, metadataBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

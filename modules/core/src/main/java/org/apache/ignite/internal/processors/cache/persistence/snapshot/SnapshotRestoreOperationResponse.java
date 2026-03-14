@@ -21,31 +21,28 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** Snapshot operation prepare response. */
-public class SnapshotRestoreOperationResponse implements Message {
+public class SnapshotRestoreOperationResponse implements MarshallableMessage {
     /** Cache configurations on local node. */
     private List<StoredCacheData> ccfgs;
 
     /** */
-    @Order(value = 0, method = "ccfgsBytes")
-    private byte[] ccfgsBytes;
+    @Order(0)
+    byte[] ccfgsBytes;
     
     /** Snapshot metadata files on local node. */
     private List<SnapshotMetadata> metas;
 
     /** */
-    @Order(value = 1, method = "metasBytes")
-    private byte[] metasBytes;
+    @Order(1)
+    byte[] metasBytes;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotRestoreOperationResponse() {
@@ -74,56 +71,16 @@ public class SnapshotRestoreOperationResponse implements Message {
         return metas;
     }
 
-    /** */
-    public byte[] ccfgsBytes() {
-        if (ccfgsBytes != null)
-            return ccfgsBytes;
-
-        try {
-            return ccfgsBytes = U.marshal(jdk(), ccfgs);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        ccfgsBytes = U.marshal(marsh, ccfgs);
+        metasBytes = U.marshal(marsh, metas);
     }
 
-    /** */
-    public void ccfgsBytes(byte[] ccfgsBytes) {
-        if (F.isEmpty(ccfgsBytes))
-            return;
-
-        try {
-            ccfgs = U.unmarshal(jdk(), ccfgsBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    /** */
-    public byte[] metasBytes() {
-        if (metasBytes != null)
-            return metasBytes;
-
-        try {
-            return metasBytes = U.marshal(jdk(), metas);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    public void metasBytes(byte[] metasBytes) {
-        if (F.isEmpty(metasBytes))
-            return;
-
-        try {
-            metas = U.unmarshal(jdk(), metasBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        ccfgs = U.unmarshal(marsh, ccfgsBytes, clsLdr);
+        metas = U.unmarshal(marsh, metasBytes, clsLdr);
     }
     
     /** {@inheritDoc} */

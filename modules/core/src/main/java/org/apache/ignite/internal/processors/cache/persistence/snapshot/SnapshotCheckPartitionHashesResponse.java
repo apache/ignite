@@ -19,25 +19,22 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** */
-public class SnapshotCheckPartitionHashesResponse implements Message {
+public class SnapshotCheckPartitionHashesResponse implements MarshallableMessage {
     /** Per metas result: consistent id -> check results per partition key. */
     private Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults;
 
     /** */
-    @Order(value = 0, method = "perMetaResultsBytes")
-    private byte[] perMetaResultsBytes;
+    @Order(0)
+    byte[] perMetaResultsBytes;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotCheckPartitionHashesResponse() {
@@ -54,30 +51,14 @@ public class SnapshotCheckPartitionHashesResponse implements Message {
         return perMetaResults;
     }
 
-    /** */
-    public byte[] perMetaResultsBytes() {
-        if (perMetaResultsBytes != null)
-            return perMetaResultsBytes;
-
-        try {
-            return perMetaResultsBytes = U.marshal(jdk(), perMetaResults);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        perMetaResultsBytes = U.marshal(marsh, perMetaResults);
     }
 
-    /** */
-    public void perMetaResultsBytes(byte[] perMetaResultsBytes) {
-        if (F.isEmpty(perMetaResultsBytes))
-            return;
-
-        try {
-            perMetaResults = U.unmarshal(jdk(), perMetaResultsBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        perMetaResults = U.unmarshal(marsh, perMetaResultsBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

@@ -19,25 +19,24 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** */
-public class SnapshotPartitionsVerifyHandlerResponse implements Message {
+public class SnapshotPartitionsVerifyHandlerResponse implements MarshallableMessage {
     /** */
     private Map<PartitionKey, PartitionHashRecord> res;
 
     /** */
-    @Order(value = 0, method = "responseBytes")
-    private byte[] resBytes;
+    @Order(0)
+    byte[] resBytes;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotPartitionsVerifyHandlerResponse() {
@@ -54,30 +53,14 @@ public class SnapshotPartitionsVerifyHandlerResponse implements Message {
         return res;
     }
 
-    /** */
-    public byte[] responseBytes() {
-        if (resBytes != null)
-            return resBytes;
-
-        try {
-            return resBytes = U.marshal(jdk(), res);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        resBytes = U.marshal(jdk(), res);
     }
 
-    /** */
-    public void responseBytes(byte[] resBytes) {
-        if (F.isEmpty(resBytes))
-            return;
-
-        try {
-            res = U.unmarshal(jdk(), resBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        res = U.unmarshal(jdk(), resBytes, U.gridClassLoader());
     }
 
     /** {@inheritDoc} */

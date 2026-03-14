@@ -48,25 +48,25 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAccepted
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResultSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResultMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponseMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponseMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponseMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -257,12 +257,17 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)521, SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer());
         factory.register((short)522, DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
         factory.register((short)523, SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
-        factory.register((short)524, IncrementalSnapshotVerifyResult::new, new IncrementalSnapshotVerifyResultSerializer());
-        factory.register((short)525, SnapshotRestoreOperationResponse::new, new SnapshotRestoreOperationResponseSerializer());
-        factory.register((short)526, SnapshotMetadataResponse::new, new SnapshotMetadataResponseSerializer());
-        factory.register((short)527, SnapshotCheckPartitionHashesResponse::new, new SnapshotCheckPartitionHashesResponseSerializer());
+        factory.register((short)524, IncrementalSnapshotVerifyResult::new,
+            new IncrementalSnapshotVerifyResultMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)525, SnapshotRestoreOperationResponse::new,
+            new SnapshotRestoreOperationResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)526, SnapshotMetadataResponse::new,
+            new SnapshotMetadataResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)527, SnapshotCheckPartitionHashesResponse::new,
+            new SnapshotCheckPartitionHashesResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
         factory.register((short)529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
-        factory.register((short)530, SnapshotPartitionsVerifyHandlerResponse::new, new SnapshotPartitionsVerifyHandlerResponseSerializer());
+        factory.register((short)530, SnapshotPartitionsVerifyHandlerResponse::new,
+            new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
     }
 }

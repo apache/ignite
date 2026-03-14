@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -30,19 +29,18 @@ import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** */
-public class IncrementalSnapshotVerifyResult implements Message {
+public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
     /** Transaction hashes collection. */
     private Map<Object, TransactionsHashRecord> txHashRes;
     
     /** */
-    @Order(value = 0, method = "txHashResBytes")
-    private byte[] txHashResBytes;
+    @Order(0)
+    byte[] txHashResBytes;
 
     /**
      * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
@@ -51,8 +49,8 @@ public class IncrementalSnapshotVerifyResult implements Message {
     private Map<PartitionKey, PartitionHashRecord> partHashRes;
 
     /** */
-    @Order(value = 1, method = "partHashResBytes")
-    private byte[] partHashResBytes;
+    @Order(1)
+    byte[] partHashResBytes;
     
     /** Partially committed transactions' collection. */
     @Order(2)
@@ -95,56 +93,16 @@ public class IncrementalSnapshotVerifyResult implements Message {
         return partiallyCommittedTxs;
     }
 
-    /** */
-    public byte[] txHashResBytes() {
-        if (txHashResBytes != null)
-            return txHashResBytes;
-
-        try {
-            return txHashResBytes = U.marshal(jdk(), txHashRes);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        txHashResBytes = U.marshal(marsh, txHashRes);
+        partHashResBytes = U.marshal(marsh, partHashRes);
     }
 
-    /** */
-    public void txHashResBytes(byte[] txHashResBytes) {
-        if (F.isEmpty(txHashResBytes))
-            return;
-
-        try {
-            txHashRes = U.unmarshal(jdk(), txHashResBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /** */
-    public byte[] partHashResBytes() {
-        if (partHashResBytes != null)
-            return partHashResBytes;
-
-        try {
-            return partHashResBytes = U.marshal(jdk(), partHashRes);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    public void partHashResBytes(byte[] partHashResBytesBytes) {
-        if (F.isEmpty(partHashResBytesBytes))
-            return;
-
-        try {
-            partHashRes = U.unmarshal(jdk(), partHashResBytesBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        txHashRes = U.unmarshal(marsh, txHashResBytes, clsLdr);
+        partHashRes = U.unmarshal(marsh, partHashResBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
