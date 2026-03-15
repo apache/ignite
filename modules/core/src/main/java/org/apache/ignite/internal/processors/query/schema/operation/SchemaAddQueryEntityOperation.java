@@ -111,7 +111,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
             entities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to marshall query entities", e);
+            throw new IgniteException("Failed to unmarshall query entities", e);
         }
     }
 
