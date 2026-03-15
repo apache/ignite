@@ -30,12 +30,11 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** */
 public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
@@ -103,11 +102,11 @@ public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
         partHashResBytes = U.marshal(marsh, partHashRes);
 
         try {
-            finishUnmarshal(jdk(), U.gridClassLoader());
+            finishUnmarshal(marsh, U.gridClassLoader());
         }
         catch (Exception e) {
             e.printStackTrace();
-            System.out.println("MY ERROR");
+            System.out.println("MY ERROR " + X.getFullStackTrace(e));
             System.out.println("MY txHashRes=" + ToStringBuilder.reflectionToString(txHashRes,
                 new MultilineRecursiveToStringStyle()));
             System.out.println("MY partHashRes=" + ToStringBuilder.reflectionToString(partHashRes,
