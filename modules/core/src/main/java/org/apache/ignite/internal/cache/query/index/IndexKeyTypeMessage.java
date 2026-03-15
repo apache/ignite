@@ -48,6 +48,7 @@ public class IndexKeyTypeMessage implements MarshallableMessage {
     /** Constructor. */
     public IndexKeyTypeMessage(@Nullable IndexKeyType keyType) {
         val = keyType;
+        code = encode(keyType);
     }
 
     /** Constructor. */
