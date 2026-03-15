@@ -24,13 +24,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Enabling indexing on cache operation.
  */
-public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
+public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,7 +38,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     private Collection<QueryEntity> entities;
 
     /** Serialized form of query entities. */
-    @Order(value = 0, method = "queryEntitiesBytes")
+    @Order(0)
     transient byte[] qryEntitiesBytes;
 
     /** */
@@ -95,25 +95,23 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         return sqlEscape;
     }
 
-    /** */
-    byte[] queryEntitiesBytes() {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         try {
-            return U.marshal(jdk(), entities);
+            qryEntitiesBytes = U.marshal(marsh, entities);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to marshall query entities", e);
         }
     }
 
-    /** */
-    void queryEntitiesBytes(byte[] qryEntitiesBytes) {
-        if (qryEntitiesBytes != null) {
-            try {
-                entities = U.unmarshal(jdk(), qryEntitiesBytes, U.gridClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        try {
+            entities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshall query entities", e);
         }
     }
 

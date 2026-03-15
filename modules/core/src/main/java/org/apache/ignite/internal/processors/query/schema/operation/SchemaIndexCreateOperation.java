@@ -26,12 +26,13 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Schema index create operation.
  */
-public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
+public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +45,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     private QueryIndex idx;
 
     /** Serialized form of 'query index'. */
-    @Order(value = 1, method = "queryIndexBytes")
+    @Order(1)
     transient byte[] qryIdxBytes;
 
     /** Ignore operation if index exists. */
@@ -114,25 +115,23 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
         return parallel;
     }
 
-    /** */
-    byte[] queryIndexBytes() {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         try {
-            return U.marshal(Marshallers.jdk(), idx);
+            qryIdxBytes = U.marshal(marsh, idx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to marshall query index", e);
         }
     }
 
-    /** */
-    void queryIndexBytes(byte[] qryIdxBytes) {
-        if (qryIdxBytes != null) {
-            try {
-                idx = U.unmarshal(Marshallers.jdk(), qryIdxBytes, U.gridClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshall query index", e);
-            }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        try {
+            idx = U.unmarshal(marsh, qryIdxBytes, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshall query index", e);
         }
     }
 

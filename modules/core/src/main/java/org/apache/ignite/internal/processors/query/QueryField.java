@@ -23,13 +23,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Query field metadata.
  */
-public class QueryField implements Serializable, Message {
+public class QueryField implements Serializable, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +53,7 @@ public class QueryField implements Serializable, Message {
     private Object dfltVal;
 
     /** Serialized form of 'default value'. */
-    @Order(value = 4, method = "defaultValueBytes")
+    @Order(4)
     transient byte[] dfltValBytes;
 
     /** Precision. */
@@ -166,25 +166,23 @@ public class QueryField implements Serializable, Message {
         return scale;
     }
 
-    /** */
-    public byte[] defaultValueBytes() {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
         try {
-            return U.marshal(Marshallers.jdk(), dfltVal);
+            dfltValBytes = U.marshal(marsh, dfltVal);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to marshal default value", e);
         }
     }
 
-    /** */
-    public void defaultValueBytes(byte[] dfltValBytes) {
-        if (dfltValBytes != null) {
-            try {
-                dfltVal = U.unmarshal(Marshallers.jdk(), dfltValBytes, U.gridClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal default value", e);
-            }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        try {
+            dfltVal = U.unmarshal(marsh, dfltValBytes, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal default value", e);
         }
     }
 
