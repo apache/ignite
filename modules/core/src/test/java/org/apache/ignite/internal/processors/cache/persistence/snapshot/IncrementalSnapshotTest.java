@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -426,7 +427,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 DistributedProcess.DistributedProcessType stage = failStage.get();
 
                 if (stage != null && stage.ordinal() == singleMsg.type())
-                    GridTestUtils.setFieldValue(singleMsg, "err", new IgniteException("Test exception."));
+                    GridTestUtils.setFieldValue(singleMsg, "errMsg", new ErrorMessage(new IgniteException("Test exception.")));
             }
 
             return false;

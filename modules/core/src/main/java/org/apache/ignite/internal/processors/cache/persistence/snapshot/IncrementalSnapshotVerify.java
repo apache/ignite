@@ -234,30 +234,33 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
             for (Map.Entry<GridCacheVersion, Set<Short>> tx: txPrimParticipatingNodes.entrySet())
                 calcTxHash.accept(tx.getKey(), tx.getValue());
 
-            Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
-                .map(e -> new TransactionsHashRecord(
-                    sft.consistentId(),
-                    blt.compactIdMapping().get(e.getKey()),
-                    e.getValue().hash
-                ))
-                .collect(Collectors.toMap(
-                    TransactionsHashRecord::remoteConsistentId,
-                    Function.identity()
-                ));
+            System.out.println("MY nodesTxHash.size()=" + nodesTxHash.size());
 
-            Map<PartitionKey, PartitionHashRecord> partHashRes = partMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> new PartitionHashRecord(
-                        e.getKey(),
-                        false,
-                        sft.consistentId(),
-                        null,
-                        0,
-                        null,
-                        new VerifyPartitionContext(e.getValue())
-                    )
-                ));
+            Map<Object, TransactionsHashRecord> txHashRes = new HashMap<>();
+
+            nodesTxHash.forEach((nodeId, hashHolder) -> {
+                TransactionsHashRecord rec = new TransactionsHashRecord(
+                    sft.consistentId(),
+                    blt.compactIdMapping().get(nodeId),
+                    hashHolder.hash);
+
+                txHashRes.put(rec.remoteConsistentId(), rec);
+            });
+
+            System.out.println("MY partMap.size()=" + partMap.size());
+
+            Map<PartitionKey, PartitionHashRecord> partHashRes = new HashMap<>();
+
+            partMap.forEach((partKey, hashHolder) -> {
+                partHashRes.put(partKey, new PartitionHashRecord(
+                    partKey,
+                    false,
+                    sft.consistentId(),
+                    null,
+                    0,
+                    null,
+                    new VerifyPartitionContext(hashHolder)));
+            });
 
             if (log.isInfoEnabled()) {
                 log.info("Verify incremental snapshot procedure finished " +

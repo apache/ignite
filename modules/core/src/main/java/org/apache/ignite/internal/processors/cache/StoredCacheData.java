@@ -36,6 +36,8 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  * {@link CacheConfiguration} and additional information about cache which is not a part of configuration.
  * This class is {@link Serializable} and is intended to be read-written with {@link JdkMarshaller}
  * in order to be serialization wise agnostic to further additions or removals of fields.
+ * <p>
+ * All changes must be made with the respect of RU rules.
  */
 public class StoredCacheData implements Serializable, CdcCacheEvent {
     /** */
