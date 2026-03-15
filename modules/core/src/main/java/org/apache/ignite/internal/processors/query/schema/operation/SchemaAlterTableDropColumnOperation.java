@@ -19,26 +19,31 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema alter table drop column operation.
  */
-public class SchemaAlterTableDropColumnOperation extends SchemaAbstractAlterTableOperation {
+public class SchemaAlterTableDropColumnOperation extends SchemaAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Target table name. */
-    private final String tblName;
+    @Order(0)
+    String tblName;
 
     /** Columns to drop. */
-    private final List<String> cols;
+    @Order(1)
+    List<String> cols;
 
     /** Ignore operation if target table doesn't exist. */
-    private final boolean ifTblExists;
+    @Order(2)
+    boolean ifTblExists;
 
     /** Ignore operation if column does not exist. */
-    private final boolean ifExists;
+    @Order(3)
+    boolean ifExists;
 
     /**
      * Constructor.
@@ -59,6 +64,9 @@ public class SchemaAlterTableDropColumnOperation extends SchemaAbstractAlterTabl
         this.ifTblExists = ifTblExists;
         this.ifExists = ifExists;
     }
+
+    /** */
+    public SchemaAlterTableDropColumnOperation() {}
 
     /**
      * @return Ignore operation if table doesn't exist.
@@ -91,5 +99,10 @@ public class SchemaAlterTableDropColumnOperation extends SchemaAbstractAlterTabl
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaAlterTableDropColumnOperation.class, this, "parent", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -112;
     }
 }

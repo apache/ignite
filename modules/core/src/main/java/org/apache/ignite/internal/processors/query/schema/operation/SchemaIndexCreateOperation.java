@@ -18,30 +18,46 @@
 package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Schema index create operation.
  */
-public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
+public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Table name. */
-    private final String tblName;
+    @Order(0)
+    String tblName;
 
     /** Index. */
     @GridToStringInclude
-    private final QueryIndex idx;
+    private QueryIndex idx;
+
+    /** Serialized form of 'query index'. */
+    @Order(1)
+    transient byte[] qryIdxBytes;
 
     /** Ignore operation if index exists. */
-    private final boolean ifNotExists;
+    @Order(2)
+    boolean ifNotExists;
 
     /** Index creation parallelism level */
-    private final int parallel;
+    @Order(3)
+    int parallel;
+
+    /** */
+    public SchemaIndexCreateOperation() {}
 
     /**
      * Constructor.
@@ -100,7 +116,32 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) {
+        try {
+            qryIdxBytes = U.marshal(marsh, idx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshall query index", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        try {
+            idx = U.unmarshal(marsh, qryIdxBytes, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshall query index", e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaIndexCreateOperation.class, this, "parent", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -114;
     }
 }
