@@ -53,6 +53,7 @@ public class IndexKeyTypeMessage implements MarshallableMessage {
     /** Constructor. */
     public IndexKeyTypeMessage(int keyTypeCode) {
         code = (byte)keyTypeCode;
+        val = decode(code);
     }
 
     /** @return Code. */
@@ -69,6 +70,8 @@ public class IndexKeyTypeMessage implements MarshallableMessage {
 
     /** @return Index key type. */
     public @Nullable IndexKeyType value() {
+        assert val != null;
+
         return val;
     }
 
