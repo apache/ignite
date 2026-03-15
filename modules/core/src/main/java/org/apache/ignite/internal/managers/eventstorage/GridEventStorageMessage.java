@@ -82,7 +82,7 @@ public class GridEventStorageMessage implements Message {
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @Order(value = 8, method = "loaderParticipants")
+    @Order(8)
     Map<UUID, IgniteUuid> ldrParties;
 
     /** */
@@ -189,13 +189,6 @@ public class GridEventStorageMessage implements Message {
      */
     public @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
-    }
-
-    /**
-     * @param ldrParties Node class loader participant map.
-     */
-    public void loaderParticipants(@Nullable Map<UUID, IgniteUuid> ldrParties) {
-        this.ldrParties = ldrParties;
     }
 
     /**
