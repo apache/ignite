@@ -21,7 +21,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -159,7 +159,7 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
      * no queries are executed at the moment; {@code false} otherwise.
      */
     private boolean queryPoolIsEmpty(IgniteEx node) {
-        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().pools().getQueryExecutorService();
+        IgniteThreadPoolExecutor qryPool = node.context().pools().getQueryExecutorService();
 
         return qryPool.getQueue().isEmpty() && qryPool.getActiveCount() == 0;
     }

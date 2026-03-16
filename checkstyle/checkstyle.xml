@@ -24,6 +24,11 @@
 
     <property name="fileExtensions" value="java, properties, xml"/>
 
+    <!-- Suppressions. See: https://checkstyle.sourceforge.io/filters/suppressionfilter.html -->
+    <module name="SuppressionFilter">
+        <property name="file" value="checkstyle/checkstyle-suppressions.xml"/>
+    </module>
+
     <!-- Whitespaces Checks. See: http://checkstyle.sourceforge.net/config_whitespace.html -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
@@ -33,6 +38,11 @@
     <module name="NewlineAtEndOfFile"/>
 
     <module name="TreeWalker">
+        <!-- Suppressions. See: https://checkstyle.sourceforge.io/filters/suppressionxpathfilter.html -->
+        <module name="SuppressionXpathFilter">
+            <property name="file" value="checkstyle/checkstyle-xpath-suppressions.xml"/>
+        </module>
+
         <!-- Coding Checks. See: https://checkstyle.sourceforge.io/config_coding.html -->
         <module name="SimplifyBooleanExpression"/>
 
@@ -82,10 +92,7 @@
 
         <!-- @Override annotations on the same line with a method declaration check. -->
         <module name="AnnotationOnSameLine" />
-        <module name="SuppressionXpathSingleFilter">
-            <property name="checks" value="AnnotationOnSameLine" />
-            <property name="query" value="//ANNOTATION[.//IDENT[not(@text='Override')]]" />
-        </module>
+
         <!--
             Checks the padding between the identifier of a method definition, constructor definition, method call, or
             constructor invocation; and the left parenthesis of the parameter list.
@@ -166,24 +173,6 @@
         -->
         <module name="JavadocVariable"/>
 
-        <!--
-          Suppresses MissingJavadocMethod check violations in the specified packages.
-          See: https://checkstyle.sourceforge.io/config_filters.html#SuppressionXpathSingleFilter
-       -->
-        <module name="SuppressionXpathSingleFilter">
-            <property name="checks" value="(?&lt;!Missing)JavadocMethod"/>
-            <property name="files" value="[\\/]internal[\\/]|[\\/]test[\\/]|[\\/]tests[\\/]|[\\/]ml[\\/]|[\\/]yardstick[\\/]"/>
-        </module>
-
-        <!--
-          Suppresses all Javadoc check violations in the specified files.
-          See: https://checkstyle.sourceforge.io/config_filters.html#SuppressionXpathSingleFilter
-       -->
-        <module name="SuppressionXpathSingleFilter">
-            <property name="checks" value="Javadoc"/>
-            <property name="files" value="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
-        </module>
-
         <module name="Indentation" />
 
         <module name="LeftCurly"/>
@@ -194,6 +183,35 @@
 
         <!-- Usage of Ignite abbrevations check. -->
         <module name="org.apache.ignite.tools.checkstyle.IgniteAbbrevationsRule"/>
+
+        <!-- Prevents usage of the particular Java classes in Ignite codebase. -->
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.ForkJoinPool"/>
+            <property name="factoryMethods" value="commonPool"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteForkJoinPool"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.Executors"/>
+            <property name="factoryMethods" value="newFixedThreadPool, newWorkStealingPool, newSingleThreadExecutor, newCachedThreadPool, unconfigurableExecutorService"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.IgniteThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.Executors"/>
+            <property name="factoryMethods" value="newSingleThreadScheduledExecutor, newScheduledThreadPool, unconfigurableScheduledExecutorService"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.ThreadPoolExecutor"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.IgniteThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.ScheduledThreadPoolExecutor"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor"/>
+        </module>
     </module>
 
     <!--

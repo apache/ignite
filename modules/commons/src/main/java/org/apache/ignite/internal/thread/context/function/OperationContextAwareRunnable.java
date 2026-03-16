@@ -51,7 +51,9 @@ public class OperationContextAwareRunnable extends OperationContextAwareWrapper<
      * {@link OperationContextSnapshot} will be restored before {@link Runnable} execution, potentially in another
      * thread.
      * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original
-     * {@link Runnable}.
+     * {@link Runnable}. It helps to avoid creation of unnecessary wrappers when it is known in advance that
+     * {@link Runnable#run()} will be called from a thread that does not have an {@link OperationContext} bound to it
+     * (e.g. thread of Thread Pool).
      */
     public static Runnable wrapIfContextNotEmpty(Runnable delegate) {
         return wrap(delegate, OperationContextAwareRunnable::new, true);

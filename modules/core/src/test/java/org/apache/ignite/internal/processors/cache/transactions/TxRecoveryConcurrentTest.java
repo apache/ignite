@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.Test;
@@ -40,6 +38,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests concurrent execution of the tx recovery.
@@ -165,13 +164,11 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
 
     /** */
     private void waitForTxRecoveryRequestEnqueuedOn(IgniteEx grid) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(() ->
-            grid.context().pools().getStripedExecutorService().queueStripeSize(0) > 0, 5_000, 10));
+        assertTrue(waitForCondition(() -> grid.context().pools().getStripedExecutorService().queueStripeSize(0) > 0, 5_000, 10));
     }
 
     /** */
     private void waitForTxRecoveryTaskEnqueuedOn(IgniteEx grid) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(() ->
-            !((ThreadPoolExecutor)grid.context().pools().getSystemExecutorService()).getQueue().isEmpty(), 5_000, 10));
+        assertTrue(waitForCondition(() -> !(grid.context().pools().getSystemExecutorService()).getQueue().isEmpty(), 5_000, 10));
     }
 }
