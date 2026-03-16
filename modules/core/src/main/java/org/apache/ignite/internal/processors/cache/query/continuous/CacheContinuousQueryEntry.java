@@ -55,17 +55,17 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** Key. */
     @GridToStringInclude
-    @Order(value = 2, method = "serializedKey")
+    @Order(2)
     KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
-    @Order(value = 3, method = "serializedNewValue")
+    @Order(3)
     CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
-    @Order(value = 4, method = "serializedOldValue")
+    @Order(4)
     CacheObject oldVal;
 
     /** Cache name. */
@@ -322,51 +322,21 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @return Key.
      */
     KeyCacheObject key() {
-        return key;
-    }
-
-    /** */
-    KeyCacheObject serializedKey() {
         return isFiltered() ? null : key;
-    }
-
-    /** */
-    void serializedKey(KeyCacheObject key) {
-        this.key = key;
     }
 
     /**
      * @return New value.
      */
     CacheObject newValue() {
-        return newVal;
-    }
-
-    /** */
-    CacheObject serializedNewValue() {
         return isFiltered() ? null : newVal;
-    }
-
-    /** */
-    void serializedNewValue(CacheObject newVal) {
-        this.newVal = newVal;
     }
 
     /**
      * @return Old value.
      */
     CacheObject oldValue() {
-        return oldVal;
-    }
-
-    /** */
-    CacheObject serializedOldValue() {
         return isFiltered() ? null : oldVal;
-    }
-
-    /** */
-    void serializedOldValue(CacheObject oldVal) {
-        this.oldVal = oldVal;
     }
 
     /** {@inheritDoc} */
