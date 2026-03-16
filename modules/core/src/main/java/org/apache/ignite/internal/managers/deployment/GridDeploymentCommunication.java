@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -131,7 +132,7 @@ class GridDeploymentCommunication {
         try {
             GridDeploymentRequest req = (GridDeploymentRequest)msg;
 
-            if (req.isUndeploy())
+            if (req.undeploy())
                 processUndeployRequest(nodeId, req);
             else {
                 assert activeReqNodeIds.get() == null;
@@ -343,7 +344,7 @@ class GridDeploymentCommunication {
             ctx.io().sendToGridTopic(
                 rmtNodes,
                 TOPIC_CLASSLOAD,
-                new GridDeploymentRequest(null, null, rsrcName, true),
+                new GridDeploymentRequest(rsrcName),
                 GridIoPolicy.P2P_POOL);
         }
     }
@@ -375,9 +376,9 @@ class GridDeploymentCommunication {
                     ", requesters=" + nodeIds + ']');
         }
 
-        Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        GridTopic.T1 resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
-        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName, false);
+        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName);
 
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);
