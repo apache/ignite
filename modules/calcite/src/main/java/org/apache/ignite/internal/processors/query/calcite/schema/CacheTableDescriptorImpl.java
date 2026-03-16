@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
@@ -45,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.calcite.VirtualColumnProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
@@ -73,6 +73,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
@@ -156,10 +157,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         // TODO: IGNITE-28223 Проверить, что не будет дублирования имен виртуальных колонок
         // TODO: IGNITE-28223 Подумать, что будет если пользователь захочет создать колонку с именем виртуальной колонки
-        List<CacheColumnDescriptor> virtCols = virtColProv.provideVirtualColumns(fldIdx);
-        descriptors.addAll(virtCols);
-        fldIdx += virtCols.size();
-        virtCols.forEach(c -> virtualFields.set(c.fieldIndex()));
+        Map<String, VirtualCacheColumnDescriptor> addlVirtColsByName = VirtualCacheColumnDescriptor.toDescByName(
+            fldIdx, virtColProv
+        );
+
+        descriptors.addAll(VirtualCacheColumnDescriptor.toSortedByFieldIndex(addlVirtColsByName.values()));
+
+        fldIdx += addlVirtColsByName.size();
+
+        addlVirtColsByName.values().forEach(c -> virtualFields.set(c.fieldIndex()));
 
         int keyField = QueryUtils.KEY_COL;
         int valField = QueryUtils.VAL_COL;
@@ -202,7 +208,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 descriptors.stream()
                     .filter(desc -> typeDesc.primaryKeyFields().contains(desc.name()))
                     .map(ColumnDescriptor::fieldIndex)
-                    .collect(Collectors.toList())
+                    .collect(toList())
             );
         }
         else {
@@ -210,7 +216,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 descriptors.stream()
                     .filter(desc -> typeDesc.fields().containsKey(desc.name()) && typeDesc.property(desc.name()).key())
                     .map(ColumnDescriptor::fieldIndex)
-                    .collect(Collectors.toList())
+                    .collect(toList())
             );
         }
 
@@ -289,6 +295,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final CacheColumnDescriptor desc = descriptors[colIdx];
 
+        // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть
         return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
     }
 
@@ -361,6 +368,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         for (int i = 2; i < descriptors.length; i++) {
             final CacheColumnDescriptor desc = descriptors[i];
 
+            // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть и обновить коммент выше?
             if (!desc.field() || !desc.key())
                 continue;
 
@@ -395,6 +403,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
                 Object fieldVal = hnd.get(i, row);
 
+                // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть и обновить коммент выше?
                 if (desc.field() && !desc.key() && fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
@@ -432,6 +441,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             Object fieldVal = hnd.get(i + offset, row);
 
+            // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть и обновить коммент выше?
             if (desc.field())
                 desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             else

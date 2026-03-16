@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.calcite.VirtualColumnProvider;
+import org.apache.ignite.calcite.VirtualColumnProvider.ValueExtractorContext;
+import org.apache.ignite.calcite.VirtualColumnProvider.VirtualColumnDescriptor;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
@@ -103,7 +103,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
             if (VirtualColumnProvider.class.equals(cls)) {
-                return (T)(VirtualColumnProvider)nxtColIdx -> List.of(new KeyToStingVirtualColumn(nxtColIdx));
+                return (T)(VirtualColumnProvider)() -> List.of(new KeyToStingVirtualColumn());
             }
 
             return super.createComponent(ctx, cls);
@@ -111,34 +111,30 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static class KeyToStingVirtualColumn extends AbstractTestCacheColumnDescriptor {
-        /** */
-        private KeyToStingVirtualColumn(int idx) {
-            super(idx, KEY_TO_STRING_COLUMN_NAME, Type.nullable(String.class), false, false);
+    private static class KeyToStingVirtualColumn implements VirtualColumnDescriptor {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return KEY_TO_STRING_COLUMN_NAME;
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(
-            ExecutionContext<?> ectx,
-            GridCacheContext<?, ?> cctx,
-            CacheDataRow src
-        ) throws IgniteCheckedException {
-            return cctx.unwrapBinaryIfNeeded(src.key(), false, null).toString();
+        @Override public Class<?> type() {
+            return String.class;
         }
 
         /** {@inheritDoc} */
-        @Override public void set(Object dst, Object val) {
-            throw new UnsupportedOperationException();
+        @Override public int scale() {
+            return VirtualColumnDescriptor.NOT_SPECIFIED;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasDefaultValue() {
-            return false;
+        @Override public int precision() {
+            return VirtualColumnDescriptor.NOT_SPECIFIED;
         }
 
         /** {@inheritDoc} */
-        @Override public Object defaultValue() {
-            throw new UnsupportedOperationException();
+        @Override public Object value(ValueExtractorContext ctx) throws IgniteCheckedException {
+            return ctx.source(true, true).toString();
         }
     }
 }
