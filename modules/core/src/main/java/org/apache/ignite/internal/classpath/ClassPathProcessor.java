@@ -169,7 +169,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         synchronized (this) {
             IgniteClassPath icp = fromMetastorage(icpId);
 
-            ClassPathDeployToAllRequest req = new ClassPathDeployToAllRequest(icpId);
+            ClassPathDeployToAllRequest req = new ClassPathDeployToAllRequest(icpId, ctx.localNodeId());
 
             if (deployToAllFuts.put(icpId, fut) != null)
                 return new GridFinishedFuture<>(new IllegalStateException("Distribute to all process started, already: " + icp));
@@ -195,7 +195,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
         log.info("Starting download new classpath [icp=" + icp + ']');
 
-        return new GridFinishedFuture<>(new ClassPathDeployToAllResponse());
+        return new DownloadClassPathTask(ctx, icp).call();
     }
 
     /**

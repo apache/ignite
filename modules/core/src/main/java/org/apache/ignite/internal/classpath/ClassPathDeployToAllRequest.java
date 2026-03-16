@@ -31,8 +31,12 @@ public class ClassPathDeployToAllRequest implements Serializable {
     /** Ignite class path id. */
     final UUID icpId;
 
+    /** Node containing class path files received from client. */
+    final UUID uploadNodeId;
+
     /** */
-    public ClassPathDeployToAllRequest(UUID icpId) {
+    public ClassPathDeployToAllRequest(UUID icpId, UUID uploadNodeId) {
         this.icpId = icpId;
+        this.uploadNodeId = uploadNodeId;
     }
 }
