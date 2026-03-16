@@ -51,6 +51,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
         id = IgniteUuid.randomUuid();
+        this.item = item;
     }
 
     /** {@inheritDoc} */
