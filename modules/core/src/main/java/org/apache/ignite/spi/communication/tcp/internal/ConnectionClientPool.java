@@ -622,36 +622,21 @@ public class ConnectionClientPool {
                 ", client=" + addClient +
                 ", oldClient=" + curClients[connIdx] + ']';
 
-            GridCommunicationClient[] newClients;
+            GridCommunicationClient[] newClients = curClients == null
+                ? new GridCommunicationClient[cfg.connectionsPerNode()]
+                : Arrays.copyOf(curClients, curClients.length);
+
+            newClients[connIdx] = addClient;
 
             if (curClients == null) {
-                newClients = new GridCommunicationClient[cfg.connectionsPerNode()];
-                newClients[connIdx] = addClient;
+                if (clients.putIfAbsent(node.id(), newClients) == null) {
+                    createNodeMetrics(node);
 
-                curClients = clients.compute(node.id(), (nodeId0, clients0) -> {
-                    if (clients0 == null) {
-                        // Syncs metrics creation on this map.
-                        createNodeMetrics(node);
-
-                        return newClients;
-                    }
-
-                    return clients0;
-                });
-
-                if (curClients != null)
                     break;
+                }
             }
-            else {
-                newClients = curClients.clone();
-                newClients[connIdx] = addClient;
-
-                if (log.isDebugEnabled())
-                    log.debug("The node client was replaced [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
-
-                if (clients.replace(node.id(), curClients, newClients))
-                    break;
-            }
+            else if (clients.replace(node.id(), curClients, newClients))
+                break;
         }
     }
 
