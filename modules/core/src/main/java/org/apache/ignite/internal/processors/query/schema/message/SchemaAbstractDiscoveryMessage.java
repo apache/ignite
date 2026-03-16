@@ -27,14 +27,15 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract discovery message for schema operations.
  */
-public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, Message {
+public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,7 +51,7 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      * Operation bytes. Serialized reprezentation of schema operation.
      * TODO Should be removed in IGNITE-27559
      */
-    @Order(value = 1, method = "operationBytes")
+    @Order(1)
     byte[] opBytes;
 
     /** Error message. */
@@ -101,25 +102,6 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
     }
 
     /**
-     * @return Operation bytes.
-     */
-    public byte[] operationBytes() {
-        try {
-            return opBytes != null ? opBytes : U.marshal(Marshallers.jdk(), op);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to marshal schema operation", e);
-        }
-    }
-
-    /**
-     * @param opBytes Operation bytes.
-     */
-    public void operationBytes(byte[] opBytes) {
-        this.opBytes = opBytes;
-    }
-
-    /**
      * Set error.
      *
      * @param err Error.
@@ -164,5 +146,17 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaAbstractDiscoveryMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (op != null)
+            opBytes = U.marshal(marsh, op);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (opBytes != null)
+            op = U.unmarshal(marsh, opBytes, clsLdr);
     }
 }
