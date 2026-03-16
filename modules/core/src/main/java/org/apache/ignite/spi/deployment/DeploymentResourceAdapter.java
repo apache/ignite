@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * @deprecated Will be replaced with the
  * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
-@Deprecated(forRemoval = true)
+@Deprecated
 public class DeploymentResourceAdapter implements DeploymentResource {
     /** */
     private final String name;

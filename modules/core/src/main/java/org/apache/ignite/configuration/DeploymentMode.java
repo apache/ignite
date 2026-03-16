@@ -73,7 +73,7 @@ import org.jetbrains.annotations.Nullable;
  * @deprecated Will be replaced with the
  * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
-@Deprecated(forRemoval = true)
+@Deprecated
 public enum DeploymentMode {
     /**
      * In this mode deployed classes do not share resources. Basically, resources are created

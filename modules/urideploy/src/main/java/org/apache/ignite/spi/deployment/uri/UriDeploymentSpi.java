@@ -311,7 +311,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-@Deprecated(forRemoval = true)
+@Deprecated
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /**

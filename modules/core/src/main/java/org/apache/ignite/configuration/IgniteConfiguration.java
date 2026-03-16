@@ -2133,7 +2133,7 @@ public class IgniteConfiguration {
      * @deprecated Will be replaced with the
      * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public DeploymentSpi getDeploymentSpi() {
         return deploySpi;
     }
@@ -2147,7 +2147,7 @@ public class IgniteConfiguration {
      * @deprecated Will be replaced with the
      * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public IgniteConfiguration setDeploymentSpi(DeploymentSpi deploySpi) {
         this.deploySpi = deploySpi;
 
@@ -2483,7 +2483,7 @@ public class IgniteConfiguration {
      * @deprecated Will be replaced with the
      * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public IgniteConfiguration setDeploymentMode(DeploymentMode deployMode) {
         this.deployMode = deployMode;
 
@@ -2498,7 +2498,7 @@ public class IgniteConfiguration {
      * @deprecated Will be replaced with the
      * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public DeploymentMode getDeploymentMode() {
         return deployMode;
     }

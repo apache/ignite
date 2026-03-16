@@ -27,7 +27,7 @@ import org.apache.ignite.spi.IgniteSpiManagementMBean;
  * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
 @MXBeanDescription("MBean that provides access to local deployment SPI configuration.")
-@Deprecated(forRemoval = true)
+@Deprecated
 public interface LocalDeploymentSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }

@@ -67,7 +67,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgnoreIfPeerClassLoadingDisabled
-@Deprecated(forRemoval = true)
+@Deprecated
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /** Enables additional check for resource name on resources removal. */
     @SystemProperty(value = "Enables an additional check of a resource name on resources removal")
