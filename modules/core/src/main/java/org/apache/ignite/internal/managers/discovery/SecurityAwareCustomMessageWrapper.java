@@ -28,8 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** Custom message wrapper with ID of security subject that initiated the current message. */
 public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage implements MarshallableMessage {
     /** */
@@ -44,11 +42,12 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
 
     /** */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(1)
     Message msg;
 
     /** Serialized message bytes. */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    @Order(1)
+    @Order(2)
     byte[] msgBytes;
 
     /** Default constructor for {@link MessageFactory}. */
@@ -101,13 +100,13 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (delegate instanceof Message)
-            msgBytes = U.marshal(jdk(), delegate);
+        if (!(delegate instanceof Message))
+            msgBytes = U.marshal(marsh, delegate);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (msgBytes != null)
-            delegate = U.unmarshal(jdk(), msgBytes, U.gridClassLoader());
+            delegate = U.unmarshal(marsh, msgBytes, U.gridClassLoader());
     }
 }
