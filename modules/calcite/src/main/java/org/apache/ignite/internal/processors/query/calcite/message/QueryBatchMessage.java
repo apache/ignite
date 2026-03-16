@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 /**
  *
  */
-public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
+public class QueryBatchMessage implements CalciteMarshalableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     UUID qryId;

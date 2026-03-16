@@ -392,7 +392,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridDhtLocalPartition part,
         OffheapInvokeClosure c)
         throws IgniteCheckedException {
-        dataStore(part).invoke(cctx, key, c);
+        ctx.database().checkpointReadLock();
+
+        try {
+            dataStore(part).invoke(cctx, key, c);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /** {@inheritDoc} */

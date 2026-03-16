@@ -262,6 +262,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequestSe
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponseSerializer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntrySerializer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionExSerializer;
@@ -279,6 +280,7 @@ import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartRe
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessageSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntrySerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequestSerializer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
@@ -330,6 +332,7 @@ import org.apache.ignite.internal.util.GridPartitionStateMapSerializer;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -350,12 +353,27 @@ import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMess
  * Message factory implementation.
  */
 public class GridIoMessageFactory implements MessageFactoryProvider {
+    /** Custom data marshaller. */
+    private final Marshaller cstDataMarshall;
+
+    /** Class loader for the custom data marshalling. */
+    private final ClassLoader cstDataMarshallClsLdr;
+
+    /**
+     * @param cstDataMarshall Custom data marshaller.
+     * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
+     */
+    public GridIoMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
+        this.cstDataMarshall = cstDataMarshall;
+        this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
+    }
+
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)-65, TxInfo::new, new TxInfoSerializer());
         factory.register((short)-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());
         factory.register((short)-63, ExchangeInfo::new, new ExchangeInfoSerializer());
@@ -454,14 +472,14 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)92, CacheEntryInfoCollection::new, new CacheEntryInfoCollectionSerializer());
         factory.register((short)93, CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer());
         factory.register((short)94, IgniteTxKey::new, new IgniteTxKeySerializer());
-        factory.register((short)95, DataStreamerEntry::new);
+        factory.register((short)95, DataStreamerEntry::new, new DataStreamerEntrySerializer());
         factory.register((short)96, CacheContinuousQueryEntry::new, new CacheContinuousQueryEntrySerializer());
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
         factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
         factory.register((short)100, IgniteTxEntry::new, new IgniteTxEntrySerializer());
         factory.register((short)101, TxEntryValueHolder::new, new TxEntryValueHolderSerializer());
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
-        factory.register((short)103, GridCacheRawVersionedEntry::new);
+        factory.register((short)103, GridCacheRawVersionedEntry::new, new GridCacheRawVersionedEntrySerializer());
         factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
         factory.register((short)106, GridQueryCancelRequest::new, new GridQueryCancelRequestSerializer());
         factory.register((short)107, GridQueryFailResponse::new, new GridQueryFailResponseSerializer());

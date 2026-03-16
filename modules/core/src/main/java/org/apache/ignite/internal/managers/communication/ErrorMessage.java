@@ -17,41 +17,26 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Message used to transfer {@link Throwable} objects.
- * <p>Because raw serialization of throwables is prohibited, you should use this message when it is necessary
- * to transfer some error as part of some message. See {@link MessageProcessor} for details.
- * <p>Currently, under the hood marshalling and unmarshalling is performed by {@link JdkMarshaller}.
- * <p>If the message serialization fails, wraps this error with own one.
  */
 @SuppressWarnings({"NullableProblems", "unused"})
-// TODO Remove Serializable once https://issues.apache.org/jira/browse/IGNITE-27627 is completed.
-public class ErrorMessage implements Message, Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Serialization and deserealization call holder. */
-    @Order(value = 0, method = "errorBytes")
+public class ErrorMessage implements MarshallableMessage {
+    /** Error bytes. */
+    @Order(0)
     @GridToStringExclude
     @Nullable public byte[] errBytes;
 
-    /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
+    /** Error. */
     private @Nullable Throwable err;
 
     /**
@@ -62,61 +47,32 @@ public class ErrorMessage implements Message, Serializable {
     }
 
     /**
-     * @param err Original error. Will be lazily serialized.
+     * @param err Original error.
      */
     public ErrorMessage(@Nullable Throwable err) {
         this.err = err;
     }
 
-    /**
-     * Provides serialized bytes of the error. Should be called only once.
-     *
-     * @return Serialized error.
-     * @see MessageWriter
-     */
-    public @Nullable byte[] errorBytes() {
-        if (err == null)
-            return null;
-
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         try {
-            return U.marshal(jdk(), err);
+            if (err != null)
+                errBytes = U.marshal(marsh, err);
         }
-        catch (IgniteCheckedException e0) {
+        catch (IgniteCheckedException e) {
             IgniteCheckedException wrappedErr = new IgniteCheckedException(err.getMessage());
 
             wrappedErr.setStackTrace(err.getStackTrace());
-            wrappedErr.addSuppressed(e0);
+            wrappedErr.addSuppressed(e);
 
-            try {
-                return U.marshal(jdk(), wrappedErr);
-            }
-            catch (IgniteCheckedException e1) {
-                IgniteException marshErr = new IgniteException("Unable to marshal the wrapping error.", e1);
-
-                marshErr.addSuppressed(wrappedErr);
-
-                throw marshErr;
-            }
+            errBytes = U.marshal(marsh, wrappedErr);
         }
     }
 
-    /**
-     * Deserializes the error from {@code errBytes}. Should be called only once.
-     *
-     * @param errBytes Serialized error.
-     * @see MessageWriter
-     */
-    public void errorBytes(@Nullable byte[] errBytes) {
-        if (F.isEmpty(errBytes))
-            err = null;
-        else {
-            try {
-                err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal error data bytes.", e);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (errBytes != null)
+            err = U.unmarshal(marsh, errBytes, clsLdr);
     }
 
     /** */
@@ -125,8 +81,6 @@ public class ErrorMessage implements Message, Serializable {
     }
 
     /**
-     * Safely gets original error from an error message.
-     *
      * @param errorMsg Error message.
      * @return Error containing in the message.
      */

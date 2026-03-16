@@ -72,7 +72,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         TcpDiscoveryAbstractMessage msg,
         byte[] data,
         long timeout
-    ) throws IOException {
+    ) throws IOException, IgniteCheckedException {
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
 

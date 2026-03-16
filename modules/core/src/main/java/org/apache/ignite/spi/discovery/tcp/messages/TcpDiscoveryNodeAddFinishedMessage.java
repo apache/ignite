@@ -20,14 +20,12 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,6 +83,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         nodeId = msg.nodeId;
         clientDiscoData = msg.clientDiscoData;
         clientNodeAttrs = msg.clientNodeAttrs;
+        clientNodeAttrsBytes = msg.clientNodeAttrsBytes;
     }
 
     /**
@@ -126,37 +125,16 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         this.clientNodeAttrs = clientNodeAttrs;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) {
-        if (clientNodeAttrs != null && clientNodeAttrsBytes == null) {
-            try {
-                clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal client node attributes", e);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (clientNodeAttrs != null)
+            clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param clsLdr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (F.isEmpty(clientNodeAttrsBytes))
-            clientNodeAttrs = null;
-        else {
-            try {
-                clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
-
-                clientNodeAttrsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal client node attributes", e);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (clientNodeAttrsBytes != null)
+            clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
