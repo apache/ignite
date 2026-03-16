@@ -186,7 +186,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessageSerializer;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessageSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
@@ -438,7 +438,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)42, GridDhtForceKeysRequest::new, new GridDhtForceKeysRequestSerializer());
         factory.register((short)43, GridDhtForceKeysResponse::new, new GridDhtForceKeysResponseSerializer());
         factory.register((short)45, GridDhtPartitionDemandMessage::new, new GridDhtPartitionDemandMessageSerializer());
-        factory.register((short)46, GridDhtPartitionsFullMessage::new, new GridDhtPartitionsFullMessageSerializer());
+        factory.register((short)46, GridDhtPartitionsFullMessage::new,
+            new GridDhtPartitionsFullMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)47, GridDhtPartitionsSingleMessage::new, new GridDhtPartitionsSingleMessageSerializer());
         factory.register((short)48, GridDhtPartitionsSingleRequest::new, new GridDhtPartitionsSingleRequestSerializer());
         factory.register((short)49, GridNearGetRequest::new, new GridNearGetRequestSerializer());
