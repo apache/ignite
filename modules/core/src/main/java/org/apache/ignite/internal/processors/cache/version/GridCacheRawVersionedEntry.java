@@ -17,50 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Raw versioned entry.
  */
-@IgniteCodeGeneratingFail
-public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implements
-    GridCacheVersionedEntry<K, V>, GridCacheVersionable, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Key bytes. */
-    @GridDirectTransient
-    private byte[] keyBytes;
-
-    /** Value bytes. */
-    private byte[] valBytes;
-
+public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implements GridCacheVersionedEntry<K, V>, GridCacheVersionable {
     /** TTL. */
-    private long ttl;
+    @Order(0)
+    long ttl;
 
     /** Expire time. */
-    private long expireTime;
+    @Order(1)
+    long expireTime;
 
     /** Version. */
-    private GridCacheVersion ver;
+    @Order(2)
+    GridCacheVersion ver;
 
     /**
      * {@code Externalizable} support.
@@ -87,28 +66,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
 
         this.key = key;
         this.val = val;
-        this.ttl = ttl;
-        this.expireTime = expireTime;
-        this.ver = ver;
-    }
-
-    /**
-     * Constructor used in receiver hub where marshalled key and value are available and we do not want to
-     * unmarshal value.
-     *
-     * @param keyBytes Key.
-     * @param valBytes Value bytes.
-     * @param expireTime Expire time.
-     * @param ttl TTL.
-     * @param ver Version.
-     */
-    public GridCacheRawVersionedEntry(byte[] keyBytes,
-        byte[] valBytes,
-        long ttl,
-        long expireTime,
-        GridCacheVersion ver) {
-        this.keyBytes = keyBytes;
-        this.valBytes = valBytes;
         this.ttl = ttl;
         this.expireTime = expireTime;
         this.ver = ver;
@@ -156,162 +113,13 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         return ver;
     }
 
-    /**
-     * Perform internal unmarshal of this entry. It must be performed after entry is deserialized and before
-     * its restored key/value are needed.
-     *
-     * @param ctx Context.
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshal(CacheObjectContext ctx, Marshaller marsh) throws IgniteCheckedException {
-        unmarshalKey(ctx, marsh);
-
-        if (val == null && valBytes != null) {
-            val = U.unmarshal(marsh, valBytes, U.resolveClassLoader(null, ctx.classLoader()));
-
-            val.finishUnmarshal(ctx, null);
-        }
-    }
-
-    /**
-     * Perform internal key unmarshal of this entry. It must be performed after entry is deserialized and before
-     * its restored key/value are needed.
-     *
-     * @param ctx Context.
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalKey(CacheObjectContext ctx, Marshaller marsh) throws IgniteCheckedException {
-        if (key == null) {
-            assert keyBytes != null;
-
-            key = U.unmarshal(marsh, keyBytes, U.resolveClassLoader(null, ctx.classLoader()));
-
-            key.finishUnmarshal(ctx, null);
-        }
-    }
-
-    /**
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareDirectMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx);
-
-        if (val != null)
-            val.prepareMarshal(ctx);
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 103;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 2:
-                expireTime = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                ttl = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                valBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                ver = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 2:
-                if (!writer.writeLong(expireTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeLong(ttl))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeByteArray(valBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMessage(ver))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheRawVersionedEntry.class, this,
-            "keyBytesLen", keyBytes != null ? keyBytes.length : "n/a",
-            "valBytesLen", valBytes != null ? valBytes.length : "n/a",
-            "super", super.toString());
+        return S.toString(GridCacheRawVersionedEntry.class, this, "super", super.toString());
     }
 }

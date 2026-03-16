@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Check Protected Classes
+name: Protected Classes
 
 on: pull_request_target
 
@@ -114,3 +114,8 @@ jobs:
               issue_number: context.issue.number,
               labels: ['compatibility'],
             });
+
+      - name: Failed on affected check
+        if: steps.check.outputs.affected == 'true'
+        run: |
+          exit 1
