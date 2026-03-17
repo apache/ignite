@@ -65,10 +65,22 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessageSerializer;
+import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryFieldMarshallableSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperationMarshallableSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperationSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperationSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperationMarshallableSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperationSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -120,6 +132,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMes
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
@@ -158,6 +172,17 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
+            new SchemaAlterTableAddColumnOperationSerializer());
+        factory.register((short)-114, SchemaIndexCreateOperation::new,
+            new SchemaIndexCreateOperationMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)-113, SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
+        factory.register((short)-112, SchemaAlterTableDropColumnOperation::new,
+            new SchemaAlterTableDropColumnOperationSerializer());
+        factory.register((short)-111, SchemaAddQueryEntityOperation::new,
+            new SchemaAddQueryEntityOperationMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)-110, QueryField::new, new QueryFieldMarshallableSerializer(cstDataMarshall,
+            cstDataMarshallClsLdr));
         factory.register((short)-109, User::new, new UserSerializer());
         factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
@@ -205,6 +230,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
         factory.register((short)28, TcpDiscoveryClientReconnectMessage::new,
             new TcpDiscoveryClientReconnectMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)29, TcpDiscoveryNodeAddedMessage::new,
+            new TcpDiscoveryNodeAddedMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
