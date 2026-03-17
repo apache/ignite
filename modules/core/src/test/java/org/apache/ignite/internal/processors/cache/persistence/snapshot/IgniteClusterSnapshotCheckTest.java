@@ -121,6 +121,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
 
@@ -148,22 +149,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public int snpThrdPoolSz;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}, snpThrdPoolSz={2}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, snpThrdPoolSz={2}")
     public static Collection<Object[]> params() {
-        Collection<Object[]> res = new ArrayList<>();
-
-        for (int pullSz : F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1)) {
-            for (Object[] superParSet : AbstractSnapshotSelfTest.params()) {
-                Object[] pars = new Object[superParSet.length + 1];
-
-                System.arraycopy(superParSet, 0, pars, 0, superParSet.length);
-                pars[pars.length - 1] = pullSz;
-
-                res.add(pars);
-            }
-        }
-
-        return res;
+        return cartesianProduct(
+            encryptionParameters(),
+            F.asList(false, true),
+            F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1)
+        );
     }
 
     /** Cleanup data of task execution results if need. */
@@ -667,7 +659,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         if (initiator > 2 && (allHandlers || restore))
                             continue;
                         // On the restoration, all the snapshot checking handlers are always invoked for a non-incremental snapshot.
-                        // Incremental snapsot doesn't support snapshot handlers and do not check partitions.
+                        // Incremental snapshot doesn't support snapshot handlers and do not check partitions.
                         if (restore && !allHandlers || incremental && (allHandlers || fullCheck))
                             continue;
 
@@ -782,7 +774,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     assertEquals(0, mreg.<IntMetric>findMetric("processedWalSegments").value());
                 }
                 else {
-                    assertTrue(mreg.<IntMetric>findMetric("incrementIndex").value() < 1);
+                    assertNull(mreg.findMetric("incrementIndex"));
                     assertEquals(fullCheck, mreg.<BooleanMetric>findMetric("checkPartitions").value());
 
                     // Incremental snapshot metrics aren't expected.

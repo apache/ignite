@@ -728,10 +728,10 @@ public class SnapshotCheckProcess {
 
         mreg.register("startTime", U::currentTimeMillis,
             "The system time of the start of the cluster snapshot check operation on current node.");
-        mreg.register("incrementIndex", ctx.req::incrementalIndex,
-            "The index of incremental snapshot of the snapshot check operation.");
 
         if (ctx.req.incrementalIndex() > 0) {
+            mreg.register("incrementIndex", ctx.req::incrementalIndex,
+                "The index of incremental snapshot of the snapshot check operation.");
             mreg.register("totalWalSegments", ctx.totalCounter::get,
                 "The total number of WAL segments in the incremental snapshot to check on current node.");
             mreg.register("processedWalSegments", ctx.checkedCounter::get,
