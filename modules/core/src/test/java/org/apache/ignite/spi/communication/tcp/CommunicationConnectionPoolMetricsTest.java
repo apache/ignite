@@ -241,6 +241,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testMetricsBasics() throws Exception {
+        maxConnIdleTimeout = 500;
+
         int preloadCnt = 300;
         int srvrCnt = 3;
 
