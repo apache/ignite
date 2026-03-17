@@ -22,21 +22,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
  * Partition map from single node.
  */
-public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, MarshallableMessage {
+public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Message {
     /** Type code. */
     public static final short TYPE_CODE = 518;
 
@@ -57,7 +55,8 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Mar
     protected GridPartitionStateMap map;
 
     /** */
-    private volatile int moving;
+    @Order(4)
+    volatile int moving;
 
     /** */
     private static final AtomicIntegerFieldUpdater<GridDhtPartitionMap> MOVING_FIELD_UPDATER =
@@ -284,16 +283,5 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Mar
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet())
-            put(entry.getKey(), entry.getValue());
     }
 }
