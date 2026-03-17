@@ -869,16 +869,16 @@ public class ConnectionClientPool {
         private long maxConnectionsIdleTime() {
             GridCommunicationClient[] nodeClients = clients.get(node.id());
 
-            long actual = nodeClients == null
+            long max = nodeClients == null
                 ? 0
                 : Arrays.stream(nodeClients).filter(Objects::nonNull).mapToLong(GridCommunicationClient::getIdleTime).max().orElse(0);
 
-            for (; ;) {
-                long max = maxIdleTimeOut.get();
+            long cur;
 
-                if (max >= actual || maxIdleTimeOut.compareAndSet(max, actual))
-                    break;
+            do {
+                 cur = maxIdleTimeOut.get();
             }
+            while (cur < max && !maxIdleTimeOut.compareAndSet(cur, max));
 
             return maxIdleTimeOut.get();
         }
