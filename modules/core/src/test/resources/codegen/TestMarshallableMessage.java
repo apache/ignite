@@ -43,29 +43,13 @@ public class TestMarshallableMessage implements MarshallableMessage {
     byte[] cstDataBytes;
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) {
-        if (cstData != null && cstDataBytes == null) {
-            try {
-                cstDataBytes = U.marshal(marsh, cstData);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal custom data.", e);
-            }
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        cstDataBytes = U.marshal(marsh, cstData);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (cstDataBytes != null && cstData == null) {
-            try {
-                cstData = U.unmarshal(marsh, cstDataBytes, clsLdr);
-
-                cstDataBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal custom data.", e);
-            }
-        }
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        cstData = U.unmarshal(marsh, cstDataBytes, clsLdr);
     }
 
     public short directType() {

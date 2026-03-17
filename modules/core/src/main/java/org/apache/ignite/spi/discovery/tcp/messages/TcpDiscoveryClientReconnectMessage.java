@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -130,29 +129,15 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) {
-        if (msgs != null && msgsBytes == null) {
-            try {
-                msgsBytes = U.marshal(marsh, msgs);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal the pending messages.", e);
-            }
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (msgs != null)
+            msgsBytes = U.marshal(marsh, msgs);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (msgsBytes != null && msgs == null) {
-            try {
-                msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
-
-                msgsBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal the pending messages.", e);
-            }
-        }
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (msgsBytes != null)
+            msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

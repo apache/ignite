@@ -15,19 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.deployment.local;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.spi.IgniteSpiManagementMBean;
+/** */
+public class MessageArrayType implements MessageType {
+    /** */
+    private final MessageType valType;
 
-/**
- * Management MBean for {@link LocalDeploymentSpi} SPI.
- *
- * @deprecated Will be replaced with the
- * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
- */
-@MXBeanDescription("MBean that provides access to local deployment SPI configuration.")
-@Deprecated
-public interface LocalDeploymentSpiMBean extends IgniteSpiManagementMBean {
-    // No-op.
+    /** */
+    private final Class<?> clazz;
+
+    /**
+     * @param valType Value type.
+     * @param clazz Class.
+     */
+    public MessageArrayType(MessageType valType, Class<?> clazz) {
+        this.valType = valType;
+        this.clazz = clazz;
+    }
+
+    /** @return Value type. */
+    public MessageType valueType() {
+        return valType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageCollectionItemType type() {
+        return MessageCollectionItemType.ARRAY;
+    }
+
+    /** @return Class. */
+    public Class<?> clazz() {
+        return clazz;
+    }
 }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessageSerializer;
+import org.apache.ignite.internal.managers.communication.ErrorMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessageSerializer;
@@ -27,8 +27,12 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.UserSerializer;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
@@ -47,6 +51,12 @@ import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryM
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessageSerializer;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItemSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
@@ -134,23 +144,20 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustom
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessageSerializer;
-import org.jetbrains.annotations.Nullable;
 
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** Custom data marshaller. */
-    private final @Nullable Marshaller cstDataMarshall;
+    private final Marshaller cstDataMarshall;
 
     /** Class loader for the custom data marshalling. */
-    private final @Nullable ClassLoader cstDataMarshallClsLdr;
+    private final ClassLoader cstDataMarshallClsLdr;
 
     /**
      * @param cstDataMarshall Custom data marshaller.
      * @param cstDataMarshallClsLdr Class loader for the custom data marshalling.
      */
-    public DiscoveryMessageFactory(@Nullable Marshaller cstDataMarshall, @Nullable ClassLoader cstDataMarshallClsLdr) {
-        assert cstDataMarshall == null && cstDataMarshallClsLdr == null || cstDataMarshall != null && cstDataMarshallClsLdr != null;
-
+    public DiscoveryMessageFactory(Marshaller cstDataMarshall, ClassLoader cstDataMarshallClsLdr) {
         this.cstDataMarshall = cstDataMarshall;
         this.cstDataMarshallClsLdr = cstDataMarshallClsLdr;
     }
@@ -171,7 +178,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageSerializer());
+        factory.register((short)-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
 
         // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
@@ -226,5 +233,11 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)512, ChangeGlobalStateFinishMessage::new, new ChangeGlobalStateFinishMessageSerializer());
         factory.register((short)513, StopRoutineAckDiscoveryMessage::new, new StopRoutineAckDiscoveryMessageSerializer());
         factory.register((short)514, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
+        factory.register((short)515, CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
+        factory.register((short)516, ClientCacheChangeDiscoveryMessage::new, new ClientCacheChangeDiscoveryMessageSerializer());
+        factory.register((short)517, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
+        factory.register((short)518, MappingProposedMessage::new, new MappingProposedMessageSerializer());
+        factory.register((short)519, MarshallerMappingItem::new, new MarshallerMappingItemSerializer());
+
     }
 }

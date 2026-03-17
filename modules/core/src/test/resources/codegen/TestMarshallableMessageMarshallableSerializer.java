@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.TestMarshallableMessage;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -45,7 +47,12 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
             if (!writer.writeHeader(msg.directType()))
                 return false;
 
-            msg.prepareMarshal(marshaller);
+            try {
+                msg.prepareMarshal(marshaller);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal object", e);
+            }
 
             writer.onHeaderWritten();
         }
@@ -101,7 +108,12 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
                 reader.incrementState();
         }
 
-        msg.finishUnmarshal(marshaller, clsLdr);
+        try {
+            msg.finishUnmarshal(marshaller, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal object", e);
+        }
 
         return true;
     }

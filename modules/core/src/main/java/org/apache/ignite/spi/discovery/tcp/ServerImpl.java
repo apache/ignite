@@ -7466,10 +7466,13 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param clientMsgWrk Client message worker to start.
          * @return Whether connection was successful.
          * @throws IOException If IO failed.
+         * @throws IgniteCheckedException If node is not yet initialized or is stopping.
          */
         @SuppressWarnings({"IfMayBeConditional"})
-        private boolean processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg,
-            @Nullable ClientMessageWorker clientMsgWrk) throws IOException {
+        private boolean processJoinRequestMessage(
+            TcpDiscoveryJoinRequestMessage msg,
+            @Nullable ClientMessageWorker clientMsgWrk
+        ) throws IOException, IgniteCheckedException {
             assert msg != null;
             assert !msg.responded();
 
