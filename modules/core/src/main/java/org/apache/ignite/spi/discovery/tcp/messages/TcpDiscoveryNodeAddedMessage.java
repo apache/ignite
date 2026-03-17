@@ -248,7 +248,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** @param marsh marshaller. */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        nodeBytes = U.marshal(marsh, node);
+        if (node != null)
+            nodeBytes = U.marshal(marsh, node);
 
         if (top != null)
             topBytes = U.marshal(marsh, top);
@@ -259,7 +260,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        node = U.unmarshal(marsh, nodeBytes, clsLdr);
+        if (nodeBytes != null)
+            node = U.unmarshal(marsh, nodeBytes, clsLdr);
 
         if (topBytes != null)
             top = U.unmarshal(marsh, topBytes, clsLdr);
