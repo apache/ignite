@@ -1204,8 +1204,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
-                    req.finishUnmarshalFilters(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
-
                     filter = (IgnitePredicate<Event>)req.filter();
 
                     // Resource injection.

@@ -225,22 +225,16 @@ public class GridEventStorageMessage implements MarshallableMessage {
             resTopicBytes = null;
         }
 
+        if (filterBytes != null && filter == null) {
+            filter = U.unmarshal(marsh, filterBytes, ldr);
+
+            filterBytes = null;
+        }
+
         if (evtsBytes != null && evts == null) {
             evts = U.unmarshal(marsh, evtsBytes, ldr);
 
             evtsBytes = null;
-        }
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param filterClsLdr Class loader for filter.
-     */
-    public void finishUnmarshalFilters(Marshaller marsh, ClassLoader filterClsLdr) throws IgniteCheckedException {
-        if (filterBytes != null && filter == null) {
-            filter = U.unmarshal(marsh, filterBytes, filterClsLdr);
-
-            filterBytes = null;
         }
     }
 
