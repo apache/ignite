@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -222,16 +223,16 @@ public class DdlSqlToCommandConverter {
                 RelDataType type = planner.convert(col.dataType);
                 Object dflt = null;
 
-                assert col.expression == null || col.expression instanceof SqlLiteral;
+                // assert col.expression == null || col.expression instanceof SqlLiteral;
 
-                if (col.expression != null
+                if (col.expression != null) {
+                    Type storageType = ctx.typeFactory().getResultClass(type);
+                    DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
+
+                    // TODO: 17.03.2026 Надо будет тут что-то поменять дополнительно
                     && (((SqlLiteral)col.expression).getTypeName() != SqlTypeName.NULL || type instanceof OtherType)) {
                     if (type instanceof OtherType)
                         throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
-
-                    Type storageType = ctx.typeFactory().getResultClass(type);
-
-                    DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
 
                     dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);
                 }

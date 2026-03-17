@@ -137,7 +137,7 @@ void TableElement(List<SqlNode> list) :
 {
     id = SimpleIdentifier() type = DataTypeEx() nullable = NullableOptDefaultTrue()
     (
-        <DEFAULT_> { s.add(this); } dflt = Literal() {
+        <DEFAULT_> { s.add(this); } dflt = Expression(ExprContext.ACCEPT_ALL) {
             strategy = ColumnStrategy.DEFAULT;
         }
     |

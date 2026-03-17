@@ -1287,7 +1287,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
       if (jj_2_97(2)) {
         jj_consume_token(DEFAULT_);
                      s.add(this);
-        dflt = Literal();
+        dflt = Expression(ExprContext.ACCEPT_ALL);
             strategy = ColumnStrategy.DEFAULT;
       } else {
             dflt = null;
@@ -30440,7 +30440,7 @@ final String p;
 
   final private boolean jj_3_97() {
     if (jj_scan_token(DEFAULT_)) return true;
-    if (jj_3R_117()) return true;
+    if (jj_3R_81()) return true;
     return false;
   }
 
