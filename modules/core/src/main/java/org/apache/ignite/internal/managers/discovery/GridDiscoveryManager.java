@@ -3062,7 +3062,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     evt.message("Client node reconnected");
 
                 else
-                    assert false : "Unexpected discovery message type: " + type;;
+                    assert false : "Unexpected discovery message type: " + type;
 
                 ctx.event().record(evt, discoCache);
             }

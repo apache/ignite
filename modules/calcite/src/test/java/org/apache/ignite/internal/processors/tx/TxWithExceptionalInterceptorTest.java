@@ -117,6 +117,13 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
         exceptionRaised.set(0);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids(true);
+    }
+
     /** */
     private static class FilterDefinedNode implements IgnitePredicate<ClusterNode> {
         /** */
