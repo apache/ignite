@@ -36,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private volatile DiscoveryCustomMessage msg;
 
     /** Serialized message bytes. */
