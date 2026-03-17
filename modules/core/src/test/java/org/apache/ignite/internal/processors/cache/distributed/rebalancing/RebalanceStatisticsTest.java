@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -155,26 +154,26 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             assertEquals(msgs.size(), supplierMsgs.size());
 
             for (GridDhtPartitionSupplyMessage msg : msgs) {
-                Map<Integer, CacheEntryInfoCollection> infos = U.field(msg, "infos");
+                Map<Integer, List<GridCacheEntryInfo>> infos = U.field(msg, "infos");
 
                 CacheGroupContext grpCtx = node.context().cache().cacheGroup(msg.groupId());
 
                 long bytes = 0;
 
-                for (CacheEntryInfoCollection c : infos.values()) {
-                    for (GridCacheEntryInfo i : c.infos())
+                for (List<GridCacheEntryInfo> entriesList : infos.values()) {
+                    for (GridCacheEntryInfo i : entriesList)
                         bytes += getSize.apply(i, grpCtx.cacheObjectContext());
                 }
 
                 String[] checVals = {
                     "grp=" + grpCtx.cacheOrGroupName(),
                     "partitions=" + infos.size(),
-                    "entries=" + infos.values().stream().mapToInt(i -> i.infos().size()).sum(),
+                    "entries=" + infos.values().stream().mapToInt(List::size).sum(),
                     "topVer=" + msg.topologyVersion(),
                     "rebalanceId=" + U.field(msg, "rebalanceId"),
                     "bytesRcvd=" + U.humanReadableByteCount(bytes),
                     "fullPartitions=" + infos.size(),
-                    "fullEntries=" + infos.values().stream().mapToInt(i -> i.infos().size()).sum(),
+                    "fullEntries=" + infos.values().stream().mapToInt(List::size).sum(),
                     "fullBytesRcvd=" + U.humanReadableByteCount(bytes),
                     "histPartitions=0",
                     "histEntries=0",
@@ -197,16 +196,16 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
         for (List<GridDhtPartitionSupplyMessage> msgs : supplyMsgs.values()) {
             for (GridDhtPartitionSupplyMessage msg : msgs) {
-                Map<Integer, CacheEntryInfoCollection> infos = U.field(msg, "infos");
+                Map<Integer, List<GridCacheEntryInfo>> infos = U.field(msg, "infos");
 
                 rebId = U.field(msg, "rebalanceId");
                 parts += infos.size();
-                entries += infos.values().stream().mapToInt(i -> i.infos().size()).sum();
+                entries += infos.values().stream().mapToInt(List::size).sum();
 
                 CacheObjectContext cacheObjCtx = node.context().cache().cacheGroup(msg.groupId()).cacheObjectContext();
 
-                for (CacheEntryInfoCollection c : infos.values()) {
-                    for (GridCacheEntryInfo i : c.infos())
+                for (List<GridCacheEntryInfo> entriesList : infos.values()) {
+                    for (GridCacheEntryInfo i : entriesList)
                         bytes += getSize.apply(i, cacheObjCtx);
                 }
             }

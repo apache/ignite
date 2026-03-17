@@ -69,8 +69,6 @@ import org.apache.ignite.internal.processors.authentication.UserAuthenticateResp
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessageSerializer;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapterMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
@@ -495,7 +493,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register((short)88, GridCacheReturn::new, new GridCacheReturnSerializer());
         factory.register((short)91, GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer());
-        factory.register((short)92, CacheEntryInfoCollection::new, new CacheEntryInfoCollectionSerializer());
         factory.register((short)93, CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer());
         factory.register((short)94, IgniteTxKey::new, new IgniteTxKeySerializer());
         factory.register((short)95, DataStreamerEntry::new, new DataStreamerEntrySerializer());
