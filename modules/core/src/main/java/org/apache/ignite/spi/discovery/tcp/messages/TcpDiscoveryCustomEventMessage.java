@@ -101,7 +101,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param marsh Marshaller.
      */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (msg instanceof Message)
             serMsg = (Message)msg;
         else {
