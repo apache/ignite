@@ -596,15 +596,23 @@ public class ConnectionClientPool {
 
             newClients[connIdx] = addClient;
 
-            if (curClients == null) {
-                if (clients.putIfAbsent(node.id(), newClients) == null) {
-                    createNodeMetrics(node);
+            boolean success;
 
-                    break;
-                }
+            if (curClients == null) {
+                success = clients.putIfAbsent(node.id(), newClients) == null;
+
+                if (success)
+                    createNodeMetrics(node);
             }
-            else if (clients.replace(node.id(), curClients, newClients))
+            else
+                success = clients.replace(node.id(), curClients, newClients);
+
+            if (success) {
+                if (log.isDebugEnabled())
+                    log.debug("New node client were added [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
+
                 break;
+            }
         }
     }
 
