@@ -17,28 +17,23 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Message holding new node that wants to join the topology. */
     @Order(0)
-    TcpDiscoveryNodeMessage nodeMsg;
+    public TcpDiscoveryNodeMessage nodeMsg;
 
     /** Discovery data container. */
     @Order(1)
@@ -81,17 +76,6 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         setFlag(RESPONDED_FLAG_POS, responded);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (node != null)
-            nodeBytes = U.marshal(marsh, node);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (nodeBytes != null)
-            node = U.unmarshal(marsh, nodeBytes, clsLdr);
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {

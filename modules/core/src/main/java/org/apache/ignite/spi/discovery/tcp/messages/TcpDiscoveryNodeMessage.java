@@ -17,25 +17,62 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /** Message for {@link TcpDiscoveryNode}. */
-public class TcpDiscoveryNodeMessage extends ClusterNodeMessage {
-    /** */
+public class TcpDiscoveryNodeMessage implements MarshallableMessage {
+    /** Node ID. */
     @Order(0)
-    public int discPort;
+    public UUID id;
+
+    /** */
+    public Map<String, Object> attrs;
 
     /** */
     @Order(1)
+    byte[] attrsBytes;
+
+    /** Internal discovery addresses as strings. */
+    @Order(2)
+    Collection<String> addrs;
+
+    /** Internal discovery host names as strings. */
+    @Order(3)
+    Collection<String> hostNames;
+
+    /** */
+    @Order(4)
+    public int discPort;
+
+    /** */
+    @Order(5)
+    public TcpDiscoveryNodeMetricsMessage metricsMsg;
+
+    /** */
+    @Order(6)
+    long order;
+
+    /** */
+    @Order(7)
     public long intOrder;
 
     /** */
-    @Order(2)
+    @Order(8)
+    IgniteProductVersionMessage verMsg;
+
+    /** */
+    @Order(9)
     public @Nullable UUID clientRouterNodeId;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -45,16 +82,37 @@ public class TcpDiscoveryNodeMessage extends ClusterNodeMessage {
 
     /** @param tcpDiscoveryNode Tcp Discovery node. */
     public TcpDiscoveryNodeMessage(TcpDiscoveryNode tcpDiscoveryNode) {
-        super(tcpDiscoveryNode);
-
-        attrs = new HashMap<>(tcpDiscoveryNode.getAttributes());
+        id = tcpDiscoveryNode.id();
+        attrs = new HashMap<>(tcpDiscoveryNode.attributes());
+        attrsBytes = null;
+        addrs = tcpDiscoveryNode.addresses();
+        hostNames = tcpDiscoveryNode.hostNames();
         discPort = tcpDiscoveryNode.discoveryPort();
+        metricsMsg = new TcpDiscoveryNodeMetricsMessage(tcpDiscoveryNode.metrics());
+        order = tcpDiscoveryNode.order();
         intOrder = tcpDiscoveryNode.internalOrder();
+        verMsg = new IgniteProductVersionMessage(tcpDiscoveryNode.version());
         clientRouterNodeId = tcpDiscoveryNode.clientRouterNodeId();
+    }
+
+
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (attrs != null && attrsBytes == null)
+            attrsBytes = U.marshal(marsh, attrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (attrsBytes != null && attrs == null)
+            attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
+
+        attrsBytes = null;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -112;
+        return -111;
     }
 }
