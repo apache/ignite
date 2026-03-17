@@ -22,7 +22,7 @@ import org.apache.ignite.internal.ExchangeInfoSerializer;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.GridJobExecuteRequest;
-import org.apache.ignite.internal.GridJobExecuteRequestMarshallableSerializer;
+import org.apache.ignite.internal.GridJobExecuteRequestSerializer;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobExecuteResponseSerializer;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
@@ -54,7 +54,7 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequestSeria
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBeanSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestSerializer;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentRequestMarshallableSerializer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -398,18 +398,19 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new, new HandshakeMessageSerializer());
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer());
         factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
-        factory.register((short)1, GridJobExecuteRequest::new,
-            new GridJobExecuteRequestMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)1, GridJobExecuteRequest::new, new GridJobExecuteRequestSerializer());
         factory.register((short)2, GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer());
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
         factory.register((short)4, GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer());
         factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
         factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
-        factory.register((short)8, GridIoMessage::new, new GridIoMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)8, GridIoMessage::new,
+            new GridIoMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
         factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
-        factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
+        factory.register((short)11, GridDeploymentRequest::new,
+            new GridDeploymentRequestMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
         factory.register((short)13, GridEventStorageMessage::new,
             new GridEventStorageMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));

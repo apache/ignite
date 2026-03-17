@@ -122,18 +122,6 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
             assert taskCls1.getClassLoader() != taskCls2.getClassLoader();
             assert taskCls1 != taskCls2;
 
-//            final AtomicBoolean undeployed = new AtomicBoolean(false);
-//
-//            grid2.events().localListen(new GridLocalEventListener() {
-//                @Override public void onEvent(GridEvent evt) {
-//                    if (evt.type() == EVT_TASK_UNDEPLOYED) {
-//                        assert ((GridDeploymentEvent)evt).alias().equals(TASK_NAME);
-//
-//                        undeployed.set(true);
-//                    }
-//                }
-//            }, EVT_TASK_UNDEPLOYED);
-
             ignite2.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
 
             Integer res1 = ignite1.compute().execute(taskCls1, Collections.singletonList(ignite2.cluster().localNode().id()));
@@ -149,10 +137,6 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
             info("Result2: " + res2);
 
             assert !res1.equals(res2);
-
-//            Thread.sleep(P2P_TIMEOUT * 2);
-//
-//            assert undeployed.get();
         }
         finally {
             stopGrid(2);

@@ -1257,31 +1257,49 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     GridJobSessionImpl jobSes;
                     GridJobContextImpl jobCtx;
 
-                    // Note that we unmarshal session/job attributes here with proper class loader.
-                    GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
-                        req.sessionId(),
-                        node.id(),
-                        req.taskName(),
-                        dep,
-                        req.taskClassName(),
-                        req.topology(),
-                        req.getTopologyPredicate(),
-                        req.startTaskTime(),
-                        endTime,
-                        req.getSiblings(),
-                        req.getSessionAttributes(),
-                        req.sessionFullSupport(),
-                        req.internal(),
-                        req.executorName(),
-                        ctx.security().securityContext()
-                    );
+                    boolean loc = ctx.localNodeId().equals(node.id()) && !ctx.config().isMarshalLocalJobs();
 
-                    taskSes.setCheckpointSpi(req.checkpointSpi());
-                    taskSes.setClassLoader(dep.classLoader());
+                    try {
+                        if (!loc)
+                            req.finishUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
-                    jobSes = new GridJobSessionImpl(ctx, taskSes, req.jobId());
+                        // Note that we unmarshal session/job attributes here with proper class loader.
+                        GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
+                            req.sessionId(),
+                            node.id(),
+                            req.taskName(),
+                            dep,
+                            req.taskClassName(),
+                            req.topology(),
+                            req.getTopologyPredicate(),
+                            req.startTaskTime(),
+                            endTime,
+                            req.getSiblings(),
+                            req.getSessionAttributes(),
+                            req.sessionFullSupport(),
+                            req.internal(),
+                            req.executorName(),
+                            ctx.security().securityContext()
+                        );
 
-                    jobCtx = new GridJobContextImpl(ctx, req.jobId(), req.getJobAttributes());
+                        taskSes.setCheckpointSpi(req.checkpointSpi());
+                        taskSes.setClassLoader(dep.classLoader());
+
+                        jobSes = new GridJobSessionImpl(ctx, taskSes, req.jobId());
+
+                        jobCtx = new GridJobContextImpl(ctx, req.jobId(), req.getJobAttributes());
+                    }
+                    catch (IgniteCheckedException e) {
+                        IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
+                            "[taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
+                            ", codeVer=" + req.userVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+
+                        U.error(log, ex.getMessage(), e);
+
+                        handleException(node, req, ex, endTime);
+
+                        return;
+                    }
 
                     job = new GridJobWorker(
                         ctx,
