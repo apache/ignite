@@ -40,11 +40,11 @@ import org.jetbrains.annotations.Nullable;
  * Several of them might be a {@link Message}, several may not and require the original marshalling.
  */
 public class TcpDiscoveryCollectionMessage implements MarshallableMessage {
-    /** {@link TcpDiscoveryAbstractMessage} pending messages which are a {@link Message}. */
+    /** {@link TcpDiscoveryAbstractMessage} messages which are a {@link Message}. */
     @Order(0)
     @Nullable Map<Integer, Message> writableMsgs;
 
-    /** Marshallable or Java-serializable pending messages which are not a {@link Message}. */
+    /** Marshallable or Java-serializable messages which are not a {@link Message}. */
     @Nullable private Map<Integer, TcpDiscoveryAbstractMessage> marshallableMsgs;
 
     /** Marshalled {@link #marshallableMsgs}. */
