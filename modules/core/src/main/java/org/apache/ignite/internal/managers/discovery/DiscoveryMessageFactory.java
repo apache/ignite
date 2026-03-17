@@ -65,10 +65,12 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessageSerializer;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessageSerializer;
+import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryFieldMarshallableSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageMarshallableSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -158,6 +160,17 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
+            new SchemaAlterTableAddColumnOperationSerializer());
+        factory.register((short)-114, SchemaIndexCreateOperation::new,
+            new SchemaIndexCreateOperationMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)-113, SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
+        factory.register((short)-112, SchemaAlterTableDropColumnOperation::new,
+            new SchemaAlterTableDropColumnOperationSerializer());
+        factory.register((short)-111, SchemaAddQueryEntityOperation::new,
+            new SchemaAddQueryEntityOperationMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)-110, QueryField::new, new QueryFieldMarshallableSerializer(cstDataMarshall,
+            cstDataMarshallClsLdr));
         factory.register((short)-109, User::new, new UserSerializer());
         factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());

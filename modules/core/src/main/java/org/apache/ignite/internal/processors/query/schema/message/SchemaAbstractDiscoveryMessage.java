@@ -17,25 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract discovery message for schema operations.
  */
-public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, MarshallableMessage {
+public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,22 +40,16 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
 
     /** Operation. */
     @GridToStringInclude
-    private SchemaAbstractOperation op;
-
-    /**
-     * Operation bytes. Serialized reprezentation of schema operation.
-     * TODO Should be removed in IGNITE-27559
-     */
     @Order(1)
-    byte[] opBytes;
+    SchemaAbstractOperation op;
 
     /** Error message. */
     @Order(2)
-    String errMsg;
+    transient String errMsg;
 
     /** Error code. */
     @Order(3)
-    int errCode;
+    transient int errCode;
 
     /** Error. */
     SchemaOperationException err;
@@ -93,12 +82,7 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      * @return Operation.
      */
     public SchemaAbstractOperation operation() {
-        try {
-            return op != null ? op : U.unmarshal(Marshallers.jdk(), opBytes, null);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshal schema operation", e);
-        }
+        return op;
     }
 
     /**
@@ -146,17 +130,5 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaAbstractDiscoveryMessage.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (op != null)
-            opBytes = U.marshal(marsh, op);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (opBytes != null)
-            op = U.unmarshal(marsh, opBytes, clsLdr);
     }
 }
