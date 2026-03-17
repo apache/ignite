@@ -6073,15 +6073,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     DiscoveryCustomMessage msgObj = null;
 
-                    try {
-                        msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                        msgObj = msg.message();
-                    }
-                    catch (Throwable e) {
-                        U.error(log, "Failed to unmarshal discovery custom message.", e);
-                    }
-
                     if (msgObj != null) {
                         DiscoveryCustomMessage nextMsg = msgObj.ackMessage();
 
@@ -6262,16 +6253,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (node == null)
                     return;
 
-                DiscoveryCustomMessage msgObj;
-
-                try {
-                    msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                    msgObj = msg.message();
-                }
-                catch (Throwable t) {
-                    throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
-                }
+                DiscoveryCustomMessage msgObj = msg.message();
 
                 IgniteFuture<?> fut = lsnr.onDiscovery(
                     new DiscoveryNotification(

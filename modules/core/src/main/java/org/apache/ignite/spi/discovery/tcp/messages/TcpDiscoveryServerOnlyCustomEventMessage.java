@@ -26,9 +26,6 @@ import org.jetbrains.annotations.NotNull;
  */
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustomEventMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Default constructor.
      */

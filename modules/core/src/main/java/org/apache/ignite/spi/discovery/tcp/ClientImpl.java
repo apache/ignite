@@ -2595,17 +2595,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
                     if (node != null && node.visible()) {
-                        try {
-                            msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                        DiscoveryCustomMessage msgObj = msg.message();
 
-                            DiscoveryCustomMessage msgObj = msg.message();
-
-                            notifyDiscovery(
-                                EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj, msg.spanContainer());
-                        }
-                        catch (Throwable e) {
-                            U.error(log, "Failed to unmarshal discovery custom message.", e);
-                        }
+                        notifyDiscovery(
+                            EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj, msg.spanContainer());
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Received metrics from unknown node: " + nodeId);

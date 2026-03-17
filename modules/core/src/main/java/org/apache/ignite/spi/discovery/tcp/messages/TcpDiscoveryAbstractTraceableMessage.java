@@ -36,7 +36,6 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     private SpanContainer spanContainer = new SpanContainer();
 
     /** Serialization holder of {@link #spanContainer}'s bytes. */
-    @SuppressWarnings("unused")
     @Order(0)
     @Nullable byte[] spanContainerBytes;
 
