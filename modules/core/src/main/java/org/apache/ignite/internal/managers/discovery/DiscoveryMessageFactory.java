@@ -68,9 +68,19 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryFieldMarshallableSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageMarshallableSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperationMarshallableSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperationSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperationSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperationMarshallableSerializer;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperationSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -163,14 +173,13 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
             new SchemaAlterTableAddColumnOperationSerializer());
         factory.register((short)-114, SchemaIndexCreateOperation::new,
-            new SchemaIndexCreateOperationMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new SchemaIndexCreateOperationMarshallableSerializer(marsh, clsLdr));
         factory.register((short)-113, SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
         factory.register((short)-112, SchemaAlterTableDropColumnOperation::new,
             new SchemaAlterTableDropColumnOperationSerializer());
         factory.register((short)-111, SchemaAddQueryEntityOperation::new,
-            new SchemaAddQueryEntityOperationMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
-        factory.register((short)-110, QueryField::new, new QueryFieldMarshallableSerializer(cstDataMarshall,
-            cstDataMarshallClsLdr));
+            new SchemaAddQueryEntityOperationMarshallableSerializer(marsh, clsLdr));
+        factory.register((short)-110, QueryField::new, new QueryFieldMarshallableSerializer(marsh, clsLdr));
         factory.register((short)-109, User::new, new UserSerializer());
         factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register((short)-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
@@ -225,10 +234,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new SecurityAwareCustomMessageWrapperMarshallableSerializer(marsh, clsLdr));
         factory.register((short)502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
         factory.register((short)503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
-        factory.register((short)504, SchemaProposeDiscoveryMessage::new,
-            new SchemaProposeDiscoveryMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)505, SchemaFinishDiscoveryMessage::new,
-            new SchemaFinishDiscoveryMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register((short)504, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
+        factory.register((short)505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
         factory.register((short)506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
         factory.register((short)507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
         factory.register((short)508, MetadataUpdateAcceptedMessage::new,
