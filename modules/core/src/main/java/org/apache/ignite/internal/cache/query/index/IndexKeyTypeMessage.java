@@ -71,8 +71,6 @@ public class IndexKeyTypeMessage implements MarshallableMessage {
 
     /** @return Index key type. */
     public @Nullable IndexKeyType value() {
-        assert val != null;
-
         return val;
     }
 
