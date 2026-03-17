@@ -485,7 +485,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Cancel only if we force grid to stop
         if (cancel) {
             for (GridJobWorker job : activeJobs.values()) {
-                job.onStopping();
+                job.onNodeStopping();
 
                 cancelJob(job, false);
             }

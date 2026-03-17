@@ -17,10 +17,12 @@
 -->
 <rat-config>
     <families>
-        <family id="IAL20" name="Ignite Apache License 2.0"/>
+        <family id="AL" name="Apache License"/>
     </families>
     <licenses>
-        <license family="IAL20" id="IAL20" name="Ignite Apache License 2.0">
+        <!-- Override built-in AL2.0: replace the permissive URL-based matcher
+             with the full ASF license header text. -->
+        <license family="AL" id="AL2.0" name="Apache License 2.0">
             <text>Licensed to the Apache Software Foundation (ASF) under one or more
                 contributor license agreements.  See the NOTICE file distributed with
                 this work for additional information regarding copyright ownership.
@@ -37,7 +39,4 @@
                 limitations under the License.</text>
         </license>
     </licenses>
-    <approved>
-        <family license_ref="IAL20"/>
-    </approved>
 </rat-config>
