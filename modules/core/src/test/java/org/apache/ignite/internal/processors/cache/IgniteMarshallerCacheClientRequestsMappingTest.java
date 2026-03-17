@@ -163,6 +163,8 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                         try {
                             TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
+                            evtMsg.finishUnmarshal(marshaller(), U.gridClassLoader());
+
                             DiscoveryCustomMessage delegate = U.unwrapCustomMessage(evtMsg.message());
 
                             if (delegate instanceof MappingAcceptedMessage) {
@@ -236,6 +238,8 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
                             TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
+
+                            evtMsg.finishUnmarshal(marshaller(), U.gridClassLoader());
 
                             DiscoveryCustomMessage delegate = U.unwrapCustomMessage(evtMsg.message());
 

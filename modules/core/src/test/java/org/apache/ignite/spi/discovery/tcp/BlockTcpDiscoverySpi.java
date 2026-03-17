@@ -53,7 +53,14 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
 
         TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-        assertNotNull(cm.message());
+        try {
+            cm.finishUnmarshal(marshaller(), U.gridClassLoader());
+
+            assertNotNull(cm.message());
+        }
+        catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
 
         if (clo != null)
             clo.apply(addr, U.unwrapCustomMessage(cm.message()));

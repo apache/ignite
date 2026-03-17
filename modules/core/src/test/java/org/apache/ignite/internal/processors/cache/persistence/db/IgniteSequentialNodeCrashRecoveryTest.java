@@ -354,7 +354,16 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         /** */
         private DiscoveryCustomMessage extractCustomMessage(TcpDiscoveryCustomEventMessage msg) {
-            DiscoveryCustomMessage msgObj = msg.message();
+            DiscoveryCustomMessage msgObj = null;
+
+            try {
+                msg.finishUnmarshal(marshaller(), U.gridClassLoader());
+
+                msgObj = msg.message();
+            }
+            catch (Throwable e) {
+                U.error(log, "Failed to unmarshal discovery custom message.", e);
+            }
 
             return U.unwrapCustomMessage(msgObj);
         }
