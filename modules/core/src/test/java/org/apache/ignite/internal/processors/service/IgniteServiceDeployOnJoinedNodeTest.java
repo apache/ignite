@@ -70,7 +70,7 @@ public class IgniteServiceDeployOnJoinedNodeTest extends GridCommonAbstractTest 
 
     /** */
     @Test
-    public void testDeployOnJoinedNode() throws Exception {
+    public void test() throws Exception {
         // Node A only stores service config.
         try (IgniteEx a = startGrid("A")) {
             // Service must be deployed on node B.
