@@ -44,6 +44,7 @@ public interface VirtualColumnProvider {
      *     {@code "_VAL"}.</li>
      *     <li>User will get an error when trying to create a column with the name of one of the virtual ones.</li>
      * </ul>
+     * @return Virtual column descriptors to add to tables.
      */
     List<VirtualColumnDescriptor> provideVirtualColumnDescriptors();
 

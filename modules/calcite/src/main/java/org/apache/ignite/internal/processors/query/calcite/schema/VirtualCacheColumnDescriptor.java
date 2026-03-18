@@ -93,8 +93,7 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public RelDataType logicalType(IgniteTypeFactory f) {
+    @Override public RelDataType logicalType(IgniteTypeFactory f) {
         if (logicalType == null) {
             logicalType = TypeUtils.sqlType(
                 f,
