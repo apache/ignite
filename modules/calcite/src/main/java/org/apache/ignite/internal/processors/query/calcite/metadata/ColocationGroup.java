@@ -320,47 +320,52 @@ public class ColocationGroup implements CalciteMarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (assignments == null && !primaryAssignment) {
-            Map<UUID, Integer> nodeIdxs = new HashMap<>();
+        if (assignments == null || primaryAssignment)
+            marshalledAssignments = null;
 
-            for (int i = 0; i < nodeIds.size(); i++)
-                nodeIdxs.put(nodeIds.get(i), i);
+        Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
-            int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
+        for (int i = 0; i < nodeIds.size(); i++)
+            nodeIdxs.put(nodeIds.get(i), i);
 
-            CompactedIntArray.Builder builder = CompactedIntArray.builder(bitsPerPart, assignments.size());
+        int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 
-            for (List<UUID> assignment : assignments) {
-                assert F.isEmpty(assignment) || assignment.size() == 1;
+        CompactedIntArray.Builder builder = CompactedIntArray.builder(bitsPerPart, assignments.size());
 
-                if (F.isEmpty(assignment))
-                    builder.add(nodeIds.size());
-                else {
-                    Integer nodeIdx = nodeIdxs.get(assignment.get(0));
+        for (List<UUID> assignment : assignments) {
+            assert F.isEmpty(assignment) || assignment.size() == 1;
 
-                    builder.add(nodeIdx);
-                }
+            if (F.isEmpty(assignment))
+                builder.add(nodeIds.size());
+            else {
+                Integer nodeIdx = nodeIdxs.get(assignment.get(0));
+
+                builder.add(nodeIdx);
             }
-
-            marshalledAssignments = builder.build().buffer();
         }
+
+        marshalledAssignments = builder.build().buffer();
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (!F.isEmpty(marshalledAssignments)) {
-            int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
+        if (F.isEmpty(marshalledAssignments)) {
+            assignments = null;
 
-            CompactedIntArray compactedArr = CompactedIntArray.of(bitsPerPart, marshalledAssignments);
+            return;
+        }
 
-            assignments = new ArrayList<>(compactedArr.size());
+        int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 
-            for (GridIntIterator iter = compactedArr.iterator(); iter.hasNext(); ) {
-                int nodeIdx = iter.next();
+        CompactedIntArray compactedArr = CompactedIntArray.of(bitsPerPart, marshalledAssignments);
 
-                assignments.add(nodeIdx >= nodeIds.size() ? Collections.emptyList() :
-                    Collections.singletonList(nodeIds.get(nodeIdx)));
-            }
+        assignments = new ArrayList<>(compactedArr.size());
+
+        for (GridIntIterator iter = compactedArr.iterator(); iter.hasNext(); ) {
+            int nodeIdx = iter.next();
+
+            assignments.add(nodeIdx >= nodeIds.size() ? Collections.emptyList() :
+                Collections.singletonList(nodeIds.get(nodeIdx)));
         }
     }
 
