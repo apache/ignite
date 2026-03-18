@@ -17,30 +17,51 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-/** */
+/**
+ * Tests check the following case:
+ * 1. Node "A" starts with the service configuration. But NodeFilter filter out node "A".
+ * 2. Node "B" starts and NodeFilter conforms it.
+ * We expect that service will be deployed on node "B".
+ */
+@RunWith(Parameterized.class)
 public class IgniteServiceDeployOnJoinedNodeTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameter
+    public boolean nodeBClient;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "nodeBClient={0}")
+    public static Collection<?> parameters() {
+        return List.of(false, true);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setConsistentId(igniteInstanceName)
+            .setClientMode("B".equals(igniteInstanceName) && nodeBClient);
 
-        if (!cfg.isClientMode()) {
+        if (cfg.getConsistentId().equals("A")) {
             // Server node stores service config.
             cfg = cfg.setServiceConfiguration(new ServiceConfiguration()
                 .setName("service")
                 .setService(new GreeterService())
                 .setMaxPerNodeCount(1)
-                // Service deployed on client node, only.
-                //.setNodeFilter(n -> true)
-                .setNodeFilter(ClusterNode::isClient)
+                // Service deployed on node "B", only.
+                .setNodeFilter(n -> n.consistentId().equals("B"))
             );
         }
 
@@ -50,13 +71,15 @@ public class IgniteServiceDeployOnJoinedNodeTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testDeployOnJoinedNode() throws Exception {
-        // Server node only stores service config.
-        try (IgniteEx ignored = startGrid(0)) {
-            // Service must be deployed on client node.
-            try (IgniteEx cli = startClientGrid(1)) {
-                Supplier<String> srvc = cli.services(cli.cluster().forClients()).serviceProxy("service", Supplier.class, false);
+        // Node A only stores service config.
+        try (IgniteEx a = startGrid("A")) {
+            // Service must be deployed on node B.
+            try (IgniteEx b = startGrid("B")) {
+                assertEquals(b.configuration().isClientMode(), (Boolean)nodeBClient);
 
-                assertEquals("Hello", srvc.get());
+                ClusterGroup grp = nodeBClient ? b.cluster().forClients() : b.cluster().forServers();
+
+                assertEquals("Hello", b.services(grp).serviceProxy("service", Supplier.class, false).get());
             }
         }
     }
