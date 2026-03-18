@@ -114,7 +114,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessageMarshallableSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -177,6 +176,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
     @Override public void registerAll(MessageFactory factory) {
         factory.register((short)-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+
         factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
             new SchemaAlterTableAddColumnOperationSerializer());
         factory.register((short)-114, SchemaIndexCreateOperation::new,
@@ -233,8 +233,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)25, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
         factory.register((short)26, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
         factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
-        factory.register((short)28, TcpDiscoveryClientReconnectMessage::new,
-            new TcpDiscoveryClientReconnectMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)28, TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
         factory.register((short)29, TcpDiscoveryNodeAddedMessage::new,
             new TcpDiscoveryNodeAddedMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
 

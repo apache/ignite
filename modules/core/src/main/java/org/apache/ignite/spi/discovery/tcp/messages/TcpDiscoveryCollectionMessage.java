@@ -133,7 +133,7 @@ public class TcpDiscoveryCollectionMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -110;
+        return -200;
     }
 
     /** {@inheritDoc} */
