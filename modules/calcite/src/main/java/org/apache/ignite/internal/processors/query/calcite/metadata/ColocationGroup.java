@@ -320,8 +320,11 @@ public class ColocationGroup implements CalciteMarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (assignments == null || primaryAssignment)
+        if (assignments == null || primaryAssignment) {
             marshalledAssignments = null;
+
+            return;
+        }
 
         Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
