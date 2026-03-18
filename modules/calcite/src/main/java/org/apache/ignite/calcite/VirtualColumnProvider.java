@@ -75,6 +75,7 @@ public interface VirtualColumnProvider {
     }
 
     /** Context for extracting the value of a virtual column. */
+    // TODO: IGNITE-28223 Может еще немного подумать на счет API
     interface ValueExtractorContext {
         /** Returns the cache ID. */
         int cacheId();

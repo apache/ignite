@@ -74,6 +74,9 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
         GridCacheContext<?, ?> cctx,
         CacheDataRow src
     ) throws IgniteCheckedException {
+        // TODO: IGNITE-28223 Скорее всего надо еще немного подумать и сделать ValueExtractorContextImp в ThreadLocal
+        //  или вроде того, чтобы памяти лишней не выделять ибо скорее всего это будет горячее место
+        // TODO: IGNITE-28223 можно будет сделать ValueExtractorContextEx чтобы из него получать ectx, cctx, src.
         return desc.value(new ValueExtractorContextImp(cctx, src));
     }
 

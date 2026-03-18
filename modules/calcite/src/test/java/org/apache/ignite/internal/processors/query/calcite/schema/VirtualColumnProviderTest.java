@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /** For {@link VirtualColumnProvider} testing. */
+// TODO: IGNITE-28223 Добавить еще тестов
 public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String KEY_TO_STRING_COLUMN_NAME = "KEY_TO_STRING";
