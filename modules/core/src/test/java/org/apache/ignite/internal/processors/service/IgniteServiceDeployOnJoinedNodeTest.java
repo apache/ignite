@@ -32,9 +32,9 @@ import org.junit.runners.Parameterized;
 
 /**
  * Tests check the following case:
- * 1. Node "A" starts with the service configuration. But NodeFilter filter out node "A".
+ * 1. Node "A" starts with the service configuration. But, NodeFilter filter out node "A".
  * 2. Node "B" starts and NodeFilter conforms it.
- * We expect that service will be deployed on node "B".
+ * 3. Expect that service will be deployed on node "B".
  */
 @RunWith(Parameterized.class)
 public class IgniteServiceDeployOnJoinedNodeTest extends GridCommonAbstractTest {

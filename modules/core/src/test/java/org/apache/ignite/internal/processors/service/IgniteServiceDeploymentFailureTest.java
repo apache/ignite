@@ -272,8 +272,6 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     private static int totalInstancesCount(IgniteEx igniteEx, String srvcName) {
         int registeredCnt = totalInstancesCount(igniteEx.services().serviceDescriptors(), srvcName);
 
-        System.out.println("registeredCnt = " + registeredCnt + ", srvcName = " + srvcName);
-
         assertEquals(registeredCnt, totalInstancesCount(getServicesMap(igniteEx, REGISTERED_SERVICES_BY_NAME).values(), srvcName));
         assertEquals(registeredCnt, totalInstancesCount(getServicesMap(igniteEx, DEPLOYED_SERVICES).values(), srvcName));
         assertEquals(registeredCnt, totalInstancesCount(getServicesMap(igniteEx, DEPLOYED_SERVICES_BY_NAME).values(), srvcName));
