@@ -63,6 +63,14 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     @Order(2)
     @Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
+    /**
+     * TODO: Use direct messages or a message container after https://issues.apache.org/jira/browse/IGNITE-25883
+     * Marshalled {@link #msgs}.
+     */
+    @Order(2)
+    @GridToStringExclude
+    byte[] msgsBytes;
+
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private Collection<TcpDiscoveryNode> top;
@@ -125,7 +133,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         node = msg.node;
         nodeBytes = msg.nodeBytes;
-        pendingMsgsMsg = msg.pendingMsgsMsg;
+        msgs = msg.msgs;
+        msgsBytes = msg.msgsBytes;
         top = msg.top;
         topBytes = msg.topBytes;
         clientTop = msg.clientTop;
@@ -158,6 +167,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @param msgs Pending messages to send to new node.
      */
+    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        this.msgs = msgs;
+        msgsBytes = null;
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
         pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
     }
@@ -251,6 +263,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         if (node != null)
             nodeBytes = U.marshal(marsh, node);
 
+        if (msgs != null)
+            msgsBytes = U.marshal(marsh, msgs);
+
         if (top != null)
             topBytes = U.marshal(marsh, top);
 
@@ -263,6 +278,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         if (nodeBytes != null)
             node = U.unmarshal(marsh, nodeBytes, clsLdr);
 
+        if (msgsBytes != null)
+            msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
+
         if (topBytes != null)
             top = U.unmarshal(marsh, topBytes, clsLdr);
 
@@ -272,7 +290,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         nodeBytes = null;
         topBytes = null;
         topHistBytes = null;
+        msgsBytes = null;
     }
+
 
     /** {@inheritDoc} */
     @Override public short directType() {

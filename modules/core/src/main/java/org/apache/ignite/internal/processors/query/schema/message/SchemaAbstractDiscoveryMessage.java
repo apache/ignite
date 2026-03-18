@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,22 +40,16 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
 
     /** Operation. */
     @GridToStringInclude
-    private SchemaAbstractOperation op;
-
-    /**
-     * Operation bytes. Serialized reprezentation of schema operation.
-     * TODO Should be removed in IGNITE-27559
-     */
-    @Order(value = 1, method = "operationBytes")
-    byte[] opBytes;
+    @Order(1)
+    SchemaAbstractOperation op;
 
     /** Error message. */
     @Order(2)
-    String errMsg;
+    transient String errMsg;
 
     /** Error code. */
     @Order(3)
-    int errCode;
+    transient int errCode;
 
     /** Error. */
     SchemaOperationException err;
@@ -92,31 +82,7 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      * @return Operation.
      */
     public SchemaAbstractOperation operation() {
-        try {
-            return op != null ? op : U.unmarshal(Marshallers.jdk(), opBytes, null);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshal schema operation", e);
-        }
-    }
-
-    /**
-     * @return Operation bytes.
-     */
-    public byte[] operationBytes() {
-        try {
-            return opBytes != null ? opBytes : U.marshal(Marshallers.jdk(), op);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to marshal schema operation", e);
-        }
-    }
-
-    /**
-     * @param opBytes Operation bytes.
-     */
-    public void operationBytes(byte[] opBytes) {
-        this.opBytes = opBytes;
+        return op;
     }
 
     /**
