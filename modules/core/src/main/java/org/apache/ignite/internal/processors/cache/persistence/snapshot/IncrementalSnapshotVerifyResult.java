@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
-import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
@@ -32,13 +30,13 @@ public class IncrementalSnapshotVerifyResult implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Transaction hashes collection. */
-    private Map<Object, TransactionsHashRecord> txHashRes;
+    private Collection<TransactionsHashRecord> txHashRes;
 
     /**
      * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
      * into the incremental snapshot.
      */
-    private Map<PartitionKey, PartitionHashRecord> partHashRes;
+    private Collection<PartitionHashRecord> partHashRes;
 
     /** Partially committed transactions' collection. */
     private Collection<GridCacheVersion> partiallyCommittedTxs;
@@ -53,8 +51,8 @@ public class IncrementalSnapshotVerifyResult implements Serializable {
 
     /** */
     IncrementalSnapshotVerifyResult(
-        Map<Object, TransactionsHashRecord> txHashRes,
-        Map<PartitionKey, PartitionHashRecord> partHashRes,
+        Collection<TransactionsHashRecord> txHashRes,
+        Collection<PartitionHashRecord> partHashRes,
         Collection<GridCacheVersion> partiallyCommittedTxs,
         Collection<Exception> exceptions
     ) {
@@ -65,12 +63,12 @@ public class IncrementalSnapshotVerifyResult implements Serializable {
     }
 
     /** */
-    public Map<PartitionKey, PartitionHashRecord> partHashRes() {
+    public Collection<PartitionHashRecord> partHashRes() {
         return partHashRes;
     }
 
     /** */
-    public Map<Object, TransactionsHashRecord> txHashRes() {
+    public Collection<TransactionsHashRecord> txHashRes() {
         return txHashRes;
     }
 
