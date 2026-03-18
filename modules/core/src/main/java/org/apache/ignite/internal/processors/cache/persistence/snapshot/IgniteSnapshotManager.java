@@ -1070,7 +1070,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpOp.snapshotFileTree(),
-                    snpOp.streamerWarning(), true);
+                    snpOp.streamerWarning(), true, null, null);
 
                 snpOp.meta(meta);
 
