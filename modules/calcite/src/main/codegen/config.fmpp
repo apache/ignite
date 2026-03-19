@@ -433,6 +433,7 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
+      "SqlQueryOrExprWithForUpdate()",
       "SqlAlterTable()",
       "SqlAlterUser()",
       "SqlKillScanQuery()",

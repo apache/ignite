@@ -239,10 +239,36 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
+        validateForUpdate(select);
+
         checkIntegerLimit(select.getFetch(), "fetch / limit");
         checkIntegerLimit(select.getOffset(), "offset");
 
         super.validateSelect(select, targetRowType);
+    }
+
+    /**
+     * Validates combinations of clauses used with {@code FOR UPDATE}.
+     *
+     * @param select Select statement to validate.
+     */
+    private void validateForUpdate(SqlSelect select) {
+        if (!select.isForUpdate())
+            return;
+
+        SqlNodeList grp = select.getGroup();
+
+        if (grp != null && !grp.isEmpty())
+            throw newValidationError(
+                grp,
+                IgniteResource.INSTANCE.unsupportedClause("FOR UPDATE with GROUP BY")
+            );
+
+        if (select.getHaving() != null)
+            throw newValidationError(
+                select.getHaving(),
+                IgniteResource.INSTANCE.unsupportedClause("FOR UPDATE with HAVING")
+            );
     }
 
     /** {@inheritDoc} */

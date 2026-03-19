@@ -24,6 +24,31 @@ boolean IfNotExistsOpt() :
     { return false; }
 }
 
+SqlNode SqlQueryOrExprWithForUpdate() :
+{
+    SqlNode qry;
+    SqlSelect select = null;
+}
+{
+    qry = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    [
+        <FOR> <UPDATE>
+        {
+            if (qry instanceof SqlSelect)
+                select = (SqlSelect)qry;
+            else if (qry instanceof SqlOrderBy && ((SqlOrderBy)qry).query instanceof SqlSelect)
+                select = (SqlSelect)((SqlOrderBy)qry).query;
+            else
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.unsupportedClause("FOR UPDATE"));
+
+            select.setForUpdate(true);
+        }
+    ]
+    {
+        return qry;
+    }
+}
+
 SqlNodeList WithCreateTableOptionList() :
 {
     List<SqlNode> list = new ArrayList<SqlNode>();
