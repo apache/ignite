@@ -22,7 +22,7 @@ Ignite can generate events for a variety of operations happening in the cluster 
 The list of events is available in the link:events/events[Events] section.
 
 == Enabling Events
-By default, events are disabled, and you have to enable each event type explicitly if you want to use it in your application.
+By default, almost all events are disabled (except for a few that are implicitly enabled because they are required by the system), and you have to enable each event type explicitly if you want to use it in your application.
 To enable specific event types, list them in the `includeEventTypes` property of `IgniteConfiguration` as shown below:
 
 [tabs]

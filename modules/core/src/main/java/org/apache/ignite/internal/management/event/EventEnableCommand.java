@@ -22,11 +22,13 @@ import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
+import static org.apache.ignite.internal.management.api.CommandUtils.servers;
+
 /** */
 public class EventEnableCommand implements ComputeCommand<EventCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Enable events";
+        return "Enable events on all server nodes";
     }
 
     /** {@inheritDoc} */
@@ -35,13 +37,13 @@ public class EventEnableCommand implements ComputeCommand<EventCommandArg, Strin
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EventEnableDisableTask> taskClass() {
-        return EventEnableDisableTask.class;
+    @Override public Class<EventManagementTask> taskClass() {
+        return EventManagementTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, EventCommandArg arg) {
-        return nodes;
+        return servers(nodes);
     }
 
     /** {@inheritDoc} */

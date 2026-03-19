@@ -17,17 +17,29 @@
 
 package org.apache.ignite.internal.management.event;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 
-/** Command to enable/disable events. */
-public class EventCommand extends CommandRegistryImpl<NoArg, Void> {
+/** */
+public class EventListCommandArg extends IgniteDataTransferObject {
     /** */
-    public EventCommand() {
-        super(
-            new EventEnableCommand(),
-            new EventDisableCommand(),
-            new EventListCommand()
-        );
+    private static final long serialVersionUID = 0;
+
+    /** */
+    @Order(0)
+    @Argument(
+        optional = true,
+        description = "Only enabled events")
+    boolean enabled;
+
+    /** */
+    public boolean enabled() {
+        return enabled;
+    }
+
+    /** */
+    public void enabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

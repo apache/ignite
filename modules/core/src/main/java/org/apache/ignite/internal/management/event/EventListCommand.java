@@ -18,21 +18,27 @@
 package org.apache.ignite.internal.management.event;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
+
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /** */
-public class EventListCommand implements ComputeCommand<NoArg, Collection<String>> {
+public class EventListCommand implements ComputeCommand<EventListCommandArg, Map<String, String>> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "List of all supported events";
+        return "List and status of events";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public Class<EventListCommandArg> argClass() {
+        return EventListCommandArg.class;
     }
 
     /** {@inheritDoc} */
@@ -41,10 +47,17 @@ public class EventListCommand implements ComputeCommand<NoArg, Collection<String
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, Collection<String> res, Consumer<String> printer) {
-        printer.accept("Supported events:");
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, EventListCommandArg arg) {
+        return servers(nodes);
+    }
 
-        for (String r : res)
-            printer.accept(r);
+    /** {@inheritDoc} */
+    @Override public void printResult(EventListCommandArg arg, Map<String, String> res, Consumer<String> printer) {
+        SystemViewCommand.printTable(
+            List.of("Event", "Status"),
+            List.of(STRING, STRING),
+            res.entrySet().stream().map(e -> List.of(e.getKey(), e.getValue())).collect(Collectors.toList()),
+            printer
+        );
     }
 }

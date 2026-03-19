@@ -37,13 +37,13 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Enable/disable events task.
  */
 @GridInternal
-public class EventEnableDisableTask extends VisorMultiNodeTask<EventCommandArg, String, String> {
+public class EventManagementTask extends VisorMultiNodeTask<EventCommandArg, String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<EventCommandArg, String> job(EventCommandArg arg) {
-        return new EventEnableDisableJob(arg, debug);
+        return new EventManagementJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -57,7 +57,7 @@ public class EventEnableDisableTask extends VisorMultiNodeTask<EventCommandArg, 
     }
 
     /** The job for enable/disable events. */
-    private static class EventEnableDisableJob extends VisorJob<EventCommandArg, String> {
+    private static class EventManagementJob extends VisorJob<EventCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -65,7 +65,7 @@ public class EventEnableDisableTask extends VisorMultiNodeTask<EventCommandArg, 
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected EventEnableDisableJob(EventCommandArg arg, boolean debug) {
+        protected EventManagementJob(EventCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -95,7 +95,7 @@ public class EventEnableDisableTask extends VisorMultiNodeTask<EventCommandArg, 
             else {
                 ignite.context().event().disableEvents(evtTypes);
 
-                return "Events desabled";
+                return "Events disabled";
             }
         }
 

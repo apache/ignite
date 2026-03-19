@@ -73,7 +73,7 @@ public class GridCommandHandlerEventTest extends GridCommandHandlerAbstractTest 
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--event", "status"));
+        assertEquals(EXIT_CODE_OK, execute("--event", "list", "--enabled"));
 
         String out = testOut.toString();
 
@@ -94,15 +94,34 @@ public class GridCommandHandlerEventTest extends GridCommandHandlerAbstractTest 
         startGrid(getConfiguration(getTestIgniteInstanceName(1))
             .setIncludeEventTypes(EventType.EVT_TX_STARTED, EventType.EVT_CACHE_STOPPED));
 
+        assertEvents(true, EventType.EVT_TX_STARTED, EventType.EVT_CACHE_STARTED);
+        assertEvents(false, EventType.EVT_CACHE_STOPPED);
+
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--event", "status"));
+        assertEquals(EXIT_CODE_OK, execute("--event", "list", "--enabled"));
 
         String out = testOut.toString();
 
         assertTrue(out.contains("EVT_TX_STARTED"));
-        assertTrue(out.contains("Warning: Event EVT_CACHE_STARTED is enabled only on part of nodes"));
-        assertTrue(out.contains("Warning: Event EVT_CACHE_STOPPED is enabled only on part of nodes"));
+        assertTrue(out.contains("EVT_CACHE_STARTED"));
+        assertFalse(out.contains("EVT_CACHE_STOPPED"));
+
+        assertEquals(EXIT_CODE_OK, execute("--event", "disable", "EVT_TX_STARTED"));
+
+        startGrid(getConfiguration(getTestIgniteInstanceName(2))
+            .setIncludeEventTypes(EventType.EVT_TX_STARTED, EventType.EVT_CACHE_STOPPED));
+
+        assertEvents(true, EventType.EVT_CACHE_STARTED);
+        assertEvents(false, EventType.EVT_TX_STARTED, EventType.EVT_CACHE_STOPPED);
+
+        assertEquals(EXIT_CODE_OK, execute("--event", "list", "--enabled"));
+
+        out = testOut.toString();
+
+        assertFalse(out.contains("EVT_TX_STARTED"));
+        assertTrue(out.contains("EVT_CACHE_STARTED"));
+        assertFalse(out.contains("EVT_CACHE_STOPPED"));
     }
 
     /** */
@@ -140,7 +159,7 @@ public class GridCommandHandlerEventTest extends GridCommandHandlerAbstractTest 
 
         assertEvents(true, EventType.EVT_CACHE_STARTED, EventType.EVT_CACHE_STOPPED);
 
-        assertExecuteWithSecurity(LOGIN_EVT_STATUS, "--event", "status");
+        assertExecuteWithSecurity(LOGIN_EVT_STATUS, "--event", "list");
 
         assertExecuteWithSecurity(LOGIN_EVT_DISABLE, "--event", "disable", "EVT_CACHE_STARTED,EVT_CACHE_STOPPED");
 
@@ -177,6 +196,9 @@ public class GridCommandHandlerEventTest extends GridCommandHandlerAbstractTest 
     /** */
     private void assertEvents(boolean enabled, int... evts) {
         for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
             for (int i = 0; i < evts.length; i++)
                 assertEquals(enabled, ignite.events().isEnabled(evts[i]));
         }

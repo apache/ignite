@@ -17,30 +17,66 @@
 
 package org.apache.ignite.internal.management.event;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * List of supported events task.
+ * Events status task.
  */
 @GridInternal
-public class EventListTask extends VisorOneNodeTask<NoArg, Collection<String>> {
+public class EventListTask extends VisorMultiNodeTask<EventListCommandArg, Map<String, String>, Collection<String>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, Collection<String>> job(NoArg arg) {
-        return new EventListJob(arg, debug);
+    @Override protected VisorJob<EventListCommandArg, Collection<String>> job(EventListCommandArg arg) {
+        return new EventStatusJob(arg, debug);
     }
 
-    /** The job for view all supported events. */
-    private static class EventListJob extends VisorJob<NoArg, Collection<String>> {
+    /** {@inheritDoc} */
+    @Nullable @Override protected Map<String, String> reduce0(List<ComputeJobResult> results) {
+        for (ComputeJobResult res : results) {
+            if (res.getException() != null)
+                throw res.getException();
+        }
+
+        Map<String, String> res = new TreeMap<>();
+
+        ((Iterable<String>)results.get(0).getData()).forEach(evt -> res.put(evt, "Enabled"));
+
+        for (int i = 1; i < results.size(); i++) {
+            Collection<String> res0 = results.get(i).getData();
+
+            res.keySet().retainAll(res0);
+        }
+
+        for (int i = 0; i < results.size(); i++) {
+            Collection<String> res0 = results.get(i).getData();
+
+            for (String evtName : res0) {
+                if (!res.containsKey(evtName))
+                    res.put(evtName, "Enabled on part of nodes");
+            }
+        }
+
+        if (!taskArg.enabled())
+            U.gridEventNames().values().forEach(e -> res.putIfAbsent("EVT_" + e, "Disabled"));
+
+        return res;
+    }
+
+    /** The job for view events status. */
+    private static class EventStatusJob extends VisorJob<EventListCommandArg, Collection<String>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -48,13 +84,20 @@ public class EventListTask extends VisorOneNodeTask<NoArg, Collection<String>> {
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected EventListJob(NoArg arg, boolean debug) {
+        protected EventStatusJob(EventListCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<String> run(NoArg arg) throws IgniteException {
-            return U.gridEventNames().values().stream().map(e -> "EVT_" + e).sorted().collect(Collectors.toList());
+        @Override protected Collection<String> run(EventListCommandArg arg) throws IgniteException {
+            int[] evts = ignite.context().event().enabledEvents();
+
+            Collection<String> res = new ArrayList<>();
+
+            for (int i = 0; i < evts.length; i++)
+                res.add("EVT_" + U.gridEventName(evts[i]));
+
+            return res;
         }
     }
 }
