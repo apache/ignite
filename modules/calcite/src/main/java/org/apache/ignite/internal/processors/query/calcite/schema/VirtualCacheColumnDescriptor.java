@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Collection;
-import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.calcite.VirtualColumnDescriptor;
 import org.apache.ignite.calcite.VirtualColumnProvider;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -32,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
@@ -54,8 +55,12 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
 
     /** */
     VirtualCacheColumnDescriptor(VirtualColumnDescriptor desc, int fieldIdx) {
-        assert !QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(desc.name()) : desc.name();
-        assert !QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(desc.name()) : desc.name();
+        if (QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(desc.name())
+            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(desc.name())) {
+            throw new IgniteException(
+                String.format("Virtual column name should not overlap with the system ones: [name=%s]", desc.name())
+            );
+        }
 
         this.desc = desc;
         this.fieldIdx = fieldIdx;
@@ -188,10 +193,28 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
 
     /** */
     static List<CacheColumnDescriptor> createCacheColDesc(int nxtColIdx, VirtualColumnProvider virtColProv) {
-        int[] colIdx = {nxtColIdx};
+        Set<String> virtColNames = new HashSet<>();
 
-        return virtColProv.provideDescriptors().stream()
-            .map(desc -> new VirtualCacheColumnDescriptor(desc, colIdx[0]++))
-            .collect(toList());
+        List<CacheColumnDescriptor> res = new ArrayList<>();
+
+        for (VirtualColumnDescriptor d : virtColProv.provideDescriptors()) {
+            if (!virtColNames.add(d.name()))
+                throw new IgniteException(String.format("Virtual column names must be unique: [name=%s]", d.name()));
+
+            res.add(new VirtualCacheColumnDescriptor(d, nxtColIdx++));
+        }
+
+        return res;
+    }
+
+    /** */
+    static void checkForNameConflictsWithUserColumns(List<CacheColumnDescriptor> virtColDescs, Set<String> usrColNames) {
+        for (CacheColumnDescriptor desc : virtColDescs) {
+            if (usrColNames.contains(desc.name())) {
+                throw new IgniteException(
+                    String.format("Virtual column name should not overlap with the user ones: [name=%s]", desc.name())
+                );
+            }
+        }
     }
 }

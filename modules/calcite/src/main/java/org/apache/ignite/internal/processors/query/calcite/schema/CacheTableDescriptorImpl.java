@@ -156,6 +156,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         int fldIdx = QueryUtils.VAL_COL + 1;
 
         List<CacheColumnDescriptor> addlVirtCols = VirtualCacheColumnDescriptor.createCacheColDesc(fldIdx, virtColProv);
+        VirtualCacheColumnDescriptor.checkForNameConflictsWithUserColumns(addlVirtCols, fields);
         descriptors.addAll(addlVirtCols);
         fldIdx += addlVirtCols.size();
         addlVirtCols.forEach(c -> virtualFields.set(c.fieldIndex()));
