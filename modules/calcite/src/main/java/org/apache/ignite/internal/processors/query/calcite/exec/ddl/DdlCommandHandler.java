@@ -32,6 +32,8 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.calcite.VirtualColumnDescriptor;
+import org.apache.ignite.calcite.VirtualColumnProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -62,6 +64,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
@@ -128,6 +132,8 @@ public class DdlCommandHandler {
         security.authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
 
         isDdlOnSchemaSupported(cmd.schemaName());
+
+        checkVirtualColumns(cmd);
 
         if (schemaSupp.get().getSubSchema(cmd.schemaName()).getTable(cmd.tableName()) != null) {
             if (cmd.ifNotExists())
@@ -398,5 +404,38 @@ public class DdlCommandHandler {
         }
 
         return res;
+    }
+
+    /** */
+    private void checkVirtualColumns(CreateTableCommand cmd) {
+        VirtualColumnProvider virtColProv = cacheProc.context().kernalContext().plugins().createComponentOrDefault(
+            VirtualColumnProvider.class, VirtualColumnProvider.EMPTY
+        );
+
+        List<String> virtColNameList = virtColProv.provideDescriptors().stream()
+            .map(VirtualColumnDescriptor::name)
+            .collect(toList());
+
+        Set<String> virtColNameSet = new HashSet<>();
+        Set<String> sysVirtColNameSet = Set.of(QueryUtils.KEY_FIELD_NAME, QueryUtils.VAL_FIELD_NAME);
+        Set<String> tblColNameSet = cmd.columns().stream().map(ColumnDefinition::name).collect(toSet());
+
+        for (String virtColName : virtColNameList) {
+            if (!virtColNameSet.add(virtColName)) {
+                throw new IgniteSQLException(
+                    String.format("Virtual column names must be unique: [name=%s]", virtColName)
+                );
+            }
+            else if (sysVirtColNameSet.contains(virtColName)) {
+                throw new IgniteSQLException(
+                    String.format("Virtual column name must not match system one: [name=%s]", virtColName)
+                );
+            }
+            else if (tblColNameSet.contains(virtColName)) {
+                throw new IgniteSQLException(
+                    String.format("Virtual column name must not overlap with user ones: [name=%s]", virtColName)
+                );
+            }
+        }
     }
 }

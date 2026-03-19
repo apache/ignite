@@ -155,17 +155,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         int fldIdx = QueryUtils.VAL_COL + 1;
 
-        // TODO: IGNITE-28223 Проверить, что не будет дублирования имен виртуальных колонок
-        // TODO: IGNITE-28223 Подумать, что будет если пользователь захочет создать колонку с именем виртуальной колонки
-        Map<String, VirtualCacheColumnDescriptor> addlVirtColsByName = VirtualCacheColumnDescriptor.toDescByName(
-            fldIdx, virtColProv
-        );
-
-        descriptors.addAll(VirtualCacheColumnDescriptor.toSortedByFieldIndex(addlVirtColsByName.values()));
-
-        fldIdx += addlVirtColsByName.size();
-
-        addlVirtColsByName.values().forEach(c -> virtualFields.set(c.fieldIndex()));
+        List<CacheColumnDescriptor> addlVirtCols = VirtualCacheColumnDescriptor.createCacheColDesc(fldIdx, virtColProv);
+        descriptors.addAll(addlVirtCols);
+        fldIdx += addlVirtCols.size();
+        addlVirtCols.forEach(c -> virtualFields.set(c.fieldIndex()));
 
         int keyField = QueryUtils.KEY_COL;
         int valField = QueryUtils.VAL_COL;

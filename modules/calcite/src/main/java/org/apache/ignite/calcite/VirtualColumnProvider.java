@@ -18,8 +18,6 @@
 package org.apache.ignite.calcite;
 
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -42,58 +40,9 @@ public interface VirtualColumnProvider {
      *     <li>{@link VirtualColumnDescriptor#name()} - it is recommended to return in uppercase.</li>
      *     <li>{@link VirtualColumnDescriptor#name()} - it is forbidden to use system names {@code "_KEY"} and
      *     {@code "_VAL"}.</li>
-     *     <li>User will get an error when trying to create a column with the name of one of the virtual ones.</li>
+     *     <li>User will get an error when trying to create a column with name of one of virtual ones.</li>
      * </ul>
      * @return Virtual column descriptors to add to tables.
      */
-    List<VirtualColumnDescriptor> provideVirtualColumnDescriptors();
-
-    /** Virtual column descriptor. */
-    interface VirtualColumnDescriptor {
-        /** */
-        int NOT_SPECIFIED = -1;
-
-        /** Returns the name of the virtual column. */
-        String name();
-
-        /** Virtual column type. */
-        Class<?> type();
-
-        /** Returns the scale of the virtual column type, {@value #NOT_SPECIFIED} if not specified. */
-        int scale();
-
-        /** Returns the precision of the virtual column type, {@value #NOT_SPECIFIED} if not specified. */
-        int precision();
-
-        /**
-         * Returns the value of a virtual column.
-         *
-         * @param ctx Context to extract the value.
-         * @throws IgniteCheckedException If there are errors when getting the value.
-         */
-        Object value(ValueExtractorContext ctx) throws IgniteCheckedException;
-    }
-
-    /** Context for extracting the value of a virtual column. */
-    // TODO: IGNITE-28223 Может еще немного подумать на счет API
-    interface ValueExtractorContext {
-        /** Returns the cache ID. */
-        int cacheId();
-
-        /** Returns cache name. */
-        String cacheName();
-
-        /** Returns the partition ID. */
-        int partition();
-
-        /**
-         * Returns the source for getting the value of the virtual column.
-         *
-         * @param keyOrValue {@code true} if a cache key (primary key) is needed, {@code false} if a cache value is
-         *      needed.
-         * @param keepBinary {@code true} if returned as {@link BinaryObject}. If the key or value is not composite, it
-         *      may return not as {@link BinaryObject}, but as a simple type.
-         */
-        Object source(boolean keyOrValue, boolean keepBinary);
-    }
+    List<VirtualColumnDescriptor> provideDescriptors();
 }

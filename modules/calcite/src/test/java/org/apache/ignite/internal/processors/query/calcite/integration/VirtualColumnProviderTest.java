@@ -15,20 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.calcite.VirtualColumnDescriptor;
 import org.apache.ignite.calcite.VirtualColumnProvider;
-import org.apache.ignite.calcite.VirtualColumnProvider.ValueExtractorContext;
-import org.apache.ignite.calcite.VirtualColumnProvider.VirtualColumnDescriptor;
+import org.apache.ignite.calcite.VirtualColumnValueExtractorContext;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -38,9 +41,26 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String KEY_TO_STRING_COLUMN_NAME = "KEY_TO_STRING";
 
+    /** */
+    private static final List<VirtualColumnDescriptor> VIRT_COLS = new CopyOnWriteArrayList<>();
+
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        VIRT_COLS.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        VIRT_COLS.clear();
     }
 
     /** {@inheritDoc} */
@@ -52,12 +72,67 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(sqlCfg)
-            .setPluginProviders(new TestVirtualColumnPluginProvider());
+            .setPluginProviders(new TestVirtualColumnPluginProvider(VIRT_COLS));
     }
 
     /** */
     @Test
-    public void test() {
+    public void testVirtualColumnWithKeyName() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn(QueryUtils.KEY_FIELD_NAME));
+
+        GridTestUtils.assertThrows(
+            log,
+            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+            IgniteSQLException.class,
+            "Virtual column name must not match system one: [name=_KEY]"
+        );
+    }
+
+    /** */
+    @Test
+    public void testVirtualColumnWithValName() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn(QueryUtils.VAL_FIELD_NAME));
+
+        GridTestUtils.assertThrows(
+            log,
+            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+            IgniteSQLException.class,
+            "Virtual column name must not match system one: [name=_VAL]"
+        );
+    }
+
+    /** */
+    @Test
+    public void testVirtualColumnsWithSameName() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn("FOO"));
+        VIRT_COLS.add(new KeyToStingVirtualColumn("FOO"));
+
+        GridTestUtils.assertThrows(
+            log,
+            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+            IgniteSQLException.class,
+            "Virtual column names must be unique: [name=FOO]"
+        );
+    }
+
+    /** */
+    @Test
+    public void testCreateTableWithColumnNameEqualsVirtual() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn("NAME"));
+
+        GridTestUtils.assertThrows(
+            log,
+            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+            IgniteSQLException.class,
+            "Virtual column name must not overlap with user ones: [name=NAME]"
+        );
+    }
+
+    /** */
+    @Test
+    public void testAddVirtualColumn() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
+
         sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
 
         for (int i = 0; i < 2; i++)
@@ -77,7 +152,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
             .returns(1, "foo1", "1")
             .check();
 
-        // Let's check the use of a virtual column in where.
+        // Let's check use of a virtual column in where.
         assertQuery(String.format(
             "select id, name, %1$s from PUBLIC.PERSON where %1$s = %2$s order by id",
             KEY_TO_STRING_COLUMN_NAME, "1"
@@ -86,7 +161,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
             .returns(1, "foo1", "1")
             .check();
 
-        // Let's check the use of a virtual column in order by.
+        // Let's check use of a virtual column in order by.
         assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", KEY_TO_STRING_COLUMN_NAME))
             .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
             .returns(0, "foo0", "0")
@@ -95,7 +170,15 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static class TestVirtualColumnPluginProvider extends AbstractTestPluginProvider {
+    static class TestVirtualColumnPluginProvider extends AbstractTestPluginProvider {
+        /** */
+        private final List<VirtualColumnDescriptor> virtCols;
+
+        /** */
+        TestVirtualColumnPluginProvider(List<VirtualColumnDescriptor> virtCols) {
+            this.virtCols = virtCols;
+        }
+
         /** {@inheritDoc} */
         @Override public String name() {
             return getClass().getSimpleName();
@@ -104,7 +187,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
             if (VirtualColumnProvider.class.equals(cls)) {
-                return (T)(VirtualColumnProvider)() -> List.of(new KeyToStingVirtualColumn());
+                return (T)(VirtualColumnProvider)() -> virtCols;
             }
 
             return super.createComponent(ctx, cls);
@@ -112,10 +195,18 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static class KeyToStingVirtualColumn implements VirtualColumnDescriptor {
+    static class KeyToStingVirtualColumn implements VirtualColumnDescriptor {
+        /** */
+        private final String name;
+
+        /** */
+        KeyToStingVirtualColumn(String name) {
+            this.name = name;
+        }
+
         /** {@inheritDoc} */
         @Override public String name() {
-            return KEY_TO_STRING_COLUMN_NAME;
+            return name;
         }
 
         /** {@inheritDoc} */
@@ -134,7 +225,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(ValueExtractorContext ctx) throws IgniteCheckedException {
+        @Override public Object value(VirtualColumnValueExtractorContext ctx) throws IgniteCheckedException {
             return ctx.source(true, true).toString();
         }
     }

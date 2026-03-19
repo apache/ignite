@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRule
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
-import org.apache.ignite.internal.processors.query.calcite.schema.VirtualColumnProviderTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.VirtualColumnProviderTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
 import org.junit.runner.RunWith;

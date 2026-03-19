@@ -20,28 +20,29 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.calcite.VirtualColumnDescriptor;
 import org.apache.ignite.calcite.VirtualColumnProvider;
-import org.apache.ignite.calcite.VirtualColumnProvider.ValueExtractorContext;
-import org.apache.ignite.calcite.VirtualColumnProvider.VirtualColumnDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.VirtualColumnValueExtractorContextEx;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
 /** Virtual column descriptor for cache tables. */
 class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
+    /** */
+    private static final ThreadLocal<VirtualColumnValueExtractorContextExImp> VALUE_EXTRACTOR_CTX = ThreadLocal.withInitial(
+        VirtualColumnValueExtractorContextExImp::new
+    );
+
     /** */
     private final VirtualColumnDescriptor desc;
 
@@ -53,6 +54,9 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
 
     /** */
     VirtualCacheColumnDescriptor(VirtualColumnDescriptor desc, int fieldIdx) {
+        assert !QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(desc.name()) : desc.name();
+        assert !QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(desc.name()) : desc.name();
+
         this.desc = desc;
         this.fieldIdx = fieldIdx;
     }
@@ -74,10 +78,7 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
         GridCacheContext<?, ?> cctx,
         CacheDataRow src
     ) throws IgniteCheckedException {
-        // TODO: IGNITE-28223 Скорее всего надо еще немного подумать и сделать ValueExtractorContextImp в ThreadLocal
-        //  или вроде того, чтобы памяти лишней не выделять ибо скорее всего это будет горячее место
-        // TODO: IGNITE-28223 можно будет сделать ValueExtractorContextEx чтобы из него получать ectx, cctx, src.
-        return desc.value(new ValueExtractorContextImp(cctx, src));
+        return desc.value(VALUE_EXTRACTOR_CTX.get().update(ectx, cctx, src));
     }
 
     /** {@inheritDoc} */
@@ -126,17 +127,27 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
     }
 
     /** */
-    private static class ValueExtractorContextImp implements ValueExtractorContext {
+    private static class VirtualColumnValueExtractorContextExImp implements VirtualColumnValueExtractorContextEx {
         /** */
-        private final GridCacheContext<?, ?> cctx;
+        private GridCacheContext<?, ?> cctx;
 
         /** */
-        private final CacheDataRow src;
+        private CacheDataRow src;
 
         /** */
-        private ValueExtractorContextImp(GridCacheContext<?, ?> cctx, CacheDataRow src) {
+        private ExecutionContext<?> ectx;
+
+        /** */
+        private VirtualColumnValueExtractorContextExImp update(
+            ExecutionContext<?> ectx,
+            GridCacheContext<?, ?> cctx,
+            CacheDataRow src
+        ) {
+            this.ectx = ectx;
             this.cctx = cctx;
             this.src = src;
+
+            return this;
         }
 
         /** {@inheritDoc} */
@@ -158,32 +169,29 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
         @Override public Object source(boolean keyOrValue, boolean keepBinary) {
             return cctx.unwrapBinaryIfNeeded(keyOrValue ? src.key() : src.value(), keepBinary, null);
         }
+
+        /** {@inheritDoc} */
+        @Override public ExecutionContext<?> executionCtx() {
+            return ectx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheContext<?, ?> cacheCtx() {
+            return cctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheDataRow source() {
+            return src;
+        }
     }
 
     /** */
-    static Map<String, VirtualCacheColumnDescriptor> toDescByName(int nxtColIdx, VirtualColumnProvider virtColProv) {
+    static List<CacheColumnDescriptor> createCacheColDesc(int nxtColIdx, VirtualColumnProvider virtColProv) {
         int[] colIdx = {nxtColIdx};
 
-        return virtColProv.provideVirtualColumnDescriptors().stream()
-            .peek(desc -> {
-                if (QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(desc.name())
-                    || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(desc.name()))
-                    throw new IgniteException(String.format(
-                        "System name is not allowed for a virtual column: [name=%s]", desc.name()
-                    ));
-            })
+        return virtColProv.provideDescriptors().stream()
             .map(desc -> new VirtualCacheColumnDescriptor(desc, colIdx[0]++))
-            .collect(toMap(ColumnDescriptor::name, Function.identity(), (desc, desc2) -> {
-                throw new IgniteException(String.format(
-                    "Virtual columns with the same name are not allowed: [name=%s]", desc.name()
-                ));
-            }));
-    }
-
-    /** */
-    static List<VirtualCacheColumnDescriptor> toSortedByFieldIndex(Collection<VirtualCacheColumnDescriptor> descs) {
-        return descs.stream()
-            .sorted(Comparator.comparingInt(CacheColumnDescriptor::fieldIndex))
             .collect(toList());
     }
 }
