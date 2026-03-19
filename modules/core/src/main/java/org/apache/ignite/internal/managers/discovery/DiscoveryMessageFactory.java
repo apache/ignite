@@ -175,7 +175,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
         factory.register((short)-200, TcpDiscoveryCollectionMessage::new,
-            new TcpDiscoveryCollectionMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
         factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
             new SchemaAlterTableAddColumnOperationSerializer());
