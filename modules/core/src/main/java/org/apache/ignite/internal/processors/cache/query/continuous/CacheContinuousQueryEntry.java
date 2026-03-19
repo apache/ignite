@@ -388,10 +388,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         if (keyBytes != null)
             key = marsh.unmarshal(keyBytes, clsLdr);
         
-        if (newVal != null)
+        if (newValBytes != null)
             newVal = marsh.unmarshal(newValBytes, clsLdr);
         
-        if (oldVal != null)
+        if (oldValBytes != null)
             oldVal = marsh.unmarshal(oldValBytes, clsLdr);
     }
 }
