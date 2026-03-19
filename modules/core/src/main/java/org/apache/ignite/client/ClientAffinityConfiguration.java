@@ -20,7 +20,7 @@ package org.apache.ignite.client;
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** Affinity configuration. */
+/** Affinity configuration for default (rendezvous) affinity function. */
 public final class ClientAffinityConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
