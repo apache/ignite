@@ -21,13 +21,13 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,7 +40,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private volatile DiscoveryCustomMessage msg;
+    private volatile DiscoverySpiCustomMessage msg;
 
     /** Serialized message bytes. */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
@@ -63,7 +63,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param creatorNodeId Creator node id.
      * @param msg Message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoveryCustomMessage msg) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoverySpiCustomMessage msg) {
         super(creatorNodeId);
 
         this.msg = msg;
@@ -91,7 +91,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     /**
      * @return Original message.
      */
-    public DiscoveryCustomMessage message() {
+    public DiscoverySpiCustomMessage message() {
         return msg;
     }
 
@@ -126,7 +126,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
             return;
 
         if (serMsg != null)
-            msg = (DiscoveryCustomMessage)serMsg;
+            msg = (DiscoverySpiCustomMessage)serMsg;
         else {
             try {
                 if (msgBytes != null)

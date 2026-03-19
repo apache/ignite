@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Custom message wrapper with ID of security subject that initiated the current message. */
-public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage implements MarshallableMessage {
+public class SecurityAwareCustomMessageWrapper implements DiscoverySpiCustomMessage, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -87,8 +87,8 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
-        DiscoveryCustomMessage ack = delegate().ackMessage();
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
+        DiscoveryCustomMessage ack = (DiscoveryCustomMessage)delegate().ackMessage();
 
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }

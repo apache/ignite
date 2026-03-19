@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -194,7 +195,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
             clientBlocker = commSpi;
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
                 DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
                 if (delegate instanceof DynamicCacheChangeBatch) {
