@@ -54,8 +54,6 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * <ul>
  *   <li>The target class must implement the {@code Message} interface.</li>
  *   <li>Each field to be serialized must be annotated with {@code @Order}.</li>
- *   <li>If {@link Order#method()} attribute was set, then each serializing field
- *   must have a getter named {@code method()} and a setter named {@code method(value)}.</li>
  * </ul>
  *
  * <p>
