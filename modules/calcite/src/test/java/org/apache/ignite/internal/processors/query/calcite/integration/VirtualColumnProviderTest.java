@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.calcite.VirtualColumnDescriptor;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /** For {@link VirtualColumnProvider} testing. */
+// TODO: IGNITE-28223 Добавить больше тестов?
 public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String KEY_TO_STRING_COLUMN_NAME = "KEY_TO_STRING";
@@ -165,6 +167,58 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
             .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
             .returns(0, "foo0", "0")
             .returns(1, "foo1", "1")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testInsertRowsWithVirtualColumn() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
+
+        sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
+
+        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
+
+        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo0", "0")
+            .check();
+
+        // TODO: IGNITE-28223 Проверь что будет с _KEY, _VALUE
+        sql(
+            String.format("insert into PUBLIC.PERSON(id, name, %s) values (?, ?, ?)", KEY_TO_STRING_COLUMN_NAME),
+            1, "foo1", "invalid_value"
+        );
+
+        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo0", "0")
+            .returns(0, "foo1", "1")
+            .check();
+    }
+
+        /** */
+    @Test
+    public void testUpdateRowsWithVirtualColumn() {
+        VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
+
+        sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
+        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
+
+        List<List<?>> sql0 = sql("select id, name, KEY_TO_STRING from PUBLIC.PERSON");
+
+        sql("update PUBLIC.PERSON set name=? where id=?", "foo1", 0);
+
+        List<List<?>> sql1 = sql("select id, name, KEY_TO_STRING from PUBLIC.PERSON");
+
+        sql("update PUBLIC.PERSON set name=?, KEY_TO_STRING=? where id=?", "foo2", "not_valid", 0);
+
+        List<List<?>> sql2 = sql("select id, name, KEY_TO_STRING from PUBLIC.PERSON");
+
+        // TODO: IGNITE-28223 Вот тут почему-то пусто стало...
+        assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo2", "0")
             .check();
     }
 

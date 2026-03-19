@@ -21,7 +21,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /** Context for extracting value of a virtual column. */
-// TODO: IGNITE-28223 Может еще немного подумать на счет API
 @IgniteExperimental
 public interface VirtualColumnValueExtractorContext {
     /** Returns cache ID. */
