@@ -179,8 +179,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertEquals(e0.isKeepBinary(), e1.isKeepBinary());
         assertEquals(e0.partition(), e1.partition());
         assertEquals(e0.updateCounter(), e1.updateCounter());
-
-        // Key and value shouldn't be serialized in case an event is filtered.
+        
         assertNotNull(e1.key());
         assertNotNull(e0.key());
         assertNotNull(e1.oldValue());
