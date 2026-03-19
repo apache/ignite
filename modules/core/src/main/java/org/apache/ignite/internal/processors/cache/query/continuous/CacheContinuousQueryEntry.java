@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -283,39 +281,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     boolean isKeepBinary() {
         return (flags & KEEP_BINARY) != 0;
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
-        if (key != null)
-            key.prepareMarshal(cctx.cacheObjectContext());
-
-        if (newVal != null)
-            newVal.prepareMarshal(cctx.cacheObjectContext());
-
-        if (oldVal != null)
-            oldVal.prepareMarshal(cctx.cacheObjectContext());
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        if (!isFiltered()) {
-            if (key != null)
-                key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (newVal != null)
-                newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (oldVal != null)
-                oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-        }
     }
 
     /**
