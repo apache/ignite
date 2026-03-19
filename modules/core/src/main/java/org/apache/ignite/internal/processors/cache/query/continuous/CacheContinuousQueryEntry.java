@@ -57,6 +57,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     @GridToStringInclude
     KeyCacheObject key;
 
+    /** */
     @Order(2)
     byte[] keyBytes;
 
@@ -64,6 +65,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     @GridToStringInclude
     CacheObject newVal;
 
+    /** */
     @Order(3)
     byte[] newValBytes;
 
@@ -71,6 +73,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     @GridToStringInclude
     CacheObject oldVal;
 
+    /** */
     @Order(4)
     byte[] oldValBytes;
 
@@ -332,6 +335,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         return S.toString(CacheContinuousQueryEntry.class, this);
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (!isFiltered()) {
             if (key != null)
@@ -345,6 +349,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (keyBytes != null)
             key = marsh.unmarshal(keyBytes, clsLdr);
