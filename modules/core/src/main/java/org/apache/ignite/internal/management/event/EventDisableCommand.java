@@ -25,7 +25,7 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /** */
-public class EventDisableCommand implements ComputeCommand<EventCommandArg, String> {
+public class EventDisableCommand implements ComputeCommand<EventCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Disable events on all server nodes";
@@ -47,8 +47,8 @@ public class EventDisableCommand implements ComputeCommand<EventCommandArg, Stri
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(EventCommandArg arg, String res, Consumer<String> printer) {
-        printer.accept(res);
+    @Override public void printResult(EventCommandArg arg, Void res, Consumer<String> printer) {
+        printer.accept("Events were disabled [evts=" + String.join(", ", arg.events()) + ']');
     }
 
     /** */

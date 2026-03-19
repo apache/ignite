@@ -37,27 +37,27 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Enable/disable events task.
  */
 @GridInternal
-public class EventManagementTask extends VisorMultiNodeTask<EventCommandArg, String, String> {
+public class EventManagementTask extends VisorMultiNodeTask<EventCommandArg, Void, Void> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<EventCommandArg, String> job(EventCommandArg arg) {
+    @Override protected VisorJob<EventCommandArg, Void> job(EventCommandArg arg) {
         return new EventManagementJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected String reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         for (ComputeJobResult res : results) {
             if (res.getException() != null)
                 throw res.getException();
         }
 
-        return results.get(0).getData();
+        return null;
     }
 
     /** The job for enable/disable events. */
-    private static class EventManagementJob extends VisorJob<EventCommandArg, String> {
+    private static class EventManagementJob extends VisorJob<EventCommandArg, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -70,7 +70,7 @@ public class EventManagementTask extends VisorMultiNodeTask<EventCommandArg, Str
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(EventCommandArg arg) throws IgniteException {
+        @Override protected Void run(EventCommandArg arg) throws IgniteException {
             Map<Integer, String> evtToName = U.gridEventNames();
 
             Map<String, Integer> nameToEvt = evtToName.entrySet().stream()
@@ -87,16 +87,12 @@ public class EventManagementTask extends VisorMultiNodeTask<EventCommandArg, Str
                 evtTypes[i] = nameToEvt.get(evtName);
             }
 
-            if (arg instanceof EventEnableCommand.EventEnableCommandArg) {
+            if (arg instanceof EventEnableCommand.EventEnableCommandArg)
                 ignite.context().event().enableEvents(evtTypes);
-
-                return "Events enabled";
-            }
-            else {
+            else
                 ignite.context().event().disableEvents(evtTypes);
 
-                return "Events disabled";
-            }
+            return null;
         }
 
         /** {@inheritDoc} */
