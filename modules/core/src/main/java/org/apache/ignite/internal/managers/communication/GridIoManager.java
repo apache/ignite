@@ -1199,13 +1199,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 return;
             }
 
-            if (initMsg.topic() == null) {
-                int topicOrd = initMsg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    initMsg.topic(GridTopic.fromOrdinal(topicOrd));
-            }
-
             byte plc = initMsg.policy();
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1244,13 +1237,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         nodeId + ", msg=" + msg + ']');
 
                 return;
-            }
-
-            if (msg.topic() == null) {
-                int topicOrd = msg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    msg.topic(GridTopic.fromOrdinal(topicOrd));
             }
 
             if (!started) {

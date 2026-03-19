@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ExecutorAwareMessage;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -219,17 +220,19 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (topic != null && topicBytes == null)
+        if (topicOrd < 0 && topic != null && topicBytes == null)
             topicBytes = U.marshal(marsh, topic);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (topicBytes != null && topic == null) {
+        if (topicOrd < 0 && topicBytes != null && topic == null) {
             topic = U.unmarshal(marsh, topicBytes, ldr);
 
             topicBytes = null;
         }
+        else if (topicOrd >= 0)
+            topic = GridTopic.fromOrdinal(topicOrd);
     }
 
     /** {@inheritDoc} */
