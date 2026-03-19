@@ -255,21 +255,16 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
             for (Map.Entry<GridCacheVersion, Set<Short>> tx: txPrimParticipatingNodes.entrySet())
                 calcTxHash.accept(tx.getKey(), tx.getValue());
 
-            Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
+            Collection<TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
                 .map(e -> new TransactionsHashRecord(
                     sft.consistentId(),
                     blt.compactIdMapping().get(e.getKey()),
                     e.getValue().hash
                 ))
-                .collect(Collectors.toMap(
-                    TransactionsHashRecord::remoteConsistentId,
-                    Function.identity()
-                ));
+                .collect(Collectors.toCollection(ArrayList::new));
 
-            Map<PartitionKey, PartitionHashRecord> partHashRes = partMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> new PartitionHashRecord(
+            Collection<PartitionHashRecord> partHashRes = partMap.entrySet().stream()
+                .map(e -> new PartitionHashRecord(
                         e.getKey(),
                         false,
                         sft.consistentId(),
@@ -278,7 +273,7 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                         null,
                         new VerifyPartitionContext(e.getValue())
                     )
-                ));
+                ).collect(Collectors.toCollection(ArrayList::new));
 
             if (log.isInfoEnabled()) {
                 log.info("Verify incremental snapshot procedure finished " +

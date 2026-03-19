@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelf
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallInterceptorTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployOnJoinedNodeTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
@@ -101,6 +102,7 @@ import org.junit.runners.Suite;
     IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
     IgniteServiceDeploymentFailureTest.class,
+    IgniteServiceDeployOnJoinedNodeTest.class,
 
     GridServiceExceptionPropagationTest.class,
     ServiceDeploymentProcessingOnCoordinatorLeftTest.class,
