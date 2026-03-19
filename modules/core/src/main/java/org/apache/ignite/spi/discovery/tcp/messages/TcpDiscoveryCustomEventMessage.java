@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -127,8 +128,19 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
         if (serMsg != null)
             msg = (DiscoveryCustomMessage)serMsg;
         else {
-            if (msgBytes != null)
+            try {
                 msg = U.unmarshal(marsh, msgBytes, ldr);
+            }
+            catch (IgniteCheckedException e) {
+                // Try to resurrect a message in a case of deserialization failure
+                if (e.getCause() instanceof IncompleteDeserializationException) {
+                    msg = ((IncompleteDeserializationException)e.getCause()).message();
+
+                    return;
+                }
+
+                throw e;
+            }
         }
     }
 
