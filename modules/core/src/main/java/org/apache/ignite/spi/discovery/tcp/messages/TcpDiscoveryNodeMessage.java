@@ -131,6 +131,6 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -111;
+        return -117;
     }
 }

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
 
@@ -71,11 +73,26 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
     private LongAdder procEntriesCnt;
 
     /** */
-    public IncrementalSnapshotVerify(IgniteEx ignite, IgniteLogger log, SnapshotFileTree sft, int incrementalIdx) {
+    @Nullable private final Consumer<Integer> totalCnsmr;
+
+    /** */
+    @Nullable private final Consumer<Integer> checkedCnsmr;
+
+    /** */
+    public IncrementalSnapshotVerify(
+        IgniteEx ignite,
+        IgniteLogger log,
+        SnapshotFileTree sft,
+        int incrementalIdx,
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedCnsmr
+    ) {
         this.ignite = ignite;
         this.log = log;
         this.sft = sft;
-        this.incIdx = incrementalIdx;
+        incIdx = incrementalIdx;
+        this.totalCnsmr = totalCnsmr;
+        this.checkedCnsmr = checkedCnsmr;
     }
 
     /**
@@ -106,11 +123,15 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                 ignite.context().cache().context(), sft, incIdx, txCaches.keySet()
             ) {
                 @Override void totalWalSegments(int segCnt) {
-                    // No-op.
+                    if (totalCnsmr != null)
+                        totalCnsmr.accept(segCnt);
                 }
 
                 @Override void processedWalSegments(int segCnt) {
                     procSegCnt.set(segCnt);
+
+                    if (checkedCnsmr != null)
+                        checkedCnsmr.accept(segCnt);
                 }
 
                 @Override void initWalEntries(LongAdder entriesCnt) {

@@ -48,7 +48,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Added node. */
+    /** Message of the added node. */
     @Order(0)
     public TcpDiscoveryNodeMessage nodeMsg;
 

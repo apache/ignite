@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -180,17 +181,20 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
     public static Collection<Object[]> params() {
-        boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
-            ? new boolean[] {false}
-            : new boolean[] {false, true};
-
         List<Object[]> res = new ArrayList<>();
 
-        for (boolean enc: encVals)
-            for (boolean onlyPrimary: new boolean[] {true, false})
-                res.add(new Object[] { enc, onlyPrimary});
+        for (boolean enc : encryptionParameters())
+            for (boolean onlyPrimary : new boolean[] {true, false})
+                res.add(new Object[] {enc, onlyPrimary});
 
         return res;
+    }
+
+    /** */
+    protected static Collection<Boolean> encryptionParameters() {
+        return DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
+            ? F.asList(false)
+            : F.asList(false, true);
     }
 
     /** {@inheritDoc} */
