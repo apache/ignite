@@ -2239,8 +2239,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        if (msg.topologyHistory() != null)
-                            topHist.putAll(msg.topologyHistory());
+                        topHist.putAll(msg.topologyHistory());
                     }
                     else {
                         if (log.isDebugEnabled())

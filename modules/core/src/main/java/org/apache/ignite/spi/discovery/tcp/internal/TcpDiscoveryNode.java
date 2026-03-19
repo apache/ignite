@@ -220,11 +220,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** @param msg The transfer message. */
     public TcpDiscoveryNode(TcpDiscoveryNodeMessage msg) {
-        this(msg.id(), msg.addresses(), msg.hostNames(), msg.discPort, new ClusterMetricsSnapshot(msg.metricsMsg),
-            msg.version(), msg.consistentId());
+        this(msg.id, msg.addrs, msg.hostNames, msg.discPort, new ClusterMetricsSnapshot(msg.metricsMsg),
+            new IgniteProductVersion(msg.verMsg), msg.consistentId);
 
-        attrs = msg.attributes();
-        order = msg.order();
+        attrs = msg.attrs;
+        order = msg.order;
         intOrder = msg.intOrder;
         clientRouterNodeId = msg.clientRouterNodeId;
     }

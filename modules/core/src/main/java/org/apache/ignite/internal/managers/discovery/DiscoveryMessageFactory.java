@@ -76,8 +76,6 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDisc
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.ClusterNodeMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -117,13 +115,15 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponseSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessageMarshallableSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
@@ -131,7 +131,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
@@ -164,8 +164,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-112, TcpDiscoveryNodeMessage::new, new TcpDiscoveryNodeMessageSerializer());
-        factory.register((short)-111, ClusterNodeMessage::new, new ClusterNodeMessageSerializer());
+        factory.register((short)-111, TcpDiscoveryNodeMessage::new,
+            new TcpDiscoveryNodeMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)-110, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
         factory.register((short)-109, User::new, new UserSerializer());
         factory.register((short)-108, UserManagementOperation::new, new UserManagementOperationSerializer());
@@ -202,8 +202,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new,
             new TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
-        factory.register((short)20, TcpDiscoveryJoinRequestMessage::new,
-            new TcpDiscoveryJoinRequestMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)20, TcpDiscoveryJoinRequestMessage::new, new TcpDiscoveryJoinRequestMessageSerializer());
         factory.register((short)21, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
         factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
@@ -214,6 +213,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
         factory.register((short)28, TcpDiscoveryClientReconnectMessage::new,
             new TcpDiscoveryClientReconnectMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)29, TcpDiscoveryNodeAddedMessage::new,
+            new TcpDiscoveryNodeAddedMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
 
         // DiscoveryCustomMessage
         factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
@@ -238,6 +239,5 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)517, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
         factory.register((short)518, MappingProposedMessage::new, new MappingProposedMessageSerializer());
         factory.register((short)519, MarshallerMappingItem::new, new MarshallerMappingItemSerializer());
-
     }
 }

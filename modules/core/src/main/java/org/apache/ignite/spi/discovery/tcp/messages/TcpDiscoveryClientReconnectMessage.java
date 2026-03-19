@@ -50,7 +50,7 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     @GridToStringExclude
     private Collection<TcpDiscoveryAbstractMessage> msgs;
 
-    /** Srialized bytes of {@link #msgs}. */
+    /** Serialized bytes of {@link #msgs}. */
     @Order(2)
     byte[] msgsBytes;
 

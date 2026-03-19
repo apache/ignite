@@ -18,10 +18,10 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,42 +37,49 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
     public UUID id;
 
     /** */
+    public Object consistentId;
+
+    /** Serialized {@link #consistentId}. */
+    @Order(1)
+    byte[] consistentIdBytes;
+
+    /** */
     public Map<String, Object> attrs;
 
     /** */
-    @Order(1)
+    @Order(2)
     byte[] attrsBytes;
 
     /** Internal discovery addresses as strings. */
-    @Order(2)
-    Collection<String> addrs;
+    @Order(3)
+    public Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    @Order(3)
-    Collection<String> hostNames;
-
-    /** */
     @Order(4)
-    public int discPort;
+    public Collection<String> hostNames;
 
     /** */
     @Order(5)
-    public TcpDiscoveryNodeMetricsMessage metricsMsg;
+    public int discPort;
 
     /** */
     @Order(6)
-    long order;
+    public TcpDiscoveryNodeMetricsMessage metricsMsg;
 
     /** */
     @Order(7)
-    public long intOrder;
+    public long order;
 
     /** */
     @Order(8)
-    IgniteProductVersionMessage verMsg;
+    public long intOrder;
 
     /** */
     @Order(9)
+    public IgniteProductVersionMessage verMsg;
+
+    /** */
+    @Order(10)
     public @Nullable UUID clientRouterNodeId;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -80,27 +87,34 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
         // No-op.
     }
 
-    /** @param tcpDiscoveryNode Tcp Discovery node. */
-    public TcpDiscoveryNodeMessage(TcpDiscoveryNode tcpDiscoveryNode) {
-        id = tcpDiscoveryNode.id();
-        attrs = new HashMap<>(tcpDiscoveryNode.attributes());
-        attrsBytes = null;
-        addrs = tcpDiscoveryNode.addresses();
-        hostNames = tcpDiscoveryNode.hostNames();
-        discPort = tcpDiscoveryNode.discoveryPort();
-        metricsMsg = new TcpDiscoveryNodeMetricsMessage(tcpDiscoveryNode.metrics());
-        order = tcpDiscoveryNode.order();
-        intOrder = tcpDiscoveryNode.internalOrder();
-        verMsg = new IgniteProductVersionMessage(tcpDiscoveryNode.version());
-        clientRouterNodeId = tcpDiscoveryNode.clientRouterNodeId();
+    /** @param n Cluster node. */
+    public TcpDiscoveryNodeMessage(ClusterNode n) {
+        id = n.id();
+        consistentId = n.consistentId();
+        attrs = n.attributes();
+        addrs = n.addresses();
+        hostNames = n.hostNames();
+        metricsMsg = new TcpDiscoveryNodeMetricsMessage(n.metrics());
+        order = n.order();
+        verMsg = new IgniteProductVersionMessage(n.version());
     }
 
+    /** @param n Tcp Discovery node. */
+    public TcpDiscoveryNodeMessage(TcpDiscoveryNode n) {
+        this((ClusterNode)n);
 
+        discPort = n.discoveryPort();
+        intOrder = n.internalOrder();
+        clientRouterNodeId = n.clientRouterNodeId();
+    }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (attrs != null && attrsBytes == null)
             attrsBytes = U.marshal(marsh, attrs);
+
+        if (consistentId != null && consistentIdBytes == null)
+            consistentIdBytes = U.marshal(marsh, consistentId);
     }
 
     /** {@inheritDoc} */
@@ -108,7 +122,11 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
         if (attrsBytes != null && attrs == null)
             attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
 
+        if (consistentIdBytes != null && consistentId == null)
+            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
+
         attrsBytes = null;
+        consistentIdBytes = null;
     }
 
     /** {@inheritDoc} */

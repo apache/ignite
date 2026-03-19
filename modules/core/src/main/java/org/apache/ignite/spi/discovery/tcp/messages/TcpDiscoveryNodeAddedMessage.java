@@ -18,19 +18,21 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -68,7 +70,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     @Order(3)
-    Collection<TcpDiscoveryNodeMessage> top;
+    public @Nullable Collection<TcpDiscoveryNodeMessage> topMsgs;
 
     /** */
     @GridToStringInclude
@@ -76,7 +78,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Topology snapshots history. */
     @Order(4)
-    private Map<Long, Collection<TcpDiscoveryNode>> topHist;
+    Map<Long, Collection<TcpDiscoveryNodeMessage>> topHistMsgs;
 
     /** Start time of the first grid node. */
     @Order(5)
@@ -120,9 +122,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         nodeMsg = msg.nodeMsg;
         msgs = msg.msgs;
         msgsBytes = msg.msgsBytes;
-        top = msg.top;
+        topMsgs = msg.topMsgs;
         clientTop = msg.clientTop;
-        topHist = msg.topHist;
+        topHistMsgs = msg.topHistMsgs;
         dataPacket = msg.dataPacket;
         gridStartTime = msg.gridStartTime;
     }
@@ -161,7 +163,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Current topology.
      */
     @Nullable public Collection<TcpDiscoveryNode> topology() {
-        return top;
+        return topMsgs == null ? null : topMsgs.stream().map(TcpDiscoveryNode::new).collect(Collectors.toList());
     }
 
     /**
@@ -170,9 +172,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param top Current topology.
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
-        this.top = top == null
+        topMsgs = top == null
             ? null
-            : ;
+            : top.stream().map(TcpDiscoveryNodeMessage::new).collect(Collectors.toList());;
     }
 
     /**
@@ -197,7 +199,18 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Map with topology snapshots history.
      */
     public Map<Long, Collection<ClusterNode>> topologyHistory() {
-        return topHist;
+        if (F.isEmpty(topHistMsgs))
+            return Collections.emptyMap();
+
+        Map<Long, Collection<ClusterNode>> res = U.newHashMap(topHistMsgs.size());
+
+        topHistMsgs.forEach((id, msgs) -> {
+            Collection<ClusterNode> nodes = msgs.stream().map(TcpDiscoveryNode::new).collect(Collectors.toList());
+
+            res.put(id, nodes);
+        });
+
+        return res;
     }
 
     /**
@@ -206,7 +219,19 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param topHist Map with topology snapshots history.
      */
     public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
-        this.topHist = topHist;
+        if (F.isEmpty(topHist)) {
+            topHistMsgs = null;
+
+            return;
+        }
+
+        topHistMsgs = U.newHashMap(topHist.size());
+
+        topHist.forEach((id, nodes) -> {
+            Collection<TcpDiscoveryNodeMessage> msgs = nodes.stream().map(n -> new TcpDiscoveryNodeMessage(n)).collect(Collectors.toList());
+
+            topHistMsgs.put(id, msgs);
+        });
     }
 
     /**

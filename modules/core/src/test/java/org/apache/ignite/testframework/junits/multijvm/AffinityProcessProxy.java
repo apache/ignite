@@ -393,7 +393,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> call() throws Exception {
-            return ExternalizableTcpDiscoveryNode.of(affinity().mapPartitionToPrimaryAndBackups(part));
+            return affinity().mapPartitionToPrimaryAndBackups(part);
         }
     }
 

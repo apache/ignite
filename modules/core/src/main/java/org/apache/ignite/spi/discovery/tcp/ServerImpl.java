@@ -151,7 +151,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
@@ -7793,7 +7792,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                 if (clientNodeId.equals(addedMsg.nodeMsg.id))
-                    return addedMsg.topMsgs;
+                    return addedMsg.topMsgs != null;
             }
 
             return true;
