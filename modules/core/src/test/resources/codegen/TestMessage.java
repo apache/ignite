@@ -62,7 +62,7 @@ public class TestMessage implements Message {
     @Order(10)
     BitSet bitSet;
 
-    @Order(value = 11, method = "overridenFieldMethod")
+    @Order(value = 11)
     private String field;
 
     @Order(12)
