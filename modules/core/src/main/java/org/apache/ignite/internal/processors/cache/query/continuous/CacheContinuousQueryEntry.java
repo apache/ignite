@@ -322,21 +322,21 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @return Key.
      */
     KeyCacheObject key() {
-        return isFiltered() ? null : key;
+        return key;
     }
 
     /**
      * @return New value.
      */
     CacheObject newValue() {
-        return isFiltered() ? null : newVal;
+        return newVal;
     }
 
     /**
      * @return Old value.
      */
     CacheObject oldValue() {
-        return isFiltered() ? null : oldVal;
+        return oldVal;
     }
 
     /** {@inheritDoc} */

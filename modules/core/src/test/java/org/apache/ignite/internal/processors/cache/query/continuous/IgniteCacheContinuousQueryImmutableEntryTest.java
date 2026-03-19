@@ -134,7 +134,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      *
      */
     @Test
-    public void testCacheContinuousQueryEntrySerialization() {
+    public void testCacheContinuousQueryEntrySerialization() throws Exception {
         CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
@@ -166,7 +166,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
 
-        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        final DirectMessageReader reader = new DirectMessageReader(msgFactory, startGrid(0).context().cacheObjects());
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 
@@ -181,11 +181,11 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertEquals(e0.updateCounter(), e1.updateCounter());
 
         // Key and value shouldn't be serialized in case an event is filtered.
-        assertNull(e1.key());
+        assertNotNull(e1.key());
         assertNotNull(e0.key());
-        assertNull(e1.oldValue());
+        assertNotNull(e1.oldValue());
         assertNotNull(e0.oldValue());
-        assertNull(e1.newValue());
+        assertNotNull(e1.newValue());
         assertNotNull(e0.newValue());
     }
 
