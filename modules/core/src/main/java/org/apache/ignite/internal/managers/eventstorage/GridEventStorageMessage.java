@@ -207,25 +207,25 @@ public class GridEventStorageMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (resTopic != null && resTopicBytes == null)
+        if (resTopic != null)
             resTopicBytes = U.marshal(marsh, resTopic);
 
-        if (filter != null && filterBytes == null)
+        if (filter != null)
             filterBytes = U.marshal(marsh, filter);
 
-        if (evts != null && evtsBytes == null)
+        if (evts != null)
             evtsBytes = U.marshal(marsh, evts);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (resTopicBytes != null && resTopic == null) {
+        if (resTopicBytes != null) {
             resTopic = U.unmarshal(marsh, resTopicBytes, ldr);
 
             resTopicBytes = null;
         }
 
-        if (evtsBytes != null && evts == null) {
+        if (evtsBytes != null) {
             evts = U.unmarshal(marsh, evtsBytes, ldr);
 
             evtsBytes = null;
