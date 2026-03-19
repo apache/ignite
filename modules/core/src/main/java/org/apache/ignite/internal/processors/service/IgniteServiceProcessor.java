@@ -1579,16 +1579,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         try {
             updateServicesMap(deployedServices, fullTops);
-
-            for (Map.Entry<IgniteUuid, Map<UUID, Integer>> e : fullTops.entrySet()) {
-                // Checking if there are successful deployments.
-                // If none, service not deployed and must be removed from descriptors.
-                if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
-                    removeFromServicesMap(registeredServices, registeredServicesByName, e.getKey());
-
-                    removeFromServicesMap(deployedServices, deployedServicesByName, e.getKey());
-                }
-            }
         }
         finally {
             leaveBusy();
