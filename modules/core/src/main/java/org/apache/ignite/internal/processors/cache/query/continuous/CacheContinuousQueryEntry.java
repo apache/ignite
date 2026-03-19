@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -27,13 +28,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
+public class CacheContinuousQueryEntry implements GridCacheDeployable, MarshallableMessage {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
@@ -53,18 +55,24 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** Key. */
     @GridToStringInclude
-    @Order(2)
     KeyCacheObject key;
+
+    @Order(2)
+    byte[] keyBytes;
 
     /** New value. */
     @GridToStringInclude
-    @Order(3)
     CacheObject newVal;
+
+    @Order(3)
+    byte[] newValBytes;
 
     /** Old value. */
     @GridToStringInclude
-    @Order(4)
     CacheObject oldVal;
+
+    @Order(4)
+    byte[] oldValBytes;
 
     /** Cache name. */
     @Order(5)
@@ -322,5 +330,29 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryEntry.class, this);
+    }
+
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (!isFiltered()) {
+            if (key != null)
+                keyBytes = marsh.marshal(key);
+
+            if (newVal != null)
+                newValBytes = marsh.marshal(newVal);
+
+            if (oldVal != null)
+                oldValBytes = marsh.marshal(oldVal);
+        }
+    }
+
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (keyBytes != null)
+            key = marsh.unmarshal(keyBytes, clsLdr);
+        
+        if (newVal != null)
+            newVal = marsh.unmarshal(newValBytes, clsLdr);
+        
+        if (oldVal != null)
+            oldVal = marsh.unmarshal(oldValBytes, clsLdr);
     }
 }
