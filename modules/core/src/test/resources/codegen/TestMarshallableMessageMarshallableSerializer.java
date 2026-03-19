@@ -51,7 +51,7 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
                 msg.prepareMarshal(marshaller);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object", e);
+                throw new IgniteException("Failed to marshal object" + msg.getClass().getSimpleName(), e);
             }
 
             writer.onHeaderWritten();
@@ -112,7 +112,7 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
             msg.finishUnmarshal(marshaller, clsLdr);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshal object", e);
+            throw new IgniteException("Failed to unmarshal object" + msg.getClass().getSimpleName(), e);
         }
 
         return true;

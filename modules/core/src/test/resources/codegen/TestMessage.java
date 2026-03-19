@@ -63,7 +63,7 @@ public class TestMessage implements Message {
     BitSet bitSet;
 
     @Order(value = 11)
-    private String field;
+    String field;
 
     @Order(12)
     KeyCacheObject keyCacheObject;
