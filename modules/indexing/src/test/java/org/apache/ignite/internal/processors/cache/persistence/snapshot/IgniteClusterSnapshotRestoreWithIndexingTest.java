@@ -74,7 +74,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         IgniteEx client = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, true);
 
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+        runWithLogggedThreadDump(() ->
+            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         // Only primary mode leads to index rebuild on restore.
         // Must wait until index rebuild finish so subsequent checks will pass.
@@ -101,7 +102,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         forceCheckpoint();
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+        runWithLogggedThreadDump(() ->
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         // Only primary mode leads to index rebuild on restore.
         // Must wait until index rebuild finish so subsequent checks will pass.
@@ -126,7 +128,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         startGridsWithCache(nodesCnt - 2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        runWithLogggedThreadDump(() ->
+            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT));
 
         startGrid(nodesCnt - 2);
 
@@ -152,8 +155,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         forceCheckpoint();
 
         // Restore from an empty node.
-        ignite.snapshot().restoreSnapshot(
-            SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+        runWithLogggedThreadDump(() -> ignite.snapshot().restoreSnapshot(
+            SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         awaitPartitionMapExchange();
 
