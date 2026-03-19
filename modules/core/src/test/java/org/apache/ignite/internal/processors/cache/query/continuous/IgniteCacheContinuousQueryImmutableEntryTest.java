@@ -134,7 +134,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      *
      */
     @Test
-    public void testCacheContinuousQueryEntrySerialization() throws Exception {
+    public void testCacheContinuousQueryEntrySerialization() {
         CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
