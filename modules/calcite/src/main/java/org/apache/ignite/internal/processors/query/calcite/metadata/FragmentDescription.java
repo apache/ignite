@@ -126,7 +126,8 @@ public class FragmentDescription implements CalciteMarshalableMessage {
             target.prepareMarshal(ctx);
         }
 
-        mapping.prepareMarshal(ctx);
+        if (mapping != null)
+            mapping.prepareMarshal(ctx);
 
         if (remoteSources0 == null && remoteSources != null) {
             remoteSources0 = U.newHashMap(remoteSources.size());
