@@ -28,6 +28,7 @@ import org.apache.ignite.plugin.PluginProvider;
  */
 @FunctionalInterface
 @IgniteExperimental
+// TODO: IGNITE-28223 Надо менять не на виртуальные колонки а псевдо
 public interface VirtualColumnProvider {
     /** */
     VirtualColumnProvider EMPTY = List::of;

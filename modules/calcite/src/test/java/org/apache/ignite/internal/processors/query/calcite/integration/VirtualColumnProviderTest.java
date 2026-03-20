@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.calcite.VirtualColumnDescriptor;
@@ -184,7 +183,8 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
             .returns(0, "foo0", "0")
             .check();
 
-        // TODO: IGNITE-28223 Проверь что будет с _KEY, _VALUE
+        // TODO: IGNITE-28223 Сделаем так, что вставлять нельзя в такую колонку
+        // Let's make sure that when inserting a value into a virtual column, it will simply be ignored.
         sql(
             String.format("insert into PUBLIC.PERSON(id, name, %s) values (?, ?, ?)", KEY_TO_STRING_COLUMN_NAME),
             1, "foo1", "invalid_value"
@@ -203,21 +203,29 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
         VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
 
         sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
-        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
 
-        List<List<?>> sql0 = sql("select id, name, KEY_TO_STRING from PUBLIC.PERSON");
+        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
 
         sql("update PUBLIC.PERSON set name=? where id=?", "foo1", 0);
 
-        List<List<?>> sql1 = sql("select id, name, KEY_TO_STRING from PUBLIC.PERSON");
+        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo1", "0")
+            .check();
 
-        sql("update PUBLIC.PERSON set name=?, KEY_TO_STRING=? where id=?", "foo2", "not_valid", 0);
+        String name = KEY_TO_STRING_COLUMN_NAME;
+        name = QueryUtils.KEY_FIELD_NAME;
 
-        List<List<?>> sql2 = sql("select id, name, KEY_TO_STRING from PUBLIC.PERSON");
+        // TODO: IGNITE-28223 Сделаем так, что обновлять с такой колонкой
+        sql(
+            String.format("update PUBLIC.PERSON set name=?, %s=? where id=?", name),
+            "foo2", "invalid_value", 0
+        );
 
         // TODO: IGNITE-28223 Вот тут почему-то пусто стало...
-        assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", KEY_TO_STRING_COLUMN_NAME))
-            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+        // TODO: IGNITE-28223 Для _KEY тут идет запрет, думаю надо также сделать
+        assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", name))
+            .columnNames("ID", "NAME", name)
             .returns(0, "foo2", "0")
             .check();
     }
