@@ -429,13 +429,13 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
         factory.register((short)8, GridIoMessage::new,
-            new GridIoMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new GridIoMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
         factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
         factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
         factory.register((short)13, GridEventStorageMessage::new,
-            new GridEventStorageMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new GridEventStorageMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)16, GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer());
         factory.register((short)17, GridCacheTxRecoveryResponse::new, new GridCacheTxRecoveryResponseSerializer());
         factory.register((short)18, IndexQueryResultMeta::new, new IndexQueryResultMetaSerializer());
@@ -545,7 +545,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new, new GridQueryKillRequestSerializer());
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new, new GridQueryKillResponseSerializer());
         factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new,
-            new GridIoSecurityAwareMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new GridIoSecurityAwareMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new, new SingleNodeMessageSerializer());
         factory.register((short)177, TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer());
@@ -597,17 +597,16 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)522, DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
         factory.register((short)523, SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
         factory.register((short)524, IncrementalSnapshotVerifyResult::new,
-            new IncrementalSnapshotVerifyResultMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new IncrementalSnapshotVerifyResultMarshallableSerializer(marsh, clsLdr));
         factory.register((short)525, SnapshotRestoreOperationResponse::new,
-            new SnapshotRestoreOperationResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
-        factory.register((short)526, SnapshotMetadataResponse::new,
-            new SnapshotMetadataResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new SnapshotRestoreOperationResponseMarshallableSerializer(marsh, clsLdr));
+        factory.register((short)526, SnapshotMetadataResponse::new, new SnapshotMetadataResponseMarshallableSerializer(marsh, clsLdr));
         factory.register((short)527, SnapshotCheckPartitionHashesResponse::new,
-            new SnapshotCheckPartitionHashesResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new SnapshotCheckPartitionHashesResponseMarshallableSerializer(marsh, clsLdr));
         factory.register((short)528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
         factory.register((short)529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
         factory.register((short)530, SnapshotPartitionsVerifyHandlerResponse::new,
-            new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+            new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr));
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
