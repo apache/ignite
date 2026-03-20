@@ -107,6 +107,6 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (msgBytes != null)
-            delegate = U.unmarshal(marsh, msgBytes, U.gridClassLoader());
+            delegate = U.unmarshal(marsh, msgBytes, clsLdr);
     }
 }
