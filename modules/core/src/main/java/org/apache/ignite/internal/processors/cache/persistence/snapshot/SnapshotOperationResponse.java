@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotOperationResponse implements Message {
     /** Results of single-node handlers execution. */
     @Order(0)
-    private Map<String, SnapshotHandlerResult<Message>> hndResults;
+    Map<String, SnapshotHandlerResult<Message>> hndResults;
 
     /** Default constructor for {@link GridIoMessageFactory}. */
     public SnapshotOperationResponse() {
