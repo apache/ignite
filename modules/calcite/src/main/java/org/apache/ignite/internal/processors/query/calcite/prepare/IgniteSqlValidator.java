@@ -65,7 +65,9 @@ import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
@@ -401,18 +403,32 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SelectScope scope,
         boolean includeSysVars
     ) {
-        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
-            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER) {
+            SqlIdentifier id = (SqlIdentifier)exp;
+            String alias = deriveAlias(exp, 0);
+            SqlQualified qualified = scope.fullyQualify(id);
 
             if (qualified.namespace == null)
                 return;
 
             if (qualified.namespace.getTable() != null) {
-                // If child is table and has only system fields, expand star to these fields.
-                // Otherwise, expand star to non-system fields only.
-                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
-                    if (!isSystemField(fld))
+                CacheTableDescriptor desc = qualified.namespace.getTable().unwrap(CacheTableDescriptor.class);
+
+                // Hide pseudo columns from '*' expansion, but keep explicit projection available.
+                if (desc != null) {
+                    ColumnDescriptor colDesc = desc.columnDescriptor(alias);
+
+                    if (colDesc instanceof CacheColumnDescriptor && ((CacheColumnDescriptor)colDesc).pseudo())
                         return;
+                }
+
+                if (isSystemFieldName(alias)) {
+                    // If child is table and has only system fields, expand star to these fields.
+                    // Otherwise, expand star to non-system fields only.
+                    for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                        if (!isSystemField(fld))
+                            return;
+                    }
                 }
             }
         }
@@ -576,9 +592,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private boolean isSystemFieldName(String alias) {
         return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias)
-            // TODO: IGNITE-28223 Похоже что тут надо будет поменять
-            || "KEY_TO_STRING".equalsIgnoreCase(alias);
+            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
     }
 
     /** {@inheritDoc} */

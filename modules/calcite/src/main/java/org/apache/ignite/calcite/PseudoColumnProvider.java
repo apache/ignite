@@ -37,6 +37,8 @@ public interface PseudoColumnProvider {
      *
      * <p>NOTES:</p>
      * <ul>
+     *     <li>When used in "SELECT", the pseudocolumn is applied to the table and not to the entire result.</li>
+     *     <li>Added only for user tables, not for system views.</li>
      *     <li>{@link PseudoColumnDescriptor#name()} - it is recommended to return in uppercase.</li>
      *     <li>{@link PseudoColumnDescriptor#name()} - it is forbidden to use system names {@code "_KEY"} and
      *     {@code "_VAL"}.</li>

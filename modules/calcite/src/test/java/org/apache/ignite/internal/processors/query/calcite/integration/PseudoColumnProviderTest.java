@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /** For {@link PseudoColumnProvider} testing. */
-// TODO: IGNITE-28223 Добавить больше тестов?
 public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String KEY_TO_STRING_COLUMN_NAME = "KEY_TO_STRING";
