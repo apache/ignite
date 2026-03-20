@@ -104,6 +104,8 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
         this((ClusterNode)n);
 
         discPort = n.discoveryPort();
+        // Gets all the attributes. Not filtered.
+        attrs = n.getAttributes();
         intOrder = n.internalOrder();
         clientRouterNodeId = n.clientRouterNodeId();
     }
