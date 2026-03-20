@@ -92,6 +92,13 @@ public interface TableDescriptor<TableRow> extends RelProtoDataType, Initializer
     boolean isUpdateAllowed(RelOptTable tbl, int colIdx);
 
     /**
+     * Returns {@code true} for pseudocolumn.
+     *
+     * @param colIdx Column index.
+     */
+    boolean isPseudoColumn(int colIdx);
+
+    /**
      * Converts a table row to relational node row.
      *
      * @param ectx Execution context.

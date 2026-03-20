@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -80,9 +79,8 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
     public void testPseudoColumnWithKeyName() {
         PSEUDO_COLS.add(new KeyToStingPseudoColumn(QueryUtils.KEY_FIELD_NAME));
 
-        GridTestUtils.assertThrows(
-            log,
-            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+        assertThrows(
+            "create table PUBLIC.PERSON(id int primary key, name varchar)",
             IgniteSQLException.class,
             "Pseudocolumn name must not match system one: [name=_KEY]"
         );
@@ -93,9 +91,8 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
     public void testPseudoColumnWithValName() {
         PSEUDO_COLS.add(new KeyToStingPseudoColumn(QueryUtils.VAL_FIELD_NAME));
 
-        GridTestUtils.assertThrows(
-            log,
-            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+        assertThrows(
+            "create table PUBLIC.PERSON(id int primary key, name varchar)",
             IgniteSQLException.class,
             "Pseudocolumn name must not match system one: [name=_VAL]"
         );
@@ -107,9 +104,8 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
         PSEUDO_COLS.add(new KeyToStingPseudoColumn("FOO"));
         PSEUDO_COLS.add(new KeyToStingPseudoColumn("FOO"));
 
-        GridTestUtils.assertThrows(
-            log,
-            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+        assertThrows(
+            "create table PUBLIC.PERSON(id int primary key, name varchar)",
             IgniteSQLException.class,
             "Pseudocolumn names must be unique: [name=FOO]"
         );
@@ -120,9 +116,8 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
     public void testCreateTableWithColumnNameEqualsPseudo() {
         PSEUDO_COLS.add(new KeyToStingPseudoColumn("NAME"));
 
-        GridTestUtils.assertThrows(
-            log,
-            () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
+        assertThrows(
+            "create table PUBLIC.PERSON(id int primary key, name varchar)",
             IgniteSQLException.class,
             "Pseudocolumn name must not overlap with user ones: [name=NAME]"
         );
@@ -130,7 +125,63 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testAddPseudoColumn() {
+    public void testInsertRowsWithPseudoColumn() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
+
+        sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
+
+        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
+
+        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo0", "0")
+            .check();
+
+        assertThrows(
+            String.format("insert into PUBLIC.PERSON(id, name, %s) values (?, ?, ?)", KEY_TO_STRING_COLUMN_NAME),
+            IgniteSQLException.class,
+            String.format("Cannot insert field \"%s\". You cannot insert pseudocolumn.", KEY_TO_STRING_COLUMN_NAME),
+            1, "foo1", "1"
+        );
+
+        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo0", "0")
+            .check();
+    }
+
+        /** */
+    @Test
+    public void testUpdateRowsWithPseudoColumn() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
+
+        sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
+
+        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
+
+        sql("update PUBLIC.PERSON set name=? where id=?", "foo1", 0);
+
+        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo1", "0")
+            .check();
+
+        assertThrows(
+            String.format("update PUBLIC.PERSON set name=?, %s=? where id=?", KEY_TO_STRING_COLUMN_NAME),
+            IgniteSQLException.class,
+            String.format("Cannot update field \"%s\". You cannot update pseudocolumn.", KEY_TO_STRING_COLUMN_NAME),
+            "foo2", "2", 0
+        );
+
+        assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", KEY_TO_STRING_COLUMN_NAME))
+            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
+            .returns(0, "foo1", "0")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testSelectPseudoColumn() {
         PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
 
         sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
@@ -166,71 +217,6 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
             .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
             .returns(0, "foo0", "0")
             .returns(1, "foo1", "1")
-            .check();
-    }
-
-    /** */
-    @Test
-    public void testInsertRowsWithPseudoColumn() {
-        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
-
-        sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
-
-        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
-
-        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
-            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
-            .returns(0, "foo0", "0")
-            .check();
-
-        // TODO: IGNITE-28223 Сделаем так, что вставлять нельзя в такую колонку
-        // Let's make sure that when inserting a value into a pseudocolumn, it will simply be ignored.
-        sql(
-            String.format("insert into PUBLIC.PERSON(id, name, %s) values (?, ?, ?)", KEY_TO_STRING_COLUMN_NAME),
-            1, "foo1", "invalid_value"
-        );
-
-        String format = String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME);
-
-        List<List<?>> sql = sql(format);
-
-        assertQuery(format)
-            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
-            .returns(0, "foo0", "0")
-            .returns(1, "foo1", "1")
-            .check();
-    }
-
-        /** */
-    @Test
-    public void testUpdateRowsWithPseudoColumn() {
-        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
-
-        sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
-
-        sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", 0, "foo0");
-
-        sql("update PUBLIC.PERSON set name=? where id=?", "foo1", 0);
-
-        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
-            .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
-            .returns(0, "foo1", "0")
-            .check();
-
-        String name = KEY_TO_STRING_COLUMN_NAME;
-        name = QueryUtils.KEY_FIELD_NAME;
-
-        // TODO: IGNITE-28223 Сделаем так, что обновлять с такой колонкой
-        sql(
-            String.format("update PUBLIC.PERSON set name=?, %s=? where id=?", name),
-            "foo2", "invalid_value", 0
-        );
-
-        // TODO: IGNITE-28223 Вот тут почему-то пусто стало...
-        // TODO: IGNITE-28223 Для _KEY тут идет запрет, думаю надо также сделать
-        assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", name))
-            .columnNames("ID", "NAME", name)
-            .returns(0, "foo2", "0")
             .check();
     }
 

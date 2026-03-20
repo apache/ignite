@@ -289,8 +289,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final CacheColumnDescriptor desc = descriptors[colIdx];
 
-        // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть
         return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPseudoColumn(int colIdx) {
+        return descriptors[colIdx].pseudo();
     }
 
     /** {@inheritDoc} */
@@ -358,12 +362,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         if (key != null)
             return TypeUtils.fromInternal(ectx, key, descriptors[QueryUtils.KEY_COL].storageType());
 
-        // skip _key and _val
+        // skip _key, _val and pseudo
         for (int i = 2; i < descriptors.length; i++) {
             final CacheColumnDescriptor desc = descriptors[i];
 
-            // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть и обновить коммент выше?
-            if (!desc.field() || !desc.key())
+            if (!desc.field() || !desc.key() || desc.pseudo())
                 continue;
 
             Object fieldVal = hnd.get(i, row);
@@ -391,13 +394,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         if (val == null) {
             val = newVal(typeDesc.valueTypeName());
 
-            // skip _key and _val
+            // skip _key, _val and pseudo
             for (int i = 2; i < descriptors.length; i++) {
                 final CacheColumnDescriptor desc = descriptors[i];
 
                 Object fieldVal = hnd.get(i, row);
 
-                // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть и обновить коммент выше?
                 if (desc.field() && !desc.key() && fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
@@ -431,11 +433,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         for (int i = 0; i < updateColList.size(); i++) {
             final CacheColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
 
-            assert !desc.key();
+            assert !desc.key() : desc.name();
+            assert !desc.pseudo() : desc.name();
 
             Object fieldVal = hnd.get(i + offset, row);
 
-            // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть и обновить коммент выше?
             if (desc.field())
                 desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             else
@@ -729,6 +731,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         @Override public void set(Object dst, Object val) {
             throw new AssertionError();
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean pseudo() {
+            return false;
+        }
     }
 
     /** */
@@ -817,6 +824,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             final Object val0 = key() ? null : dst;
 
             desc.setValue(key0, val0, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean pseudo() {
+            return false;
         }
     }
 

@@ -49,4 +49,7 @@ public interface CacheColumnDescriptor extends ColumnDescriptor {
      * Sets field of composite object value.
      */
     public void set(Object dst, Object val) throws IgniteCheckedException;
+
+    /** Returns {@link true} for pseudocolumn. */
+    boolean pseudo();
 }

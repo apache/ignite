@@ -68,7 +68,6 @@ class PseudoCacheColumnDescriptor implements CacheColumnDescriptor {
 
     /** {@inheritDoc} */
     @Override public boolean field() {
-        // TODO: IGNITE-28223 Вот тут наверное надо глубже глянуть
         return false;
     }
 
@@ -129,6 +128,11 @@ class PseudoCacheColumnDescriptor implements CacheColumnDescriptor {
     /** {@inheritDoc} */
     @Override public Object defaultValue() {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean pseudo() {
+        return true;
     }
 
     /** */

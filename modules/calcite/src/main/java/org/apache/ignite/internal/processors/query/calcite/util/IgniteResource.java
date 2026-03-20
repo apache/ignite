@@ -36,8 +36,12 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
 
     /** */
-    @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update virtual field.")
-    Resources.ExInst<SqlValidatorException> cannotUpdateVirtualField(String field);
+    @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update pseudocolumn.")
+    Resources.ExInst<SqlValidatorException> cannotUpdatePseudoField(String field);
+
+    /** */
+    @Resources.BaseMessage("Cannot insert field \"{0}\". You cannot insert pseudocolumn.")
+    Resources.ExInst<SqlValidatorException> cannotInsertPseudoField(String field);
 
     /** */
     @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")

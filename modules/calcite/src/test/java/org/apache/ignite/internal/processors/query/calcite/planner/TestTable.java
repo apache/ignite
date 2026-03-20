@@ -388,6 +388,11 @@ public class TestTable implements IgniteCacheTable, Wrapper {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isPseudoColumn(int colIdx) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean match(CacheDataRow row) {
             throw new AssertionError();
         }

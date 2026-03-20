@@ -28,7 +28,6 @@ import org.apache.ignite.plugin.PluginProvider;
  */
 @FunctionalInterface
 @IgniteExperimental
-// TODO: IGNITE-28223 Надо менять не на виртуальные колонки а псевдо
 public interface PseudoColumnProvider {
     /** */
     PseudoColumnProvider EMPTY = List::of;
@@ -42,6 +41,7 @@ public interface PseudoColumnProvider {
      *     <li>{@link PseudoColumnDescriptor#name()} - it is forbidden to use system names {@code "_KEY"} and
      *     {@code "_VAL"}.</li>
      *     <li>User will get an error when trying to create a column with name of one of pseudo ones.</li>
+     *     <li>Updating or inserting into a pseudocolumn is prohibited.</li>
      * </ul>
      * @return Pseudocolumn descriptors to add to tables.
      */

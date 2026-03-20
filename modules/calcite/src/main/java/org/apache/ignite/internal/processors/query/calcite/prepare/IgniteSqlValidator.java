@@ -137,6 +137,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         if (insert.getTargetColumnList() == null)
             insert.setOperand(3, inferColumnList(insert));
+        else
+            validateInsertFields(insert);
 
         super.validateInsert(insert);
     }
@@ -502,12 +504,44 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 baseType, typeFactory(), id, getCatalogReader(), relOptTable);
 
             if (target == null)
-                throw newValidationError(id,
-                    RESOURCE.unknownTargetColumn(id.toString()));
+                throw newValidationError(id, RESOURCE.unknownTargetColumn(id.toString()));
+            else if (!desc.isUpdateAllowed(relOptTable, target.getIndex()))
+                throw newValidationError(id, IgniteResource.INSTANCE.cannotUpdateField(id.toString()));
+            else if (desc.isPseudoColumn(target.getIndex()))
+                throw newValidationError(id, IgniteResource.INSTANCE.cannotUpdatePseudoField(id.toString()));
+        }
+    }
 
-            if (!desc.isUpdateAllowed(relOptTable, target.getIndex()))
-                throw newValidationError(id,
-                    IgniteResource.INSTANCE.cannotUpdateField(id.toString()));
+    /** */
+    private void validateInsertFields(SqlInsert call) {
+        if (call.getTargetColumnList() == null)
+            return;
+
+        SqlValidatorNamespace ns = validatedNamespace(call, unknownType);
+
+        SqlValidatorTable table = table(ns);
+
+        if (table == null)
+            return;
+
+        CacheTableDescriptor desc = table.unwrap(CacheTableDescriptor.class);
+
+        if (desc == null)
+            return;
+
+        RelDataType baseType = table.getRowType();
+        RelOptTable relOptTable = relOptTable(ns);
+
+        for (SqlNode node : call.getTargetColumnList()) {
+            SqlIdentifier id = (SqlIdentifier)node;
+
+            RelDataTypeField target = SqlValidatorUtil.getTargetField(
+                baseType, typeFactory(), id, getCatalogReader(), relOptTable);
+
+            if (target == null)
+                continue;
+            else if (desc.isPseudoColumn(target.getIndex()))
+                throw newValidationError(id, IgniteResource.INSTANCE.cannotInsertPseudoField(id.toString()));
         }
     }
 

@@ -172,6 +172,11 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPseudoColumn(int colIdx) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
