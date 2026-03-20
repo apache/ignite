@@ -114,7 +114,7 @@ public class ConnectionClientPool {
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
 
     /** Metrics for each remote node. */
-    private final Map<UUID, NodeMetrics> metrics;
+    private final Map<UUID, NodeConnectionMetrics> metrics;
 
     /** Config. */
     private final TcpCommunicationConfiguration cfg;
@@ -234,7 +234,7 @@ public class ConnectionClientPool {
 
         metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
 
-        metrics.values().forEach(NodeMetrics::unregister);
+        metrics.values().forEach(NodeConnectionMetrics::unregister);
 
         metrics.clear();
 
@@ -257,7 +257,7 @@ public class ConnectionClientPool {
      * @throws IgniteCheckedException Thrown if any exception occurs.
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        NodeMetrics nodeMetrics = metrics.get(node.id());
+        NodeConnectionMetrics nodeMetrics = metrics.get(node.id());
 
         if (nodeMetrics != null)
             nodeMetrics.acquiringThreadsCnt.incrementAndGet();
@@ -602,7 +602,7 @@ public class ConnectionClientPool {
                 success = clients.putIfAbsent(node.id(), newClients) == null;
 
                 if (success)
-                    createNodeMetrics(node);
+                    registerNodeMetrics(node);
             }
             else
                 success = clients.replace(node.id(), curClients, newClients);
@@ -614,16 +614,6 @@ public class ConnectionClientPool {
                 break;
             }
         }
-    }
-
-    /** */
-    private void createNodeMetrics(ClusterNode node) {
-        metrics.put(node.id(), new NodeMetrics(node));
-    }
-
-    /** */
-    public static String nodeMetricsRegName(UUID nodeId) {
-        return metricName(SHARED_METRICS_REGISTRY_NAME, nodeId.toString());
     }
 
     /**
@@ -645,7 +635,7 @@ public class ConnectionClientPool {
             newClients[rmvClient.connectionIndex()] = null;
 
             if (clients.replace(nodeId, curClients, newClients)) {
-                NodeMetrics nodeMetrics = metrics.get(nodeId);
+                NodeConnectionMetrics nodeMetrics = metrics.get(nodeId);
 
                 if (nodeMetrics != null)
                     nodeMetrics.removedConnectionsCnt.addAndGet(1);
@@ -691,10 +681,7 @@ public class ConnectionClientPool {
     public void onNodeLeft(UUID nodeId) {
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
 
-        NodeMetrics nodeMetrics = metrics.remove(nodeId);
-
-        if (nodeMetrics != null)
-            nodeMetrics.unregister();
+        unregisterNodeMetrics(nodeId);
 
         if (clients0 != null) {
             for (GridCommunicationClient client : clients0) {
@@ -712,10 +699,10 @@ public class ConnectionClientPool {
 
     /** */
     public void cleanupNodeMetrics() {
-        Iterator<Map.Entry<UUID, NodeMetrics>> iter = metrics.entrySet().iterator();
+        Iterator<Map.Entry<UUID, NodeConnectionMetrics>> iter = metrics.entrySet().iterator();
 
         while (iter.hasNext()) {
-            Map.Entry<UUID, NodeMetrics> entry = iter.next();
+            Map.Entry<UUID, NodeConnectionMetrics> entry = iter.next();
 
             if (nodeGetter.apply(entry.getKey()) == null) {
                 entry.getValue().unregister();
@@ -793,7 +780,20 @@ public class ConnectionClientPool {
     }
 
     /** */
-    private class NodeMetrics {
+    private void registerNodeMetrics(ClusterNode node) {
+        metrics.put(node.id(), new NodeConnectionMetrics(node));
+    }
+
+    /** */
+    void unregisterNodeMetrics(UUID nodeId) {
+        NodeConnectionMetrics nodeMetrics = metrics.remove(nodeId);
+
+        if (nodeMetrics != null)
+            nodeMetrics.unregister();
+    }
+
+    /** */
+    private class NodeConnectionMetrics {
         /** */
         private final MetricRegistryImpl registry;
 
@@ -810,7 +810,7 @@ public class ConnectionClientPool {
         private final AtomicInteger acquiringThreadsCnt = new AtomicInteger();
 
         /** */
-        NodeMetrics(ClusterNode node) {
+        NodeConnectionMetrics(ClusterNode node) {
             this.node = node;
             registry = createRegistry();
         }
@@ -876,7 +876,7 @@ public class ConnectionClientPool {
             long cur;
 
             do {
-                 cur = maxIdleTimeOut.get();
+                cur = maxIdleTimeOut.get();
             }
             while (cur < max && !maxIdleTimeOut.compareAndSet(cur, max));
 
@@ -890,7 +890,7 @@ public class ConnectionClientPool {
 
         /** */
         private MetricRegistryImpl createRegistry() {
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.id()));
+            MetricRegistryImpl mreg = metricsMgr.registry(metricName(SHARED_METRICS_REGISTRY_NAME, node.id().toString()));
 
             mreg.register(
                 METRIC_NAME_CONSIST_ID,
