@@ -87,21 +87,20 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
         // No-op.
     }
 
-    /** @param n Cluster node. */
-    public TcpDiscoveryNodeMessage(ClusterNode n) {
+    /** @param clusterNode Cluster node. */
+    public TcpDiscoveryNodeMessage(ClusterNode clusterNode) {
+        assert clusterNode instanceof TcpDiscoveryNode;
+
+        TcpDiscoveryNode n = (TcpDiscoveryNode)clusterNode;
+
         id = n.id();
         consistentId = n.consistentId();
-        attrs = n.attributes();
+        attrs = n.getAttributes();
         addrs = n.addresses();
         hostNames = n.hostNames();
         metricsMsg = new TcpDiscoveryNodeMetricsMessage(n.metrics());
         order = n.order();
         verMsg = new IgniteProductVersionMessage(n.version());
-    }
-
-    /** @param n Tcp Discovery node. */
-    public TcpDiscoveryNodeMessage(TcpDiscoveryNode n) {
-        this((ClusterNode)n);
 
         discPort = n.discoveryPort();
         intOrder = n.internalOrder();
@@ -110,19 +109,19 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (attrs != null && attrsBytes == null)
+        if (attrs != null)
             attrsBytes = U.marshal(marsh, attrs);
 
-        if (consistentId != null && consistentIdBytes == null)
+        if (consistentId != null)
             consistentIdBytes = U.marshal(marsh, consistentId);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (attrsBytes != null && attrs == null)
+        if (attrsBytes != null)
             attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
 
-        if (consistentIdBytes != null && consistentId == null)
+        if (consistentIdBytes != null)
             consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
 
         attrsBytes = null;
