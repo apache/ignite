@@ -520,7 +520,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --event list [--enabled]
 
     Parameters:
-      --enabled  - Only enabled events.
+      --enabled  - Filter only enabled events.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

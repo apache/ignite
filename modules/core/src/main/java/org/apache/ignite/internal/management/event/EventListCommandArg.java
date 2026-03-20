@@ -30,7 +30,7 @@ public class EventListCommandArg extends IgniteDataTransferObject {
     @Order(0)
     @Argument(
         optional = true,
-        description = "Only enabled events")
+        description = "Filter only enabled events")
     boolean enabled;
 
     /** */

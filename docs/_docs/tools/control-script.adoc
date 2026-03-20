@@ -1630,13 +1630,13 @@ Parameters:
 |--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.
 
 
-== Events management
+== Event management
 
-The control utility provides commands to enable events, disable events, check the status of events on all server nodes.
+The control utility provides commands to enable, disable and check the status of events on all server nodes.
 
 === Enable/disable events
 
-To eneble or disable events on all server nodes, use the `--event enable/disable` command.
+To enable or disable events on all server nodes, use the `--event enable/disable` command.
 
 [source, shell]
 ----
