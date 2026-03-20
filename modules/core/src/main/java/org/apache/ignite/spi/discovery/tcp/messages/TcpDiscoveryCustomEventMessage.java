@@ -129,7 +129,8 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
             msg = (DiscoveryCustomMessage)serMsg;
         else {
             try {
-                msg = U.unmarshal(marsh, msgBytes, ldr);
+                if (msgBytes != null)
+                    msg = U.unmarshal(marsh, msgBytes, ldr);
             }
             catch (IgniteCheckedException e) {
                 // Try to resurrect a message in a case of deserialization failure
