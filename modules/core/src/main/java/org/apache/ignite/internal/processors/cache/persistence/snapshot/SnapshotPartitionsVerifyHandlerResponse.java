@@ -27,8 +27,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** */
 public class SnapshotPartitionsVerifyHandlerResponse implements MarshallableMessage {
     /** */
@@ -55,13 +53,13 @@ public class SnapshotPartitionsVerifyHandlerResponse implements MarshallableMess
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        resBytes = U.marshal(jdk(), res);
+        resBytes = U.marshal(marsh, res);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (resBytes != null)
-            res = U.unmarshal(jdk(), resBytes, U.gridClassLoader());
+            res = U.unmarshal(marsh, resBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
