@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -102,13 +104,18 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     public boolean clientLdr;
 
     /** */
-    @Parameterized.Parameters(name = "connsPerNode={0}, pairedConns={1}, msgQueueLimit={2}, clientLdr={3}")
+    @Parameterized.Parameter(4)
+    public int idx;
+
+    /** */
+    @Parameterized.Parameters(name = "connsPerNode={0}, pairedConns={1}, msgQueueLimit={2}, clientLdr={3}, idx={4}")
     public static Collection<Object[]> params() {
         return GridTestUtils.cartesianProduct(
             F.asList(1, 4), // Connections per node.
             F.asList(false, true), // Paired connections.
             F.asList(0, 100), // Message queue limit.
-            F.asList(true, false) // Use client as a load.
+            F.asList(true, false), // Use client as a load.
+            IntStream.range(0, 40).boxed().collect(Collectors.toList())
         );
     }
 
