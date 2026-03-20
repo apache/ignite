@@ -73,6 +73,7 @@ public class RowIdPseudoColumnTest extends AbstractBasicIntegrationTest {
 
         // TODO: IGNITE-28223-add-rowid Вот тут теперь падает и можно дальше двигать
         assertQuery("select id, name, rowid from PUBLIC.PERSON where rowid = '0'")
+            .columnNames("ID", "NAME", "ROWID")
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", "_key_PK"))
             .returns(0, "foo0", "0")
             .check();
