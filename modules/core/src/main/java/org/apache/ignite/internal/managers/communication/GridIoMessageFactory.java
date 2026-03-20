@@ -62,7 +62,7 @@ import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyReque
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponseSerializer;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessageSerializer;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessageSerializer;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
@@ -231,12 +231,34 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequestSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessageSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResultMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponseMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessageSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessageSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResultSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponseMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponseSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponseMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequestSerializer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
@@ -332,6 +354,7 @@ import org.apache.ignite.internal.util.GridPartitionStateMapSerializer;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessageSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -405,12 +428,14 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
         factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
-        factory.register((short)8, GridIoMessage::new, new GridIoMessageSerializer());
+        factory.register((short)8, GridIoMessage::new,
+            new GridIoMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
         factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
         factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
         factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
-        factory.register((short)13, GridEventStorageMessage::new, new GridEventStorageMessageSerializer());
+        factory.register((short)13, GridEventStorageMessage::new,
+            new GridEventStorageMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register((short)16, GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer());
         factory.register((short)17, GridCacheTxRecoveryResponse::new, new GridCacheTxRecoveryResponseSerializer());
         factory.register((short)18, IndexQueryResultMeta::new, new IndexQueryResultMetaSerializer());
@@ -519,9 +544,10 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer());
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new, new GridQueryKillRequestSerializer());
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new, new GridQueryKillResponseSerializer());
-        factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new, new GridIoSecurityAwareMessageSerializer());
+        factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new,
+            new GridIoSecurityAwareMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
-        factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
+        factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new, new SingleNodeMessageSerializer());
         factory.register((short)177, TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer());
         factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new,
             new SnapshotFilesRequestMessageSerializer());
@@ -566,6 +592,22 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridPartitionStateMap.TYPE_CODE, GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
         factory.register(GridDhtPartitionMap.TYPE_CODE, GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
         factory.register(GridDhtPartitionFullMap.TYPE_CODE, GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer());
+        factory.register((short)520, SnapshotOperationResponse::new, new SnapshotOperationResponseSerializer());
+        factory.register((short)521, SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer());
+        factory.register((short)522, DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
+        factory.register((short)523, SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
+        factory.register((short)524, IncrementalSnapshotVerifyResult::new,
+            new IncrementalSnapshotVerifyResultMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)525, SnapshotRestoreOperationResponse::new,
+            new SnapshotRestoreOperationResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)526, SnapshotMetadataResponse::new,
+            new SnapshotMetadataResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)527, SnapshotCheckPartitionHashesResponse::new,
+            new SnapshotCheckPartitionHashesResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
+        factory.register((short)529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
+        factory.register((short)530, SnapshotPartitionsVerifyHandlerResponse::new,
+            new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
