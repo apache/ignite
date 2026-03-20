@@ -45,7 +45,7 @@ public interface PseudoColumnProvider {
      *     <li>User will get an error when trying to create a column with name of one of pseudo ones.</li>
      *     <li>Updating or inserting into a pseudocolumn is prohibited.</li>
      * </ul>
-     * @return Pseudocolumn descriptors to add to tables.
+     * @return Pseudocolumn descriptors.
      */
     List<PseudoColumnDescriptor> provideDescriptors();
 }

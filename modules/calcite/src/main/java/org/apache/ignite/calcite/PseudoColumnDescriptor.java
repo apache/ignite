@@ -26,22 +26,21 @@ public interface PseudoColumnDescriptor {
     /** */
     int NOT_SPECIFIED = -1;
 
-    /** Returns name of pseudocolumn. */
+    /** @return Name of pseudocolumn. */
     String name();
 
-    /** Pseudocolumn type. */
+    /** @return Pseudocolumn type. */
     Class<?> type();
 
-    /** Returns scale of pseudocolumn type, {@value #NOT_SPECIFIED} if not specified. */
+    /** @return Scale of pseudocolumn type, {@value #NOT_SPECIFIED} if not specified. */
     int scale();
 
-    /** Returns precision of pseudocolumn type, {@value #NOT_SPECIFIED} if not specified. */
+    /** @return Precision of pseudocolumn type, {@value #NOT_SPECIFIED} if not specified. */
     int precision();
 
     /**
-     * Returns value of a pseudocolumn.
-     *
      * @param ctx Context to extract value.
+     * @return Value of a pseudocolumn.
      * @throws IgniteCheckedException If there are errors when getting value.
      */
     Object value(PseudoColumnValueExtractorContext ctx) throws IgniteCheckedException;

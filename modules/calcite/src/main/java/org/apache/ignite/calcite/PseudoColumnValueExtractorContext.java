@@ -23,21 +23,20 @@ import org.apache.ignite.lang.IgniteExperimental;
 /** Context for extracting value of a pseudocolumn. */
 @IgniteExperimental
 public interface PseudoColumnValueExtractorContext {
-    /** Returns cache ID. */
+    /** @return Cache ID. */
     int cacheId();
 
-    /** Returns cache name. */
+    /** @return Cache name. */
     String cacheName();
 
-    /** Returns partition ID. */
+    /** @return Partition ID. */
     int partition();
 
     /**
-     * Returns source for getting value of pseudocolumn.
-     *
      * @param keyOrValue {@code true} if a cache key (primary key) is needed, {@code false} if a cache value is needed.
      * @param keepBinary {@code true} if returned as {@link BinaryObject}. If key or value is not composite, it may
      *      return not as {@link BinaryObject}, but as a simple type.
+     * @return Source for getting value of pseudocolumn.
      */
     Object source(boolean keyOrValue, boolean keepBinary);
 }
