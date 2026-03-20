@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
@@ -70,14 +71,11 @@ public class RowIdPseudoColumnTest extends AbstractBasicIntegrationTest {
         for (int i = 0; i < 2; i++)
             sql("insert into PUBLIC.PERSON(id, name) values(?, ?)", i, "foo" + i);
 
-        List<List<?>> sql = sql(
-            "explain plan for select id, name from PUBLIC.PERSON where rowid = ?",
-            "0"
-        );
-
-        log.info(">>>>> sql: " + sql);
-
-        log.info(">>>>> finish");
+        // TODO: IGNITE-28223-add-rowid Вот тут теперь падает и можно дальше двигать
+        assertQuery("select id, name, rowid from PUBLIC.PERSON where rowid = '0'")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", "_key_PK"))
+            .returns(0, "foo0", "0")
+            .check();
     }
 
     /** */
