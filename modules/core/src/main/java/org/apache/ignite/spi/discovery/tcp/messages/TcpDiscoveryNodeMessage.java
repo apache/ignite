@@ -103,6 +103,8 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
         verMsg = new IgniteProductVersionMessage(n.version());
 
         discPort = n.discoveryPort();
+        // Gets all the attributes. Not filtered.
+        attrs = n.getAttributes();
         intOrder = n.internalOrder();
         clientRouterNodeId = n.clientRouterNodeId();
     }
