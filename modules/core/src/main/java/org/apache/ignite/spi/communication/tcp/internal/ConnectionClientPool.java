@@ -222,7 +222,7 @@ public class ConnectionClientPool {
         mreg.register(METRIC_NAME_PAIRED_CONNS, () -> cfg.usePairedConnections(), "Paired connections flag.");
         mreg.register(
             METRIC_NAME_ASYNC_CONNS,
-            () -> true,
+            () -> true, // Currently we have only one connection implementation that is ASYNC (see GridTcpNioCommunicationClient#async)
             "Asynchronous flag. If TRUE, connections put data in a queue (with some preprocessing) instead of immediate sending.");
     }
 
