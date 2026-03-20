@@ -17,29 +17,49 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract discovery message for schema operations.
  */
-public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage {
+public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Operation. */
     @GridToStringInclude
-    protected final SchemaAbstractOperation op;
+    @Order(1)
+    SchemaAbstractOperation op;
+
+    /** Error message. */
+    @Order(2)
+    transient String errMsg;
+
+    /** Error code. */
+    @Order(3)
+    transient int errCode;
+
+    /** Error. */
+    SchemaOperationException err;
+
+    /**
+     * Constructor.
+     */
+    protected SchemaAbstractDiscoveryMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -47,6 +67,9 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      * @param op Operation.
      */
     protected SchemaAbstractDiscoveryMessage(SchemaAbstractOperation op) {
+        id = IgniteUuid.randomUuid();
+        errCode = -1;
+
         this.op = op;
     }
 
@@ -55,17 +78,48 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * @return Operation.
      */
     public SchemaAbstractOperation operation() {
         return op;
+    }
+
+    /**
+     * Set error.
+     *
+     * @param err Error.
+     */
+    public void onError(SchemaOperationException err) {
+        if (!hasError()) {
+            this.err = err;
+
+            errMsg = err.getMessage();
+            errCode = err.code();
+
+            if (err.getCause() != null)
+                errMsg += ": " + err.getCause().getMessage();
+        }
+    }
+
+    /**
+     * @return {@code True} if error was reported during init.
+     */
+    public boolean hasError() {
+        return err != null || errMsg != null || errCode > -1;
+    }
+
+    /**
+     * @return Error message (if any).
+     */
+    @Nullable public SchemaOperationException error() {
+        if (!hasError())
+            return null;
+
+        if (err == null)
+            err = new SchemaOperationException(errMsg, errCode);
+
+        return err;
     }
 
     /**

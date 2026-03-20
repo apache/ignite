@@ -19,24 +19,29 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
-public class UserManagementOperation implements Serializable {
+public class UserManagementOperation implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** User. */
-    private User usr;
+    @Order(0)
+    User usr;
 
     /** Operation type. */
-    private OperationType type;
+    @Order(1)
+    OperationType type;
 
-    /** Operation Id. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    /** Operation ID. */
+    @Order(2)
+    IgniteUuid id;
 
     /**
      * Constructor.
@@ -52,6 +57,7 @@ public class UserManagementOperation implements Serializable {
     public UserManagementOperation(User usr, OperationType type) {
         this.usr = usr;
         this.type = type;
+        id = IgniteUuid.randomUuid();
     }
 
     /**
@@ -96,6 +102,11 @@ public class UserManagementOperation implements Serializable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return id.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -108;
     }
 
     /**

@@ -34,16 +34,16 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
     private static final long serialVersionUID = 0L;
 
     /** ID of the failed node. */
-    @Order(6)
-    private UUID failedNodeId;
+    @Order(0)
+    UUID failedNodeId;
 
     /** Internal order of the failed node. */
-    @Order(value = 7, method = "internalOrder")
-    private long order;
+    @Order(1)
+    long order;
 
     /** */
-    @Order(8)
-    private String warning;
+    @Order(2)
+    String warning;
 
     /** Constructor. */
     public TcpDiscoveryNodeFailedMessage() {
@@ -91,24 +91,10 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
     }
 
     /**
-     * @param failedNodeId ID of the failed node.
-     */
-    public void failedNodeId(UUID failedNodeId) {
-        this.failedNodeId = failedNodeId;
-    }
-
-    /**
      * @return Internal order of the failed node.
      */
     public long internalOrder() {
         return order;
-    }
-
-    /**
-     * @param order Internal order of the failed node.
-     */
-    public void internalOrder(long order) {
-        this.order = order;
     }
 
     /** {@inheritDoc} */

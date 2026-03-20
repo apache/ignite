@@ -108,11 +108,11 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -1288,7 +1288,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         long time = System.currentTimeMillis();
 
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, null, null, null, null, grps);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(null, null, null, null, grps);
 
         m.topologyVersion(msgTopVer);
 
@@ -1342,8 +1342,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * Creates partitions full message for all cache groups.
      *
-     * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
-     * finishUnmarshall methods are called).
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
      * @param partHistSuppliers Partition history suppliers map.
@@ -1351,7 +1349,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Message.
      */
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
-        boolean compress,
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
@@ -1359,14 +1356,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
 
-        return createPartitionsFullMessage(compress, exchId, lastVer, partHistSuppliers, partsToReload, grps);
+        return createPartitionsFullMessage(exchId, lastVer, partHistSuppliers, partsToReload, grps);
     }
 
     /**
      * Creates partitions full message for selected cache groups.
      *
-     * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
-     *     finishUnmarshall methods are called).
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
      * @param partHistSuppliers Partition history suppliers map.
@@ -1375,7 +1370,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Message.
      */
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
-        boolean compress,
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
@@ -1386,8 +1380,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         final GridDhtPartitionsFullMessage m =
             new GridDhtPartitionsFullMessage(exchId, lastVer, ver, partHistSuppliers, partsToReload);
-
-        m.compressed(compress);
 
         final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
@@ -1406,7 +1398,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
 
             if (locMap != null)
-                addFullPartitionsMap(m, dupData, compress, grp.groupId(), locMap, affCache.similarAffinityKey());
+                addFullPartitionsMap(m, dupData, grp.groupId(), locMap, affCache.similarAffinityKey());
 
             Map<Integer, Long> partSizesMap = grp.topology().globalPartSizes();
 
@@ -1426,7 +1418,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             GridDhtPartitionFullMap map = top.partitionMap(true);
 
             if (map != null)
-                addFullPartitionsMap(m, dupData, compress, top.groupId(), map, top.similarAffinityKey());
+                addFullPartitionsMap(m, dupData, top.groupId(), map, top.similarAffinityKey());
 
             if (exchId != null) {
                 m.addPartitionUpdateCounters(top.groupId(), top.fullUpdateCounters());
@@ -1449,14 +1441,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param m Message.
      * @param dupData Duplicated data map.
-     * @param compress {@code True} if need check for duplicated partition state data.
      * @param grpId Cache group ID.
      * @param map Map to add.
      * @param affKey Cache affinity key.
      */
     private void addFullPartitionsMap(GridDhtPartitionsFullMessage m,
         Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData,
-        boolean compress,
         Integer grpId,
         GridDhtPartitionFullMap map,
         Object affKey) {
@@ -1464,7 +1454,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Integer dupDataCache = null;
 
-        if (compress && affKey != null && !m.containsGroup(grpId)) {
+        if (affKey != null && !m.containsGroup(grpId)) {
             T2<Integer, GridDhtPartitionFullMap> state0 = dupData.get(affKey);
 
             if (state0 != null && state0.get2().partitionStateEquals(map)) {
@@ -1509,10 +1499,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
         }
-        catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
-                    node.id() + ", msg=" + m + ']');
+        catch (ClusterTopologyCheckedException e) {
+            log.warning("Failed to send local partitions to node because it left grid [nodeId=" + node.id() + ", exchId=" + id + ']', e);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send local partition map to node [node=" + node + ", exchId=" + id + ']', e);
@@ -1556,8 +1544,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
-            cctx.versions().last(),
-            true);
+            cctx.versions().last());
 
         Map<Object, T2<Integer, GridPartitionStateMap>> dupData = new HashMap<>();
 
@@ -3065,7 +3052,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    try (OperationSecurityContext c = withRemoteSecurityContext(cctx.kernalContext(), task.securityContext())) {
+                    try (Scope ignored = withRemoteSecurityContext(cctx.kernalContext(), task.securityContext())) {
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
 
@@ -3191,7 +3178,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     break;
                                 }
-                                catch (IgniteFutureTimeoutCheckedException ignored) {
+                                catch (IgniteFutureTimeoutCheckedException ignoredEx) {
                                     updateHeartbeat();
 
                                     if (nextDumpTime <= U.currentTimeMillis()) {

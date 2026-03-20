@@ -42,34 +42,34 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Sub ID. */
-    @Order(5)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Version. */
-    @Order(value = 6, method = "version")
-    private GridCacheVersion ver;
+    @Order(2)
+    GridCacheVersion ver;
 
     /** Result. */
     @GridToStringInclude
-    @Order(7)
-    private Collection<GridCacheEntryInfo> entries;
+    @Order(value = 3, method = "entries")
+    Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
-    @Order(value = 8, method = "invalidPartitions")
-    private Collection<Integer> invalidParts = new GridLeanSet<>();
+    @Order(4)
+    Collection<Integer> invalidParts = new GridLeanSet<>();
 
     /** Topology version if invalid partitions is not empty. */
-    @Order(value = 9, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(5)
+    AffinityTopologyVersion topVer;
 
     /** Error message. */
-    @Order(value = 10, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(6)
+    @Nullable ErrorMessage errMsg;
 
     /**
      * Empty constructor.

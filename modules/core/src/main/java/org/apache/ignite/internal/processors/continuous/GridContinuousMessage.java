@@ -17,18 +17,13 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
@@ -38,25 +33,28 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
  */
 public class GridContinuousMessage implements Message {
     /** Message type. */
-    private GridContinuousMessageType type;
+    @Order(0)
+    GridContinuousMessageType type;
 
     /** Routine ID. */
-    private UUID routineId;
+    @Order(1)
+    UUID routineId;
 
     /** Optional message data. */
     @GridToStringInclude(sensitive = true)
-    @GridDirectTransient
     private Object data;
 
     /** */
-    @GridDirectCollection(Message.class)
-    private Collection<Message> msgs;
+    @Order(2)
+    Collection<Message> msgs;
 
     /** Serialized message data. */
-    private byte[] dataBytes;
+    @Order(3)
+    byte[] dataBytes;
 
     /** Future ID for synchronous event notifications. */
-    private IgniteUuid futId;
+    @Order(4)
+    IgniteUuid futId;
 
     /**
      * Empty constructor.
@@ -144,107 +142,6 @@ public class GridContinuousMessage implements Message {
      */
     @Nullable public IgniteUuid futureId() {
         return futId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(dataBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeCollection(msgs, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeUuid(routineId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeByte(type != null ? (byte)type.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                dataBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                msgs = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                routineId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                byte typeOrd;
-
-                typeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                type = GridContinuousMessageType.fromOrdinal(typeOrd);
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -35,12 +35,12 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    @Order(value = 0, method = "topologyVersion")
-    @Nullable private AffinityTopologyVersion topVer;
+    @Order(0)
+    @Nullable AffinityTopologyVersion topVer;
 
     /** Request's id. */
-    @Order(value = 1, method = "requestId")
-    @Nullable private IgniteUuid reqId;
+    @Order(1)
+    @Nullable IgniteUuid reqId;
 
     /**
      * Empty constructor for marshalling purposes.
@@ -70,24 +70,10 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(@Nullable AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Requests id.
      */
     public @Nullable IgniteUuid requestId() {
         return reqId;
-    }
-
-    /**
-     * @param reqId Request's id.
-     */
-    public void requestId(@Nullable IgniteUuid reqId) {
-        this.reqId = reqId;
     }
 
     /** {@inheritDoc} */

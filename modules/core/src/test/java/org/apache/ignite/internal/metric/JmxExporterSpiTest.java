@@ -22,7 +22,6 @@ import java.sql.Connection;
 import java.text.DateFormat;
 import java.time.LocalTime;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +43,6 @@ import javax.management.MBeanParameterInfo;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import com.google.common.collect.Iterators;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -77,19 +75,15 @@ import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.systemview.CachePagesListViewWalker;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigInitializer;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.transactions.TransactionState;
 import org.junit.Test;
 
 import static java.util.Arrays.stream;
@@ -130,13 +124,9 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** */
 public class JmxExporterSpiTest extends AbstractExporterSpiTest {
-    /** */
-    private static IgniteEx ignite;
-
     /** */
     private static final String REGISTRY_NAME = "test_registry";
 
@@ -166,22 +156,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
-
-        ignite = startGrid(0);
-
-        ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Collection<String> caches = ignite.cacheNames();
-
-        for (String cache : caches)
-            ignite.destroyCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids(true);
 
         cleanPersistenceDir();
@@ -192,16 +170,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     public void testJmxMetricsExporterIsEnabledByDefault() throws Exception {
         presetJmxMetricExporter = false;
 
-        IgniteConfiguration cfg = startDedicatedNode(null);
+        IgniteConfiguration cfg = startGrid(0).configuration();
 
-        try {
-            assertTrue(!F.isEmpty(cfg.getMetricExporterSpi()));
-            assertTrue(cfg.getMetricExporterSpi().length == 1);
-            assertTrue(cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
-        }
-        finally {
-            stopGrid(cfg.getIgniteInstanceName());
-        }
+        assertTrue(!F.isEmpty(cfg.getMetricExporterSpi()));
+        assertTrue(cfg.getMetricExporterSpi().length == 1);
+        assertTrue(cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
     }
 
     /** */
@@ -214,14 +187,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             presetJmxMetricExporter = false;
 
-            IgniteConfiguration cfg = startDedicatedNode(null);
+            IgniteConfiguration cfg = startGrid(0).configuration();
 
-            try {
-                assertTrue(stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
-            }
-            finally {
-                stopGrid(cfg.getIgniteInstanceName());
-            }
+            assertTrue(stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
         }
         finally {
             U.IGNITE_MBEANS_DISABLED = beansDisabled;
@@ -231,21 +199,19 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testJmxMetricsExporterIsDisabled() throws Exception {
-        IgniteConfiguration cfg = startDedicatedNode(getConfiguration(getTestIgniteInstanceName(G.allGrids().size()))
-            .setMetricExporterSpi(new NoopMetricExporterSpi()));
+        IgniteConfiguration cfg = startGrid(getConfiguration(getTestIgniteInstanceName(0))
+            .setMetricExporterSpi(new NoopMetricExporterSpi())
+        ).configuration();
 
-        try {
-            assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
-                stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
-        }
-        finally {
-            stopGrid(cfg.getIgniteInstanceName());
-        }
+        assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
+            stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
     }
 
     /** */
     @Test
     public void testSysJmxMetrics() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         DynamicMBean sysMBean = metricRegistry(ignite.name(), null, SYS_METRICS);
 
         Set<String> res = stream(sysMBean.getMBeanInfo().getAttributes())
@@ -277,6 +243,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testDataRegionJmxMetrics() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         DynamicMBean dataRegionMBean = metricRegistry(ignite.name(), "io", "dataregion.default");
 
         Set<String> res = stream(dataRegionMBean.getMBeanInfo().getAttributes())
@@ -298,6 +266,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testUnregisterRemovedRegistry() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         String n = "cache-for-remove";
 
         IgniteCache c = ignite.createCache(n);
@@ -314,6 +284,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testFilterAndExport() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         createAdditionalMetrics(ignite);
 
         assertThrowsWithCause(new Runnable() {
@@ -334,7 +306,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testRemoveFilteredRegistry() {
+    public void testRemoveFilteredRegistry() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         String regName = MetricUtils.metricName(FILTERED_PREFIX, "registry-for-remove");
 
         GridMetricManager mmgr = ignite.context().metric();
@@ -355,6 +329,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testCachesView() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
@@ -376,6 +352,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testCacheGroupsView() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
@@ -397,6 +375,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testServices() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
         srvcCfg.setName("service");
@@ -420,6 +400,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testComputeBroadcast() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         CyclicBarrier barrier = new CyclicBarrier(6);
 
         for (int i = 0; i < 5; i++) {
@@ -456,6 +438,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testClientsConnections() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+        
         String host = ignite.configuration().getClientConnectorConfiguration().getHost();
 
         if (host == null)
@@ -503,31 +487,32 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testContinuousQuery() throws Exception {
-        try (IgniteEx remoteNode = startGrid(1)) {
-            IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
+        IgniteEx ignite = prepareCluster(2);
+        IgniteEx remoteNode = grid(1);
+        
+        IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
 
-            assertEquals(0, systemView(CQ_SYS_VIEW).size());
-            assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
+        assertEquals(0, systemView(CQ_SYS_VIEW).size());
+        assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
 
-            try (QueryCursor qry = cache.query(new ContinuousQuery<>()
-                .setInitialQuery(new ScanQuery<>())
-                .setPageSize(100)
-                .setTimeInterval(1000)
-                .setLocalListener(evts -> {
-                    // No-op.
-                })
-                .setRemoteFilterFactory(() -> evt -> true)
-            )) {
-                for (int i = 0; i < 100; i++)
-                    cache.put(i, i);
+        try (QueryCursor qry = cache.query(new ContinuousQuery<>()
+            .setInitialQuery(new ScanQuery<>())
+            .setPageSize(100)
+            .setTimeInterval(1000)
+            .setLocalListener(evts -> {
+                // No-op.
+            })
+            .setRemoteFilterFactory(() -> evt -> true)
+        )) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
 
-                checkContinuousQueryView(ignite, ignite);
-                checkContinuousQueryView(ignite, remoteNode);
-            }
-
-            assertEquals(0, systemView(CQ_SYS_VIEW).size());
-            assertTrue(waitForCondition(() -> systemView(remoteNode, CQ_SYS_VIEW).isEmpty(), getTestTimeout()));
+            checkContinuousQueryView(ignite, ignite);
+            checkContinuousQueryView(ignite, remoteNode);
         }
+
+        assertEquals(0, systemView(CQ_SYS_VIEW).size());
+        assertTrue(waitForCondition(() -> systemView(remoteNode, CQ_SYS_VIEW).isEmpty(), getTestTimeout()));
     }
 
     /** */
@@ -557,7 +542,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     public TabularDataSupport systemView(String name) {
-        return systemView(ignite, name);
+        return systemView(grid(0), name);
     }
 
     /** */
@@ -607,6 +592,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
+        prepareCluster(1);
+
         MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
 
         createTestHistogram(mreg);
@@ -642,6 +629,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramExport() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         MetricRegistryImpl mreg = ignite.context().metric().registry("histogramTest");
 
         createTestHistogram(mreg);
@@ -664,6 +653,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testJmxHistogramNamesExport() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         MetricRegistryImpl reg = ignite.context().metric().registry(REGISTRY_NAME);
 
         String simpleName = "testhist";
@@ -687,6 +678,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testTransactions() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
@@ -718,7 +711,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertEquals(ignite.localNode().id().toString(), txv.get("localNodeId"));
             assertEquals(REPEATABLE_READ.name(), txv.get("isolation"));
             assertEquals(PESSIMISTIC.name(), txv.get("concurrency"));
-            assertEquals(ACTIVE.name(), txv.get("state"));
+            assertEquals(TransactionState.ACTIVE.name(), txv.get("state"));
             assertNotNull(txv.get("xid"));
             assertFalse((boolean)txv.get("system"));
             assertFalse((boolean)txv.get("implicit"));
@@ -758,7 +751,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 assertEquals(ignite.localNode().id().toString(), txv.get("localNodeId"));
                 assertEquals(SERIALIZABLE.name(), txv.get("isolation"));
                 assertEquals(OPTIMISTIC.name(), txv.get("concurrency"));
-                assertEquals(ACTIVE.name(), txv.get("state"));
+                assertEquals(TransactionState.ACTIVE.name(), txv.get("state"));
                 assertNotNull(txv.get("xid"));
                 assertFalse((boolean)txv.get("system"));
                 assertFalse((boolean)txv.get("implicit"));
@@ -786,6 +779,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testLocalScanQuery() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         IgniteCache<Integer, Integer> cache1 = ignite.createCache(
             new CacheConfiguration<Integer, Integer>("cache1")
                 .setGroupName("group1"));
@@ -847,6 +842,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         try (IgniteEx client1 = startClientGrid("client-1");
             IgniteEx client2 = startClientGrid("client-2")) {
 
@@ -895,6 +892,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** @throws Exception If failed. */
     @Test
     public void testIgniteKernal() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         DynamicMBean mbn = metricRegistry(ignite.name(), null, IGNITE_METRICS);
 
         assertNotNull(mbn);
@@ -1036,6 +1035,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSysStripedExecutor() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         checkStripeExecutorView(ignite.context().pools().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
@@ -1044,34 +1045,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStreamerStripedExecutor() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         checkStripeExecutorView(ignite.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
-    }
-
-    /**
-     * Starts dedicated node.
-     *
-     * @param cfg Ignite Configuration.
-     * @return Actual configuration of the node started.
-     */
-    private IgniteConfiguration startDedicatedNode(@Nullable IgniteConfiguration cfg) throws Exception {
-        if (cfg == null)
-            cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi());
-
-        ((TcpCommunicationConfigInitializer)cfg.getCommunicationSpi()).setLocalPort(TcpCommunicationSpi.DFLT_PORT +
-            TcpCommunicationSpi.DFLT_PORT_RANGE + 1);
-
-        int clusterSize = ignite.cluster().nodes().size();
-
-        Ignite ig = startGrid(cfg);
-
-        assertEquals(1, ig.cluster().nodes().size());
-        assertEquals(clusterSize, ignite.cluster().nodes().size());
-
-        return ig.configuration();
     }
 
     /**
@@ -1081,7 +1059,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
      * @param viewName System view.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, String viewName, String poolName) throws Exception {
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String viewName, String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
         execSvc.execute(0, new TestRunnable(latch, 0));
@@ -1118,6 +1096,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testPagesList() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         String cacheName = "cacheFL";
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
@@ -1145,7 +1125,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testBinaryMeta() {
+    public void testBinaryMeta() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         IgniteCache<Integer, TestObjectAllTypes> c1 = ignite.createCache("test-all-types-cache");
         IgniteCache<Integer, TestObjectEnum> c2 = ignite.createCache("test-enum-cache");
 
@@ -1181,6 +1163,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testMetastorage() throws Exception {
+        IgniteEx ignite = prepareCluster(1);
+
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
         String name = "test-key";
@@ -1218,42 +1202,44 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testDistributedMetastorage() throws Exception {
-        try (IgniteEx ignite1 = startGrid(1)) {
-            DistributedMetaStorage dms = ignite.context().distributedMetastorage();
+        IgniteEx ignite = prepareCluster(2);
 
-            String name = "test-distributed-key";
-            String val = "test-distributed-value";
+        IgniteEx ignite1 = grid(1);
 
-            dms.write(name, val);
+        DistributedMetaStorage dms = ignite.context().distributedMetastorage();
 
-            TabularDataSupport view = systemView(DISTRIBUTED_METASTORE_VIEW);
+        String name = "test-distributed-key";
+        String val = "test-distributed-value";
 
-            boolean found = false;
+        dms.write(name, val);
 
-            for (int i = 0; i < view.size(); i++) {
-                CompositeData row = view.get(new Object[] {i});
+        TabularDataSupport view = systemView(DISTRIBUTED_METASTORE_VIEW);
 
-                if (row.get("name").equals(name) && row.get("value").equals(val)) {
-                    found = true;
-                    break;
-                }
+        boolean found = false;
+
+        for (int i = 0; i < view.size(); i++) {
+            CompositeData row = view.get(new Object[] {i});
+
+            if (row.get("name").equals(name) && row.get("value").equals(val)) {
+                found = true;
+                break;
+            }
+        }
+
+        assertTrue(found);
+
+        assertTrue(waitForCondition(() -> {
+            TabularDataSupport view1 = systemView(ignite1, DISTRIBUTED_METASTORE_VIEW);
+
+            for (int i = 0; i < view1.size(); i++) {
+                CompositeData row = view1.get(new Object[] {i});
+
+                if (row.get("name").equals(name) && row.get("value").equals(val))
+                    return true;
             }
 
-            assertTrue(found);
-
-            assertTrue(waitForCondition(() -> {
-                TabularDataSupport view1 = systemView(ignite1, DISTRIBUTED_METASTORE_VIEW);
-
-                for (int i = 0; i < view1.size(); i++) {
-                    CompositeData row = view1.get(new Object[] {i});
-
-                    if (row.get("name").equals(name) && row.get("value").equals(val))
-                        return true;
-                }
-
-                return false;
-            }, getTestTimeout()));
-        }
+            return false;
+        }, getTestTimeout()));
     }
 
     /** */
@@ -1277,5 +1263,12 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         histogram.value(600);
         histogram.value(600);
         histogram.value(600);
+    }
+
+    /** */
+    private IgniteEx prepareCluster(int nodeCnt) throws Exception {
+        startGrids(nodeCnt).cluster().state(ClusterState.ACTIVE);
+        
+        return grid(0);
     }
 }

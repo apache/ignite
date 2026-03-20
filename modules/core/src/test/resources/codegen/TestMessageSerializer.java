@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.codegen;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -28,13 +29,18 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * This class is generated automatically.
  *
- * @see org.apache.ignite.codegen.MessageSerializer
+ * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMessageSerializer implements MessageSerializer {
+public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
-    @Override public boolean writeTo(Message m, MessageWriter writer) {
-        TestMessage msg = (TestMessage)m;
+    private final static MessageArrayType intMatrixCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class);
+    /** */
+    private final static MessageArrayType strArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class);
+    /** */
+    private final static MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class);
 
+    /** */
+    @Override public boolean writeTo(TestMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -44,67 +50,67 @@ public class TestMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(msg.id()))
+                if (!writer.writeInt(msg.id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray(msg.byteArr()))
+                if (!writer.writeByteArray(msg.byteArr))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString(msg.str()))
+                if (!writer.writeString(msg.str))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeObjectArray(msg.strArr(), MessageCollectionItemType.STRING))
+                if (!writer.writeObjectArray(msg.strArr, strArrCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeObjectArray(msg.intMatrix(), MessageCollectionItemType.INT_ARR))
+                if (!writer.writeObjectArray(msg.intMatrix, intMatrixCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage(msg.ver()))
+                if (!writer.writeMessage(msg.ver))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeObjectArray(msg.verArr(), MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(msg.verArr, verArrCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeUuid(msg.uuid()))
+                if (!writer.writeUuid(msg.uuid))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeIgniteUuid(msg.ignUuid()))
+                if (!writer.writeIgniteUuid(msg.ignUuid))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeAffinityTopologyVersion(msg.topVer()))
+                if (!writer.writeAffinityTopologyVersion(msg.topVer))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBitSet(msg.bitSet()))
+                if (!writer.writeBitSet(msg.bitSet))
                     return false;
 
                 writer.incrementState();
@@ -116,19 +122,19 @@ public class TestMessageSerializer implements MessageSerializer {
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeKeyCacheObject(msg.keyCacheObject()))
+                if (!writer.writeKeyCacheObject(msg.keyCacheObject))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCacheObject(msg.cacheObject()))
+                if (!writer.writeCacheObject(msg.cacheObject))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeGridLongList(msg.gridLongList()))
+                if (!writer.writeGridLongList(msg.gridLongList))
                     return false;
 
                 writer.incrementState();
@@ -138,12 +144,10 @@ public class TestMessageSerializer implements MessageSerializer {
     }
 
     /** */
-    @Override public boolean readFrom(Message m, MessageReader reader) {
-        TestMessage msg = (TestMessage)m;
-
+    @Override public boolean readFrom(TestMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.id(reader.readInt());
+                msg.id = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,7 +155,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                msg.byteArr(reader.readByteArray());
+                msg.byteArr = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -159,7 +163,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 2:
-                msg.str(reader.readString());
+                msg.str = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -167,7 +171,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 3:
-                msg.strArr(reader.readObjectArray(MessageCollectionItemType.STRING, String.class));
+                msg.strArr = reader.readObjectArray(strArrCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -175,7 +179,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 4:
-                msg.intMatrix(reader.readObjectArray(MessageCollectionItemType.INT, int[].class));
+                msg.intMatrix = reader.readObjectArray(intMatrixCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -183,7 +187,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 5:
-                msg.ver(reader.readMessage());
+                msg.ver = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -191,7 +195,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 6:
-                msg.verArr(reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class));
+                msg.verArr = reader.readObjectArray(verArrCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -199,7 +203,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 7:
-                msg.uuid(reader.readUuid());
+                msg.uuid = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -207,7 +211,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 8:
-                msg.ignUuid(reader.readIgniteUuid());
+                msg.ignUuid = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -215,7 +219,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 9:
-                msg.topVer(reader.readAffinityTopologyVersion());
+                msg.topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -223,7 +227,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 10:
-                msg.bitSet(reader.readBitSet());
+                msg.bitSet = reader.readBitSet();
 
                 if (!reader.isLastRead())
                     return false;
@@ -239,7 +243,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 12:
-                msg.keyCacheObject(reader.readKeyCacheObject());
+                msg.keyCacheObject = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -247,7 +251,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 13:
-                msg.cacheObject(reader.readCacheObject());
+                msg.cacheObject = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -255,7 +259,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 14:
-                msg.gridLongList(reader.readGridLongList());
+                msg.gridLongList = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;

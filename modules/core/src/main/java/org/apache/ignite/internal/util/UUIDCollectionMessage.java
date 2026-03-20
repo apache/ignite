@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class UUIDCollectionMessage implements Message {
     /** The collection of UUIDs that was wrapped. */
     @Order(0)
-    private Collection<UUID> uuids;
+    Collection<UUID> uuids;
 
     /**
      * Empty constructor required for direct marshalling.
@@ -52,13 +53,6 @@ public class UUIDCollectionMessage implements Message {
         return uuids;
     }
 
-    /**
-     * @param uuids The collection of UUIDs that was wrapped.
-     */
-    public void uuids(Collection<UUID> uuids) {
-        this.uuids = uuids;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 115;
@@ -74,7 +68,7 @@ public class UUIDCollectionMessage implements Message {
 
         UUIDCollectionMessage that = (UUIDCollectionMessage)o;
 
-        return uuids == that.uuids || (uuids != null && uuids.equals(that.uuids));
+        return Objects.equals(uuids, that.uuids);
     }
 
     /** {@inheritDoc} */

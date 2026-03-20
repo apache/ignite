@@ -48,15 +48,12 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * <p>
  * The generated serializer follows the naming convention: {@code [MessageClassName]Serializer}.
  * <p>
- * Only fields annotated with {@link Order} and accessed through matching accessor methods
- * (i.e., {@code fieldName()} and {@code fieldName(value)}) are included in the serialization logic.
+ * Only fields annotated with {@link Order} are included in the serialization logic.
  * <p>
  * <strong>Usage Requirements:</strong>
  * <ul>
  *   <li>The target class must implement the {@code Message} interface.</li>
  *   <li>Each field to be serialized must be annotated with {@code @Order}.</li>
- *   <li>By default, each serializing field must have a getter named {@code fieldName()} and
- *   a setter named {@code fieldName(value)}.</li>
  *   <li>If {@link Order#method()} attribute was set, then each serializing field
  *   must have a getter named {@code method()} and a setter named {@code method(value)}.</li>
  * </ul>
@@ -70,6 +67,12 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
 public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
+
+    /** Compressed message. */
+    static final String COMPRESSED_MESSAGE_INTERFACE = "org.apache.ignite.internal.managers.communication.CompressedMessage";
+
+    /** Externalizable message. */
+    static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.MarshallableMessage";
 
     /** This is the only message with zero fields. A serializer must be generated due to restrictions in our communication process. */
     static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
@@ -128,41 +131,54 @@ public class MessageProcessor extends AbstractProcessor {
      * @return a list of {@code VariableElement} objects representing all ordered fields, including those declared in superclasses.
      */
     private List<VariableElement> orderedFields(TypeElement type) {
+        List<List<VariableElement>> hierList = hierarchicalOrderedFields(type);
+
         List<VariableElement> result = new ArrayList<>();
 
-        while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
-                if (el.getAnnotation(Order.class) != null) {
-                    result.add((VariableElement)el);
+        for (List<VariableElement> elList : hierList) {
+            elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
-                    if (el.getModifiers().contains(Modifier.STATIC)) {
-                        processingEnv.getMessager().printMessage(
-                            Diagnostic.Kind.ERROR,
-                            "Annotation @Order must only be used for non-static fields.",
-                            el);
-                    }
+            result.addAll(elList);
 
-                    validateEnumFieldMapping(type, el);
+            for (int i = 0; i < elList.size(); i++) {
+                if (elList.get(i).getAnnotation(Order.class).value() != i) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Annotation @Order must be a sequence from 0 to " + (elList.size() - 1),
+                        elList.get(i));
                 }
-            }
-
-            Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
-
-            type = (TypeElement)superType;
-        }
-
-        result.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
-
-        for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).getAnnotation(Order.class).value() != i) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Annotation @Order must be a sequence from 0 to " + (result.size() - 1),
-                    result.get(i));
             }
         }
 
         return result;
+    }
+
+    /** */
+    private List<List<VariableElement>> hierarchicalOrderedFields(TypeElement type) {
+        Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
+
+        List<List<VariableElement>> hierList = superType == null ? new ArrayList<>() : hierarchicalOrderedFields((TypeElement)superType);
+
+        List<VariableElement> elList = new ArrayList<>();
+
+        for (Element el : type.getEnclosedElements()) {
+            if (el.getAnnotation(Order.class) != null) {
+                elList.add((VariableElement)el);
+
+                if (el.getModifiers().contains(Modifier.STATIC)) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Annotation @Order must only be used for non-static fields.",
+                        el);
+                }
+
+                validateEnumFieldMapping(type, el);
+            }
+        }
+
+        hierList.add(elList);
+
+        return hierList;
     }
 
     /**

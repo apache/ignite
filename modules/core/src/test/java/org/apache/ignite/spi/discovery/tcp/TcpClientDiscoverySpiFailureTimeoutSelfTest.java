@@ -452,7 +452,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
-        ) throws IOException {
+        ) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {
                     U.dumpStack(log, "Before sleep [msg=" + msg +
@@ -472,9 +472,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /**  */
-        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(
+            TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {
                     U.dumpStack(log, "Before sleep [msg=" + msg + ']');
@@ -498,7 +500,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             Socket sock,
             int res,
             long timeout
-        ) throws IOException {
+        ) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {
                     U.dumpStack(log, "Before sleep [msg=" + msg + ']');

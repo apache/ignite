@@ -42,17 +42,17 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
     @Order(1)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** */
     @GridToStringExclude
     @Order(2)
-    private byte[] jobBytes;
+    byte[] jobBytes;
 
     /** */
     @GridToStringExclude
@@ -60,33 +60,33 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @Order(3)
-    private long startTaskTime;
+    long startTaskTime;
 
     /** */
     @Order(4)
-    private long timeout;
+    long timeout;
 
     /** */
     @Order(5)
-    private String taskName;
+    String taskName;
 
     /** */
-    @Order(value = 6, method = "userVersion")
-    private String userVer;
+    @Order(6)
+    String userVer;
 
     /** */
-    @Order(value = 7, method = "taskClassName")
-    private String taskClsName;
+    @Order(7)
+    String taskClsName;
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @Order(value = 8, method = "loaderParticipants")
-    private Map<UUID, IgniteUuid> ldrParticipants;
+    @Order(8)
+    Map<UUID, IgniteUuid> ldrParticipants;
 
     /** */
     @GridToStringExclude
-    @Order(value = 9, method = "sessionAttributesBytes")
-    private byte[] sesAttrsBytes;
+    @Order(9)
+    byte[] sesAttrsBytes;
 
     /** */
     @GridToStringExclude
@@ -94,77 +94,77 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @GridToStringExclude
-    @Order(value = 10, method = "jobAttributesBytes")
-    private byte[] jobAttrsBytes;
+    @Order(10)
+    byte[] jobAttrsBytes;
 
     /** */
     @GridToStringExclude
     private Map<? extends Serializable, ? extends Serializable> jobAttrs;
 
     /** Checkpoint SPI name. */
-    @Order(value = 11, method = "checkpointSpi")
-    private String cpSpi;
+    @Order(11)
+    String cpSpi;
 
     /** */
     private Collection<ComputeJobSibling> siblings;
 
     /** */
     @Order(12)
-    private byte[] siblingsBytes;
+    byte[] siblingsBytes;
 
     /** Transient since needs to hold local creation time. */
     private final long createTime = U.currentTimeMillis();
 
     /** */
-    @Order(value = 13, method = "classLoaderId")
-    private IgniteUuid clsLdrId;
+    @Order(13)
+    IgniteUuid clsLdrId;
 
     /** */
-    @Order(value = 14, method = "deploymentMode")
-    private DeploymentMode depMode;
+    @Order(14)
+    DeploymentMode depMode;
 
     /** */
     @Order(15)
-    private boolean dynamicSiblings;
+    boolean dynamicSiblings;
 
     /** */
-    @Order(value = 16, method = "forceLocalDeployment")
-    private boolean forceLocDep;
+    @Order(16)
+    boolean forceLocDep;
 
     /** */
-    @Order(value = 17, method = "sessionFullSupport")
-    private boolean sesFullSup;
+    @Order(17)
+    boolean sesFullSup;
 
     /** */
     @Order(18)
-    private boolean internal;
+    boolean internal;
 
     /** */
-    @Order(value = 19, method = "topology")
-    private Collection<UUID> top;
+    @Order(19)
+    Collection<UUID> top;
 
     /** */
     private IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    @Order(value = 20, method = "topologyPredicateBytes")
-    private byte[] topPredBytes;
+    @Order(20)
+    byte[] topPredBytes;
 
     /** */
     @Order(21)
-    private int[] cacheIds;
+    int[] cacheIds;
 
     /** */
-    @Order(value = 22, method = "partition")
-    private int part;
+    @Order(22)
+    int part;
 
     /** */
-    @Order(value = 23, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(23)
+    AffinityTopologyVersion topVer;
 
     /** */
-    @Order(value = 24, method = "executorName")
-    private String execName;
+    @Order(24)
+    String execName;
 
     /**
      * Default constructor.
@@ -275,24 +275,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param sesId New task session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
-    /**
      * @return Job session ID.
      */
     public IgniteUuid jobId() {
         return jobId;
-    }
-
-    /**
-     * @param jobId New job session ID.
-     */
-    public void jobId(IgniteUuid jobId) {
-        this.jobId = jobId;
     }
 
     /**
@@ -303,13 +289,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param taskClsName New task class name.
-     */
-    public void taskClassName(String taskClsName) {
-        this.taskClsName = taskClsName;
-    }
-
-    /**
      * @return Task name.
      */
     public String taskName() {
@@ -317,38 +296,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param taskName New task name.
-     */
-    public void taskName(String taskName) {
-        this.taskName = taskName;
-    }
-
-    /**
      * @return Task version.
      */
     public String userVersion() {
         return userVer;
-    }
-
-    /**
-     * @param userVer New task version.
-     */
-    public void userVersion(String userVer) {
-        this.userVer = userVer;
-    }
-
-    /**
-     * @return Serialized job bytes.
-     */
-    public byte[] jobBytes() {
-        return jobBytes;
-    }
-
-    /**
-     * @param jobBytes New serialized job bytes.
-     */
-    public void jobBytes(byte[] jobBytes) {
-        this.jobBytes = jobBytes;
     }
 
     /**
@@ -366,24 +317,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param startTaskTime New task start time.
-     */
-    public void startTaskTime(long startTaskTime) {
-        this.startTaskTime = startTaskTime;
-    }
-
-    /**
      * @return Timeout.
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout New timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
     }
 
     /**
@@ -396,20 +333,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @return Serialized collection of split siblings.
-     */
-    public byte[] siblingsBytes() {
-        return siblingsBytes;
-    }
-
-    /**
-     * @param siblingsBytes New serialized collection of split siblings.
-     */
-    public void siblingsBytes(byte[] siblingsBytes) {
-        this.siblingsBytes = siblingsBytes;
-    }
-
-    /**
      * @return Job siblings.
      */
     public Collection<ComputeJobSibling> getSiblings() {
@@ -417,38 +340,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @return Serialized form of session attributes.
-     */
-    public byte[] sessionAttributesBytes() {
-        return sesAttrsBytes;
-    }
-
-    /**
-     * @param sesAttrsBytes New serialized form of session attributes.
-     */
-    public void sessionAttributesBytes(byte[] sesAttrsBytes) {
-        this.sesAttrsBytes = sesAttrsBytes;
-    }
-
-    /**
      * @return Session attributes.
      */
     public Map<Object, Object> getSessionAttributes() {
         return sesAttrs;
-    }
-
-    /**
-     * @return Serialized form of job attributes.
-     */
-    public byte[] jobAttributesBytes() {
-        return jobAttrsBytes;
-    }
-
-    /**
-     * @param jobAttrsBytes New serialized form of job attributes.
-     */
-    public void jobAttributesBytes(byte[] jobAttrsBytes) {
-        this.jobAttrsBytes = jobAttrsBytes;
     }
 
     /**
@@ -466,24 +361,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param cpSpi New checkpoint SPI name.
-     */
-    public void checkpointSpi(String cpSpi) {
-        this.cpSpi = cpSpi;
-    }
-
-    /**
      * @return Task local class loader id.
      */
     public IgniteUuid classLoaderId() {
         return clsLdrId;
-    }
-
-    /**
-     * @param clsLdrId New task local class loader id.
-     */
-    public void classLoaderId(IgniteUuid clsLdrId) {
-        this.clsLdrId = clsLdrId;
     }
 
     /**
@@ -494,40 +375,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param depMode New deployment mode value.
-     */
-    public void deploymentMode(DeploymentMode depMode) {
-        this.depMode = depMode;
-    }
-
-    /**
-     * Returns true if siblings list is dynamic, i.e. task is continuous.
-     *
-     * @return True if siblings list is dynamic.
-     */
-    public boolean dynamicSiblings() {
-        return dynamicSiblings;
-    }
-
-    /**
-     * @param dynamicSiblings New dynamic siblings flag.
-     */
-    public void dynamicSiblings(boolean dynamicSiblings) {
-        this.dynamicSiblings = dynamicSiblings;
-    }
-
-    /**
      * @return Node class loader participant map.
      */
     public Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParticipants;
-    }
-
-    /**
-     * @param ldrParticipants New node class loader participant map.
-     */
-    public void loaderParticipants(Map<UUID, IgniteUuid> ldrParticipants) {
-        this.ldrParticipants = ldrParticipants;
     }
 
     /**
@@ -538,24 +389,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param forceLocDep New local deployment forcing flag.
-     */
-    public void forceLocalDeployment(boolean forceLocDep) {
-        this.forceLocDep = forceLocDep;
-    }
-
-    /**
      * @return Topology.
      */
     @Nullable public Collection<UUID> topology() {
         return top;
-    }
-
-    /**
-     * @param top New topology.
-     */
-    public void topology(@Nullable Collection<UUID> top) {
-        this.top = top;
     }
 
     /**
@@ -566,31 +403,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @return Marshalled topology predicate.
-     */
-    public byte[] topologyPredicateBytes() {
-        return topPredBytes;
-    }
-
-    /**
-     * @param topPredBytes New marshalled topology predicate.
-     */
-    public void topologyPredicateBytes(byte[] topPredBytes) {
-        this.topPredBytes = topPredBytes;
-    }
-
-    /**
      * @return {@code True} if session attributes are enabled.
      */
     public boolean sessionFullSupport() {
         return sesFullSup;
-    }
-
-    /**
-     * @param sesFullSup New flag, indicating that session attributes are enabled.
-     */
-    public void sessionFullSupport(boolean sesFullSup) {
-        this.sesFullSup = sesFullSup;
     }
 
     /**
@@ -601,24 +417,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @param internal New internal job flag.
-     */
-    public void internal(boolean internal) {
-        this.internal = internal;
-    }
-
-    /**
      * @return Caches' identifiers to reserve specified partition for job execution.
      */
     public int[] cacheIds() {
         return cacheIds;
-    }
-
-    /**
-     * @param cacheIds New cache identifiers.
-     */
-    public void cacheIds(int[] cacheIds) {
-        this.cacheIds = cacheIds;
     }
 
     /**
@@ -628,23 +430,9 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         return part;
     }
 
-    /**
-     * @param part New partition.
-     */
-    public void partition(int part) {
-        this.part = part;
-    }
-
     /** {@inheritDoc} */
     @Override public String executorName() {
         return execName;
-    }
-
-    /**
-     * @param execName New executor name.
-     */
-    public void executorName(String execName) {
-        this.execName = execName;
     }
 
     /**
@@ -652,13 +440,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

@@ -142,11 +142,6 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(
         GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer,

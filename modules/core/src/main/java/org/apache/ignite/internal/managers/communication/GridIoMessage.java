@@ -38,8 +38,8 @@ public class GridIoMessage implements Message, SpanTransport {
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
     /** Policy. */
-    @Order(value = 0, method = "policy")
-    private byte plc;
+    @Order(0)
+    byte plc;
 
     /** Message topic. */
     @GridToStringInclude
@@ -47,31 +47,31 @@ public class GridIoMessage implements Message, SpanTransport {
 
     /** Topic bytes. */
     @Order(1)
-    private byte[] topicBytes;
+    byte[] topicBytes;
 
     /** Topic ordinal. */
-    @Order(value = 2, method = "topicOrdinal")
-    private int topicOrd = -1;
+    @Order(2)
+    int topicOrd = -1;
 
     /** Message ordered flag. */
-    @Order(value = 3, method = "isOrdered")
-    private boolean ordered;
+    @Order(3)
+    boolean ordered;
 
     /** Message timeout. */
     @Order(4)
-    private long timeout;
+    long timeout;
 
     /** Whether message can be skipped on timeout. */
     @Order(5)
-    private boolean skipOnTimeout;
+    boolean skipOnTimeout;
 
     /** Message. */
-    @Order(value = 6, method = "message")
-    private Message msg;
+    @Order(6)
+    Message msg;
 
     /** Serialized span */
     @Order(7)
-    private byte[] span;
+    byte[] span;
 
     /**
      * Default constructor.
@@ -119,13 +119,6 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param plc Policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Topic.
      */
     Object topic() {
@@ -140,31 +133,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @return Topic bytes.
-     */
-    public byte[] topicBytes() {
-        return topicBytes;
-    }
-
-    /**
-     * @param topicBytes Topic bytes.
-     */
-    public void topicBytes(byte[] topicBytes) {
-        this.topicBytes = topicBytes;
-    }
-
-    /**
      * @return Topic ordinal.
      */
     public int topicOrdinal() {
         return topicOrd;
-    }
-
-    /**
-     * @param topicOrd Topic ordinal.
-     */
-    public void topicOrdinal(int topicOrd) {
-        this.topicOrd = topicOrd;
     }
 
     /**
@@ -175,24 +147,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param msg Message.
-     */
-    public void message(Message msg) {
-        this.msg = msg;
-    }
-
-    /**
      * @return Message timeout.
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout Message timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
     }
 
     /**
@@ -203,24 +161,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param skipOnTimeout Whether message can be skipped on timeout.
-     */
-    public void skipOnTimeout(boolean skipOnTimeout) {
-        this.skipOnTimeout = skipOnTimeout;
-    }
-
-    /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
     public boolean isOrdered() {
         return ordered;
-    }
-
-    /**
-     * @param ordered {@code True} if message is ordered, {@code false} otherwise.
-     */
-    public void isOrdered(boolean ordered) {
-        this.ordered = ordered;
     }
 
     /** {@inheritDoc} */

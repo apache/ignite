@@ -36,8 +36,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FragmentMapping implements CalciteMessage {
     /** */
-    @Order(value = 0, method = "colocationGroups")
-    private List<ColocationGroup> colocationGrps;
+    @Order(0)
+    List<ColocationGroup> colocationGrps;
 
     /** */
     public FragmentMapping() {
@@ -121,11 +121,6 @@ public class FragmentMapping implements CalciteMessage {
     /** */
     public List<ColocationGroup> colocationGroups() {
         return colocationGrps == null ? Collections.emptyList() : Collections.unmodifiableList(colocationGrps);
-    }
-
-    /** */
-    public void colocationGroups(List<ColocationGroup> colocationGrps) {
-        this.colocationGrps = colocationGrps;
     }
 
     /** */

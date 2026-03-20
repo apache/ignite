@@ -103,6 +103,8 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         ignite = startGrids(nodesCnt);
 
         cache = ignite.cache(CACHE);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

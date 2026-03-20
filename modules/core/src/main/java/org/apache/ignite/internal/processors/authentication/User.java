@@ -19,15 +19,17 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 import org.mindrot.BCrypt;
 
 /**
  */
-public class User implements Serializable {
+public class User implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,11 +45,13 @@ public class User implements Serializable {
     private static int bCryptGensaltLog2Rounds = 10;
 
     /** User name. */
-    private String name;
+    @Order(0)
+    String name;
 
     /** Hashed password. */
+    @Order(1)
     @GridToStringExclude
-    private String hashedPasswd;
+    String hashedPasswd;
 
     /**
      * Constructor.
@@ -103,15 +107,7 @@ public class User implements Serializable {
      * @param passwd Plain text password.
      * @return Hashed password.
      */
-    @Nullable public static String password(String passwd) {
-        return password_bcrypt(passwd);
-    }
-
-    /**
-     * @param passwd Plain text password.
-     * @return Hashed password.
-     */
-    @Nullable private static String password_bcrypt(String passwd) {
+    @Nullable private static String password(String passwd) {
         return BCrypt.hashpw(passwd, BCrypt.gensalt(bCryptGensaltLog2Rounds));
     }
 
@@ -141,12 +137,16 @@ public class User implements Serializable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = Objects.hash(name, hashedPasswd);
-        return result;
+        return Objects.hash(name, hashedPasswd);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(User.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -109;
     }
 }

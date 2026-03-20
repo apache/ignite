@@ -35,19 +35,19 @@ public class HandshakeMessage implements Message {
 
     /** */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
-    @Order(value = 1, method = "received")
-    private long rcvCnt;
+    @Order(1)
+    long rcvCnt;
 
     /** */
-    @Order(value = 2, method = "connectCount")
-    private long connectCnt;
+    @Order(2)
+    long connectCnt;
 
     /** */
-    @Order(value = 3, method = "connectionIndex")
-    private int connIdx;
+    @Order(3)
+    int connIdx;
 
     /**
      * Default constructor.
@@ -98,34 +98,6 @@ public class HandshakeMessage implements Message {
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @param connIdx Connection index.
-     */
-    public void connectionIndex(int connIdx) {
-        this.connIdx = connIdx;
-    }
-
-    /**
-     * @param connectCnt Connect count.
-     */
-    public void connectCount(long connectCnt) {
-        this.connectCnt = connectCnt;
-    }
-
-    /**
-     * @param rcvCnt Number of received messages.
-     */
-    public void received(long rcvCnt) {
-        this.rcvCnt = rcvCnt;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
     }
 
     /**

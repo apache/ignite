@@ -35,7 +35,7 @@ public class NodeIdMessage implements Message {
 
     /** */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public NodeIdMessage() {
@@ -56,13 +56,6 @@ public class NodeIdMessage implements Message {
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @param nodeId Node ID bytes.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */

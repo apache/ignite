@@ -80,6 +80,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -4046,19 +4047,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    public static class OfflineTestCommand implements OfflineCommand<OfflineTestCommandArg, Void> {
+    public static class OfflineTestCommand implements OfflineCommand<TestOfflineTestCommandArg, Void> {
         /** {@inheritDoc} */
         @Override public String description() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Class<OfflineTestCommandArg> argClass() {
-            return OfflineTestCommandArg.class;
+        @Override public Class<TestOfflineTestCommandArg> argClass() {
+            return TestOfflineTestCommandArg.class;
         }
 
         /** {@inheritDoc} */
-        @Override public Void execute(OfflineTestCommandArg arg, Consumer<String> printer) {
+        @Override public Void execute(TestOfflineTestCommandArg arg, Consumer<String> printer) {
             printer.accept(arg.input());
 
             return null;
@@ -4066,9 +4067,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    public static class OfflineTestCommandArg extends IgniteDataTransferObject {
+    public static class TestOfflineTestCommandArg extends IgniteDataTransferObject {
         /** */
         @Argument
+        @Order(0)
         String input;
 
         /** */

@@ -43,7 +43,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -66,8 +65,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -90,7 +87,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
     private FailureHandler failureHnd;
 
     /** */
-    private DiscoverySpi discoverySpi;
+    private TcpDiscoverySpi discoverySpi;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -108,7 +105,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
             dsCfg.setFileIOFactory(fileIoFactory);
 
         if (discoverySpi != null)
-            cfg.setDiscoverySpi(discoverySpi);
+            cfg.setDiscoverySpi(discoverySpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
 
         cfg
             .setDataStorageConfiguration(dsCfg)
@@ -357,16 +354,18 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         /** */
         private DiscoveryCustomMessage extractCustomMessage(TcpDiscoveryCustomEventMessage msg) {
-            DiscoverySpiCustomMessage msgObj = null;
+            DiscoveryCustomMessage msgObj = null;
 
             try {
-                msgObj = msg.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
+                msg.finishUnmarhal(marshaller(), U.gridClassLoader());
+
+                msgObj = msg.message();
             }
             catch (Throwable e) {
                 U.error(log, "Failed to unmarshal discovery custom message.", e);
             }
 
-            return ((CustomMessageWrapper)msgObj).delegate();
+            return U.unwrapCustomMessage(msgObj);
         }
 
         /** Unblock discovery custom messages. */

@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -247,7 +246,18 @@ public interface MessageWriter {
      * @param val Message.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(Message val);
+    public default boolean writeMessage(Message val) {
+        return writeMessage(val, false);
+    }
+
+    /**
+     * Writes nested message.
+     *
+     * @param val Message.
+     * @param compress Whether message should be compressed.
+     * @return Whether value was fully written.
+     */
+    public boolean writeMessage(Message val, boolean compress);
 
     /**
      * Writes {@link CacheObject}.
@@ -277,44 +287,46 @@ public interface MessageWriter {
      * Writes array of objects.
      *
      * @param arr Array of objects.
-     * @param itemType Array component type.
+     * @param type Array component type.
      * @param <T> Type of the objects that array contains.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType);
+    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type);
 
     /**
      * Writes collection with its elements order.
      *
      * @param col Collection.
-     * @param itemType Collection item type.
+     * @param type Collection item type.
      * @param <T> Type of the objects that collection contains.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType);
-
-    /**
-     * Writes set with its elements order.
-     *
-     * @param set Set.
-     * @param itemType Set item type.
-     * @param <T> Type of the objects that set contains.
-     * @return Whether value was fully written.
-     */
-    public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType);
+    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type);
 
     /**
      * Writes map.
      *
      * @param map Map.
-     * @param keyType Map key type.
-     * @param valType Map value type.
+     * @param type Map type.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType);
+    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type) {
+        return writeMap(map, type, false);
+    }
+
+    /**
+     * Writes map.
+     *
+     * @param map Map.
+     * @param type Map type.
+     * @param compress Whether map should be compressed.
+     * @param <K> Initial key types of the map to write.
+     * @param <V> Initial value types of the map to write.
+     * @return Whether value was fully written.
+     */
+    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress);
 
     /**
      * @return Whether header of current message is already written.
@@ -337,6 +349,11 @@ public interface MessageWriter {
      * Increments state.
      */
     public void incrementState();
+
+    /**
+     * Decrements state.
+     */
+    public void decrementState();
 
     /**
      * Callback called before inner message is written.

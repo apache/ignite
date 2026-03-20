@@ -54,12 +54,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallable;
@@ -476,7 +476,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         SecurityContext initiatorSecCtx = securityContext("no-permissions-login-0");
 
         SupplierX<Future<?>> starter = () -> {
-            try (OperationSecurityContext ignored1 = grid(0).context().security().withContext(initiatorSecCtx)) {
+            try (Scope ignored1 = grid(0).context().security().withContext(initiatorSecCtx)) {
                 return new TestFutureAdapter<>(
                     grid(0).context().closure().runAsync(
                         BROADCAST,
@@ -525,7 +525,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         assertTrue(taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
         try (
-            OperationSecurityContext ignored = initiator == null
+            Scope ignored = initiator == null
                 ? null
                 : grid(0).context().security().withContext(initiator)
         ) {

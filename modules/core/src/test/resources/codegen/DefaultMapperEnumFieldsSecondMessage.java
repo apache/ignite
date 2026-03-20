@@ -22,15 +22,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 public class DefaultMapperEnumFieldsSecondMessage implements Message {
     @Order(0)
-    private TransactionIsolation txMode;
-
-    public TransactionIsolation txMode() {
-        return txMode;
-    }
-
-    public void txMode(TransactionIsolation txMode) {
-        this.txMode = txMode;
-    }
+    TransactionIsolation txMode;
 
     public short directType() {
         return 1;

@@ -31,10 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -184,14 +182,11 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
         AtomicBoolean hookMsgs = new AtomicBoolean(true);
 
         discoveryHook = new GridTestUtils.DiscoveryHook() {
-            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
+            @Override public void beforeDiscovery(DiscoveryCustomMessage msg) {
                 if (!hookMsgs.get())
                     return;
 
-                DiscoveryCustomMessage customMsg = msg == null ? null
-                    : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
-
-                if (customMsg instanceof MetadataRemoveProposedMessage) {
+                if (msg instanceof MetadataRemoveProposedMessage) {
                     try {
                         barrier0.await();
 

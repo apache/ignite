@@ -28,32 +28,32 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridQueryNextPageResponse implements Message {
     /** */
-    @Order(value = 0, method = "queryRequestId")
-    private long qryReqId;
+    @Order(0)
+    long qryReqId;
 
     /** */
     @Order(1)
-    private int segmentId;
+    int segmentId;
 
     /** */
-    @Order(value = 2, method = "query")
-    private int qry;
+    @Order(2)
+    int qry;
 
     /** */
     @Order(3)
-    private int page;
+    int page;
 
     /** */
     @Order(4)
-    private int allRows;
+    int allRows;
 
     /** */
-    @Order(value = 5, method = "columns")
-    private int cols;
+    @Order(5)
+    int cols;
 
     /** */
-    @Order(value = 6, method = "values")
-    private Collection<Message> vals;
+    @Order(6)
+    Collection<Message> vals;
 
     /**
      * Note, columns count in plain row can differ from {@link #cols}.
@@ -64,15 +64,15 @@ public class GridQueryNextPageResponse implements Message {
 
     /** */
     @Order(7)
-    private AffinityTopologyVersion retry;
+    AffinityTopologyVersion retry;
 
     /** Retry cause description. */
     @Order(8)
-    private String retryCause;
+    String retryCause;
 
     /** Last page flag. */
     @Order(9)
-    private boolean last;
+    boolean last;
 
     /**
      * Empty constructor.
@@ -116,24 +116,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param qryReqId Query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
-    }
-
-    /**
      * @return Index segment ID.
      */
     public int segmentId() {
         return segmentId;
-    }
-
-    /**
-     * @param segmentId Index segment ID.
-     */
-    public void segmentId(int segmentId) {
-        this.segmentId = segmentId;
     }
 
     /**
@@ -144,24 +130,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param qry Query.
-     */
-    public void query(int qry) {
-        this.qry = qry;
-    }
-
-    /**
      * @return Page.
      */
     public int page() {
         return page;
-    }
-
-    /**
-     * @param page Page.
-     */
-    public void page(int page) {
-        this.page = page;
     }
 
     /**
@@ -172,13 +144,6 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param allRows All rows.
-     */
-    public void allRows(int allRows) {
-        this.allRows = allRows;
-    }
-
-    /**
      * @return Columns in row.
      */
     public int columns() {
@@ -186,24 +151,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @param cols Columns in row.
-     */
-    public void columns(int cols) {
-        this.cols = cols;
-    }
-
-    /**
      * @return Values.
      */
     public Collection<Message> values() {
         return vals;
-    }
-
-    /**
-     * @param vals Values.
-     */
-    public void values(Collection<Message> vals) {
-        this.vals = vals;
     }
 
     /**
@@ -251,13 +202,6 @@ public class GridQueryNextPageResponse implements Message {
      */
     public boolean last() {
         return last;
-    }
-
-    /**
-     * @param last Last page flag.
-     */
-    public void last(boolean last) {
-        this.last = last;
     }
 
     /** {@inheritDoc} */

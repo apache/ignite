@@ -20,9 +20,7 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -199,7 +197,18 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage();
+    public default <T extends Message> T readMessage() {
+        return readMessage(false);
+    }
+
+    /**
+     * Reads nested message.
+     *
+     * @param compress Whether message should be decompressed.
+     * @param <T> Type of the message.
+     * @return Message.
+     */
+    public <T extends Message> T readMessage(boolean compress);
 
     /**
      * Reads {@link CacheObject}.
@@ -225,43 +234,41 @@ public interface MessageReader {
     /**
      * Reads array of objects.
      *
-     * @param itemType Array component type.
-     * @param itemCls Array component class.
+     * @param type Array component type.
      * @param <T> Type of the read object.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls);
+    public <T> T[] readObjectArray(MessageArrayType type);
 
     /**
      * Reads any collection.
      *
-     * @param itemType Collection item type.
+     * @param type Collection item type.
      * @param <C> Type of the read collection.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType);
-
-    /**
-     * Reads any collection and provides it as a set.
-     *
-     * @param itemType Set item type.
-     * @param <S> Type of the read set.
-     * @return Set.
-     */
-    public <S extends Set<?>> S readSet(MessageCollectionItemType itemType);
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type);
 
     /**
      * Reads map.
      *
-     * @param keyType Map key type.
-     * @param valType Map value type.
-     * @param linked Whether {@link LinkedHashMap} should be created.
+     * @param type Map type.
      * @param <M> Type of the read map.
      * @return Map.
      */
-    // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean linked);
+    public default <M extends Map<?, ?>> M readMap(MessageMapType type) {
+        return readMap(type, false);
+    }
+
+    /**
+     * Reads map.
+     *
+     * @param type Map type.
+     * @param compress Whether map should be compressed.
+     * @param <M> Type of the read map.
+     * @return Map.
+     */
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}
@@ -283,6 +290,11 @@ public interface MessageReader {
      * Increments read state.
      */
     public void incrementState();
+
+    /**
+     * Decrements read state.
+     */
+    public void decrementState();
 
     /**
      * Callback called before inner message is read.

@@ -23,28 +23,28 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class FragmentDescription implements MarshalableMessage {
+public class FragmentDescription implements CalciteMarshalableMessage {
     /** */
     @Order(0)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(1)
-    private FragmentMapping mapping;
+    FragmentMapping mapping;
 
     /** */
     @Order(2)
-    private Map<Long, UUIDCollectionMessage> remoteSources0;
+    Map<Long, UUIDCollectionMessage> remoteSources0;
 
     /** */
     @Order(3)
-    private ColocationGroup target;
+    ColocationGroup target;
 
     /** */
     private Map<Long, List<UUID>> remoteSources;

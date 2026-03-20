@@ -34,16 +34,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDiagnosticRequest implements Message {
     /** */
-    @Order(value = 0, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** Originator node id. */
     @Order(1)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private @Nullable Set<DiagnosticBaseInfo> infos;
+    @Nullable Set<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
@@ -124,11 +124,6 @@ public class IgniteDiagnosticRequest implements Message {
         return nodeId;
     }
 
-    /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
     /**
      * @return Future ID.
      */
@@ -136,19 +131,9 @@ public class IgniteDiagnosticRequest implements Message {
         return futId;
     }
 
-    /** */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
     /** @return Compound diagnostic infos. */
     public @Nullable Set<DiagnosticBaseInfo> infos() {
         return infos;
-    }
-
-    /** Sets compound diagnostic infos. */
-    public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
-        this.infos = infos;
     }
 
     /** {@inheritDoc} */

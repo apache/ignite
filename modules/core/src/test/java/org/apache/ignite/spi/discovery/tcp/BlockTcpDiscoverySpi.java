@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 
@@ -55,22 +53,17 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
 
         TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-        DiscoveryCustomMessage delegate;
-
         try {
-            DiscoverySpiCustomMessage custMsg = cm.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
+            cm.finishUnmarhal(marshaller(), U.gridClassLoader());
 
-            assertNotNull(custMsg);
-
-            delegate = ((CustomMessageWrapper)custMsg).delegate();
-
+            assertNotNull(cm.message());
         }
         catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
 
         if (clo != null)
-            clo.apply(addr, delegate);
+            clo.apply(addr, U.unwrapCustomMessage(cm.message()));
     }
 
     /** {@inheritDoc} */
@@ -79,7 +72,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         TcpDiscoveryAbstractMessage msg,
         byte[] data,
         long timeout
-    ) throws IOException {
+    ) throws IOException, IgniteCheckedException {
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
 

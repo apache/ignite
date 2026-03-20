@@ -59,108 +59,108 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11;
 
     /** */
-    @Order(4)
-    private long id;
+    @Order(0)
+    long id;
 
     /** */
-    @Order(5)
-    private String cacheName;
+    @Order(1)
+    String cacheName;
 
     /** */
-    @Order(6)
-    private GridCacheQueryType type;
+    @Order(2)
+    GridCacheQueryType type;
 
     /** */
-    @Order(7)
+    @Order(3)
     @GridToStringInclude(sensitive = true)
-    private String clause;
+    String clause;
 
     /** */
     private IndexQueryDesc idxQryDesc;
 
     /** */
-    @Order(value = 8, method = "indexQueryDescriptionBytes")
-    private byte[] idxQryDescBytes;
+    @Order(4)
+    byte[] idxQryDescBytes;
 
     /** */
-    @Order(9)
-    private int limit;
+    @Order(5)
+    int limit;
 
     /** */
-    @Order(value = 10, method = "className")
-    private String clsName;
+    @Order(6)
+    String clsName;
 
     /** */
     private IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
-    @Order(value = 11, method = "keyValueFilterBytes")
-    private byte[] keyValFilterBytes;
+    @Order(7)
+    byte[] keyValFilterBytes;
 
     /** */
     private IgniteReducer<Object, Object> rdc;
 
     /** */
-    @Order(value = 12, method = "reducerBytes")
-    private byte[] rdcBytes;
+    @Order(8)
+    byte[] rdcBytes;
 
     /** */
     private IgniteClosure<?, ?> trans;
 
     /** */
-    @Order(value = 13, method = "transformerBytes")
-    private byte[] transBytes;
+    @Order(9)
+    byte[] transBytes;
 
     /** */
     private Object[] args;
 
     /** */
-    @Order(value = 14, method = "argumentsBytes")
-    private byte[] argsBytes;
+    @Order(10)
+    byte[] argsBytes;
+
+    /** */
+    @Order(11)
+    int pageSize;
+
+    /** */
+    @Order(12)
+    boolean incBackups;
+
+    /** */
+    @Order(13)
+    boolean cancel;
+
+    /** */
+    @Order(14)
+    boolean incMeta;
 
     /** */
     @Order(15)
-    private int pageSize;
+    boolean all;
 
     /** */
-    @Order(value = 16, method = "includeBackups")
-    private boolean incBackups;
+    @Order(16)
+    boolean keepBinary;
 
     /** */
     @Order(17)
-    private boolean cancel;
+    int taskHash;
+
+    /** Partition. */
+    @Order(18)
+    int part = -1;
 
     /** */
-    @Order(value = 18, method = "includeMetaData")
-    private boolean incMeta;
+    @Order(value = 19, method = "topologyVersion")
+    AffinityTopologyVersion topVer;
 
-    /** */
-    @Order(value = 19, method = "allPages")
-    private boolean all;
-
-    /** */
+    /** Set of keys that must be skiped during iteration. */
     @Order(20)
-    private boolean keepBinary;
+    Collection<KeyCacheObject> skipKeys;
 
     /** */
     @Order(21)
-    private int taskHash;
-
-    /** Partition. */
-    @Order(value = 22, method = "partition")
-    private int part = -1;
-
-    /** */
-    @Order(value = 23, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
-
-    /** Set of keys that must be skiped during iteration. */
-    @Order(24)
-    private Collection<KeyCacheObject> skipKeys;
-
-    /** */
-    @Order(25)
-    private byte flags;
+    byte flags;
 
     /**
      * Empty constructor.
@@ -206,7 +206,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            deployFilterOrTransformer,
             qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
@@ -230,7 +230,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
             qry.isDataPageScanEnabled());
     }
 
@@ -243,8 +243,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId) {
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
-            cctx.affinity().affinityTopologyVersion(),
-            cctx.deploymentEnabled());
+            cctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -253,18 +252,15 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param cacheId Cache ID.
      * @param id Request to cancel.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info flag.
      */
     private GridCacheQueryRequest(
         int cacheId,
         long id,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         this.cacheId = cacheId;
         this.id = id;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
 
         cancel = true;
     }
@@ -525,24 +521,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param id Request ID.
-     */
-    public void id(long id) {
-        this.id = id;
-    }
-
-    /**
      * @return Cache name.
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
     }
 
     /**
@@ -553,13 +535,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param type Query type.
-     */
-    public void type(GridCacheQueryType type) {
-        this.type = type;
-    }
-
-    /**
      * @return Query limit.
      */
     public int limit() {
@@ -567,24 +542,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param limit Limit.
-     */
-    public void limit(int limit) {
-        this.limit = limit;
-    }
-
-    /**
      * @return Query clause.
      */
     public String clause() {
         return clause;
-    }
-
-    /**
-     * @param clause Query clause.
-     */
-    public void clause(String clause) {
-        this.clause = clause;
     }
 
     /**
@@ -602,13 +563,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param clsName Class name.
-     */
-    public void className(String clsName) {
-        this.clsName = clsName;
-    }
-
-    /**
      * @return Flag indicating whether to include backups.
      */
     public boolean includeBackups() {
@@ -616,24 +570,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param incBackups Flag indicating whether to include backups.
-     */
-    public void includeBackups(boolean incBackups) {
-        this.incBackups = incBackups;
-    }
-
-    /**
      * @return Flag indicating that this is cancel request.
      */
     public boolean cancel() {
         return cancel;
-    }
-
-    /**
-     * @param cancel Flag indicating that this is cancel request.
-     */
-    public void cancel(boolean cancel) {
-        this.cancel = cancel;
     }
 
     /**
@@ -665,13 +605,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param pageSize Page size.
-     */
-    public void pageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    /**
      * @return Arguments.
      */
     public Object[] arguments() {
@@ -686,24 +619,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param incMeta Include meta data or not.
-     */
-    public void includeMetaData(boolean incMeta) {
-        this.incMeta = incMeta;
-    }
-
-    /**
      * @return Whether to load all pages.
      */
     public boolean allPages() {
         return all;
-    }
-
-    /**
-     * @param all Whether to load all pages.
-     */
-    public void allPages(boolean all) {
-        this.all = all;
     }
 
     /**
@@ -714,24 +633,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param keepBinary Whether to keep binary.
-     */
-    public void keepBinary(boolean keepBinary) {
-        this.keepBinary = keepBinary;
-    }
-
-    /**
      * @return Task hash.
      */
     public int taskHash() {
         return taskHash;
-    }
-
-    /**
-     * @param taskHash Task hash.
-     */
-    public void taskHash(int taskHash) {
-        this.taskHash = taskHash;
     }
 
     /**
@@ -755,108 +660,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @param skipKeys Set of keys that must be skiped during iteration.
-     */
-    public void skipKeys(Collection<KeyCacheObject> skipKeys) {
-        this.skipKeys = skipKeys;
-    }
-
-    /**
      * @return Partition.
      */
     @Override public int partition() {
         return part;
-    }
-
-    /**
-     * @param part Partition.
-     */
-    public void partition(int part) {
-        this.part = part;
-    }
-
-    /**
-     * @return Index query description bytes.
-     */
-    public byte[] indexQueryDescriptionBytes() {
-        return idxQryDescBytes;
-    }
-
-    /**
-     * @param idxQryDescBytes Index query description bytes.
-     */
-    public void indexQueryDescriptionBytes(byte[] idxQryDescBytes) {
-        this.idxQryDescBytes = idxQryDescBytes;
-    }
-
-    /**
-     * @return Key-value filter bytes.
-     */
-    public byte[] keyValueFilterBytes() {
-        return keyValFilterBytes;
-    }
-
-    /**
-     * @param keyValFilterBytes Key-value filter bytes.
-     */
-    public void keyValueFilterBytes(byte[] keyValFilterBytes) {
-        this.keyValFilterBytes = keyValFilterBytes;
-    }
-
-    /**
-     * @return Reducer bytes.
-     */
-    public byte[] reducerBytes() {
-        return rdcBytes;
-    }
-
-    /**
-     * @param rdcBytes Reducer bytes.
-     */
-    public void reducerBytes(byte[] rdcBytes) {
-        this.rdcBytes = rdcBytes;
-    }
-
-    /**
-     * @return Transformer bytes.
-     */
-    public byte[] transformerBytes() {
-        return transBytes;
-    }
-
-    /**
-     * @param transBytes Transformer bytes.
-     */
-    public void transformerBytes(byte[] transBytes) {
-        this.transBytes = transBytes;
-    }
-
-    /**
-     * @return Arguments bytes.
-     */
-    public byte[] argumentsBytes() {
-        return argsBytes;
-    }
-
-    /**
-     * @param argsBytes Arguments bytes.
-     */
-    public void argumentsBytes(byte[] argsBytes) {
-        this.argsBytes = argsBytes;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /** {@inheritDoc} */
