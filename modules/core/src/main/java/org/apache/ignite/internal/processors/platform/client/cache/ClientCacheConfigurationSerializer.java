@@ -234,7 +234,7 @@ public class ClientCacheConfigurationSerializer {
 
         if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_AFFINITY_CFG)) {
             AffinityFunction aff = cfg.getAffinity();
-            writer.writeInt(aff == null ? -1 : aff.partitions());
+            writer.writeInt(aff instanceof RendezvousAffinityFunction ? aff.partitions() : -1);
             writer.writeBoolean(aff instanceof RendezvousAffinityFunction
                 && ((RendezvousAffinityFunction)aff).isExcludeNeighbors());
         }

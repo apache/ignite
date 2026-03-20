@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Affinity configuration for default (rendezvous) affinity function. */
@@ -52,6 +53,8 @@ public final class ClientAffinityConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public ClientAffinityConfiguration setPartitions(int partitions) {
+        A.ensure(partitions > 0, "Partitions count must be positive");
+
         this.partitions = partitions;
 
         return this;
