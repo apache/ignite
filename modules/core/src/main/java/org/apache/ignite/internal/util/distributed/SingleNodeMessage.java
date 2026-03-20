@@ -47,7 +47,7 @@ public class SingleNodeMessage<R extends Message> implements Message {
 
     /** Single node response. */
     @Order(value = 2)
-    private Message resp;
+    Message resp;
 
     /** Error. */
     @Order(3)
