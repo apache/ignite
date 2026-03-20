@@ -46,7 +46,7 @@ public class SingleNodeMessage<R extends Message> implements Message {
     int type;
 
     /** Single node response. */
-    @Order(value = 2, method = "response")
+    @Order(value = 2)
     private Message resp;
 
     /** Error. */
@@ -91,11 +91,6 @@ public class SingleNodeMessage<R extends Message> implements Message {
     /** @return Response. */
     public R response() {
         return (R)resp;
-    }
-
-    /** @param resp Response. */
-    public void response(R resp) {
-        this.resp = resp;
     }
 
     /** @return {@code True} if finished with error. */
