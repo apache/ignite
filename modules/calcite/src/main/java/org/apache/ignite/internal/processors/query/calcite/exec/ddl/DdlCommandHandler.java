@@ -32,8 +32,8 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.calcite.VirtualColumnDescriptor;
-import org.apache.ignite.calcite.VirtualColumnProvider;
+import org.apache.ignite.calcite.PseudoColumnDescriptor;
+import org.apache.ignite.calcite.PseudoColumnProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -133,7 +133,7 @@ public class DdlCommandHandler {
 
         isDdlOnSchemaSupported(cmd.schemaName());
 
-        checkVirtualColumns(cmd);
+        checkPseudoColumns(cmd);
 
         if (schemaSupp.get().getSubSchema(cmd.schemaName()).getTable(cmd.tableName()) != null) {
             if (cmd.ifNotExists())
@@ -407,33 +407,33 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private void checkVirtualColumns(CreateTableCommand cmd) {
-        VirtualColumnProvider virtColProv = cacheProc.context().kernalContext().plugins().createComponentOrDefault(
-            VirtualColumnProvider.class, VirtualColumnProvider.EMPTY
+    private void checkPseudoColumns(CreateTableCommand cmd) {
+        PseudoColumnProvider pseudoColProv = cacheProc.context().kernalContext().plugins().createComponentOrDefault(
+            PseudoColumnProvider.class, PseudoColumnProvider.EMPTY
         );
 
-        List<String> virtColNameList = virtColProv.provideDescriptors().stream()
-            .map(VirtualColumnDescriptor::name)
+        List<String> pseudoColNameList = pseudoColProv.provideDescriptors().stream()
+            .map(PseudoColumnDescriptor::name)
             .collect(toList());
 
-        Set<String> virtColNameSet = new HashSet<>();
-        Set<String> sysVirtColNameSet = Set.of(QueryUtils.KEY_FIELD_NAME, QueryUtils.VAL_FIELD_NAME);
+        Set<String> pseudoColNameSet = new HashSet<>();
+        Set<String> sysColNameSet = Set.of(QueryUtils.KEY_FIELD_NAME, QueryUtils.VAL_FIELD_NAME);
         Set<String> tblColNameSet = cmd.columns().stream().map(ColumnDefinition::name).collect(toSet());
 
-        for (String virtColName : virtColNameList) {
-            if (!virtColNameSet.add(virtColName)) {
+        for (String pseudoColName : pseudoColNameList) {
+            if (!pseudoColNameSet.add(pseudoColName)) {
                 throw new IgniteSQLException(
-                    String.format("Virtual column names must be unique: [name=%s]", virtColName)
+                    String.format("Pseudocolumn names must be unique: [name=%s]", pseudoColName)
                 );
             }
-            else if (sysVirtColNameSet.contains(virtColName)) {
+            else if (sysColNameSet.contains(pseudoColName)) {
                 throw new IgniteSQLException(
-                    String.format("Virtual column name must not match system one: [name=%s]", virtColName)
+                    String.format("Pseudocolumn name must not match system one: [name=%s]", pseudoColName)
                 );
             }
-            else if (tblColNameSet.contains(virtColName)) {
+            else if (tblColNameSet.contains(pseudoColName)) {
                 throw new IgniteSQLException(
-                    String.format("Virtual column name must not overlap with user ones: [name=%s]", virtColName)
+                    String.format("Pseudocolumn name must not overlap with user ones: [name=%s]", pseudoColName)
                 );
             }
         }

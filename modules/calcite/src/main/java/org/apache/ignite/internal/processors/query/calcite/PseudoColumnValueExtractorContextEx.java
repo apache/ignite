@@ -15,29 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.calcite;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.calcite.PseudoColumnValueExtractorContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.lang.IgniteExperimental;
 
-/** Context for extracting value of a virtual column. */
+/** Internal extension with additional methods and constants. */
 @IgniteExperimental
-public interface VirtualColumnValueExtractorContext {
-    /** Returns cache ID. */
-    int cacheId();
+public interface PseudoColumnValueExtractorContextEx extends PseudoColumnValueExtractorContext {
+    /** Returns execution context. */
+    ExecutionContext<?> executionCtx();
 
-    /** Returns cache name. */
-    String cacheName();
+    /** Returns cache context. */
+    GridCacheContext<?, ?> cacheCtx();
 
-    /** Returns partition ID. */
-    int partition();
-
-    /**
-     * Returns source for getting value of virtual column.
-     *
-     * @param keyOrValue {@code true} if a cache key (primary key) is needed, {@code false} if a cache value is needed.
-     * @param keepBinary {@code true} if returned as {@link BinaryObject}. If key or value is not composite, it may
-     *      return not as {@link BinaryObject}, but as a simple type.
-     */
-    Object source(boolean keyOrValue, boolean keepBinary);
+    /** Returns source cache data row. */
+    CacheDataRow source();
 }

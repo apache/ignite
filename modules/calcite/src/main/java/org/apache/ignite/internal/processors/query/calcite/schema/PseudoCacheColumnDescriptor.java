@@ -24,12 +24,12 @@ import java.util.Set;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.calcite.VirtualColumnDescriptor;
-import org.apache.ignite.calcite.VirtualColumnProvider;
+import org.apache.ignite.calcite.PseudoColumnDescriptor;
+import org.apache.ignite.calcite.PseudoColumnProvider;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.VirtualColumnValueExtractorContextEx;
+import org.apache.ignite.internal.processors.query.calcite.PseudoColumnValueExtractorContextEx;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -37,15 +37,15 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
-/** Virtual column descriptor for cache tables. */
-class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
+/** Pseudocolumn descriptor for cache tables. */
+class PseudoCacheColumnDescriptor implements CacheColumnDescriptor {
     /** */
-    private static final ThreadLocal<VirtualColumnValueExtractorContextExImp> VALUE_EXTRACTOR_CTX = ThreadLocal.withInitial(
-        VirtualColumnValueExtractorContextExImp::new
+    private static final ThreadLocal<PseudoColumnValueExtractorContextExImp> VALUE_EXTRACTOR_CTX = ThreadLocal.withInitial(
+        PseudoColumnValueExtractorContextExImp::new
     );
 
     /** */
-    private final VirtualColumnDescriptor desc;
+    private final PseudoColumnDescriptor desc;
 
     /** */
     private final int fieldIdx;
@@ -54,11 +54,11 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
     private volatile RelDataType logicalType;
 
     /** */
-    VirtualCacheColumnDescriptor(VirtualColumnDescriptor desc, int fieldIdx) {
+    PseudoCacheColumnDescriptor(PseudoColumnDescriptor desc, int fieldIdx) {
         if (QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(desc.name())
             || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(desc.name())) {
             throw new IgniteException(
-                String.format("Virtual column name should not overlap with the system ones: [name=%s]", desc.name())
+                String.format("Pseudocolumn name should not overlap with the system ones: [name=%s]", desc.name())
             );
         }
 
@@ -107,8 +107,8 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
             logicalType = TypeUtils.sqlType(
                 f,
                 desc.type(),
-                desc.precision() != VirtualColumnDescriptor.NOT_SPECIFIED ? desc.precision() : PRECISION_NOT_SPECIFIED,
-                desc.scale() != VirtualColumnDescriptor.NOT_SPECIFIED ? desc.scale() : SCALE_NOT_SPECIFIED,
+                desc.precision() != PseudoColumnDescriptor.NOT_SPECIFIED ? desc.precision() : PRECISION_NOT_SPECIFIED,
+                desc.scale() != PseudoColumnDescriptor.NOT_SPECIFIED ? desc.scale() : SCALE_NOT_SPECIFIED,
                 true
             );
         }
@@ -132,7 +132,7 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
     }
 
     /** */
-    private static class VirtualColumnValueExtractorContextExImp implements VirtualColumnValueExtractorContextEx {
+    private static class PseudoColumnValueExtractorContextExImp implements PseudoColumnValueExtractorContextEx {
         /** */
         private GridCacheContext<?, ?> cctx;
 
@@ -143,7 +143,7 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
         private ExecutionContext<?> ectx;
 
         /** */
-        private VirtualColumnValueExtractorContextExImp update(
+        private PseudoColumnValueExtractorContextExImp update(
             ExecutionContext<?> ectx,
             GridCacheContext<?, ?> cctx,
             CacheDataRow src
@@ -192,27 +192,27 @@ class VirtualCacheColumnDescriptor implements CacheColumnDescriptor {
     }
 
     /** */
-    static List<CacheColumnDescriptor> createCacheColDesc(int nxtColIdx, VirtualColumnProvider virtColProv) {
-        Set<String> virtColNames = new HashSet<>();
+    static List<CacheColumnDescriptor> createCacheColDesc(int nxtColIdx, PseudoColumnProvider pseudoColProv) {
+        Set<String> pseudoColNames = new HashSet<>();
 
         List<CacheColumnDescriptor> res = new ArrayList<>();
 
-        for (VirtualColumnDescriptor d : virtColProv.provideDescriptors()) {
-            if (!virtColNames.add(d.name()))
-                throw new IgniteException(String.format("Virtual column names must be unique: [name=%s]", d.name()));
+        for (PseudoColumnDescriptor d : pseudoColProv.provideDescriptors()) {
+            if (!pseudoColNames.add(d.name()))
+                throw new IgniteException(String.format("Pseudocolumn names must be unique: [name=%s]", d.name()));
 
-            res.add(new VirtualCacheColumnDescriptor(d, nxtColIdx++));
+            res.add(new PseudoCacheColumnDescriptor(d, nxtColIdx++));
         }
 
         return res;
     }
 
     /** */
-    static void checkForNameConflictsWithUserColumns(List<CacheColumnDescriptor> virtColDescs, Set<String> usrColNames) {
-        for (CacheColumnDescriptor desc : virtColDescs) {
+    static void checkForNameConflictsWithUserColumns(List<CacheColumnDescriptor> pseudoColDescs, Set<String> usrColNames) {
+        for (CacheColumnDescriptor desc : pseudoColDescs) {
             if (usrColNames.contains(desc.name())) {
                 throw new IgniteException(
-                    String.format("Virtual column name should not overlap with the user ones: [name=%s]", desc.name())
+                    String.format("Pseudocolumn name should not overlap with the user ones: [name=%s]", desc.name())
                 );
             }
         }

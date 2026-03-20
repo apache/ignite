@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.MultiDcQu
 import org.apache.ignite.internal.processors.query.calcite.integration.OperatorsExtensionIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionPruneTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionsReservationIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.PseudoColumnProviderTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryBlockingTaskExecutorIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
@@ -90,7 +91,6 @@ import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRule
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.VirtualColumnProviderTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
 import org.junit.runner.RunWith;
@@ -176,7 +176,7 @@ import org.junit.runners.Suite;
     CacheStoreTest.class,
     MultiDcQueryMappingTest.class,
     TxWithExceptionalInterceptorTest.class,
-    VirtualColumnProviderTest.class
+    PseudoColumnProviderTest.class
 })
 public class IntegrationTestSuite {
 }

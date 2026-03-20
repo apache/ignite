@@ -23,27 +23,27 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 
 /**
- * Virtual table column provider from {@link PluginProvider plugin} created via
+ * Table pseudocolumn provider from {@link PluginProvider plugin} created via
  * {@link PluginProvider#createComponent(PluginContext, Class)} for Calcite-based query engine.
  */
 @FunctionalInterface
 @IgniteExperimental
 // TODO: IGNITE-28223 Надо менять не на виртуальные колонки а псевдо
-public interface VirtualColumnProvider {
+public interface PseudoColumnProvider {
     /** */
-    VirtualColumnProvider EMPTY = List::of;
+    PseudoColumnProvider EMPTY = List::of;
 
     /**
-     * Returns a list of virtual column descriptions to add to tables.
+     * Returns a list of pseudocolumn descriptions to add to tables.
      *
      * <p>NOTES:</p>
      * <ul>
-     *     <li>{@link VirtualColumnDescriptor#name()} - it is recommended to return in uppercase.</li>
-     *     <li>{@link VirtualColumnDescriptor#name()} - it is forbidden to use system names {@code "_KEY"} and
+     *     <li>{@link PseudoColumnDescriptor#name()} - it is recommended to return in uppercase.</li>
+     *     <li>{@link PseudoColumnDescriptor#name()} - it is forbidden to use system names {@code "_KEY"} and
      *     {@code "_VAL"}.</li>
-     *     <li>User will get an error when trying to create a column with name of one of virtual ones.</li>
+     *     <li>User will get an error when trying to create a column with name of one of pseudo ones.</li>
      * </ul>
-     * @return Virtual column descriptors to add to tables.
+     * @return Pseudocolumn descriptors to add to tables.
      */
-    List<VirtualColumnDescriptor> provideDescriptors();
+    List<PseudoColumnDescriptor> provideDescriptors();
 }

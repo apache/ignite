@@ -44,7 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.calcite.VirtualColumnProvider;
+import org.apache.ignite.calcite.PseudoColumnProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
@@ -120,7 +120,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         GridCacheContextInfo<?, ?> cacheInfo,
         GridQueryTypeDescriptor typeDesc,
         Object affinityIdentity,
-        VirtualColumnProvider virtColProv
+        PseudoColumnProvider pseudoColProv
     ) {
         this.cacheInfo = cacheInfo;
         this.typeDesc = typeDesc;
@@ -155,11 +155,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         int fldIdx = QueryUtils.VAL_COL + 1;
 
-        List<CacheColumnDescriptor> addlVirtCols = VirtualCacheColumnDescriptor.createCacheColDesc(fldIdx, virtColProv);
-        VirtualCacheColumnDescriptor.checkForNameConflictsWithUserColumns(addlVirtCols, fields);
-        descriptors.addAll(addlVirtCols);
-        fldIdx += addlVirtCols.size();
-        addlVirtCols.forEach(c -> virtualFields.set(c.fieldIndex()));
+        List<CacheColumnDescriptor> pseudoCols = PseudoCacheColumnDescriptor.createCacheColDesc(fldIdx, pseudoColProv);
+        PseudoCacheColumnDescriptor.checkForNameConflictsWithUserColumns(pseudoCols, fields);
+        descriptors.addAll(pseudoCols);
+        fldIdx += pseudoCols.size();
+        pseudoCols.forEach(c -> virtualFields.set(c.fieldIndex()));
 
         int keyField = QueryUtils.KEY_COL;
         int valField = QueryUtils.VAL_COL;

@@ -20,29 +20,29 @@ package org.apache.ignite.calcite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteExperimental;
 
-/** Virtual column descriptor. */
+/** Pseudocolumn descriptor. */
 @IgniteExperimental
-public interface VirtualColumnDescriptor {
+public interface PseudoColumnDescriptor {
     /** */
     int NOT_SPECIFIED = -1;
 
-    /** Returns name of virtual column. */
+    /** Returns name of pseudocolumn. */
     String name();
 
-    /** Virtual column type. */
+    /** Pseudocolumn type. */
     Class<?> type();
 
-    /** Returns scale of virtual column type, {@value #NOT_SPECIFIED} if not specified. */
+    /** Returns scale of pseudocolumn type, {@value #NOT_SPECIFIED} if not specified. */
     int scale();
 
-    /** Returns precision of virtual column type, {@value #NOT_SPECIFIED} if not specified. */
+    /** Returns precision of pseudocolumn type, {@value #NOT_SPECIFIED} if not specified. */
     int precision();
 
     /**
-     * Returns value of a virtual column.
+     * Returns value of a pseudocolumn.
      *
      * @param ctx Context to extract value.
      * @throws IgniteCheckedException If there are errors when getting value.
      */
-    Object value(VirtualColumnValueExtractorContext ctx) throws IgniteCheckedException;
+    Object value(PseudoColumnValueExtractorContext ctx) throws IgniteCheckedException;
 }

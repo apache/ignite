@@ -39,7 +39,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.calcite.VirtualColumnProvider;
+import org.apache.ignite.calcite.PseudoColumnProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -259,7 +259,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             cacheInfo,
             typeDesc,
             affinityIdentity(cacheInfo.config()),
-            ctx.plugins().createComponentOrDefault(VirtualColumnProvider.class, VirtualColumnProvider.EMPTY)
+            ctx.plugins().createComponentOrDefault(PseudoColumnProvider.class, PseudoColumnProvider.EMPTY)
         );
 
         return new CacheTableImpl(ctx, desc);

@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.calcite.VirtualColumnDescriptor;
-import org.apache.ignite.calcite.VirtualColumnProvider;
-import org.apache.ignite.calcite.VirtualColumnValueExtractorContext;
+import org.apache.ignite.calcite.PseudoColumnDescriptor;
+import org.apache.ignite.calcite.PseudoColumnProvider;
+import org.apache.ignite.calcite.PseudoColumnValueExtractorContext;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
@@ -35,14 +35,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-/** For {@link VirtualColumnProvider} testing. */
+/** For {@link PseudoColumnProvider} testing. */
 // TODO: IGNITE-28223 Добавить больше тестов?
-public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
+public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String KEY_TO_STRING_COLUMN_NAME = "KEY_TO_STRING";
 
     /** */
-    private static final List<VirtualColumnDescriptor> VIRT_COLS = new CopyOnWriteArrayList<>();
+    private static final List<PseudoColumnDescriptor> PSEUDO_COLS = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -53,14 +53,14 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        VIRT_COLS.clear();
+        PSEUDO_COLS.clear();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        VIRT_COLS.clear();
+        PSEUDO_COLS.clear();
     }
 
     /** {@inheritDoc} */
@@ -72,87 +72,87 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(sqlCfg)
-            .setPluginProviders(new TestVirtualColumnPluginProvider(VIRT_COLS));
+            .setPluginProviders(new TestPseudoColumnPluginProvider(PSEUDO_COLS));
     }
 
     /** */
     @Test
-    public void testVirtualColumnWithKeyName() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn(QueryUtils.KEY_FIELD_NAME));
+    public void testPseudoColumnWithKeyName() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(QueryUtils.KEY_FIELD_NAME));
 
         GridTestUtils.assertThrows(
             log,
             () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
             IgniteSQLException.class,
-            "Virtual column name must not match system one: [name=_KEY]"
+            "Pseudocolumn name must not match system one: [name=_KEY]"
         );
     }
 
     /** */
     @Test
-    public void testVirtualColumnWithValName() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn(QueryUtils.VAL_FIELD_NAME));
+    public void testPseudoColumnWithValName() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(QueryUtils.VAL_FIELD_NAME));
 
         GridTestUtils.assertThrows(
             log,
             () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
             IgniteSQLException.class,
-            "Virtual column name must not match system one: [name=_VAL]"
+            "Pseudocolumn name must not match system one: [name=_VAL]"
         );
     }
 
     /** */
     @Test
-    public void testVirtualColumnsWithSameName() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn("FOO"));
-        VIRT_COLS.add(new KeyToStingVirtualColumn("FOO"));
+    public void testPseudoColumnsWithSameName() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn("FOO"));
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn("FOO"));
 
         GridTestUtils.assertThrows(
             log,
             () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
             IgniteSQLException.class,
-            "Virtual column names must be unique: [name=FOO]"
+            "Pseudocolumn names must be unique: [name=FOO]"
         );
     }
 
     /** */
     @Test
-    public void testCreateTableWithColumnNameEqualsVirtual() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn("NAME"));
+    public void testCreateTableWithColumnNameEqualsPseudo() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn("NAME"));
 
         GridTestUtils.assertThrows(
             log,
             () -> sql("create table PUBLIC.PERSON(id int primary key, name varchar)"),
             IgniteSQLException.class,
-            "Virtual column name must not overlap with user ones: [name=NAME]"
+            "Pseudocolumn name must not overlap with user ones: [name=NAME]"
         );
     }
 
     /** */
     @Test
-    public void testAddVirtualColumn() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
+    public void testAddPseudoColumn() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
 
         sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
 
         for (int i = 0; i < 2; i++)
             sql("insert into PUBLIC.PERSON(id, name) values (?, ?)", i, "foo" + i);
 
-        // Let's make sure that when using '*' there will be no virtual column.
+        // Let's make sure that when using '*' there will be no pseudocolumn.
         assertQuery("select * from PUBLIC.PERSON order by id")
             .columnNames("ID", "NAME")
             .returns(0, "foo0")
             .returns(1, "foo1")
             .check();
 
-        // Let's make sure that when we specify a virtual column, we get it.
+        // Let's make sure that when we specify a pseudocolumn, we get it.
         assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
             .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
             .returns(0, "foo0", "0")
             .returns(1, "foo1", "1")
             .check();
 
-        // Let's check use of a virtual column in where.
+        // Let's check use of a pseudocolumn in where.
         assertQuery(String.format(
             "select id, name, %1$s from PUBLIC.PERSON where %1$s = %2$s order by id",
             KEY_TO_STRING_COLUMN_NAME, "1"
@@ -161,7 +161,7 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
             .returns(1, "foo1", "1")
             .check();
 
-        // Let's check use of a virtual column in order by.
+        // Let's check use of a pseudocolumn in order by.
         assertQuery(String.format("select id, name, %1$s from PUBLIC.PERSON order by %1$s", KEY_TO_STRING_COLUMN_NAME))
             .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
             .returns(0, "foo0", "0")
@@ -171,8 +171,8 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testInsertRowsWithVirtualColumn() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
+    public void testInsertRowsWithPseudoColumn() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
 
         sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
 
@@ -184,23 +184,27 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
             .check();
 
         // TODO: IGNITE-28223 Сделаем так, что вставлять нельзя в такую колонку
-        // Let's make sure that when inserting a value into a virtual column, it will simply be ignored.
+        // Let's make sure that when inserting a value into a pseudocolumn, it will simply be ignored.
         sql(
             String.format("insert into PUBLIC.PERSON(id, name, %s) values (?, ?, ?)", KEY_TO_STRING_COLUMN_NAME),
             1, "foo1", "invalid_value"
         );
 
-        assertQuery(String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME))
+        String format = String.format("select id, name, %s from PUBLIC.PERSON order by id", KEY_TO_STRING_COLUMN_NAME);
+
+        List<List<?>> sql = sql(format);
+
+        assertQuery(format)
             .columnNames("ID", "NAME", KEY_TO_STRING_COLUMN_NAME)
             .returns(0, "foo0", "0")
-            .returns(0, "foo1", "1")
+            .returns(1, "foo1", "1")
             .check();
     }
 
         /** */
     @Test
-    public void testUpdateRowsWithVirtualColumn() {
-        VIRT_COLS.add(new KeyToStingVirtualColumn(KEY_TO_STRING_COLUMN_NAME));
+    public void testUpdateRowsWithPseudoColumn() {
+        PSEUDO_COLS.add(new KeyToStingPseudoColumn(KEY_TO_STRING_COLUMN_NAME));
 
         sql("create table PUBLIC.PERSON(id int primary key, name varchar)");
 
@@ -231,13 +235,13 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    static class TestVirtualColumnPluginProvider extends AbstractTestPluginProvider {
+    static class TestPseudoColumnPluginProvider extends AbstractTestPluginProvider {
         /** */
-        private final List<VirtualColumnDescriptor> virtCols;
+        private final List<PseudoColumnDescriptor> cols;
 
         /** */
-        TestVirtualColumnPluginProvider(List<VirtualColumnDescriptor> virtCols) {
-            this.virtCols = virtCols;
+        TestPseudoColumnPluginProvider(List<PseudoColumnDescriptor> cols) {
+            this.cols = cols;
         }
 
         /** {@inheritDoc} */
@@ -247,8 +251,8 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
 
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (VirtualColumnProvider.class.equals(cls)) {
-                return (T)(VirtualColumnProvider)() -> virtCols;
+            if (PseudoColumnProvider.class.equals(cls)) {
+                return (T)(PseudoColumnProvider)() -> cols;
             }
 
             return super.createComponent(ctx, cls);
@@ -256,12 +260,12 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    static class KeyToStingVirtualColumn implements VirtualColumnDescriptor {
+    static class KeyToStingPseudoColumn implements PseudoColumnDescriptor {
         /** */
         private final String name;
 
         /** */
-        KeyToStingVirtualColumn(String name) {
+        KeyToStingPseudoColumn(String name) {
             this.name = name;
         }
 
@@ -277,16 +281,16 @@ public class VirtualColumnProviderTest extends AbstractBasicIntegrationTest {
 
         /** {@inheritDoc} */
         @Override public int scale() {
-            return VirtualColumnDescriptor.NOT_SPECIFIED;
+            return PseudoColumnDescriptor.NOT_SPECIFIED;
         }
 
         /** {@inheritDoc} */
         @Override public int precision() {
-            return VirtualColumnDescriptor.NOT_SPECIFIED;
+            return PseudoColumnDescriptor.NOT_SPECIFIED;
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(VirtualColumnValueExtractorContext ctx) throws IgniteCheckedException {
+        @Override public Object value(PseudoColumnValueExtractorContext ctx) throws IgniteCheckedException {
             return ctx.source(true, true).toString();
         }
     }
