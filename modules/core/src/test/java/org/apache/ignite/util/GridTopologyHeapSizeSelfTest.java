@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for calculation logic for topology heap size.

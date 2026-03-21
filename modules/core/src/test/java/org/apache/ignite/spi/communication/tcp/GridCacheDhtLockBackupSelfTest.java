@@ -40,6 +40,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Special cases for GG-2329.
@@ -193,8 +195,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
             long clearDuration = System.currentTimeMillis() - start;
 
-            assertTrue("Cache on backup is not empty (was cleared in " + clearDuration + "ms): " + failMsg,
-                clearDuration < 3000);
+            assertTrue(clearDuration < 3000, "Cache on backup is not empty (was cleared in " + clearDuration + "ms): " + failMsg);
         }
     }
 

@@ -33,14 +33,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runners.model.Statement;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Check threads for default names in single and thread pool instances.
@@ -64,17 +63,10 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
     /** Sequence for sets objects. */
     private static final AtomicLong SEQUENCE = new AtomicLong();
 
-    /** */
-    private static final TestRule beforeAllTestRule = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            defaultThreadFactoryCountBeforeTest = getDefaultPoolCount();
-            base.evaluate();
-        }
-    };
-
-    /** Manages before first test execution. */
-    @ClassRule public static transient RuleChain firstLastTestRule
-        = RuleChain.outerRule(beforeAllTestRule).around(GridAbstractTest.firstLastTestRule);
+    @BeforeEach
+    public void beforeEach() throws Exception {
+        defaultThreadFactoryCountBeforeTest = getDefaultPoolCount();
+    }
 
     /** */
     private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -131,11 +123,11 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            assertEquals("Executors.DefaultThreadFactory usage detected, IgniteThreadPoolExecutor is preferred",
-                defaultThreadFactoryCountBeforeTest, getDefaultPoolCount());
+            assertEquals(defaultThreadFactoryCountBeforeTest, getDefaultPoolCount(),
+                    "Executors.DefaultThreadFactory usage detected, IgniteThreadPoolExecutor is preferred");
 
-            assertEquals("Thread without specific name detected",
-                anonymousThreadCountBeforeTest, getAnonymousThreadCount());
+            assertEquals(anonymousThreadCountBeforeTest, getAnonymousThreadCount(),
+                    "Thread without specific name detected");
 
         }
         finally {
@@ -206,8 +198,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
      * @return count
      */
     private static int getDefaultPoolCount() throws ReflectiveOperationException {
-        Class<?> dfltThreadFacktory = Class.forName("java.util.concurrent.Executors$DefaultThreadFactory");
-        Field poolNumber = dfltThreadFacktory.getDeclaredField("poolNumber");
+        Class<?> dfltThreadFactory = Class.forName("java.util.concurrent.Executors$DefaultThreadFactory");
+        Field poolNumber = dfltThreadFactory.getDeclaredField("poolNumber");
         poolNumber.setAccessible(true);
         AtomicInteger counter = (AtomicInteger)poolNumber.get(null);
         return counter.get();

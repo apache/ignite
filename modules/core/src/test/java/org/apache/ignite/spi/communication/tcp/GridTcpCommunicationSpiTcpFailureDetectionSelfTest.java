@@ -21,6 +21,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -62,13 +66,11 @@ public class GridTcpCommunicationSpiTcpFailureDetectionSelfTest extends GridTcpC
         return spi;
     }
 
-    /**
-     * @throws Exception if failed.
-     */
+    /** */
     @Test
-    public void testFailureDetectionEnabled() throws Exception {
+    public void testFailureDetectionEnabled() {
         assertTrue(spis[0].failureDetectionTimeoutEnabled());
-        assertTrue(spis[0].failureDetectionTimeout() == IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT);
+        assertEquals(spis[0].failureDetectionTimeout(), (long) IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT);
 
         for (int i = 1; i < SPI_COUNT; i++) {
             assertFalse(spis[i].failureDetectionTimeoutEnabled());

@@ -64,6 +64,9 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -179,7 +182,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         reject = false;
 
-        assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
+        assertEquals(getSpiCount(), lsnrs.size(), "Invalid listener count");
 
         final ConcurrentMap<UUID, Deque<GridTestMessage>> msgs = new ConcurrentHashMap<>();
 
@@ -226,7 +229,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         info(">>> Sent all messages in " + (System.currentTimeMillis() - start) + " milliseconds");
 
-        assertEquals("Invalid count of messages was sent", iterationCnt * getSpiCount() * 3, msgId.get());
+        assertEquals(iterationCnt * getSpiCount() * 3, msgId.get(), "Invalid count of messages was sent");
 
         U.sleep(IDLE_CONN_TIMEOUT * 2);
 
@@ -249,10 +252,10 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 U.sleep(2000);
             }
 
-            assertEquals("Sent and received messages count mismatch.", sent.size(), rcvd.size());
+            assertEquals(sent.size(), rcvd.size(), "Sent and received messages count mismatch.");
 
-            assertTrue("Listener did not receive some messages: " + lsnr, rcvd.containsAll(sent));
-            assertTrue("Listener received extra messages: " + lsnr, sent.containsAll(rcvd));
+            assertTrue(rcvd.containsAll(sent), "Listener did not receive some messages: " + lsnr);
+            assertTrue(sent.containsAll(rcvd), "Listener received extra messages: " + lsnr);
         }
     }
 
@@ -354,8 +357,8 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 if (snd != null) {
                     GridTestUtils.waitForCondition(() -> snd.messagesRequests().isEmpty(), 10_000);
 
-                    assertEquals("Unexpected messages: " + snd.messagesRequests(), 0,
-                        snd.messagesRequests().size());
+                    assertEquals(0, snd.messagesRequests().size(),
+                            "Unexpected messages: " + snd.messagesRequests());
                 }
             }
         }
@@ -370,7 +373,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         info(">>> Starting pass through performance test. <<<");
 
-        assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
+        assertEquals(getSpiCount(), lsnrs.size(), "Invalid listener count");
 
         final AtomicInteger cntr = new AtomicInteger();
 
@@ -403,7 +406,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         info(">>> Sent all messages in " + (System.currentTimeMillis() - start) + " milliseconds");
 
-        assertEquals("Invalid count of messages was sent", msgCnt, msgId.get());
+        assertEquals(msgCnt, msgId.get(), "Invalid count of messages was sent");
     }
 
     /**

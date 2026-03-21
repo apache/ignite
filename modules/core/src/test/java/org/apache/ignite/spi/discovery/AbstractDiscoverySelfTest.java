@@ -49,6 +49,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Base discovery self-test class.
@@ -264,7 +266,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         Thread.sleep(getMaxDiscoveryTime() * 3);
 
         for (AtomicInteger cnt : locUpdCnts)
-            assertTrue("One of the SPIs did not get at least 2 METRICS_UPDATE events from local node", cnt.get() > 1);
+            assertTrue(cnt.get() > 1, "One of the SPIs did not get at least 2 METRICS_UPDATE events from local node");
     }
 
     /**
@@ -314,7 +316,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                 if (nodeIds.contains(node.id())) {
                     Serializable attr = node.attribute(TEST_ATTRIBUTE_NAME);
 
-                    if (attr == null || !(attr instanceof String)) {
+                    if (!(attr instanceof String)) {
                         fail("Node does not contains attribute [attr=" + TEST_ATTRIBUTE_NAME + ", nodeId=" +
                             node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
                     }

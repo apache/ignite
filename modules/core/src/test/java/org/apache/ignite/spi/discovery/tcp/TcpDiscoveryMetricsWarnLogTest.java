@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for testing warning log message about too many cache metrics.

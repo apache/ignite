@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.store;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import javax.cache.integration.CacheLoaderException;
@@ -28,6 +27,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -124,7 +127,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override protected Iterator<String> inputIterator(@Nullable Object... args) {
             assertNotNull(args);
-            assertTrue(Arrays.equals(EXP_ARGS, args));
+            assertArrayEquals(EXP_ARGS, args);
 
             return new Iterator<String>() {
                 private int i = -1;
@@ -151,7 +154,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Integer, String> parse(String rec, @Nullable Object... args) {
             assertNotNull(args);
-            assertTrue(Arrays.equals(EXP_ARGS, args));
+            assertArrayEquals(EXP_ARGS, args);
 
             String[] p = rec.split("=");
 

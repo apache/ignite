@@ -29,11 +29,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
@@ -67,7 +69,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testFreezingClient() throws Exception {
-        Assume.assumeTrue("The test reqires the 'kill' command.", U.isUnix() || U.isMacOs());
+        assumeTrue(U.isUnix() || U.isMacOs(), "The test reqires the 'kill' command.");
 
         Ignite srv = startGrid(0);
         IgniteProcessProxy client = (IgniteProcessProxy)startClientGrid("client");

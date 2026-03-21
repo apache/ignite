@@ -45,6 +45,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Store test.
  */
@@ -85,11 +88,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
                             final Map<Integer, Integer> loaded = new HashMap<>();
 
-                            w.loadAll(keys, new CI2<Integer, Integer>() {
-                                @Override public void apply(Integer k, Integer v) {
-                                    loaded.put(k, v);
-                                }
-                            });
+                            w.loadAll(keys, (CI2<Integer, Integer>) loaded::put);
 
                             for (Integer key : keys)
                                 assertEquals(key, loaded.get(key));
@@ -357,7 +356,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
                 throw new RuntimeException(e);
             }
 
-            assertEquals("Redundant load call.", 1, cnts[key].incrementAndGet());
+            assertEquals(1, cnts[key].incrementAndGet(), "Redundant load call.");
 
             return key;
         }
@@ -379,7 +378,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
             Map<Integer, Integer> loaded = new HashMap<>();
 
             for (Integer key : keys) {
-                assertEquals("Redundant loadAll call.", 1, cnts[key].incrementAndGet());
+                assertEquals(1, cnts[key].incrementAndGet(), "Redundant loadAll call.");
 
                 loaded.put(key, key);
             }

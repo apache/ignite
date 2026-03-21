@@ -68,6 +68,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -236,8 +239,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         Map failedNodes = getFailedNodesCollection(ig0);
 
-        assertTrue(String.format("Failed nodes is expected to be empty, but contains %s nodes.", failedNodes.size()),
-            failedNodes.isEmpty());
+        assertTrue(failedNodes.isEmpty(),
+                String.format("Failed nodes is expected to be empty, but contains %s nodes.", failedNodes.size()));
     }
 
     /**

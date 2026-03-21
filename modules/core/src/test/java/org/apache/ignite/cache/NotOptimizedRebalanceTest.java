@@ -39,6 +39,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test checks rebalance behavior when several exchanges trigger sequence.
@@ -182,11 +185,11 @@ public class NotOptimizedRebalanceTest extends GridCommonAbstractTest {
             IgniteInternalFuture<Boolean> newFut = newFuts.get(grpFut.getKey());
 
             if (serverJoin)
-                assertTrue(futureInfoString(fut), fut.isDone() && !fut.get());
+                assertTrue(fut.isDone() && !fut.get(), futureInfoString(fut));
             else
                 assertSame(fut, newFut);
 
-            assertTrue(futureInfoString(newFut), newFut.isDone() && newFut.get());
+            assertTrue(newFut.isDone() && newFut.get(), futureInfoString(newFut));
         }
     }
 
@@ -197,7 +200,7 @@ public class NotOptimizedRebalanceTest extends GridCommonAbstractTest {
     public void checkAllFuturesCancelled(Map<CacheGroupContext, IgniteInternalFuture<Boolean>> futs)
         throws org.apache.ignite.IgniteCheckedException {
         for (IgniteInternalFuture<Boolean> fut : futs.values())
-            assertTrue(futureInfoString(fut), fut.isDone() && !fut.get());
+            assertTrue(fut.isDone() && !fut.get(), futureInfoString(fut));
     }
 
     /**
@@ -205,7 +208,7 @@ public class NotOptimizedRebalanceTest extends GridCommonAbstractTest {
      */
     public void checkAllFuturesProcessing(Map<CacheGroupContext, IgniteInternalFuture<Boolean>> futs) {
         for (IgniteInternalFuture<Boolean> fut : futs.values())
-            assertFalse(futureInfoString(fut), fut.isDone());
+            assertFalse(fut.isDone(), futureInfoString(fut));
     }
 
     /**

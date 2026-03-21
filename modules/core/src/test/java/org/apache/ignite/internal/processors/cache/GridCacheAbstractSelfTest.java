@@ -60,6 +60,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Abstract class for cache tests.
@@ -163,8 +165,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         ", globalPrimarySize=" + globalPrimarySize +
                         ", entrySet=" + jcache(i).localEntries() + ']');
 
-                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
-                        0, jcache(i).localSize(CachePeekMode.ALL));
+                    assertEquals(0, jcache(i).localSize(CachePeekMode.ALL),
+                            "Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']');
 
                     break;
                 }

@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.NODE_ID_MSG_TYPE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This test check that client sends only Node ID message type on connect.

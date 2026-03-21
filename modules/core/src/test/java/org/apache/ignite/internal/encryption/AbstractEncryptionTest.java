@@ -71,6 +71,10 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.CIPHER_ALGO;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Abstract encryption test.
@@ -209,7 +213,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         int size = cache.size();
 
-        assertTrue("Cache cannot be empty", size > 0);
+        assertTrue(size > 0, "Cache cannot be empty");
 
         for (long i = 0; i < size; i++)
             assertEquals(generateValue(i), cache.get(i));
@@ -389,7 +393,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             GridEncryptionManager encryption = grid.context().encryption();
 
-            assertEquals(grid.localNode().id().toString(), (byte)expKeyId, encryption.getActiveKey(grpId).id());
+            assertEquals((byte)expKeyId, encryption.getActiveKey(grpId).id(), grid.localNode().id().toString());
 
             IgniteInternalFuture<Void> fut = encryption.reencryptionFuture(grpId);
 
@@ -433,8 +437,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 String msg = String.format("p=%d, off=%d, total=%d",
                     p, ReencryptStateUtils.pageIndex(state), ReencryptStateUtils.pageCount(state));
 
-                assertEquals(msg, 0, ReencryptStateUtils.pageCount(state));
-                assertEquals(msg, 0, ReencryptStateUtils.pageIndex(state));
+                assertEquals(0, ReencryptStateUtils.pageCount(state), msg);
+                assertEquals(0, ReencryptStateUtils.pageIndex(state), msg);
 
                 long startPageId = PageIdUtils.pageId(p, PageIdAllocator.FLAG_DATA, 0);
 
@@ -474,7 +478,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                         }
 
                         msg = String.format("File=%s, page=%d", pageStore.getFileAbsolutePath(), n);
-                        assertEquals(msg, expKeyId, pageKeyId);
+                        assertEquals(expKeyId, pageKeyId, msg);
                     }
                 }
             }

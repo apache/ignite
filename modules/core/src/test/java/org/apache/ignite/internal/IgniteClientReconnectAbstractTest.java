@@ -54,6 +54,10 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -366,7 +370,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         if (!(e.getCause() instanceof IgniteClientDisconnectedException))
             log.error("Unexpected cause: " + e.getCause(), e);
 
-        assertTrue("Unexpected cause: " + e.getCause(), e.getCause() instanceof IgniteClientDisconnectedException);
+        assertInstanceOf(IgniteClientDisconnectedException.class, e.getCause(), "Unexpected cause: " + e.getCause());
 
         IgniteClientDisconnectedException e0 = (IgniteClientDisconnectedException)e.getCause();
 

@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -109,12 +111,12 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         // Initial custom message will travel across the ring and will be discarded.
         sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
 
-        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
+        assertTrue(
             GridTestUtils.waitForCondition(() -> {
                 log.info("Waiting for messages delivery");
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
-            }, 10000));
+            }, 10000), "Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs);
 
         blockMsgs = true;
 
@@ -129,13 +131,13 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         mediator.close();
         victim.close();
 
-        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
+        assertTrue(
             GridTestUtils.waitForCondition(() -> {
                 log.info("Waiting for messages delivery [sentSize=" + sentEnsuredMsgs.size() +
                     ", rcvdSize=" + receivedEnsuredMsgs.size() + ']');
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
-            }, 10000));
+            }, 10000), "Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs);
     }
 
     /**
@@ -181,12 +183,12 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         mediator.close();
         victim.close();
 
-        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
+        assertTrue(
             GridTestUtils.waitForCondition(() -> {
                 log.info("Waiting for messages delivery");
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
-            }, 10000));
+            }, 10000), "Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs);
     }
 
     /**
@@ -230,7 +232,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
             return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
         }, 5000);
 
-        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs, delivered);
+        assertTrue(delivered, "Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs);
     }
 
     /**

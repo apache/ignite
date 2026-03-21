@@ -45,6 +45,9 @@ import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * {@link ClientConfiguration} unit tests.
  */

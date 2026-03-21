@@ -170,6 +170,12 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Super class for all common tests.
@@ -1400,7 +1406,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size,
         @Nullable IgniteInClosure<ClusterNode> nodeInitializer, @Nullable String joiningNodeConsistentId) {
         if (joiningNodeConsistentId == null)
-            assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
+            assertEquals(ign.name(), ign.cluster().localNode().consistentId(), "Expected consistentId is set to node name");
 
         ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
 
@@ -1442,7 +1448,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        assertEquals("Failed to find moving keys [movedPats=" + movedParts + ", keys=" + keys + ']', size, keys.size());
+        assertEquals(size, keys.size(), "Failed to find moving keys [movedPats=" + movedParts + ", keys=" + keys + ']');
 
         return keys;
     }
@@ -1744,7 +1750,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected IgniteCache<Integer, Integer> nearCache(Integer key) {
         List<Ignite> allGrids = Ignition.allGrids();
 
-        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+        assertFalse(F.isEmpty(allGrids), "There are no alive nodes.");
 
         Affinity<Integer> aff = allGrids.get(0).affinity(DEFAULT_CACHE_NAME);
 
@@ -1786,7 +1792,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected Ignite primaryNode(Object key, String cacheName) {
         List<Ignite> allGrids = Ignition.allGrids();
 
-        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+        assertFalse(F.isEmpty(allGrids), "There are no alive nodes.");
 
         Ignite ignite = allGrids.get(0);
 
@@ -1794,7 +1800,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode node = aff.mapKeyToNode(key);
 
-        assertNotNull("There are no cache affinity nodes", node);
+        assertNotNull(node, "There are no cache affinity nodes");
 
         return grid(node);
     }
@@ -1807,7 +1813,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected Ignite backupNode(Object key, String cacheName) {
         List<Ignite> allGrids = Ignition.allGrids();
 
-        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+        assertFalse(F.isEmpty(allGrids), "There are no alive nodes.");
 
         Ignite ignite = allGrids.get(0);
 
@@ -1815,7 +1821,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
-        assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes + ']', nodes.size() > 1);
+        assertTrue(nodes.size() > 1, "Expected more than one node for key [key=" + key + ", nodes=" + nodes + ']');
 
         Iterator<ClusterNode> it = nodes.iterator();
 
@@ -1832,7 +1838,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected List<Ignite> backupNodes(Object key, String cacheName) {
         List<Ignite> allGrids = Ignition.allGrids();
 
-        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+        assertFalse(F.isEmpty(allGrids), "There are no alive nodes.");
 
         Ignite ignite = allGrids.get(0);
 
@@ -1840,7 +1846,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
-        assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes + ']', nodes.size() > 1);
+        assertTrue(nodes.size() > 1, "Expected more than one node for key [key=" + key + ", nodes=" + nodes + ']');
 
         Iterator<ClusterNode> it = nodes.iterator();
 
@@ -1887,13 +1893,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param act Actual.
      */
     protected static <T> void assertEqualsCollectionsIgnoringOrder(Collection<T> exp, Collection<T> act) {
-        assertTrue("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act,
-            (exp.size() == act.size()));
+        assertEquals(exp.size(), act.size(), "Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
         for (T obj : exp)
-            assertEquals("Collections are not equal (element " + obj + " frequency is different)." +
-                    "\nCollections: " + exp + ", " + act,
-                Collections.frequency(exp, obj), Collections.frequency(act, obj));
+            assertEquals(Collections.frequency(exp, obj), Collections.frequency(act, obj),
+                    "Collections are not equal (element " + obj + " frequency is different)." +
+                            "\nCollections: " + exp + ", " + act);
     }
 
     /**
@@ -1973,7 +1978,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param saveSnp Do not clean snapshot directory if {@code true}.
      */
     protected void cleanPersistenceDir(boolean saveSnp) throws IgniteCheckedException {
-        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+        assertTrue(F.isEmpty(G.allGrids()), "Grids are not stopped");
 
         SharedFileTree sft = sharedFileTree();
 
@@ -2049,9 +2054,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
             for (Map.Entry<?, ?> e : expData.entrySet()) {
-                assertEquals("Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']',
-                    e.getValue(),
-                    cache.get(e.getKey()));
+                assertEquals(e.getValue(), cache.get(e.getKey()),
+                        "Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']');
             }
         }
     }
@@ -2094,9 +2098,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             Map completedVersHashMap = completedTxsMap(node);
 
             for (Object o : completedVersHashMap.values()) {
-                assertTrue("completedVersHashMap contains " + o.getClass().getName() + " instead of boolean. " +
-                    "These values should be replaced by boolean after onePhaseCommit finished. " +
-                    "[node=" + node.name() + "]", o instanceof Boolean);
+                assertTrue(o instanceof Boolean, "completedVersHashMap contains " + o.getClass().getName() + " instead of boolean. " +
+                        "These values should be replaced by boolean after onePhaseCommit finished. " +
+                        "[node=" + node.name() + "]");
             }
         }
     }
@@ -2487,13 +2491,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 continue;
 
             if (cntr0 != null) {
-                assertEquals("Expecting same counters [partId=" + partId +
-                    ", cntrs=" + cntrMap + ']', cntr0, cntr.get2());
+                assertEquals(cntr0, cntr.get2(), "Expecting same counters [partId=" + partId +
+                        ", cntrs=" + cntrMap + ']');
 
                 if (withReserveCntr)
-                    assertEquals("Expecting same reservation counters [partId=" + partId +
-                            ", cntrs=" + cntrMap + ']',
-                        cntr0.reserved(), cntr.get2().reserved());
+                    assertEquals(cntr0.reserved(), cntr.get2().reserved(), "Expecting same reservation counters [partId=" + partId +
+                            ", cntrs=" + cntrMap + ']');
             }
 
             cntr0 = cntr.get2();
@@ -2519,13 +2522,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (cntr.get2() == null)
                 continue;
 
-            assertEquals("Expecting same counters [partId=" + partId +
-                ", cntrs=" + cntrMap + ']', cnt, cntr.get2().get());
+            assertEquals(cnt, cntr.get2().get(), "Expecting same counters [partId=" + partId +
+                    ", cntrs=" + cntrMap + ']');
 
             if (withReserveCntr) {
-                assertEquals("Expecting same reservation counters [partId=" + partId +
-                        ", cntrs=" + cntrMap + ']',
-                    reserved, cntr.get2().reserved());
+                assertEquals(reserved, cntr.get2().reserved(), "Expecting same reservation counters [partId=" + partId +
+                        ", cntrs=" + cntrMap + ']');
             }
         }
     }

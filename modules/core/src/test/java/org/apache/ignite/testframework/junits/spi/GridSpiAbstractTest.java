@@ -54,10 +54,9 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
-import org.junit.ClassRule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -65,32 +64,35 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  * Base SPI test class.
  * @param <T> SPI implementation class.
  */
-public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstractTest {
+public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstractTest implements BeforeAllCallback, AfterAllCallback {
     /** */
     private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
     /** */
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
 
-    /** */
-    private static final TestRule firstLastTestRuleSpi = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            GridSpiAbstractTest testClsInstance = (GridSpiAbstractTest)description.getTestClass().newInstance();
-            try {
-                testClsInstance.beforeFirstTestInternal();
+    @Override
+    public void beforeAll(ExtensionContext context) throws Exception {
+        // Get the test class instance
+        Class<?> testClass = context.getRequiredTestClass();
+        GridSpiAbstractTest testClsInstance = (GridSpiAbstractTest) testClass.getDeclaredConstructor().newInstance();
+        testClsInstance.beforeFirstTestInternal();
 
-                base.evaluate();
-            }
-            finally {
-                testClsInstance.afterLastTest();
-            }
+        // Store the instance in the context for afterAll to use
+        context.getStore(ExtensionContext.Namespace.create(testClass))
+                .put("testInstance", testClsInstance);
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        // Retrieve the stored instance
+        Class<?> testClass = context.getRequiredTestClass();
+        GridSpiAbstractTest testClsInstance = context.getStore(ExtensionContext.Namespace.create(testClass))
+                .get("testInstance", GridSpiAbstractTest.class);
+        if (testClsInstance != null) {
+            testClsInstance.afterLastTest();
         }
-    };
-
-    /** Manages first and last test execution. */
-    @SuppressWarnings({"TransientFieldInNonSerializableClass"})
-    @ClassRule public static transient RuleChain firstLastTestRule
-        = RuleChain.outerRule(firstLastTestRuleSpi).around(GridAbstractTest.firstLastTestRule);
+    }
 
     /** */
     private final boolean autoStart;

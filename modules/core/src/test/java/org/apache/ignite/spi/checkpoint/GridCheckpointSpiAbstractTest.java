@@ -21,6 +21,9 @@ import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 /**
  * Grid checkpoint SPI abstract test.
  * @param <T> Concrete SPI class.
@@ -53,7 +56,7 @@ public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
         for (int i = 0; i < CHECK_POINT_COUNT; i++) {
             byte[] serState = getSpi().loadCheckpoint(CHECK_POINT_KEY_PREFIX + i);
 
-            assertNotNull("Missing checkpoint: " + CHECK_POINT_KEY_PREFIX + i, serState);
+            assertNotNull(serState, "Missing checkpoint: " + CHECK_POINT_KEY_PREFIX + i);
 
             GridCheckpointTestState state = GridTestIoUtils.deserializeJdk(serState);
 
@@ -80,7 +83,7 @@ public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
 
             final byte[] serState = getSpi().loadCheckpoint(key);
 
-            assertNull("Checkpoint state should not be loaded with key: " + key, serState);
+            assertNull(serState, "Checkpoint state should not be loaded with key: " + key);
         }
     }
 

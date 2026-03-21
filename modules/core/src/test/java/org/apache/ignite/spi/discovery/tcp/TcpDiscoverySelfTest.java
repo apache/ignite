@@ -109,6 +109,11 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
@@ -467,7 +472,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         boolean res = spi.pingNode(failedNodeId);
 
-        assertFalse("Ping is ok for node " + failedNodeId + ", but had to fail.", res);
+        assertFalse(res, "Ping is ok for node " + failedNodeId + ", but had to fail.");
 
         // Metrics update interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
@@ -1054,7 +1059,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     }
                 }
 
-                assertTrue("TcpDiscoveryMulticastIpFinder should register port.", found);
+                assertTrue(found, "TcpDiscoveryMulticastIpFinder should register port.");
             }
         }
         finally {
@@ -2128,13 +2133,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     log.info("Count1: " + cnt);
 
-                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                    assertTrue(cnt == null || cnt <= 2, "Invalid message count: " + cnt);
 
                     cnt = stats.receivedMessages().get(TcpDiscoveryNodeFailedMessage.class.getSimpleName());
 
                     log.info("Count2: " + cnt);
 
-                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                    assertTrue(cnt == null || cnt <= 2, "Invalid message count: " + cnt);
                 }
             }
         }
@@ -2159,9 +2164,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            assertEquals("Expected items in marshaller discovery data: 1, actual: "
-                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
-                    1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+            assertEquals(1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                    "Expected items in marshaller discovery data: 1, actual: "
+                            + TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
 
             IgniteCache<Object, Object> employees = srv1.createCache("employees");
 
@@ -2169,9 +2174,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(2);
 
-            assertEquals("Expected items in marshaller discovery data: 2, actual: "
-                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
-                    2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+            assertEquals(2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                    "Expected items in marshaller discovery data: 2, actual: "
+                            + TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
         }
         finally {
             stopAllGrids();
@@ -2317,7 +2322,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             discoverySpi.impl.checkRingLatency(hops);
 
-            assertTrue("Check ring latency message wasn't discarded", lsnr.check(1000));
+            assertTrue(lsnr.check(1000), "Check ring latency message wasn't discarded");
         }
         finally {
             stopAllGrids();
@@ -2345,7 +2350,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         if (!wait)
             U.dumpThreads(log);
 
-        assertTrue("Failed to wait for node stop.", wait);
+        assertTrue(wait, "Failed to wait for node stop.");
     }
 
     /**

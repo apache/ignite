@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Discovery data exchange test.
  */
@@ -72,8 +75,8 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
 
             assertFalse(dataBags.isEmpty());
 
-            assertTrue(dataBags.toString(),
-                dataBags.stream().allMatch(pair -> node.context().clientNode() == pair.get2().isJoiningNodeClient()));
+            assertTrue(dataBags.stream().allMatch(pair -> node.context().clientNode() == pair.get2().isJoiningNodeClient()),
+                    dataBags.toString());
         }
     }
 

@@ -34,6 +34,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  * Tests for store session listeners.
  */
@@ -87,11 +90,9 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
         fail.set(false);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testAtomicCache() throws Exception {
+    public void testAtomicCache() {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.ATOMIC);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);

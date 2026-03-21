@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.topology.MdcTopologyValidator;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /** */
 public class MultiDataCenterTopologyValidatorTest extends GridCommonAbstractTest {
     /** */

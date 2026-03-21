@@ -34,6 +34,9 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -84,7 +87,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testRandomReassignmentNoBackups() throws Exception {
+    public void testRandomReassignmentNoBackups() {
         checkRandomReassignment(0);
     }
 
@@ -92,7 +95,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testRandomReassignmentOneBackup() throws Exception {
+    public void testRandomReassignmentOneBackup() {
         checkRandomReassignment(1);
     }
 
@@ -100,7 +103,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testRandomReassignmentTwoBackups() throws Exception {
+    public void testRandomReassignmentTwoBackups() {
         checkRandomReassignment(2);
     }
 
@@ -108,16 +111,13 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testRandomReassignmentThreeBackups() throws Exception {
+    public void testRandomReassignmentThreeBackups() {
         checkRandomReassignment(3);
     }
 
-    /**
-     * @param backups Number of backups.
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testNullKeyForPartitionCalculation() throws Exception {
+    public void testNullKeyForPartitionCalculation() {
         AffinityFunction aff = affinityFunction();
 
         try {

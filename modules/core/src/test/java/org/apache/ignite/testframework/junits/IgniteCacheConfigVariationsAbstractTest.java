@@ -44,6 +44,10 @@ import org.apache.ignite.testframework.configvariations.CacheStartMode;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Abstract class for cache configuration variations tests.
@@ -170,8 +174,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             assertNotNull(jcache(i));
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
-                0, jcache(i).localSize(CachePeekMode.ALL));
+            assertEquals(0, jcache(i).localSize(CachePeekMode.ALL),
+                    "Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']');
     }
 
     /** {@inheritDoc} */
@@ -264,8 +268,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                         }, 10_000);
 
                     if (cacheIsEmpty)
-                        assertTrue("Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
-                            + ", local entries " + entrySet(jcache(fi).localEntries()), cacheIsEmpty);
+                        assertTrue(cacheIsEmpty, "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
+                            + ", local entries " + entrySet(jcache(fi).localEntries()));
 
                     int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
                     int keySize = jcache(i).localSize();
@@ -289,8 +293,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                         break;
                     }
 
-                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
-                        0, jcache(i).localSize(CachePeekMode.ALL));
+                    assertEquals(0, jcache(i).localSize(CachePeekMode.ALL),
+                            "Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']');
 
                     break;
                 }
@@ -312,7 +316,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 
         if (cacheIsNotEmptyMsg == null)
-            assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
+            assertEquals(0, jcache().localSize(CachePeekMode.ALL), "Cache is not empty");
 
         storeStgy.resetStore();
 

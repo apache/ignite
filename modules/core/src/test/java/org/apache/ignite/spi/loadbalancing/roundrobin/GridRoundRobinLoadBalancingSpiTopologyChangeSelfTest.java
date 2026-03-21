@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.checkCyclicBalancing;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests round robin load balancing with topology changes.
@@ -83,7 +85,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
 
         orderedNodes = getSpi().getNodeIds(ses);
 
-        assertFalse("Balancer uses removed node", orderedNodes.contains(doomed));
+        assertFalse(orderedNodes.contains(doomed), "Balancer uses removed node");
 
         checkCyclicBalancing(getSpi(), allNodes, orderedNodes, ses);
 
@@ -105,7 +107,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
             }
         }
 
-        assertTrue("Balancer doesn't use added node", foundNewNode);
+        assertTrue(foundNewNode, "Balancer doesn't use added node");
 
         orderedNodes = getSpi().getNodeIds(ses);
 

@@ -56,6 +56,10 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests for {@link CacheJdbcPojoStore}.
@@ -674,9 +678,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         checkCacheStore(cache);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     private class TestErrorHandler implements Thread.UncaughtExceptionHandler {
         /** {@inheritDoc} */
         @Override public void uncaughtException(Thread t, Throwable e) {

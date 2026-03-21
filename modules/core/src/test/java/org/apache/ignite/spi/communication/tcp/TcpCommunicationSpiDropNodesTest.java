@@ -44,6 +44,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests grid node kicking on communication failure.
@@ -138,7 +142,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
             fail("Should have exception here.");
         }
         catch (IgniteException e) {
-            assertTrue(e.getCause() instanceof IgniteSpiException);
+            assertInstanceOf(IgniteSpiException.class, e.getCause());
         }
 
         block = false;

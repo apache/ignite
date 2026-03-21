@@ -41,6 +41,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 /**
  * Tests of circled historical rebalance.
  */
@@ -150,7 +152,7 @@ public class CircledRebalanceTest extends GridCommonAbstractTest {
             for (int j = 0; j < realBackups; j++)
                 TestRecordingCommunicationSpi.spi(grid(nodesToRestart[j])).waitForRecorded();
 
-            assertFalse("Assert on iter " + i, hasFullRebalance.get());
+            assertFalse(hasFullRebalance.get(), "Assert on iter " + i);
         }
     }
 

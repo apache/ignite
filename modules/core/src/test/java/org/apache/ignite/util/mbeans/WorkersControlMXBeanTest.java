@@ -24,6 +24,9 @@ import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * {@link WorkersControlMXBean} test.
  */

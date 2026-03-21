@@ -44,6 +44,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for {@link CacheJdbcPojoStore} tests.
@@ -487,7 +490,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             ResultSet rs = stmt.executeQuery();
 
-            assertFalse("Unexpected non empty result set", rs.next());
+            assertFalse(rs.next(), "Unexpected non empty result set");
 
             U.closeQuiet(rs);
 
@@ -503,7 +506,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             rs = stmt.executeQuery();
 
-            assertTrue("Unexpected empty result set", rs.next());
+            assertTrue(rs.next(), "Unexpected empty result set");
 
             assertEquals(-1, rs.getInt(1));
             assertEquals(-2, rs.getInt(2));
@@ -512,7 +515,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             assertEquals(testGender.toString(), Gender.values()[rs.getInt(5)].toString());
 
-            assertFalse("Unexpected more data in result set", rs.next());
+            assertFalse(rs.next(), "Unexpected more data in result set");
 
             U.closeQuiet(rs);
 
@@ -523,7 +526,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             rs = stmt.executeQuery();
 
-            assertTrue("Unexpected empty result set", rs.next());
+            assertTrue(rs.next(), "Unexpected empty result set");
 
             assertEquals(-1, rs.getInt(1));
             assertEquals(-3, rs.getInt(2));
@@ -532,14 +535,14 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             assertEquals(testGender.toString(), Gender.values()[rs.getInt(5)].toString());
 
-            assertFalse("Unexpected more data in result set", rs.next());
+            assertFalse(rs.next(), "Unexpected more data in result set");
 
             // Test remove.
             c1.remove(key);
 
             rs = stmt.executeQuery();
 
-            assertFalse("Unexpected non-empty result set", rs.next());
+            assertFalse(rs.next(), "Unexpected non-empty result set");
 
             U.closeQuiet(rs);
         }
@@ -605,9 +608,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         catch (CacheLoaderException e) {
             String msg = e.getMessage();
 
-            assertTrue("Unexpected exception: " + msg,
-                ("Provided key type is not found in store or cache configuration " +
-                    "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]").equals(msg));
+            assertEquals(("Provided key type is not found in store or cache configuration " +
+                    "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]"), msg, "Unexpected exception: " + msg);
         }
         finally {
             checkFetchSize = false;

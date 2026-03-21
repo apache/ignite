@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -112,7 +113,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
         });
 
         //then: Despite the first attempt of handshake would be frozen the compute should be handled well eventually.
-        assertTrue("Compute should be successfully handled.", waitForCondition(result::get, 20_000));
+        assertTrue(waitForCondition(result::get, 20_000), "Compute should be successfully handled.");
     }
 
     /** TcpHandshakeExecutor which can be asked to delay until socket is closed. */

@@ -36,6 +36,9 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -244,15 +247,14 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
             String errorMsg = cause1.getMessage();
 
-            assertTrue(
-                "Expected error message was not found: " + errorMsg,
-                errorMsg.contains("Failed to connect to any address from IP finder")
+            assertTrue(errorMsg.contains("Failed to connect to any address from IP finder"),
+                "Expected error message was not found: " + errorMsg
             );
 
             expectedExThrown = true;
         }
 
-        assertTrue("Expected exception was not thrown.", expectedExThrown);
+        assertTrue(expectedExThrown, "Expected exception was not thrown.");
 
         IgniteInternalFuture startGridFut = futRef.get();
 

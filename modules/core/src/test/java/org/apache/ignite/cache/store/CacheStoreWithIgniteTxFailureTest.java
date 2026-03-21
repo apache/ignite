@@ -45,6 +45,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests to check scenarios with system failures during transaction commit. Internal system failures are simulated by
@@ -191,11 +193,10 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
                 waitForTopology(3);
 
-                assertTrue("Client node should survive test scenario",
-                    G.allGrids()
+                assertTrue(G.allGrids()
                         .stream()
                         .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
-                        .count() == 1);
+                        .count() == 1, "Client node should survive test scenario");
             }
         }
         else
@@ -236,14 +237,13 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
                         },
                         1_000);
 
-                    assertTrue(
+                    assertTrue(checkResult,
                         String.format("Key inconsistent with CacheStore found on node %d; nodeName: %s. " +
                                 "Key in store: %s, key in cache: %s.",
                             i,
                             ig.name(),
                             storeStgy.getFromStore(key),
-                            cache.get(key)),
-                        checkResult);
+                            cache.get(key)));
                 }
             }
         }

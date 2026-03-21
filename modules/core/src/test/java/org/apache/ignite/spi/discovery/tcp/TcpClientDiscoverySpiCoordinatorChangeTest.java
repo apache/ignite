@@ -29,6 +29,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 /**
  * This class tests that a client is able to connect to another server node without leaving the cluster.
  */
@@ -67,7 +69,7 @@ public class TcpClientDiscoverySpiCoordinatorChangeTest extends GridCommonAbstra
         client.getOrCreateCache("CACHE-NAME");
 
         // Check that the client didn't disconnect/reconnect quickly.
-        assertFalse("Client node was failed and reconnected to the cluster.", clientReconnectState.get());
+        assertFalse(clientReconnectState.get(), "Client node was failed and reconnected to the cluster.");
 
         // Stop the client.
         client.close();

@@ -46,6 +46,9 @@ import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * This class tests that calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are executed from
@@ -177,7 +180,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
             for (int i = 0; i < nUploaders; ++i)
                 uploaders[i].get();
 
-            assertEquals("Uninitialized cache store session listener.", 0, uninitializedListenerCnt.get());
+            assertEquals(0, uninitializedListenerCnt.get(), "Uninitialized cache store session listener.");
         }
         finally {
             cache.destroy();
@@ -234,7 +237,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
 
             assertEquals(CNT, entryCnt.get());
 
-            assertEquals("Uninitialized cache store session listener.", 0, uninitializedListenerCnt.get());
+            assertEquals(0, uninitializedListenerCnt.get(), "Uninitialized cache store session listener.");
 
             checkOpCount(operations, OperationType.SESSION_START, startedSessions);
 
@@ -258,7 +261,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
                 ++n;
         }
 
-        assertEquals("Operation=" + op.name(), expected, n);
+        assertEquals(expected, n, "Operation=" + op.name());
     }
 
     /**

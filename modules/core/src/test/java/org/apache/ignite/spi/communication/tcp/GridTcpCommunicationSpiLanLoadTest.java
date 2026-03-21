@@ -43,6 +43,9 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
@@ -188,7 +191,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
 
         info(">>> Sent all messages in " + (System.currentTimeMillis() - start) + " milliseconds");
 
-        assertEquals("Invalid count of messages was sent", msgCnt, msgId.get());
+        assertEquals(msgCnt, msgId.get(), "Invalid count of messages was sent");
 
         U.sleep(IDLE_CONN_TIMEOUT * 2);
     }

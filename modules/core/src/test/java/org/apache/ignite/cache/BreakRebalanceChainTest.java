@@ -35,6 +35,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test checks what happens when the rebalance chain is breaking of two parts.
  */
@@ -121,7 +123,7 @@ public class BreakRebalanceChainTest extends GridCommonAbstractTest {
 
         communicationSpi.waitForBlocked();
 
-        assertEquals("Several parallel rebalace detected.", blockedDemand(rebalancingCaches), 1);
+        assertEquals(1, blockedDemand(rebalancingCaches), "Several parallel rebalace detected.");
 
         IgniteEx filteredNode = startGrid(getTestIgniteInstanceName(3) + FILTERED_NODE_SUFFIX);
 
@@ -130,7 +132,7 @@ public class BreakRebalanceChainTest extends GridCommonAbstractTest {
         for (IgniteInternalFuture fut : futs)
             fut.get(10_000);
 
-        assertEquals("Several parallel rebalace detected.", blockedDemand(rebalancingCaches), 1);
+        assertEquals(1, blockedDemand(rebalancingCaches), "Several parallel rebalace detected.");
 
         communicationSpi.stopBlock();
 

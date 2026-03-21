@@ -43,6 +43,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test cases when rebalance processed and not cancelled during various exchange events.
  */
@@ -361,14 +365,14 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
         }
 
         for (IgniteInternalFuture<Boolean> fut : futs)
-            assertFalse(futInfoString(fut), fut.isDone());
+            assertFalse(fut.isDone(), futInfoString(fut));
 
         commSpi1.stopBlock();
 
         awaitPartitionMapExchange();
 
         for (IgniteInternalFuture<Boolean> fut : futs)
-            assertTrue(futInfoString(fut), fut.isDone() && fut.get());
+            assertTrue(fut.isDone() && fut.get(), futInfoString(fut));
     }
 
     /**
@@ -425,7 +429,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
             CacheGroupContext grp = U.field(fut, "grp");
 
             if (CU.isPersistentCache(grp.config(), ignite0.configuration().getDataStorageConfiguration()))
-                assertFalse(futInfoString(fut), fut.isDone());
+                assertFalse(fut.isDone(), futInfoString(fut));
         }
 
         commSpi1.stopBlock();
@@ -436,7 +440,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
             CacheGroupContext grp = U.field(fut, "grp");
 
             if (CU.isPersistentCache(grp.config(), ignite0.configuration().getDataStorageConfiguration()))
-                assertTrue(futInfoString(fut), fut.isDone() && fut.get());
+                assertTrue(fut.isDone() && fut.get(), futInfoString(fut));
         }
     }
 
@@ -479,14 +483,14 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
         }
 
         for (IgniteInternalFuture<Boolean> fut : futs)
-            assertFalse(futInfoString(fut), fut.isDone());
+            assertFalse(fut.isDone(), futInfoString(fut));
 
         commSpi1.stopBlock();
 
         awaitPartitionMapExchange();
 
         for (IgniteInternalFuture<Boolean> fut : futs)
-            assertTrue(futInfoString(fut), fut.isDone() && fut.get());
+            assertTrue(fut.isDone() && fut.get(), futInfoString(fut));
     }
 
     /**
@@ -504,7 +508,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
             futs[i] = grid(1).context().cache()
                 .cacheGroup(CU.cacheId(cache)).preloader().rebalanceFuture();
 
-            assertFalse(futInfoString(futs[i]), futs[i].isDone());
+            assertFalse(futs[i].isDone(), futInfoString(futs[i]));
 
             i++;
         }

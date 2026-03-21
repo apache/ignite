@@ -57,6 +57,13 @@ import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTe
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Class for {@code PojoCacheStore} tests.
  */
@@ -660,7 +667,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             ResultSet rs = stmt.executeQuery("SELECT picture, description FROM Logo");
 
             assertTrue(rs.next());
-            assertTrue(Arrays.equals(picture, rs.getBytes(1)));
+            assertArrayEquals(picture, rs.getBytes(1));
             assertEquals(longDescription, rs.getString(2));
             assertFalse(rs.next());
         }

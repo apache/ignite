@@ -34,6 +34,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * This class tests handling exceptions from {@link CacheStore#write(Cache.Entry)}.
  */
@@ -101,8 +103,8 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
                 }
             }, CacheWriterException.class, null);
 
-        assertTrue("Stacktrace should contain the message of the original exception",
-            Throwables.getStackTraceAsString(t).contains(ThrowableCacheStore.EXCEPTION_MESSAGE));
+        assertTrue(Throwables.getStackTraceAsString(t).contains(ThrowableCacheStore.EXCEPTION_MESSAGE),
+                "Stacktrace should contain the message of the original exception");
     }
 
     /**

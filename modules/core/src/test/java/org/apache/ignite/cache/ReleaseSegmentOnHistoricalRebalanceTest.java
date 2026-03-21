@@ -39,6 +39,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -326,6 +329,6 @@ public class ReleaseSegmentOnHistoricalRebalanceTest extends AbstractReleaseSegm
         awaitPartitionMapExchange();
 
         for (int i = 0; i < 2_000; i++)
-            assertNotNull(String.valueOf(i), n1.cache(DEFAULT_CACHE_NAME).get(i));
+            assertNotNull(n1.cache(DEFAULT_CACHE_NAME).get(i), String.valueOf(i));
     }
 }

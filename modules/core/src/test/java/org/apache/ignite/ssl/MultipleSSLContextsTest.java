@@ -38,6 +38,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Test SSL configuration, where certificates for nodes, connectors and client connectors are signed using different
  * trust stores. SSL for all three transports are enabled at the same time.
@@ -229,14 +232,14 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
      * @param cache A cache to check.
      */
     private void assertCacheContent(Map<Integer, Integer> exp, IgniteCache<Integer, Integer> cache) {
-        assertEquals("Cache has an unexpected size.", exp.size(), cache.size());
+        assertEquals(exp.size(), cache.size(), "Cache has an unexpected size.");
 
         for (Map.Entry<Integer, Integer> e : exp.entrySet()) {
             int key = e.getKey();
             Integer expVal = e.getValue();
             Integer actVal = cache.get(key);
 
-            assertEquals("Cache contains an unexpected value for a key=" + key, expVal, actVal);
+            assertEquals(expVal, actVal, "Cache contains an unexpected value for a key=" + key);
         }
     }
 }

@@ -23,28 +23,59 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
+import org.junit.jupiter.api.extension.TestInstancePostProcessor;
+import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 
 /**
- * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br/>
- * Can be used as both {@link Rule} and {@link ClassRule}.
+ * JUnit 5 extension that manages usage of {@link WithSystemProperty} annotations.<br/>
+ * Can be used at both class and method level.
  *
  * @see WithSystemProperty
  */
-public class SystemPropertiesRule implements TestRule {
-    /**
-     * {@inheritDoc}
-     *
-     * @throws NoSuchMethodError If test method wasn't found for some reason.
-     */
-    @Override public Statement apply(Statement base, Description desc) {
-        Class<?> testCls = desc.getTestClass();
+public class SystemPropertiesRule implements BeforeAllCallback, AfterAllCallback,
+        BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor,
+        TestExecutionExceptionHandler, TestTemplateInvocationContextProvider {
 
-        String testName = desc.getMethodName();
+    private static final Namespace NAMESPACE = Namespace.create(SystemPropertiesRule.class);
+    private static final String CLASS_PROPERTIES_KEY = "classProperties";
+    private static final String METHOD_PROPERTIES_KEY = "methodProperties";
 
-        if (testName == null)
-            return classStatement(testCls, base);
-        else
-            return methodStatement(getTestMethod(testCls, testName), base);
+    @Override
+    public void beforeAll(ExtensionContext context) {
+        Class<?> testClass = context.getRequiredTestClass();
+        List<T2<String, String>> classProperties = setSystemPropertiesBeforeClass(testClass);
+        getStore(context).put(CLASS_PROPERTIES_KEY, classProperties);
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        List<T2<String, String>> classProperties = getStore(context).get(CLASS_PROPERTIES_KEY, List.class);
+        if (classProperties != null) {
+            clearSystemProperties(classProperties);
+        }
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        Method testMethod = context.getRequiredTestMethod();
+        List<T2<String, String>> methodProperties = setSystemPropertiesBeforeTestMethod(testMethod);
+        getStore(context).put(METHOD_PROPERTIES_KEY, methodProperties);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) {
+        List<T2<String, String>> methodProperties = getStore(context).get(METHOD_PROPERTIES_KEY, List.class);
+        if (methodProperties != null) {
+            clearSystemProperties(methodProperties);
+        }
     }
 
     /**
@@ -64,48 +95,15 @@ public class SystemPropertiesRule implements TestRule {
         Method testMtd;
         try {
             testMtd = testCls.getMethod(testMtdName);
-
         }
         catch (NoSuchMethodException e) {
             throw new NoSuchMethodError(S.toString("Test method wasn't found",
-                "testClass", testCls.getSimpleName(), false,
-                "methodName", testName, false,
-                "testMtdName", testMtdName, false
+                    "testClass", testCls.getSimpleName(), false,
+                    "methodName", testName, false,
+                    "testMtdName", testMtdName, false
             ));
         }
         return testMtd;
-    }
-
-    /**
-     * @return Statement that sets all required system properties before class and cleans them after.
-     */
-    private Statement classStatement(Class<?> testCls, Statement base) {
-        return DelegatingJUnitStatement.wrap(() -> {
-            List<T2<String, String>> clsSysProps = setSystemPropertiesBeforeClass(testCls);
-
-            try {
-                base.evaluate();
-            }
-            finally {
-                clearSystemProperties(clsSysProps);
-            }
-        });
-    }
-
-    /**
-     * @return Statement that sets all required system properties before test method and cleans them after.
-     */
-    private Statement methodStatement(Method testMtd, Statement base) {
-        return DelegatingJUnitStatement.wrap(() -> {
-            List<T2<String, String>> testSysProps = setSystemPropertiesBeforeTestMethod(testMtd);
-
-            try {
-                base.evaluate();
-            }
-            finally {
-                clearSystemProperties(testSysProps);
-            }
-        });
     }
 
     /**
@@ -154,7 +152,7 @@ public class SystemPropertiesRule implements TestRule {
      * @param testMtd Current test method.
      * @return List of updated properties in reversed order.
      */
-    public List<T2<String, String>> setSystemPropertiesBeforeTestMethod(Method testMtd) {
+    private List<T2<String, String>> setSystemPropertiesBeforeTestMethod(Method testMtd) {
         WithSystemProperty[] allProps = null;
 
         SystemPropertiesList testProps = testMtd.getAnnotation(SystemPropertiesList.class);
@@ -198,4 +196,38 @@ public class SystemPropertiesRule implements TestRule {
                 System.setProperty(t2.getKey(), t2.getValue());
         }
     }
+
+    /**
+     * Get the store for the extension context.
+     */
+    private Store getStore(ExtensionContext context) {
+        return context.getStore(NAMESPACE);
+    }
+
+    // Required interface methods that need to be implemented but aren't used
+    @Override
+    public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
+        // No-op - required by TestInstancePostProcessor
+    }
+
+    @Override
+    public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        throw throwable; // Re-throw by default
+    }
+
+    @Override
+    public boolean supportsTestTemplate(ExtensionContext context) {
+        return false; // Not supporting test templates
+    }
+
+    @Override
+    public java.util.stream.Stream<org.junit.jupiter.api.extension.TestTemplateInvocationContext>
+    provideTestTemplateInvocationContexts(ExtensionContext context) {
+        return java.util.stream.Stream.empty(); // No test template contexts
+    }
+
+/*    @ExtendWith(SystemPropertiesExtension.class)
+    public class YourTest {
+        // test methods
+    }*/
 }

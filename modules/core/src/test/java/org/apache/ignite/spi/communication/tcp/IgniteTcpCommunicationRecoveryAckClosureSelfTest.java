@@ -58,6 +58,10 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -96,11 +100,11 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
+            assertTrue(msg instanceof GridTestMessage, "Unexpected message: " + msg);
 
             GridTestMessage msg0 = (GridTestMessage)msg;
 
-            assertTrue("Duplicated message received: " + msg0, msgIds.add(msg0.getMsgId()));
+            assertTrue(msgIds.add(msg0.getMsgId()), "Duplicated message received: " + msg0);
 
             rcvCnt.incrementAndGet();
 
@@ -214,8 +218,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                                 }
                             }, 10_000);
 
-                            assertEquals("Unexpected messages: " + recoveryDesc.messagesRequests(), 0,
-                                recoveryDesc.messagesRequests().size());
+                            assertEquals(0, recoveryDesc.messagesRequests().size(),
+                                    "Unexpected messages: " + recoveryDesc.messagesRequests());
 
                             break;
                         }
@@ -347,7 +351,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             }
         }, awaitTime);
 
-        assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
+        assertTrue(ses0.closeTime() != 0, "Failed to wait for session close");
 
         GridTestUtils.setFieldValue(srv1, "skipWrite", false);
 

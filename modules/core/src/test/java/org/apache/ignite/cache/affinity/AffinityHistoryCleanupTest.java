@@ -36,6 +36,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -260,10 +262,10 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
 
             Map<AffinityTopologyVersion, Object> cache = GridTestUtils.getFieldValue(aff, "affCache");
 
-            assertEquals("Unexpected history: " + cache.keySet(), expHist.size(), cache.size());
+            assertEquals(expHist.size(), cache.size(), "Unexpected history: " + cache.keySet());
 
             for (AffinityTopologyVersion topVer : expHist)
-                assertTrue("No history [ver=" + topVer + ", hist=" + cache.keySet() + ']', cache.containsKey(topVer));
+                assertTrue(cache.containsKey(topVer), "No history [ver=" + topVer + ", hist=" + cache.keySet() + ']');
 
             cnt++;
         }

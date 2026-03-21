@@ -53,13 +53,17 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests for communication over discovery feature (inverse communication request).
@@ -190,7 +194,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
         RESPOND_TO_INVERSE_REQUEST.set(true);
 
-        Assume.assumeThat(System.getProperty("zookeeper.forceSync"), is(nullValue()));
+        assumeTrue(System.getProperty("zookeeper.forceSync") == null);
 
         startGrid(0).cluster().state(ClusterState.ACTIVE);
 
@@ -235,7 +239,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UUID newRouterNode = ((TcpDiscoveryNode)grid(1).localNode()).clientRouterNodeId();
 
         assertEquals(clientNodeId, newId);
-        assertFalse(oldRouterNode + " " + newRouterNode, newRouterNode.equals(oldRouterNode));
+        assertFalse(newRouterNode.equals(oldRouterNode), oldRouterNode + " " + newRouterNode);
 
         assertTrue(GridTestUtils.waitForCondition(msgRcvd::get, 1000L));
     }
@@ -359,7 +363,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
+        GridTestUtils.runAsync(() ->
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
         );
 

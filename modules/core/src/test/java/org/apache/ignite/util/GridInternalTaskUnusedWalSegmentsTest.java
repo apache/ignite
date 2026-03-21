@@ -42,6 +42,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Test correctness of WalTask.
@@ -93,7 +95,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
         try {
-            IgniteEx ig0 = (IgniteEx)startGrids(4);
+            IgniteEx ig0 = startGrids(4);
 
             ig0.cluster().state(ClusterState.ACTIVE);
 
@@ -115,7 +117,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
                     new VisorTaskArgument<>(ig0.cluster().node().id(),
                             new WalPrintCommandArg(), false)).result();
 
-            assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
+            assertEquals(printRes.results().size(), 4, "Check that print task finished without exceptions");
 
             List<File> walArchives = new ArrayList<>();
 
@@ -128,7 +130,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
                     new VisorTaskArgument<>(ig0.cluster().node().id(),
                             new WalDeleteCommandArg(), false)).result();
 
-            assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 4);
+            assertEquals(4, delRes.results().size(), "Check that delete task finished with no exceptions");
 
             List<File> walDeletedArchives = new ArrayList<>();
 
@@ -138,11 +140,10 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
             }
 
             for (File f : walDeletedArchives)
-                assertTrue("Checking existing of deleted WAL archived segments: " + f.getAbsolutePath(), !f.exists());
+                assertFalse(f.exists(), "Checking existing of deleted WAL archived segments: " + f.getAbsolutePath());
 
             for (File f : walArchives)
-                assertTrue("Checking existing of WAL archived segments from print task after delete: " + f.getAbsolutePath(),
-                        !f.exists());
+                assertFalse(f.exists(), "Checking existing of WAL archived segments from print task after delete: " + f.getAbsolutePath());
         }
         finally {
             stopAllGrids();

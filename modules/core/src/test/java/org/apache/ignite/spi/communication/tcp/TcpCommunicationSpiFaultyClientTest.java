@@ -47,6 +47,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests that faulty client will be failed if connection can't be established.
@@ -227,7 +229,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(clientPool, "clients");
 
             // Wait for write timeout and closing idle connections.
-            assertTrue("Failed to wait for closing idle connections.",
+            assertTrue(
                 GridTestUtils.waitForCondition(() -> {
                     for (GridCommunicationClient[] clients0 : clients.values()) {
                         for (GridCommunicationClient client : clients0) {
@@ -237,7 +239,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                     }
 
                     return true;
-                }, 1000));
+                }, 1000), "Failed to wait for closing idle connections.");
 
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -262,7 +264,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             final long time = U.currentTimeMillis() - t1;
 
-            assertTrue("Must try longer than expected delay", time >= expDelay);
+            assertTrue(time >= expDelay, "Must try longer than expected delay");
 
             assertTrue(latch.await(expDelay + 1000, TimeUnit.MILLISECONDS));
 

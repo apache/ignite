@@ -20,6 +20,8 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */

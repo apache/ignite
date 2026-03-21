@@ -39,6 +39,8 @@ import org.junit.jupiter.api.Test;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -101,12 +103,11 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         LinkedList<Integer> keys = new LinkedList<>(linkedMap.keySet());
 
-        assertTrue("Invalid key set size: " + keys.size(), U.safeAbs(maxSize - keys.size()) <= diff);
+        assertTrue(U.safeAbs(maxSize - keys.size()) <= diff, "Invalid key set size: " + keys.size());
 
-        assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
-        assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
-        assertTrue("Invalid map queue size: " + linkedMap.queue().sizex(),
-            U.safeAbs(maxSize - linkedMap.queue().sizex()) <= diff);
+        assertTrue(U.safeAbs(maxSize - linkedMap.size()) <= diff, "Invalid map size: " + linkedMap.size());
+        assertTrue(U.safeAbs(maxSize - linkedMap.sizex()) <= diff, "Invalid map sizex: " + linkedMap.sizex());
+        assertTrue(U.safeAbs(maxSize - linkedMap.queue().sizex()) <= diff, "Invalid map queue size: " + linkedMap.queue().sizex());
 
         while (!keys.isEmpty()) {
             boolean found = false;
@@ -123,7 +124,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
                 }
             }
 
-            assertTrue("Key was not found on the top of any thread: " + key, found);
+            assertTrue(found, "Key was not found on the top of any thread: " + key);
         }
 
         int min = Integer.MAX_VALUE;
@@ -141,7 +142,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         info("Max: " + max);
         info("Min: " + min);
 
-        assertTrue("Invalid keys count: " + actKeyCnt, U.safeAbs(maxSize - actKeyCnt) <= diff);
+        assertTrue(U.safeAbs(maxSize - actKeyCnt) <= diff, "Invalid keys count: " + actKeyCnt);
     }
 
     /**
@@ -166,8 +167,8 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
             keyCnt,
             maxSize * 10); // Intentionally memorize more than maxSize since in this mode LRU is not fair.
 
-        assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
-        assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
+        assertTrue(U.safeAbs(maxSize - linkedMap.size()) <= diff, "Invalid map size: " + linkedMap.size());
+        assertTrue(U.safeAbs(maxSize - linkedMap.sizex()) <= diff, "Invalid map sizex: " + linkedMap.sizex());
 
         LinkedList<Integer> keys = new LinkedList<>(linkedMap.keySet());
 
@@ -184,7 +185,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
                 }
             }
 
-            assertTrue("Key was not found in any thread: " + key, found);
+            assertTrue(found, "Key was not found in any thread: " + key);
         }
 
         int min = Integer.MAX_VALUE;
@@ -204,7 +205,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         info("Max: " + max);
         info("Min: " + min);
 
-        assertTrue("Invalid keys count: " + actKeyCnt, U.safeAbs(maxSize - actKeyCnt) <= diff);
+        assertTrue(U.safeAbs(maxSize - actKeyCnt) <= diff, "Invalid keys count: " + actKeyCnt);
     }
 
     /**
@@ -229,8 +230,8 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
             keyCnt,
             maxSize * 10); // Intentionally memorize more than maxSize since in this mode LRU is not fair.
 
-        assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
-        assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
+        assertTrue(U.safeAbs(maxSize - linkedMap.size()) <= diff, "Invalid map size: " + linkedMap.size());
+        assertTrue(U.safeAbs(maxSize - linkedMap.sizex()) <= diff, "Invalid map sizex: " + linkedMap.sizex());
 
         LinkedList<Integer> keys = new LinkedList<>(linkedMap.keySet());
 
@@ -247,7 +248,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
                 }
             }
 
-            assertTrue("Key was not found in any thread: " + key, found);
+            assertTrue(found, "Key was not found in any thread: " + key);
         }
 
         int min = Integer.MAX_VALUE;
@@ -267,7 +268,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         info("Max: " + max);
         info("Min: " + min);
 
-        assertTrue("Invalid keys count: " + actKeyCnt, U.safeAbs(maxSize - actKeyCnt) <= diff);
+        assertTrue(U.safeAbs(maxSize - actKeyCnt) <= diff, "Invalid keys count: " + actKeyCnt);
     }
 
     /**
@@ -288,8 +289,8 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         // Producer thread.
         IgniteInternalFuture<?> fut = multithreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+            new Callable<>() {
+                @Nullable @Override public Object call() {
                     String thNm = Thread.currentThread().getName();
 
                     LinkedList<Integer> keys = new LinkedList<>();
@@ -351,8 +352,8 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         // Updater threads.
         IgniteInternalFuture<?> fut = multithreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+            new Callable<>() {
+                @Nullable @Override public Object call() {
                     Random rnd = new Random();
 
                     while (run.get()) {
@@ -377,7 +378,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
                 cp.removeAll(linkedMap.keySet());
 
-                assertTrue("Keys disappeared from map: " + cp, cp.isEmpty());
+                assertTrue(cp.isEmpty(), "Keys disappeared from map: " + cp);
             }
 
             info(">>> Iterator test complete [duration = " + (System.currentTimeMillis() - start) + ']');
@@ -476,10 +477,10 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         Set<Integer> keys = linkedMap.keySet();
 
         if (clear)
-            assertTrue("Keys must not be in map " + keys, keys.isEmpty());
+            assertTrue(keys.isEmpty(), "Keys must not be in map " + keys);
         else {
             original.removeAll(keys);
-            assertTrue("Keys must be in map: " + original, original.isEmpty());
+            assertTrue(original.isEmpty(), "Keys must be in map: " + original);
         }
 
         info(">>> put get remove test complete [duration = " + (System.currentTimeMillis() - start) + ']');
@@ -548,7 +549,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
             while (it.hasNext()) {
                 int key = it.next();
 
-                assertFalse("Duplicate key: " + key, keys.contains(key));
+                assertFalse(keys.contains(key), "Duplicate key: " + key);
                 keys.add(key);
             }
 
@@ -567,7 +568,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         Set<Integer> keys = linkedMap.keySet();
 
         original.removeAll(keys);
-        assertTrue("Keys must be in map: " + original, original.isEmpty());
+        assertTrue(original.isEmpty(), "Keys must be in map: " + original);
 
         info(">>> put get remove test complete [duration = " + (System.currentTimeMillis() - start) + ']');
     }

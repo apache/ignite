@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.checkCyclicBalancing;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests round robin load balancing.
@@ -79,7 +81,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
         List<UUID> orderedNodes = new ArrayList<>(getSpi().getNodeIds(ses));
 
-        assertEquals("Balancer doesn't use all available nodes", orderedNodes.size(), allNodes.size());
+        assertEquals(orderedNodes.size(), allNodes.size(), "Balancer doesn't use all available nodes");
 
         checkCyclicBalancing(getSpi(), allNodes, orderedNodes, ses);
     }
@@ -96,7 +98,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
         List<UUID> orderedNodes = getSpi().getNodeIds(ses1);
 
-        assertEquals("Balancer doesn't use all available nodes", orderedNodes.size(), allNodes.size());
+        assertEquals(orderedNodes.size(), allNodes.size(), "Balancer doesn't use all available nodes");
 
         checkCyclicBalancing(getSpi(), allNodes, orderedNodes, ses1, ses2);
 

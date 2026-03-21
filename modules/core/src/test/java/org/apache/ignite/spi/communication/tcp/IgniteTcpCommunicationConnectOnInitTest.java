@@ -45,6 +45,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Testing {@link TcpCommunicationSpi} that will send the wait handshake message on received connections until SPI
  * context initialized.
@@ -107,7 +110,7 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
             boolean wait = GridTestUtils.waitForCondition(
                 () -> ses.bytesReceived() == HandshakeWaitMessage.MESSAGE_FULL_SIZE, 1000);
 
-            assertTrue("Handshake not started.", wait);
+            assertTrue(wait, "Handshake not started.");
 
             discoWriteLatch.countDown();
 

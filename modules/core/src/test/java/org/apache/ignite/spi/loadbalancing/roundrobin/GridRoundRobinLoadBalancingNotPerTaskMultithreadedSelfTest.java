@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Multithreaded tests for global load balancer.
  */
@@ -112,7 +114,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
 
                     info(msg);
 
-                    assertTrue(msg, curCnt >= floor);
+                    assertTrue(curCnt >= floor, msg);
                 }
 
                 avgSpread /= allNodes.size();
@@ -122,7 +124,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
                 info("Average spread for " + allNodes.size() + " nodes is " + avgSpread + " percents");
 
                 // Consider +-10% is permissible average spread for all nodes.
-                assertTrue("Average spread is too big: " + avgSpread, avgSpread <= 10);
+                assertTrue(avgSpread <= 10, "Average spread is too big: " + avgSpread);
 
                 return null;
             }

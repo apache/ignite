@@ -34,6 +34,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests near-only cache.
@@ -220,8 +225,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                         foundAffNode = true;
                 }
 
-                assertTrue("Did not found primary or backup entry for grid: " + i, foundEntry);
-                assertTrue("Did not found affinity node for grid: " + i, foundAffNode);
+                assertTrue(foundEntry, "Did not found primary or backup entry for grid: " + i);
+                assertTrue(foundAffNode, "Did not found affinity node for grid: " + i);
             }
         }
     }

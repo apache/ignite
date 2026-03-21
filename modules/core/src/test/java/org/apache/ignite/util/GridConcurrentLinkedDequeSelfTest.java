@@ -23,6 +23,9 @@ import org.jsr166.ConcurrentLinkedDeque8;
 import org.junit.jupiter.api.Test;
 
 import static org.jsr166.ConcurrentLinkedDeque8.Node;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link org.jsr166.ConcurrentLinkedDeque8}.
@@ -32,7 +35,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPoll() throws Exception {
+    public void testPoll() {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
         deque.add(1);

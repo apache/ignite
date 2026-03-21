@@ -17,48 +17,37 @@
 
 package org.apache.ignite.testframework.junits;
 
-import org.jetbrains.annotations.NotNull;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.function.Executable;
 
 /**
- * Utility class to convert lambdas into {@link Statement} objects.
  *
- * @see Statement
  */
-public class DelegatingJUnitStatement extends Statement {
-    /** Object to delegate statements body to. */
-    private final StatementEx delegate;
+public class DelegatingJUnitStatement implements Executable {
+    /** Object to delegate executable body to. */
+    private Executable delegate;
 
     /**
-     * @param delegate Object to delegate statements body to.
-     * @return {@link StatementEx} converted to {@link Statement}.
+     * @param delegate Object to delegate executable body to.
+     * @return {@link Executable} as a {@link org.junit.jupiter.api.function.Executable}.
      */
-    public static Statement wrap(@NotNull StatementEx delegate) {
+    public static Executable wrap(Executable delegate) {
         return new DelegatingJUnitStatement(delegate);
     }
 
     /**
-     * @param delegate Object to delegate statements body to.
+     * @param delegate Object to delegate executable body to.
      */
-    private DelegatingJUnitStatement(@NotNull StatementEx delegate) {
+    private DelegatingJUnitStatement(Executable delegate) {
         this.delegate = delegate;
     }
 
-    /** {@inheritDoc} */
-    @Override public void evaluate() throws Throwable {
-        delegate.evaluate();
-    }
-
     /**
-     * Functional version of {@link Statement} abstract class.
+     * Executes the delegate executable.
      *
-     * @see Statement
+     * @throws Throwable if the delegate execution throws an exception
      */
-    @FunctionalInterface
-    public static interface StatementEx {
-        /**
-         * @see Statement#evaluate()
-         */
-        void evaluate() throws Throwable;
+    @Override
+    public void execute() throws Throwable {
+        delegate.execute();
     }
 }

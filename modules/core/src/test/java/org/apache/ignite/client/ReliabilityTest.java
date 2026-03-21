@@ -65,6 +65,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -152,12 +156,12 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
                         List<Cache.Entry<Integer, String>> res = cur.getAll();
 
-                        assertEquals("Unexpected number of entries", data.size(), res.size());
+                        assertEquals(data.size(), res.size(), "Unexpected number of entries");
 
                         Map<Integer, String> act = res.stream()
                                 .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
 
-                        assertEquals("Unexpected entries", data, act);
+                        assertEquals(data, act, "Unexpected entries");
                     }
                 }
                 catch (ClientConnectionException ignored) {
@@ -362,7 +366,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
                 + nullOpsNames;
 
-        assertEquals(msg, expectedNullCnt, nullOps.size());
+        assertEquals(expectedNullCnt, nullOps.size(), msg);
     }
 
     /**

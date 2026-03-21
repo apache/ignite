@@ -41,6 +41,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 /**
  *
  */
@@ -158,13 +161,12 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
 
             stallSpi.stopStall();
 
-            assertEquals("New node did not become a coordinator",
-                1, newCrd.cluster().localNode().order());
+            assertEquals(1, newCrd.cluster().localNode().order(), "New node did not become a coordinator");
 
             fut3.get();
 
-            assertEquals("Second node did not join the grid",
-                2, grid(3).cluster().localNode().order());
+            assertEquals(2, grid(3).cluster().localNode().order(),
+                    "Second node did not join the grid");
         }
         finally {
             stopAllGrids();

@@ -59,6 +59,11 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -113,11 +118,11 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             // info("Test listener received message: " + msg);
 
-            assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
+            assertInstanceOf(GridTestMessage.class, msg, "Unexpected message: " + msg);
 
             GridTestMessage msg0 = (GridTestMessage)msg;
 
-            assertTrue("Duplicated message received: " + msg0, msgIds.add(msg0.getMsgId()));
+            assertTrue(msgIds.add(msg0.getMsgId()), "Duplicated message received: " + msg0);
 
             rcvCnt.incrementAndGet();
 
@@ -331,7 +336,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
                         }
                     }, awaitForSocketWriteTimeout());
 
-                    assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
+                    assertTrue(ses0.closeTime() != 0, "Failed to wait for session close");
 
                     try {
                         ses1.resumeReads().get();
@@ -455,7 +460,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
                         }
                     }, awaitForSocketWriteTimeout());
 
-                    assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
+                    assertTrue(ses0.closeTime() != 0, "Failed to wait for session close");
 
                     try {
                         ses1.resumeReads().get();
@@ -471,7 +476,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
                         }
                     }, awaitForSocketWriteTimeout());
 
-                    assertTrue("Failed to wait for session close", ses1.closeTime() != 0);
+                    assertTrue(ses1.closeTime() != 0, "Failed to wait for session close");
 
                     for (int j = 0; j < 100; j++) {
                         spi1.sendMessage(node0, new GridTestMessage(node1.id(), msgId.incrementAndGet(), 0));
@@ -580,7 +585,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
                     // Wait when session is closed because of write timeout.
                     GridTestUtils.waitForCondition(() -> ses0.closeTime() != 0, awaitForSocketWriteTimeout());
 
-                    assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
+                    assertTrue(ses0.closeTime() != 0, "Failed to wait for session close");
 
                     try {
                         ses1.resumeReads().get();

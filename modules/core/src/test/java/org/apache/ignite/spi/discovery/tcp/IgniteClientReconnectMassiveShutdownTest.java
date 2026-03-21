@@ -55,6 +55,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Client reconnect test in multi threaded mode while cache operations are in progress.
@@ -278,7 +282,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
             // Checks that failing servers was stopped after segmentation policy applying.
             if (stopType == StopType.FAIL_EVENT) {
-                assertTrue("Servers was not stopped.", GridTestUtils.waitForCondition(() -> {
+                assertTrue(GridTestUtils.waitForCondition(() -> {
                     for (int i = 0; i < srvsToKill; i++) {
                         try {
                             grid(i);
@@ -291,7 +295,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                     }
 
                     return true;
-                }, 15_000));
+                }, 15_000), "Servers was not stopped.");
             }
 
             // Clean up ignite instance from static map in IgnitionEx.grids

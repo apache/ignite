@@ -40,6 +40,11 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Local deployment SPI test.
  */
@@ -119,9 +124,9 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         assertNotNull(t1);
 
-        assertSame(t1.getResourceClass(), task);
+        assertSame(task, t1.getResourceClass());
 
-        assertEquals(t1.getName(), taskName);
+        assertEquals(taskName, t1.getName());
 
         getSpi().unregister(taskName);
 

@@ -60,6 +60,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.IgniteUtils.spiAttribute;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_HOST_NAMES;
 import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * TCP communication SPI config test.
@@ -218,8 +221,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             }
         });
 
-        assertFalse("Check test logs, NPE was found",
-            GridTestUtils.waitForCondition(npeLsnr::check, 3_000));
+        assertFalse(GridTestUtils.waitForCondition(npeLsnr::check, 3_000), "Check test logs, NPE was found");
 
         initFut.get();
         sendFut.get();
@@ -284,7 +286,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         String host = findHostName(addrs.get2());
         String ip = findIpAddr(addrs.get1());
 
-        assertNotNull("addrs=" + addrs, ip);
+        assertNotNull(ip, "addrs=" + addrs);
 
         log.info("Testing ip=" + ip + " host=" + host);
 

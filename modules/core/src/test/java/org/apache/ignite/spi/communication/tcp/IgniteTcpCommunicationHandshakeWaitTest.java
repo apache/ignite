@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Testing {@link TcpCommunicationSpi} that will send the wait handshake message on received connections until SPI
  * context initialized.
