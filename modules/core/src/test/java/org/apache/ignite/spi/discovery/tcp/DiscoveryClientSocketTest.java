@@ -32,6 +32,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Check a ssl socket configuration which used in discovery.
  */
@@ -120,7 +123,7 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
                 fail("Failed to read from socket.");
         }
 
-        assertEquals("Handshake did not pass, read bytes: " + read, Arrays.asList(U.IGNITE_HEADER), Arrays.asList(U.IGNITE_HEADER));
+        assertEquals(Arrays.asList(U.IGNITE_HEADER), Arrays.asList(U.IGNITE_HEADER), "Handshake did not pass, read bytes: " + read);
     }
 
     /**

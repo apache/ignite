@@ -28,6 +28,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_TOP_HISTORY_SIZE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for topology snapshots history.
@@ -61,9 +64,9 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
 
             DiscoverySpiHistorySupport ann = U.getAnnotation(spi.getClass(), DiscoverySpiHistorySupport.class);
 
-            assertNotNull("Spi does not have annotation for history support", ann);
+            assertNotNull(ann, "Spi does not have annotation for history support");
 
-            assertTrue("History support is disabled for current spi", ann.value());
+            assertTrue(ann.value(), "History support is disabled for current spi");
         }
         finally {
             stopGrid();
@@ -176,6 +179,6 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
      */
     private static void assertTopVer(long expTopVer, Ignite... ignites) {
         for (Ignite g : ignites)
-            assertEquals("Grid has wrong topology version.", expTopVer, g.cluster().topologyVersion());
+            assertEquals(expTopVer, g.cluster().topologyVersion(), "Grid has wrong topology version.");
     }
 }

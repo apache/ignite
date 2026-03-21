@@ -26,6 +26,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -148,7 +151,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
                         if (o == null || o.hashCode() % STRIPE_COUNT == 0)
                             assertEquals(2, holdCnt);
                         else
-                            assertEquals("Test object " + o.hashCode(), 1, holdCnt);
+                            assertEquals(1, holdCnt, "Test object " + o.hashCode());
                     }
                     finally {
                         lock.unlock(o);

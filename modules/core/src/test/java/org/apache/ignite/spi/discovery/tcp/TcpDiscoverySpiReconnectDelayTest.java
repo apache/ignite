@@ -43,6 +43,8 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoveryImpl.RES_WAIT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for {@link TcpDiscoverySpi#setReconnectDelay(int)}.
@@ -150,7 +152,7 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
             int cntr = failJoinReq.get();
             int numOfMsgs = numOfFailedRequests - cntr;
             int expNumOfMsgs = numOfFailedRequests + 1;
-            assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
+            assertEquals(expNumOfMsgs, numOfMsgs, "Unexpected number of messages");
         }
     }
 
@@ -216,7 +218,7 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
             int cntr = failCntr.get();
             int numOfMsgs = numOfFailedRequests - cntr;
             int expNumOfMsgs = numOfFailedRequests + 1;
-            assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
+            assertEquals(expNumOfMsgs, numOfMsgs, "Unexpected number of messages");
         }
     }
 
@@ -299,7 +301,7 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
                 int cntr = failJoinReq.get();
                 int numOfMsgs = numOfFailedRequests - cntr;
                 int expNumOfMsgs = numOfFailedRequests + 1;
-                assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
+                assertEquals(expNumOfMsgs, numOfMsgs, "Unexpected number of messages");
             }
         }
     }
@@ -354,7 +356,7 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
                 int cntr = failJoinReqRes.get();
                 int numOfMsgs = numOfFailedRequests - cntr;
                 int expNumOfMsgs = numOfFailedRequests + 1;
-                assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
+                assertEquals(expNumOfMsgs, numOfMsgs, "Unexpected number of messages");
             }
         }
     }

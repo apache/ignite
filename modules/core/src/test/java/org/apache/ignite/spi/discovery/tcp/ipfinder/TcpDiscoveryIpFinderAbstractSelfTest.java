@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Abstract test for ip finder.
  */
@@ -45,7 +47,7 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
      *
      * @throws Exception If any error occurs.
      */
-    protected TcpDiscoveryIpFinderAbstractSelfTest() throws Exception {
+    protected TcpDiscoveryIpFinderAbstractSelfTest() {
         super(false);
     }
 
@@ -89,7 +91,7 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
             addrs = finder.getRegisteredAddresses();
         }
 
-        assertEquals("Wrong collection size", 3, addrs.size());
+        assertEquals(3, addrs.size(), "Wrong collection size");
 
         for (InetSocketAddress addr : initAddrs)
             assert addrs.contains(addr) : "Address is missing (got inconsistent addrs collection): " + addr;
@@ -104,7 +106,7 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
             addrs = finder.getRegisteredAddresses();
         }
 
-        assertEquals("Wrong collection size", 2, addrs.size());
+        assertEquals(2, addrs.size(), "Wrong collection size");
 
         finder.unregisterAddresses(finder.getRegisteredAddresses());
 

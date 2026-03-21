@@ -34,6 +34,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
@@ -99,7 +102,7 @@ public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
             .filter(node -> node.id().equals(routerId))
             .collect(Collectors.toList());
 
-        assertTrue(routers.size() == 1);
+        assertEquals(1, routers.size());
         assertEquals(bool ? DC_ID_0 : DC_ID_1, routers.get(0).dataCenterId());
     }
 
@@ -139,7 +142,7 @@ public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
             .filter(node -> node.id().equals(routerId))
             .collect(Collectors.toList());
 
-        assertTrue(routers.size() == 1);
+        assertEquals(1, routers.size());
         assertNull(routers.get(0).dataCenterId());
     }
 }

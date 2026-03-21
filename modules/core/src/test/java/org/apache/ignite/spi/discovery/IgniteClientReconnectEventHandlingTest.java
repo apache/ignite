@@ -37,6 +37,10 @@ import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Checks that client will not process previous cluster events after reconnect.
@@ -120,8 +124,8 @@ public class IgniteClientReconnectEventHandlingTest extends GridCommonAbstractTe
         stopGrid(1);
 
         // Wait for the discovery notifier worker processed client disconnection.
-        assertTrue("Failed to wait for client disconnected.",
-            waitForCondition(() -> client.cluster().clientReconnectFuture() != null, 10_000));
+        assertTrue(waitForCondition(() -> client.cluster().clientReconnectFuture() != null, 10_000),
+                "Failed to wait for client disconnected.");
 
         assertTrue(client.context().clientDisconnected());
 
@@ -142,14 +146,15 @@ public class IgniteClientReconnectEventHandlingTest extends GridCommonAbstractTe
 
         fut.get();
 
-        assertTrue(!client.context().clientDisconnected());
+        assertFalse(client.context().clientDisconnected());
 
-        assertTrue("Failed to wait for client reconnect event.", reconnect.await(10, SECONDS));
+        assertTrue(reconnect.await(10, SECONDS),
+                "Failed to wait for client reconnect event.");
 
         awaitPartitionMapExchange();
 
-        assertEquals("Only reconnect event should be processed after the client reconnects to cluster.",
-            1, evtQueue.size());
+        assertEquals(1, evtQueue.size(),
+                "Only reconnect event should be processed after the client reconnects to cluster.");
 
         assertEquals(EVT_CLIENT_NODE_RECONNECTED, evtQueue.poll().type());
     }

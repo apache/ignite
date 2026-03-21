@@ -29,6 +29,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstract
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * GridTcpDiscoveryVmIpFinder test.
  */
@@ -196,8 +200,8 @@ public class TcpDiscoveryVmIpFinderSelfTest
 
         finder.setAddresses(Collections.singleton("[::1]:47500..47509"));
 
-        assertEquals("Registered addresses: " + finder.getRegisteredAddresses().toString(),
-            10, finder.getRegisteredAddresses().size());
+        assertEquals(10, finder.getRegisteredAddresses().size(),
+                "Registered addresses: " + finder.getRegisteredAddresses().toString());
     }
 
     /**

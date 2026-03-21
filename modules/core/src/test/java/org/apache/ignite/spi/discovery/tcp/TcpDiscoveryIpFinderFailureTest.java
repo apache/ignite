@@ -41,6 +41,9 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Check different disconnections scenarios in respect to {@link TcpDiscoverySpi#joinTimeout} cfg
@@ -142,7 +145,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
             return true;
         }, EVT_CLIENT_NODE_DISCONNECTED);
 
-        assertTrue("Failed to wait for client node disconnected.", latch.await(6, SECONDS));
+        assertTrue(latch.await(6, SECONDS), "Failed to wait for client node disconnected.");
     }
 
     /**
@@ -191,7 +194,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
 
         Ignition.stop(crd.name(), true);
 
-        assertTrue("Failed to wait for server node disconnected.", latch.await(10, SECONDS));
+        assertTrue(latch.await(10, SECONDS), "Failed to wait for server node disconnected.");
     }
 
     /**
@@ -230,7 +233,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
         if (!GridTestUtils.waitForCondition(done::get, 10_000)) {
             fut.cancel();
 
-            assertTrue("Node was not failed", fut.get());
+            assertTrue(fut.get(), "Node was not failed");
         }
         else {
             String nodeState = fut.get() ? "Connected" : "Failed";
@@ -274,7 +277,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
 
         if (!GridTestUtils.waitForCondition(() -> done.get(), 5_000)) fut.cancel();
 
-        assertTrue("Node should be stuck in a joining loop", fut.get());
+        assertTrue(fut.get(), "Node should be stuck in a joining loop");
     }
 
     /**
@@ -350,7 +353,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
             }
         }
 
-        assertTrue("Server node must fail if nonshared dynamic service returns empty list", isSpiExThrown);
+        assertTrue(isSpiExThrown, "Server node must fail if nonshared dynamic service returns empty list");
     }
 
     /**

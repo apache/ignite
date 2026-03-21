@@ -86,6 +86,10 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.testframework.GridTestUtils.noop;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Client-based discovery tests.
@@ -2397,7 +2401,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private void checkRemoteNodes(Ignite ignite, int expCnt) {
         Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
-        assertEquals("Unexpected state for node: " + ignite.name(), expCnt, nodes.size());
+        assertEquals(expCnt, nodes.size(), "Unexpected state for node: " + ignite.name());
 
         for (ClusterNode node : nodes) {
             UUID id = node.id();
@@ -2425,7 +2429,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     protected void await(CountDownLatch latch, long timeout) throws InterruptedException {
-        assertTrue("Latch count: " + latch.getCount(), latch.await(timeout, MILLISECONDS));
+        assertTrue(latch.await(timeout, MILLISECONDS), "Latch count: " + latch.getCount());
     }
 
     /**
@@ -2433,8 +2437,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     private void awaitClient(CountDownLatch latch) throws InterruptedException {
-        assertTrue("Failed to wait for latch, latch count: " + latch.getCount(),
-            latch.await(awaitClientTime(), MILLISECONDS));
+        assertTrue(latch.await(awaitClientTime(), MILLISECONDS),
+                "Failed to wait for latch, latch count: " + latch.getCount());
     }
 
     /**

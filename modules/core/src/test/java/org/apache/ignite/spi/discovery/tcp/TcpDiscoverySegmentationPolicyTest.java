@@ -33,6 +33,9 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for segmentation policy and failure handling in {@link TcpDiscoverySpi}.
@@ -111,16 +114,16 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
         IgniteEx ignite1 = grid(1);
         IgniteEx ignite2 = grid(2);
 
-        assertFalse("Unexpected segmentation.", segmented.get());
+        assertFalse(segmented.get(), "Unexpected segmentation.");
 
         ((TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi()).brakeConnection();
         ((TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi()).brakeConnection();
 
         waitForCondition(() -> G.allGrids().size() < NODES_CNT, getTestTimeout());
 
-        assertTrue("Segmentation was not happened.", segmented.get());
+        assertTrue(segmented.get(), "Segmentation was not happened.");
 
-        assertTrue(byFailureHnd == dfltFailureHndInvoked);
+        assertEquals(byFailureHnd, dfltFailureHndInvoked);
     }
 
     /**

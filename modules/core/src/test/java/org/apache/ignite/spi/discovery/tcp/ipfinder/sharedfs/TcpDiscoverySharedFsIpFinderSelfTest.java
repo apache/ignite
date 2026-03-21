@@ -26,6 +26,8 @@ import java.util.UUID;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * GridTcpDiscoverySharedFsIpFinder test.
  */
@@ -71,11 +73,11 @@ public class TcpDiscoverySharedFsIpFinderSelfTest
 
         finder.registerAddresses(initAddrs);
 
-        assertEquals("Wrong collection size", 1, finder.getRegisteredAddresses().size());
+        assertEquals(1, finder.getRegisteredAddresses().size(), "Wrong collection size");
 
         finder.unregisterAddresses(initAddrs);
 
-        assertEquals("Wrong collection size", 0, finder.getRegisteredAddresses().size());
+        assertEquals(0, finder.getRegisteredAddresses().size(), "Wrong collection size");
 
         finder.close();
     }

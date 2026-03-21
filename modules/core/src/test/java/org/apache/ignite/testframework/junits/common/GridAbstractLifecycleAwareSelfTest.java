@@ -26,6 +26,9 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheNameResource;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 /**
  * Base class for tests against {@link LifecycleAware} support.
  */
@@ -118,16 +121,16 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         assertFalse(lifecycleAwares.isEmpty());
 
         for (TestLifecycleAware lifecycleAware : lifecycleAwares) {
-            assertEquals("Unexpected start count for " + lifecycleAware, 1, lifecycleAware.startCount());
-            assertEquals("Unexpected stop count for " + lifecycleAware, 0, lifecycleAware.stopCount());
+            assertEquals(1, lifecycleAware.startCount(), "Unexpected start count for " + lifecycleAware);
+            assertEquals(0, lifecycleAware.stopCount(), "Unexpected stop count for " + lifecycleAware);
         }
 
         try {
             stopGrid();
 
             for (TestLifecycleAware lifecycleAware : lifecycleAwares) {
-                assertEquals("Unexpected start count for " + lifecycleAware, 1, lifecycleAware.startCount());
-                assertEquals("Unexpected stop count for " + lifecycleAware, 1, lifecycleAware.stopCount());
+                assertEquals(1, lifecycleAware.startCount(), "Unexpected start count for " + lifecycleAware);
+                assertEquals(1, lifecycleAware.stopCount(), "Unexpected stop count for " + lifecycleAware);
             }
         }
         finally {

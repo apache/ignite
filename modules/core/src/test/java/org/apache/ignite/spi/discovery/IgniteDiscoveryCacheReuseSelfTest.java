@@ -29,6 +29,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 /**
  * Tests discovery cache reuse between topology events.
  */
@@ -93,7 +97,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
 
             GridConcurrentHashSet alives1 = U.field(discoCache1, "alives");
             GridConcurrentHashSet alives2 = U.field(discoCache2, "alives");
-            assertEquals("Discovery caches are not equal", alives1, alives2);
+            assertEquals(alives1, alives2, "Discovery caches are not equal");
         }
     }
 }

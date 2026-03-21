@@ -43,6 +43,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Client-based discovery SPI test with failure detection timeout enabled.
@@ -196,14 +199,14 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }, EVT_NODE_FAILED);
 
-            assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(15000, TimeUnit.MILLISECONDS), "Can't get node failure event");
 
             long detectTime = failureDetectTime[0] - failureTime;
 
-            assertTrue("Client node failure detected too fast: " + detectTime + "ms",
-                detectTime > clientFailureDetectionTimeout - 200);
-            assertTrue("Client node failure detected too slow:  " + detectTime + "ms",
-                detectTime < clientFailureDetectionTimeout + 5000);
+            assertTrue(detectTime > clientFailureDetectionTimeout - 200,
+                    "Client node failure detected too fast: " + detectTime + "ms");
+            assertTrue(detectTime < clientFailureDetectionTimeout + 5000,
+                    "Client node failure detected too slow:  " + detectTime + "ms");
         }
         finally {
             failureThreshold = FAILURE_THRESHOLD;
@@ -259,14 +262,14 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }, EVT_NODE_FAILED);
             }
 
-            assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(15000, TimeUnit.MILLISECONDS), "Can't get node failure event");
 
             long detectTime = failureDetectTime.get() - failureTime;
 
-            assertTrue("Server node failure detected too fast: " + detectTime + "ms",
-                detectTime > failureThreshold - 100);
-            assertTrue("Server node failure detected too slow:  " + detectTime + "ms",
-                detectTime < clientFailureDetectionTimeout);
+            assertTrue(detectTime > failureThreshold - 100,
+                    "Server node failure detected too fast: " + detectTime + "ms");
+            assertTrue(detectTime < clientFailureDetectionTimeout,
+                    "Server node failure detected too slow:  " + detectTime + "ms");
         }
         finally {
             failureThreshold = FAILURE_THRESHOLD;
@@ -425,7 +428,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         try {
             assertTrue(latch.await(failureThreshold + 3000, TimeUnit.MILLISECONDS));
 
-            assertFalse("Unexpected event, see log for details.", err.get());
+            assertFalse(err.get(), "Unexpected event, see log for details.");
             assertEquals(nodeId, client.cluster().localNode().id());
         }
         finally {

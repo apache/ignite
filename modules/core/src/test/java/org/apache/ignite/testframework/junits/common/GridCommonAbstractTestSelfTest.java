@@ -24,6 +24,8 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.findTestResource;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -34,7 +36,7 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testResourceLocation() {
-        Consumer<String> check = (res) -> assertNotNull("Required resource not found: " + res, findTestResource(res));
+        Consumer<String> check = (res) -> assertNotNull(findTestResource(res), "Required resource not found: " + res);
 
         check.accept(GridTestProperties.TESTS_PROP_FILE);
         check.accept(GridTestProperties.DEFAULT_LOG4J_FILE);

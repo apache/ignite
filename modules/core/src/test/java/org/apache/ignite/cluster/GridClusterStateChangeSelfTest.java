@@ -26,6 +26,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Checks {@link ClusterState} change.
  */
@@ -107,12 +111,12 @@ public class GridClusterStateChangeSelfTest extends GridCommonAbstractTest {
             if (initiator.cluster().state() != state)
                 initiator.cluster().state(state);
 
-            NODES_NAMES.forEach(n -> assertEquals(n, state, grid(n).cluster().state()));
+            NODES_NAMES.forEach(n -> assertEquals(state, grid(n).cluster().state(), n));
 
             // Set the same state.
             initiator.cluster().state(state);
 
-            NODES_NAMES.forEach(n -> assertEquals(n, state, grid(n).cluster().state()));
+            NODES_NAMES.forEach(n -> assertEquals(state, grid(n).cluster().state(), n));
         }
     }
 
@@ -123,7 +127,7 @@ public class GridClusterStateChangeSelfTest extends GridCommonAbstractTest {
      * @param to Target state.
      */
     private void testStateChanged(ClusterState from, ClusterState to) {
-        assertTrue(from.toString(), from != to);
+        assertNotSame(from, to, from.toString());
 
         for (String name : NODES_NAMES) {
             IgniteEx initiator = grid(name);
@@ -133,11 +137,11 @@ public class GridClusterStateChangeSelfTest extends GridCommonAbstractTest {
 
             initiator.cluster().state(from);
 
-            NODES_NAMES.forEach(n -> assertEquals(n, from, grid(n).cluster().state()));
+            NODES_NAMES.forEach(n -> assertEquals(from, grid(n).cluster().state(), n));
 
             initiator.cluster().state(to);
 
-            NODES_NAMES.forEach(n -> assertEquals(n, to, grid(n).cluster().state()));
+            NODES_NAMES.forEach(n -> assertEquals(to, grid(n).cluster().state(), n));
         }
     }
 }

@@ -31,6 +31,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This class tests basic contracts of {@code ConcurrentLinkedHashMap}.
@@ -95,15 +99,15 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         Iterator<Map.Entry<Integer, String>> tstIt = tst.entrySet().iterator();
 
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
-            assertTrue("No enough elements in key set", tstIt.hasNext());
+            assertTrue(tstIt.hasNext(), "No enough elements in key set");
 
             Map.Entry<Integer, String> tstEntry = tstIt.next();
 
-            assertEquals("Key mismatch", tstEntry.getKey(), entry.getKey());
-            assertEquals("Value mismatch", tstEntry.getValue(), entry.getValue());
+            assertEquals(tstEntry.getKey(), entry.getKey(), "Key mismatch");
+            assertEquals(tstEntry.getValue(), entry.getValue(), "Value mismatch");
         }
 
-        assertEquals("Invalid map size", mapSize, tst.size());
+        assertEquals(mapSize, tst.size(), "Invalid map size");
     }
 
     /**
@@ -133,11 +137,11 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
 
             for (Iterator<Map.Entry<Integer, String>> mapIt = map.entrySet().iterator(); mapIt.hasNext(); ) {
                 Map.Entry<Integer, String> entry = mapIt.next();
-                assertTrue("No enough elements in key set", tstIt.hasNext());
+                assertTrue(tstIt.hasNext(), "No enough elements in key set");
 
                 Map.Entry<Integer, String> tstEntry = tstIt.next();
 
-                assertEquals("Key mismatch", tstEntry.getKey(), entry.getKey());
+                assertEquals(tstEntry.getKey(), entry.getKey(), "Key mismatch");
                 assertEquals("Value mismatch", tstEntry.getValue(), entry.getValue());
 
                 if (entry.getKey() % 2 == 0) {
@@ -150,11 +154,11 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         Iterator<Map.Entry<Integer, String>> tstIt = tst.entrySet().iterator();
 
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
-            assertTrue("No enough elements in key set after removal", tstIt.hasNext());
+            assertTrue(tstIt.hasNext(), "No enough elements in key set after removal");
 
             Map.Entry<Integer, String> tstEntry = tstIt.next();
 
-            assertEquals("Key mismatch after removal", tstEntry.getKey(), entry.getKey());
+            assertEquals(tstEntry.getKey(), entry.getKey(), "Key mismatch after removal");
             assertEquals("Value mismatch after removal", tstEntry.getValue(), entry.getValue());
         }
     }
@@ -172,7 +176,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
 
         Iterator<Integer> it = tst.keySet().iterator();
         for (int i = 0; i < 5; i++) {
-            assertTrue("Not enough elements", it.hasNext());
+            assertTrue(it.hasNext(), "Not enough elements");
             assertEquals(i, it.next().intValue());
         }
 
@@ -182,11 +186,11 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         }
 
         for (int i = 5; i < 10; i++) {
-            assertTrue("Not enough elements", it.hasNext());
+            assertTrue(it.hasNext(), "Not enough elements");
             assertEquals(i, it.next().intValue());
         }
 
-        assertFalse("Duplicate key", it.hasNext());
+        assertFalse(it.hasNext(), "Duplicate key");
     }
 
     /**

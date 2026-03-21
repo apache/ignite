@@ -36,6 +36,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**  */
 public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest {
 
@@ -114,7 +120,7 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         assertNotNull(resolved);
 
         //for every host 4 entries (for 0, 47500, 47501, 47502)
-        assertEquals(resolved.size(), 12);
+        assertEquals(12, resolved.size());
 
         Iterator<InetSocketAddress> it = resolved.iterator();
 
@@ -162,9 +168,8 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
 
         log.info("Adrrs1 - " + addr1.getAddress() + " Adrrs2 - " + addr2.getAddress());
 
-        assertFalse("Addresses weren't resolved second time. Probably DNS cache has TTL more then 1 min, if yes " +
-                "then please mute this test. Adrrs1 - " + addr1.getAddress() + " Adrrs2 - " + addr2.getAddress(),
-            addr1.equals(addr2));
+        assertNotEquals(addr1, addr2, "Addresses weren't resolved second time. Probably DNS cache has TTL more then 1 min, if yes " +
+                "then please mute this test. Adrrs1 - " + addr1.getAddress() + " Adrrs2 - " + addr2.getAddress());
     }
 
     /**
@@ -218,7 +223,7 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
 
         log.info("Resolved addresses are " + resolved);
 
-        assertTrue(resolved.size() == 10);
+        assertEquals(10, resolved.size());
 
         Iterator<InetSocketAddress> it = resolved.iterator();
 
@@ -231,11 +236,11 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         while (it.hasNext()) {
             InetSocketAddress curr = it.next();
 
-            assertTrue("IP address isn't the same. ip - " + curr.getAddress().getHostAddress() + " expected " + ip,
-                ip.equals(curr.getAddress().getHostAddress()));
+            assertEquals(ip, curr.getAddress().getHostAddress(),
+                    "IP address isn't the same. ip - " + curr.getAddress().getHostAddress() + " expected " + ip);
 
-            assertTrue("FQDN isn't the same. cur - " + curr.getHostName() + " expected " + host,
-                host.equals(curr.getHostName()));
+            assertEquals(host, curr.getHostName(),
+                    "FQDN isn't the same. cur - " + curr.getHostName() + " expected " + host);
         }
     }
 
@@ -420,8 +425,8 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
 
         assertTrue(MULTI_FQDN.equals(addr1.getHostName()) && MULTI_FQDN.equals(addr2.getHostName()));
 
-        assertFalse("Addresses are the same. Adrrs1 - " + addr1.getAddress() +
-            " Adrrs2 - " + addr2.getAddress(), addr1.equals(addr2));
+        assertNotEquals(addr1, addr2, "Addresses are the same. Adrrs1 - " + addr1.getAddress() +
+                " Adrrs2 - " + addr2.getAddress());
     }
 
     /**

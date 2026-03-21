@@ -37,6 +37,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.serviceMetricRegistryName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests metrics of service invocations.
@@ -72,7 +75,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         ignite.services().deploy(srvcCfg);
 
-        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(ignite.context().metric(), SRVC_NAME));
+        assertNull(findMetricRegistry(ignite.context().metric(), SRVC_NAME), METRICS_MUST_NOT_BE_CREATED);
 
         ignite.services().cancel(SRVC_NAME);
 
@@ -80,8 +83,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         ignite.services().deploy(srvcCfg);
 
-        assertNotNull("Service metric registry must be created.",
-            findMetricRegistry(ignite.context().metric(), SRVC_NAME));
+        assertNotNull(findMetricRegistry(ignite.context().metric(), SRVC_NAME), "Service metric registry must be created.");
     }
 
     /** Checks metric are created when service is deployed and removed when service is undeployed. */
@@ -124,8 +126,9 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             Collectors.toSet()).size();
 
         // Only same method metric count must persist across the cluster for the singleton.
-        assertEquals("Only one metric registry can persist for one service instance", expectedCnt,
-            grids.stream().map(GridServiceMetricsTest::metricsCnt).mapToInt(Integer::intValue).sum());
+        assertEquals(expectedCnt,
+            grids.stream().map(GridServiceMetricsTest::metricsCnt).mapToInt(Integer::intValue).sum(),
+                "Only one metric registry can persist for one service instance");
 
         for (int i = 0; i < grids.size(); ++i) {
             if (metricsCnt(grid(i)) > 0) {
@@ -138,8 +141,9 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         }
 
         // Only same method metric count must persist across the cluster for the singleton.
-        assertEquals("Only one metric registry can persist for one service instance", expectedCnt,
-            G.allGrids().stream().map(grid -> metricsCnt((IgniteEx)grid)).mapToInt(Integer::intValue).sum());
+        assertEquals(expectedCnt,
+            G.allGrids().stream().map(grid -> metricsCnt((IgniteEx)grid)).mapToInt(Integer::intValue).sum(),
+                "Only one metric registry can persist for one service instance");
     }
 
     /** Tests service metrics for single service instance. */
@@ -231,7 +235,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         }
 
         // Compare calls number and metrics number.
-        assertEquals("Calculated wrong service invocation number.", invokesInMetrics, invokeCollector);
+        assertEquals(invokesInMetrics, invokeCollector, "Calculated wrong service invocation number.");
     }
 
     /** Expose ignite-references of the nodes as list. */

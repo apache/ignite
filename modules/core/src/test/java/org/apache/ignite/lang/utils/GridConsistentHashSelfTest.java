@@ -34,6 +34,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Consistent hash test.
  */
@@ -92,7 +96,7 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
             hash.clear();
 
             assertEquals(0, hash.size());
-            assertEquals("Invalid hash: " + hash.nodes(), 0, hash.count());
+            assertEquals(0, hash.count(), "Invalid hash: " + hash.nodes());
 
             assert hash.isEmpty();
         }

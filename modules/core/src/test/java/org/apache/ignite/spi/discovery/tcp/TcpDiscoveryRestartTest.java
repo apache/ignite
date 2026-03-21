@@ -40,6 +40,10 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -196,9 +200,9 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
                 }
             }, 5000);
 
-            assertTrue("No join event: " + nodeId, joinIds.contains(nodeId));
+            assertTrue(joinIds.contains(nodeId), "No join event: " + nodeId);
 
-            assertTrue("No left event: " + nodeId, leftIds.contains(nodeId));
+            assertTrue(leftIds.contains(nodeId), "No left event: " + nodeId);
         }
     }
 }

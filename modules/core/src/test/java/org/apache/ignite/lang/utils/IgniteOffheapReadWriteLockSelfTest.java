@@ -30,6 +30,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -105,7 +109,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                                 for (int i1 = 0; i1 < data.length; i1++) {
                                     Pair pair = data[i1];
 
-                                    assertEquals("Failed check for index: " + i1, pair.a, -pair.b);
+                                    assertEquals(pair.a, -pair.b, "Failed check for index: " + i1);
                                 }
                             }
                             finally {
@@ -197,7 +201,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                             Pair pair = data[idx];
 
-                            assertEquals("Failed check for index: " + idx, pair.a, -pair.b);
+                            assertEquals(pair.a, -pair.b, "Failed check for index: " + idx);
                         }
                         finally {
                             lock.readUnlock(lPtr);
@@ -266,7 +270,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                         Pair pair = data[idx];
 
-                        assertEquals("Failed check for index: " + idx, pair.a, -pair.b);
+                        assertEquals(pair.a, -pair.b, "Failed check for index: " + idx);
 
                         write = rnd.nextInt(10) < 2;
 
@@ -417,7 +421,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                                     for (int i1 = 0; i1 < data.length; i1++) {
                                         Pair pair = data[i1];
 
-                                        assertEquals("Failed check for index: " + i1, pair.a, -pair.b);
+                                        assertEquals(pair.a, -pair.b, "Failed check for index: " + i1);
                                     }
                                 }
                                 finally {
@@ -481,7 +485,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < data.length; i++) {
             Pair pair = data[i];
 
-            assertEquals("Failed for index: " + i, pair.a, -pair.b);
+            assertEquals(pair.a, -pair.b, "Failed for index: " + i);
         }
     }
 

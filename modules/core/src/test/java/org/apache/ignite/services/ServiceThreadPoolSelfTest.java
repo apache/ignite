@@ -22,6 +22,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test verifying that services thread pool is properly used.
  */
@@ -102,7 +105,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
         @Override public void hello() {
             String thread = Thread.currentThread().getName();
 
-            assertTrue("Service is executed in wrong thread: " + thread, thread.startsWith("svc-#"));
+            assertTrue(thread.startsWith("svc-#"), "Service is executed in wrong thread: " + thread);
         }
 
         /** {@inheritDoc} */
@@ -110,11 +113,11 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) {
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
+        @Override public void execute(ServiceContext ctx) {
         }
     }
 }

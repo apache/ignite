@@ -24,15 +24,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstract
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * GridTcpDiscoveryMulticastIpFinder test.
  */
 public class TcpDiscoveryMulticastIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryMulticastIpFinder> {
-    /**
-     * @throws Exception In case of error.
-     */
-    public TcpDiscoveryMulticastIpFinderSelfTest() throws Exception {
+    /** */
+    public TcpDiscoveryMulticastIpFinderSelfTest() {
         // No-op.
     }
 
@@ -103,7 +104,7 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
 
             assertEquals(1, addrs1.size());
             assertEquals(2, addrs2.size());
-            assertTrue("Unexpected number of addresses: " + addrs3, addrs3.size() == 2 || addrs3.size() == 3);
+            assertTrue(addrs3.size() == 2 || addrs3.size() == 3, "Unexpected number of addresses: " + addrs3);
 
             checkRequestAddresses(ipFinder1, 3);
             checkRequestAddresses(ipFinder2, 3);

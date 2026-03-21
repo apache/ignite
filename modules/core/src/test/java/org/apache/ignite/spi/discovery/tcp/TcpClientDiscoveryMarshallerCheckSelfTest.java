@@ -24,6 +24,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Test for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
  */
@@ -92,8 +95,8 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
                 String msg = ex.getMessage();
 
                 assertTrue(ex instanceof IgniteSpiException);
-                assertTrue("Caught exception: " + msg, msg.contains("Local node's binary " +
-                    "configuration is not equal to remote node's binary configuration"));
+                assertTrue(msg.contains("Local node's binary " +
+                    "configuration is not equal to remote node's binary configuration"), "Caught exception: " + msg);
             }
             finally {
                 stopGrid(0);

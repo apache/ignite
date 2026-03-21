@@ -41,6 +41,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests TcpDiscoverySpiMBean.
@@ -259,8 +264,8 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(() ->
                 grid0.cluster().forServers().nodes().size() == srvCnt - 1, 5_000));
 
-            assertTrue("Next node have to be failed within failureDetectionTimeout",
-                cnt.await(grid0.configuration().getFailureDetectionTimeout() + 3000, MILLISECONDS));
+            assertTrue(cnt.await(grid0.configuration().getFailureDetectionTimeout() + 3000, MILLISECONDS),
+                    "Next node have to be failed within failureDetectionTimeout");
 
             bean.excludeNode(grid0.localNode().id().toString());
         }

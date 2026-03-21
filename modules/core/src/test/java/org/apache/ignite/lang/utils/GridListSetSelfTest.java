@@ -27,6 +27,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test for {@link GridListSet}.
  */
@@ -96,7 +102,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     public void testSortedNotStrict() {
         GridListSet<V1> set = new GridListSet<>(new Comparator<V1>() {
             @Override public int compare(V1 o1, V1 o2) {
-                return o1.other() < o2.other() ? -1 : o1.other() == o2.other() ? 0 : 1;
+                return Integer.compare(o1.other(), o2.other());
             }
         }, false);
 
@@ -109,8 +115,8 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
 
         V1 cur = set.addx(new V1(1, 20));
 
-        assertEquals(cur.value(), 1);
-        assertEquals(cur.other(), 1);
+        assertEquals(1, cur.value());
+        assertEquals(1, cur.other());
 
         assert cur == set.get(1);
 
@@ -166,7 +172,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
 
         GridListSet<V2> set = new GridListSet<>(new Comparator<V2>() {
             @Override public int compare(V2 o1, V2 o2) {
-                return o1.other() < o2.other() ? -1 : o1.other() == o2.other() ? 0 : 1;
+                return Integer.compare(o1.other(), o2.other());
             }
         }, true);
 

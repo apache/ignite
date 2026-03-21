@@ -38,6 +38,10 @@ import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Client-based discovery SPI test with non-Ignite servers.
  */
@@ -268,7 +272,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Runnable newWorker(Socket clientSock) {
             return new SocketWorker(clientSock) {
-                @Override public void action(InputStream input, OutputStream output) throws IOException {
+                @Override public void action(InputStream input, OutputStream output) {
                     log.error("TEST: No response was sent to " + clientSock.getRemoteSocketAddress());
                 }
             };
@@ -298,7 +302,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Runnable newWorker(Socket clientSock) {
             return new SocketWorker(clientSock) {
-                @Override public void action(InputStream input, OutputStream output) throws IOException {
+                @Override public void action(InputStream input, OutputStream output) {
                     // No-op
                 }
 

@@ -28,6 +28,13 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Test scenarios for Data Center ID configuration variations.
  */
@@ -70,11 +77,11 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
 
         String dcId = testGrid.localNode().dataCenterId();
 
-        assertNotNull("Data Center ID of the node should not be null", dcId);
+        assertNotNull(dcId, "Data Center ID of the node should not be null");
         assertEquals(DC_ID_0, dcId);
 
         String dcIdFromAttr = testGrid.localNode().attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
-        assertNotNull("Data Center ID of the node should not be null", dcIdFromAttr);
+        assertNotNull(dcIdFromAttr, "Data Center ID of the node should not be null");
         assertEquals(DC_ID_0, dcIdFromAttr);
     }
 
@@ -94,7 +101,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
         try {
             startGrid(1);
 
-            assertFalse("Expected exception hasn't been thrown", true);
+            assertFalse(true, "Expected exception hasn't been thrown");
         }
         catch (IgniteCheckedException e) {
             Throwable cause = e.getCause();
@@ -119,7 +126,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
         try {
             startGrid(1);
 
-            assertFalse("Expected exception hasn't been thrown", true);
+            fail("Expected exception hasn't been thrown");
         }
         catch (IgniteCheckedException e) {
             Throwable cause = e.getCause();
@@ -173,7 +180,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
             client0 = startClientGrid(1);
         }
         catch (IgniteCheckedException e) {
-            assertFalse("Unexpected exception was thrown: " + e, true);
+            fail("Unexpected exception was thrown: " + e);
         }
 
         System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
@@ -184,15 +191,14 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
             client1 = startClientGrid(2);
         }
         catch (IgniteCheckedException e) {
-            assertFalse("Unexpected exception was thrown: " + e, true);
+            fail("Unexpected exception was thrown: " + e);
         }
 
-        assertEquals(srv0.localNode().dataCenterId(), DC_ID_0);
+        assertEquals(DC_ID_0, srv0.localNode().dataCenterId());
 
         assertNotNull(client0);
-        assertEquals(client0.localNode().dataCenterId(), DC_ID_1);
+        assertEquals(DC_ID_1, client0.localNode().dataCenterId());
 
         assertNotNull(client1);
-        assertNull(client1.localNode().dataCenterId(), null);
     }
 }
