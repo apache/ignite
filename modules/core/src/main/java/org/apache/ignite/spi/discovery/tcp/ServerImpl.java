@@ -6952,8 +6952,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Current node holds connection with the node that is joining the cluster. Therefore, it can
                             // save certificates with which the connection was established to joining node attributes.
-                            if (spi.nodeAuth != null && nodeId.equals(req.nodeMsg.id) && ses.extractCertificates() != null)
+                            if (spi.nodeAuth != null && nodeId.equals(req.nodeMsg.id) && ses.extractCertificates() != null) {
+                                req.nodeMsg.attrs = new HashMap<>(req.nodeMsg.attrs);
+
                                 req.nodeMsg.attrs.put(ATTR_NODE_CERTIFICATES, ses.extractCertificates());
+                            }
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
