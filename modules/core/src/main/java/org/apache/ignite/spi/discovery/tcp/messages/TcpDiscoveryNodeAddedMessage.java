@@ -234,7 +234,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             int idx = 0;
 
             for (Message m : msgs)
-                msgsHldr.writableMsgs.put(idx, m);
+                msgsHldr.writableMsgs.put(idx++, m);
 
             topHistMsgs.put(id, msgsHldr);
         });
