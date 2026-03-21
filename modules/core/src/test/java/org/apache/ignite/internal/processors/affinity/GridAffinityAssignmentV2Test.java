@@ -53,8 +53,7 @@ import static org.junit.Assert.fail;
 public class GridAffinityAssignmentV2Test {
     /**  */
     protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider() {
-        @Override
-        public ClusterMetrics metrics() {
+        @Override public ClusterMetrics metrics() {
             return new ClusterMetricsSnapshot();
         }
     };
