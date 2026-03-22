@@ -171,7 +171,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponseSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
@@ -179,13 +179,15 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMes
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageMarshallableSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
@@ -221,8 +223,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
-        factory.register((short)-117, TcpDiscoveryNodeMessage::new,
-            new TcpDiscoveryNodeMessageMarshallableSerializer(cstDataMarshall, cstDataMarshallClsLdr));
+        factory.register((short)-117, TcpDiscoveryNodeMessage::new, new TcpDiscoveryNodeMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)-116, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
         factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
             new SchemaAlterTableAddColumnOperationSerializer());
@@ -270,8 +271,10 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
         factory.register((short)19, TcpDiscoveryNodeAddFinishedMessage::new,
             new TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)20, TcpDiscoveryJoinRequestMessage::new, new TcpDiscoveryJoinRequestMessageSerializer());
-        factory.register((short)21, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
+        factory.register((short)20, TcpDiscoveryJoinRequestMessage::new,
+            new TcpDiscoveryJoinRequestMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register((short)21, TcpDiscoveryCustomEventMessage::new,
+            new TcpDiscoveryCustomEventMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)23, TcpConnectionRequestDiscoveryMessage::new, new TcpConnectionRequestDiscoveryMessageSerializer());
@@ -280,7 +283,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)26, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
         factory.register((short)27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
         factory.register((short)28, TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
-        factory.register((short)29, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageSerializer());
+        factory.register((short)29, TcpDiscoveryNodeAddedMessage::new,
+            new TcpDiscoveryNodeAddedMessageMarshallableSerializer(marsh, clsLdr));
         factory.register((short)30, FullMessage::new, new FullMessageSerializer());
         factory.register((short)31, InitMessage::new, new InitMessageSerializer());
         factory.register((short)32, SnapshotStartDiscoveryMessage::new, new SnapshotStartDiscoveryMessageSerializer());

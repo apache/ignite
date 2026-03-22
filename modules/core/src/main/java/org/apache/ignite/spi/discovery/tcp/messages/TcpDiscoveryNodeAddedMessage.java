@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -27,7 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

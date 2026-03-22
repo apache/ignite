@@ -258,7 +258,7 @@ public class NodeMetricsMessage implements Message {
 
     /** */
     public NodeMetricsMessage() {
-        lastUpdateTime = U.currentTimeMillis();
+        // No-op.
     }
 
     /**
