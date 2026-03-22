@@ -160,7 +160,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param discPort Port.
      * @param nodeMetrics Node metrics.
      * @param ver Version.
-     * @param consistentId Node consistent ID.
      */
     private TcpDiscoveryNode(
         UUID id,
@@ -168,8 +167,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         Collection<String> hostNames,
         int discPort,
         ClusterMetrics nodeMetrics,
-        IgniteProductVersion ver,
-        Object consistentId
+        IgniteProductVersion ver
     ) {
         assert id != null;
         assert nodeMetrics != null;
@@ -211,7 +209,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         IgniteProductVersion ver,
         Object consistentId
     ) {
-        this(id, addrs, hostNames, discPort, metricsProvider.metrics(), ver, consistentId);
+        this(id, addrs, hostNames, discPort, metricsProvider.metrics(), ver);
+
+        this.consistentId = consistentId;
 
         this.metricsProvider = metricsProvider;
         cacheMetrics = metricsProvider.cacheMetrics();
@@ -222,7 +222,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** @param msg The transfer message. */
     public TcpDiscoveryNode(TcpDiscoveryNodeMessage msg) {
         this(msg.id, msg.addrs, msg.hostNames, msg.discPort, new ClusterMetricsSnapshot(msg.metricsMsg),
-            new IgniteProductVersion(msg.verMsg), msg.consistentId);
+            new IgniteProductVersion(msg.verMsg));
 
         attrs = msg.attrs;
         order = msg.order;

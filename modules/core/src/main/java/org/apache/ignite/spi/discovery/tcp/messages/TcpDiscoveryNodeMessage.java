@@ -37,49 +37,42 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
     public UUID id;
 
     /** */
-    public Object consistentId;
-
-    /** Serialized {@link #consistentId}. */
-    @Order(1)
-    byte[] consistentIdBytes;
-
-    /** */
     public Map<String, Object> attrs;
 
     /** */
-    @Order(2)
+    @Order(1)
     byte[] attrsBytes;
 
     /** Internal discovery addresses as strings. */
-    @Order(3)
+    @Order(2)
     public Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    @Order(4)
+    @Order(3)
     public Collection<String> hostNames;
 
     /** */
-    @Order(5)
+    @Order(4)
     public int discPort;
 
     /** */
-    @Order(6)
+    @Order(5)
     public TcpDiscoveryNodeMetricsMessage metricsMsg;
 
     /** */
-    @Order(7)
+    @Order(6)
     public long order;
 
     /** */
-    @Order(8)
+    @Order(7)
     public long intOrder;
 
     /** */
-    @Order(9)
+    @Order(8)
     public IgniteProductVersionMessage verMsg;
 
     /** */
-    @Order(10)
+    @Order(9)
     public @Nullable UUID clientRouterNodeId;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -94,7 +87,6 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
         TcpDiscoveryNode n = (TcpDiscoveryNode)clusterNode;
 
         id = n.id();
-        consistentId = n.consistentId();
         attrs = n.getAttributes();
         addrs = n.addresses();
         hostNames = n.hostNames();
@@ -111,21 +103,12 @@ public class TcpDiscoveryNodeMessage implements MarshallableMessage {
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (attrs != null)
             attrsBytes = U.marshal(marsh, attrs);
-
-        if (consistentId != null)
-            consistentIdBytes = U.marshal(marsh, consistentId);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (attrsBytes != null)
             attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
-
-        if (consistentIdBytes != null)
-            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
-
-        attrsBytes = null;
-        consistentIdBytes = null;
     }
 
     /** {@inheritDoc} */
