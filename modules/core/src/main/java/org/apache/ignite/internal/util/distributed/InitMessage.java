@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -26,6 +26,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,24 +38,34 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see SingleNodeMessage
  */
-public class InitMessage<I extends Serializable> implements DiscoveryCustomMessage {
+public class InitMessage<I extends Message> implements Message, DiscoveryCustomMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    public IgniteUuid id;
 
     /** Process id. */
-    private final UUID procId;
+    @Order(1)
+    public UUID procId;
 
     /** Process type. */
-    private final int type;
+    @Order(2)
+    public int type;
 
     /** Request. */
-    private final I req;
+    @Order(3)
+    public Message req;
 
     /** Whether coordinator waits client nodes results. */
-    private final boolean waitClnRes;
+    @Order(4)
+    public boolean waitClnRes;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public InitMessage() {
+        // No-op.
+    }
 
     /**
      * @param procId Process id.
@@ -61,6 +73,7 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
      * @param req Request.
      */
     public InitMessage(UUID procId, DistributedProcessType type, I req, boolean waitClnRes) {
+        this.id = IgniteUuid.randomUuid();
         this.procId = procId;
         this.type = type.ordinal();
         this.req = req;
@@ -95,7 +108,7 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
 
     /** @return Request. */
     public I request() {
-        return req;
+        return (I)req;
     }
 
     /** @return Whether coordinator waits client nodes results. */
@@ -106,5 +119,10 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(InitMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 31;
     }
 }

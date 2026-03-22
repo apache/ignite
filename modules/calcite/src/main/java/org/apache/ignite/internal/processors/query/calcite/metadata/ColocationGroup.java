@@ -29,19 +29,20 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ColocationGroup implements CalciteMessage {
+public class ColocationGroup implements CalciteMarshalableMessage {
     /** */
     @Order(0)
     long[] srcIds;
@@ -60,7 +61,7 @@ public class ColocationGroup implements CalciteMessage {
     private boolean primaryAssignment;
 
     /** Marshalled assignments serialization call holder. */
-    @Order(value = 2, method = "marshalledAssignments")
+    @Order(2)
     int[] marshalledAssignments;
 
     /** */
@@ -317,10 +318,10 @@ public class ColocationGroup implements CalciteMessage {
         return MessageType.COLOCATION_GROUP;
     }
 
-    /** Significantly compacts and fastens UUIDs marshalling. */
-    public @Nullable int[] marshalledAssignments() {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (assignments == null || primaryAssignment)
-            return null;
+            return;
 
         Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
@@ -343,16 +344,13 @@ public class ColocationGroup implements CalciteMessage {
             }
         }
 
-        return builder.build().buffer();
+        marshalledAssignments = builder.build().buffer();
     }
 
-    /** Significantly compacts and fastens UUIDs unmarshalling. */
-    public void marshalledAssignments(@Nullable int[] marshalledAssignments) {
-        if (F.isEmpty(marshalledAssignments)) {
-            assignments = null;
-
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (F.isEmpty(marshalledAssignments))
             return;
-        }
 
         int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 

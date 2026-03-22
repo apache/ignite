@@ -6067,7 +6067,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DiscoveryCustomMessage msgObj = null;
 
                     try {
-                        msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                        msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                         msgObj = msg.message();
                     }
@@ -6258,7 +6258,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 DiscoveryCustomMessage msgObj;
 
                 try {
-                    msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     msgObj = msg.message();
                 }

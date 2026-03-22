@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMarshalableMessage;
@@ -118,9 +119,15 @@ public class FragmentDescription implements CalciteMarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (target != null)
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (target != null) {
             target = target.explicitMapping();
+
+            target.prepareMarshal(ctx);
+        }
+
+        if (mapping != null)
+            mapping.prepareMarshal(ctx);
 
         if (remoteSources0 == null && remoteSources != null) {
             remoteSources0 = U.newHashMap(remoteSources.size());
@@ -131,7 +138,11 @@ public class FragmentDescription implements CalciteMarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        target.prepareUnmarshal(ctx);
+
+        mapping.prepareUnmarshal(ctx);
+
         if (remoteSources == null && remoteSources0 != null) {
             remoteSources = U.newHashMap(remoteSources0.size());
 

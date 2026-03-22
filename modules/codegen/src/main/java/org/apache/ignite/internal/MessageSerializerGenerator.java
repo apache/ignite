@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -53,7 +52,6 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -390,9 +388,7 @@ public class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        String methodName = field.getAnnotation(Order.class).method();
-
-        String getExpr = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName + "()";
+        String getExpr = field.getSimpleName().toString();
 
         TypeMirror type = field.asType();
 
@@ -557,18 +553,12 @@ public class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(Collection<String> code, VariableElement field, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        String methodName = field.getAnnotation(Order.class).method();
-
-        if (Objects.equals(methodName, "")) {
-            if (type.equals(field.getEnclosingElement()))
-                code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
-            else {
-                // Field has to be requested from a super class object.
-                code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
-            }
-        }
-        else
+        if (type.equals(field.getEnclosingElement()))
             code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+        else {
+            // Field has to be requested from a super class object.
+            code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+        }
 
         indent++;
 
@@ -586,19 +576,13 @@ public class MessageSerializerGenerator {
         String writerCall,
         String mapperCall,
         String fieldGetterCall) {
-        String methodName = field.getAnnotation(Order.class).method();
-
-        if (Objects.equals(methodName, "")) {
-            if (type.equals(field.getEnclosingElement()))
-                code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
-            else {
-                // Field has to be requested from a super class object.
-                code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
-                    writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
-            }
-        }
-        else
+        if (type.equals(field.getEnclosingElement()))
             code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+        else {
+            // Field has to be requested from a super class object.
+            code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
+                writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
+        }
 
         indent++;
 
@@ -895,19 +879,13 @@ public class MessageSerializerGenerator {
     private void returnFalseIfReadFailed(VariableElement field, String mtd, String... args) {
         String argsStr = String.join(", ", args);
 
-        String methodName = field.getAnnotation(Order.class).method();
-
-        if (Objects.equals(methodName, "")) {
-            if (type.equals(field.getEnclosingElement()))
-                read.add(identedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
-            else {
-                // Field has to be requested from a super class object.
-                read.add(identedLine("((%s)msg).%s = %s(%s);",
-                    field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
-            }
+        if (type.equals(field.getEnclosingElement()))
+            read.add(identedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
+        else {
+            // Field has to be requested from a super class object.
+            read.add(identedLine("((%s)msg).%s = %s(%s);",
+                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
         }
-        else
-            read.add(identedLine("msg.%s(%s(%s));", methodName, mtd, argsStr));
 
         read.add(EMPTY);
 
@@ -933,19 +911,13 @@ public class MessageSerializerGenerator {
         else
             readOp = line("%s(%s, reader.readByte())", mapperDecodeCallStmnt, enumValuesFieldName);
 
-        String methodName = field.getAnnotation(Order.class).method();
-
-        if (Objects.equals(methodName, "")) {
-            if (type.equals(field.getEnclosingElement()))
-                read.add(identedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
-            else {
-                // Field has to be requested from a super class object.
-                read.add(identedLine("((%s)msg).%s = %s;",
-                    field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
-            }
+        if (type.equals(field.getEnclosingElement()))
+            read.add(identedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
+        else {
+            // Field has to be requested from a super class object.
+            read.add(identedLine("((%s)msg).%s = %s;",
+                field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
         }
-        else
-            read.add(identedLine("msg.%s(%s);", methodName, readOp));
 
         read.add(EMPTY);
 

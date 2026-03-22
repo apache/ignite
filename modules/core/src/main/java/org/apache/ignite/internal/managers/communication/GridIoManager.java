@@ -1199,15 +1199,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 return;
             }
 
-            if (initMsg.topic() == null) {
-                int topicOrd = initMsg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    initMsg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    initMsg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
-            }
-
             byte plc = initMsg.policy();
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1246,15 +1237,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         nodeId + ", msg=" + msg + ']');
 
                 return;
-            }
-
-            if (msg.topic() == null) {
-                int topicOrd = msg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    msg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
 
             if (!started) {
@@ -1980,9 +1962,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         );
 
         try {
-            if (topicOrd < 0)
-                ioMsg.prepareMarshal(marsh);
-
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
         catch (IgniteSpiException e) {
@@ -2054,9 +2033,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                if (topicOrd < 0)
-                    ioMsg.prepareMarshal(marsh);
-
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                         getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);

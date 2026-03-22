@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.EmptyResult;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.KeyChangeFuture;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
@@ -54,10 +54,10 @@ class GroupKeyChangeProcess {
     private final GridKernalContext ctx;
 
     /** Cache group encyption key change prepare phase. */
-    private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> prepareGKChangeProc;
+    private final DistributedProcess<ChangeCacheEncryptionRequest, Message> prepareGKChangeProc;
 
     /** Cache group encyption key change perform phase. */
-    private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> performGKChangeProc;
+    private final DistributedProcess<ChangeCacheEncryptionRequest, Message> performGKChangeProc;
 
     /** Group encryption keys. */
     private final CacheGroupEncryptionKeys keys;
@@ -183,7 +183,7 @@ class GroupKeyChangeProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<EmptyResult> prepare(ChangeCacheEncryptionRequest req) {
+    private IgniteInternalFuture<Message> prepare(ChangeCacheEncryptionRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -251,7 +251,7 @@ class GroupKeyChangeProcess {
                     ctx.encryption().addGroupKey(req.groupIds()[i], grpKey);
                 }
 
-                return new GridFinishedFuture<>(new EmptyResult());
+                return new GridFinishedFuture<>();
             });
 
         }
@@ -268,7 +268,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
+    private void finishPrepare(UUID id, Map<UUID, Message> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (req != null && req.requestId().equals(id))
                 req = null;
@@ -285,7 +285,7 @@ class GroupKeyChangeProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<EmptyResult> perform(ChangeCacheEncryptionRequest req) {
+    private IgniteInternalFuture<Message> perform(ChangeCacheEncryptionRequest req) {
         if (this.req == null || !this.req.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown cache group key change was rejected."));
 
@@ -303,7 +303,7 @@ class GroupKeyChangeProcess {
             this.req = null;
         }
 
-        return new GridFinishedFuture<>(new EmptyResult());
+        return new GridFinishedFuture<>();
     }
 
     /**
@@ -313,7 +313,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
+    private void finishPerform(UUID id, Map<UUID, Message> res, Map<UUID, Throwable> err) {
         completeFuture(id, err, fut);
     }
 
