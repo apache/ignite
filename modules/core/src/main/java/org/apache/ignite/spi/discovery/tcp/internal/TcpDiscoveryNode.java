@@ -162,7 +162,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param ver Version.
      * @param consistentId Node consistent ID.
      */
-    public TcpDiscoveryNode(
+    private TcpDiscoveryNode(
         UUID id,
         Collection<String> addrs,
         Collection<String> hostNames,
@@ -189,7 +189,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
         metrics = nodeMetrics;
-        sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
     /**
@@ -216,6 +215,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         this.metricsProvider = metricsProvider;
         cacheMetrics = metricsProvider.cacheMetrics();
+
+        sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
     /** @param msg The transfer message. */
