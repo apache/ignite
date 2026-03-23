@@ -307,6 +307,19 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, idxDesc.index(), tbl);
         tbl.addIndex(idx);
+
+        // TODO: IGNITE-28331 Вот тут получилось добавить еще один индекс только в кальцит, но есть нюансы.
+        //  1. Оригинальный индекс отображается на множество полей, а нам нужно еще один на _KEY.
+        //  2. Даже если его добавить из коробки компаратор не умеет так просто сравнить, надо прокачивать.
+        //  3. Будет супер еще научиться работать с key_type.
+        if (idxDesc.isPk() && idxDesc.keyDefinitions().size() > 1) {
+            log.info(String.format(">>>>> THERE: [schemaName=%s, tblName=%s, idxName=%s]", schemaName, tblName, idxName));
+
+            RelCollation idxCollation1 = deriveSecondaryIndexCollation1(tbl);
+
+            IgniteIndex idx1 = new CacheIndexImpl(idxCollation1, idxName + "_UNWRAPPED", idxDesc.index(), tbl);
+            tbl.addIndex(idx1);
+        }
     }
 
     /**
@@ -330,6 +343,16 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         }
 
         return RelCollations.of(collations);
+    }
+
+    /** */
+    private static RelCollation deriveSecondaryIndexCollation1(IgniteCacheTable tbl) {
+        CacheTableDescriptor tblDesc = tbl.descriptor();
+
+        ColumnDescriptor desc = tblDesc.columnDescriptor(QueryUtils.KEY_FIELD_NAME);
+        int fieldIdx = desc.fieldIndex();
+
+        return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));
     }
 
     /** {@inheritDoc} */
