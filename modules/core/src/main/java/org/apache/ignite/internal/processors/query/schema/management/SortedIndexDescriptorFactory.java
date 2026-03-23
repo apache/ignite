@@ -95,7 +95,11 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
         if (!(isPk && QueryUtils.KEY_FIELD_NAME.equals(tbl.affinityKey())))
             addAffinityColumn(unwrappedCols, tbl);
 
-        LinkedHashMap<String, IndexKeyDefinition> idxCols = unwrappedCols;
+        // TODO: IGNITE-28331 Вот тут если раскоментировать, то чинится для _key = BinaryObject, но ломает если будет
+        //  указание полей пк, может надо посмтреть в регистрацию индексов в кальцит, позже глянем
+        //  org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl.onIndexCreated
+        LinkedHashMap<String, IndexKeyDefinition> idxCols = isPk ? wrappedCols : unwrappedCols;
+        // LinkedHashMap<String, IndexKeyDefinition> idxCols = unwrappedCols;
         IndexName idxFullName = new IndexName(cacheInfo.name(), typeDesc.schemaName(), typeDesc.tableName(), idxName);
 
         Index idx;

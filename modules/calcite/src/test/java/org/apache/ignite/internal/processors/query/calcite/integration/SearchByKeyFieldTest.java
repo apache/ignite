@@ -56,15 +56,26 @@ public class SearchByKeyFieldTest extends AbstractBasicIntegrationTest {
         for (int i = 0; i < 10; i++)
             sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
 
-        List<List<?>> sqlRs = sql("select _key from PUBLIC.PERSON order by id");
+        List<List<?>> sqlRs = sql("select _key, id from PUBLIC.PERSON order by id");
         int _key = (Integer) sqlRs.get(7).get(0);
+        int id = (Integer) sqlRs.get(7).get(1);
+
         assertEquals(7, _key);
+        assertEquals(7, id);
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(_key)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
-            .returns(7, "foo7", 25, _key)
+            .returns(id, "foo7", 25, _key)
+            .check();
+
+        // Let's just make sure that PK search is not broken.
+        assertQuery("select id, name, age, _key from PUBLIC.PERSON where id = ?")
+            .withParams(id)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(id, "foo7", 25, _key)
             .check();
     }
 
@@ -76,14 +87,27 @@ public class SearchByKeyFieldTest extends AbstractBasicIntegrationTest {
         for (int i = 0; i < 10; i++)
             sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
 
-        List<List<?>> sqlRs = sql("select _key from PUBLIC.PERSON order by id");
+        List<List<?>> sqlRs = sql("select _key, id, name from PUBLIC.PERSON order by id");
         BinaryObject _key = (BinaryObject) sqlRs.get(6).get(0);
+        int id = (Integer) sqlRs.get(6).get(1);
+        String name = (String) sqlRs.get(6).get(2);
+
+        assertEquals(6, id);
+        assertEquals("foo6", name);
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(_key)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
-            .returns(6, "foo6", 14, _key)
+            .returns(id, name, 24, _key)
+            .check();
+
+        // Let's just make sure that PK search is not broken.
+        assertQuery("select id, name, age, _key from PUBLIC.PERSON where id = ? and name = ?")
+            .withParams(id, name)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(id, name, 24, _key)
             .check();
     }
 }
