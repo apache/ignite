@@ -19,18 +19,17 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionReservationsMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsToReload;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -131,19 +130,19 @@ public class CompressedMessageTest {
         for (Map.Entry<UUID, PartitionReservationsMap> entry : expHistSuppliers.entrySet())
             assertEquals(entry.getValue().reservations(), actHistSuppliers.get(entry.getKey()).reservations());
 
-        Map<UUID, CachePartitionsToReloadMap> expPartsToReload = U.field((Object)U.field(expected, "partsToReload"), "map");
-        Map<UUID, CachePartitionsToReloadMap> actPartsToReload = U.field((Object)U.field(actual, "partsToReload"), "map");
+        Map<UUID, Map<Integer, Set<Integer>>> expPartsToReload = U.field((Object)U.field(expected, "partsToReload"), "map");
+        Map<UUID, Map<Integer, Set<Integer>>> actPartsToReload = U.field((Object)U.field(actual, "partsToReload"), "map");
 
         assertEquals(expPartsToReload.size(), actPartsToReload.size());
 
-        for (Map.Entry<UUID, CachePartitionsToReloadMap> entry : expPartsToReload.entrySet()) {
-            Map<Integer, PartitionsToReload> expCachePartitions = U.field(entry.getValue(), "map");
-            Map<Integer, PartitionsToReload> actCachePartitions = U.field(actPartsToReload.get(entry.getKey()), "map");
+        for (Map.Entry<UUID, Map<Integer, Set<Integer>>> entry : expPartsToReload.entrySet()) {
+            Map<Integer, Set<Integer>> expCachePartitions = entry.getValue();
+            Map<Integer, Set<Integer>> actCachePartitions = actPartsToReload.get(entry.getKey());
 
             assertEquals(expCachePartitions.size(), actCachePartitions.size());
 
-            for (Map.Entry<Integer, PartitionsToReload> partsEntry : expCachePartitions.entrySet())
-                assertEquals(partsEntry.getValue().partitions(), actCachePartitions.get(partsEntry.getKey()).partitions());
+            for (Map.Entry<Integer, Set<Integer>> partsEntry : expCachePartitions.entrySet())
+                assertEquals(partsEntry.getValue(), actCachePartitions.get(partsEntry.getKey()));
         }
     }
 }
