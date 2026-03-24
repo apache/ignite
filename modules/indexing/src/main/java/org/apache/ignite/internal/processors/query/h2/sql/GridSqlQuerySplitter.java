@@ -718,7 +718,7 @@ public class GridSqlQuerySplitter {
         pushDownSelectColumns(tblAliases, cols, wrapAlias, select);
 
         // Move all the related WHERE conditions to wrap query.
-        pushDownWhereConditions(tblAliases, cols, wrapAlias, select);
+        pushDownWhereConditions(tblAliases, cols, wrapAlias, select, model, begin, end);
 
         // Push down to a subquery all the JOIN elements and process ON conditions.
         pushDownJoins(tblAliases, cols, model, begin, end, wrapAlias);
@@ -1049,6 +1049,47 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * Return table aliases whose WHERE conditions are safe to push down.
+     * For LEFT OUTER JOIN, only aliases from the left branch are safe.
+     */
+    private static Set<GridSqlAlias> tblAliasesToPushdownConditions(
+            SplitterQueryModel model,
+            int begin,
+            int end,
+            Set<GridSqlAlias> tblAliases
+    ) {
+        int leftBranchEnd = -1;
+
+        for (int i = 1; i <= end; i++) {
+            if (model.findJoin(i).isLeftOuter()) {
+                leftBranchEnd = i - 1;
+                break;
+            }
+        }
+
+        if (leftBranchEnd == -1)
+            return tblAliases;
+
+        Set<GridSqlAlias> aliases = U.newIdentityHashSet();
+
+        int safeBegin = begin;
+        int safeEnd = Math.min(end, leftBranchEnd);
+
+        if (safeBegin > safeEnd)
+            return aliases;
+
+        for (int i = safeBegin; i <= safeEnd; i++) {
+            GridSqlAlias uniqueTblAlias = model.childModel(i).uniqueAlias();
+
+            assert uniqueTblAlias != null : model.ast().getSQL();
+
+            aliases.add(uniqueTblAlias);
+        }
+
+        return aliases;
+    }
+
+    /**
      * @param tblAliases Table aliases for push down.
      * @param cols Columns with generated aliases.
      * @param wrapAlias Alias of the wrap query.
@@ -1058,10 +1099,16 @@ public class GridSqlQuerySplitter {
         Set<GridSqlAlias> tblAliases,
         Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
-        GridSqlSelect select
+        GridSqlSelect select,
+        SplitterQueryModel model,
+        int begin,
+        int end
     ) {
         if (select.where() == null)
             return;
+
+        Set<GridSqlAlias> tblAliasesToPushdownConditions =
+                tblAliasesToPushdownConditions(model, begin, end, tblAliases);
 
         GridSqlSelect wrapSelect = GridSqlAlias.<GridSqlSubquery>unwrap(wrapAlias).subquery();
 
@@ -1073,7 +1120,7 @@ public class GridSqlQuerySplitter {
             SplitterAndCondition c = andConditions.get(i);
             GridSqlAst condition = c.ast();
 
-            if (isAllRelatedToTables(tblAliases, U.newIdentityHashSet(), condition)) {
+            if (isAllRelatedToTables(tblAliasesToPushdownConditions, U.newIdentityHashSet(), condition)) {
                 if (!SplitterUtils.isTrue(condition)) {
                     // Replace the original condition with `true` and move it to the wrap query.
                     c.parent().child(c.childIndex(), TRUE);
