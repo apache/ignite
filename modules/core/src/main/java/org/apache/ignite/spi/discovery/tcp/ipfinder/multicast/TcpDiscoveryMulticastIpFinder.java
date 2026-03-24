@@ -388,8 +388,11 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
     /** {@inheritDoc} */
     @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
-        if (mcastAddr == null)
+        if (mcastAddr == null) {
             reqItfs = new HashSet<>(resolveLocalAddresses());
+
+            log.info(">>> [DEBUG] TcpDiscoveryMulticastIpFinder.getRegisteredAddresses -> reqItfs=" + reqItfs);
+        }
 
         if (mcastAddr != null && reqItfs != null) {
             Collection<InetSocketAddress> ret;
@@ -423,6 +426,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 registerAddresses(ret);
 
             firstReq = false;
+
+            log.info(">>> [DEBUG] TcpDiscoveryMulticastIpFinder.getRegisteredAddresses -> ret=" + ret);
         }
 
         return super.getRegisteredAddresses();

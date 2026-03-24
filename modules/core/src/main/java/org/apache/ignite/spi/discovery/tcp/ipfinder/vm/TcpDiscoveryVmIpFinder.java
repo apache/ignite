@@ -263,10 +263,19 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
         Collection<InetSocketAddress> resolvedAddrs = new LinkedHashSet<>();
 
-        for (String ipStr : addrs)
-            resolvedAddrs.addAll(address(ipStr));
+        for (String ipStr : addrs) {
+            Collection<InetSocketAddress> addr = address(ipStr);
+
+            log.info(">>> [DEBUG] TcpDiscoveryVmIpFinder.getRegisteredAddresses -> addr=" + addr);
+
+            resolvedAddrs.addAll(addr);
+        }
 
         resolvedAddrs.addAll(registeredAddrs);
+
+        log.info(">>> [DEBUG] TcpDiscoveryVmIpFinder.getRegisteredAddresses -> addrs=" + addrs);
+        log.info(">>> [DEBUG] TcpDiscoveryVmIpFinder.getRegisteredAddresses -> registeredAddrs=" + registeredAddrs);
+        log.info(">>> [DEBUG] TcpDiscoveryVmIpFinder.getRegisteredAddresses -> resolvedAddrs=" + resolvedAddrs);
 
         return resolvedAddrs;
     }
