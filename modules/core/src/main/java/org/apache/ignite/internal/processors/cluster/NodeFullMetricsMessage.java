@@ -29,7 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** Node compound metrics message. */
 public class NodeFullMetricsMessage implements Message {
     /** */
-    @Deprecated
     public static final short TYPE_CODE = 138;
 
     /** Node metrics wrapper message. */

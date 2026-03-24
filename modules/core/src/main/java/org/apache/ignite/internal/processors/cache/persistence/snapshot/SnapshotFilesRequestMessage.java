@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     /** Snapshot request message type (value is {@code 178}). */
-    @Deprecated
     public static final short TYPE_CODE = 178;
 
     /** Snapshot operation request ID. */

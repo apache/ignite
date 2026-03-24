@@ -28,7 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class IgniteDhtPartitionCountersMap implements Message {
     /** Type code. */
-    @Deprecated
     public static final short TYPE_CODE = 507;
 
     /** */

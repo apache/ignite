@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public final class ClusterMetricsUpdateMessage implements Message {
     /** */
-    @Deprecated
     public static final short TYPE_CODE = 133;
 
     /** Single node metrics message. */

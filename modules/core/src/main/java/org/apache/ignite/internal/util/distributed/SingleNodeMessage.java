@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SingleNodeMessage<R extends Message> implements Message {
     /** Initial channel message type (value is {@code 176}). */
-    @Deprecated
     public static final short TYPE_CODE = 176;
 
     /** Process id. */

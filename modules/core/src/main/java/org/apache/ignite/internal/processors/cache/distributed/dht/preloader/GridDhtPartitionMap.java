@@ -36,7 +36,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Message {
     /** Type code. */
-    @Deprecated
     public static final short TYPE_CODE = 518;
 
     /** Node ID. */

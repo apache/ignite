@@ -24,7 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** Pair of group ID and partition ID. */
 public class GroupPartitionIdPair implements Message {
     /** Type code. */
-    @Deprecated
     public static final short TYPE_CODE = 508;
 
     /** Group ID. */

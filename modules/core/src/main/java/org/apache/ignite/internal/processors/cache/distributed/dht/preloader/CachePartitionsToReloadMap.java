@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 /** Partition reload map for cache. */
 public class CachePartitionsToReloadMap implements Message {
     /** Type code. */
-    @Deprecated
     public static final short TYPE_CODE = 512;
 
     /** Partition reload map for cache. */

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     /** Snapshot response message type (value is {@code 179}). */
-    @Deprecated
     public static final short TYPE_CODE = 179;
 
     /** Exception message which is occurred during snapshot request processing. */

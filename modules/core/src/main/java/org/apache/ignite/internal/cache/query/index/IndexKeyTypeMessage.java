@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 /** Message wrapper for {@link IndexKeyType}. */
 public class IndexKeyTypeMessage implements MarshallableMessage {
     /** Type code. */
-    @Deprecated
     public static final short TYPE_CODE = 516;
 
     /** */

@@ -33,7 +33,6 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  */
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /** Type code. */
-    @Deprecated
     public static final short TYPE_CODE = 505;
 
     /** */

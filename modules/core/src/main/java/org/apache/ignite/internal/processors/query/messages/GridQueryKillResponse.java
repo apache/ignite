@@ -27,7 +27,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridQueryKillResponse implements Message {
     /** */
-    @Deprecated
     public static final short TYPE_CODE = 173;
 
     /** Error text. */
