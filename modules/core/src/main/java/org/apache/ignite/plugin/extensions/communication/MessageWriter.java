@@ -356,14 +356,14 @@ public interface MessageWriter {
     public void decrementState();
 
     /**
-     * Callback called before nested value is written.
+     * Callback called before nested object is written.
      */
     public void beforeNestedWrite();
 
     /**
-     * Callback called after nested value is written.
+     * Callback called after nested object is written.
      *
-     * @param finished Whether value was fully written.
+     * @param finished Whether object was fully written.
      */
     public void afterNestedWrite(boolean finished);
 

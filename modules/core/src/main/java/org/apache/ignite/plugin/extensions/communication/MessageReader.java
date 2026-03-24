@@ -297,14 +297,14 @@ public interface MessageReader {
     public void decrementState();
 
     /**
-     * Callback called before nested value is read.
+     * Callback called before nested object is read.
      */
     public void beforeNestedRead();
 
     /**
-     * Callback called after nested value is read.
+     * Callback called after nested object is read.
      *
-     * @param finished Whether value was fully read.
+     * @param finished Whether object was fully read.
      */
     public void afterNestedRead(boolean finished);
 
