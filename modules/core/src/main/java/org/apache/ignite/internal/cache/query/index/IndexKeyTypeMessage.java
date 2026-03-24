@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Message wrapper for {@link IndexKeyType}. */
-public class IndexKeyTypeMessage implements Message {
+public class IndexKeyTypeMessage implements MarshallableMessage {
     /** Type code. */
     public static final short TYPE_CODE = 516;
 
@@ -35,8 +37,8 @@ public class IndexKeyTypeMessage implements Message {
     private @Nullable IndexKeyType val;
 
     /** Code. */
-    @Order(value = 0, method = "code")
-    byte code = NULL_VALUE_CODE;
+    @Order(0)
+    byte code;
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
     public IndexKeyTypeMessage() {
@@ -51,7 +53,8 @@ public class IndexKeyTypeMessage implements Message {
 
     /** Constructor. */
     public IndexKeyTypeMessage(int keyTypeCode) {
-        code((byte)keyTypeCode);
+        code = (byte)keyTypeCode;
+        val = decode(code);
     }
 
     /** @return Code. */
@@ -64,7 +67,6 @@ public class IndexKeyTypeMessage implements Message {
      */
     public void code(byte code) {
         this.code = code;
-        val = decode(code);
     }
 
     /** @return Index key type. */
@@ -93,5 +95,15 @@ public class IndexKeyTypeMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        code = encode(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        val = decode(code);
     }
 }

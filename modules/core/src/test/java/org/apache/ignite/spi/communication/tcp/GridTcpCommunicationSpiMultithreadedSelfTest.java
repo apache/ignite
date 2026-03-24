@@ -64,6 +64,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -468,7 +469,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
             MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(jdk(), U.gridClassLoader()), testMsgFactory})
             );
 
             ctx.timeoutProcessor(timeoutProcessor);

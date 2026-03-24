@@ -15,25 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema.operation;
+package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/**
- * Parent class for ALTER TABLE command variants.
- */
-public class SchemaAbstractAlterTableOperation extends SchemaAbstractOperation {
+/** */
+public class TestUuidMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    UUID val;
 
-    /**
-     * Constructor.
-     *
-     * @param opId Operation ID.
-     * @param cacheName Cache name.
-     * @param schemaName Schema name.
-     */
-    public SchemaAbstractAlterTableOperation(UUID opId, String cacheName, String schemaName) {
-        super(opId, cacheName, schemaName);
+    /** Default constructor for {@link MessageFactory}. */
+    public TestUuidMessage() {
+        // No-op.
+    }
+
+    /** */
+    public TestUuidMessage(UUID val) {
+        this.val = val;
+    }
+
+    /** */
+    public UUID value() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 10_001;
     }
 }

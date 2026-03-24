@@ -357,7 +357,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
             DiscoveryCustomMessage msgObj = null;
 
             try {
-                msg.finishUnmarhal(marshaller(), U.gridClassLoader());
+                msg.finishUnmarshal(marshaller(), U.gridClassLoader());
 
                 msgObj = msg.message();
             }

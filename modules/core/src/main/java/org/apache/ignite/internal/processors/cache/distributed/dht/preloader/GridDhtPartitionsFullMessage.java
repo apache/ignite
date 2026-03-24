@@ -40,6 +40,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
@@ -99,10 +101,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * Used as a stub for serialization of {@link #errs}.
      * All logic resides within getter and setter.
      */
-    @Order(value = 7, method = "errorMessages")
+    @Order(7)
     @Compress
     @SuppressWarnings("unused")
-    private Map<UUID, ErrorMessage> errMsgs;
+    Map<UUID, ErrorMessage> errMsgs;
 
     /** */
     @Order(8)
@@ -368,20 +370,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Error messages map.
-     */
-    public Map<UUID, ErrorMessage> errorMessages() {
-        return errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
-    }
-
-    /**
-     * @param errMsgs Error messages map.
-     */
-    public void errorMessages(Map<UUID, ErrorMessage> errMsgs) {
-        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
-    }
-
-    /**
      * Rebalance finished.
      */
     public boolean rebalanced() {
@@ -530,5 +518,15 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         }
 
         return map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        errMsgs = errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 }

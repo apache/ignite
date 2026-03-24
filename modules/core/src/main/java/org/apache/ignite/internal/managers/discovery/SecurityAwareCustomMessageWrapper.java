@@ -19,19 +19,17 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
-
 /** Custom message wrapper with ID of security subject that initiated the current message. */
-public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage implements Message {
+public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,13 +41,13 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
     private DiscoveryCustomMessage delegate;
 
     /** */
-    @Order(1)
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(1)
     Message msg;
 
     /** Serialized message bytes. */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    @Order(value = 2, method = "messageBytes")
+    @Order(2)
     byte[] msgBytes;
 
     /** Default constructor for {@link MessageFactory}. */
@@ -95,37 +93,20 @@ public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }
 
-    /** */
-    public byte[] messageBytes() {
-        if (delegate instanceof Message)
-            return null;
-
-        if (msgBytes != null)
-            return msgBytes;
-
-        try {
-            return msgBytes = U.marshal(jdk(), delegate);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    public void messageBytes(byte[] msgBytes) {
-        if (F.isEmpty(msgBytes))
-            return;
-
-        try {
-            delegate = U.unmarshal(jdk(), msgBytes, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 501;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (!(delegate instanceof Message))
+            msgBytes = U.marshal(marsh, delegate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (msgBytes != null)
+            delegate = U.unmarshal(marsh, msgBytes, clsLdr);
     }
 }
