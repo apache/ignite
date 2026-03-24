@@ -33,10 +33,16 @@ import org.apache.ignite.internal.processors.authentication.UserProposedMessageS
 import org.apache.ignite.internal.processors.authentication.UserSerializer;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessageSerializer;
+import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage;
+import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatchMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
@@ -85,6 +91,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessageSerializer;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
@@ -323,5 +331,12 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer(529));
         factory.register(SnapshotPartitionsVerifyHandlerResponse::new,
             new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr, 530));
+        factory.register(CacheStatisticsClearMessage::new, new CacheStatisticsClearMessageSerializer(531));
+        factory.register(ChangeGlobalStateMessage::new,
+            new ChangeGlobalStateMessageMarshallableSerializer(marsh, clsLdr, 532));
+        factory.register(ClientCacheChangeDummyDiscoveryMessage::new,
+            new ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer(marsh, clsLdr, 533));
+        factory.register(DynamicCacheChangeBatch::new,
+            new DynamicCacheChangeBatchMarshallableSerializer(marsh, clsLdr, 534));
     }
 }

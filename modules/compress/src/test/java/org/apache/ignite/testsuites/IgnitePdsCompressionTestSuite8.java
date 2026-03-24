@@ -14,33 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
-/**
- * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
- */
+/** */
 @RunWith(DynamicSuite.class)
-public class IgnitePdsNativeIoTestSuite2 {
+public class IgnitePdsCompressionTestSuite8 extends AbstractIgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
      */
     public static List<Class<?>> suite() {
         List<Class<?>> suite = new ArrayList<>();
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
-
-        // Direct IO + Page compression.
-        suite.add(DiskPageCompressionIntegrationDirectIOTest.class);
-
-        //Integrity test with reduced count of pages.
-        suite.add(IgniteNativeIoWalFlushFsyncSelfTest.class);
+        enableCompressionByDefault();
+        IgnitePdsTestSuite10.addRealPageStoreTests(suite, null);
 
         return suite;
     }
