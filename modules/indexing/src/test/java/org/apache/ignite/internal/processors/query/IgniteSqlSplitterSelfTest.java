@@ -2048,6 +2048,59 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Verifies LEFT JOIN behavior when the left side is a subquery with DISTINCT and
+     * the result is filtered by a condition on the right table.
+     * The test checks that no rows are returned when there is no matching department name.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLeftJoinWithSubquery() throws Exception {
+        IgniteCache<?, ?> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        String personTbl = "PERSON_LEFT_JOIN_SUBQUERY";
+        String depTbl = "DEPARTMENT_LEFT_JOIN_SUBQUERY";
+
+        try {
+            cache.query(new SqlFieldsQuery(
+                    "CREATE TABLE " + personTbl + " (" +
+                            "id INT PRIMARY KEY, " +
+                            "depId INT, " +
+                            "name VARCHAR" +
+                            ')'
+            )).getAll();
+
+            cache.query(new SqlFieldsQuery(
+                    "CREATE TABLE " + depTbl + " (" +
+                            "id INT PRIMARY KEY, " +
+                            "name VARCHAR" +
+                            ')'
+            )).getAll();
+
+            cache.query(new SqlFieldsQuery(
+                    "INSERT INTO " + personTbl + "(id, depId, name) VALUES (1, 1, 'Emma')"
+            )).getAll();
+
+            cache.query(new SqlFieldsQuery(
+                    "INSERT INTO " + depTbl + "(id, name) VALUES (2, 'TX')"
+            )).getAll();
+
+            List<List<?>> res = cache.query(new SqlFieldsQuery(
+                    "SELECT p.id AS person_id, p.name AS person_name, o.id AS department_id " +
+                            "FROM (SELECT DISTINCT * FROM " + personTbl + ") p " +
+                            "LEFT JOIN " + depTbl + " o ON p.depId = o.id " +
+                            "WHERE o.name = 'SQL'"
+            )).getAll();
+
+            assertTrue(res.isEmpty());
+        }
+        finally {
+            cache.query(new SqlFieldsQuery("DROP TABLE IF EXISTS " + personTbl)).getAll();
+            cache.query(new SqlFieldsQuery("DROP TABLE IF EXISTS " + depTbl)).getAll();
+        }
+    }
+
+    /**
      * Check avg() with various data types.
      *
      * @param cache Cache.
