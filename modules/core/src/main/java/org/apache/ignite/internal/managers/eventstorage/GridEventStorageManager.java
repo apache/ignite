@@ -388,10 +388,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to enable.
      */
-    public synchronized void enableEvents(int[] types) {
-        assert types != null;
-
+    public void enableEvents(int[] types) {
         ctx.security().authorize(SecurityPermission.EVENTS_ENABLE);
+
+        enableEvents0(types);
+    }
+
+    /**
+     * Enables provided events (without authorization).
+     *
+     * @param types Events to enable.
+     */
+    public synchronized void enableEvents0(int[] types) {
+        assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -430,10 +439,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    public synchronized void disableEvents(int[] types) {
-        assert types != null;
-
+    public void disableEvents(int[] types) {
         ctx.security().authorize(SecurityPermission.EVENTS_DISABLE);
+
+        disableEvents0(types);
+    }
+
+    /**
+     * Disables provided events (without authorization).
+     *
+     * @param types Events to disable.
+     */
+    public synchronized void disableEvents0(int[] types) {
+        assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -1190,10 +1208,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         if (!toEnable.isEmpty())
-            enableEvents(toEnable.arrayCopy());
+            enableEvents0(toEnable.arrayCopy());
 
         if (!toDisable.isEmpty())
-            disableEvents(toDisable.arrayCopy());
+            disableEvents0(toDisable.arrayCopy());
     }
 
     /** {@inheritDoc} */
