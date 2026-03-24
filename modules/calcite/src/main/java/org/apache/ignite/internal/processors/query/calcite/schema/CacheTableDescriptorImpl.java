@@ -400,7 +400,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
                 Object fieldVal = hnd.get(i, row);
 
-                if (desc.field() && !desc.key() && fieldVal != null)
+                if (desc.field() && !desc.key() && !desc.pseudo() && fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }

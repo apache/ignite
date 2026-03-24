@@ -554,9 +554,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             RelDataTypeField target = SqlValidatorUtil.getTargetField(
                 baseType, typeFactory(), id, getCatalogReader(), relOptTable);
 
-            if (target == null)
-                continue;
-            else if (desc.isPseudoColumn(target.getIndex()))
+            if (target != null && desc.isPseudoColumn(target.getIndex()))
                 throw newValidationError(id, IgniteResource.INSTANCE.cannotInsertPseudoField(id.toString()));
         }
     }
