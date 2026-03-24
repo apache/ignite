@@ -14,33 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCheckpointRecoveryWithCompressionTest;
+import org.apache.ignite.internal.processors.compress.CompressionConfigurationTest;
+import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
+import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
+import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
-/**
- * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
- */
+/** */
 @RunWith(DynamicSuite.class)
-public class IgnitePdsNativeIoTestSuite2 {
+public class IgnitePdsCompressionTestSuite5 extends AbstractIgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
      */
     public static List<Class<?>> suite() {
         List<Class<?>> suite = new ArrayList<>();
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
+        suite.add(CompressionConfigurationTest.class);
+        suite.add(CompressionProcessorTest.class);
+        suite.add(FileSystemUtilsTest.class);
+        suite.add(DiskPageCompressionIntegrationAsyncTest.class);
 
-        // Direct IO + Page compression.
-        suite.add(DiskPageCompressionIntegrationDirectIOTest.class);
+        suite.add(IgnitePdsCheckpointRecoveryWithCompressionTest.class);
 
-        //Integrity test with reduced count of pages.
-        suite.add(IgniteNativeIoWalFlushFsyncSelfTest.class);
+        enableCompressionByDefault();
+        IgniteSnapshotTestSuite2.addSnapshotTests1(suite, null);
 
         return suite;
     }

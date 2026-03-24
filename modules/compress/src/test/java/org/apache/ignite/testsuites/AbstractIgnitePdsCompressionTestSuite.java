@@ -17,23 +17,15 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
+import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
-/** */
-@RunWith(DynamicSuite.class)
-public class IgnitePdsCompressionTestSuite extends AbstractIgnitePdsCompressionTestSuite {
-    /**
-     * @return Suite.
-     */
-    public static List<Class<?>> suite() {
-        List<Class<?>> suite = new ArrayList<>();
-
-        enableCompressionByDefault();
-        IgniteSnapshotTestSuite.addSnapshotTests(suite, null);
-
-        return suite;
+/** Abstract class for Ignite PDS compression test suites. */
+public class AbstractIgnitePdsCompressionTestSuite {
+    /** */
+    static void enableCompressionByDefault() {
+        System.setProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, ZSTD.name());
+        System.setProperty(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, String.valueOf(8 * 1024));
     }
 }
