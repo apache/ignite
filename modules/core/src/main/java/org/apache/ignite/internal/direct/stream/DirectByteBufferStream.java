@@ -2126,16 +2126,7 @@ public class DirectByteBufferStream {
                 break;
 
             case MSG:
-                try {
-                    if (val != null)
-                        writer.beforeNestedWrite();
-
-                    writeMessage((Message)val, writer);
-                }
-                finally {
-                    if (val != null)
-                        writer.afterNestedWrite(lastFinished);
-                }
+                writeMessage((Message)val, writer);
 
                 break;
 
