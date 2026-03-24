@@ -391,7 +391,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         if (mcastAddr == null) {
             reqItfs = new HashSet<>(resolveLocalAddresses());
 
-            log.info(">>> [DEBUG] TcpDiscoveryMulticastIpFinder.getRegisteredAddresses -> reqItfs=" + reqItfs);
+            System.out.println(">>> [DEBUG] TcpDiscoveryMulticastIpFinder.getRegisteredAddresses -> reqItfs=" + reqItfs);
         }
 
         if (mcastAddr != null && reqItfs != null) {
@@ -427,7 +427,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             firstReq = false;
 
-            log.info(">>> [DEBUG] TcpDiscoveryMulticastIpFinder.getRegisteredAddresses -> ret=" + ret);
+            System.out.println(">>> [DEBUG] TcpDiscoveryMulticastIpFinder.getRegisteredAddresses -> ret=" + ret);
         }
 
         return super.getRegisteredAddresses();

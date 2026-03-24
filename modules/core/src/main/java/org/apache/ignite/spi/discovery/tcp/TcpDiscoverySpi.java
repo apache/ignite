@@ -1995,7 +1995,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         Collection<InetSocketAddress> addrs = ipFinder.getRegisteredAddresses();
 
-        log.info(">>> [DEBUG] TcpDiscoverySpi.registeredAddresses -> addrs=" + addrs);
+        System.out.println(">>> [DEBUG] TcpDiscoverySpi.registeredAddresses -> addrs=" + addrs);
 
         for (InetSocketAddress addr : addrs) {
             if (addr.getPort() == 0) {

@@ -576,7 +576,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             while (addrs == null || addrs.isEmpty()) {
                 addrs = new ArrayList<>(spi.resolvedAddresses());
 
-                log.info(">>> [DEBUG] ClientImpl.joinTopology -> addrs=" + addrs);
+                System.out.println(">>> [DEBUG] ClientImpl.joinTopology -> addrs=" + addrs);
 
                 if (!F.isEmpty(addrs)) {
                     if (log.isDebugEnabled())
