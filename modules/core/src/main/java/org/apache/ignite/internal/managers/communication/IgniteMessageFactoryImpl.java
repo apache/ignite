@@ -63,6 +63,10 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
             return msg.readFrom(buf, reader);
         }
+
+        @Override public short directType() {
+            throw new UnsupportedOperationException("Default serializer does not support custom direct type");
+        }
     };
 
     /** Message suppliers. */

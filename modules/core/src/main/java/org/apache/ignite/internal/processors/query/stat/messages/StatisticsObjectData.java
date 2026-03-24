@@ -31,6 +31,7 @@ public class StatisticsObjectData implements Message, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 185;
 
     /** Statistics key. */

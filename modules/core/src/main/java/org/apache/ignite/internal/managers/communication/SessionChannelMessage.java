@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class SessionChannelMessage implements Message {
     /** Initial channel message type (value is {@code 175}). */
+    @Deprecated
     public static final short TYPE_CODE = 175;
 
     /** Channel session unique identifier. */

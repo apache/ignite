@@ -396,217 +396,215 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
-        factory.register((short)-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)-65, TxInfo::new, new TxInfoSerializer());
-        factory.register((short)-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());
-        factory.register((short)-63, ExchangeInfo::new, new ExchangeInfoSerializer());
-        factory.register((short)-62, IgniteDiagnosticResponse::new, new IgniteDiagnosticResponseSerializer());
-        factory.register((short)-61, IgniteDiagnosticRequest::new, new IgniteDiagnosticRequestSerializer());
-        factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
-        factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
-        factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer());
-        factory.register((short)-49, UpdateErrors::new, new UpdateErrorsSerializer());
-        factory.register((short)-48, GridDhtAtomicNearResponse::new, new GridDhtAtomicNearResponseSerializer());
-        factory.register((short)-45, GridChangeGlobalStateMessageResponse::new, new GridChangeGlobalStateMessageResponseSerializer());
+        factory.register(ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr, -66));
+        factory.register(TxInfo::new, new TxInfoSerializer(-65));
+        factory.register(TxEntriesInfo::new, new TxEntriesInfoSerializer(-64));
+        factory.register(ExchangeInfo::new, new ExchangeInfoSerializer(-63));
+        factory.register(IgniteDiagnosticResponse::new, new IgniteDiagnosticResponseSerializer(-62));
+        factory.register(IgniteDiagnosticRequest::new, new IgniteDiagnosticRequestSerializer(-61));
+        factory.register(SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer(-53));
+        factory.register(NearCacheUpdates::new, new NearCacheUpdatesSerializer(-51));
+        factory.register(GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer(-50));
+        factory.register(UpdateErrors::new, new UpdateErrorsSerializer(-49));
+        factory.register(GridDhtAtomicNearResponse::new, new GridDhtAtomicNearResponseSerializer(-48));
+        factory.register(GridChangeGlobalStateMessageResponse::new, new GridChangeGlobalStateMessageResponseSerializer(-45));
         factory.register((short)-43, IgniteIoTestMessage::new);
-        factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer());
-        factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
-        factory.register((short)-26, TxLockList::new, new TxLockListSerializer());
-        factory.register((short)-25, TxLock::new, new TxLockSerializer());
-        factory.register((short)-24, TxLocksRequest::new, new TxLocksRequestSerializer());
-        factory.register((short)-23, TxLocksResponse::new, new TxLocksResponseSerializer());
-        factory.register(TcpCommunicationSpi.NODE_ID_MSG_TYPE, NodeIdMessage::new, new NodeIdMessageSerializer());
-        factory.register(TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE, RecoveryLastReceivedMessage::new,
-            new RecoveryLastReceivedMessageSerializer());
-        factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new, new HandshakeMessageSerializer());
-        factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer());
-        factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
-        factory.register((short)1, GridJobExecuteRequest::new, new GridJobExecuteRequestSerializer());
-        factory.register((short)2, GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer());
-        factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
-        factory.register((short)4, GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer());
-        factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
-        factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
-        factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
-        factory.register((short)8, GridIoMessage::new,
-            new GridIoMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)9, GridIoUserMessage::new, new GridIoUserMessageSerializer());
-        factory.register((short)10, GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer());
-        factory.register((short)11, GridDeploymentRequest::new, new GridDeploymentRequestSerializer());
-        factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
-        factory.register((short)13, GridEventStorageMessage::new,
-            new GridEventStorageMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)16, GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer());
-        factory.register((short)17, GridCacheTxRecoveryResponse::new, new GridCacheTxRecoveryResponseSerializer());
-        factory.register((short)18, IndexQueryResultMeta::new, new IndexQueryResultMetaSerializer());
-        factory.register((short)19, IndexKeyTypeSettings::new, new IndexKeyTypeSettingsSerializer());
-        factory.register((short)20, GridCacheTtlUpdateRequest::new, new GridCacheTtlUpdateRequestSerializer());
-        factory.register((short)21, GridDistributedLockRequest::new, new GridDistributedLockRequestSerializer());
-        factory.register((short)22, GridDistributedLockResponse::new, new GridDistributedLockResponseSerializer());
-        factory.register((short)23, GridDistributedTxFinishRequest::new, new GridDistributedTxFinishRequestSerializer());
-        factory.register((short)24, GridDistributedTxFinishResponse::new, new GridDistributedTxFinishResponseSerializer());
-        factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
-        factory.register((short)26, GridDistributedTxPrepareResponse::new, new GridDistributedTxPrepareResponseSerializer());
+        factory.register(GridDhtAtomicSingleUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer(-36));
+        factory.register(GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer(-27));
+        factory.register(TxLockList::new, new TxLockListSerializer(-26));
+        factory.register(TxLock::new, new TxLockSerializer(-25));
+        factory.register(TxLocksRequest::new, new TxLocksRequestSerializer(-24));
+        factory.register(TxLocksResponse::new, new TxLocksResponseSerializer(-23));
+        factory.register(NodeIdMessage::new, new NodeIdMessageSerializer(TcpCommunicationSpi.NODE_ID_MSG_TYPE));
+        factory.register(RecoveryLastReceivedMessage::new,
+            new RecoveryLastReceivedMessageSerializer(TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE));
+        factory.register(HandshakeMessage::new, new HandshakeMessageSerializer(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE));
+        factory.register(HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE));
+        factory.register(GridJobCancelRequest::new, new GridJobCancelRequestSerializer(0));
+        factory.register(GridJobExecuteRequest::new, new GridJobExecuteRequestSerializer(1));
+        factory.register(GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer(2));
+        factory.register(GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer(3));
+        factory.register(GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer(4));
+        factory.register(GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer(5));
+        factory.register(GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer(6));
+        factory.register(GridCheckpointRequest::new, new GridCheckpointRequestSerializer(7));
+        factory.register(GridIoMessage::new, new GridIoMessageMarshallableSerializer(marsh, clsLdr, 8));
+        factory.register(GridIoUserMessage::new, new GridIoUserMessageSerializer(9));
+        factory.register(GridDeploymentInfoBean::new, new GridDeploymentInfoBeanSerializer(10));
+        factory.register(GridDeploymentRequest::new, new GridDeploymentRequestSerializer(11));
+        factory.register(GridDeploymentResponse::new, new GridDeploymentResponseSerializer(12));
+        factory.register(GridEventStorageMessage::new, new GridEventStorageMessageMarshallableSerializer(marsh, clsLdr, 13));
+        factory.register(GridCacheTxRecoveryRequest::new, new GridCacheTxRecoveryRequestSerializer(16));
+        factory.register(GridCacheTxRecoveryResponse::new, new GridCacheTxRecoveryResponseSerializer(17));
+        factory.register(IndexQueryResultMeta::new, new IndexQueryResultMetaSerializer(18));
+        factory.register(IndexKeyTypeSettings::new, new IndexKeyTypeSettingsSerializer(19));
+        factory.register(GridCacheTtlUpdateRequest::new, new GridCacheTtlUpdateRequestSerializer(20));
+        factory.register(GridDistributedLockRequest::new, new GridDistributedLockRequestSerializer(21));
+        factory.register(GridDistributedLockResponse::new, new GridDistributedLockResponseSerializer(22));
+        factory.register(GridDistributedTxFinishRequest::new, new GridDistributedTxFinishRequestSerializer(23));
+        factory.register(GridDistributedTxFinishResponse::new, new GridDistributedTxFinishResponseSerializer(24));
+        factory.register(GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer(25));
+        factory.register(GridDistributedTxPrepareResponse::new, new GridDistributedTxPrepareResponseSerializer(26));
         // Type 27 is former GridDistributedUnlockRequest
-        factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
-        factory.register((short)29, GridDhtAffinityAssignmentResponse::new, new GridDhtAffinityAssignmentResponseSerializer());
-        factory.register((short)30, GridDhtLockRequest::new, new GridDhtLockRequestSerializer());
-        factory.register((short)31, GridDhtLockResponse::new, new GridDhtLockResponseSerializer());
-        factory.register((short)32, GridDhtTxFinishRequest::new, new GridDhtTxFinishRequestSerializer());
-        factory.register((short)33, GridDhtTxFinishResponse::new, new GridDhtTxFinishResponseSerializer());
-        factory.register((short)34, GridDhtTxPrepareRequest::new, new GridDhtTxPrepareRequestSerializer());
-        factory.register((short)35, GridDhtTxPrepareResponse::new, new GridDhtTxPrepareResponseSerializer());
-        factory.register((short)36, GridDhtUnlockRequest::new, new GridDhtUnlockRequestSerializer());
-        factory.register((short)37, GridDhtAtomicDeferredUpdateResponse::new, new GridDhtAtomicDeferredUpdateResponseSerializer());
-        factory.register((short)38, GridDhtAtomicUpdateRequest::new, new GridDhtAtomicUpdateRequestSerializer());
-        factory.register((short)39, GridDhtAtomicUpdateResponse::new, new GridDhtAtomicUpdateResponseSerializer());
-        factory.register((short)40, GridNearAtomicFullUpdateRequest::new, new GridNearAtomicFullUpdateRequestSerializer());
-        factory.register((short)41, GridNearAtomicUpdateResponse::new, new GridNearAtomicUpdateResponseSerializer());
-        factory.register((short)42, GridDhtForceKeysRequest::new, new GridDhtForceKeysRequestSerializer());
-        factory.register((short)43, GridDhtForceKeysResponse::new, new GridDhtForceKeysResponseSerializer());
-        factory.register((short)45, GridDhtPartitionDemandMessage::new, new GridDhtPartitionDemandMessageSerializer());
-        factory.register((short)46, GridDhtPartitionsFullMessage::new,
-            new GridDhtPartitionsFullMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)47, GridDhtPartitionsSingleMessage::new, new GridDhtPartitionsSingleMessageSerializer());
-        factory.register((short)48, GridDhtPartitionsSingleRequest::new, new GridDhtPartitionsSingleRequestSerializer());
-        factory.register((short)49, GridNearGetRequest::new, new GridNearGetRequestSerializer());
-        factory.register((short)50, GridNearGetResponse::new, new GridNearGetResponseSerializer());
-        factory.register((short)51, GridNearLockRequest::new, new GridNearLockRequestSerializer());
-        factory.register((short)52, GridNearLockResponse::new, new GridNearLockResponseSerializer());
-        factory.register((short)53, GridNearTxFinishRequest::new, new GridNearTxFinishRequestSerializer());
-        factory.register((short)54, GridNearTxFinishResponse::new, new GridNearTxFinishResponseSerializer());
-        factory.register((short)55, GridNearTxPrepareRequest::new, new GridNearTxPrepareRequestSerializer());
-        factory.register((short)56, GridNearTxPrepareResponse::new, new GridNearTxPrepareResponseSerializer());
-        factory.register((short)57, GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer());
-        factory.register((short)58, GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer());
-        factory.register((short)59, GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer());
-        factory.register((short)61, GridContinuousMessage::new, new GridContinuousMessageSerializer());
-        factory.register((short)62, DataStreamerRequest::new, new DataStreamerRequestSerializer());
-        factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
-        factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
-        factory.register((short)77, GridTaskResultResponse::new, new GridTaskResultResponseSerializer());
-        factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());
-        factory.register((short)79, MissingMappingResponseMessage::new, new MissingMappingResponseMessageSerializer());
-        factory.register((short)80, MetadataRequestMessage::new, new MetadataRequestMessageSerializer());
-        factory.register((short)81, MetadataResponseMessage::new, new MetadataResponseMessageSerializer());
-        factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
-        factory.register((short)84, GridByteArrayList::new, new GridByteArrayListSerializer());
-        factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
-        factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
-        factory.register((short)88, GridCacheReturn::new, new GridCacheReturnSerializer());
-        factory.register((short)91, GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer());
-        factory.register((short)92, CacheEntryInfoCollection::new, new CacheEntryInfoCollectionSerializer());
-        factory.register((short)93, CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer());
-        factory.register((short)94, IgniteTxKey::new, new IgniteTxKeySerializer());
-        factory.register((short)95, DataStreamerEntry::new, new DataStreamerEntrySerializer());
-        factory.register((short)96, CacheContinuousQueryEntry::new, new CacheContinuousQueryEntryMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
-        factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)100, IgniteTxEntry::new, new IgniteTxEntrySerializer());
-        factory.register((short)101, TxEntryValueHolder::new, new TxEntryValueHolderSerializer());
-        factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
-        factory.register((short)103, GridCacheRawVersionedEntry::new, new GridCacheRawVersionedEntrySerializer());
-        factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
-        factory.register((short)106, GridQueryCancelRequest::new, new GridQueryCancelRequestSerializer());
-        factory.register((short)107, GridQueryFailResponse::new, new GridQueryFailResponseSerializer());
-        factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
-        factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
-        factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
-        factory.register((short)113, IndexKeyDefinition::new, new IndexKeyDefinitionSerializer());
-        factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
-        factory.register((short)115, UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer());
-        factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
-        factory.register((short)117, GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer());
-        factory.register((short)118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
+        factory.register(GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer(28));
+        factory.register(GridDhtAffinityAssignmentResponse::new, new GridDhtAffinityAssignmentResponseSerializer(29));
+        factory.register(GridDhtLockRequest::new, new GridDhtLockRequestSerializer(30));
+        factory.register(GridDhtLockResponse::new, new GridDhtLockResponseSerializer(31));
+        factory.register(GridDhtTxFinishRequest::new, new GridDhtTxFinishRequestSerializer(32));
+        factory.register(GridDhtTxFinishResponse::new, new GridDhtTxFinishResponseSerializer(33));
+        factory.register(GridDhtTxPrepareRequest::new, new GridDhtTxPrepareRequestSerializer(34));
+        factory.register(GridDhtTxPrepareResponse::new, new GridDhtTxPrepareResponseSerializer(35));
+        factory.register(GridDhtUnlockRequest::new, new GridDhtUnlockRequestSerializer(36));
+        factory.register(GridDhtAtomicDeferredUpdateResponse::new, new GridDhtAtomicDeferredUpdateResponseSerializer(37));
+        factory.register(GridDhtAtomicUpdateRequest::new, new GridDhtAtomicUpdateRequestSerializer(38));
+        factory.register(GridDhtAtomicUpdateResponse::new, new GridDhtAtomicUpdateResponseSerializer(39));
+        factory.register(GridNearAtomicFullUpdateRequest::new, new GridNearAtomicFullUpdateRequestSerializer(40));
+        factory.register(GridNearAtomicUpdateResponse::new, new GridNearAtomicUpdateResponseSerializer(41));
+        factory.register(GridDhtForceKeysRequest::new, new GridDhtForceKeysRequestSerializer(42));
+        factory.register(GridDhtForceKeysResponse::new, new GridDhtForceKeysResponseSerializer(43));
+        factory.register(GridDhtPartitionDemandMessage::new, new GridDhtPartitionDemandMessageSerializer(45));
+        factory.register(GridDhtPartitionsFullMessage::new, new GridDhtPartitionsFullMessageMarshallableSerializer(marsh, clsLdr, 46));
+        factory.register(GridDhtPartitionsSingleMessage::new, new GridDhtPartitionsSingleMessageSerializer(47));
+        factory.register(GridDhtPartitionsSingleRequest::new, new GridDhtPartitionsSingleRequestSerializer(48));
+        factory.register(GridNearGetRequest::new, new GridNearGetRequestSerializer(49));
+        factory.register(GridNearGetResponse::new, new GridNearGetResponseSerializer(50));
+        factory.register(GridNearLockRequest::new, new GridNearLockRequestSerializer(51));
+        factory.register(GridNearLockResponse::new, new GridNearLockResponseSerializer(52));
+        factory.register(GridNearTxFinishRequest::new, new GridNearTxFinishRequestSerializer(53));
+        factory.register(GridNearTxFinishResponse::new, new GridNearTxFinishResponseSerializer(54));
+        factory.register(GridNearTxPrepareRequest::new, new GridNearTxPrepareRequestSerializer(55));
+        factory.register(GridNearTxPrepareResponse::new, new GridNearTxPrepareResponseSerializer(56));
+        factory.register(GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer(57));
+        factory.register(GridCacheQueryRequest::new, new GridCacheQueryRequestSerializer(58));
+        factory.register(GridCacheQueryResponse::new, new GridCacheQueryResponseSerializer(59));
+        factory.register(GridContinuousMessage::new, new GridContinuousMessageSerializer(61));
+        factory.register(DataStreamerRequest::new, new DataStreamerRequestSerializer(62));
+        factory.register(DataStreamerResponse::new, new DataStreamerResponseSerializer(63));
+        factory.register(GridTaskResultRequest::new, new GridTaskResultRequestSerializer(76));
+        factory.register(GridTaskResultResponse::new, new GridTaskResultResponseSerializer(77));
+        factory.register(MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer(78));
+        factory.register(MissingMappingResponseMessage::new, new MissingMappingResponseMessageSerializer(79));
+        factory.register(MetadataRequestMessage::new, new MetadataRequestMessageSerializer(80));
+        factory.register(MetadataResponseMessage::new, new MetadataResponseMessageSerializer(81));
+        factory.register(JobStealingRequest::new, new JobStealingRequestSerializer(82));
+        factory.register(GridByteArrayList::new, new GridByteArrayListSerializer(84));
+        factory.register(GridCacheVersion::new, new GridCacheVersionSerializer(86));
+        factory.register(GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer(87));
+        factory.register(GridCacheReturn::new, new GridCacheReturnSerializer(88));
+        factory.register(GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer(91));
+        factory.register(CacheEntryInfoCollection::new, new CacheEntryInfoCollectionSerializer(92));
+        factory.register(CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer(93));
+        factory.register(IgniteTxKey::new, new IgniteTxKeySerializer(94));
+        factory.register(DataStreamerEntry::new, new DataStreamerEntrySerializer(95));
+        factory.register(CacheContinuousQueryEntry::new, new CacheContinuousQueryEntryMarshallableSerializer(marsh, clsLdr, 96));
+        factory.register(CacheEvictionEntry::new, new CacheEvictionEntrySerializer(97));
+        factory.register(CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterMarshallableSerializer(marsh, clsLdr, 98));
+        factory.register(IgniteTxEntry::new, new IgniteTxEntrySerializer(100));
+        factory.register(TxEntryValueHolder::new, new TxEntryValueHolderSerializer(101));
+        factory.register(CacheVersionedValue::new, new CacheVersionedValueSerializer(102));
+        factory.register(GridCacheRawVersionedEntry::new, new GridCacheRawVersionedEntrySerializer(103));
+        factory.register(GridCacheVersionEx::new, new GridCacheVersionExSerializer(104));
+        factory.register(GridQueryCancelRequest::new, new GridQueryCancelRequestSerializer(106));
+        factory.register(GridQueryFailResponse::new, new GridQueryFailResponseSerializer(107));
+        factory.register(GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer(108));
+        factory.register(GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer(109));
+        factory.register(GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer(112));
+        factory.register(IndexKeyDefinition::new, new IndexKeyDefinitionSerializer(113));
+        factory.register(GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer(114));
+        factory.register(UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer(115));
+        factory.register(GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer(116));
+        factory.register(GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer(117));
+        factory.register(CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer(118));
 
         // [120..123] - DR
-        factory.register((short)125, GridNearAtomicSingleUpdateRequest::new, new GridNearAtomicSingleUpdateRequestSerializer());
-        factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new, new GridNearAtomicSingleUpdateInvokeRequestSerializer());
-        factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new, new GridNearAtomicSingleUpdateFilterRequestSerializer());
-        factory.register((short)128, CacheGroupAffinityMessage::new, new CacheGroupAffinityMessageSerializer());
-        factory.register((short)129, WalStateAckMessage::new, new WalStateAckMessageSerializer());
-        factory.register((short)130, UserManagementOperationFinishedMessage::new, new UserManagementOperationFinishedMessageSerializer());
-        factory.register((short)131, UserAuthenticateRequestMessage::new, new UserAuthenticateRequestMessageSerializer());
-        factory.register((short)132, UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer());
-        factory.register(ClusterMetricsUpdateMessage.TYPE_CODE, ClusterMetricsUpdateMessage::new,
-            new ClusterMetricsUpdateMessageSerializer());
-        factory.register((short)134, ContinuousRoutineStartResultMessage::new, new ContinuousRoutineStartResultMessageSerializer());
-        factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
-        factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
-        factory.register(NodeMetricsMessage.TYPE_CODE, NodeMetricsMessage::new, new NodeMetricsMessageSerializer());
-        factory.register(NodeFullMetricsMessage.TYPE_CODE, NodeFullMetricsMessage::new, new NodeFullMetricsMessageSerializer());
-        factory.register((short)157, PartitionUpdateCountersMessage::new,
-            new PartitionUpdateCountersMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
-        factory.register((short)163, GenerateEncryptionKeyResponse::new, new GenerateEncryptionKeyResponseSerializer());
-        factory.register((short)167, ServiceDeploymentProcessId::new, new ServiceDeploymentProcessIdSerializer());
-        factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new, new ServiceSingleNodeDeploymentResultBatchSerializer());
-        factory.register((short)169, ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer());
-        factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new, new GridQueryKillRequestSerializer());
-        factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new, new GridQueryKillResponseSerializer());
-        factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new,
-            new GridIoSecurityAwareMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
-        factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new, new SingleNodeMessageSerializer());
-        factory.register((short)177, TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer());
-        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new,
-            new SnapshotFilesRequestMessageSerializer());
-        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new,
-            new SnapshotFilesFailureMessageSerializer());
-        factory.register((short)180, AtomicApplicationAttributesAwareRequest::new, new AtomicApplicationAttributesAwareRequestSerializer());
-        factory.register((short)181, TransactionAttributesAwareRequest::new, new TransactionAttributesAwareRequestSerializer());
+        factory.register(GridNearAtomicSingleUpdateRequest::new, new GridNearAtomicSingleUpdateRequestSerializer(125));
+        factory.register(GridNearAtomicSingleUpdateInvokeRequest::new, new GridNearAtomicSingleUpdateInvokeRequestSerializer(126));
+        factory.register(GridNearAtomicSingleUpdateFilterRequest::new, new GridNearAtomicSingleUpdateFilterRequestSerializer(127));
+        factory.register(CacheGroupAffinityMessage::new, new CacheGroupAffinityMessageSerializer(128));
+        factory.register(WalStateAckMessage::new, new WalStateAckMessageSerializer(129));
+        factory.register(UserManagementOperationFinishedMessage::new, new UserManagementOperationFinishedMessageSerializer(130));
+        factory.register(UserAuthenticateRequestMessage::new, new UserAuthenticateRequestMessageSerializer(131));
+        factory.register(UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer(132));
+        factory.register(ClusterMetricsUpdateMessage::new,
+            new ClusterMetricsUpdateMessageSerializer(ClusterMetricsUpdateMessage.TYPE_CODE));
+        factory.register(ContinuousRoutineStartResultMessage::new, new ContinuousRoutineStartResultMessageSerializer(134));
+        factory.register(LatchAckMessage::new, new LatchAckMessageSerializer(135));
+        factory.register(CacheMetricsMessage::new, new CacheMetricsMessageSerializer(CacheMetricsMessage.TYPE_CODE));
+        factory.register(NodeMetricsMessage::new, new NodeMetricsMessageSerializer(NodeMetricsMessage.TYPE_CODE));
+        factory.register(NodeFullMetricsMessage::new, new NodeFullMetricsMessageSerializer(NodeFullMetricsMessage.TYPE_CODE));
+        factory.register(PartitionUpdateCountersMessage::new, new PartitionUpdateCountersMessageMarshallableSerializer(marsh, clsLdr, 157));
+        factory.register(GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer(162));
+        factory.register(GenerateEncryptionKeyResponse::new, new GenerateEncryptionKeyResponseSerializer(163));
+        factory.register(ServiceDeploymentProcessId::new, new ServiceDeploymentProcessIdSerializer(167));
+        factory.register(ServiceSingleNodeDeploymentResultBatch::new, new ServiceSingleNodeDeploymentResultBatchSerializer(168));
+        factory.register(ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer(169));
+        factory.register(GridQueryKillRequest::new, new GridQueryKillRequestSerializer(GridQueryKillRequest.TYPE_CODE));
+        factory.register(GridQueryKillResponse::new, new GridQueryKillResponseSerializer(GridQueryKillResponse.TYPE_CODE));
+        factory.register(GridIoSecurityAwareMessage::new,
+            new GridIoSecurityAwareMessageMarshallableSerializer(marsh, clsLdr, GridIoSecurityAwareMessage.TYPE_CODE));
+        factory.register(SessionChannelMessage::new, new SessionChannelMessageSerializer(SessionChannelMessage.TYPE_CODE));
+        factory.register(SingleNodeMessage::new, new SingleNodeMessageSerializer(SingleNodeMessage.TYPE_CODE));
+        factory.register(TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer(177));
+        factory.register(SnapshotFilesRequestMessage::new,
+            new SnapshotFilesRequestMessageSerializer(SnapshotFilesRequestMessage.TYPE_CODE));
+        factory.register(SnapshotFilesFailureMessage::new,
+            new SnapshotFilesFailureMessageSerializer(SnapshotFilesFailureMessage.TYPE_CODE));
+        factory.register(AtomicApplicationAttributesAwareRequest::new, new AtomicApplicationAttributesAwareRequestSerializer(180));
+        factory.register(TransactionAttributesAwareRequest::new, new TransactionAttributesAwareRequestSerializer(181));
 
         // Incremental snapshot.
-        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new,
-            new IncrementalSnapshotAwareMessageSerializer());
+        factory.register(IncrementalSnapshotAwareMessage::new,
+            new IncrementalSnapshotAwareMessageSerializer(IncrementalSnapshotAwareMessage.TYPE_CODE));
 
         // Index statistics.
-        factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new, new StatisticsKeyMessageSerializer());
-        factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new, new StatisticsDecimalMessageSerializer());
-        factory.register(StatisticsObjectData.TYPE_CODE, StatisticsObjectData::new, new StatisticsObjectDataSerializer());
-        factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new, new StatisticsColumnDataSerializer());
-        factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new, new StatisticsRequestSerializer());
-        factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new, new StatisticsResponseSerializer());
+        factory.register(StatisticsKeyMessage::new, new StatisticsKeyMessageSerializer(StatisticsKeyMessage.TYPE_CODE));
+        factory.register(StatisticsDecimalMessage::new, new StatisticsDecimalMessageSerializer(StatisticsDecimalMessage.TYPE_CODE));
+        factory.register(StatisticsObjectData::new, new StatisticsObjectDataSerializer(StatisticsObjectData.TYPE_CODE));
+        factory.register(StatisticsColumnData::new, new StatisticsColumnDataSerializer(StatisticsColumnData.TYPE_CODE));
+        factory.register(StatisticsRequest::new, new StatisticsRequestSerializer(StatisticsRequest.TYPE_CODE));
+        factory.register(StatisticsResponse::new, new StatisticsResponseSerializer(StatisticsResponse.TYPE_CODE));
 
-        factory.register(CachePartitionPartialCountersMap.TYPE_CODE, CachePartitionPartialCountersMap::new,
-            new CachePartitionPartialCountersMapSerializer());
-        factory.register(IgniteDhtDemandedPartitionsMap.TYPE_CODE, IgniteDhtDemandedPartitionsMap::new,
-            new IgniteDhtDemandedPartitionsMapSerializer());
-        factory.register(BinaryMetadataVersionInfo.TYPE_CODE, BinaryMetadataVersionInfo::new,
-            new BinaryMetadataVersionInfoSerializer());
-        factory.register(CachePartitionFullCountersMap.TYPE_CODE, CachePartitionFullCountersMap::new,
-            new CachePartitionFullCountersMapSerializer());
-        factory.register(IgniteDhtPartitionCountersMap.TYPE_CODE, IgniteDhtPartitionCountersMap::new,
-            new IgniteDhtPartitionCountersMapSerializer());
-        factory.register(GroupPartitionIdPair.TYPE_CODE, GroupPartitionIdPair::new, new GroupPartitionIdPairSerializer());
-        factory.register(PartitionReservationsMap.TYPE_CODE, PartitionReservationsMap::new, new PartitionReservationsMapSerializer());
-        factory.register(IgniteDhtPartitionHistorySuppliersMap.TYPE_CODE, IgniteDhtPartitionHistorySuppliersMap::new,
-            new IgniteDhtPartitionHistorySuppliersMapSerializer());
-        factory.register(PartitionsToReload.TYPE_CODE, PartitionsToReload::new, new PartitionsToReloadSerializer());
-        factory.register(CachePartitionsToReloadMap.TYPE_CODE, CachePartitionsToReloadMap::new, new CachePartitionsToReloadMapSerializer());
-        factory.register(IgniteDhtPartitionsToReloadMap.TYPE_CODE, IgniteDhtPartitionsToReloadMap::new,
-            new IgniteDhtPartitionsToReloadMapSerializer());
-        factory.register(IntLongMap.TYPE_CODE, IntLongMap::new, new IntLongMapSerializer());
-        factory.register(IndexKeyTypeMessage.TYPE_CODE, IndexKeyTypeMessage::new,
-            new IndexKeyTypeMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(GridPartitionStateMap.TYPE_CODE, GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
-        factory.register(GridDhtPartitionMap.TYPE_CODE, GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
-        factory.register(GridDhtPartitionFullMap.TYPE_CODE, GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer());
-        factory.register((short)520, SnapshotOperationResponse::new, new SnapshotOperationResponseSerializer());
-        factory.register((short)521, SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer());
-        factory.register((short)522, DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
-        factory.register((short)523, SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
-        factory.register((short)524, IncrementalSnapshotVerifyResult::new,
-            new IncrementalSnapshotVerifyResultMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)525, SnapshotRestoreOperationResponse::new,
-            new SnapshotRestoreOperationResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)526, SnapshotMetadataResponse::new, new SnapshotMetadataResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)527, SnapshotCheckPartitionHashesResponse::new,
-            new SnapshotCheckPartitionHashesResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
-        factory.register((short)529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
-        factory.register((short)530, SnapshotPartitionsVerifyHandlerResponse::new,
-            new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr));
+        factory.register(CachePartitionPartialCountersMap::new,
+            new CachePartitionPartialCountersMapSerializer(CachePartitionPartialCountersMap.TYPE_CODE));
+        factory.register(IgniteDhtDemandedPartitionsMap::new,
+            new IgniteDhtDemandedPartitionsMapSerializer(IgniteDhtDemandedPartitionsMap.TYPE_CODE));
+        factory.register(BinaryMetadataVersionInfo::new,
+            new BinaryMetadataVersionInfoSerializer(BinaryMetadataVersionInfo.TYPE_CODE));
+        factory.register(CachePartitionFullCountersMap::new,
+            new CachePartitionFullCountersMapSerializer(CachePartitionFullCountersMap.TYPE_CODE));
+        factory.register(IgniteDhtPartitionCountersMap::new,
+            new IgniteDhtPartitionCountersMapSerializer(IgniteDhtPartitionCountersMap.TYPE_CODE));
+        factory.register(GroupPartitionIdPair::new, new GroupPartitionIdPairSerializer(GroupPartitionIdPair.TYPE_CODE));
+        factory.register(PartitionReservationsMap::new, new PartitionReservationsMapSerializer(PartitionReservationsMap.TYPE_CODE));
+        factory.register(IgniteDhtPartitionHistorySuppliersMap::new,
+            new IgniteDhtPartitionHistorySuppliersMapSerializer(IgniteDhtPartitionHistorySuppliersMap.TYPE_CODE));
+        factory.register(PartitionsToReload::new, new PartitionsToReloadSerializer(PartitionsToReload.TYPE_CODE));
+        factory.register(CachePartitionsToReloadMap::new,
+            new CachePartitionsToReloadMapSerializer(CachePartitionsToReloadMap.TYPE_CODE));
+        factory.register(IgniteDhtPartitionsToReloadMap::new,
+            new IgniteDhtPartitionsToReloadMapSerializer(IgniteDhtPartitionsToReloadMap.TYPE_CODE));
+        factory.register(IntLongMap::new, new IntLongMapSerializer(IntLongMap.TYPE_CODE));
+        factory.register(IndexKeyTypeMessage::new,
+            new IndexKeyTypeMessageMarshallableSerializer(marsh, clsLdr, IndexKeyTypeMessage.TYPE_CODE));
+        factory.register(GridPartitionStateMap::new, new GridPartitionStateMapSerializer(GridPartitionStateMap.TYPE_CODE));
+        factory.register(GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer(GridDhtPartitionMap.TYPE_CODE));
+        factory.register(GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer(GridDhtPartitionFullMap.TYPE_CODE));
+        factory.register(SnapshotOperationResponse::new, new SnapshotOperationResponseSerializer(520));
+        factory.register(SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer(521));
+        factory.register(DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer(522));
+        factory.register(SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer(523));
+        factory.register(IncrementalSnapshotVerifyResult::new,
+            new IncrementalSnapshotVerifyResultMarshallableSerializer(marsh, clsLdr, 524));
+        factory.register(SnapshotRestoreOperationResponse::new,
+            new SnapshotRestoreOperationResponseMarshallableSerializer(marsh, clsLdr, 525));
+        factory.register(SnapshotMetadataResponse::new,
+            new SnapshotMetadataResponseMarshallableSerializer(marsh, clsLdr, 526));
+        factory.register(SnapshotCheckPartitionHashesResponse::new,
+            new SnapshotCheckPartitionHashesResponseMarshallableSerializer(marsh, clsLdr, 527));
+        factory.register(SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer(528));
+        factory.register(SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer(529));
+        factory.register(SnapshotPartitionsVerifyHandlerResponse::new,
+            new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr, 530));
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR

@@ -32,6 +32,7 @@ public class StatisticsKeyMessage implements Message, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 183;
 
     /** Object schema. */

@@ -25,6 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** Partitions to reload. */
 public class PartitionsToReload implements Message {
     /** Type code. */
+    @Deprecated
     public static final short TYPE_CODE = 511;
 
     /** Set of partitions to reload. */

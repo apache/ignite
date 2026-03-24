@@ -26,6 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 174;
 
     /** Security subject ID that will be used during message processing on a remote node. */

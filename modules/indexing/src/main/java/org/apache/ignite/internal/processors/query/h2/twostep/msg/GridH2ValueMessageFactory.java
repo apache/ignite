@@ -37,34 +37,34 @@ import org.h2.value.Value;
 public class GridH2ValueMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-4, () -> GridH2Null.INSTANCE, new GridH2NullSerializer());
-        factory.register((short)-5, GridH2Boolean::new, new GridH2BooleanSerializer());
-        factory.register((short)-6, GridH2Byte::new, new GridH2ByteSerializer());
-        factory.register((short)-7, GridH2Short::new, new GridH2ShortSerializer());
-        factory.register((short)-8, GridH2Integer::new, new GridH2IntegerSerializer());
-        factory.register((short)-9, GridH2Long::new, new GridH2LongSerializer());
-        factory.register((short)-10, GridH2Decimal::new, new GridH2DecimalSerializer());
-        factory.register((short)-11, GridH2Double::new, new GridH2DoubleSerializer());
-        factory.register((short)-12, GridH2Float::new, new GridH2FloatSerializer());
-        factory.register((short)-13, GridH2Time::new, new GridH2TimeSerializer());
-        factory.register((short)-14, GridH2Date::new, new GridH2DateSerializer());
-        factory.register((short)-15, GridH2Timestamp::new, new GridH2TimestampSerializer());
-        factory.register((short)-16, GridH2Bytes::new, new GridH2BytesSerializer());
-        factory.register((short)-17, GridH2String::new, new GridH2StringSerializer());
-        factory.register((short)-18, GridH2Array::new, new GridH2ArraySerializer());
-        factory.register((short)-19, GridH2JavaObject::new, new GridH2JavaObjectSerializer());
-        factory.register((short)-20, GridH2Uuid::new, new GridH2UuidSerializer());
-        factory.register((short)-21, GridH2Geometry::new, new GridH2GeometrySerializer());
-        factory.register((short)-22, GridH2CacheObject::new, new GridH2CacheObjectSerializer());
-        factory.register((short)-30, GridH2IndexRangeRequest::new, new GridH2IndexRangeRequestSerializer());
-        factory.register((short)-31, GridH2IndexRangeResponse::new, new GridH2IndexRangeResponseSerializer());
-        factory.register((short)-32, GridH2RowMessage::new, new GridH2RowMessageSerializer());
-        factory.register((short)-33, GridH2QueryRequest::new, new GridH2QueryRequestSerializer());
-        factory.register((short)-34, GridH2RowRange::new, new GridH2RowRangeSerializer());
-        factory.register((short)-35, GridH2RowRangeBounds::new, new GridH2RowRangeBoundsSerializer());
-        factory.register((short)-54, QueryTable::new, new QueryTableSerializer());
-        factory.register((short)-55, GridH2DmlRequest::new, new GridH2DmlRequestSerializer());
-        factory.register((short)-56, GridH2DmlResponse::new, new GridH2DmlResponseSerializer());
+        factory.register(() -> GridH2Null.INSTANCE, new GridH2NullSerializer(-4));
+        factory.register(GridH2Boolean::new, new GridH2BooleanSerializer(-5));
+        factory.register(GridH2Byte::new, new GridH2ByteSerializer(-6));
+        factory.register(GridH2Short::new, new GridH2ShortSerializer(-7));
+        factory.register(GridH2Integer::new, new GridH2IntegerSerializer(-8));
+        factory.register(GridH2Long::new, new GridH2LongSerializer(-9));
+        factory.register(GridH2Decimal::new, new GridH2DecimalSerializer(-10));
+        factory.register(GridH2Double::new, new GridH2DoubleSerializer(-11));
+        factory.register(GridH2Float::new, new GridH2FloatSerializer(-12));
+        factory.register(GridH2Time::new, new GridH2TimeSerializer(-13));
+        factory.register(GridH2Date::new, new GridH2DateSerializer(-14));
+        factory.register(GridH2Timestamp::new, new GridH2TimestampSerializer(-15));
+        factory.register(GridH2Bytes::new, new GridH2BytesSerializer(-16));
+        factory.register(GridH2String::new, new GridH2StringSerializer(-17));
+        factory.register(GridH2Array::new, new GridH2ArraySerializer(-18));
+        factory.register(GridH2JavaObject::new, new GridH2JavaObjectSerializer(-19));
+        factory.register(GridH2Uuid::new, new GridH2UuidSerializer(-20));
+        factory.register(GridH2Geometry::new, new GridH2GeometrySerializer(-21));
+        factory.register(GridH2CacheObject::new, new GridH2CacheObjectSerializer(-22));
+        factory.register(GridH2IndexRangeRequest::new, new GridH2IndexRangeRequestSerializer(-30));
+        factory.register(GridH2IndexRangeResponse::new, new GridH2IndexRangeResponseSerializer(-31));
+        factory.register(GridH2RowMessage::new, new GridH2RowMessageSerializer(-32));
+        factory.register(GridH2QueryRequest::new, new GridH2QueryRequestSerializer(-33));
+        factory.register(GridH2RowRange::new, new GridH2RowRangeSerializer(-34));
+        factory.register(GridH2RowRangeBounds::new, new GridH2RowRangeBoundsSerializer(-35));
+        factory.register(QueryTable::new, new QueryTableSerializer(-54));
+        factory.register(GridH2DmlRequest::new, new GridH2DmlRequestSerializer(-55));
+        factory.register(GridH2DmlResponse::new, new GridH2DmlResponseSerializer(-56));
     }
 
     /**

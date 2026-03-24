@@ -31,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class CachePartitionPartialCountersMap implements Serializable, Message {
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 500;
 
     /** */

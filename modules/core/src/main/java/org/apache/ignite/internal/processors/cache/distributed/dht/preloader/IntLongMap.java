@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IntLongMap implements Message {
     /** Type code. */
+    @Deprecated
     public static final short TYPE_CODE = 514;
 
     /** Map. */

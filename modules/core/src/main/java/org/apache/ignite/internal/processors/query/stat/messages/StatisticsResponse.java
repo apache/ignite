@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class StatisticsResponse implements Message {
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 188;
 
     /** Request id. */

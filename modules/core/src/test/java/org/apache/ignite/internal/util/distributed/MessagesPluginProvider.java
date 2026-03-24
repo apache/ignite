@@ -34,8 +34,8 @@ import static org.junit.Assert.assertTrue;
 public class MessagesPluginProvider extends AbstractTestPluginProvider {
     /** */
     private static final MessageFactoryProvider FACTORY_PROVIDER = f -> {
-        f.register((short)10_000, TestIntegerMessage::new, new TestIntegerMessageSerializer());
-        f.register((short)10_001, TestUuidMessage::new, new TestUuidMessageSerializer());
+        f.register(TestIntegerMessage::new, new TestIntegerMessageSerializer(10_000));
+        f.register(TestUuidMessage::new, new TestUuidMessageSerializer(10_001));
     };
 
     /** {@inheritDoc} */

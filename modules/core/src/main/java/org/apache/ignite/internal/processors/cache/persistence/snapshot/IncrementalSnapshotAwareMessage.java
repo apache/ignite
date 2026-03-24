@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 400;
 
     /** Original transaction message. */

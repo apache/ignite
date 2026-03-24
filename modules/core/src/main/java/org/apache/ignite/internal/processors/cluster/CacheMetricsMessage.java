@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** Cache metrics message. */
 public class CacheMetricsMessage implements Message {
     /** */
+    @Deprecated
     public static final short TYPE_CODE = 136;
 
     /** Number of reads. */

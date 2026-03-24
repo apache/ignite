@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /** Map for storing GroupPartitionIdPair and their respective history counter values. */
 public class PartitionReservationsMap implements Message {
     /** Type code. */
+    @Deprecated
     public static final short TYPE_CODE = 509;
 
     /** Mapping between GroupPartitionIdPair objects and their respective history counter values. */

@@ -40,6 +40,7 @@ import org.jetbrains.annotations.NotNull;
 public class GridDhtPartitionFullMap
     extends AbstractMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable, Message {
     /** Type code. */
+    @Deprecated
     public static final short TYPE_CODE = 519;
 
     /** */
