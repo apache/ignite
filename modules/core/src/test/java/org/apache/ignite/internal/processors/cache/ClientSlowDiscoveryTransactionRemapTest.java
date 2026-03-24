@@ -18,16 +18,18 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import com.google.common.collect.Maps;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -43,7 +45,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.internal.util.collections.Sets;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -126,16 +127,33 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         tx.put(2, val + 1);
     };
 
+    /** Creates an ordered set from the given values. */
+    private static <T extends Comparable<? super T>> Set<T> sortedSetOf(T... vals) {
+        return new TreeSet<>(Arrays.asList(vals));
+    }
+
+    /** Creates an ordered identity map from the given set. */
+    private static <T extends Comparable<? super T>> Map<T, T> identitySortedMapOf(Set<T> vals) {
+        Map<T, T> res = new TreeMap<>();
+
+        for (T v : vals)
+            res.put(v, v);
+
+        return res;
+    }
+
     /** Put all remove all same keys. */
     private static IgniteInClosure<TestTransaction<Integer, Integer>> putAllRemoveAllSameKeys = tx -> {
-        tx.putAll(Maps.asMap(Sets.newSet(1, 2, 3, 4, 5), k -> k));
-        tx.removeAll(Sets.newSet(1, 2, 3, 4, 5));
+        Set<Integer> keys = sortedSetOf(1, 2, 3, 4, 5);
+
+        tx.putAll(identitySortedMapOf(keys));
+        tx.removeAll(keys);
     };
 
     /** Put all remove all different keys. */
     private static IgniteInClosure<TestTransaction<Integer, Integer>> putAllRemoveAllDifferentKeys = tx -> {
-        tx.putAll(Maps.asMap(Sets.newSet(1, 2, 3, 4, 5), k -> k));
-        tx.removeAll(Sets.newSet(6, 7, 8, 9, 10));
+        tx.putAll(identitySortedMapOf(sortedSetOf(1, 2, 3, 4, 5)));
+        tx.removeAll(sortedSetOf(6, 7, 8, 9, 10));
     };
 
     /** Random operation. */

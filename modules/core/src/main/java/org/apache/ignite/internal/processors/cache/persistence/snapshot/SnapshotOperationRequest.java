@@ -20,40 +20,52 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation end request for {@link DistributedProcess.DistributedProcessType#START_SNAPSHOT} initiate message.
  */
 public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
     /** Operational node ID. */
-    private final UUID opNodeId;
+    @Order(0)
+    UUID opNodeId;
 
     /** If {@code true} then incremental snapshot requested. */
-    private final boolean incremental;
+    @Order(1)
+    boolean incremental;
 
     /** Index of incremental snapshot. */
-    private final int incIdx;
+    @Order(2)
+    int incIdx;
 
     /** If {@code true} snapshot only primary copies of partitions. */
-    private final boolean onlyPrimary;
+    @Order(3)
+    boolean onlyPrimary;
 
     /** If {@code true} then create dump. */
-    private final boolean dump;
+    @Order(4)
+    boolean dump;
 
     /** If {@code true} then compress partition files. */
-    private final boolean compress;
+    @Order(5)
+    boolean compress;
 
     /** If {@code true} then content of dump encrypted. */
-    private final boolean encrypt;
+    @Order(6)
+    boolean encrypt;
 
     /** If {@code true} then only cache config and metadata included in snapshot. */
-    private final boolean configOnly;
+    @Order(7)
+    boolean configOnly;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public SnapshotOperationRequest() {
+        // No-op.
+    }
 
     /**
      * @param reqId Request ID.
@@ -140,7 +152,12 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     }
 
     /** {@inheritDoc} */
+    @Override public short directType() {
+        return 34;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotOperationRequest.class, this);
+        return S.toString(SnapshotOperationRequest.class, this, super.toString());
     }
 }
