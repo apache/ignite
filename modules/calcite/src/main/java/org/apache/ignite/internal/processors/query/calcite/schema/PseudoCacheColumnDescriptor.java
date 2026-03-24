@@ -17,23 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.calcite.PseudoColumnDescriptor;
 import org.apache.ignite.calcite.PseudoColumnProvider;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.PseudoColumnValueExtractorContextEx;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
@@ -55,13 +53,6 @@ class PseudoCacheColumnDescriptor implements CacheColumnDescriptor {
 
     /** */
     PseudoCacheColumnDescriptor(PseudoColumnDescriptor desc, int fieldIdx) {
-        if (QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(desc.name())
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(desc.name())) {
-            throw new IgniteException(
-                String.format("Pseudocolumn name should not overlap with the system ones: [name=%s]", desc.name())
-            );
-        }
-
         this.desc = desc;
         this.fieldIdx = fieldIdx;
     }
@@ -197,27 +188,28 @@ class PseudoCacheColumnDescriptor implements CacheColumnDescriptor {
 
     /** */
     static List<CacheColumnDescriptor> createCacheColDesc(int nxtColIdx, PseudoColumnProvider pseudoColProv) {
-        Set<String> pseudoColNames = new HashSet<>();
+        int[] colIdx = {nxtColIdx};
 
-        List<CacheColumnDescriptor> res = new ArrayList<>();
-
-        for (PseudoColumnDescriptor d : pseudoColProv.provideDescriptors()) {
-            if (!pseudoColNames.add(d.name()))
-                throw new IgniteException(String.format("Pseudocolumn names must be unique: [name=%s]", d.name()));
-
-            res.add(new PseudoCacheColumnDescriptor(d, nxtColIdx++));
-        }
-
-        return res;
+        return pseudoColProv.provideDescriptors().stream()
+            .map(d -> new PseudoCacheColumnDescriptor(d, colIdx[0]++))
+            .collect(toList());
     }
 
-    /** */
-    static void checkForNameConflictsWithUserColumns(List<CacheColumnDescriptor> pseudoColDescs, Set<String> usrColNames) {
+    /**
+     * Cheks that pseudocolumn names do not overlap with user-defined ones. This check is required for the persistent
+     * cache node restart scenario. A suitable location for this check could not be found. For a running node, this
+     * check was performed during the DDL validation phase.
+     */
+    static void checkForNameConflictsWithUserColumns(List<CacheColumnDescriptor> pseudoColDescs, GridQueryTypeDescriptor typeDesc) {
+        Set<String> usrColNames = typeDesc.fields().keySet();
+
         for (CacheColumnDescriptor desc : pseudoColDescs) {
             if (usrColNames.contains(desc.name())) {
-                throw new IgniteException(
-                    String.format("Pseudocolumn name should not overlap with the user ones: [name=%s]", desc.name())
-                );
+                throw new AssertionError(String.format(
+                    "Pseudocolumn name should not overlap with the user ones: " +
+                        "[pseudoColumnName=%s, cacheName=%s, schemaName=%s, tableName=%s]",
+                    desc.name(), typeDesc.cacheName(), typeDesc.schemaName(), typeDesc.tableName()
+                ));
             }
         }
     }

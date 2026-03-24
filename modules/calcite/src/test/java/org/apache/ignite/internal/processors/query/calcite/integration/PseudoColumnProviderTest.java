@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
@@ -71,43 +70,6 @@ public class PseudoColumnProviderTest extends AbstractBasicIntegrationTest {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(sqlCfg)
             .setPluginProviders(new TestPseudoColumnPluginProvider(PSEUDO_COLS));
-    }
-
-    /** */
-    @Test
-    public void testPseudoColumnWithKeyName() {
-        PSEUDO_COLS.add(new KeyToStingPseudoColumn(QueryUtils.KEY_FIELD_NAME));
-
-        assertThrows(
-            "create table PUBLIC.PERSON(id int primary key, name varchar)",
-            IgniteSQLException.class,
-            "Pseudocolumn name must not match system one: [name=_KEY]"
-        );
-    }
-
-    /** */
-    @Test
-    public void testPseudoColumnWithValName() {
-        PSEUDO_COLS.add(new KeyToStingPseudoColumn(QueryUtils.VAL_FIELD_NAME));
-
-        assertThrows(
-            "create table PUBLIC.PERSON(id int primary key, name varchar)",
-            IgniteSQLException.class,
-            "Pseudocolumn name must not match system one: [name=_VAL]"
-        );
-    }
-
-    /** */
-    @Test
-    public void testPseudoColumnsWithSameName() {
-        PSEUDO_COLS.add(new KeyToStingPseudoColumn("FOO"));
-        PSEUDO_COLS.add(new KeyToStingPseudoColumn("FOO"));
-
-        assertThrows(
-            "create table PUBLIC.PERSON(id int primary key, name varchar)",
-            IgniteSQLException.class,
-            "Pseudocolumn names must be unique: [name=FOO]"
-        );
     }
 
     /** */

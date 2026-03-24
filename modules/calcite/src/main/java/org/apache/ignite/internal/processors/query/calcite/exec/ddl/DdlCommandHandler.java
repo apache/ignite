@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
@@ -412,28 +411,12 @@ public class DdlCommandHandler {
             PseudoColumnProvider.class, PseudoColumnProvider.EMPTY
         );
 
-        List<String> pseudoColNameList = pseudoColProv.provideDescriptors().stream()
-            .map(PseudoColumnDescriptor::name)
-            .collect(toList());
-
-        Set<String> pseudoColNameSet = new HashSet<>();
-        Set<String> sysColNameSet = Set.of(QueryUtils.KEY_FIELD_NAME, QueryUtils.VAL_FIELD_NAME);
         Set<String> tblColNameSet = cmd.columns().stream().map(ColumnDefinition::name).collect(toSet());
 
-        for (String pseudoColName : pseudoColNameList) {
-            if (!pseudoColNameSet.add(pseudoColName)) {
+        for (PseudoColumnDescriptor desc : pseudoColProv.provideDescriptors()) {
+            if (tblColNameSet.contains(desc.name())) {
                 throw new IgniteSQLException(
-                    String.format("Pseudocolumn names must be unique: [name=%s]", pseudoColName)
-                );
-            }
-            else if (sysColNameSet.contains(pseudoColName)) {
-                throw new IgniteSQLException(
-                    String.format("Pseudocolumn name must not match system one: [name=%s]", pseudoColName)
-                );
-            }
-            else if (tblColNameSet.contains(pseudoColName)) {
-                throw new IgniteSQLException(
-                    String.format("Pseudocolumn name must not overlap with user ones: [name=%s]", pseudoColName)
+                    String.format("Pseudocolumn name must not overlap with user ones: [name=%s]", desc.name())
                 );
             }
         }

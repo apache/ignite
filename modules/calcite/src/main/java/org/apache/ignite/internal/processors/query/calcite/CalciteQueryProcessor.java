@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -51,11 +53,14 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.calcite.PseudoColumnDescriptor;
+import org.apache.ignite.calcite.PseudoColumnProvider;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -393,6 +398,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public ExecutionService<Object[]> executionService() {
         return executionSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        checkPseudoColumnsFromPlugin();
     }
 
     /** {@inheritDoc} */
@@ -879,5 +889,30 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public InjectResourcesService injectService() {
         return injectSvc;
+    }
+
+    /** */
+    private void checkPseudoColumnsFromPlugin() throws IgniteCheckedException {
+        PseudoColumnProvider prov = ctx.plugins().createComponentOrDefault(
+            PseudoColumnProvider.class, PseudoColumnProvider.EMPTY
+        );
+
+        Set<String> colNames = new HashSet<>();
+        Set<String> sysColNames = Set.of(QueryUtils.KEY_FIELD_NAME, QueryUtils.VAL_FIELD_NAME);
+
+        for (PseudoColumnDescriptor desc : prov.provideDescriptors()) {
+            if (!colNames.add(desc.name())) {
+                throw new IgniteCheckedException(String.format(
+                    "Pseudocolumn name from plugin must be unique: [name=%s, provider=%s]",
+                    desc.name(), prov
+                ));
+            }
+            else if (sysColNames.contains(desc.name())) {
+                throw new IgniteCheckedException(String.format(
+                    "Pseudocolumn name from plugin must not match system one: [name=%s, provider=%s]",
+                    desc.name(), prov
+                ));
+            }
+        }
     }
 }
