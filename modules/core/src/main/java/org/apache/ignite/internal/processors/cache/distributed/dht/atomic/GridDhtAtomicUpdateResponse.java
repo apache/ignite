@@ -82,11 +82,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         return futId;
     }
 
-    /** @return Errors. */
-    public UpdateErrors errors() {
-        return errs;
-    }
-
     /**
      * Sets update error.
      *

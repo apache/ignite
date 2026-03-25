@@ -85,9 +85,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
         return false;
     }
 
-    /**
-     * @return List of ACKed future ids.
-     */
+    /** @return List of ACKed future ids. */
     public GridLongList futureIds() {
         return futIds;
     }

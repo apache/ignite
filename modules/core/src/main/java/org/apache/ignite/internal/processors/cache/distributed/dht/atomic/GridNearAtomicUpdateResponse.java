@@ -152,9 +152,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return futId;
     }
 
-    /**
-     * @return Errs.
-     */
+    /** @return Errs. */
     public UpdateErrors errors() {
         return errs;
     }
