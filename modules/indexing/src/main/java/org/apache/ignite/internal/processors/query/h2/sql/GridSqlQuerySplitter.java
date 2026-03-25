@@ -1072,13 +1072,12 @@ public class GridSqlQuerySplitter {
 
         Set<GridSqlAlias> aliases = U.newIdentityHashSet();
 
-        int safeBegin = begin;
         int safeEnd = Math.min(end, leftBranchEnd);
 
-        if (safeBegin > safeEnd)
+        if (begin > safeEnd)
             return aliases;
 
-        for (int i = safeBegin; i <= safeEnd; i++) {
+        for (int i = begin; i <= safeEnd; i++) {
             GridSqlAlias uniqueTblAlias = model.childModel(i).uniqueAlias();
 
             assert uniqueTblAlias != null : model.ast().getSQL();

@@ -2056,7 +2056,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testLeftJoinWithSubquery() throws Exception {
-        IgniteCache<?, ?> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache = ignite(0).getOrCreateCache(
+                cacheConfig("psLeftJoinSubquery", true, Integer.class, Person.class)
+        );
 
         String personTbl = "PERSON_LEFT_JOIN_SUBQUERY";
         String depTbl = "DEPARTMENT_LEFT_JOIN_SUBQUERY";
@@ -2095,8 +2097,13 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             assertTrue(res.isEmpty());
         }
         finally {
-            cache.query(new SqlFieldsQuery("DROP TABLE IF EXISTS " + personTbl)).getAll();
-            cache.query(new SqlFieldsQuery("DROP TABLE IF EXISTS " + depTbl)).getAll();
+            try {
+                cache.query(new SqlFieldsQuery("DROP TABLE IF EXISTS " + personTbl)).getAll();
+                cache.query(new SqlFieldsQuery("DROP TABLE IF EXISTS " + depTbl)).getAll();
+            }
+            finally {
+                cache.destroy();
+            }
         }
     }
 
