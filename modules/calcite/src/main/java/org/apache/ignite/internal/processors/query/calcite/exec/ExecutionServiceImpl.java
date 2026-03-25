@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -78,6 +80,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -204,6 +207,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
+
+    /**
+     * Transaction modified entries holder.
+     *
+     * @see TransactionConfiguration#isTxAwareQueriesEnabled()
+     */
+    private TxAwareModifiedEntriesHolder mofiedEntriesHolder;
 
     /**
      * @param ctx Kernal.
@@ -477,6 +487,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         iteratorsHolder().init();
+        mofiedEntriesHolder = new TxAwareModifiedEntriesHolder(U.isTxAwareQueriesEnabled(ctx));
     }
 
     /** {@inheritDoc} */
@@ -484,6 +495,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         eventManager().removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         iteratorsHolder().tearDown();
+        mofiedEntriesHolder = null;
     }
 
     /** */
@@ -515,7 +527,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             case DML:
                 ListFieldsQueryCursor<?> cur = mapAndExecutePlan(
                     qry,
-                    (MultiStepPlan)plan
+                    (MultiStepPlan)plan,
+                    mofiedEntriesHolder
                 );
 
                 cur.iterator().hasNext();
@@ -525,7 +538,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             case QUERY:
                 return mapAndExecutePlan(
                     qry,
-                    (MultiStepPlan)plan
+                    (MultiStepPlan)plan,
+                    mofiedEntriesHolder
                 );
 
             case EXPLAIN:
@@ -577,7 +591,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private ListFieldsQueryCursor<?> mapAndExecutePlan(
         RootQuery<Row> qry,
-        MultiStepPlan plan
+        MultiStepPlan plan,
+        TxAwareModifiedEntriesHolder mofiedEntriesHolder
     ) {
         qry.mapping();
 
@@ -626,6 +641,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
         final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
+        final Collection<QueryTxEntry> writeEntrs = userTx == null ?
+            mofiedEntriesHolder.retrieve() : ExecutionContext.transactionChanges(userTx.writeEntries());
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
@@ -641,7 +658,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
             qryParams,
-            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
+            writeEntrs,
+            mofiedEntriesHolder);
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -901,7 +919,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 createIoTracker(nodeId, msg.originatingQueryId()),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters()),
-                msg.queryTransactionEntries()
+                msg.queryTransactionEntries(),
+                null
             );
 
             executeFragment(qry, fragmentPlan, ectx);

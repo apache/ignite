@@ -145,11 +145,15 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private Object[] correlations = new Object[16];
 
+    /** Modified entries holder. */
+    @Nullable private final TxAwareModifiedEntriesHolder mofiedEntriesHolder;
+
     /**
      * @param qctx Parent base query context.
      * @param qryId Query ID.
      * @param fragmentDesc Partitions information.
      * @param params Parameters.
+     * @param mofiedEntriesHolder Modified entries holder.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
@@ -166,7 +170,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         IoTracker ioTracker,
         long timeout,
         Map<String, Object> params,
-        @Nullable Collection<QueryTxEntry> qryTxEntries
+        @Nullable Collection<QueryTxEntry> qryTxEntries,
+        @Nullable TxAwareModifiedEntriesHolder mofiedEntriesHolder
     ) {
         super(qctx);
 
@@ -183,6 +188,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.params = params;
         this.timeout = timeout;
         this.qryTxEntries = qryTxEntries;
+        this.mofiedEntriesHolder = mofiedEntriesHolder;
 
         startTs = U.currentTimeMillis();
 
@@ -421,11 +427,18 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
+                if (mofiedEntriesHolder != null)
+                    mofiedEntriesHolder.store(qryTxEntries);
+
                 if (!isCancelled())
                     task.run();
             }
             catch (Throwable e) {
                 onError.accept(e);
+            }
+            finally {
+                if (mofiedEntriesHolder != null)
+                    mofiedEntriesHolder.detach();
             }
         });
     }

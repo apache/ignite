@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UnstableT
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedTxAwareFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale001Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale010Test;
@@ -174,7 +175,8 @@ import org.junit.runners.Suite;
     QueryEntityValueColumnAliasTest.class,
     CacheStoreTest.class,
     MultiDcQueryMappingTest.class,
-    TxWithExceptionalInterceptorTest.class
+    TxWithExceptionalInterceptorTest.class,
+    UserDefinedTxAwareFunctionsIntegrationTest.class
 })
 public class IntegrationTestSuite {
 }
