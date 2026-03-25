@@ -36,7 +36,11 @@ import static org.junit.Assert.assertArrayEquals;
  * Messages marshalling test.
  */
 public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
-    /** */
+    /**
+     * Size of chunk for marshalling.
+     * <p>
+     * Should be small to ensure message is written/read in parts.
+     */
     private static final int CHUNK_SIZE = 16;
 
     /** Message factory. */
