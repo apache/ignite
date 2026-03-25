@@ -25,12 +25,14 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.UUID;
 import com.thoughtworks.xstream.XStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -65,17 +67,18 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
      * @throws Exception In case of an error.
      */
     public static void main(String[] args) throws Exception {
-        new IgniteCompatibilityNodeRunner().run(args);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void doRun(String[] args) throws Exception {
         try {
+            X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
+
+            X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
+
             if (args.length < 5) {
                 throw new IllegalArgumentException("At least five arguments expected:" +
                     " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [node-ver]" +
                     " [optional/path/to/closure/file]");
             }
+
+            startParentPipeWatcher();
 
             final Thread watchdog = delayedDumpClasspath();
 
@@ -120,6 +123,43 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             throw e;
         }
+    }
+
+    /**
+     * Checks that parent process is alive.
+     *
+     * <p>We listen on {@code System.in} because this compatibility node is started by the parent JVM via
+     * {@link ProcessBuilder}, where {@code System.in} is a pipe from the parent. When the parent process exits,
+     * the write-end of the pipe is closed and {@code System.in.read()} returns EOF. We treat this as a signal
+     * to stop Ignite and terminate the process.</p>
+     */
+    private static void startParentPipeWatcher() {
+        Thread thread = new Thread(() -> {
+            try {
+                while (System.in.read() != -1) {
+                    // No-op
+                }
+            }
+            catch (IOException e) {
+                X.println("Failed to read parent stdin pipe, stopping compatibility node: " + e);
+            }
+
+            X.println("Parent JVM stdin pipe is closed, stopping compatibility node");
+
+            try {
+                if (ignite != null)
+                    Ignition.stop(ignite.name(), true);
+            }
+            catch (Throwable e) {
+                X.println("Failed to stop compatibility node after parent pipe closure: " + e);
+            }
+            finally {
+                System.exit(0);
+            }
+        }, "compatibility-parent-pipe-watcher");
+
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**
