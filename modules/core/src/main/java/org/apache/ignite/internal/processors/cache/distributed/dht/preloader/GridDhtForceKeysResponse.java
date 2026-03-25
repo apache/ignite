@@ -72,23 +72,16 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
+     * @param err Error.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, IgniteCheckedException err) {
         assert futId != null;
         assert miniId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
-    }
-
-    /**
-     * Sets error.
-     *
-     * @param err Error.
-     */
-    public void error(IgniteCheckedException err) {
-        errorMessage(new ErrorMessage(err));
+        this.errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
@@ -96,74 +89,24 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return The error message.
-     */
-    @Nullable public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * Sets the error message.
-     *
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @return Keys.
-     */
+    /** @return Keys. */
     public Collection<KeyCacheObject> missedKeys() {
         return F.emptyIfNull(missedKeys);
     }
 
-    /** @param missedKeys Missed keys. */
-    public void missedKeys(List<KeyCacheObject> missedKeys) {
-        this.missedKeys = missedKeys;
-    }
-
-    /**
-     * @return Forced entries.
-     */
+    /** @return Forced entries. */
     public Collection<GridCacheEntryInfo> forcedInfos() {
         return F.emptyIfNull(infos);
     }
 
-    /**
-     * @param infos Forced entries.
-     */
-    public void forcedInfos(List<GridCacheEntryInfo> infos) {
-        this.infos = infos;
-    }
-
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Mini-future ID.
-     */
+    /** @return Mini-future ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini-future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**

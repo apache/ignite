@@ -103,44 +103,19 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         this.errs = errs;
     }
 
-    /**
-     * @return Primary node ID.
-     */
+    /** @return Primary node ID. */
     public UUID primaryId() {
         return primaryId;
     }
 
-    /**
-     * @param primaryId Primary node ID.
-     */
-    public void primaryId(UUID primaryId) {
-        this.primaryId = primaryId;
-    }
-
-    /**
-     * @return Flags.
-     */
+    /** @return Flags. */
     public byte flags() {
         return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
-    }
-
-    /**
-     * @param partId Partition ID.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
     }
 
     /**
@@ -180,18 +155,9 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         return (flags & mask) != 0;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /** {@inheritDoc} */

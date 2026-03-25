@@ -92,13 +92,6 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
         return futIds;
     }
 
-    /**
-     * @param futIds New list of ACKed future ids.
-     */
-    public void futureIds(GridLongList futIds) {
-        this.futIds = futIds;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
