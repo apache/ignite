@@ -31,7 +31,7 @@ import org.junit.Test;
  * Checks that using {@link QueryUtils#KEY_FIELD_NAME} in condition will use
  * {@link QueryUtils#PRIMARY_KEY_INDEX pk index}.
  */
-public class SearchByKeyFieldTest extends AbstractBasicIntegrationTest {
+public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
