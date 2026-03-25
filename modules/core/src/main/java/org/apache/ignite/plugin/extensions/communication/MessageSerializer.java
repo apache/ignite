@@ -38,11 +38,4 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     public boolean readFrom(M msg, MessageReader reader);
-
-    /**
-     * Gets message type.
-     *
-     * @return Message type.
-     */
-    short directType();
 }

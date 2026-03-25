@@ -170,8 +170,6 @@ public class MessageSerializerGenerator {
             fields.add("private final ClassLoader clsLdr;");
         }
 
-        fields.add("private final short directType;");
-
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
 
@@ -191,24 +189,6 @@ public class MessageSerializerGenerator {
 
             writer.write(TAB + "}" + NL);
 
-            ++indent;
-
-            writer.write(NL);
-            writer.write(identedLine("@Override public short directType() {"));
-            writer.write(NL);
-
-            ++indent;
-
-            writer.write(identedLine("return directType;"));
-            writer.write(NL);
-
-            --indent;
-
-            writer.write(identedLine("}"));
-            writer.write(NL);
-
-            --indent;
-
             writer.write("}");
 
             writer.write(NL);
@@ -219,37 +199,22 @@ public class MessageSerializerGenerator {
 
     /** */
     private void writeConstructor(Writer writer, String serClsName) throws IOException {
+        if (!marshallableMessage())
+            return;
+
         ++indent;
 
-        if (marshallableMessage()) {
-            writer.write(identedLine(METHOD_JAVADOC));
-            writer.write(NL);
-            writer.write(identedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr, int directType) {"));
+        writer.write(identedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(identedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
 
-            writer.write(NL);
+        writer.write(NL);
 
-            ++indent;
+        ++indent;
 
-            writer.write(identedLine("this.marshaller = marshaller;"));
-            writer.write(NL);
-            writer.write(identedLine("this.clsLdr = clsLdr;"));
-            writer.write(NL);
-            writer.write(identedLine("this.directType = (short)directType;"));
-            writer.write(NL);
-        }
-        else {
-            writer.write(identedLine(METHOD_JAVADOC));
-            writer.write(NL);
-            writer.write(identedLine("public " + serClsName + "(int directType) {"));
-
-            writer.write(NL);
-
-            ++indent;
-
-            writer.write(identedLine("this.directType = (short)directType;"));
-            writer.write(NL);
-
-        }
+        writer.write(identedLine("this.marshaller = marshaller;"));
+        writer.write(NL);
+        writer.write(identedLine("this.clsLdr = clsLdr;"));
 
         --indent;
 
@@ -284,7 +249,7 @@ public class MessageSerializerGenerator {
      * <pre>
      *     public boolean writeTo(Message m, MessageWriter writer) {
      *         if (!writer.isHeaderWritten()) {
-     *             if (!writer.writeHeader(directType))
+     *             if (!writer.writeHeader(msg.directType()))
      *                 return false;
      *
      *             writer.onHeaderWritten();
@@ -310,7 +275,7 @@ public class MessageSerializerGenerator {
 
             indent++;
 
-            returnFalseIfWriteFailed(code, "writer.writeHeader");
+            returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
             if (write && marshallableMessage()) {
                 imports.add("org.apache.ignite.IgniteCheckedException");
@@ -566,12 +531,14 @@ public class MessageSerializerGenerator {
     /**
      * Generate code of writing header.
      * <pre>
-     * if (!writer.writeHeader(directType))
+     * if (!writer.writeHeader(msg.directType()))
      *     return false;
      * </pre>
      */
-    private void returnFalseIfWriteFailed(Collection<String> code, String accessor) {
-        code.add(identedLine("if (!%s(directType))", accessor));
+    private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
+        String argsStr = String.join(", ", args);
+
+        code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 

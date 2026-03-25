@@ -57,6 +57,5 @@ public interface Message {
      *
      * @return Message type.
      */
-    @Deprecated
     public short directType();
 }

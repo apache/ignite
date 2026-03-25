@@ -66,7 +66,7 @@ public interface MessageFactory {
      * is already constructed.
      */
     default void register(Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
-        register(serializer.directType(), supplier, serializer);
+        register(supplier.get().directType(), supplier, serializer);
     }
 
     /**
