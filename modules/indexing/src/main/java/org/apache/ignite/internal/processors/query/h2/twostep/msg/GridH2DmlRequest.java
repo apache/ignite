@@ -91,6 +91,10 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     @Order(10)
     boolean explicitTimeout;
 
+    /** Query initiator id. */
+    @Order(11)
+    String qryInitiatorId;
+
     /**
      * Empty constructor.
      */
@@ -114,6 +118,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         paramsBytes = req.paramsBytes;
         schemaName = req.schemaName;
         explicitTimeout = req.explicitTimeout;
+        qryInitiatorId = req.qryInitiatorId;
     }
 
     /**
@@ -305,6 +310,23 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
      */
     public GridH2DmlRequest explicitTimeout(boolean explicitTimeout) {
         this.explicitTimeout = explicitTimeout;
+
+        return this;
+    }
+
+    /**
+     * @return Query initiator id.
+     */
+    public String queryInitiatorId() {
+        return qryInitiatorId;
+    }
+
+    /**
+     * @param qryInitiatorId Query initiator id.
+     * @return {@code this}.
+     */
+    public GridH2DmlRequest queryInitiatorId(String qryInitiatorId) {
+        this.qryInitiatorId = qryInitiatorId;
 
         return this;
     }

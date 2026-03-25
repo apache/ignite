@@ -40,10 +40,16 @@ public class SqlQueryView {
         this.qry = qry;
     }
 
-    /** @return Origin query node. */
+    /** @return Node that owns this query. */
     @Order(2)
-    public UUID originNodeId() {
+    public UUID nodeId() {
         return qry.nodeId();
+    }
+
+    /** @return Origin query node. */
+    @Order(3)
+    public UUID originNodeId() {
+        return qry.originNodeId();
     }
 
     /** @return Query ID. */
@@ -64,21 +70,27 @@ public class SqlQueryView {
     }
 
     /** @return Query start time. */
-    @Order(3)
+    @Order(4)
     public Date startTime() {
         return new Date(qry.startTime());
     }
 
     /** @return Query duration. */
-    @Order(4)
+    @Order(5)
     public long duration() {
         return U.currentTimeMillis() - qry.startTime();
     }
 
     /** @return Query initiator ID. */
-    @Order(7)
+    @Order(8)
     public String initiatorId() {
         return qry.queryInitiatorId();
+    }
+
+    /** @return {@code True} if query executes map phase. */
+    @Order(9)
+    public boolean mapQuery() {
+        return qry.mapQuery();
     }
 
     /** @return {@code True} if query is local. */

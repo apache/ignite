@@ -390,6 +390,8 @@ class MapQueryResult {
             U.close(rs, log);
 
             h2.heavyQueriesTracker().stopTracking(qryInfo, null);
+
+            h2.runningQueryManager().unregister(qryInfo.runningQueryId(), null);
         }
     }
 }

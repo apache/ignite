@@ -505,6 +505,31 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             LONG_QUERY_WARNING_TIMEOUT);
     }
 
+    /** Verifies map query information in long-query logs. */
+    @Test
+    @MultiNodeTest
+    public void testLongMapQueryLogInfo() {
+        String initiatorId = UUID.randomUUID().toString();
+
+        UUID originNodeId = ignite.cluster().localNode().id();
+
+        LogListener lsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG)
+            .andMatches("type=MAP")
+            .andMatches("mapQuery=true")
+            .andMatches("originNodeId=" + originNodeId)
+            .andMatches("initiatorId=" + initiatorId)
+            .build();
+
+        testLog().registerListener(lsnr);
+
+        ignite.cache("test").query(new SqlFieldsQuery("SELECT val FROM test WHERE id = sleep_func(?, 0)")
+            .setQueryInitiatorId(initiatorId)
+            .setArgs(LONG_QUERY_WARNING_TIMEOUT))
+            .getAll();
+
+        assertTrue(lsnr.check());
+    }
+
     /** */
     private void checkInitiatorId(ListeningTestLogger log, String type, String sql, Object... args) {
         String initiatorId = UUID.randomUUID().toString();

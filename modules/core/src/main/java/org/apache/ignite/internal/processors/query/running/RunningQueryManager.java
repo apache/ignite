@@ -287,6 +287,68 @@ public class RunningQueryManager {
     public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
         String qryInitiatorId, boolean enforceJoinOrder, boolean distributedJoins) {
+        return register(
+            qry,
+            qryType,
+            schemaName,
+            loc,
+            cancel,
+            qryInitiatorId,
+            enforceJoinOrder,
+            distributedJoins,
+            localNodeId,
+            false
+        );
+    }
+
+    /**
+     * Registers map-side running query and returns an id associated with the query on the current node.
+     *
+     * @param qry Query text.
+     * @param schemaName Schema name.
+     * @param cancel Query cancel.
+     * @param qryInitiatorId Query initiator ID.
+     * @param originNodeId Query origin node ID.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param distributedJoins Distributed joins flag.
+     * @return Id of registered query.
+     */
+    public long registerMapQuery(
+        String qry,
+        String schemaName,
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId,
+        UUID originNodeId,
+        boolean enforceJoinOrder,
+        boolean distributedJoins
+    ) {
+        return register(
+            qry,
+            SQL_FIELDS,
+            schemaName,
+            false,
+            cancel,
+            qryInitiatorId,
+            enforceJoinOrder,
+            distributedJoins,
+            originNodeId,
+            true
+        );
+    }
+
+    /** Registers running query and returns an id associated with the query. */
+    private long register(
+        String qry,
+        GridCacheQueryType qryType,
+        String schemaName,
+        boolean loc,
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId,
+        boolean enforceJoinOrder,
+        boolean distributedJoins,
+        UUID originNodeId,
+        boolean mapQry
+    ) {
         long qryId = qryIdGen.incrementAndGet();
 
         if (qryInitiatorId == null)
@@ -295,6 +357,7 @@ public class RunningQueryManager {
         final GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
             localNodeId,
+            originNodeId,
             qry,
             qryType,
             schemaName,
@@ -303,6 +366,7 @@ public class RunningQueryManager {
             cancel,
             loc,
             qryInitiatorId,
+            mapQry,
             enforceJoinOrder,
             distributedJoins,
             securitySubjectId(ctx)
@@ -314,7 +378,7 @@ public class RunningQueryManager {
 
         run.span().addTag(SQL_QRY_ID, run::globalQueryId);
 
-        if (!qryStartedListeners.isEmpty()) {
+        if (!mapQry && !qryStartedListeners.isEmpty()) {
             GridQueryStartedInfo info = new GridQueryStartedInfo(
                 run.id(),
                 localNodeId,
@@ -375,26 +439,28 @@ public class RunningQueryManager {
             if (failed)
                 qrySpan.addTag(ERROR, failReason::getMessage);
 
-            //We need to collect query history and metrics only for SQL queries.
             if (isSqlQuery(qry)) {
                 qry.runningFuture().onDone();
 
-                qryHistTracker.collectHistory(qry, failed);
+                // We need to collect query history and metrics only for external SQL queries.
+                if (!qry.mapQuery()) {
+                    qryHistTracker.collectHistory(qry, failed);
 
-                if (!failed)
-                    successQrsCnt.increment();
-                else {
-                    failedQrsCnt.increment();
+                    if (!failed)
+                        successQrsCnt.increment();
+                    else {
+                        failedQrsCnt.increment();
 
-                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
-                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
-                    // right when query failed due to some other reason.
-                    if (QueryUtils.wasCancelled(failReason))
-                        canceledQrsCnt.increment();
+                        // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                        // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                        // right when query failed due to some other reason.
+                        if (QueryUtils.wasCancelled(failReason))
+                            canceledQrsCnt.increment();
+                    }
                 }
             }
 
-            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+            if (!qry.mapQuery() && ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
                 String flags = null;
 
                 // Create string for flags with not default values.
@@ -426,7 +492,7 @@ public class RunningQueryManager {
                     !failed);
             }
 
-            if (!qryFinishedListeners.isEmpty()) {
+            if (!qry.mapQuery() && !qryFinishedListeners.isEmpty()) {
                 GridQueryFinishedInfo info = new GridQueryFinishedInfo(
                     qry.id(),
                     localNodeId,
@@ -553,7 +619,7 @@ public class RunningQueryManager {
         long curTime = U.currentTimeMillis();
 
         for (GridRunningQueryInfo runningQryInfo : runs.values()) {
-            if (curTime - runningQryInfo.startTime() > duration)
+            if (!runningQryInfo.mapQuery() && curTime - runningQryInfo.startTime() > duration)
                 res.add(runningQryInfo);
         }
 

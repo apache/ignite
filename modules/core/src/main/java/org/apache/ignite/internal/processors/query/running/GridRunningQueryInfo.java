@@ -33,8 +33,11 @@ public class GridRunningQueryInfo {
     /** */
     private final long id;
 
-    /** Originating Node ID. */
+    /** Node that owns query. */
     private final UUID nodeId;
+
+    /** Query coordinator node ID. */
+    private final UUID originNodeId;
 
     /** */
     private final String qry;
@@ -67,6 +70,9 @@ public class GridRunningQueryInfo {
     /** Originator. */
     private final String qryInitiatorId;
 
+    /** Map query flag. */
+    private final boolean mapQry;
+
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
@@ -80,7 +86,8 @@ public class GridRunningQueryInfo {
      * Constructor.
      *
      * @param id Query ID.
-     * @param nodeId Originating node ID.
+     * @param nodeId Node that owns query.
+     * @param originNodeId Query coordinator node ID.
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
@@ -89,6 +96,7 @@ public class GridRunningQueryInfo {
      * @param cancel Query cancel.
      * @param loc Local query flag.
      * @param qryInitiatorId Query's initiator identifier.
+     * @param mapQry Map query flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param distributedJoins Distributed joins flag.
      * @param subjId Subject ID.
@@ -96,6 +104,7 @@ public class GridRunningQueryInfo {
     public GridRunningQueryInfo(
         long id,
         UUID nodeId,
+        UUID originNodeId,
         String qry,
         GridCacheQueryType qryType,
         String schemaName,
@@ -104,12 +113,14 @@ public class GridRunningQueryInfo {
         GridQueryCancel cancel,
         boolean loc,
         String qryInitiatorId,
+        boolean mapQry,
         boolean enforceJoinOrder,
         boolean distributedJoins,
         UUID subjId
     ) {
         this.id = id;
         this.nodeId = nodeId;
+        this.originNodeId = originNodeId;
         this.qry = qry;
         this.qryType = qryType;
         this.schemaName = schemaName;
@@ -119,6 +130,7 @@ public class GridRunningQueryInfo {
         this.loc = loc;
         this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
+        this.mapQry = mapQry;
         this.enforceJoinOrder = enforceJoinOrder;
         this.distributedJoins = distributedJoins;
         this.subjId = subjId;
@@ -203,10 +215,17 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Originating node ID.
+     * @return Node that owns query.
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Query coordinator node ID.
+     */
+    public UUID originNodeId() {
+        return originNodeId;
     }
 
     /**
@@ -222,6 +241,13 @@ public class GridRunningQueryInfo {
      */
     public String queryInitiatorId() {
         return qryInitiatorId;
+    }
+
+    /**
+     * @return {@code true} if query executes map phase.
+     */
+    public boolean mapQuery() {
+        return mapQry;
     }
 
     /**

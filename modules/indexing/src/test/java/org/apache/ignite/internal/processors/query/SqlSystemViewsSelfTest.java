@@ -681,6 +681,50 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** Test map query flag in running queries system view. */
+    @Test
+    public void testMapQueryRunningQueriesView() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        IgniteCache<Integer, String> cache = ignite.createCache(
+            new CacheConfiguration<Integer, String>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setIndexedTypes(Integer.class, String.class)
+        );
+
+        for (int i = 0; i < 10; i++)
+            cache.put(i, Integer.toString(i));
+
+        awaitPartitionMapExchange();
+
+        String initiatorId = UUID.randomUUID().toString();
+
+        try (FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("SELECT * FROM String")
+            .setQueryInitiatorId(initiatorId)
+            .setPageSize(1))) {
+            cursor.iterator().next();
+
+            for (int i = 0; i < 2; i++) {
+                int nodeIdx = i;
+                UUID nodeId = grid(nodeIdx).localNode().id();
+
+                assertTrue(waitForCondition(() -> {
+                    SystemView<SqlQueryView> view = grid(nodeIdx).context().systemView().view(SQL_QRY_VIEW);
+
+                    for (SqlQueryView qry : view) {
+                        if (qry.mapQuery()
+                            && nodeId.equals(qry.nodeId())
+                            && ignite.localNode().id().equals(qry.originNodeId())
+                            && initiatorId.equals(qry.initiatorId()))
+                            return true;
+                    }
+
+                    return false;
+                }, 5_000));
+            }
+        }
+    }
+
     /**
      * Test that we can't use cache tables and system views in the same query.
      */
