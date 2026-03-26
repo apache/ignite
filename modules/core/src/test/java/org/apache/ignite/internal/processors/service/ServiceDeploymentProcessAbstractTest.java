@@ -22,11 +22,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -102,7 +102,7 @@ public abstract class ServiceDeploymentProcessAbstractTest extends GridCommonAbs
         private volatile boolean block;
 
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
             if (block && U.unwrapCustomMessage(msg) instanceof ServiceClusterDeploymentResultBatch)
                 return;
 

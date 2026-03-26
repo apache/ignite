@@ -29,7 +29,6 @@ import java.util.zip.InflaterInputStream;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -39,6 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
@@ -70,7 +70,7 @@ public class DiscoveryMessageParser {
     }
 
     /** Marshals discovery message to bytes array. */
-    public byte[] marshalZip(DiscoveryCustomMessage msg) {
+    public byte[] marshalZip(DiscoverySpiCustomMessage msg) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try (DeflaterOutputStream out = new DeflaterOutputStream(baos)) {
@@ -93,7 +93,7 @@ public class DiscoveryMessageParser {
     }
 
     /** Unmarshals discovery message from bytes array. */
-    public DiscoveryCustomMessage unmarshalZip(byte[] bytes) {
+    public DiscoverySpiCustomMessage unmarshalZip(byte[] bytes) {
         try (
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             InflaterInputStream in = new InflaterInputStream(bais)
@@ -106,7 +106,7 @@ public class DiscoveryMessageParser {
             if (MESSAGE_SERIALIZATION != mode)
                 throw new IOException("Received unexpected byte while reading discovery message: " + mode);
 
-            return (DiscoveryCustomMessage)deserializeMessage(in);
+            return (DiscoverySpiCustomMessage)deserializeMessage(in);
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to deserialize message.", e);

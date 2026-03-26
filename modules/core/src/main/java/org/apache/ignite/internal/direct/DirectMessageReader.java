@@ -442,14 +442,14 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeInnerMessageRead() {
+    @Override public void beforeNestedRead() {
         state.forward();
 
         state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInnerMessageRead(boolean finished) {
+    @Override public void afterNestedRead(boolean finished) {
         state.backward(finished);
     }
 

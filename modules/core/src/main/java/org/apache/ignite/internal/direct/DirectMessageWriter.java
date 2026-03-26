@@ -420,14 +420,14 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeInnerMessageWrite() {
+    @Override public void beforeNestedWrite() {
         state.forward();
 
         state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInnerMessageWrite(boolean finished) {
+    @Override public void afterNestedWrite(boolean finished) {
         state.backward(finished);
     }
 

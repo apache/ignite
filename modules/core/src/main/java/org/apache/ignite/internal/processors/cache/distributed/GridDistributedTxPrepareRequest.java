@@ -34,12 +34,9 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -67,12 +64,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** */
     public static final int STORE_WRITE_THROUGH_FLAG_MASK = 0x20;
-
-    /** Collection to message converter. */
-    private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = UUIDCollectionMessage::new;
-
-    /** Message to collection converter. */
-    private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = UUIDCollectionMessage::uuids;
 
     /** Thread ID. */
     @Order(0)
@@ -126,11 +117,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    private Map<UUID, Collection<UUID>> txNodes;
-
-    /** Tx nodes direct marshallable message. */
     @Order(10)
-    public Map<UUID, UUIDCollectionMessage> txNodesMsg;
+    public Map<UUID, Collection<UUID>> txNodes;
 
     /** IO policy. */
     @Order(11)
@@ -403,9 +391,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             dhtVerKeys = dhtVers.keySet();
             dhtVerVals = dhtVers.values();
         }
-
-        if (txNodesMsg == null)
-            txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
     }
 
     /** {@inheritDoc} */
@@ -435,9 +420,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 dhtVers.put(key, verIt.next());
             }
         }
-
-        if (txNodesMsg != null)
-            txNodes = F.viewReadOnly(txNodesMsg, MSG_TO_COL);
     }
 
     /** {@inheritDoc} */

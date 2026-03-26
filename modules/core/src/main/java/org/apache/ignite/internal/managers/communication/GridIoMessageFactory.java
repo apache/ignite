@@ -41,8 +41,6 @@ import org.apache.ignite.internal.TxEntriesInfo;
 import org.apache.ignite.internal.TxEntriesInfoSerializer;
 import org.apache.ignite.internal.TxInfo;
 import org.apache.ignite.internal.TxInfoSerializer;
-import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
-import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessageMarshallableSerializer;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMetaSerializer;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -351,8 +349,6 @@ import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridByteArrayListSerializer;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.GridPartitionStateMapSerializer;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
-import org.apache.ignite.internal.util.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessageSerializer;
 import org.apache.ignite.marshaller.Marshaller;
@@ -514,7 +510,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
         factory.register((short)113, IndexKeyDefinition::new, new IndexKeyDefinitionSerializer());
         factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
-        factory.register((short)115, UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer());
         factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
         factory.register((short)117, GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer());
         factory.register((short)118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
@@ -587,8 +582,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(IgniteDhtPartitionsToReloadMap.TYPE_CODE, IgniteDhtPartitionsToReloadMap::new,
             new IgniteDhtPartitionsToReloadMapSerializer());
         factory.register(IntLongMap.TYPE_CODE, IntLongMap::new, new IntLongMapSerializer());
-        factory.register(IndexKeyTypeMessage.TYPE_CODE, IndexKeyTypeMessage::new,
-            new IndexKeyTypeMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(GridPartitionStateMap.TYPE_CODE, GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
         factory.register(GridDhtPartitionMap.TYPE_CODE, GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
         factory.register(GridDhtPartitionFullMap.TYPE_CODE, GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer());

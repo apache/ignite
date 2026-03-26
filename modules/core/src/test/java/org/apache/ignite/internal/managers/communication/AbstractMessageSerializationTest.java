@@ -333,10 +333,10 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeInnerMessageWrite() {}
+        @Override public void beforeNestedWrite() {}
 
         /** {@inheritDoc} */
-        @Override public void afterInnerMessageWrite(boolean finished) {}
+        @Override public void afterNestedWrite(boolean finished) {}
 
         /** {@inheritDoc} */
         @Override public void reset() {
@@ -596,10 +596,10 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeInnerMessageRead() {}
+        @Override public void beforeNestedRead() {}
 
         /** {@inheritDoc} */
-        @Override public void afterInnerMessageRead(boolean finished) {}
+        @Override public void afterNestedRead(boolean finished) {}
 
         /** {@inheritDoc} */
         @Override public void reset() {
