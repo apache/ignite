@@ -32,9 +32,11 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -350,6 +352,12 @@ public class DirectByteBufferStream {
     /** */
     private boolean serializeFinished;
 
+    /** */
+    final GridKernalContext ctx;
+
+    /** */
+    final CacheObjectContext fakeCacheObjCtx;
+
     /**
      * Constructror for stream used for writing messages.
      *
@@ -360,6 +368,8 @@ public class DirectByteBufferStream {
 
         // Is not used while writing messages.
         cacheObjProc = null;
+        fakeCacheObjCtx = null;
+        ctx = null;
     }
 
     /**
@@ -368,9 +378,13 @@ public class DirectByteBufferStream {
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
+        this.ctx = ctx;
+
+        fakeCacheObjCtx = new CacheObjectContext(
+            ctx, null, null, false, false, false, false);
     }
 
     /**
@@ -1501,7 +1515,7 @@ public class DirectByteBufferStream {
         }
 
         try {
-            KeyCacheObject key = cacheObjProc.toKeyCacheObject(null, cacheObjType, cacheObjArr);
+            KeyCacheObject key = cacheObjProc.toKeyCacheObject(fakeCacheObjCtx, cacheObjType, cacheObjArr);
 
             if (keyCacheObjPart != -1)
                 key.partition(keyCacheObjPart);

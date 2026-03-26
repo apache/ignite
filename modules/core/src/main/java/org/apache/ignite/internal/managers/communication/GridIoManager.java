@@ -437,7 +437,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 }
 
                 @Override public MessageReader reader(MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
+                    return new DirectMessageReader(msgFactory, ctx.cacheObjects(), ctx);
                 }
             };
         }

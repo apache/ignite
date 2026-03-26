@@ -111,7 +111,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         buf.flip();
         buf.get(bytes);
 
-        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null, null);
 
         Message resMsg = null;
 

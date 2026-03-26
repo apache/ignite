@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -57,6 +58,9 @@ public class DirectMessageReader implements MessageReader {
 
     /** Cache object processor. */
     private final IgniteCacheObjectProcessor cacheObjProc;
+    
+    /** */
+    private final GridKernalContext ctx;
 
     /** Buffer for reading. */
     private ByteBuffer buf;
@@ -68,13 +72,14 @@ public class DirectMessageReader implements MessageReader {
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
+        this.ctx = ctx;
 
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, cacheObjProc);
+                return new StateItem(msgFactory, cacheObjProc, ctx);
             }
         });
     }
@@ -486,7 +491,7 @@ public class DirectMessageReader implements MessageReader {
         tmpBuf.put(uncompressed);
         tmpBuf.flip();
 
-        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc, ctx);
 
         tmpReader.setBuffer(tmpBuf);
 
@@ -510,8 +515,8 @@ public class DirectMessageReader implements MessageReader {
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
          */
-        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-            stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
+        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc, ctx);
         }
 
         /** {@inheritDoc} */

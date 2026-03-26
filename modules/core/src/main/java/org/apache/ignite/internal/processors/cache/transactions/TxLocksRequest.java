@@ -23,11 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Transactions lock list request.
@@ -38,13 +36,9 @@ public class TxLocksRequest extends GridCacheMessage {
     long futId;
 
     /** Tx keys. */
-    @GridToStringInclude
-    private Set<IgniteTxKey> txKeys;
-
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
     @Order(1)
-    IgniteTxKey[] txKeysArr;
+    @GridToStringInclude
+    Set<IgniteTxKey> txKeys;
 
     /**
      * Default constructor.
@@ -92,30 +86,17 @@ public class TxLocksRequest extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        txKeysArr = new IgniteTxKey[txKeys.size()];
-
-        int i = 0;
-
-        for (IgniteTxKey key : txKeys) {
+        for (IgniteTxKey key : txKeys) 
             key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
-            txKeysArr[i++] = key;
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        txKeys = U.newHashSet(txKeysArr.length);
-
-        for (IgniteTxKey key : txKeysArr) {
-            key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-            txKeys.add(key);
-        }
-
-        txKeysArr = null;
+        if (txKeys != null)
+            for (IgniteTxKey key : txKeys)
+                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
     }
 
     /** {@inheritDoc} */

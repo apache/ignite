@@ -166,7 +166,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
 
-        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null, null);
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 

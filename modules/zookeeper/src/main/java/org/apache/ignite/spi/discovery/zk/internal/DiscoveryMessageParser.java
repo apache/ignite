@@ -136,7 +136,7 @@ public class DiscoveryMessageParser {
 
     /** */
     private Message deserializeMessage(InputStream in) throws IOException {
-        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null);
+        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null, null);
         ByteBuffer msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgReader.setBuffer(msgBuf);
