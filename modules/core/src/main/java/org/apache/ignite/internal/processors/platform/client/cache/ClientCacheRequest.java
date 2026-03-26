@@ -84,15 +84,8 @@ public abstract class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteInternalCache<Object, Object> internalBinaryCache(ClientConnectionContext ctx) {
-        String cacheName = cacheDescriptor(ctx).cacheName();
-
-        IgniteCache<?, ?> cache = ctx.kernalContext().grid().cache(cacheName);
-
-        if (cache == null)
-            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheName= " + cacheName + "]");
-
-        return ((IgniteCacheProxy<Object, Object>)cache.withKeepBinary()).internalProxy();
+    protected IgniteInternalCache<Object, Object> internalCache(ClientConnectionContext ctx) {
+        return ((IgniteCacheProxy<Object, Object>)cache(ctx)).internalProxy();
     }
 
     /**
@@ -134,6 +127,10 @@ public abstract class ClientCacheRequest extends ClientRequest {
         String cacheName = cacheDesc.cacheName();
 
         IgniteCache<Object, Object> cache = ctx.kernalContext().grid().cache(cacheName);
+
+        if (cache == null)
+            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheName= " + cacheName + "]");
+
         if (withExpiryPolicy())
             cache = cache.withExpiryPolicy(expiryPolicy);
         
