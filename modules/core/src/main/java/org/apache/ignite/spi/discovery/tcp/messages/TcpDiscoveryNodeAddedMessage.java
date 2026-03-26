@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -67,10 +65,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
 
-    // TODO: use inner collection after https://issues.apache.org/jira/browse/IGNITE-28294 .
     /** Topology snapshots history. */
     @Order(4)
-    Map<Long, TcpDiscoveryCollectionMessage> topHistMsgs;
+    Map<Long, Collection<TcpDiscoveryNodeMessage>> topHistMsgs;
 
     /** Start time of the first grid node. */
     @Order(5)
@@ -189,22 +186,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Map with topology snapshots history.
      */
     public Map<Long, Collection<ClusterNode>> topologyHistory() {
-        if (F.isEmpty(topHistMsgs))
+        if (F.isEmpty(topMsgs))
             return Collections.emptyMap();
 
         Map<Long, Collection<ClusterNode>> res = U.newHashMap(topHistMsgs.size());
 
-        topHistMsgs.forEach((id, msgHldr) -> {
-            Collection<ClusterNode> nodes = new ArrayList<>(msgHldr.writableMsgs.size());
-
-            for (int i : msgHldr.writableMsgs.keySet()) {
-                TcpDiscoveryNodeMessage msg = (TcpDiscoveryNodeMessage)msgHldr.writableMsgs.get(i);
-
-                nodes.add(new TcpDiscoveryNode(msg));
-            }
-
-            res.put(id, nodes);
-        });
+        topHistMsgs.forEach((id, nodeMsgs) ->
+            res.put(id, nodeMsgs.stream().map(TcpDiscoveryNode::new).collect(Collectors.toList())));
 
         return res;
     }
@@ -223,21 +211,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
         topHistMsgs = U.newHashMap(topHist.size());
 
-        topHist.forEach((id, nodes) -> {
-            Collection<TcpDiscoveryNodeMessage> msgs = nodes.stream().map(TcpDiscoveryNodeMessage::new).collect(Collectors.toList());
-
-            TcpDiscoveryCollectionMessage msgsHldr = new TcpDiscoveryCollectionMessage();
-
-            msgsHldr.writableMsgs = U.newHashMap(msgs.size());
-
-            // Keeps the original message order.
-            int idx = 0;
-
-            for (Message m : msgs)
-                msgsHldr.writableMsgs.put(idx++, m);
-
-            topHistMsgs.put(id, msgsHldr);
-        });
+        topHist.forEach((id, nodes) ->
+            topHistMsgs.put(id, nodes.stream().map(TcpDiscoveryNodeMessage::new).collect(Collectors.toList())));
     }
 
     /**
