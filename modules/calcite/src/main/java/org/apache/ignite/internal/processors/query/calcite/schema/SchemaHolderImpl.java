@@ -301,30 +301,22 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IndexDescriptor idxDesc
     ) {
         IgniteCacheTable tbl = table(schemaName, tblName);
-        assert tbl != null;
+        assert tbl != null : String.format("schemaName=%s, tableName=%s, idxName=%s", schemaName, tblName, idxName);
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
         IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, idxDesc.index(), tbl);
         tbl.addIndex(idx);
 
-        // TODO: IGNITE-28331 Вот тут получилось добавить еще один индекс только в кальцит, но есть нюансы.
-        //  1. Оригинальный индекс отображается на множество полей, а нам нужно еще один на _KEY.
-        //  2. Даже если его добавить из коробки компаратор не умеет так просто сравнить, надо прокачивать.
-        //  3. Будет супер еще научиться работать с key_type.
-        if (idxDesc.isPk() && idxDesc.keyDefinitions().size() > 1) {
-            log.info(String.format(">>>>> THERE: [schemaName=%s, tblName=%s, idxName=%s]", schemaName, tblName, idxName));
+        // For a composite PK index, we need to create another proxy index that will expand the passed boundaries into
+        // index keys for BinaryObject/Key classes. That is, _key -> idx_field_0, idx_field_1, etc.
+        if (idxDesc.isPk() && idxDesc.isComposite()) {
+            RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
 
-            RelCollation idxCollation1 = deriveSecondaryIndexCollation1(tbl);
-
-            IgniteIndex idx1 = new CacheIndexImpl(
-                idxCollation1,
-                idxName + "_proxy",
-                idxDesc.index(),
-                tbl,
-                idxCollation.getKeys()
+            IgniteIndex keyProxyIdx = new CacheIndexImpl(
+                keyFieldCollation, idxName + "_proxy", idxDesc.index(), tbl, idxCollation.getKeys(), true
             );
-            tbl.addIndex(idx1);
+            tbl.addIndex(keyProxyIdx);
         }
     }
 
@@ -352,10 +344,15 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** */
-    private static RelCollation deriveSecondaryIndexCollation1(IgniteCacheTable tbl) {
-        CacheTableDescriptor tblDesc = tbl.descriptor();
+    private static RelCollation deriveKeyFieldIndexCollation(IgniteCacheTable tbl) {
+        ColumnDescriptor desc = tbl.descriptor().columnDescriptor(QueryUtils.KEY_FIELD_NAME);
+        assert desc != null : String.format(
+            "cacheName=%s, schemaName=%s, tableName=%s",
+            tbl.descriptor().typeDescription().cacheName(),
+            tbl.descriptor().typeDescription().tableName(),
+            tbl.descriptor().typeDescription().tableName()
+        );
 
-        ColumnDescriptor desc = tblDesc.columnDescriptor(QueryUtils.KEY_FIELD_NAME);
         int fieldIdx = desc.fieldIndex();
 
         return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));

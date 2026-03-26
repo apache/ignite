@@ -44,11 +44,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.TransformRangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -83,12 +83,18 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     /** Transaction changes. */
     private final TransactionChanges<IndexRow> txChanges;
 
+    /** */
+    private final boolean unwrapKeyFieldForPkIndex;
+
     /**
      * @param ectx Execution context.
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Physical index.
      * @param ranges Index scan bounds.
+     * @param unwrapKeyFieldForPkIndex {@code true} for a proxy composite pk index for which the boundaries need to be
+     *      unwrapped from {@link BinaryObject}/Key class into index fields. For example,
+     *      {@value QueryUtils#KEY_FIELD_NAME} -> Row[idx_field_2, idx_field_3].
      */
     public IndexScan(
         ExecutionContext<Row> ectx,
@@ -97,7 +103,8 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         ImmutableIntList idxFieldMapping,
         int[] parts,
         RangeIterable<Row> ranges,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        boolean unwrapKeyFieldForPkIndex
     ) {
         super(ectx, desc, parts, requiredColumns);
         this.ranges = ranges;
@@ -106,6 +113,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         kctx = cctx.kernalContext();
 
         this.idxFieldMapping = idxFieldMapping;
+        this.unwrapKeyFieldForPkIndex = unwrapKeyFieldForPkIndex;
 
         RelDataType srcRowType = desc.rowType(ectx.getTypeFactory(), null);
         IgniteTypeFactory typeFactory = ectx.getTypeFactory();
@@ -213,8 +221,8 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         if (bound == null)
             return null;
 
-        if (idx.indexDefinition().primary())
-            bound = unwrapForPkAndBinaryObject(bound);
+        if (unwrapKeyFieldForPkIndex)
+            bound = unwrapKeyFieldForPkIndex(bound);
 
         InlineIndexRowHandler idxRowHnd = idx.segment(0).rowHandler();
         RowHandler<Row> rowHnd = ectx.rowHandler();
@@ -496,38 +504,46 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     }
 
     /** */
-    private Row unwrapForPkAndBinaryObject(Row row) {
-        assert idx.indexDefinition().primary() : String.format("idx=%s, row=%s", idx.name(), row);
-
+    private Row unwrapKeyFieldForPkIndex(Row row) {
         RowHandler<Row> rowHnd = ectx.rowHandler();
-        Object o = rowHnd.columnCount(row) == 0 ? null : rowHnd.get(0, row);
 
-        if (!(o instanceof BinaryObject))
-            return row;
+        Object key = rowHnd.get(QueryUtils.KEY_COL, row);
+        assert key != null : String.format("idxName=%s, row=%s", idx.name(), rowHnd.toString(row));
 
-        BinaryObject bo = (BinaryObject) o;
-        assert bo.type().typeName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
-            "idx=%s, row=%s, boType=%s, idxKeyType=%s",
-            idx.name(), row, bo.type().typeName(), idx.indexDefinition().typeDescriptor().keyTypeName()
-        );
+        if (key instanceof BinaryObject)
+            return toRowForPk((BinaryObject)key);
 
-        return toRowForPk(bo);
+        return toRowForPk(key);
     }
 
     /** */
-    private Row toRowForPk(BinaryObject bo) {
-        assert idx.indexDefinition().primary() : String.format("idx=%s, bo=%s", idx.name(), bo);
+    private Row toRowForPk(BinaryObject o) {
+        assert o.type().typeName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
+            "idx=%s, o=%s, oType=%s, idxKeyType=%s",
+            idx.name(), o, o.type().typeName(), idx.indexDefinition().typeDescriptor().keyTypeName()
+        );
 
         RowHandler<Row> rowHnd = ectx.rowHandler();
         Row row = factory.create();
 
         for (Map.Entry<String, IndexKeyDefinition> keyDef : idx.indexDefinition().indexKeyDefinitions().entrySet()) {
             ColumnDescriptor fieldDesc = desc.columnDescriptor(keyDef.getKey());
-            assert fieldDesc != null : String.format("idx=%s, bo=%s, keyName=%s", idx.name(), bo, keyDef.getKey());
+            assert fieldDesc != null : String.format("idx=%s, o=%s, keyName=%s", idx.name(), o, keyDef.getKey());
 
-            rowHnd.set(fieldDesc.fieldIndex(), row, bo.field(keyDef.getKey()));
+            rowHnd.set(fieldDesc.fieldIndex(), row, o.field(keyDef.getKey()));
         }
 
         return row;
+    }
+
+    /** */
+    private Row toRowForPk(Object o) {
+        assert o.getClass().getName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
+            "idx=%s, o=%s, oType=%s, idxKeyType=%s",
+            idx.name(), o, o.getClass().getName(), idx.indexDefinition().typeDescriptor().keyTypeName()
+        );
+
+        // TODO: IGNITE-28331 Реализовать и протестировать
+        throw new UnsupportedOperationException();
     }
 }

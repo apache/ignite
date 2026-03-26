@@ -57,8 +57,8 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
             sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
 
         List<List<?>> sqlRs = sql("select _key, id from PUBLIC.PERSON order by id");
-        int _key = (Integer) sqlRs.get(7).get(0);
-        int id = (Integer) sqlRs.get(7).get(1);
+        int _key = (Integer)sqlRs.get(7).get(0);
+        int id = (Integer)sqlRs.get(7).get(1);
 
         assertEquals(7, _key);
         assertEquals(7, id);
@@ -88,9 +88,9 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
             sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
 
         List<List<?>> sqlRs = sql("select _key, id, name from PUBLIC.PERSON order by id");
-        BinaryObject _key = (BinaryObject) sqlRs.get(6).get(0);
-        int id = (Integer) sqlRs.get(6).get(1);
-        String name = (String) sqlRs.get(6).get(2);
+        BinaryObject _key = (BinaryObject)sqlRs.get(6).get(0);
+        int id = (Integer)sqlRs.get(6).get(1);
+        String name = (String)sqlRs.get(6).get(2);
 
         assertEquals(6, id);
         assertEquals("foo6", name);

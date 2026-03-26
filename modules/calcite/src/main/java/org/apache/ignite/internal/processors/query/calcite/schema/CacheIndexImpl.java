@@ -65,8 +65,11 @@ public class CacheIndexImpl implements IgniteIndex {
     private final ImmutableIntList idxFieldMapping;
 
     /** */
+    private final boolean unwrapKeyFieldForPkIndex;
+
+    /** */
     public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
-        this(collation, name, idx, tbl, collation.getKeys());
+        this(collation, name, idx, tbl, collation.getKeys(), false);
     }
 
     /** */
@@ -75,13 +78,15 @@ public class CacheIndexImpl implements IgniteIndex {
         String name,
         @Nullable Index idx,
         IgniteCacheTable tbl,
-        ImmutableIntList idxFieldMapping
+        ImmutableIntList idxFieldMapping,
+        boolean unwrapKeyFieldForPkIndex
     ) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
         this.tbl = tbl;
         this.idxFieldMapping = idxFieldMapping;
+        this.unwrapKeyFieldForPkIndex = unwrapKeyFieldForPkIndex;
     }
 
     /** */
@@ -114,7 +119,7 @@ public class CacheIndexImpl implements IgniteIndex {
         UUID locNodeId = execCtx.localNodeId();
         if (grp.nodeIds().contains(locNodeId) && idx != null) {
             return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), idxFieldMapping,
-                grp.partitions(locNodeId), ranges, requiredColumns);
+                grp.partitions(locNodeId), ranges, requiredColumns, unwrapKeyFieldForPkIndex);
         }
 
         return Collections.emptyList();
@@ -137,7 +142,8 @@ public class CacheIndexImpl implements IgniteIndex {
                 idx.unwrap(InlineIndexImpl.class),
                 idxFieldMapping,
                 grp.partitions(locNodeId),
-                requiredColumns
+                requiredColumns,
+                unwrapKeyFieldForPkIndex
             );
         }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Read only handler to process subset of columns.
@@ -65,5 +66,19 @@ public class MappingRowHandler<Row> implements RowHandler<Row> {
     /** {@inheritDoc} */
     @Override public RowFactory<Row> factory(Type... types) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(Row row) {
+        SB sb = new SB('[');
+
+        for (int i = 0; i < mapping.length; i++) {
+            if (i != 0)
+                sb.a(", ");
+
+            sb.a(delegate.get(mapping[i], row));
+        }
+
+        return sb.a(']').toString();
     }
 }
