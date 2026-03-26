@@ -522,7 +522,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         );
 
         RowHandler<Row> rowHnd = ectx.rowHandler();
-        Row row = factory.create();
+        Row row = factory.create(idxFieldMapping.getInt(idxFieldMapping.size() - 1) + 1);
 
         for (String keyName : idx.indexDefinition().indexKeyDefinitions().keySet()) {
             ColumnDescriptor fieldDesc = desc.columnDescriptor(keyName);

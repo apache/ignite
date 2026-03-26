@@ -203,7 +203,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         List<QueryField> cols
     ) {
         IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
-        assert oldTbl != null;
+        assert oldTbl != null : String.format("schemaName=%s, tableName=%s", schemaName, typeDesc.tableName());
 
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
 
@@ -211,7 +211,14 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         for (IgniteIndex idx : oldTbl.indexes().values()) {
             CacheIndexImpl idx0 = (CacheIndexImpl)idx;
 
-            newTbl.addIndex(new CacheIndexImpl(idx0.collation(), idx0.name(), idx0.queryIndex(), newTbl));
+            newTbl.addIndex(new CacheIndexImpl(
+                idx0.collation(),
+                idx0.name(),
+                idx0.queryIndex(),
+                newTbl,
+                idx0.targetCollation(),
+                idx0.isUnwrapKeyFieldForPkIndex()
+            ));
         }
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
@@ -225,7 +232,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         List<String> cols
     ) {
         IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
-        assert oldTbl != null;
+        assert oldTbl != null : String.format("schemaName=%s, tableName=%s", schemaName, typeDesc.tableName());
 
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
 
@@ -242,8 +249,18 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         for (IgniteIndex idx : oldTbl.indexes().values()) {
             CacheIndexImpl idx0 = (CacheIndexImpl)idx;
 
-            newTbl.addIndex(new CacheIndexImpl(RelCollations.permute(idx0.collation(), mapping), idx0.name(),
-                idx0.queryIndex(), newTbl));
+            if (idx0.isUnwrapKeyFieldForPkIndex()) {
+                RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(newTbl);
+                RelCollation newCollation = RelCollations.permute(idx0.targetCollation(), mapping);
+
+                newTbl.addIndex(new CacheIndexImpl(
+                    keyFieldCollation, idx0.name(), idx0.queryIndex(), newTbl, newCollation, true
+                ));
+            } else {
+                RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
+
+                newTbl.addIndex(new CacheIndexImpl(newCollation, idx0.name(), idx0.queryIndex(), newTbl));
+            }
         }
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
@@ -313,10 +330,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         if (idxDesc.isPk() && idxDesc.isComposite()) {
             RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
 
-            IgniteIndex keyProxyIdx = new CacheIndexImpl(
-                keyFieldCollation, idxName + "_proxy", idxDesc.index(), tbl, idxCollation.getKeys(), true
-            );
-            tbl.addIndex(keyProxyIdx);
+            tbl.addIndex(new CacheIndexImpl(
+                keyFieldCollation, idxName + "_proxy", idxDesc.index(), tbl, idxCollation, true
+            ));
         }
     }
 

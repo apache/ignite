@@ -56,7 +56,7 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     @Override public RowFactory<Object[]> factory(Type... types) {
         int rowLen = types.length;
 
-        return new RowFactory<Object[]>() {
+        return new RowFactory<>() {
             /** {@inheritDoc} */
             @Override public RowHandler<Object[]> handler() {
                 return ArrayRowHandler.this;
@@ -72,6 +72,11 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
                 assert fields.length == rowLen;
 
                 return fields;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object[] create(int size) {
+                return new Object[size];
             }
         };
     }

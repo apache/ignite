@@ -62,14 +62,14 @@ public class CacheIndexImpl implements IgniteIndex {
     private final IgniteCacheTable tbl;
 
     /** */
-    private final ImmutableIntList idxFieldMapping;
+    private final RelCollation targetCollation;
 
     /** */
     private final boolean unwrapKeyFieldForPkIndex;
 
     /** */
     public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
-        this(collation, name, idx, tbl, collation.getKeys(), false);
+        this(collation, name, idx, tbl, collation, false);
     }
 
     /** */
@@ -78,14 +78,14 @@ public class CacheIndexImpl implements IgniteIndex {
         String name,
         @Nullable Index idx,
         IgniteCacheTable tbl,
-        ImmutableIntList idxFieldMapping,
+        RelCollation targetCollation,
         boolean unwrapKeyFieldForPkIndex
     ) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
         this.tbl = tbl;
-        this.idxFieldMapping = idxFieldMapping;
+        this.targetCollation = targetCollation;
         this.unwrapKeyFieldForPkIndex = unwrapKeyFieldForPkIndex;
     }
 
@@ -118,7 +118,7 @@ public class CacheIndexImpl implements IgniteIndex {
     ) {
         UUID locNodeId = execCtx.localNodeId();
         if (grp.nodeIds().contains(locNodeId) && idx != null) {
-            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), idxFieldMapping,
+            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), targetCollation.getKeys(),
                 grp.partitions(locNodeId), ranges, requiredColumns, unwrapKeyFieldForPkIndex);
         }
 
@@ -140,7 +140,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 ectx,
                 tbl.descriptor(),
                 idx.unwrap(InlineIndexImpl.class),
-                idxFieldMapping,
+                targetCollation.getKeys(),
                 grp.partitions(locNodeId),
                 requiredColumns,
                 unwrapKeyFieldForPkIndex
@@ -202,7 +202,7 @@ public class CacheIndexImpl implements IgniteIndex {
         if (requiredColumns == null)
             requiredColumns = ImmutableBitSet.range(tbl.descriptor().columnDescriptors().size());
 
-        ImmutableIntList idxKeys = idxFieldMapping;
+        ImmutableIntList idxKeys = targetCollation.getKeys();
 
         // All indexed keys should be inlined, all required colummns should be inlined.
         if (idxKeys.size() < requiredColumns.cardinality() || !ImmutableBitSet.of(idxKeys).contains(requiredColumns))
@@ -217,5 +217,15 @@ public class CacheIndexImpl implements IgniteIndex {
         }
 
         return true;
+    }
+
+    /** */
+    public RelCollation targetCollation() {
+        return targetCollation;
+    }
+
+    /** */
+    public boolean isUnwrapKeyFieldForPkIndex() {
+        return unwrapKeyFieldForPkIndex;
     }
 }

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -55,10 +56,56 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSimplePk() {
-        sql("create table PUBLIC.PERSON(id int primary key, name varchar, age int)");
+        checkSimplePk(null);
+    }
 
-        for (int i = 0; i < 10; i++)
-            sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
+    /** */
+    @Test
+    public void testSimplePkAfterAddColumn() {
+        checkSimplePk(this::executeAlterTableAddColumn);
+    }
+
+    /** */
+    @Test
+    public void testSimplePkAfterDropColumn() {
+        checkSimplePk(this::executeAlterTableDropColumn);
+    }
+
+    /** */
+    @Test
+    public void testCompositePkAfterAddColumn() {
+        checkCompositePk(false, true, this::executeAlterTableAddColumn);
+    }
+
+    /** */
+    @Test
+    public void testCompositePkAfterDropColumn() {
+        checkCompositePk(false, true, this::executeAlterTableDropColumn);
+    }
+
+    /** */
+    @Test
+    public void testCompositePkWithKeyTypeAndBinaryObject() {
+        checkCompositePk(true, true, null);
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
+    public void testCompositePkWithKeyTypeAndPersonCompositeKey() {
+        checkCompositePk(true, false, null);
+    }
+
+    /** */
+    private void checkSimplePk(@Nullable Runnable executeBeforeChecks) {
+        sql("create table PUBLIC.PERSON(id int primary key, name varchar, surname varchar, age int)");
+
+        for (int i = 0; i < 10; i++) {
+            sql(
+                "insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)",
+                i, "foo" + i, "bar" + i, 18 + i
+            );
+        }
 
         List<List<?>> sqlRs = sql("select _key, id from PUBLIC.PERSON order by id");
         int _key = (Integer)sqlRs.get(7).get(0);
@@ -67,11 +114,22 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         assertEquals(7, _key);
         assertEquals(7, id);
 
+        if (executeBeforeChecks != null)
+            executeBeforeChecks.run();
+
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(_key)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
             .returns(id, "foo7", 25, _key)
+            .check();
+
+        // Let's check with a smaller number of columns.
+        assertQuery("select id, age, _key from PUBLIC.PERSON where _key = ?")
+            .withParams(_key)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
+            .columnNames("ID", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(id, 25, _key)
             .check();
 
         // Let's just make sure that PK search is not broken.
@@ -84,33 +142,20 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    @Test
-    public void testCompositePk() {
-        checkCompositePk(false, true);
-    }
-
-    /** */
-    @Test
-    public void testCompositePkWithKeyTypeAndBinaryObject() {
-        checkCompositePk(true, true);
-    }
-
-    /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
-    public void testCompositePkWithKeyTypeAndPersonCompositeKey() {
-        checkCompositePk(true, false);
-    }
-
-    /** */
-    private void checkCompositePk(boolean setKeyTypeToCreateTblDdl, boolean useBinaryObject) {
+    private void checkCompositePk(
+        boolean setKeyTypeToCreateTblDdl, boolean useBinaryObject, @Nullable Runnable executeBeforeChecks
+    ) {
         sql(String.format(
-            "create table PUBLIC.PERSON(id int, name varchar, age int, primary key(id, name))%s",
+            "create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))%s",
             setKeyTypeToCreateTblDdl ? String.format(" with \"key_type=%s\"", PersonCompositeKey.class.getName()) : ""
         ));
 
-        for (int i = 0; i < 10; i++)
-            sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
+        for (int i = 0; i < 10; i++) {
+            sql(
+                "insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)",
+                i, "foo" + i, "bar" + i, 18 + i
+            );
+        }
 
         List<List<?>> sqlRs = sql("select _key, id, name from PUBLIC.PERSON order by id");
         BinaryObject _key = (BinaryObject)sqlRs.get(6).get(0);
@@ -120,11 +165,22 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         assertEquals(6, id);
         assertEquals("foo6", name);
 
+        if (executeBeforeChecks != null)
+            executeBeforeChecks.run();
+
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(useBinaryObject ? _key : _key.deserialize())
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
+            .check();
+
+        // Let's check with a smaller number of columns.
+        assertQuery("select id, age, _key from PUBLIC.PERSON where _key = ?")
+            .withParams(useBinaryObject ? _key : _key.deserialize())
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
+            .columnNames("ID", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(id, 24, _key)
             .check();
 
         // Let's just make sure that PK search is not broken.
@@ -168,5 +224,15 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         @Override public String toString() {
             return S.toString(PersonCompositeKey.class, this);
         }
+    }
+
+    /** */
+    private void executeAlterTableAddColumn() {
+        sql("alter table PUBLIC.PERSON add email varchar");
+    }
+
+    /** */
+    private void executeAlterTableDropColumn() {
+        sql("alter table PUBLIC.PERSON drop column surname");
     }
 }

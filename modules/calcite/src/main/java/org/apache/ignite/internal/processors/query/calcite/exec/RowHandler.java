@@ -74,5 +74,8 @@ public interface RowHandler<Row> {
 
         /** */
         Row create(Object... fields);
+
+        /** */
+        Row create(int size);
     }
 }
