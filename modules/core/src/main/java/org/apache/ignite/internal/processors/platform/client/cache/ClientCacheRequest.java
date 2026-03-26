@@ -21,6 +21,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -83,10 +84,15 @@ public abstract class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteInternalCache<Object, Object> cachex(ClientConnectionContext ctx) {
+    protected IgniteInternalCache<Object, Object> internalBinaryCache(ClientConnectionContext ctx) {
         String cacheName = cacheDescriptor(ctx).cacheName();
 
-        return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
+        IgniteCache<?, ?> cache = ctx.kernalContext().grid().cache(cacheName);
+
+        if (cache == null)
+            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheName= " + cacheName + "]");
+
+        return ((IgniteCacheProxy<Object, Object>)cache.withKeepBinary()).internalProxy();
     }
 
     /**
@@ -155,8 +161,7 @@ public abstract class ClientCacheRequest extends ClientRequest {
         DynamicCacheDescriptor desc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
 
         if (desc == null)
-            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " +
-                    cacheId + "]", null);
+            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " + cacheId + "]");
 
         return desc;
     }
