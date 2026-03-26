@@ -62,11 +62,26 @@ public class CacheIndexImpl implements IgniteIndex {
     private final IgniteCacheTable tbl;
 
     /** */
+    private final ImmutableIntList idxFieldMapping;
+
+    /** */
     public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
+        this(collation, name, idx, tbl, collation.getKeys());
+    }
+
+    /** */
+    public CacheIndexImpl(
+        RelCollation collation,
+        String name,
+        @Nullable Index idx,
+        IgniteCacheTable tbl,
+        ImmutableIntList idxFieldMapping
+    ) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
         this.tbl = tbl;
+        this.idxFieldMapping = idxFieldMapping;
     }
 
     /** */
@@ -98,7 +113,7 @@ public class CacheIndexImpl implements IgniteIndex {
     ) {
         UUID locNodeId = execCtx.localNodeId();
         if (grp.nodeIds().contains(locNodeId) && idx != null) {
-            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
+            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), idxFieldMapping,
                 grp.partitions(locNodeId), ranges, requiredColumns);
         }
 
@@ -120,7 +135,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 ectx,
                 tbl.descriptor(),
                 idx.unwrap(InlineIndexImpl.class),
-                collation.getKeys(),
+                idxFieldMapping,
                 grp.partitions(locNodeId),
                 requiredColumns
             );
@@ -181,7 +196,7 @@ public class CacheIndexImpl implements IgniteIndex {
         if (requiredColumns == null)
             requiredColumns = ImmutableBitSet.range(tbl.descriptor().columnDescriptors().size());
 
-        ImmutableIntList idxKeys = collation.getKeys();
+        ImmutableIntList idxKeys = idxFieldMapping;
 
         // All indexed keys should be inlined, all required colummns should be inlined.
         if (idxKeys.size() < requiredColumns.cardinality() || !ImmutableBitSet.of(idxKeys).contains(requiredColumns))

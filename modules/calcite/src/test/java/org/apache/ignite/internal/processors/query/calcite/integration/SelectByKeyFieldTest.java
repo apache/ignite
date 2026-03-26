@@ -97,7 +97,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(_key)
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
             .check();

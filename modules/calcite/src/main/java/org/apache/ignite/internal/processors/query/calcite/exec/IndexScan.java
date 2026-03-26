@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -26,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -45,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionChang
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.TransformRangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -208,6 +212,9 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
+
+        if (idx.indexDefinition().primary())
+            bound = unwrapForPkAndBinaryObject(bound);
 
         InlineIndexRowHandler idxRowHnd = idx.segment(0).rowHandler();
         RowHandler<Row> rowHnd = ectx.rowHandler();
@@ -497,5 +504,41 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    private Row unwrapForPkAndBinaryObject(Row row) {
+        assert idx.indexDefinition().primary() : String.format("idx=%s, row=%s", idx.name(), row);
+
+        RowHandler<Row> rowHnd = ectx.rowHandler();
+        Object o = rowHnd.columnCount(row) == 0 ? null : rowHnd.get(0, row);
+
+        if (!(o instanceof BinaryObject))
+            return row;
+
+        BinaryObject bo = (BinaryObject) o;
+        assert bo.type().typeName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
+            "idx=%s, row=%s, boType=%s, idxKeyType=%s",
+            idx.name(), row, bo.type().typeName(), idx.indexDefinition().typeDescriptor().keyTypeName()
+        );
+
+        return toRowForPk(bo);
+    }
+
+    /** */
+    private Row toRowForPk(BinaryObject bo) {
+        assert idx.indexDefinition().primary() : String.format("idx=%s, bo=%s", idx.name(), bo);
+
+        RowHandler<Row> rowHnd = ectx.rowHandler();
+        Row row = factory.create();
+
+        for (Map.Entry<String, IndexKeyDefinition> keyDef : idx.indexDefinition().indexKeyDefinitions().entrySet()) {
+            ColumnDescriptor fieldDesc = desc.columnDescriptor(keyDef.getKey());
+            assert fieldDesc != null : String.format("idx=%s, bo=%s, keyName=%s", idx.name(), bo, keyDef.getKey());
+
+            rowHnd.set(fieldDesc.fieldIndex(), row, bo.field(keyDef.getKey()));
+        }
+
+        return row;
     }
 }
