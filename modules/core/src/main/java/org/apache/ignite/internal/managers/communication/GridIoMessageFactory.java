@@ -266,8 +266,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKeySeria
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolderSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLock;
-import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
-import org.apache.ignite.internal.processors.cache.transactions.TxLockListSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLockSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequestSerializer;
@@ -399,7 +397,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-43, IgniteIoTestMessage::new);
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer());
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
-        factory.register((short)-26, TxLockList::new, new TxLockListSerializer());
         factory.register((short)-25, TxLock::new, new TxLockSerializer());
         factory.register((short)-24, TxLocksRequest::new, new TxLocksRequestSerializer());
         factory.register((short)-23, TxLocksResponse::new, new TxLocksResponseSerializer());
