@@ -126,7 +126,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
-     * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
      * @param ver Client protocol version.
@@ -140,7 +139,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean enforceJoinOrder,
         boolean replicatedOnly,
         boolean collocated,
-        boolean lazy,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
         ClientListenerProtocolVersion ver,
@@ -161,7 +159,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             enforceJoinOrder,
             collocated,
             replicatedOnly,
-            lazy,
             false,
             skipReducerOnUpdate,
             null,
@@ -348,7 +345,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setCollocated(cliCtx.isCollocated());
-        qry.setLazy(cliCtx.isLazy());
         qry.setSchema(OdbcUtils.prepareSchema(schema));
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setQueryInitiatorId(connCtx.clientDescriptor());

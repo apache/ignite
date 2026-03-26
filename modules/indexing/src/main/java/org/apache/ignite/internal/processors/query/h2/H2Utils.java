@@ -483,7 +483,7 @@ public class H2Utils {
     @SuppressWarnings("unchecked")
     public static QueryCursorImpl<List<?>> zeroCursor() {
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList(
-            Collections.singletonList(0L)), null, false, false);
+            Collections.singletonList(0L)), null, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 

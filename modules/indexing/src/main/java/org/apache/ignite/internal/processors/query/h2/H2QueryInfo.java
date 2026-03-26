@@ -212,7 +212,6 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", type=").append(type)
                 .append(", distributedJoin=").append(distributedJoin)
                 .append(", enforceJoinOrder=").append(enforceJoinOrder)
-                .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema)
                 .append(", initiatorId=").append(initiatorId)
                 .append(", sql='").append(sql)
