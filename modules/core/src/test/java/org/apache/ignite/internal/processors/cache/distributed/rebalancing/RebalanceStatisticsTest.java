@@ -160,8 +160,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
                 long bytes = 0;
 
-                for (List<GridCacheEntryInfo> entriesList : infos.values()) {
-                    for (GridCacheEntryInfo i : entriesList)
+                for (List<GridCacheEntryInfo> entries : infos.values()) {
+                    for (GridCacheEntryInfo i : entries)
                         bytes += getSize.apply(i, grpCtx.cacheObjectContext());
                 }
 
@@ -191,7 +191,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
         long rebId = -1;
         int parts = 0;
-        int entries = 0;
+        int entriesCnt = 0;
         long bytes = 0;
 
         for (List<GridDhtPartitionSupplyMessage> msgs : supplyMsgs.values()) {
@@ -200,12 +200,12 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
                 rebId = U.field(msg, "rebalanceId");
                 parts += infos.size();
-                entries += infos.values().stream().mapToInt(List::size).sum();
+                entriesCnt += infos.values().stream().mapToInt(List::size).sum();
 
                 CacheObjectContext cacheObjCtx = node.context().cache().cacheGroup(msg.groupId()).cacheObjectContext();
 
-                for (List<GridCacheEntryInfo> entriesList : infos.values()) {
-                    for (GridCacheEntryInfo i : entriesList)
+                for (List<GridCacheEntryInfo> entries : infos.values()) {
+                    for (GridCacheEntryInfo i : entries)
                         bytes += getSize.apply(i, cacheObjCtx);
                 }
             }
@@ -213,7 +213,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
         String[] checVals = {
             "partitions=" + parts,
-            "entries=" + entries,
+            "entries=" + entriesCnt,
             "rebalanceId=" + rebId,
             "bytesRcvd=" + U.humanReadableByteCount(bytes),
         };
