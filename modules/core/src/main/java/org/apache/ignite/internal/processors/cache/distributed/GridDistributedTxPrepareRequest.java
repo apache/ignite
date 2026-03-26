@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -101,34 +99,27 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     public Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
-    @GridToStringInclude
-    private Map<IgniteTxKey, GridCacheVersion> dhtVers;
-
-    /** */
     @Order(7)
-    public Collection<IgniteTxKey> dhtVerKeys;
-
-    /** */
-    @Order(8)
-    public Collection<GridCacheVersion> dhtVerVals;
+    @GridToStringInclude
+    public Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** Expected transaction size. */
-    @Order(9)
+    @Order(8)
     public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    @Order(10)
+    @Order(9)
     public Map<UUID, Collection<UUID>> txNodes;
 
     /** IO policy. */
-    @Order(11)
+    @Order(10)
     public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
 
     /** */
-    @Order(12)
+    @Order(11)
     @GridToStringExclude
     public byte flags;
 
@@ -381,15 +372,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         if (reads != null)
             marshalTx(reads, ctx);
 
-        if (dhtVers != null && dhtVerKeys == null) {
+        if (dhtVers != null) {
             for (IgniteTxKey key : dhtVers.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);
             }
-
-            dhtVerKeys = dhtVers.keySet();
-            dhtVerVals = dhtVers.values();
         }
     }
 
@@ -403,22 +391,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         if (reads != null)
             unmarshalTx(reads, ctx, ldr);
 
-        if (dhtVerKeys != null && dhtVers == null) {
-            assert dhtVerVals != null;
-            assert dhtVerKeys.size() == dhtVerVals.size();
-
-            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
-            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
-
-            dhtVers = U.newHashMap(dhtVerKeys.size());
-
-            while (keyIt.hasNext()) {
-                IgniteTxKey key = keyIt.next();
-
+        if (dhtVers != null) {
+            for (IgniteTxKey key : dhtVers.keySet())
                 key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-                dhtVers.put(key, verIt.next());
-            }
         }
     }
 
