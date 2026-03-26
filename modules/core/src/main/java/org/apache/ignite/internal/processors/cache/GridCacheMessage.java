@@ -272,6 +272,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
+    @Deprecated() // TODO, to be removed
     public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         // No-op.
     }
@@ -284,6 +285,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
+    @Deprecated() // TODO, to be removed
     public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
