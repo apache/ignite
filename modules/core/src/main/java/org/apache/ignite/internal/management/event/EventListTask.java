@@ -65,7 +65,7 @@ public class EventListTask extends VisorMultiNodeTask<EventListCommandArg, Map<S
 
             for (String evtName : res0) {
                 if (!res.containsKey(evtName))
-                    res.put(evtName, "Enabled on part of nodes");
+                    res.put(evtName, "Enabled/Disabled (not consistent across cluster)");
             }
         }
 

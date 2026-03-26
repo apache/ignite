@@ -399,7 +399,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to enable.
      */
-    public synchronized void enableEvents0(int[] types) {
+    private synchronized void enableEvents0(int[] types) {
         assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
@@ -450,7 +450,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    public synchronized void disableEvents0(int[] types) {
+    private synchronized void disableEvents0(int[] types) {
         assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
