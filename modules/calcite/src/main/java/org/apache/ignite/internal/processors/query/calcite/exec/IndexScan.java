@@ -233,19 +233,8 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
             if (key != ectx.unspecifiedValue()) {
                 key = TypeUtils.fromInternal(ectx, key, fieldsStoreTypes[fieldIdx]);
 
-                try {
-                    if (key instanceof BinaryObject) {
-                        // TODO: IGNITE-28331 Вот тут не совсем сработало, надо подумать как быть.
-                        //  Даже если хендлить что мы работаем с BinaryObject, то надо и компаратор правильный брать или использовать.
-                        //  Надо будет хитрее сделать конечно, но возможно это все реализуемо, надо подумать с ИИ.
-                        keys[i] = IndexKeyFactory.wrap(key, IndexKeyType.JAVA_OBJECT, cctx.cacheObjectContext(), idxRowHnd.indexKeyTypeSettings());
-                    } else {
-                        keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).indexKeyType(),
-                            cctx.cacheObjectContext(), idxRowHnd.indexKeyTypeSettings());
-                    }
-                } catch (ClassCastException e) {
-                    throw e;
-                }
+                keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).indexKeyType(),
+                    cctx.cacheObjectContext(), idxRowHnd.indexKeyTypeSettings());
 
                 nullSearchRow = false;
             }
