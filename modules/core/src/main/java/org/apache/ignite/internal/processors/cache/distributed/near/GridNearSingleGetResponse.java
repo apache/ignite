@@ -42,24 +42,24 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     public static final int CONTAINS_VAL_FLAG_MASK = 0x2;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** Result. */
-    @Order(value = 5, method = "result")
-    private Message res;
+    @Order(1)
+    Message res;
 
     /** Topology version. */
-    @Order(value = 6, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(2)
+    AffinityTopologyVersion topVer;
 
     /** Error message. */
-    @Order(value = 7, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(3)
+    ErrorMessage errMsg;
 
     /** Flags. */
-    @Order(8)
-    private byte flags;
+    @Order(4)
+    byte flags;
 
     /**
      * Empty constructor.
@@ -125,13 +125,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer != null ? topVer : super.topologyVersion();
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**

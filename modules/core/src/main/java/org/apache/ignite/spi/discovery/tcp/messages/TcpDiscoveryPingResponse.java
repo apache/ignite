@@ -30,8 +30,8 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage implem
     private static final long serialVersionUID = 0L;
 
     /** Whether pinged client exists. */
-    @Order(5)
-    private boolean clientExists;
+    @Order(0)
+    boolean clientExists;
 
     /** */
     public TcpDiscoveryPingResponse() {

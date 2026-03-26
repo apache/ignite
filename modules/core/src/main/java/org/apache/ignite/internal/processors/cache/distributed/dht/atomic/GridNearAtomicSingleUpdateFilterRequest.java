@@ -36,8 +36,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
     /** Filter. */
-    @Order(12)
-    private CacheEntryPredicate[] filter;
+    @Order(0)
+    CacheEntryPredicate[] filter;
 
     /**
      * Empty constructor.
@@ -58,7 +58,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      * @param filter Optional filter for atomic check.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
@@ -69,8 +68,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(
             cacheId,
@@ -80,17 +78,11 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
 
         assert filter != null && filter.length > 0;
 
-        this.filter = filter;
-    }
-
-    /** */
-    public void filter(CacheEntryPredicate[] filter) {
         this.filter = filter;
     }
 

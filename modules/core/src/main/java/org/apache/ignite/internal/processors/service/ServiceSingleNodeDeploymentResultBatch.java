@@ -32,14 +32,14 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ServiceSingleNodeDeploymentResultBatch implements Message {
     /** Deployment process id. */
-    @Order(value = 0, method = "deploymentId")
+    @Order(0)
     @GridToStringInclude
-    private ServiceDeploymentProcessId depId;
+    ServiceDeploymentProcessId depId;
 
     /** Services deployments results. */
     @Order(1)
     @GridToStringInclude
-    private Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results;
+    Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results;
 
     /**
      * Empty constructor for marshalling purposes.
@@ -65,24 +65,10 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
     }
 
     /**
-     * @param results Services deployments results.
-     */
-    public void results(Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results) {
-        this.results = results;
-    }
-
-    /**
      * @return Deployment process id.
      */
     public ServiceDeploymentProcessId deploymentId() {
         return depId;
-    }
-
-    /**
-     * @param depId Deployment process id.
-     */
-    public void deploymentId(ServiceDeploymentProcessId depId) {
-        this.depId = depId;
     }
 
     /** {@inheritDoc} */

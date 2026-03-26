@@ -19,25 +19,27 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Partition update counters message.
  */
-public class PartitionUpdateCountersMessage implements Message {
+public class PartitionUpdateCountersMessage implements MarshallableMessage {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
     /** Byte representation of partition counters. */
     @Order(0)
-    private byte[] data;
+    byte[] data;
 
     /** */
     @Order(1)
-    private int cacheId;
+    int cacheId;
 
     /** */
     private int size;
@@ -62,32 +64,10 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
-     * @return Data.
-     */
-    public byte[] data() {
-        return Arrays.copyOf(data, size * ITEM_SIZE);
-    }
-
-    /**
-     * @param data New data.
-     */
-    public void data(byte[] data) {
-        this.data = data;
-        size = data == null ? 0 : data.length / ITEM_SIZE;
-    }
-
-    /**
      * @return Cache id.
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @param cacheId New cache id.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
     }
 
     /**
@@ -105,7 +85,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE;
 
         return GridUnsafe.getInt(data, off);
     }
@@ -118,7 +98,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 4;
 
         return GridUnsafe.getLong(data, off);
     }
@@ -131,7 +111,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 12;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 12;
 
         return GridUnsafe.getLong(data, off);
     }
@@ -144,7 +124,7 @@ public class PartitionUpdateCountersMessage implements Message {
     public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
 
-        long off = GridUnsafe.BYTE_ARR_OFF + size++ * ITEM_SIZE;
+        long off = GridUnsafe.BYTE_ARR_OFF + (long)size++ * ITEM_SIZE;
 
         GridUnsafe.putInt(data, off, part); off += 4;
         GridUnsafe.putLong(data, off, init); off += 8;
@@ -205,5 +185,15 @@ public class PartitionUpdateCountersMessage implements Message {
             ", size=" + size +
             ", cntrs=" + sb +
             '}';
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        data = Arrays.copyOf(data, size * ITEM_SIZE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        size = data == null ? 0 : data.length / ITEM_SIZE;
     }
 }

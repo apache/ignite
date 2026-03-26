@@ -37,29 +37,29 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     /** Entries keys. */
     @GridToStringInclude
-    @Order(4)
-    private List<KeyCacheObject> keys;
+    @Order(0)
+    List<KeyCacheObject> keys;
 
     /** Entries versions. */
-    @Order(value = 5, method = "versions")
-    private List<GridCacheVersion> vers;
+    @Order(1)
+    List<GridCacheVersion> vers;
 
     /** Near entries keys. */
     @GridToStringInclude
-    @Order(6)
-    private List<KeyCacheObject> nearKeys;
+    @Order(2)
+    List<KeyCacheObject> nearKeys;
 
     /** Near entries versions. */
-    @Order(value = 7, method = "nearVersions")
-    private List<GridCacheVersion> nearVers;
+    @Order(3)
+    List<GridCacheVersion> nearVers;
 
     /** New TTL. */
-    @Order(8)
-    private long ttl;
+    @Order(4)
+    long ttl;
 
     /** Topology version. */
-    @Order(value = 9, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(5)
+    AffinityTopologyVersion topVer;
 
     /**
      * Required empty constructor.
@@ -89,24 +89,10 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return TTL.
      */
     public long ttl() {
         return ttl;
-    }
-
-    /**
-     * @param ttl New TTL.
-     */
-    public void ttl(long ttl) {
-        this.ttl = ttl;
     }
 
     /**
@@ -149,34 +135,10 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param keys New entries keys.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Versions.
      */
     public List<GridCacheVersion> versions() {
         return vers;
-    }
-
-    /**
-     * @param vers New entries versions.
-     */
-    public void versions(List<GridCacheVersion> vers) {
-        this.vers = vers;
-    }
-
-    /**
-     * @param idx Entry index.
-     * @return Version.
-     */
-    public GridCacheVersion version(int idx) {
-        assert idx >= 0 && idx < vers.size() : idx;
-
-        return vers.get(idx);
     }
 
     /**
@@ -187,24 +149,10 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param nearKeys New near entries keys.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
-    }
-
-    /**
      * @return Versions for near cache entries.
      */
     public List<GridCacheVersion> nearVersions() {
         return nearVers;
-    }
-
-    /**
-     * @param nearVers New near entries versions.
-     */
-    public void nearVersions(List<GridCacheVersion> nearVers) {
-        this.nearVers = nearVers;
     }
 
     /** {@inheritDoc} */

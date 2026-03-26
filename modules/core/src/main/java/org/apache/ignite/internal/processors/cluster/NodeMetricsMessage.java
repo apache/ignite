@@ -37,224 +37,224 @@ public class NodeMetricsMessage implements Message {
     public static final short TYPE_CODE = 137;
 
     /** */
-    @Order(value = 0)
-    private long lastUpdateTime = -1;
+    @Order(0)
+    public long lastUpdateTime = -1;
 
     /** */
-    @Order(value = 1, method = "maximumActiveJobs")
-    private int maxActiveJobs = -1;
+    @Order(1)
+    public int maxActiveJobs = -1;
 
     /** */
-    @Order(value = 2, method = "currentActiveJobs")
-    private int curActiveJobs = -1;
+    @Order(2)
+    public int curActiveJobs = -1;
 
     /** */
-    @Order(value = 3, method = "averageActiveJobs")
-    private float avgActiveJobs = -1;
+    @Order(3)
+    public float avgActiveJobs = -1;
 
     /** */
-    @Order(value = 4, method = "maximumWaitingJobs")
-    private int maxWaitingJobs = -1;
+    @Order(4)
+    public int maxWaitingJobs = -1;
 
     /** */
-    @Order(value = 5, method = "currentWaitingJobs")
-    private int curWaitingJobs = -1;
+    @Order(5)
+    public int curWaitingJobs = -1;
 
     /** */
-    @Order(value = 6, method = "averageWaitingJobs")
-    private float avgWaitingJobs = -1;
+    @Order(6)
+    public float avgWaitingJobs = -1;
 
     /** */
-    @Order(value = 7, method = "maximumRejectedJobs")
-    private int maxRejectedJobs = -1;
+    @Order(7)
+    public int maxRejectedJobs = -1;
 
     /** */
-    @Order(value = 8, method = "currentRejectedJobs")
-    private int curRejectedJobs = -1;
+    @Order(8)
+    public int curRejectedJobs = -1;
 
     /** */
-    @Order(value = 9, method = "averageRejectedJobs")
-    private float avgRejectedJobs = -1;
+    @Order(9)
+    public float avgRejectedJobs = -1;
 
     /** */
-    @Order(value = 10, method = "maximumCancelledJobs")
-    private int maxCancelledJobs = -1;
+    @Order(10)
+    public int maxCancelledJobs = -1;
 
     /** */
-    @Order(value = 11, method = "currentCancelledJobs")
-    private int curCancelledJobs = -1;
+    @Order(11)
+    public int curCancelledJobs = -1;
 
     /** */
-    @Order(value = 12, method = "averageCancelledJobs")
-    private float avgCancelledJobs = -1;
+    @Order(12)
+    public float avgCancelledJobs = -1;
 
     /** */
-    @Order(value = 13)
-    private int totalRejectedJobs = -1;
+    @Order(13)
+    public int totalRejectedJobs = -1;
 
     /** */
-    @Order(value = 14)
-    private int totalCancelledJobs = -1;
+    @Order(14)
+    public int totalCancelledJobs = -1;
 
     /** */
-    @Order(value = 15)
-    private int totalExecutedJobs = -1;
+    @Order(15)
+    public int totalExecutedJobs = -1;
 
     /** */
-    @Order(value = 16, method = "maximumJobWaitTime")
-    private long maxJobWaitTime = -1;
+    @Order(16)
+    public long maxJobWaitTime = -1;
 
     /** */
-    @Order(value = 17, method = "currentJobWaitTime")
-    private long curJobWaitTime = Long.MAX_VALUE;
+    @Order(17)
+    public long curJobWaitTime = Long.MAX_VALUE;
 
     /** */
-    @Order(value = 18, method = "averageJobWaitTime")
-    private double avgJobWaitTime = -1;
+    @Order(18)
+    public double avgJobWaitTime = -1;
 
     /** */
-    @Order(value = 19, method = "maximumJobExecuteTime")
-    private long maxJobExecTime = -1;
+    @Order(19)
+    public long maxJobExecTime = -1;
 
     /** */
-    @Order(value = 20, method = "currentJobExecuteTime")
-    private long curJobExecTime = -1;
+    @Order(20)
+    public long curJobExecTime = -1;
 
     /** */
-    @Order(value = 21, method = "averageJobExecuteTime")
-    private double avgJobExecTime = -1;
+    @Order(21)
+    public double avgJobExecTime = -1;
 
     /** */
-    @Order(value = 22, method = "totalExecutedTasks")
-    private int totalExecTasks = -1;
+    @Order(22)
+    public int totalExecTasks = -1;
 
     /** */
-    @Order(value = 23)
-    private long totalIdleTime = -1;
+    @Order(23)
+    public long totalIdleTime = -1;
 
     /** */
-    @Order(value = 24, method = "currentIdleTime")
-    private long curIdleTime = -1;
+    @Order(24)
+    public long curIdleTime = -1;
 
     /** */
-    @Order(value = 25)
-    private int totalCpus = -1;
+    @Order(25)
+    public int totalCpus = -1;
 
     /** */
-    @Order(value = 26, method = "currentCpuLoad")
-    private double curCpuLoad = -1;
+    @Order(26)
+    public double curCpuLoad = -1;
 
     /** */
-    @Order(value = 27, method = "averageCpuLoad")
-    private double avgCpuLoad = -1;
+    @Order(27)
+    public double avgCpuLoad = -1;
 
     /** */
-    @Order(value = 28, method = "currentGcCpuLoad")
-    private double curGcCpuLoad = -1;
+    @Order(28)
+    public double curGcCpuLoad = -1;
 
     /** */
-    @Order(value = 29, method = "heapMemoryInitialized")
-    private long heapInit = -1;
+    @Order(29)
+    public long heapInit = -1;
 
     /** */
-    @Order(value = 30, method = "heapMemoryUsed")
-    private long heapUsed = -1;
+    @Order(30)
+    public long heapUsed = -1;
 
     /** */
-    @Order(value = 31, method = "heapMemoryCommitted")
-    private long heapCommitted = -1;
+    @Order(31)
+    public long heapCommitted = -1;
 
     /** */
-    @Order(value = 32, method = "heapMemoryMaximum")
-    private long heapMax = -1;
+    @Order(32)
+    public long heapMax = -1;
 
     /** */
-    @Order(value = 33, method = "heapMemoryTotal")
-    private long heapTotal = -1;
+    @Order(33)
+    public long heapTotal = -1;
 
     /** */
-    @Order(value = 34, method = "nonHeapMemoryInitialized")
-    private long nonHeapInit = -1;
+    @Order(34)
+    public long nonHeapInit = -1;
 
     /** */
-    @Order(value = 35, method = "nonHeapMemoryUsed")
-    private long nonHeapUsed = -1;
+    @Order(35)
+    public long nonHeapUsed = -1;
 
     /** */
-    @Order(value = 36, method = "nonHeapMemoryCommitted")
-    private long nonHeapCommitted = -1;
+    @Order(36)
+    public long nonHeapCommitted = -1;
 
     /** */
-    @Order(value = 37, method = "nonHeapMemoryMaximum")
-    private long nonHeapMax = -1;
+    @Order(37)
+    public long nonHeapMax = -1;
 
     /** */
-    @Order(value = 38, method = "nonHeapMemoryTotal")
-    private long nonHeapTotal = -1;
+    @Order(38)
+    public long nonHeapTotal = -1;
 
     /** */
-    @Order(value = 39)
-    private long upTime = -1;
+    @Order(39)
+    public long upTime = -1;
 
     /** */
-    @Order(value = 40)
-    private long startTime = -1;
+    @Order(40)
+    public long startTime = -1;
 
     /** */
-    @Order(value = 41)
-    private long nodeStartTime = -1;
+    @Order(41)
+    public long nodeStartTime = -1;
 
     /** */
-    @Order(value = 42, method = "currentThreadCount")
-    private int threadCnt = -1;
+    @Order(42)
+    public int threadCnt = -1;
 
     /** */
-    @Order(value = 43, method = "maximumThreadCount")
-    private int peakThreadCnt = -1;
+    @Order(43)
+    public int peakThreadCnt = -1;
 
     /** */
-    @Order(value = 44, method = "totalStartedThreadCount")
-    private long startedThreadCnt = -1;
+    @Order(44)
+    public long startedThreadCnt = -1;
 
     /** */
-    @Order(value = 45, method = "currentDaemonThreadCount")
-    private int daemonThreadCnt = -1;
+    @Order(45)
+    public int daemonThreadCnt = -1;
 
     /** */
-    @Order(value = 46, method = "lastDataVersion")
-    private long lastDataVer = -1;
+    @Order(46)
+    public long lastDataVer = -1;
 
     /** */
-    @Order(value = 47, method = "sentMessagesCount")
-    private int sentMsgsCnt = -1;
+    @Order(47)
+    public int sentMsgsCnt = -1;
 
     /** */
-    @Order(value = 48, method = "sentBytesCount")
-    private long sentBytesCnt = -1;
+    @Order(48)
+    public long sentBytesCnt = -1;
 
     /** */
-    @Order(value = 49, method = "receivedMessagesCount")
-    private int rcvdMsgsCnt = -1;
+    @Order(49)
+    public int rcvdMsgsCnt = -1;
 
     /** */
-    @Order(value = 50, method = "receivedBytesCount")
-    private long rcvdBytesCnt = -1;
+    @Order(50)
+    public long rcvdBytesCnt = -1;
 
     /** */
-    @Order(value = 51, method = "outboundMessagesQueueSize")
-    private int outMesQueueSize = -1;
+    @Order(51)
+    public int outMesQueueSize = -1;
 
     /** */
-    @Order(value = 52)
-    private int totalNodes = -1;
+    @Order(52)
+    public int totalNodes = -1;
 
     /** */
-    @Order(value = 53, method = "totalJobsExecutionTime")
-    private long totalJobsExecTime = -1;
+    @Order(53)
+    public long totalJobsExecTime = -1;
 
     /** */
-    @Order(value = 54, method = "currentPmeDuration")
-    private long curPmeDuration = -1;
+    @Order(54)
+    public long curPmeDuration = -1;
 
     /** */
     public NodeMetricsMessage() {

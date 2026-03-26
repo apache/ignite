@@ -31,16 +31,16 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** Future ID. */
-    @Order(value = 7, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(8)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Flag indicating if all remote transactions were prepared. */
-    @Order(9)
-    private boolean success;
+    @Order(2)
+    boolean success;
 
     /** Transient TX state. */
     private IgniteTxState txState;

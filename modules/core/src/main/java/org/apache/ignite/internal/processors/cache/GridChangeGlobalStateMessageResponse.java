@@ -28,12 +28,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     /** Request id. */
-    @Order(value = 3, method = "requestId")
-    private UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Activation error message. */
-    @Order(value = 4, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(1)
+    ErrorMessage errMsg;
 
     /**
      * Default constructor.
@@ -61,31 +61,10 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     }
 
     /**
-     * @param reqId Request id.
-     */
-    public void requestId(UUID reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Activation error.
      */
     public @Nullable Throwable getError() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

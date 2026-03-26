@@ -58,52 +58,52 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     public static final int RECOVERY_FLAG_MASK = 0x08;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Sub ID. */
-    @Order(5)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Version. */
-    @Order(value = 6, method = "version")
-    private GridCacheVersion ver;
+    @Order(2)
+    GridCacheVersion ver;
 
     /** */
     @GridToStringInclude
     private LinkedHashMap<KeyCacheObject, Boolean> keyMap;
 
     /** */
-    @Order(7)
-    private List<KeyCacheObject> keys;
+    @Order(3)
+    List<KeyCacheObject> keys;
 
     /** */
-    @Order(8)
-    private List<Boolean> readersFlags;
+    @Order(4)
+    List<Boolean> readersFlags;
 
     /** */
-    @Order(9)
-    private byte flags;
+    @Order(5)
+    byte flags;
 
     /** Topology version. */
-    @Order(value = 10, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(6)
+    AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(11)
-    private int taskNameHash;
+    @Order(7)
+    int taskNameHash;
 
     /** TTL for read operation. */
-    @Order(12)
-    private long createTtl;
+    @Order(8)
+    long createTtl;
 
     /** TTL for read operation. */
-    @Order(13)
-    private long accessTtl;
+    @Order(9)
+    long accessTtl;
 
     /** Transaction label. */
-    @Order(value = 14, method = "txLabel")
-    private @Nullable String txLbl;
+    @Order(10)
+    @Nullable String txLbl;
 
     /**
      * Empty constructor.
@@ -125,7 +125,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param taskNameHash Task name hash.
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
-     * @param addDepInfo Deployment info.
      * @param txLbl Transaction label.
      */
     public GridNearGetRequest(
@@ -141,7 +140,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         long accessTtl,
         boolean addReader,
         boolean skipVals,
-        boolean addDepInfo,
         boolean recovery,
         @Nullable String txLbl
     ) {
@@ -170,7 +168,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
-        this.addDepInfo = addDepInfo;
         this.txLbl = txLbl;
 
         if (readThrough)
@@ -194,24 +191,10 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Sub ID.
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Sub ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -223,23 +206,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         return taskNameHash;
     }
 
-    /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
-    }
-
-    /**
-     * @param ver Version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
     }
 
     /**
@@ -247,48 +216,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     public LinkedHashMap<KeyCacheObject, Boolean> keyMap() {
         return keyMap;
-    }
-
-    /**
-     * @return Keys.
-     */
-    public List<KeyCacheObject> keys() {
-        return keys;
-    }
-
-    /**
-     * @param keys Keys.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
-     * @return Readers flags.
-     */
-    public List<Boolean> readersFlags() {
-        return readersFlags;
-    }
-
-    /**
-     * @param readersFlags Readers flags.
-     */
-    public void readersFlags(List<Boolean> readersFlags) {
-        this.readersFlags = readersFlags;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /**
@@ -326,13 +253,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return New TTL to set after entry is created, -1 to leave unchanged.
      */
     public long createTtl() {
@@ -340,24 +260,10 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
-     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
-     */
-    public void createTtl(long createTtl) {
-        this.createTtl = createTtl;
-    }
-
-    /**
      * @return New TTL to set after entry is accessed, -1 to leave unchanged.
      */
     public long accessTtl() {
         return accessTtl;
-    }
-
-    /**
-     * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
-     */
-    public void accessTtl(long accessTtl) {
-        this.accessTtl = accessTtl;
     }
 
     /** {@inheritDoc} */
@@ -372,13 +278,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param txLbl Possible transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
     }
 
     /**

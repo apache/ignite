@@ -31,15 +31,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DataStreamerResponse implements Message {
     /** */
-    @Order(value = 0, method = "requestId")
-    private long reqId;
+    @Order(0)
+    long reqId;
 
     /** */
     private @Nullable Throwable err;
 
     /** */
-    @Order(value = 1, method = "errorBytes")
-    private @Nullable byte[] errBytes;
+    @Order(1)
+    @Nullable byte[] errBytes;
 
     /**
      * @param reqId Request ID.
@@ -65,24 +65,10 @@ public class DataStreamerResponse implements Message {
     }
 
     /**
-     * @param reqId Request ID.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Error bytes.
      */
     public @Nullable byte[] errorBytes() {
         return errBytes;
-    }
-
-    /**
-     * @param errBytes Error bytes.
-     */
-    public void errorBytes(@Nullable byte[] errBytes) {
-        this.errBytes = errBytes;
     }
 
     /**

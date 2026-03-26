@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetricsImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
@@ -178,6 +179,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     @Nullable
     private final PeriodicHistogramMetricImpl pageTsHistogram;
 
+    /** Metric indicating whether page eviction has started. */
+    private final BooleanMetricImpl evictionsStarted;
+
     /**
      * Same as {@link #DataRegionMetricsImpl(DataRegionConfiguration, GridKernalContext, DataRegionMetricsProvider)}
      * but uses a no-op implementation for the {@link DataRegionMetricsProvider}.
@@ -280,6 +284,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(dataRegionCfg.getMaxSize());
+
+        evictionsStarted = mreg.booleanMetric("EvictionsStarted",
+            "True if page eviction was triggered due to data region memory pressure.");
 
         if (persistenceEnabled) {
             // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
@@ -874,5 +881,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             U.currentTimeMillis(), vals[vals.length - 1]));
 
         return list;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEvictionsStarted() {
+        return evictionsStarted.value();
+    }
+
+    /** */
+    public void onPageEvictionsStarted() {
+        if (!evictionsStarted.value())
+            evictionsStarted.value(true);
     }
 }

@@ -17,60 +17,72 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
-import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class IncrementalSnapshotVerifyResult implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
     /** Transaction hashes collection. */
-    private Map<Object, TransactionsHashRecord> txHashRes;
+    private Collection<TransactionsHashRecord> txHashRes;
+
+    /** */
+    @Order(0)
+    byte[] txHashResBytes;
 
     /**
      * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
      * into the incremental snapshot.
      */
-    private Map<PartitionKey, PartitionHashRecord> partHashRes;
-
-    /** Partially committed transactions' collection. */
-    private Collection<GridCacheVersion> partiallyCommittedTxs;
-
-    /** Occurred exceptions. */
-    private Collection<Exception> exceptions;
+    private Collection<PartitionHashRecord> partHashRes;
 
     /** */
+    @Order(1)
+    byte[] partHashResBytes;
+
+    /** Partially committed transactions' collection. */
+    @Order(2)
+    Collection<GridCacheVersion> partiallyCommittedTxs;
+
+    /** Occurred exceptions. */
+    @Order(3)
+    Collection<ErrorMessage> exceptions;
+
+    /** Default constructor for {@link MessageFactory}. */
     public IncrementalSnapshotVerifyResult() {
         // No-op.
     }
 
     /** */
     IncrementalSnapshotVerifyResult(
-        Map<Object, TransactionsHashRecord> txHashRes,
-        Map<PartitionKey, PartitionHashRecord> partHashRes,
+        Collection<TransactionsHashRecord> txHashRes,
+        Collection<PartitionHashRecord> partHashRes,
         Collection<GridCacheVersion> partiallyCommittedTxs,
         Collection<Exception> exceptions
     ) {
         this.txHashRes = txHashRes;
         this.partHashRes = partHashRes;
         this.partiallyCommittedTxs = partiallyCommittedTxs;
-        this.exceptions = exceptions;
+        this.exceptions = exceptions == null ? null : F.viewReadOnly(exceptions, ErrorMessage::new);
     }
 
     /** */
-    public Map<PartitionKey, PartitionHashRecord> partHashRes() {
+    public Collection<PartitionHashRecord> partHashRes() {
         return partHashRes;
     }
 
     /** */
-    public Map<Object, TransactionsHashRecord> txHashRes() {
+    public Collection<TransactionsHashRecord> txHashRes() {
         return txHashRes;
     }
 
@@ -79,8 +91,23 @@ public class IncrementalSnapshotVerifyResult implements Serializable {
         return partiallyCommittedTxs;
     }
 
-    /** */
-    public Collection<Exception> exceptions() {
-        return exceptions;
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        txHashResBytes = U.marshal(marsh, txHashRes);
+        partHashResBytes = U.marshal(marsh, partHashRes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (txHashResBytes != null)
+            txHashRes = U.unmarshal(marsh, txHashResBytes, clsLdr);
+
+        if (partHashResBytes != null)
+            partHashRes = U.unmarshal(marsh, partHashResBytes, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 524;
     }
 }

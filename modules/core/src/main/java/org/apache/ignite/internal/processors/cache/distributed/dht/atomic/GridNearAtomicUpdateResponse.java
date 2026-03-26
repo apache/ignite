@@ -47,34 +47,34 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     private UUID nodeId;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** */
-    @Order(value = 5, method = "errors")
-    private UpdateErrors errs;
+    @Order(1)
+    UpdateErrors errs;
 
     /** Return value. */
     @GridToStringInclude
-    @Order(value = 6, method = "returnValue")
-    private GridCacheReturn ret;
+    @Order(2)
+    GridCacheReturn ret;
 
     /** */
-    @Order(value = 7, method = "remapTopologyVersion")
-    private AffinityTopologyVersion remapTopVer;
+    @Order(3)
+    AffinityTopologyVersion remapTopVer;
 
     /** Data for near cache update. */
-    @Order(8)
-    private NearCacheUpdates nearUpdates;
+    @Order(4)
+    NearCacheUpdates nearUpdates;
 
     /** Partition ID. */
-    @Order(value = 9, method = "partition")
-    private int partId;
+    @Order(5)
+    int partId;
 
     /** */
     @GridToStringInclude
-    @Order(10)
-    private List<UUID> mapping;
+    @Order(6)
+    List<UUID> mapping;
 
     /** */
     private boolean nodeLeft;
@@ -92,20 +92,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * @param futId Future ID.
      * @param partId Partition.
      * @param nodeLeft {@code True} if primary node failed.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearAtomicUpdateResponse(int cacheId,
         UUID nodeId,
         long futId,
         int partId,
-        boolean nodeLeft,
-        boolean addDepInfo) {
+        boolean nodeLeft) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
         this.partId = partId;
         this.nodeLeft = nodeLeft;
-        this.addDepInfo = addDepInfo;
 
         assert partId >= 0;
     }

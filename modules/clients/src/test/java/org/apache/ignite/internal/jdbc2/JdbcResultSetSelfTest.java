@@ -1140,10 +1140,12 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PackageVisibleField")
     private static class TestObjectField implements Serializable {
         /** */
-        @GridToStringInclude final int a;
+        @GridToStringInclude
+        final int a;
 
         /** */
-        @GridToStringInclude final String b;
+        @GridToStringInclude
+        final String b;
 
         /**
          * @param a A.

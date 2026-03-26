@@ -30,16 +30,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridTaskSessionRequest implements Message {
     /** Task session ID. */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** ID of job within a task. */
     @Order(1)
-    private IgniteUuid jobId;
+    IgniteUuid jobId;
 
     /** Changed attributes bytes. */
-    @Order(value = 2, method = "attributesBytes")
-    private byte[] attrsBytes;
+    @Order(2)
+    byte[] attrsBytes;
 
     /** Changed attributes. */
     private Map<?, ?> attrs;
@@ -66,20 +66,6 @@ public class GridTaskSessionRequest implements Message {
     }
 
     /**
-     * @return Changed attributes (serialized).
-     */
-    public byte[] attributesBytes() {
-        return attrsBytes;
-    }
-
-    /**
-     * @param attrsBytes Changed attributes (serialized).
-     */
-    public void attributesBytes(byte[] attrsBytes) {
-        this.attrsBytes = attrsBytes;
-    }
-
-    /**
      * @return Changed attributes.
      */
     public Map<?, ?> attributes() {
@@ -94,24 +80,10 @@ public class GridTaskSessionRequest implements Message {
     }
 
     /**
-     * @param sesId Task session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
-    /**
      * @return Job ID.
      */
     public IgniteUuid jobId() {
         return jobId;
-    }
-
-    /**
-     * @param jobId Job ID.
-     */
-    public void jobId(IgniteUuid jobId) {
-        this.jobId = jobId;
     }
 
     /** {@inheritDoc} */

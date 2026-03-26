@@ -18,14 +18,12 @@
 package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message to send across ring.
  *
- * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
+ * @see DiscoverySpi#sendCustomEvent
  */
 public interface DiscoverySpiCustomMessage extends Serializable {
     /**
@@ -33,12 +31,15 @@ public interface DiscoverySpiCustomMessage extends Serializable {
      *
      * @return Ack message or {@code null} if ack is not required.
      */
-    @Nullable public DiscoverySpiCustomMessage ackMessage();
+    @Nullable DiscoverySpiCustomMessage ackMessage();
 
     /**
-     * @return {@code True} if message can be modified during listener notification. Changes will be send to next nodes.
+     * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
+     * @see DiscoverySpiMutableCustomMessageSupport
      */
-    public boolean isMutable();
+    default boolean isMutable() {
+        return false;
+    }
 
     /**
      * Called on discovery coordinator node after listener is notified. If returns {@code true}
@@ -49,5 +50,7 @@ public interface DiscoverySpiCustomMessage extends Serializable {
      *
      * @return {@code True} if message should not be sent to all nodes.
      */
-    public boolean stopProcess();
+    default boolean stopProcess() {
+        return false;
+    }
 }

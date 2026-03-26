@@ -20,17 +20,18 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapped for custom message.
+ * Wrapper for custom message.
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
@@ -39,22 +40,33 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private transient volatile DiscoverySpiCustomMessage msg;
+    private volatile DiscoverySpiCustomMessage msg;
 
-    /** */
-    private byte[] msgBytes;
+    /** Serialized message bytes. */
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(0)
+    volatile @Nullable byte[] msgBytes;
+
+    /** {@link Message} representation of original message. */
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(1)
+    volatile @Nullable Message serMsg;
+
+    /**
+     * Constructor for {@link DiscoveryMessageFactory}.
+     */
+    public TcpDiscoveryCustomEventMessage() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node id.
      * @param msg Message.
-     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoverySpiCustomMessage msg) {
         super(creatorNodeId);
 
         this.msg = msg;
-        this.msgBytes = msgBytes;
     }
 
     /**
@@ -64,7 +76,8 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     public TcpDiscoveryCustomEventMessage(TcpDiscoveryCustomEventMessage msg) {
         super(msg);
 
-        this.msgBytes = msg.msgBytes;
+        msgBytes = msg.msgBytes;
+        serMsg = msg.serMsg;
         this.msg = msg.msg;
     }
 
@@ -76,44 +89,60 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     }
 
     /**
-     * @return Serialized message.
+     * @return Original message.
      */
-    public byte[] messageBytes() {
-        return msgBytes;
+    public DiscoverySpiCustomMessage message() {
+        return msg;
     }
 
     /**
-     * @param msg Message.
-     * @param msgBytes Serialized message.
-     */
-    public void message(@Nullable DiscoverySpiCustomMessage msg, @NotNull byte[] msgBytes) {
-        this.msg = msg;
-        this.msgBytes = msgBytes;
-    }
-
-    /**
+     * Prepare message for serialization.
+     *
      * @param marsh Marshaller.
-     * @param ldr Classloader.
-     * @return Deserialized message,
-     * @throws java.lang.Throwable if unmarshal failed.
      */
-    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
-        if (msg == null) {
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.prepareMarshal(marsh);
+
+        if (msg instanceof Message)
+            serMsg = (Message)msg;
+        else {
+            if (msg != null)
+                msgBytes = U.marshal(marsh, msg);
+        }
+    }
+
+    /**
+     * Finish deserialization.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     */
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(marsh, ldr);
+
+        if (msg != null)
+            return;
+
+        if (serMsg != null)
+            msg = (DiscoverySpiCustomMessage)serMsg;
+        else {
             try {
-                msg = U.unmarshal(marsh, msgBytes, ldr);
+                if (msgBytes != null)
+                    msg = U.unmarshal(marsh, msgBytes, ldr);
             }
             catch (IgniteCheckedException e) {
                 // Try to resurrect a message in a case of deserialization failure
-                if (e.getCause() instanceof IncompleteDeserializationException)
-                    return new CustomMessageWrapper(((IncompleteDeserializationException)e.getCause()).message());
+                if (e.getCause() instanceof IncompleteDeserializationException) {
+                    msg = ((IncompleteDeserializationException)e.getCause()).message();
+
+                    return;
+                }
 
                 throw e;
             }
-
-            assert msg != null;
         }
-
-        return msg;
     }
 
     /** {@inheritDoc} */
@@ -126,5 +155,10 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 21;
     }
 }

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -267,7 +267,7 @@ public class LightweightCheckpointManager {
         long ts,
         UUID id,
         WALPointer ptr,
-        StripedExecutor exec
+        IgniteStripedExecutor exec
     ) throws IgniteCheckedException {
         assert checkpointer != null : "Checkpointer hasn't initialized yet";
 

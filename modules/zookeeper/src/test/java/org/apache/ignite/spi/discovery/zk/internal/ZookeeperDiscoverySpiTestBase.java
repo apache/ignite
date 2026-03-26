@@ -75,6 +75,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
+import org.apache.ignite.spi.discovery.zk.TestZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -376,7 +377,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
 
-        ZookeeperDiscoverySpi zkSpi = auth != null ? new TestAuthZookeeperDiscoverySpi() : new ZookeeperDiscoverySpi();
+        ZookeeperDiscoverySpi zkSpi = auth != null ? new TestAuthZookeeperDiscoverySpi() : new TestZookeeperDiscoverySpi();
 
         if (joinTimeout != 0)
             zkSpi.setJoinTimeout(joinTimeout);
@@ -932,7 +933,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestAuthZookeeperDiscoverySpi extends ZookeeperDiscoverySpi {
+    private static class TestAuthZookeeperDiscoverySpi extends TestZookeeperDiscoverySpi {
         /** */
         @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             ((IgniteEx)ignite).context().addNodeAttribute(

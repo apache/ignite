@@ -18,20 +18,32 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage {
+public class CalciteErrorMessage implements CalciteMarshalableMessage {
     /** */
-    @Order(value = 1, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
+    @Order(1)
+    long fragmentId;
+
+    /** Error bytes. */
     @Order(2)
-    private long fragmentId;
+    @GridToStringExclude
+    @Nullable public byte[] errBytes;
+
+    /** Error. */
+    private @Nullable Throwable err;
 
     /** */
     public CalciteErrorMessage() {
@@ -40,12 +52,11 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
 
     /** */
     public CalciteErrorMessage(UUID qryId, long fragmentId, Throwable err) {
-        super(err);
-
         assert err != null;
 
         this.qryId = qryId;
         this.fragmentId = fragmentId;
+        this.err = err;
     }
 
     /**
@@ -53,11 +64,6 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
      */
     public UUID queryId() {
         return qryId;
-    }
-
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
     }
 
     /**
@@ -68,8 +74,8 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     }
 
     /** */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
+    public @Nullable Throwable error() {
+        return err;
     }
 
     /** {@inheritDoc} */
@@ -80,5 +86,17 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     /** {@inheritDoc} */
     @Override public short directType() {
         return MessageType.QUERY_ERROR_MESSAGE.directType();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (err != null)
+            errBytes = U.marshal(ctx.marshaller(), err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (errBytes != null)
+            err = U.unmarshal(ctx.marshaller(), errBytes, U.resolveClassLoader(ctx.cache().context().gridConfig()));
     }
 }

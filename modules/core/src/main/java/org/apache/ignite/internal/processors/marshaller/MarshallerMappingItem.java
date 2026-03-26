@@ -19,24 +19,35 @@ package org.apache.ignite.internal.processors.marshaller;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *  Used to exchange mapping information on new mapping added or missing mapping requested flows.
  *  See {@link GridMarshallerMappingProcessor} javadoc for more information.
  */
-public final class MarshallerMappingItem implements Serializable {
+public final class MarshallerMappingItem implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte platformId;
+    @Order(0)
+    byte platformId;
 
     /** */
-    private final int typeId;
+    @Order(1)
+    int typeId;
 
     /** */
-    private String clsName;
+    @Order(2)
+    String clsName;
+
+    /**
+     * no-op
+     */
+    public MarshallerMappingItem() {
+    }
 
     /**
      * Class name may be null when instance is created to request missing mapping from cluster.
@@ -96,5 +107,10 @@ public final class MarshallerMappingItem implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "[platformId: " + platformId + ", typeId:" + typeId + ", clsName: " + clsName + "]";
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 519;
     }
 }

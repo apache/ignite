@@ -99,12 +99,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -140,7 +141,6 @@ import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestor;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -433,7 +433,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(MessageFactory msgFactory) {
-                    return new DirectMessageWriter(msgFactory);
+                    return new DirectMessageWriter(msgFactory, ctx.config().getNetworkCompressionLevel());
                 }
 
                 @Override public MessageReader reader(MessageFactory msgFactory) {
@@ -449,7 +449,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new GridIoMessageFactory());
+        compMsgs.add(new GridIoMessageFactory(marsh, U.gridClassLoader()));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
@@ -1199,15 +1199,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 return;
             }
 
-            if (initMsg.topic() == null) {
-                int topicOrd = initMsg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    initMsg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    initMsg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
-            }
-
             byte plc = initMsg.policy();
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1246,15 +1237,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         nodeId + ", msg=" + msg + ']');
 
                 return;
-            }
-
-            if (msg.topic() == null) {
-                int topicOrd = msg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    msg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
 
             if (!started) {
@@ -1876,7 +1858,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try (OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
+        try (Scope ignored = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -1980,9 +1962,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         );
 
         try {
-            if (topicOrd < 0)
-                ioMsg.prepareMarshal(marsh);
-
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
         catch (IgniteSpiException e) {
@@ -2054,9 +2033,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                if (topicOrd < 0)
-                    ioMsg.prepareMarshal(marsh);
-
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                         getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
@@ -3644,7 +3620,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        try (OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
+                        try (Scope ignored = ctx.security().withContext(initNodeId)) {
                             if (!predLsnr.apply(nodeId, msgBody))
                                 removeMessageListener(TOPIC_COMM_USER, this);
                         }

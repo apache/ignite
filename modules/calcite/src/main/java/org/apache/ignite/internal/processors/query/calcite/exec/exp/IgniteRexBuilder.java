@@ -27,7 +27,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteRexBuilder extends RexBuilder {

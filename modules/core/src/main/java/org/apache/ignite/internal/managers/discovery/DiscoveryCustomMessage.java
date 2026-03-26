@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * <b>DiscoveryCustomMessage</b> messages are handled by discovery protocol which provides some guarantees around them.
@@ -74,32 +73,11 @@ import org.jetbrains.annotations.Nullable;
  *     </li>
  * </ol>
  */
-public interface DiscoveryCustomMessage extends Serializable {
+public interface DiscoveryCustomMessage extends DiscoverySpiCustomMessage {
     /**
      * @return Unique custom message ID.
      */
-    public IgniteUuid id();
-
-    /**
-     * Called when custom message has been handled by all nodes.
-     *
-     * @return Ack message or {@code null} if ack is not required.
-     */
-    @Nullable public DiscoveryCustomMessage ackMessage();
-
-    /**
-     * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
-     */
-    public boolean isMutable();
-
-    /**
-     * See {@link DiscoverySpiCustomMessage#stopProcess()}.
-     *
-     * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.
-     */
-    public default boolean stopProcess() {
-        return false;
-    }
+    IgniteUuid id();
 
     /**
      * Creates new discovery cache if message caused topology version change.
@@ -108,6 +86,9 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @param topVer New topology version.
      * @param discoCache Current discovery cache.
      * @return Reused discovery cache.
+     * @see GridCacheProcessor#onCustomEvent
      */
-    public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache);
+    default DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
+    }
 }

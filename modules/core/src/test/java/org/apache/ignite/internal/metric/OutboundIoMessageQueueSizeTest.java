@@ -23,10 +23,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -174,17 +171,6 @@ public class OutboundIoMessageQueueSizeTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Nullable @Override public DiscoveryCustomMessage ackMessage() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            throw new UnsupportedOperationException();
         }
     }
 }

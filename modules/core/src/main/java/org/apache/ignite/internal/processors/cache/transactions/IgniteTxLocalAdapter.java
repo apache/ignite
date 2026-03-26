@@ -134,9 +134,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** Implicit transaction result. */
     protected GridCacheReturn implicitRes;
 
-    /** Flag indicating whether deployment is enabled for caches from this transaction or not. */
-    private boolean depEnabled;
-
     /** */
     @GridToStringInclude
     protected final IgniteTxLocalState txState;
@@ -261,16 +258,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         assert false;
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean activeCachesDeploymentEnabled() {
-        return depEnabled;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
-        this.depEnabled = depEnabled;
     }
 
     /** {@inheritDoc} */
@@ -849,14 +836,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (txCounters != null) {
+                if (txCounters != null)
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
-
-                    for (IgniteTxEntry entry : commitEntries) {
-                        if (entry.cqNotifyClosure() != null)
-                            entry.cqNotifyClosure().applyx();
-                    }
-                }
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
                 applyTxSizes();

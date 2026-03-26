@@ -41,13 +41,13 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
-    @Order(value = 0, method = "historicalMap")
-    private CachePartitionPartialCountersMap historical;
+    @Order(0)
+    CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that require full rebalancing. */
-    @Order(value = 1, method = "fullSet")
+    @Order(1)
     @GridToStringInclude
-    private Set<Integer> full;
+    Set<Integer> full;
 
     /**
      * @param historical Historical partition set.
@@ -107,15 +107,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
         if (full != null && full.remove(partId))
             return true;
 
-        if (historical != null && historical.remove(partId))
-            return true;
-
-        return false;
-    }
-
-    /** */
-    public boolean hasPartition(int partId) {
-        return hasHistorical(partId) || hasFull(partId);
+        return historical != null && historical.remove(partId);
     }
 
     /** */
@@ -160,21 +152,11 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     }
 
     /** */
-    public void historicalMap(CachePartitionPartialCountersMap historical) {
-        this.historical = historical;
-    }
-
-    /** */
     public Set<Integer> fullSet() {
         if (full == null)
             return Collections.emptySet();
 
         return Collections.unmodifiableSet(full);
-    }
-
-    /** */
-    public void fullSet(Set<Integer> full) {
-        this.full = full;
     }
 
     /** */

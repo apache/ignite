@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 import org.h2.value.Value;
 
 import static org.h2.util.StringUtils.convertBytesToHex;
@@ -47,7 +45,8 @@ public class GridH2Geometry extends GridH2ValueMessage {
     }
 
     /** */
-    private byte[] b;
+    @Order(0)
+    byte[] b;
 
     /**
      *
@@ -73,53 +72,6 @@ public class GridH2Geometry extends GridH2ValueMessage {
         catch (IllegalAccessException | InvocationTargetException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(b))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                b = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

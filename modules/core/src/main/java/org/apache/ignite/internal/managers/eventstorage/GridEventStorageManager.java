@@ -76,6 +76,7 @@ import static org.apache.ignite.events.EventType.EVT_BASELINE_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -527,6 +528,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             case EVT_CLUSTER_DEACTIVATED:
             case EVT_BASELINE_CHANGED:
             case EVT_CLUSTER_STATE_CHANGED:
+            case EVT_CONSISTENCY_VIOLATION:
                 return true;
 
             default:
@@ -1023,15 +1025,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 GridEventStorageMessage res = (GridEventStorageMessage)msg;
 
-                try {
-                    res.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), null);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal events query response: " + msg, e);
-
-                    return;
-                }
-
                 synchronized (qryMux) {
                     if (uids.remove(nodeId)) {
                         if (res.events() != null)
@@ -1144,11 +1137,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         if (locNode != null)
             ctx.io().sendToGridTopic(locNode, topic, msg, plc);
 
-        if (!rmtNodes.isEmpty()) {
-            msg.prepareMarshal(marsh);
-
+        if (!rmtNodes.isEmpty())
             ctx.io().sendToGridTopic(rmtNodes, topic, msg, plc);
-        }
     }
 
     /**
@@ -1214,7 +1204,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
-                    req.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    req.finishUnmarshalFilters(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                     filter = (IgnitePredicate<Event>)req.filter();
 
@@ -1249,9 +1239,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending event query response to node [nodeId=" + nodeId + "res=" + res + ']');
-
-                    if (!ctx.localNodeId().equals(nodeId))
-                        res.prepareMarshal(marsh);
 
                     ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
                 }

@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -77,7 +78,6 @@ import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;

@@ -37,16 +37,16 @@ public class GridQueryFailResponse implements Message {
     public static final byte RETRY_QUERY = 2;
 
     /** */
-    @Order(value = 0, method = "queryRequestId")
-    private long qryReqId;
+    @Order(0)
+    long qryReqId;
 
     /** */
-    @Order(value = 1, method = "error")
-    private String errMsg;
+    @Order(1)
+    String errMsg;
 
     /** */
     @Order(2)
-    private byte failCode;
+    byte failCode;
 
     /**
      * Default constructor.
@@ -61,14 +61,14 @@ public class GridQueryFailResponse implements Message {
      */
     public GridQueryFailResponse(long qryReqId, Throwable err) {
         this.qryReqId = qryReqId;
-        this.errMsg = err.getMessage();
+        errMsg = err.getMessage();
 
         if (err instanceof QueryCancelledException)
-            this.failCode = CANCELLED_BY_ORIGINATOR;
+            failCode = CANCELLED_BY_ORIGINATOR;
         else if (err instanceof QueryRetryException)
-            this.failCode = RETRY_QUERY;
+            failCode = RETRY_QUERY;
         else
-            this.failCode = GENERAL_ERROR;
+            failCode = GENERAL_ERROR;
     }
 
     /**
@@ -79,13 +79,6 @@ public class GridQueryFailResponse implements Message {
     }
 
     /**
-     * @param qryReqId Query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
-    }
-
-    /**
      * @return Error.
      */
     public String error() {
@@ -93,24 +86,10 @@ public class GridQueryFailResponse implements Message {
     }
 
     /**
-     * @param errMsg Error.
-     */
-    public void error(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @return Fail code.
      */
     public byte failCode() {
         return failCode;
-    }
-
-    /**
-     * @param failCode Fail code.
-     */
-    public void failCode(byte failCode) {
-        this.failCode = failCode;
     }
 
     /** {@inheritDoc} */

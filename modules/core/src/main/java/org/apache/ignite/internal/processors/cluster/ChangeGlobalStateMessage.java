@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -29,50 +31,68 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message represent request for change cluster global state.
  */
-public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
+public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Request ID */
-    private UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** Initiator node ID. */
-    private UUID initiatingNodeId;
+    @Order(2)
+    UUID initiatingNodeId;
 
     /** Cluster state */
-    private ClusterState state;
+    @Order(3)
+    ClusterState state;
 
     /** Configurations read from persistent store. */
     private List<StoredCacheData> storedCfgs;
 
+    /** JDK Serialized version of storedCfgs. */
+    @Order(4)
+    byte[] storedCfgsBytes;
+
     /** */
     @Nullable private BaselineTopology baselineTopology;
 
-    /** */
-    private boolean forceChangeBaselineTopology;
+    /** JDK Serialized version of baselineTopology. */
+    @Order(5)
+    byte[] baselineTopologyBytes;
 
     /** */
-    private long timestamp;
+    @Order(6)
+    boolean forceChangeBaselineTopology;
 
     /** */
     @GridToStringExclude
-    private transient ExchangeActions exchangeActions;
+    private ExchangeActions exchangeActions;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
+    @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
     /** If {@code true}, cluster deactivation will be forced. */
-    private boolean forceDeactivation;
+    @Order(7)
+    boolean forceDeactivation;
+
+    /** No-arg constructor for deserialization. */
+    public ChangeGlobalStateMessage() {
+    }
 
     /**
      * @param reqId State change request ID.
@@ -97,6 +117,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         assert reqId != null;
         assert initiatingNodeId != null;
 
+        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
@@ -104,11 +125,10 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.forceDeactivation = forceDeactivation;
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
-        this.timestamp = timestamp;
     }
 
     /**
-     * @return Configurations read from persistent store..
+     * @return Configurations read from persistent store.
      */
     @Nullable public List<StoredCacheData> storedCacheConfigurations() {
         return storedCfgs;
@@ -152,11 +172,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -214,17 +229,33 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Timestamp.
-     */
-    public long timestamp() {
-        return timestamp;
-    }
-
-    /**
      * @return State change request ID.
      */
     public UUID requestId() {
         return reqId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (storedCfgs != null)
+            storedCfgsBytes = U.marshal(marsh, storedCfgs);
+
+        if (baselineTopology != null)
+            baselineTopologyBytes = U.marshal(marsh, baselineTopology);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (storedCfgsBytes != null)
+            storedCfgs = U.unmarshal(marsh, storedCfgsBytes, clsLdr);
+
+        if (baselineTopologyBytes != null)
+            baselineTopology = U.unmarshal(marsh, baselineTopologyBytes, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 532;
     }
 
     /** {@inheritDoc} */

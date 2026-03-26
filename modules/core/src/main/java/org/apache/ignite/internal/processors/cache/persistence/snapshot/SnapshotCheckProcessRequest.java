@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,23 +32,28 @@ import org.jetbrains.annotations.Nullable;
  * @see SnapshotCheckProcess
  */
 public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationRequest {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
     /** If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity and partition counters. */
     @GridToStringInclude
-    private final boolean fullCheck;
+    @Order(0)
+    boolean fullCheck;
 
     /**
      * If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type {@link SnapshotHandlerType#RESTORE}
      * are invoked. Otherwise, only snapshot metadatas and partition hashes are validated.
      */
     @GridToStringInclude
-    private final boolean allRestoreHandlers;
+    @Order(1)
+    boolean allRestoreHandlers;
 
     /** Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
     @GridToStringInclude
-    private final int incIdx;
+    @Order(2)
+    int incIdx;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public SnapshotCheckProcessRequest() {
+        // No-op.
+    }
 
     /**
      * Creates snapshot check process request.
@@ -98,6 +105,11 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     /** @return Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
     public int incrementalIndex() {
         return incIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 33;
     }
 
     /** {@inheritDoc} */

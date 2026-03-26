@@ -19,42 +19,39 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Deployment request.
  */
 public class GridDeploymentRequest implements Message {
     /** Response topic. Response should be sent back to this topic. */
-    private Object resTopic;
+    /** */
+    @Order(0)
+    @Nullable GridTopic topic;
 
-    /** Serialized topic. */
-    @Order(value = 0, method = "responseTopicBytes")
-    private byte[] resTopicBytes;
+    /** */
+    @Order(1)
+    @Nullable IgniteUuid topicId;
 
     /** Requested class name. */
-    @Order(value = 1, method = "resourceName")
-    private String rsrcName;
+    @Order(2)
+    String rsrcName;
 
     /** Class loader ID. */
-    @Order(value = 2, method = "classLoaderId")
-    private IgniteUuid ldrId;
-
-    /** Undeploy flag. */
     @Order(3)
-    private boolean isUndeploy;
+    @Nullable IgniteUuid ldrId;
 
     /** Nodes participating in request (chain). */
     @Order(4)
     @GridToStringInclude
-    private Collection<UUID> nodeIds;
+    Collection<UUID> nodeIds;
 
     /**
      * Default constructor.
@@ -64,22 +61,26 @@ public class GridDeploymentRequest implements Message {
     }
 
     /**
-     * Creates new request.
+     * Creates deploy request.
      *
-     * @param resTopic Response topic.
+     * @param topic Response topic.
      * @param ldrId Class loader ID.
      * @param rsrcName Resource name that should be found and sent back.
-     * @param isUndeploy Undeploy property.
      */
-    GridDeploymentRequest(Object resTopic, IgniteUuid ldrId, String rsrcName, boolean isUndeploy) {
-        assert isUndeploy || resTopic != null;
-        assert isUndeploy || ldrId != null;
-        assert rsrcName != null;
-
-        this.resTopic = resTopic;
+    GridDeploymentRequest(GridTopic.T1 topic, IgniteUuid ldrId, String rsrcName) {
+        this.topic = topic.topic();
+        topicId = topic.id();
         this.ldrId = ldrId;
         this.rsrcName = rsrcName;
-        this.isUndeploy = isUndeploy;
+    }
+
+    /**
+     * Creates undeploy request.
+     *
+     * @param rsrcName Resource name that should be found and sent back.
+     */
+    GridDeploymentRequest(String rsrcName) {
+        this.rsrcName = rsrcName;
     }
 
     /**
@@ -87,22 +88,10 @@ public class GridDeploymentRequest implements Message {
      *
      * @return Response topic name.
      */
-    Object responseTopic() {
-        return resTopic;
-    }
+    @Nullable GridTopic.T1 responseTopic() {
+        assert topic == null && topicId == null || topic != null && topicId != null;
 
-    /**
-     * @return Serialized topic.
-     */
-    public byte[] responseTopicBytes() {
-        return resTopicBytes;
-    }
-
-    /**
-     * @param resTopicBytes Serialized topic.
-     */
-    public void responseTopicBytes(byte[] resTopicBytes) {
-        this.resTopicBytes = resTopicBytes;
+        return topic == null ? null : new GridTopic.T1(topic, topicId);
     }
 
     /**
@@ -115,26 +104,12 @@ public class GridDeploymentRequest implements Message {
     }
 
     /**
-     * @param rsrcName Resource or class name.
-     */
-    public void resourceName(String rsrcName) {
-        this.rsrcName = rsrcName;
-    }
-
-    /**
      * Gets property ldrId.
      *
      * @return Property class loader ID.
      */
-    public IgniteUuid classLoaderId() {
+    public @Nullable IgniteUuid classLoaderId() {
         return ldrId;
-    }
-
-    /**
-     * @param ldrId Property class loader ID.
-     */
-    public void classLoaderId(IgniteUuid ldrId) {
-        this.ldrId = ldrId;
     }
 
     /**
@@ -142,15 +117,10 @@ public class GridDeploymentRequest implements Message {
      *
      * @return Property undeploy.
      */
-    public boolean isUndeploy() {
-        return isUndeploy;
-    }
+    public boolean undeploy() {
+        assert topic == null && topicId == null || topic != null && topicId != null;
 
-    /**
-     * @param isUndeploy Property undeploy.
-     */
-    public void isUndeploy(boolean isUndeploy) {
-        this.isUndeploy = isUndeploy;
+        return topic == null;
     }
 
     /**
@@ -167,26 +137,6 @@ public class GridDeploymentRequest implements Message {
      */
     public void nodeIds(Collection<UUID> nodeIds) {
         this.nodeIds = nodeIds;
-    }
-
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (resTopic != null && resTopicBytes == null)
-            resTopicBytes = U.marshal(marsh, resTopic);
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (resTopicBytes != null && resTopic == null) {
-            resTopic = U.unmarshal(marsh, resTopicBytes, ldr);
-
-            resTopicBytes = null;
-        }
     }
 
     /** {@inheritDoc} */

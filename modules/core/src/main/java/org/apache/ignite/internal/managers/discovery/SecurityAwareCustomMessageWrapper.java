@@ -18,22 +18,50 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
-/** Extends {@link CustomMessageWrapper} with ID of security subject that initiated the current message. */
-public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
+/** Custom message wrapper with ID of security subject that initiated the current message. */
+public class SecurityAwareCustomMessageWrapper implements DiscoverySpiCustomMessage, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Security subject ID. */
-    private final UUID secSubjId;
+    @Order(0)
+    UUID secSubjId;
+
+    /** Original message. */
+    private DiscoveryCustomMessage delegate;
+
+    /** */
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(1)
+    Message msg;
+
+    /** Serialized message bytes. */
+    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(2)
+    byte[] msgBytes;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public SecurityAwareCustomMessageWrapper() {
+        // No-op.
+    }
 
     /** */
     public SecurityAwareCustomMessageWrapper(DiscoveryCustomMessage delegate, UUID secSubjId) {
-        super(delegate);
-
+        this.delegate = delegate;
         this.secSubjId = secSubjId;
+
+        if (delegate instanceof Message)
+            msg = (Message)delegate;
     }
 
     /** Gets security Subject ID. */
@@ -42,9 +70,43 @@ public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return delegate().isMutable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return delegate().stopProcess();
+    }
+
+    /**
+     * @return Delegate.
+     */
+    public DiscoveryCustomMessage delegate() {
+        return msg != null ? (DiscoveryCustomMessage)msg : delegate;
+    }
+
+    /** {@inheritDoc} */
     @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
-        DiscoveryCustomMessage ack = delegate().ackMessage();
+        DiscoveryCustomMessage ack = (DiscoveryCustomMessage)delegate().ackMessage();
 
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 501;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (!(delegate instanceof Message))
+            msgBytes = U.marshal(marsh, delegate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (msgBytes != null)
+            delegate = U.unmarshal(marsh, msgBytes, clsLdr);
     }
 }

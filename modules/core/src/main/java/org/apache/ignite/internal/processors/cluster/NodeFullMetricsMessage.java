@@ -32,12 +32,12 @@ public class NodeFullMetricsMessage implements Message {
     public static final short TYPE_CODE = 138;
 
     /** Node metrics wrapper message. */
-    @Order(value = 0, method = "nodeMetricsMessage")
-    private NodeMetricsMessage nodeMetricsMsg;
+    @Order(0)
+    public NodeMetricsMessage nodeMetricsMsg;
 
     /** Cache metrics wrapper message. */
-    @Order(value = 1, method = "cachesMetricsMessages")
-    private Map<Integer, CacheMetricsMessage> cachesMetricsMsgs;
+    @Order(1)
+    public Map<Integer, CacheMetricsMessage> cachesMetricsMsgs;
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
     public NodeFullMetricsMessage() {

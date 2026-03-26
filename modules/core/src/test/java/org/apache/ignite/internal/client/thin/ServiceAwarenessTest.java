@@ -49,7 +49,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
@@ -102,7 +101,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TestBlockingDiscoverySpi());
+        TestBlockingDiscoverySpi discoSpi = new TestBlockingDiscoverySpi();
+
+        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+
+        cfg.setDiscoverySpi(discoSpi);
         cfg.setUserAttributes(Collections.singletonMap(ATTR_NODE_IDX, getTestIgniteInstanceIndex(igniteInstanceName)));
 
         return cfg;
@@ -646,13 +649,12 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         private final Set<Class<? extends DiscoveryCustomMessage>> toBlock = new HashSet<>();
 
         /** */
-        private final List<CustomMessageWrapper> blocked = new CopyOnWriteArrayList<>();
+        private final List<DiscoveryCustomMessage> blocked = new CopyOnWriteArrayList<>();
 
         /** {@inheritDoc} */
         @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            if (msg instanceof CustomMessageWrapper
-                && toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(((CustomMessageWrapper)msg).delegate().getClass()))) {
-                blocked.add((CustomMessageWrapper)msg);
+            if (toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(U.unwrapCustomMessage(msg).getClass()))) {
+                blocked.add((DiscoveryCustomMessage)msg);
 
                 return;
             }
