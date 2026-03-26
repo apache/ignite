@@ -539,7 +539,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         if (formatter == null) {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(MessageFactory msgFactory) {
-                    return new DirectMessageWriter(msgFactory);
+                    return new DirectMessageWriter(msgFactory, null, null);
                 }
 
                 @Override public MessageReader reader(MessageFactory msgFactory) {

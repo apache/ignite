@@ -115,7 +115,7 @@ public class DiscoveryMessageParser {
 
     /** */
     private void serializeMessage(Message m, OutputStream out) throws IOException {
-        DirectMessageWriter msgWriter = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter msgWriter = new DirectMessageWriter(msgFactory, null, null);
         ByteBuffer msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgWriter.setBuffer(msgBuf);

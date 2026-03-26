@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -59,6 +61,12 @@ public class DirectMessageWriter implements MessageWriter {
     /** Message factory. */
     private final MessageFactory msgFactory;
 
+    /** Cache object processor. */
+    private final IgniteCacheObjectProcessor cacheObjProc;
+
+    /** */
+    private final GridKernalContext ctx;
+
     /** Compression level. Used only for {@link CompressedMessage}. */
     private final int compressionLvl;
 
@@ -66,21 +74,28 @@ public class DirectMessageWriter implements MessageWriter {
     private ByteBuffer buf;
 
     /** @param msgFactory Message factory. */
-    public DirectMessageWriter(final MessageFactory msgFactory) {
-        this(msgFactory, DFLT_NETWORK_COMPRESSION);
+    public DirectMessageWriter(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
+        this(msgFactory, cacheObjProc, ctx, DFLT_NETWORK_COMPRESSION);
     }
 
     /**
      * @param msgFactory Message factory.
      * @param compressionLvl Compression level.
      */
-    public DirectMessageWriter(final MessageFactory msgFactory, final int compressionLvl) {
+    public DirectMessageWriter(
+        final MessageFactory msgFactory, 
+        IgniteCacheObjectProcessor cacheObjProc, 
+        GridKernalContext ctx, 
+        final int compressionLvl) {
         this.msgFactory = msgFactory;
         this.compressionLvl = compressionLvl;
 
+        this.cacheObjProc = cacheObjProc;
+        this.ctx = ctx;
+
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory);
+                return new StateItem(msgFactory, cacheObjProc, ctx);
             }
         });
     }
@@ -456,7 +471,7 @@ public class DirectMessageWriter implements MessageWriter {
         if (!stream.serializeFinished()) {
             ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory, cacheObjProc, ctx, compressionLvl);
 
             tmpWriter.setBuffer(tmpBuf);
 
@@ -509,8 +524,8 @@ public class DirectMessageWriter implements MessageWriter {
         private boolean hdrWritten;
 
         /** */
-        public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStream(msgFactory);
+        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc, ctx);
         }
 
         /** {@inheritDoc} */

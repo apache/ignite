@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.BitSet;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -244,22 +242,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (owned != null)
-            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet())
-                entry.getKey().finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

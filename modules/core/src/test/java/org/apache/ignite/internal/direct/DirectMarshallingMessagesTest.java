@@ -90,7 +90,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private <T extends Message> T doMarshalUnmarshalChunked(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(256);
 
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory, null, null);
 
         boolean fullyWritten = false;
 

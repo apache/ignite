@@ -359,20 +359,6 @@ public class DirectByteBufferStream {
     final CacheObjectContext fakeCacheObjCtx;
 
     /**
-     * Constructror for stream used for writing messages.
-     *
-     * @param msgFactory Message factory.
-     */
-    public DirectByteBufferStream(MessageFactory msgFactory) {
-        this.msgFactory = msgFactory;
-
-        // Is not used while writing messages.
-        cacheObjProc = null;
-        fakeCacheObjCtx = null;
-        ctx = null;
-    }
-
-    /**
      * Constructror for stream used for reading messages.
      *
      * @param msgFactory Message factory.
@@ -865,7 +851,7 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 1:
-                        writeByteArray(obj.valueBytes(null));
+                        writeByteArray(obj.valueBytes(fakeCacheObjCtx));
 
                         if (!lastFinished)
                             return;
@@ -897,7 +883,7 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 1:
-                        writeByteArray(keyObj.valueBytes(null));
+                        writeByteArray(keyObj.valueBytes(fakeCacheObjCtx));
 
                         if (!lastFinished)
                             return;
@@ -1549,7 +1535,7 @@ public class DirectByteBufferStream {
                 cacheObjState = 0;
         }
 
-        return cacheObjProc.toCacheObject(null, cacheObjType, cacheObjArr);
+        return cacheObjProc.toCacheObject(fakeCacheObjCtx, cacheObjType, cacheObjArr);
     }
 
     /**

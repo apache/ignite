@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.LinkedHashMap;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -254,33 +250,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-        
-        assert !F.isEmpty(keys);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys.keySet(), cctx);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys.keySet(), cctx, ldr);
     }
 
     /** {@inheritDoc} */
