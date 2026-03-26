@@ -73,6 +73,12 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testCompositePk() {
+        checkCompositePk(false, true, null);
+    }
+
+    /** */
+    @Test
     public void testCompositePkAfterAddColumn() {
         checkCompositePk(false, true, this::executeAlterTableAddColumn);
     }

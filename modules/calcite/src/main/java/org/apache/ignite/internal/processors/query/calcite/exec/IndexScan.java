@@ -511,7 +511,8 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         if (key instanceof BinaryObject)
             return toRowForPk((BinaryObject)key);
 
-        return toRowForPk(key);
+        // TODO: IGNITE-28374 Use org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.toRowForPk(java.lang.Object)
+        return row;
     }
 
     /** */
@@ -535,7 +536,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     }
 
     /** */
-    // TODO: IGNITE-28374 Fix it
+    // TODO: IGNITE-28374 Implement it and use
     private Row toRowForPk(Object o) {
         assert o.getClass().getName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
             "idx=%s, o=%s, oType=%s, idxKeyType=%s",
