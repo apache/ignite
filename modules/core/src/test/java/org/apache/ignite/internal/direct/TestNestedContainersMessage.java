@@ -15,47 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.internal.direct;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/** Partition reload map for cache. */
-public class CachePartitionsToReloadMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 512;
+/** */
+class TestNestedContainersMessage implements Message {
+    /** */
+    public static final short TYPE = Short.MAX_VALUE;
 
-    /** Partition reload map for cache. */
+    /** */
     @Order(0)
-    Map<Integer, PartitionsToReload> map;
+    Map<Integer, Map<Integer, Long>> nestedMap;
 
-    /**
-     * @param cacheId Cache id.
-     * @return Partitions to reload for this cache.
-     */
-    public @Nullable PartitionsToReload get(int cacheId) {
-        if (map == null)
-            return null;
+    /** */
+    @Order(1)
+    Map<Integer, List<Integer>> nestedCollection;
 
-        return map.get(cacheId);
-    }
+    /** */
+    @Order(2)
+    Map<Integer, String[]> nestedArr;
 
-    /**
-     * @param cacheId Cache id.
-     * @param parts Partitions to reload.
-     */
-    public void put(int cacheId, PartitionsToReload parts) {
-        if (map == null)
-            map = new HashMap<>();
-
-        map.put(cacheId, parts);
+    /** Default constructor for {@link MessageFactory}. */
+    public TestNestedContainersMessage() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TYPE_CODE;
+        return TYPE;
     }
 }

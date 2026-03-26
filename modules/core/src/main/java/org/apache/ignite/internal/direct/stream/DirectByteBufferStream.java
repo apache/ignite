@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
@@ -921,16 +923,8 @@ public class DirectByteBufferStream {
      */
     public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
-            if (buf.hasRemaining()) {
-                try {
-                    writer.beforeInnerMessageWrite();
-
-                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
-                }
-                finally {
-                    writer.afterInnerMessageWrite(lastFinished);
-                }
-            }
+            if (buf.hasRemaining())
+                nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
             else
                 lastFinished = false;
         }
@@ -1574,12 +1568,12 @@ public class DirectByteBufferStream {
 
         if (msg != null) {
             try {
-                reader.beforeInnerMessageRead();
+                reader.beforeNestedRead();
 
                 lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
             }
             finally {
-                reader.afterInnerMessageRead(lastFinished);
+                reader.afterNestedRead(lastFinished);
             }
         }
         else
@@ -2117,36 +2111,39 @@ public class DirectByteBufferStream {
                 break;
 
             case MAP:
-                writeMap((Map<K, V>)val, (MessageMapType)type, writer);
+                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type));
 
                 break;
 
             case COLLECTION:
-                writeCollection((Collection<V>)val, (MessageCollectionType)type, writer);
+                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type));
 
                 break;
 
             case ARRAY:
-                writeObjectArray((V[])val, (MessageArrayType)type, writer);
+                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type));
 
                 break;
 
             case MSG:
-                try {
-                    if (val != null)
-                        writer.beforeInnerMessageWrite();
-
-                    writeMessage((Message)val, writer);
-                }
-                finally {
-                    if (val != null)
-                        writer.afterInnerMessageWrite(lastFinished);
-                }
+                writeMessage((Message)val, writer);
 
                 break;
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    /** Performs a nested write with proper writer state enter/exit handling. */
+    private void nestedWrite(MessageWriter writer, BooleanSupplier s) {
+        try {
+            writer.beforeNestedWrite();
+
+            lastFinished = s.getAsBoolean();
+        }
+        finally {
+            writer.afterNestedWrite(lastFinished);
         }
     }
 
@@ -2230,19 +2227,35 @@ public class DirectByteBufferStream {
                 return readGridLongList();
 
             case MAP:
-                return readMap((MessageMapType)type, reader);
+                return nestedRead(reader, () -> reader.readMap((MessageMapType)type));
 
             case COLLECTION:
-                return readCollection((MessageCollectionType)type, reader);
+                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type));
 
             case ARRAY:
-                return readObjectArray((MessageArrayType)type, reader);
+                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type));
 
             case MSG:
                 return readMessage(reader);
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    /** Performs a nested read with proper reader state management. */
+    private <R> R nestedRead(MessageReader reader, Supplier<R> s) {
+        try {
+            reader.beforeNestedRead();
+
+            R r = s.get();
+
+            lastFinished = reader.isLastRead();
+
+            return r;
+        }
+        finally {
+            reader.afterNestedRead(lastFinished);
         }
     }
 

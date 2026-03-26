@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -61,7 +61,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
     /** Entries. */
     @Order(4)
-    Map<Integer, CacheEntryInfoCollection> infos;
+    Map<Integer, List<GridCacheEntryInfo>> infos;
 
     /** Message size. */
     @Order(5)
@@ -156,7 +156,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
             // If partition is empty, we need to add it.
             if (!getInfosSafe().containsKey(p))
-                getInfosSafe().put(p, new CacheEntryInfoCollection());
+                getInfosSafe().put(p, new ArrayList<>());
         }
     }
 
@@ -181,7 +181,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     /**
      * @return Entries.
      */
-    public Map<Integer, CacheEntryInfoCollection> getInfosSafe() {
+    public Map<Integer, List<GridCacheEntryInfo>> getInfosSafe() {
         if (infos == null)
             infos = new HashMap<>();
 
@@ -219,12 +219,12 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
         msgSize += info.marshalledSize(cacheObjCtx);
 
-        CacheEntryInfoCollection infoCol = getInfosSafe().get(p);
+        List<GridCacheEntryInfo> infoCol = getInfosSafe().get(p);
 
         if (infoCol == null) {
             msgSize += 4;
 
-            getInfosSafe().put(p, infoCol = new CacheEntryInfoCollection());
+            getInfosSafe().put(p, infoCol = new ArrayList<>());
         }
 
         infoCol.add(info);
@@ -239,9 +239,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         if (grp == null)
             return;
 
-        for (CacheEntryInfoCollection col : getInfosSafe().values()) {
-            List<GridCacheEntryInfo> entries = col.infos();
-
+        for (List<GridCacheEntryInfo> entries : getInfosSafe().values()) {
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(grp.cacheObjectContext(), ldr);
         }

@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
  *
@@ -41,7 +41,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     byte[] msgBytes;
 
     /** Unmarshalled message. */
-    transient DiscoveryCustomMessage resolvedMsg;
+    transient DiscoverySpiCustomMessage resolvedMsg;
 
     /**
      * @param evtId Event ID.
@@ -56,7 +56,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         long origEvtId,
         long topVer,
         UUID sndNodeId,
-        DiscoveryCustomMessage msg,
+        DiscoverySpiCustomMessage msg,
         String evtPath
     ) {
         super(evtId, ZK_EVT_CUSTOM_EVT, topVer);

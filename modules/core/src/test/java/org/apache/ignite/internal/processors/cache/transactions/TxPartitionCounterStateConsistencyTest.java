@@ -57,8 +57,8 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -1532,7 +1532,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 if (msg0.groupId() != CU.cacheId(DEFAULT_CACHE_NAME))
                     return false;
 
-                Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
+                Map<Integer, List<GridCacheEntryInfo>> infos = U.field(msg0, "infos");
 
                 return infos.keySet().contains(primaryParts[0]);
             }

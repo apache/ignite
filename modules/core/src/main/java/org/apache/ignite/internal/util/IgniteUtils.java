@@ -230,6 +230,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -8296,8 +8297,8 @@ public abstract class IgniteUtils extends CommonUtils {
      *
      * @param msg Message.
      */
-    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoveryCustomMessage msg) {
+    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
         return msg instanceof SecurityAwareCustomMessageWrapper ?
-            ((SecurityAwareCustomMessageWrapper)msg).delegate() : msg;
+            ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
     }
 }
