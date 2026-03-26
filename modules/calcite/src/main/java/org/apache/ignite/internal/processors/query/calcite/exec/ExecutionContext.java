@@ -146,7 +146,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private Object[] correlations = new Object[16];
 
     /** Modified entries holder. */
-    @Nullable private final TxAwareModifiedEntriesHolder mofiedEntriesHolder;
+    @Nullable private final TxAwareModifiedEntriesHolder modifiedEntriesHolder;
 
     /**
      * @param qctx Parent base query context.
@@ -188,7 +188,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.params = params;
         this.timeout = timeout;
         this.qryTxEntries = qryTxEntries;
-        this.mofiedEntriesHolder = mofiedEntriesHolder;
+        this.modifiedEntriesHolder = mofiedEntriesHolder;
 
         startTs = U.currentTimeMillis();
 
@@ -427,8 +427,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
-                if (mofiedEntriesHolder != null)
-                    mofiedEntriesHolder.store(qryTxEntries);
+                if (modifiedEntriesHolder != null)
+                    modifiedEntriesHolder.store(qryTxEntries);
 
                 if (!isCancelled())
                     task.run();
@@ -437,8 +437,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
                 onError.accept(e);
             }
             finally {
-                if (mofiedEntriesHolder != null)
-                    mofiedEntriesHolder.detach();
+                if (modifiedEntriesHolder != null)
+                    modifiedEntriesHolder.detach();
             }
         });
     }

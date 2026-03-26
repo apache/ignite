@@ -213,7 +213,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      *
      * @see TransactionConfiguration#isTxAwareQueriesEnabled()
      */
-    private TxAwareModifiedEntriesHolder mofiedEntriesHolder;
+    private TxAwareModifiedEntriesHolder modifiedEntriesHolder;
 
     /**
      * @param ctx Kernal.
@@ -487,7 +487,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         iteratorsHolder().init();
-        mofiedEntriesHolder = new TxAwareModifiedEntriesHolder(U.isTxAwareQueriesEnabled(ctx));
+        modifiedEntriesHolder = new TxAwareModifiedEntriesHolder(U.isTxAwareQueriesEnabled(ctx));
     }
 
     /** {@inheritDoc} */
@@ -495,7 +495,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         eventManager().removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         iteratorsHolder().tearDown();
-        mofiedEntriesHolder = null;
+        modifiedEntriesHolder = null;
     }
 
     /** */
@@ -528,7 +528,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ListFieldsQueryCursor<?> cur = mapAndExecutePlan(
                     qry,
                     (MultiStepPlan)plan,
-                    mofiedEntriesHolder
+                    modifiedEntriesHolder
                 );
 
                 cur.iterator().hasNext();
@@ -539,7 +539,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return mapAndExecutePlan(
                     qry,
                     (MultiStepPlan)plan,
-                    mofiedEntriesHolder
+                    modifiedEntriesHolder
                 );
 
             case EXPLAIN:
@@ -641,7 +641,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
         final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
-        final Collection<QueryTxEntry> writeEntrs = userTx == null ?
+        final @Nullable Collection<QueryTxEntry> writeEntries = userTx == null ?
             mofiedEntriesHolder.retrieve() : ExecutionContext.transactionChanges(userTx.writeEntries());
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
@@ -658,7 +658,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
             qryParams,
-            writeEntrs,
+            writeEntries,
             mofiedEntriesHolder);
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),

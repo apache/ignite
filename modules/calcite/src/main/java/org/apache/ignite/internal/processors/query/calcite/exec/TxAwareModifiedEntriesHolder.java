@@ -40,8 +40,8 @@ public class TxAwareModifiedEntriesHolder {
             holder.set(items);
     }
 
-    /** Retirieve entries if applicable. */
-    public Collection<QueryTxEntry> retrieve() {
+    /** Retrieve entries if applicable. */
+    @Nullable public Collection<QueryTxEntry> retrieve() {
         if (holder != null)
             return holder.get();
         else
