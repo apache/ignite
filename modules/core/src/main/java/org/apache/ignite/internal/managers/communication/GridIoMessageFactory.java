@@ -481,7 +481,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register(GridCacheReturn::new, new GridCacheReturnSerializer());
         factory.register(GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer());
-        factory.register(CacheEntryInfoCollection::new, new CacheEntryInfoCollectionSerializer());
         factory.register(CacheInvokeDirectResult::new, new CacheInvokeDirectResultSerializer());
         factory.register(IgniteTxKey::new, new IgniteTxKeySerializer());
         factory.register(DataStreamerEntry::new, new DataStreamerEntrySerializer());
@@ -500,7 +499,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
         factory.register(IndexKeyDefinition::new, new IndexKeyDefinitionSerializer());
         factory.register(GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
-        factory.register(UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer());
         factory.register(GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
         factory.register(GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer());
         factory.register(CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
@@ -567,14 +565,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(PartitionReservationsMap::new, new PartitionReservationsMapSerializer());
         factory.register(IgniteDhtPartitionHistorySuppliersMap::new,
             new IgniteDhtPartitionHistorySuppliersMapSerializer());
-        factory.register(PartitionsToReload::new, new PartitionsToReloadSerializer());
-        factory.register(CachePartitionsToReloadMap::new,
-            new CachePartitionsToReloadMapSerializer());
         factory.register(IgniteDhtPartitionsToReloadMap::new,
             new IgniteDhtPartitionsToReloadMapSerializer());
         factory.register(IntLongMap::new, new IntLongMapSerializer());
-        factory.register(IndexKeyTypeMessage::new,
-            new IndexKeyTypeMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
         factory.register(GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
         factory.register(GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer());

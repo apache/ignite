@@ -52,15 +52,15 @@ public interface MessageFactory {
     public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException;
 
     /**
-     * Register message factory using the direct type obtained from the serializer via {@link MessageSerializer#directType()}.
+     * Register message factory using the direct type obtained from the message via {@link Message#directType()}.
      * This is a convenience method equivalent to {@link #register(short, Supplier, MessageSerializer)} where the direct
-     * type is derived from the serializer itself.
+     * type is derived from the message instance itself.
      *
      * <p>All messages must be registered during construction of class which implements this interface. Any invocation
      * of this method after initialization is done must throw {@link IllegalStateException} exception.
      *
      * @param supplier Message factory.
-     * @param serializer Message serializer that also provides the direct type for registration.
+     * @param serializer Message serializer.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is already constructed.
