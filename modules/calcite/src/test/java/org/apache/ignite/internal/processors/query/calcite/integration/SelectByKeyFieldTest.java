@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,6 +26,9 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -82,7 +86,28 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCompositePk() {
-        sql("create table PUBLIC.PERSON(id int, name varchar, age int, primary key(id, name))");
+        checkCompositePk(false, true);
+    }
+
+    /** */
+    @Test
+    public void testCompositePkWithKeyTypeAndBinaryObject() {
+        checkCompositePk(true, true);
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
+    public void testCompositePkWithKeyTypeAndPersonCompositeKey() {
+        checkCompositePk(true, false);
+    }
+
+    /** */
+    private void checkCompositePk(boolean setKeyTypeToCreateTblDdl, boolean useBinaryObject) {
+        sql(String.format(
+            "create table PUBLIC.PERSON(id int, name varchar, age int, primary key(id, name))%s",
+            setKeyTypeToCreateTblDdl ? String.format(" with \"key_type=%s\"", PersonCompositeKey.class.getName()) : ""
+        ));
 
         for (int i = 0; i < 10; i++)
             sql("insert into PUBLIC.PERSON(id, name, age) values (?, ?, ?)", i, "foo" + i, 18 + i);
@@ -96,7 +121,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         assertEquals("foo6", name);
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
-            .withParams(_key)
+            .withParams(useBinaryObject ? _key : _key.deserialize())
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
@@ -109,5 +134,39 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
             .check();
+    }
+
+    /** */
+    public static class PersonCompositeKey {
+        /** */
+        @GridToStringInclude
+        public int id;
+
+        /** */
+        @GridToStringInclude
+        public String name;
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof PersonCompositeKey))
+                return false;
+
+            PersonCompositeKey that = (PersonCompositeKey)obj;
+
+            return id == that.id && name.equals(that.name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PersonCompositeKey.class, this);
+        }
     }
 }

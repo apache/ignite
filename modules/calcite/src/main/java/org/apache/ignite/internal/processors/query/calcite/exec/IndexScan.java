@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -27,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -526,24 +524,24 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         RowHandler<Row> rowHnd = ectx.rowHandler();
         Row row = factory.create();
 
-        for (Map.Entry<String, IndexKeyDefinition> keyDef : idx.indexDefinition().indexKeyDefinitions().entrySet()) {
-            ColumnDescriptor fieldDesc = desc.columnDescriptor(keyDef.getKey());
-            assert fieldDesc != null : String.format("idx=%s, o=%s, keyName=%s", idx.name(), o, keyDef.getKey());
+        for (String keyName : idx.indexDefinition().indexKeyDefinitions().keySet()) {
+            ColumnDescriptor fieldDesc = desc.columnDescriptor(keyName);
+            assert fieldDesc != null : String.format("idx=%s, o=%s, keyName=%s", idx.name(), o, keyName);
 
-            rowHnd.set(fieldDesc.fieldIndex(), row, o.field(keyDef.getKey()));
+            rowHnd.set(fieldDesc.fieldIndex(), row, o.field(keyName));
         }
 
         return row;
     }
 
     /** */
+    // TODO: IGNITE-28374 Fix it
     private Row toRowForPk(Object o) {
         assert o.getClass().getName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
             "idx=%s, o=%s, oType=%s, idxKeyType=%s",
             idx.name(), o, o.getClass().getName(), idx.indexDefinition().typeDescriptor().keyTypeName()
         );
 
-        // TODO: IGNITE-28331 Реализовать и протестировать
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("https://issues.apache.org/jira/browse/IGNITE-28374");
     }
 }
