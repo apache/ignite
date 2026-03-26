@@ -73,10 +73,6 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
         return null;
     }
 
-    @Override public boolean isMutable() {
-        return super.isMutable();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StartRoutineDiscoveryMessage.class, this, "routineId", routineId());
