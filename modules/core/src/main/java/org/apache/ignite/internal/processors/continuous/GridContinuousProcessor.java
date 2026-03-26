@@ -716,8 +716,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             reqData.deploymentInfo(dep);
         }
 
-
-        return  new StartRoutineDiscoveryMessage(
+        return new StartRoutineDiscoveryMessage(
             routineId,
             reqData,
             hnd.keepBinary());
