@@ -97,6 +97,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -918,11 +919,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         private volatile IgnitePredicate<DiscoveryCustomMessage> blockPred;
 
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
             DiscoveryCustomMessage msg0 = U.unwrapCustomMessage(msg);
 
             if (blockPred != null && blockPred.apply(msg0)) {
-                blocked.add(msg);
+                blocked.add((DiscoveryCustomMessage)msg);
 
                 if (log.isInfoEnabled())
                     log.info("Discovery message has been blocked: " + msg0);

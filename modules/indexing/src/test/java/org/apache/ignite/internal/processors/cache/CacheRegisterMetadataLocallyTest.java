@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -69,7 +70,7 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
                 DiscoveryCustomMessage realMsg = U.unwrapCustomMessage(msg);
 
                 if (realMsg instanceof MetadataUpdateProposedMessage || realMsg instanceof MetadataUpdateAcceptedMessage)
