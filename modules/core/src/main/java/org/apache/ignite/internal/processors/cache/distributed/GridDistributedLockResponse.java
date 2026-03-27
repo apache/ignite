@@ -119,52 +119,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         vals = new ArrayList<>(cnt);
     }
 
-    /**
-     *
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @return Values.
-     */
-    public List<CacheObject> values() {
-        return vals;
-    }
-
-    /**
-     * @param vals New values.
-     */
-    public void values(List<CacheObject> vals) {
-        this.vals = vals;
     }
 
     /**

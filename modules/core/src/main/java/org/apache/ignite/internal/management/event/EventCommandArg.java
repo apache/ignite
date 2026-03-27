@@ -15,32 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.management.event;
 
-import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 
 /** */
-public class SnapshotCheckHandlersNodeResponse implements Message {
-    /** Check result per handler name. */
+public class EventCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Order(0)
-    Map<String, SnapshotHandlerResult<Message>> hndRes;
+    @Positional
+    @Argument(
+        description = "Comma separated list of events",
+        example = "event1[,...,eventN]")
+    String[] events;
 
-    /** Default constructor for {@link MessageFactory}. */
-    public SnapshotCheckHandlersNodeResponse() {
-        // No-op.
+    /** */
+    public String[] events() {
+        return events;
     }
 
     /** */
-    public SnapshotCheckHandlersNodeResponse(Map<String, SnapshotHandlerResult<Message>> hndRes) {
-        this.hndRes = hndRes;
+    public void events(String[] events) {
+        this.events = events;
     }
-
-    /** */
-    public Map<String, SnapshotHandlerResult<Message>> handlerResults() {
-        return hndRes;
-    }
-
 }

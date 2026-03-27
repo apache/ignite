@@ -77,32 +77,9 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Future version.
-     */
+    /** @return Future version. */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId New future version.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Errors.
-     */
-    public UpdateErrors errors() {
-        return errs;
-    }
-
-    /**
-     * @param errs Errors.
-     */
-    public void errors(UpdateErrors errs) {
-        this.errs = errs;
     }
 
     /**
@@ -139,13 +116,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
-    }
-
-    /**
-     * @param partId Partition.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
     }
 
     /** {@inheritDoc} */

@@ -107,20 +107,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     }
 
     /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -148,46 +134,14 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         flags |= CONTAINS_VAL_FLAG_MASK;
     }
 
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
-     * @return Result.
-     */
+    /** @return Result. */
     public Message result() {
         return res;
     }
 
-    /**
-     * @param res Result.
-     */
-    public void result(Message res) {
-        this.res = res;
-    }
-
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /** {@inheritDoc} */

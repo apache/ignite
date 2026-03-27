@@ -59,8 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStre
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResultMarshallableSerializer;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
@@ -328,7 +326,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(527, SnapshotCheckPartitionHashesResponse::new,
             new SnapshotCheckPartitionHashesResponseMarshallableSerializer(marsh, clsLdr));
         factory.register(528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
-        factory.register(529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
         factory.register(530, SnapshotPartitionsVerifyHandlerResponse::new,
             new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr));
         factory.register(531, CacheStatisticsClearMessage::new, new CacheStatisticsClearMessageSerializer());

@@ -197,8 +197,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IntLongMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IntLongMapSerializer;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionReservationsMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionReservationsMapSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessageSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
@@ -229,8 +227,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Incremen
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResultMarshallableSerializer;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersNodeResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponseSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
@@ -268,8 +264,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKeySeria
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolderSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLock;
-import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
-import org.apache.ignite.internal.processors.cache.transactions.TxLockListSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLockSerializer;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequestSerializer;
@@ -562,7 +556,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(507, IgniteDhtPartitionCountersMap::new,
             new IgniteDhtPartitionCountersMapSerializer());
         factory.register(508, GroupPartitionIdPair::new, new GroupPartitionIdPairSerializer());
-        factory.register(509, PartitionReservationsMap::new, new PartitionReservationsMapSerializer());
         factory.register(510, IgniteDhtPartitionHistorySuppliersMap::new,
             new IgniteDhtPartitionHistorySuppliersMapSerializer());
         factory.register(513, IgniteDhtPartitionsToReloadMap::new,
@@ -584,7 +577,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(527, SnapshotCheckPartitionHashesResponse::new,
             new SnapshotCheckPartitionHashesResponseMarshallableSerializer(marsh, clsLdr));
         factory.register(528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
-        factory.register(529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
         factory.register(530, SnapshotPartitionsVerifyHandlerResponse::new,
             new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr));
 

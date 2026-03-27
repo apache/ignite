@@ -15,55 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.spi.communication;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * List of transaction locks for particular key.
+ * Test message class.
  */
-public class TxLockList implements Message {
-    /** Tx locks. */
-    @GridToStringInclude
+public class TestBadMessage extends GridCacheMessage {
+    /** */
+    public static final short DIRECT_TYPE = 204;
+
+    /** Node id. */
     @Order(0)
-    List<TxLock> txLocks = new ArrayList<>();
+    UUID nodeId;
 
-    /**
-     * Default constructor.
-     */
-    public TxLockList() {
-        // No-op.
+    /** Integer field. */
+    @Order(1)
+    int id;
+
+    /** Body. */
+    @Order(2)
+    String body;
+
+    /** */
+    @Order(3)
+    Message msg;
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
-    /**
-     * @return Lock list.
-     */
-    public List<TxLock> transactionLocks() {
-        return txLocks;
-    }
-
-    /**
-     * @param txLock Tx lock.
-     */
-    public void add(TxLock txLock) {
-        txLocks.add(txLock);
-    }
-
-    /**
-     * @return {@code True} if lock list is empty.
-     */
-    public boolean isEmpty() {
-        return txLocks.isEmpty();
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxLockList.class, this);
+        throw new RuntimeException("Exception while log message");
     }
-
 }

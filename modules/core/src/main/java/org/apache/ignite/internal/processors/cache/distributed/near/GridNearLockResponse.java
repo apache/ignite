@@ -114,32 +114,14 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         this.compatibleRemapVer = compatibleRemapVer;
     }
 
-    /**
-     * @return Topology version, which is set when client node should remap lock request.
-     */
+    /** @return Topology version, which is set when client node should remap lock request. */
     @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
     }
 
-    /**
-     * @param clientRemapVer New topology version, which is set when client node should remap lock request.
-     */
-    public void clientRemapVersion(AffinityTopologyVersion clientRemapVer) {
-        this.clientRemapVer = clientRemapVer;
-    }
-
-    /**
-     * @return Flag, indicating whether remap version is compatible with current version.
-     */
+    /** @return Flag, indicating whether remap version is compatible with current version. */
     public boolean compatibleRemapVersion() {
         return compatibleRemapVer;
-    }
-
-    /**
-     * @param compatibleRemapVer New flag, indicating whether remap version is compatible with current version.
-     */
-    public void compatibleRemapVersion(boolean compatibleRemapVer) {
-        this.compatibleRemapVer = compatibleRemapVer;
     }
 
     /**
@@ -156,18 +138,9 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         this.pending = pending;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -176,20 +149,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      */
     public GridCacheVersion dhtVersion(int idx) {
         return dhtVers == null ? null : dhtVers[idx];
-    }
-
-    /**
-     * @return DHT versions.
-     */
-    public GridCacheVersion[] dhtVersions() {
-        return dhtVers;
-    }
-
-    /**
-     * @param dhtVers New DHT versions.
-     */
-    public void dhtVersions(GridCacheVersion[] dhtVers) {
-        this.dhtVers = dhtVers;
     }
 
     /**
@@ -203,20 +162,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     }
 
     /**
-     * @return DHT candidate versions.
-     */
-    public GridCacheVersion[] mappedVersions() {
-        return mappedVers;
-    }
-
-    /**
-     * @param mappedVers New DHT candidate versions.
-     */
-    public void mappedVersions(GridCacheVersion[] mappedVers) {
-        this.mappedVers = mappedVers;
-    }
-
-    /**
      * Gets filter evaluation result for fast-commit transaction.
      *
      * @param idx Result index.
@@ -226,20 +171,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         assert filterRes != null : "Should not call filterResult for non-fast-commit transactions.";
 
         return filterRes[idx];
-    }
-
-    /**
-     * @return Filter evaluation results for fast-commit transactions.
-     */
-    public boolean[] filterResults() {
-        return filterRes;
-    }
-
-    /**
-     * @param filterRes New filter evaluation results for fast-commit transactions.
-     */
-    public void filterResults(boolean[] filterRes) {
-        this.filterRes = filterRes;
     }
 
     /**
