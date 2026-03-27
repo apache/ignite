@@ -179,7 +179,7 @@ include::{javaFile}[tags=multiple-endpoints, indent=0]
 
 === Keep Binary [[keep-binary]]
 
-Keep binary parameter is required for operations with custom objects involved.
+The keepBinary parameter is required for operations involving fields that contain complex objects. In case this flag is set to true such fields are not deserialized upon return to the user, instead being retained in inner binary object format.
 
 [source, java]
 ----
@@ -189,7 +189,7 @@ class TestObject implements Serializable {
     int id;
 
     @QuerySqlField
-    TestObjectField objVal;
+    TestInnerObject objVal;
 
     TestObject(int id) {
         this.id = id;
@@ -197,38 +197,19 @@ class TestObject implements Serializable {
 }
 
 // And appropriate inner class:
-class TestObjectField implements Serializable {
+class TestInnerObject implements Serializable {
     int intFld;
 
     String strFld;
 
-    TestObjectField(int intFld, String strFld) {
+    TestInnerObject(int intFld, String strFld) {
         this.intFld = intFld;
         this.strFld = strFld;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        TestObjectField that = (TestObjectField)o;
-        return intFld == that.intFld && !(strFld != null ? !strFld.equals(that.strFld) : that.strFld != null);
-    }
-
-    @Override
-    public int hashCode() {
-        int res = intFld;
-        res = 31 * res + (strFld != null ? strFld.hashCode() : 0);
-        return res;
     }
 }
 
 TestObject testObj = new TestObject(1);
-testObj.objVal = new TestObjectField(100, "Some");
+testObj.objVal = new TestInnerObject(100, "Some");
 
 // Now let`s put it through key value api:
 IgniteCache<Integer, TestObject> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -239,7 +220,7 @@ Connection conn = DriverManager.getConnection("jdbc:ignite:thin://192.168.0.50?k
 
 PreparedStatement stmt = conn.prepareStatement("SELECT id, objVal FROM TestObject WHERE objVal IS NOT DISTINCT FROM ?");
 
-stmt.setObject(1, new TestObjectField(100, "Some"));
+stmt.setObject(1, new TestInnerObject(100, "Some"));
 
 ResultSet rs = stmt.executeQuery();
 
