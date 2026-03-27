@@ -1425,7 +1425,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkDumpReaderDebugLogsGroupName(@Nullable String cacheGroupName, String expectedLogGroup,
+    private void checkDumpReaderDebugLogsGroupName(
+        @Nullable String cacheGroupName,
+        String expectedLogGroup,
         @Nullable String[] grpNames
     ) throws Exception {
         String id = "test";
