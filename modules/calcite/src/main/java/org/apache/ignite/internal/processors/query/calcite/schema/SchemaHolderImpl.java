@@ -256,7 +256,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
                 newTbl.addIndex(new CacheIndexImpl(
                     keyFieldCollation, idx0.name(), idx0.queryIndex(), newTbl, newCollation, true
                 ));
-            } else {
+            }
+            else {
                 RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
 
                 newTbl.addIndex(new CacheIndexImpl(newCollation, idx0.name(), idx0.queryIndex(), newTbl));
