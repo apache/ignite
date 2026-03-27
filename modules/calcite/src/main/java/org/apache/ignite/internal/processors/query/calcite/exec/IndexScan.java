@@ -84,6 +84,9 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     /** */
     private final boolean unwrapKeyFieldForPkIndex;
 
+    /** */
+    private final int rowSizeForUnwrapBinaryObject;
+
     /**
      * @param ectx Execution context.
      * @param desc Table descriptor.
@@ -134,6 +137,8 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         }
         else
             txChanges = TransactionChanges.empty();
+
+        rowSizeForUnwrapBinaryObject = getRowSizeForUnwrapBinaryObject();
     }
 
     /**
@@ -502,6 +507,16 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     }
 
     /** */
+    private int getRowSizeForUnwrapBinaryObject() {
+        int max = -1;
+
+        for (int i = 0; i < idxFieldMapping.size(); i++)
+            max = Math.max(max, idxFieldMapping.getInt(i));
+
+        return max + 1;
+    }
+
+    /** */
     private Row unwrapKeyFieldForPkIndex(Row row) {
         RowHandler<Row> rowHnd = ectx.rowHandler();
 
@@ -523,7 +538,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         );
 
         RowHandler<Row> rowHnd = ectx.rowHandler();
-        Row row = factory.create(idxFieldMapping.getInt(idxFieldMapping.size() - 1) + 1);
+        Row row = factory.create(rowSizeForUnwrapBinaryObject);
 
         for (String keyName : idx.indexDefinition().indexKeyDefinitions().keySet()) {
             ColumnDescriptor fieldDesc = desc.columnDescriptor(keyName);

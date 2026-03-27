@@ -151,10 +151,16 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     private void checkCompositePk(
         boolean setKeyTypeToCreateTblDdl, boolean useBinaryObject, @Nullable Runnable executeBeforeChecks
     ) {
-        sql(String.format(
-            "create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))%s",
-            setKeyTypeToCreateTblDdl ? String.format(" with \"key_type=%s\"", PersonCompositeKey.class.getName()) : ""
-        ));
+        if (setKeyTypeToCreateTblDdl) {
+            // Order of the primary key columns has been deliberately changed.
+            sql(String.format(
+                "create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(name, id)) " +
+                    "with \"key_type=%s\"",
+                PersonCompositeKey.class.getName()
+            ));
+        }
+        else
+            sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
 
         for (int i = 0; i < 10; i++) {
             sql(
