@@ -369,15 +369,7 @@ public class DumpReader implements Runnable {
         Map<Integer, String> grpIdToName = new HashMap<>();
 
         Set<Integer> grpIds = cfg.groupNames() != null
-            ? Arrays.stream(cfg.groupNames())
-                .map(grpName -> {
-                    int grpId = CU.cacheId(grpName);
-
-                    grpIdToName.put(grpId, grpName);
-
-                    return grpId;
-                })
-                .collect(Collectors.toSet())
+            ? Arrays.stream(cfg.groupNames()).map(CU::cacheId).collect(Collectors.toSet())
             : null;
 
         Set<Integer> cacheIds = cfg.cacheNames() != null
@@ -403,7 +395,7 @@ public class DumpReader implements Runnable {
 
                 grpsToNodes.get(grp).add(meta.folderName());
 
-                grpIdToName.put(grp, grpCaches.get(0).configuration().getGroupName());
+                grpIdToName.put(grp, CU.cacheOrGroupName(grpCaches.get(0).configuration()));
             }
         }
 

@@ -1300,13 +1300,19 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDumpReaderDebugLogsGroupName() throws Exception {
-        checkDumpReaderDebugLogsGroupName(new String[]{GRP});
+        checkDumpReaderDebugLogsGroupName(GRP, GRP, new String[]{GRP});
     }
 
     /** */
     @Test
     public void testDumpReaderDebugLogsNullableGroupName() throws Exception {
-        checkDumpReaderDebugLogsGroupName(null);
+        checkDumpReaderDebugLogsGroupName(GRP, GRP, null);
+    }
+
+    /** */
+    @Test
+    public void testDumpReaderDebugLogsNoGroupName() throws Exception {
+        checkDumpReaderDebugLogsGroupName(null, CACHE_0, null);
     }
 
     /** */
@@ -1419,30 +1425,31 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkDumpReaderDebugLogsGroupName(String[] grpNames) throws Exception {
+    private void checkDumpReaderDebugLogsGroupName(@Nullable String cacheGroupName, String expectedLogGroup,
+        @Nullable String[] grpNames
+    ) throws Exception {
         String id = "test";
-
         setLoggerDebugLevel();
-
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        LogListener errLsnr = LogListener.matches("Error consuming partition").andMatches("grp=" + GRP).build();
-        LogListener cnsmLsnr = LogListener.matches("Consuming partition").andMatches("grp=" + GRP).build();
+        LogListener errLsnr = LogListener.matches("Error consuming partition").andMatches("grp=" + expectedLogGroup).build();
+        LogListener cnsmLsnr = LogListener.matches("Consuming partition").andMatches("grp=" + expectedLogGroup).build();
 
         testLog.registerListener(errLsnr);
         testLog.registerListener(cnsmLsnr);
 
         IgniteEx ign = startGrid(getConfiguration(id).setConsistentId(id).setGridLogger(testLog));
-
         ign.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
             .setName(CACHE_0)
-            .setGroupName(GRP)
             .setBackups(1)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(3))
-        );
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(3));
 
+        if (cacheGroupName != null)
+            ccfg.setGroupName(cacheGroupName);
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(ccfg);
         IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
