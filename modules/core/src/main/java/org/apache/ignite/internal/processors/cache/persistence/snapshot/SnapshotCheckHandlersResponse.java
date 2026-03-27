@@ -44,8 +44,4 @@ public class SnapshotCheckHandlersResponse implements Message {
         return F.viewReadOnly(perMetaResults, SnapshotCheckHandlersNodeResponse::handlerResults);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 528;
-    }
 }

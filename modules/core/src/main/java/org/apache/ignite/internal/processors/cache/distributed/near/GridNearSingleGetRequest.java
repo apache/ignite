@@ -276,10 +276,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         return addDepInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 116;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

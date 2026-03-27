@@ -37,9 +37,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * WARNING: CompressedMessage is not intended for explicit use in messages.
  */
 public class CompressedMessage implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = -101;
-
     /** Chunk size. */
     static final int CHUNK_SIZE = 10 * 1024;
 
@@ -201,11 +198,6 @@ public class CompressedMessage implements Message {
                     }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /**

@@ -72,11 +72,6 @@ public class IndexQueryResultMeta implements Message {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 18;
-    }
-
     /** */
     public IndexKeyTypeSettings keyTypeSettings() {
         return keyTypeSettings;

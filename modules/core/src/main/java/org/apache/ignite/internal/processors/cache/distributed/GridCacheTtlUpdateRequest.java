@@ -183,10 +183,6 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 20;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

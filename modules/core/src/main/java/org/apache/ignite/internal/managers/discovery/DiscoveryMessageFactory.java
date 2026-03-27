@@ -224,119 +224,119 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register(TcpDiscoveryCollectionMessage::new,
+        factory.register(-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
-        factory.register(SchemaAlterTableAddColumnOperation::new, new SchemaAlterTableAddColumnOperationSerializer());
-        factory.register(SchemaIndexCreateOperation::new, new SchemaIndexCreateOperationMarshallableSerializer(marsh, clsLdr));
-        factory.register(SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
-        factory.register(SchemaAlterTableDropColumnOperation::new, new SchemaAlterTableDropColumnOperationSerializer());
-        factory.register(SchemaAddQueryEntityOperation::new, new SchemaAddQueryEntityOperationMarshallableSerializer(marsh, clsLdr));
-        factory.register(QueryField::new, new QueryFieldMarshallableSerializer(marsh, clsLdr));
-        factory.register(User::new, new UserSerializer());
-        factory.register(UserManagementOperation::new, new UserManagementOperationSerializer());
-        factory.register(NodeSpecificData::new, new NodeSpecificDataSerializer());
-        factory.register(DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
-        factory.register(TcpDiscoveryNodeFullMetricsMessage::new, new TcpDiscoveryNodeFullMetricsMessageSerializer());
-        factory.register(TcpDiscoveryClientNodesMetricsMessage::new, new TcpDiscoveryClientNodesMetricsMessageSerializer());
-        factory.register(TcpDiscoveryCacheMetricsMessage::new, new TcpDiscoveryCacheMetricsMessageSerializer());
-        factory.register(TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
-        factory.register(InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
-        factory.register(InetAddressMessage::new, new InetAddressMessageSerializer());
-        factory.register(ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register(-115, SchemaAlterTableAddColumnOperation::new, new SchemaAlterTableAddColumnOperationSerializer());
+        factory.register(-114, SchemaIndexCreateOperation::new, new SchemaIndexCreateOperationMarshallableSerializer(marsh, clsLdr));
+        factory.register(-113, SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
+        factory.register(-112, SchemaAlterTableDropColumnOperation::new, new SchemaAlterTableDropColumnOperationSerializer());
+        factory.register(-111, SchemaAddQueryEntityOperation::new, new SchemaAddQueryEntityOperationMarshallableSerializer(marsh, clsLdr));
+        factory.register(-110, QueryField::new, new QueryFieldMarshallableSerializer(marsh, clsLdr));
+        factory.register(-109, User::new, new UserSerializer());
+        factory.register(-108, UserManagementOperation::new, new UserManagementOperationSerializer());
+        factory.register(-107, NodeSpecificData::new, new NodeSpecificDataSerializer());
+        factory.register(-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
+        factory.register(-105, TcpDiscoveryNodeFullMetricsMessage::new, new TcpDiscoveryNodeFullMetricsMessageSerializer());
+        factory.register(-104, TcpDiscoveryClientNodesMetricsMessage::new, new TcpDiscoveryClientNodesMetricsMessageSerializer());
+        factory.register(-103, TcpDiscoveryCacheMetricsMessage::new, new TcpDiscoveryCacheMetricsMessageSerializer());
+        factory.register(-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
+        factory.register(-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
+        factory.register(-100, InetAddressMessage::new, new InetAddressMessageSerializer());
+        factory.register(-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr));
 
         // TcpDiscoveryAbstractMessage
-        factory.register(TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
-        factory.register(TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
-        factory.register(TcpDiscoveryPingResponse::new, new TcpDiscoveryPingResponseSerializer());
-        factory.register(TcpDiscoveryClientPingRequest::new, new TcpDiscoveryClientPingRequestSerializer());
-        factory.register(TcpDiscoveryClientPingResponse::new, new TcpDiscoveryClientPingResponseSerializer());
-        factory.register(TcpDiscoveryLoopbackProblemMessage::new, new TcpDiscoveryLoopbackProblemMessageSerializer());
-        factory.register(TcpDiscoveryConnectionCheckMessage::new, new TcpDiscoveryConnectionCheckMessageSerializer());
-        factory.register(TcpDiscoveryRingLatencyCheckMessage::new, new TcpDiscoveryRingLatencyCheckMessageSerializer());
-        factory.register(TcpDiscoveryHandshakeRequest::new, new TcpDiscoveryHandshakeRequestSerializer());
-        factory.register(TcpDiscoveryDiscardMessage::new, new TcpDiscoveryDiscardMessageSerializer());
-        factory.register(TcpDiscoveryHandshakeResponse::new, new TcpDiscoveryHandshakeResponseSerializer());
-        factory.register(TcpDiscoveryAuthFailedMessage::new, new TcpDiscoveryAuthFailedMessageSerializer());
-        factory.register(TcpDiscoveryDuplicateIdMessage::new, new TcpDiscoveryDuplicateIdMessageSerializer());
-        factory.register(TcpDiscoveryClientMetricsUpdateMessage::new, new TcpDiscoveryClientMetricsUpdateMessageSerializer());
-        factory.register(TcpDiscoveryMetricsUpdateMessage::new, new TcpDiscoveryMetricsUpdateMessageSerializer());
-        factory.register(TcpDiscoveryClientAckResponse::new, new TcpDiscoveryClientAckResponseSerializer());
-        factory.register(TcpDiscoveryNodeLeftMessage::new, new TcpDiscoveryNodeLeftMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
-        factory.register(TcpDiscoveryNodeAddFinishedMessage::new,
+        factory.register(0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
+        factory.register(1, TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
+        factory.register(2, TcpDiscoveryPingResponse::new, new TcpDiscoveryPingResponseSerializer());
+        factory.register(3, TcpDiscoveryClientPingRequest::new, new TcpDiscoveryClientPingRequestSerializer());
+        factory.register(4, TcpDiscoveryClientPingResponse::new, new TcpDiscoveryClientPingResponseSerializer());
+        factory.register(5, TcpDiscoveryLoopbackProblemMessage::new, new TcpDiscoveryLoopbackProblemMessageSerializer());
+        factory.register(6, TcpDiscoveryConnectionCheckMessage::new, new TcpDiscoveryConnectionCheckMessageSerializer());
+        factory.register(7, TcpDiscoveryRingLatencyCheckMessage::new, new TcpDiscoveryRingLatencyCheckMessageSerializer());
+        factory.register(8, TcpDiscoveryHandshakeRequest::new, new TcpDiscoveryHandshakeRequestSerializer());
+        factory.register(9, TcpDiscoveryDiscardMessage::new, new TcpDiscoveryDiscardMessageSerializer());
+        factory.register(10, TcpDiscoveryHandshakeResponse::new, new TcpDiscoveryHandshakeResponseSerializer());
+        factory.register(11, TcpDiscoveryAuthFailedMessage::new, new TcpDiscoveryAuthFailedMessageSerializer());
+        factory.register(12, TcpDiscoveryDuplicateIdMessage::new, new TcpDiscoveryDuplicateIdMessageSerializer());
+        factory.register(13, TcpDiscoveryClientMetricsUpdateMessage::new, new TcpDiscoveryClientMetricsUpdateMessageSerializer());
+        factory.register(14, TcpDiscoveryMetricsUpdateMessage::new, new TcpDiscoveryMetricsUpdateMessageSerializer());
+        factory.register(15, TcpDiscoveryClientAckResponse::new, new TcpDiscoveryClientAckResponseSerializer());
+        factory.register(16, TcpDiscoveryNodeLeftMessage::new, new TcpDiscoveryNodeLeftMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register(17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register(18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
+        factory.register(19, TcpDiscoveryNodeAddFinishedMessage::new,
             new TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(TcpDiscoveryJoinRequestMessage::new,
+        factory.register(20, TcpDiscoveryJoinRequestMessage::new,
             new TcpDiscoveryJoinRequestMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(TcpDiscoveryCustomEventMessage::new,
+        factory.register(21, TcpDiscoveryCustomEventMessage::new,
             new TcpDiscoveryCustomEventMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(TcpDiscoveryServerOnlyCustomEventMessage::new,
+        factory.register(22, TcpDiscoveryServerOnlyCustomEventMessage::new,
             new TcpDiscoveryServerOnlyCustomEventMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(TcpConnectionRequestDiscoveryMessage::new, new TcpConnectionRequestDiscoveryMessageSerializer());
-        factory.register(DistributedMetaStorageUpdateMessage::new, new DistributedMetaStorageUpdateMessageSerializer());
-        factory.register(DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
-        factory.register(DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
-        factory.register(DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
-        factory.register(TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
-        factory.register(TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(FullMessage::new, new FullMessageSerializer());
-        factory.register(InitMessage::new, new InitMessageSerializer());
-        factory.register(SnapshotStartDiscoveryMessage::new, new SnapshotStartDiscoveryMessageSerializer());
-        factory.register(SnapshotCheckProcessRequest::new, new SnapshotCheckProcessRequestSerializer());
-        factory.register(SnapshotOperationRequest::new, new SnapshotOperationRequestSerializer());
-        factory.register(MasterKeyChangeRequest::new, new MasterKeyChangeRequestSerializer());
-        factory.register(SnapshotOperationEndRequest::new, new SnapshotOperationEndRequestSerializer());
-        factory.register(SnapshotRestoreStartRequest::new, new SnapshotRestoreStartRequestSerializer());
-        factory.register(ChangeCacheEncryptionRequest::new, new ChangeCacheEncryptionRequestSerializer());
+        factory.register(23, TcpConnectionRequestDiscoveryMessage::new, new TcpConnectionRequestDiscoveryMessageSerializer());
+        factory.register(24, DistributedMetaStorageUpdateMessage::new, new DistributedMetaStorageUpdateMessageSerializer());
+        factory.register(25, DistributedMetaStorageUpdateAckMessage::new, new DistributedMetaStorageUpdateAckMessageSerializer());
+        factory.register(26, DistributedMetaStorageCasMessage::new, new DistributedMetaStorageCasMessageSerializer());
+        factory.register(27, DistributedMetaStorageCasAckMessage::new, new DistributedMetaStorageCasAckMessageSerializer());
+        factory.register(28, TcpDiscoveryClientReconnectMessage::new, new TcpDiscoveryClientReconnectMessageSerializer());
+        factory.register(29, TcpDiscoveryNodeAddedMessage::new, new TcpDiscoveryNodeAddedMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register(30, FullMessage::new, new FullMessageSerializer());
+        factory.register(31, InitMessage::new, new InitMessageSerializer());
+        factory.register(32, SnapshotStartDiscoveryMessage::new, new SnapshotStartDiscoveryMessageSerializer());
+        factory.register(33, SnapshotCheckProcessRequest::new, new SnapshotCheckProcessRequestSerializer());
+        factory.register(34, SnapshotOperationRequest::new, new SnapshotOperationRequestSerializer());
+        factory.register(35, MasterKeyChangeRequest::new, new MasterKeyChangeRequestSerializer());
+        factory.register(36, SnapshotOperationEndRequest::new, new SnapshotOperationEndRequestSerializer());
+        factory.register(37, SnapshotRestoreStartRequest::new, new SnapshotRestoreStartRequestSerializer());
+        factory.register(38, ChangeCacheEncryptionRequest::new, new ChangeCacheEncryptionRequestSerializer());
 
-        factory.register(GridCacheVersion::new, new GridCacheVersionSerializer());
+        factory.register(86, GridCacheVersion::new, new GridCacheVersionSerializer());
 
         // DiscoveryCustomMessage
-        factory.register(CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
-        factory.register(SecurityAwareCustomMessageWrapper::new,
+        factory.register(500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
+        factory.register(501, SecurityAwareCustomMessageWrapper::new,
             new SecurityAwareCustomMessageWrapperMarshallableSerializer(marsh, clsLdr));
-        factory.register(MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
-        factory.register(MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
-        factory.register(SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
-        factory.register(SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
-        factory.register(WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
-        factory.register(WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
-        factory.register(MetadataUpdateAcceptedMessage::new, new MetadataUpdateAcceptedMessageSerializer());
-        factory.register(TxTimeoutOnPartitionMapExchangeChangeMessage::new,
+        factory.register(502, MetadataRemoveAcceptedMessage::new, new MetadataRemoveAcceptedMessageSerializer());
+        factory.register(503, MetadataRemoveProposedMessage::new, new MetadataRemoveProposedMessageSerializer());
+        factory.register(504, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
+        factory.register(505, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
+        factory.register(506, WalStateFinishMessage::new, new WalStateFinishMessageSerializer());
+        factory.register(507, WalStateProposeMessage::new, new WalStateProposeMessageSerializer());
+        factory.register(508, MetadataUpdateAcceptedMessage::new, new MetadataUpdateAcceptedMessageSerializer());
+        factory.register(509, TxTimeoutOnPartitionMapExchangeChangeMessage::new,
             new TxTimeoutOnPartitionMapExchangeChangeMessageSerializer());
-        factory.register(UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
-        factory.register(UserProposedMessage::new, new UserProposedMessageSerializer());
-        factory.register(ChangeGlobalStateFinishMessage::new, new ChangeGlobalStateFinishMessageSerializer());
-        factory.register(StopRoutineAckDiscoveryMessage::new, new StopRoutineAckDiscoveryMessageSerializer());
-        factory.register(StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
-        factory.register(CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
-        factory.register(ClientCacheChangeDiscoveryMessage::new, new ClientCacheChangeDiscoveryMessageSerializer());
-        factory.register(MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
-        factory.register(MappingProposedMessage::new, new MappingProposedMessageSerializer());
-        factory.register(MarshallerMappingItem::new, new MarshallerMappingItemSerializer());
-        factory.register(SnapshotOperationResponse::new, new SnapshotOperationResponseSerializer());
-        factory.register(SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer());
-        factory.register(DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
-        factory.register(SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
-        factory.register(IncrementalSnapshotVerifyResult::new,
+        factory.register(510, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
+        factory.register(511, UserProposedMessage::new, new UserProposedMessageSerializer());
+        factory.register(512, ChangeGlobalStateFinishMessage::new, new ChangeGlobalStateFinishMessageSerializer());
+        factory.register(513, StopRoutineAckDiscoveryMessage::new, new StopRoutineAckDiscoveryMessageSerializer());
+        factory.register(514, StopRoutineDiscoveryMessage::new, new StopRoutineDiscoveryMessageSerializer());
+        factory.register(515, CacheAffinityChangeMessage::new, new CacheAffinityChangeMessageSerializer());
+        factory.register(516, ClientCacheChangeDiscoveryMessage::new, new ClientCacheChangeDiscoveryMessageSerializer());
+        factory.register(517, MappingAcceptedMessage::new, new MappingAcceptedMessageSerializer());
+        factory.register(518, MappingProposedMessage::new, new MappingProposedMessageSerializer());
+        factory.register(519, MarshallerMappingItem::new, new MarshallerMappingItemSerializer());
+        factory.register(520, SnapshotOperationResponse::new, new SnapshotOperationResponseSerializer());
+        factory.register(521, SnapshotHandlerResult::new, new SnapshotHandlerResultSerializer());
+        factory.register(522, DataStreamerUpdatesHandlerResult::new, new DataStreamerUpdatesHandlerResultSerializer());
+        factory.register(523, SnapshotCheckResponse::new, new SnapshotCheckResponseSerializer());
+        factory.register(524, IncrementalSnapshotVerifyResult::new,
             new IncrementalSnapshotVerifyResultMarshallableSerializer(marsh, clsLdr));
-        factory.register(SnapshotRestoreOperationResponse::new,
+        factory.register(525, SnapshotRestoreOperationResponse::new,
             new SnapshotRestoreOperationResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register(SnapshotMetadataResponse::new,
+        factory.register(526, SnapshotMetadataResponse::new,
             new SnapshotMetadataResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register(SnapshotCheckPartitionHashesResponse::new,
+        factory.register(527, SnapshotCheckPartitionHashesResponse::new,
             new SnapshotCheckPartitionHashesResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register(SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
-        factory.register(SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
-        factory.register(SnapshotPartitionsVerifyHandlerResponse::new,
+        factory.register(528, SnapshotCheckHandlersResponse::new, new SnapshotCheckHandlersResponseSerializer());
+        factory.register(529, SnapshotCheckHandlersNodeResponse::new, new SnapshotCheckHandlersNodeResponseSerializer());
+        factory.register(530, SnapshotPartitionsVerifyHandlerResponse::new,
             new SnapshotPartitionsVerifyHandlerResponseMarshallableSerializer(marsh, clsLdr));
-        factory.register(CacheStatisticsClearMessage::new, new CacheStatisticsClearMessageSerializer());
-        factory.register(ChangeGlobalStateMessage::new,
+        factory.register(531, CacheStatisticsClearMessage::new, new CacheStatisticsClearMessageSerializer());
+        factory.register(532, ChangeGlobalStateMessage::new,
             new ChangeGlobalStateMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(ClientCacheChangeDummyDiscoveryMessage::new,
+        factory.register(533, ClientCacheChangeDummyDiscoveryMessage::new,
             new ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(DynamicCacheChangeBatch::new,
+        factory.register(534, DynamicCacheChangeBatch::new,
             new DynamicCacheChangeBatchMarshallableSerializer(marsh, clsLdr));
     }
 }

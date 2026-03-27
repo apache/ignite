@@ -119,10 +119,6 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
         this.errMsg = errMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 54;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

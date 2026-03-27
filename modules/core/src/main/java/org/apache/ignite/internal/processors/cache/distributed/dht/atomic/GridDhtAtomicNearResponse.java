@@ -199,10 +199,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         return CACHE_MSG_IDX;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -48;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {

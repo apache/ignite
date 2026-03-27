@@ -27,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
  * a partition of a given id).
  */
 public class IntLongMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 514;
-
     /** Map. */
     @Order(0)
     @Nullable Map<Integer, Long> map;
@@ -53,8 +50,4 @@ public class IntLongMap implements Message {
         return map;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

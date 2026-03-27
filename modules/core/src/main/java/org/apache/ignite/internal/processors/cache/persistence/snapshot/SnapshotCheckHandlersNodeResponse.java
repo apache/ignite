@@ -43,8 +43,4 @@ public class SnapshotCheckHandlersNodeResponse implements Message {
         return hndRes;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 529;
-    }
 }

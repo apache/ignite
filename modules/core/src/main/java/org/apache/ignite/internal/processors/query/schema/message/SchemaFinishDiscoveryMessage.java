@@ -75,8 +75,4 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
         return S.toString(SchemaFinishDiscoveryMessage.class, this, "parent", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 505;
-    }
 }

@@ -66,8 +66,4 @@ public class TxLockList implements Message {
         return S.toString(TxLockList.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -26;
-    }
 }

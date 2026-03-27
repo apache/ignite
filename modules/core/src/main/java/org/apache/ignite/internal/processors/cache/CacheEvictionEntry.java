@@ -58,9 +58,4 @@ public class CacheEvictionEntry implements Message {
         this.near = near;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 97;
-    }
-
 }

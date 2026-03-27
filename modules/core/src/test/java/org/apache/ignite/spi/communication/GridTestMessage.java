@@ -161,10 +161,6 @@ public class GridTestMessage implements Message {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return DIRECT_TYPE;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

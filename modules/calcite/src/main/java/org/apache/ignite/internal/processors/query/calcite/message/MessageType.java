@@ -31,40 +31,43 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
  */
 public enum MessageType {
     /** */
-    QUERY_START_REQUEST(QueryStartRequest::new, new QueryStartRequestSerializer()),
+    QUERY_START_REQUEST(300, QueryStartRequest::new, new QueryStartRequestSerializer()),
 
     /** */
-    QUERY_START_RESPONSE(QueryStartResponse::new, new QueryStartResponseSerializer()),
+    QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
 
     /** */
-    QUERY_ERROR_MESSAGE(CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
+    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
 
     /** */
-    QUERY_BATCH_MESSAGE(QueryBatchMessage::new, new QueryBatchMessageSerializer()),
+    QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new, new QueryBatchMessageSerializer()),
 
     /** */
-    QUERY_ACKNOWLEDGE_MESSAGE(QueryBatchAcknowledgeMessage::new, new QueryBatchAcknowledgeMessageSerializer()),
+    QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new, new QueryBatchAcknowledgeMessageSerializer()),
 
     /** */
-    QUERY_INBOX_CANCEL_MESSAGE(InboxCloseMessage::new, new InboxCloseMessageSerializer()),
+    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new, new InboxCloseMessageSerializer()),
 
     /** */
-    QUERY_CLOSE_MESSAGE(QueryCloseMessage::new, new QueryCloseMessageSerializer()),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new, new QueryCloseMessageSerializer()),
 
     /** */
-    GENERIC_VALUE_MESSAGE(GenericValueMessage::new, new GenericValueMessageSerializer()),
+    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new, new GenericValueMessageSerializer()),
 
     /** */
-    FRAGMENT_MAPPING(FragmentMapping::new, new FragmentMappingSerializer()),
+    FRAGMENT_MAPPING(350, FragmentMapping::new, new FragmentMappingSerializer()),
 
     /** */
-    COLOCATION_GROUP(ColocationGroup::new, new ColocationGroupSerializer()),
+    COLOCATION_GROUP(351, ColocationGroup::new, new ColocationGroupSerializer()),
 
     /** */
-    FRAGMENT_DESCRIPTION(FragmentDescription::new, new FragmentDescriptionSerializer()),
+    FRAGMENT_DESCRIPTION(352, FragmentDescription::new, new FragmentDescriptionSerializer()),
 
     /** */
-    QUERY_TX_ENTRY(QueryTxEntry::new, new QueryTxEntrySerializer());
+    QUERY_TX_ENTRY(353, QueryTxEntry::new, new QueryTxEntrySerializer());
+
+    /** */
+    private final int directType;
 
     /** */
     private final Supplier<CalciteMessage> factory;
@@ -73,10 +76,12 @@ public enum MessageType {
     private final MessageSerializer serializer;
 
     /**
+     * @param directType Direct type.
      * @param factory Message factory.
      * @param serializer Message serializer.
      */
-    MessageType(Supplier<CalciteMessage> factory, MessageSerializer serializer) {
+    MessageType(int directType, Supplier<CalciteMessage> factory, MessageSerializer serializer) {
+        this.directType = directType;
         this.factory = factory;
         this.serializer = serializer;
     }
@@ -92,7 +97,7 @@ public enum MessageType {
      * @return Message direct type.
      */
     public short directType() {
-        return factory.get().directType();
+        return (short)directType;
     }
 
     /**

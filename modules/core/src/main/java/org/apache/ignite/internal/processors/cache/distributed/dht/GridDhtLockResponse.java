@@ -168,10 +168,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 31;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

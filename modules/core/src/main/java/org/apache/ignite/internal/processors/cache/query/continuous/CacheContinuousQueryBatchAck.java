@@ -88,10 +88,6 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 118;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

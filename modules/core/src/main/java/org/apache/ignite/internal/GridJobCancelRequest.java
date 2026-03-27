@@ -105,10 +105,6 @@ public class GridJobCancelRequest implements Message {
         return system;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 0;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

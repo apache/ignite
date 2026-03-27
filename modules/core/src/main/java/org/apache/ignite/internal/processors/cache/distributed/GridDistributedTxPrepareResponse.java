@@ -117,11 +117,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return ctx.txPrepareMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 26;
-    }
-
     /**
      * @return Error message.
      */

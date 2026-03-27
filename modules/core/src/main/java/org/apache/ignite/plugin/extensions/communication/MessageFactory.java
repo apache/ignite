@@ -44,6 +44,21 @@ public interface MessageFactory {
      *
      * @param directType Direct type.
      * @param supplier Message factory.
+     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
+     * @throws IllegalStateException On any invocation of this method when class which implements this interface
+     * is alredy constructed.
+     */
+    default void register(int directType, Supplier<Message> supplier) throws IgniteException {
+        register((short)directType, supplier);
+    }
+
+    /**
+     * Register message factory with given direct type. All messages must be registered during construction
+     * of class which implements this interface. Any invocation of this method after initialization is done must
+     * throw {@link IllegalStateException} exception.
+     *
+     * @param directType Direct type.
+     * @param supplier Message factory.
      * @param serializer Message serializer.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
@@ -52,21 +67,23 @@ public interface MessageFactory {
     public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException;
 
     /**
-     * Register message factory using the direct type obtained from the message via {@link Message#directType()}.
-     * This is a convenience method equivalent to {@link #register(short, Supplier, MessageSerializer)} where the direct
-     * type is derived from the message instance itself.
+     * Register message factory with given direct type and serializer. The direct type is also registered
+     * on the message class via {@link Message#registerAsDirectType(short)} so that {@link Message#directType()}
+     * resolves automatically without requiring each message to override it.
      *
-     * <p>All messages must be registered during construction of class which implements this interface. Any invocation
-     * of this method after initialization is done must throw {@link IllegalStateException} exception.
+     * <p>This is the preferred registration method. All messages must be registered during construction
+     * of class which implements this interface. Any invocation of this method after initialization is done must
+     * throw {@link IllegalStateException} exception.
      *
+     * @param directType Direct type.
      * @param supplier Message factory.
      * @param serializer Message serializer.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is already constructed.
      */
-    default void register(Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
-        register(supplier.get().directType(), supplier, serializer);
+    default void register(int directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
+        register((short)directType, supplier, serializer);
     }
 
     /**

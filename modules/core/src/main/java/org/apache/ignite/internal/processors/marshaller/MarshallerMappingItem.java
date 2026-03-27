@@ -109,8 +109,4 @@ public final class MarshallerMappingItem implements Message, Serializable {
         return "[platformId: " + platformId + ", typeId:" + typeId + ", clsName: " + clsName + "]";
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 519;
-    }
 }

@@ -25,9 +25,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** Map for storing GroupPartitionIdPair and their respective history counter values. */
 public class PartitionReservationsMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 509;
-
     /** Mapping between GroupPartitionIdPair objects and their respective history counter values. */
     @Order(0)
     Map<GroupPartitionIdPair, Long> map;
@@ -61,8 +58,4 @@ public class PartitionReservationsMap implements Message {
         map.put(pair, counter);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

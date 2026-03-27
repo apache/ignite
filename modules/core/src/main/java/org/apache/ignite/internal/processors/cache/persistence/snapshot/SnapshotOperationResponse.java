@@ -44,8 +44,4 @@ public class SnapshotOperationResponse implements Message {
         return hndResults;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 520;
-    }
 }

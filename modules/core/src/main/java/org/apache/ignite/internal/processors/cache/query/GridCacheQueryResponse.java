@@ -272,10 +272,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return fields;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 59;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

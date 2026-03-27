@@ -29,7 +29,7 @@ public class CalciteMessageFactory implements MessageFactoryProvider {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override public void registerAll(MessageFactory factory) {
         for (MessageType type : MessageType.values())
-            factory.register((Supplier)type.factory(), type.serializer());
+            factory.register(type.directType(), (Supplier)type.factory(), type.serializer());
     }
 
     /**

@@ -93,10 +93,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return ctx.txFinishMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 24;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

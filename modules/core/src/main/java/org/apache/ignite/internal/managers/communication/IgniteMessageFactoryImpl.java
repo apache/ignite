@@ -106,6 +106,8 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
                     "Registration of new message types is forbidden.");
         }
 
+        supplier.get().registerAsDirectType(directType);
+
         int idx = directTypeToIndex(directType);
 
         Supplier<Message> curr = msgSuppliers[idx];

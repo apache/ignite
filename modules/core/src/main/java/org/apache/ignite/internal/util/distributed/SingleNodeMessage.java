@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * @see InitMessage
  */
 public class SingleNodeMessage<R extends Message> implements Message {
-    /** Initial channel message type (value is {@code 176}). */
-    public static final short TYPE_CODE = 176;
-
     /** Process id. */
     @Order(0)
     UUID processId;
@@ -71,11 +68,6 @@ public class SingleNodeMessage<R extends Message> implements Message {
 
         if (err != null)
             errMsg = new ErrorMessage(err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /** @return Process id. */

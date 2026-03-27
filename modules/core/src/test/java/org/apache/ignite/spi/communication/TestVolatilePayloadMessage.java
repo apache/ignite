@@ -127,9 +127,4 @@ public class TestVolatilePayloadMessage implements Message {
 
         return true;
     }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return DIRECT_TYPE;
-    }
 }

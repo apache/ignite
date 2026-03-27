@@ -33,9 +33,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class IgniteDhtPartitionHistorySuppliersMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 510;
-
     /** */
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
@@ -119,8 +116,4 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
         return S.toString(IgniteDhtPartitionHistorySuppliersMap.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

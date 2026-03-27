@@ -30,9 +30,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public final class ClusterMetricsUpdateMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 133;
-
     /** Single node metrics message. */
     @Order(0)
     @Nullable NodeFullMetricsMessage singleNodeMetricsMsg;
@@ -75,10 +72,6 @@ public final class ClusterMetricsUpdateMessage implements Message {
         return singleNodeMetricsMsg != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -26,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Response for statistics request.
  */
 public class StatisticsResponse implements Message {
-    /** */
-    public static final short TYPE_CODE = 188;
-
     /** Request id. */
     @Order(0)
     UUID reqId;
@@ -74,11 +71,6 @@ public class StatisticsResponse implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StatisticsResponse.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
 }

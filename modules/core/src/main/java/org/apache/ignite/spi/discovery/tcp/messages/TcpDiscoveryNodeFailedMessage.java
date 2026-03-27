@@ -101,8 +101,4 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
         return S.toString(TcpDiscoveryNodeFailedMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 17;
-    }
 }

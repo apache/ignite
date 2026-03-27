@@ -240,10 +240,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 35;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

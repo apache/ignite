@@ -52,8 +52,4 @@ public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage im
         return S.toString(StopRoutineAckDiscoveryMessage.class, this, "routineId", routineId());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 513;
-    }
 }

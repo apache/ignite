@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
-    /** Snapshot request message type (value is {@code 178}). */
-    public static final short TYPE_CODE = 178;
-
     /** Snapshot operation request ID. */
     @Order(0)
     UUID reqId;
@@ -120,10 +117,6 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         return reqId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

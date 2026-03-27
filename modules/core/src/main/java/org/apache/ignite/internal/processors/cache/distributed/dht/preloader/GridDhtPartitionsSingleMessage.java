@@ -320,10 +320,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 47;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
