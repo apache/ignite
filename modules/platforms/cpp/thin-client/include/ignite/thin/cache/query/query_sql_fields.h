@@ -68,7 +68,7 @@ namespace ignite
                         loc(false),
                         distributedJoins(false),
                         enforceJoinOrder(false),
-                        lazy(false),
+                        lazy(true),
                         collocated(false),
                         parts(),
                         updateBatchSize(1),
