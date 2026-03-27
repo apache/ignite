@@ -34,14 +34,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -186,7 +184,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                DiscoveryCustomMessage customMsg = getFieldValue(msg, "serMsg");
+                DiscoverySpiCustomMessage customMsg = getFieldValue(msg, "serMsg");
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 
@@ -241,20 +239,6 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(
-            GridDiscoveryManager mgr,
-            AffinityTopologyVersion topVer,
-            DiscoCache discoCache
-        ) {
-            throw new UnsupportedOperationException();
         }
     }
 

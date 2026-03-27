@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,15 +29,19 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> Type of the local processing result.
  */
-public class SnapshotHandlerResult<T> implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class SnapshotHandlerResult<T extends Message> implements Message {
     /** Result of local processing. */
-    private final T data;
+    @Order(0)
+    Message data;
 
     /** Processing error. */
-    private final Exception err;
+    @Order(1)
+    ErrorMessage errMsg;
+
+    /** Default constructor for {@link GridIoMessageFactory}. */
+    public SnapshotHandlerResult() {
+        // No-op.
+    }
 
     /**
      * @param data Result of local processing.
@@ -42,16 +49,23 @@ public class SnapshotHandlerResult<T> implements Serializable {
      */
     public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err) {
         this.data = data;
-        this.err = err;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /** @return Result of local processing. */
     public @Nullable T data() {
-        return data;
+        return (T)data;
     }
 
     /** @return Processing error. */
     public @Nullable Exception error() {
-        return err;
+        return (Exception)ErrorMessage.error(errMsg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 521;
     }
 }

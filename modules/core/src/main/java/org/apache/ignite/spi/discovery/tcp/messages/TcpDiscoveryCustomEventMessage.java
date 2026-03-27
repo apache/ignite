@@ -21,13 +21,13 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,12 +35,12 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private volatile DiscoveryCustomMessage msg;
+    private volatile DiscoverySpiCustomMessage msg;
 
     /** Serialized message bytes. */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
@@ -63,7 +63,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param creatorNodeId Creator node id.
      * @param msg Message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoveryCustomMessage msg) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoverySpiCustomMessage msg) {
         super(creatorNodeId);
 
         this.msg = msg;
@@ -91,7 +91,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     /**
      * @return Original message.
      */
-    public DiscoveryCustomMessage message() {
+    public DiscoverySpiCustomMessage message() {
         return msg;
     }
 
@@ -101,13 +101,14 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param marsh Marshaller.
      */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.prepareMarshal(marsh);
+
         if (msg instanceof Message)
             serMsg = (Message)msg;
         else {
-            assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: msg =" + msg;
-
-            msgBytes = U.marshal(marsh, msg);
+            if (msg != null)
+                msgBytes = U.marshal(marsh, msg);
         }
     }
 
@@ -118,15 +119,18 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      * @param ldr Class loader.
      */
     // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
-    public void finishUnmarhal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(marsh, ldr);
+
         if (msg != null)
             return;
 
         if (serMsg != null)
-            msg = (DiscoveryCustomMessage)serMsg;
+            msg = (DiscoverySpiCustomMessage)serMsg;
         else {
             try {
-                msg = U.unmarshal(marsh, msgBytes, ldr);
+                if (msgBytes != null)
+                    msg = U.unmarshal(marsh, msgBytes, ldr);
             }
             catch (IgniteCheckedException e) {
                 // Try to resurrect a message in a case of deserialization failure

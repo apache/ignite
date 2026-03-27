@@ -387,8 +387,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSchemas() throws Exception {
-        try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA")))) {
+        try (
+            IgniteEx g = startGrid(getConfiguration()
+                .setSqlConfiguration(new SqlConfiguration()
+                    .setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA")))
+        ) {
             SystemView<SqlSchemaView> schemasSysView = g.context().systemView().view(SQL_SCHEMA_VIEW);
 
             Set<String> schemaFromSysView = new HashSet<>();

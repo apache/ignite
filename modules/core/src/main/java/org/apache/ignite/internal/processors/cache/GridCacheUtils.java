@@ -52,6 +52,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -1635,6 +1636,30 @@ public class GridCacheUtils {
     }
 
     /**
+     * @return Default affinity function.
+     */
+    public static AffinityFunction createDefaultAffinity() {
+        return new RendezvousAffinityFunction();
+    }
+
+    /**
+     * @param parts Total number of partitions.
+     * @return Default affinity function with predefined parameters.
+     */
+    public static AffinityFunction createDefaultAffinity(int parts) {
+        return createDefaultAffinity(false, parts);
+    }
+
+    /**
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @param parts Total number of partitions.
+     * @return Default affinity function with predefined parametrers.
+     */
+    public static AffinityFunction createDefaultAffinity(boolean exclNeighbors, int parts) {
+        return new RendezvousAffinityFunction(exclNeighbors, parts);
+    }
+
+    /**
      * @param log Logger.
      * @param cfg Initializes cache configuration with proper defaults.
      * @param cacheObjCtx Cache object context.
@@ -1650,15 +1675,10 @@ public class GridCacheUtils {
             cfg.setNodeFilter(CacheConfiguration.ALL_NODES);
 
         if (cfg.getAffinity() == null) {
-            if (cfg.getCacheMode() == PARTITIONED) {
-                RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
-
-                cfg.setAffinity(aff);
-            }
+            if (cfg.getCacheMode() == PARTITIONED)
+                cfg.setAffinity(createDefaultAffinity());
             else {
-                RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
-
-                cfg.setAffinity(aff);
+                cfg.setAffinity(createDefaultAffinity(512));
 
                 cfg.setBackups(Integer.MAX_VALUE);
             }

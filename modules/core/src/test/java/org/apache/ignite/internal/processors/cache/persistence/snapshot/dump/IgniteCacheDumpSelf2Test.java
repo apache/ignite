@@ -533,7 +533,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
-        try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
+        try (IgniteEx ign = startGrid()) {
             NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
 
             assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
@@ -546,7 +546,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDumpFailIfNoCaches() throws Exception {
-        try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
+        try (IgniteEx ign = startGrid()) {
             ign.cluster().state(ClusterState.ACTIVE);
 
             assertThrows(
@@ -597,7 +597,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDumpIteratorFaileOnWrongCrc() throws Exception {
-        try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
+        try (IgniteEx ign = startGrid()) {
             ign.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache<Integer, Integer> cache = ign.createCache(DEFAULT_CACHE_NAME);
@@ -1105,7 +1105,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     public void testReadEncrypted() throws Exception {
         File dumpDir;
 
-        try (IgniteEx srv = startGrid(new IgniteConfiguration().setEncryptionSpi(encryptionSpi()))) {
+        try (IgniteEx srv = startGrid(getConfiguration().setEncryptionSpi(encryptionSpi()))) {
             IgniteCache<Integer, byte[]> cache = srv.createCache(DEFAULT_CACHE_NAME);
             IntStream.range(0, KEYS_CNT).forEach(i -> {
                 byte[] data = new byte[Math.max(Integer.BYTES, ThreadLocalRandom.current().nextInt((int)U.KB))];

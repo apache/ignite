@@ -151,7 +151,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     int part = -1;
 
     /** */
-    @Order(value = 19, method = "topologyVersion")
+    @Order(19)
     AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
@@ -404,13 +404,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer != null ? topVer : AffinityTopologyVersion.NONE;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

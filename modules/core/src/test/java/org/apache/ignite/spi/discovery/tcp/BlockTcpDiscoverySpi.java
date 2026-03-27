@@ -54,7 +54,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
         try {
-            cm.finishUnmarhal(marshaller(), U.gridClassLoader());
+            cm.finishUnmarshal(marshaller(), U.gridClassLoader());
 
             assertNotNull(cm.message());
         }
@@ -72,7 +72,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         TcpDiscoveryAbstractMessage msg,
         byte[] data,
         long timeout
-    ) throws IOException {
+    ) throws IOException, IgniteCheckedException {
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
 

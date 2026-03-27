@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -96,6 +97,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -180,17 +182,20 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
     public static Collection<Object[]> params() {
-        boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
-            ? new boolean[] {false}
-            : new boolean[] {false, true};
-
         List<Object[]> res = new ArrayList<>();
 
-        for (boolean enc: encVals)
-            for (boolean onlyPrimary: new boolean[] {true, false})
-                res.add(new Object[] { enc, onlyPrimary});
+        for (boolean enc : encryptionParameters())
+            for (boolean onlyPrimary : new boolean[] {true, false})
+                res.add(new Object[] {enc, onlyPrimary});
 
         return res;
+    }
+
+    /** */
+    protected static Collection<Boolean> encryptionParameters() {
+        return DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
+            ? F.asList(false)
+            : F.asList(false, true);
     }
 
     /** {@inheritDoc} */
@@ -914,11 +919,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         private volatile IgnitePredicate<DiscoveryCustomMessage> blockPred;
 
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
             DiscoveryCustomMessage msg0 = U.unwrapCustomMessage(msg);
 
             if (blockPred != null && blockPred.apply(msg0)) {
-                blocked.add(msg);
+                blocked.add((DiscoveryCustomMessage)msg);
 
                 if (log.isInfoEnabled())
                     log.info("Discovery message has been blocked: " + msg0);

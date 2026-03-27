@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,7 +40,7 @@ public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustom
      * @param creatorNodeId Creator node id.
      * @param msg Message.
      */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoveryCustomMessage msg) {
+    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg) {
         super(creatorNodeId, msg);
     }
 

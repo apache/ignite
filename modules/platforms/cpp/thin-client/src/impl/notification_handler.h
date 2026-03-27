@@ -240,8 +240,11 @@ namespace ignite
                 {
                     disconnected = true;
 
+                    // Clear the queue as we won't be able to process these notifications after disconnect.
+                    queue.clear();
+
                     if (handler.IsValid())
-                        return common::SP_ThreadPoolTask(new DisconnectedTask(handler));
+                        handler.Get()->OnDisconnected();
 
                     return common::SP_ThreadPoolTask();
                 }
@@ -258,13 +261,18 @@ namespace ignite
                             "Internal error: handler is already set for the notification");
 
                     handler = handler0;
+
+                    // If we are already disconnected, then there is no point in processing notifications.
+                    if (disconnected) {
+                        queue.clear();
+                        handler.Get()->OnDisconnected();
+                        return;
+                    }
+
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
                         handler.Get()->OnNotification(*it);
 
                     queue.clear();
-
-                    if (disconnected)
-                        handler.Get()->OnDisconnected();
                 }
 
             private:

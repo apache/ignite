@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.discovery;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
  * For TESTING only.
@@ -45,5 +46,5 @@ public interface IgniteDiscoverySpiInternalListener {
      * @param msg Custom message.
      * @return {@code False} to cancel event send.
      */
-    public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoveryCustomMessage msg);
+    public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg);
 }

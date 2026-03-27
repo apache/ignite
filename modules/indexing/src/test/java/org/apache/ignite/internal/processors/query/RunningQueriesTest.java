@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -165,9 +166,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-
-            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
                 DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
                 if (DynamicCacheChangeBatch.class.isAssignableFrom(delegate.getClass())) {
@@ -194,7 +194,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
                 super.sendCustomEvent(msg);
             }
-        });
+        };
+
+        cfg.setDiscoverySpi(discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
@@ -227,23 +229,23 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testCloseRunningQueriesOnNodeStop() throws Exception {
-        IgniteEx ign = startGrid(super.getConfiguration("TST"));
+        IgniteEx ign = startGrid(getConfiguration("TST"));
 
-        IgniteCache<Integer, Integer> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("TST")
-            .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
-        );
+        try (ign) {
+            IgniteCache<Integer, Integer> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+                .setName("TST")
+                .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
+            );
 
-        for (int i = 0; i < 10000; i++)
-            cache.put(i, i);
+            for (int i = 0; i < 10000; i++)
+                cache.put(i, i);
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+            cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
 
-        Assert.assertEquals("Should be one running query",
-            1,
-            ign.context().query().runningQueries(-1).size());
-
-        ign.close();
+            Assert.assertEquals("Should be one running query",
+                1,
+                ign.context().query().runningQueries(-1).size());
+        }
 
         Assert.assertEquals(0, ign.context().query().runningQueries(-1).size());
     }

@@ -29,13 +29,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
+public class CacheContinuousQueryEntry implements GridCacheDeployable, MarshallableMessage {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
@@ -55,18 +56,27 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** Key. */
     @GridToStringInclude
-    @Order(value = 2, method = "serializedKey")
     KeyCacheObject key;
+
+    /** */
+    @Order(2)
+    byte[] keyBytes;
 
     /** New value. */
     @GridToStringInclude
-    @Order(value = 3, method = "serializedNewValue")
     CacheObject newVal;
+
+    /** */
+    @Order(3)
+    byte[] newValBytes;
 
     /** Old value. */
     @GridToStringInclude
-    @Order(value = 4, method = "serializedOldValue")
     CacheObject oldVal;
+
+    /** */
+    @Order(4)
+    byte[] oldValBytes;
 
     /** Cache name. */
     @Order(5)
@@ -325,16 +335,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         return key;
     }
 
-    /** */
-    KeyCacheObject serializedKey() {
-        return isFiltered() ? null : key;
-    }
-
-    /** */
-    void serializedKey(KeyCacheObject key) {
-        this.key = key;
-    }
-
     /**
      * @return New value.
      */
@@ -342,31 +342,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         return newVal;
     }
 
-    /** */
-    CacheObject serializedNewValue() {
-        return isFiltered() ? null : newVal;
-    }
-
-    /** */
-    void serializedNewValue(CacheObject newVal) {
-        this.newVal = newVal;
-    }
-
     /**
      * @return Old value.
      */
     CacheObject oldValue() {
         return oldVal;
-    }
-
-    /** */
-    CacheObject serializedOldValue() {
-        return isFiltered() ? null : oldVal;
-    }
-
-    /** */
-    void serializedOldValue(CacheObject oldVal) {
-        this.oldVal = oldVal;
     }
 
     /** {@inheritDoc} */
@@ -387,5 +367,31 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryEntry.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (!isFiltered()) {
+            if (key != null)
+                keyBytes = marsh.marshal(key);
+
+            if (newVal != null)
+                newValBytes = marsh.marshal(newVal);
+
+            if (oldVal != null)
+                oldValBytes = marsh.marshal(oldVal);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (keyBytes != null)
+            key = marsh.unmarshal(keyBytes, clsLdr);
+        
+        if (newValBytes != null)
+            newVal = marsh.unmarshal(newValBytes, clsLdr);
+        
+        if (oldValBytes != null)
+            oldVal = marsh.unmarshal(oldValBytes, clsLdr);
     }
 }
