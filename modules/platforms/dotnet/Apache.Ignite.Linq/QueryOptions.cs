@@ -41,6 +41,7 @@ namespace Apache.Ignite.Linq
         {
             PageSize = DefaultPageSize;
             UpdateBatchSize = DefaultUpdateBatchSize;
+            Lazy = true;
         }
 
         /// <summary>

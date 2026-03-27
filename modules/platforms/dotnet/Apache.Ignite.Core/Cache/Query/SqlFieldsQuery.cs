@@ -59,6 +59,7 @@ namespace Apache.Ignite.Core.Cache.Query
 
             PageSize = DefaultPageSize;
             UpdateBatchSize = DefaultUpdateBatchSize;
+            Lazy = true;
         }
 
         /// <summary>
