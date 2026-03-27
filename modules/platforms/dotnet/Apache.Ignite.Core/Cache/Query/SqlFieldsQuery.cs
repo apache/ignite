@@ -59,7 +59,9 @@ namespace Apache.Ignite.Core.Cache.Query
 
             PageSize = DefaultPageSize;
             UpdateBatchSize = DefaultUpdateBatchSize;
+#pragma warning disable 618
             Lazy = true;
+#pragma warning restore 618
         }
 
         /// <summary>
