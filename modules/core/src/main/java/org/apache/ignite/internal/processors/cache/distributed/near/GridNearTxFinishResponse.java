@@ -83,11 +83,6 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 54;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxFinishResponse.class, this, "super", super.toString());
     }

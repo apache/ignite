@@ -89,16 +89,9 @@ public interface Message {
      */
     default void registerAsDirectType(short directType) {
         var clazz = getClass();
-
-        if (REGISTRATIONS.containsValue(directType)) {
-            throw new IgniteException(
-                clazz.getSimpleName() + " can't be registered because direct type " + directType + "already registered"
-            );
-        }
-
         var type = REGISTRATIONS.putIfAbsent(clazz, directType);
 
-        if (type != null) {
+        if ((type != null) && (type != directType)) {
             throw new IgniteException(clazz.getSimpleName() + " is already registered for direct type " + type);
         }
     }

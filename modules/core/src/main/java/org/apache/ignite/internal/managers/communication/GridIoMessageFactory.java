@@ -394,7 +394,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-43, IgniteIoTestMessage::new);
         factory.register(-36, GridDhtAtomicSingleUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer());
         factory.register(-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
-        factory.register(-26, TxLockList::new, new TxLockListSerializer());
         factory.register(-25, TxLock::new, new TxLockSerializer());
         factory.register(-24, TxLocksRequest::new, new TxLocksRequestSerializer());
         factory.register(-23, TxLocksResponse::new, new TxLocksResponseSerializer());

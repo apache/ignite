@@ -61,10 +61,7 @@ public class TestMessage1 extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TxLockList.class, this);
     @Override public short directType() {
         return DIRECT_TYPE;
     }
-
 }

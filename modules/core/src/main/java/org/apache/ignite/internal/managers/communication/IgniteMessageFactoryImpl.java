@@ -63,7 +63,6 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
             return msg.readFrom(buf, reader);
         }
-
     };
 
     /** Message suppliers. */
