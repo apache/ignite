@@ -26,8 +26,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -38,11 +40,11 @@ import org.jetbrains.annotations.NotNull;
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.
  */
-public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
+public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Size of the {@link #revisionHash()}  }*/
+    /** Size of the {@link #revHash }*/
     public static final int REV_HASH_SIZE = 20;
 
     /** Size in bytes of serialized: 3 bytes (maj, min, maintenance version), 8 bytes - timestamp */
@@ -52,19 +54,35 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     private static final Pattern VER_PATTERN =
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
-    /** The values holder. */
-    private IgniteProductVersionMessage valuesHolder;
+    /** Major version number. */
+    @Order(0)
+    byte major;
+
+    /** Minor version number. */
+    @Order(1)
+    byte minor;
+
+    /** Maintenance version number. */
+    @Order(2)
+    byte maintenance;
+
+    /** Stage of development. */
+    @Order(3)
+    String stage;
+
+    /** Revision timestamp. */
+    @Order(4)
+    long revTs;
+
+    /** Revision hash. */
+    @Order(5)
+    byte[] revHash;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required by {@link Externalizable} and {@link DiscoveryMessageFactory}.
      */
     public IgniteProductVersion() {
-        valuesHolder = new IgniteProductVersionMessage();
-    }
-
-    /** @param ver Version. */
-    public IgniteProductVersion(IgniteProductVersionMessage ver) {
-        valuesHolder = ver;
+        // No-op.
     }
 
     /**
@@ -87,12 +105,17 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @param revHash Revision hash.
      */
     public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
-        this(new IgniteProductVersionMessage(major, minor, maintenance, stage, revTs, revHash));
-
         if (revHash != null && revHash.length != REV_HASH_SIZE) {
             throw new IllegalArgumentException("Invalid length for SHA1 hash (must be "
                 + REV_HASH_SIZE + "): " + revHash.length);
         }
+
+        this.major = major;
+        this.minor = minor;
+        this.maintenance = maintenance;
+        this.stage = stage;
+        this.revTs = revTs;
+        this.revHash = revHash != null ? revHash : new byte[REV_HASH_SIZE];
     }
 
     /**
@@ -101,7 +124,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Major version number.
      */
     public byte major() {
-        return valuesHolder.major;
+        return major;
     }
 
     /**
@@ -110,7 +133,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Minor version number.
      */
     public byte minor() {
-        return valuesHolder.minor;
+        return minor;
     }
 
     /**
@@ -119,14 +142,14 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Maintenance version number.
      */
     public byte maintenance() {
-        return valuesHolder.maintenance;
+        return maintenance;
     }
 
     /**
      * @return Stage of development.
      */
     public String stage() {
-        return valuesHolder.stage;
+        return stage;
     }
 
     /**
@@ -135,7 +158,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Revision timestamp.
      */
     public long revisionTimestamp() {
-        return valuesHolder.revTs;
+        return revTs;
     }
 
     /**
@@ -144,7 +167,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Revision hash.
      */
     public byte[] revisionHash() {
-        return valuesHolder.revHash;
+        return revHash;
     }
 
     /**
@@ -153,7 +176,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Release date.
      */
     public Date releaseDate() {
-        return new Date(revisionTimestamp() * 1000);
+        return new Date(revTs * 1000);
     }
 
     /**
@@ -164,31 +187,31 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      */
     public boolean greaterThanEqual(int major, int minor, int maintenance) {
         // NOTE: Unknown version is less than any other version.
-        if (major == major())
-            return minor == minor() ? maintenance() >= maintenance : minor() > minor;
+        if (major == this.major)
+            return minor == this.minor ? this.maintenance >= maintenance : this.minor > minor;
         else
-            return major() > major;
+            return this.major > major;
     }
 
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull IgniteProductVersion o) {
         // NOTE: Unknown version is less than any other version.
-        int res = Integer.compare(major(), o.major());
+        int res = Integer.compare(major, o.major);
 
         if (res != 0)
             return res;
 
-        res = Integer.compare(minor(), o.minor());
+        res = Integer.compare(minor, o.minor);
 
         if (res != 0)
             return res;
 
-        res = Integer.compare(maintenance(), o.maintenance());
+        res = Integer.compare(maintenance, o.maintenance);
 
         if (res != 0)
             return res;
 
-        return Long.compare(revisionTimestamp(), o.revisionTimestamp());
+        return Long.compare(revTs, o.revTs);
     }
 
     /**
@@ -196,17 +219,17 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Compare result.
      */
     public int compareToIgnoreTimestamp(@NotNull IgniteProductVersion o) {
-        int res = Integer.compare(major(), o.major());
+        int res = Integer.compare(major, o.major);
 
         if (res != 0)
             return res;
 
-        res = Integer.compare(minor(), o.minor());
+        res = Integer.compare(minor, o.minor);
 
         if (res != 0)
             return res;
 
-        return Integer.compare(maintenance(), o.maintenance());
+        return Integer.compare(maintenance, o.maintenance);
     }
 
     /** {@inheritDoc} */
@@ -219,48 +242,52 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
         IgniteProductVersion that = (IgniteProductVersion)o;
 
-        return revisionTimestamp() == that.revisionTimestamp() && maintenance() == that.maintenance()
-            && minor() == that.minor() && major() == that.major();
+        return revTs == that.revTs && maintenance == that.maintenance && minor == that.minor && major == that.major;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = major();
+        int res = major;
 
-        res = 31 * res + minor();
-        res = 31 * res + maintenance();
-        res = 31 * res + (int)(revisionTimestamp() ^ (revisionTimestamp() >>> 32));
+        res = 31 * res + minor;
+        res = 31 * res + maintenance;
+        res = 31 * res + (int)(revTs ^ (revTs >>> 32));
 
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeByte(major());
-        out.writeByte(minor());
-        out.writeByte(maintenance());
-        out.writeLong(revisionTimestamp());
-        U.writeByteArray(out, revisionHash());
+        out.writeByte(major);
+        out.writeByte(minor);
+        out.writeByte(maintenance);
+        out.writeLong(revTs);
+        U.writeByteArray(out, revHash);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        valuesHolder.major = in.readByte();
-        valuesHolder.minor = in.readByte();
-        valuesHolder.maintenance = in.readByte();
-        valuesHolder.revTs = in.readLong();
-        valuesHolder.revHash = U.readByteArray(in);
+        major = in.readByte();
+        minor = in.readByte();
+        maintenance = in.readByte();
+        revTs = in.readLong();
+        revHash = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -116;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revisionTimestamp() * 1000);
+        String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
 
-        String hash = U.byteArray2HexString(revisionHash()).toLowerCase();
+        String hash = U.byteArray2HexString(revHash).toLowerCase();
 
         hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
 
-        return major() + "." + minor() + "." + maintenance() + "#" + revTsStr + "-sha1:" + hash;
+        return major + "." + minor + "." + maintenance + "#" + revTsStr + "-sha1:" + hash;
     }
 
     /**

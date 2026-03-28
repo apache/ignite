@@ -2214,7 +2214,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
-            TcpDiscoveryNode node = new TcpDiscoveryNode(msg.nodeMsg);
+            TcpDiscoveryNode node = msg.node();
 
             UUID newNodeId = node.id();
 
@@ -2239,7 +2239,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         nodeAdded = true;
 
-                        topHist.putAll(msg.topologyHistory());
+                        if (msg.topologyHistory() != null)
+                            topHist.putAll(upcast(msg.topologyHistory()));
                     }
                     else {
                         if (log.isDebugEnabled())

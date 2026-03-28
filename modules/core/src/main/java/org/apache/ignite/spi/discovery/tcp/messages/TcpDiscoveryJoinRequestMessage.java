@@ -22,6 +22,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
+
 /**
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
@@ -30,9 +32,9 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message holding new node that wants to join the topology. */
+    /** New node that wants to join the topology. */
     @Order(0)
-    public TcpDiscoveryNodeMessage nodeMsg;
+    TcpDiscoveryNode node;
 
     /** Discovery data container. */
     @Order(1)
@@ -52,8 +54,17 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, DiscoveryDataPacket dataPacket) {
         super(node.id());
 
-        nodeMsg = new TcpDiscoveryNodeMessage(node);
+        this.node = node;
         this.dataPacket = dataPacket;
+    }
+
+    /**
+     * Gets new node that wants to join the topology.
+     *
+     * @return Node that wants to join the topology.
+     */
+    public TcpDiscoveryNode node() {
+        return node;
     }
 
     /** @return Discovery data container that collects data from all cluster nodes. */
@@ -86,7 +97,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
         TcpDiscoveryJoinRequestMessage other = (TcpDiscoveryJoinRequestMessage)obj;
 
-        return nodeMsg.id.equals(other.nodeMsg.id);
+        return eqNodes(other.node, node);
     }
 
     /** {@inheritDoc} */

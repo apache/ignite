@@ -131,6 +131,8 @@ import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.FullMessageSerializer;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.InitMessageSerializer;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteProductVersionSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -138,8 +140,8 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDisc
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.IgniteProductVersionMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodeMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
@@ -194,8 +196,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageMarshallableSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
@@ -231,8 +231,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
-        factory.register((short)-117, TcpDiscoveryNodeMessage::new, new TcpDiscoveryNodeMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)-116, IgniteProductVersionMessage::new, new IgniteProductVersionMessageSerializer());
+        factory.register((short)-117, TcpDiscoveryNode::new, new TcpDiscoveryNodeMarshallableSerializer(marsh, clsLdr));
+        factory.register((short)-116, IgniteProductVersion::new, new IgniteProductVersionSerializer());
         factory.register((short)-115, SchemaAlterTableAddColumnOperation::new,
             new SchemaAlterTableAddColumnOperationSerializer());
         factory.register((short)-114, SchemaIndexCreateOperation::new,

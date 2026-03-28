@@ -2153,4 +2153,16 @@ public class GridFunc {
     public static <K, V> Map<K, V> emptyIfNull(@Nullable Map<K, V> map) {
         return map == null ? Collections.emptyMap() : map;
     }
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    public static <P, C extends P> Collection<P> upcast(Collection<C> c) {
+        return (Collection<P>)c;
+    }
 }

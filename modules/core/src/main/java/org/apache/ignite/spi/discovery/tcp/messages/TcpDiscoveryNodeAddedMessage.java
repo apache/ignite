@@ -18,17 +18,13 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -44,9 +40,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message of the added node. */
+    /** Added node. */
     @Order(0)
-    public TcpDiscoveryNodeMessage nodeMsg;
+    TcpDiscoveryNode node;
 
     /** */
     @Order(1)
@@ -59,7 +55,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     @Order(3)
-    public @Nullable Collection<TcpDiscoveryNodeMessage> topMsgs;
+    @Nullable Collection<TcpDiscoveryNode> top;
 
     /** */
     @GridToStringInclude
@@ -67,11 +63,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Topology snapshots history. */
     @Order(4)
-    Map<Long, Collection<TcpDiscoveryNodeMessage>> topHistMsgs;
+    Map<Long, Collection<TcpDiscoveryNode>> topHist;
 
     /** Start time of the first grid node. */
     @Order(5)
-    public long gridStartTime;
+    long gridStartTime;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeAddedMessage() {
@@ -97,7 +93,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         assert node != null;
         assert gridStartTime > 0;
 
-        nodeMsg = new TcpDiscoveryNodeMessage(node);
+        this.node = node;
         this.dataPacket = dataPacket;
         this.gridStartTime = gridStartTime;
     }
@@ -108,11 +104,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
         super(msg);
 
-        nodeMsg = msg.nodeMsg;
+        node = msg.node;
         pendingMsgsMsg = msg.pendingMsgsMsg;
-        topMsgs = msg.topMsgs;
+        top = msg.top;
         clientTop = msg.clientTop;
-        topHistMsgs = msg.topHistMsgs;
+        topHist = msg.topHist;
         dataPacket = msg.dataPacket;
         gridStartTime = msg.gridStartTime;
     }
@@ -123,7 +119,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return New node.
      */
     public TcpDiscoveryNode node() {
-        return new TcpDiscoveryNode(nodeMsg);
+        return node;
     }
 
     /**
@@ -141,7 +137,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = msgs == null ? null : new TcpDiscoveryCollectionMessage(msgs);
+        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
     }
 
     /**
@@ -150,7 +146,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Current topology.
      */
     @Nullable public Collection<TcpDiscoveryNode> topology() {
-        return topMsgs == null ? null : topMsgs.stream().map(TcpDiscoveryNode::new).collect(Collectors.toList());
+        return top;
     }
 
     /**
@@ -159,9 +155,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param top Current topology.
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
-        topMsgs = top == null
-            ? null
-            : top.stream().map(TcpDiscoveryNodeMessage::new).collect(Collectors.toList());;
+        this.top = top;
     }
 
     /**
@@ -185,16 +179,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @return Map with topology snapshots history.
      */
-    public Map<Long, Collection<ClusterNode>> topologyHistory() {
-        if (F.isEmpty(topMsgs))
-            return Collections.emptyMap();
-
-        Map<Long, Collection<ClusterNode>> res = U.newHashMap(topHistMsgs.size());
-
-        topHistMsgs.forEach((id, nodeMsgs) ->
-            res.put(id, nodeMsgs.stream().map(TcpDiscoveryNode::new).collect(Collectors.toList())));
-
-        return res;
+    public Map<Long, Collection<TcpDiscoveryNode>> topologyHistory() {
+        return topHist;
     }
 
     /**
@@ -202,17 +188,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @param topHist Map with topology snapshots history.
      */
-    public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
-        if (F.isEmpty(topHist)) {
-            topHistMsgs = null;
-
-            return;
-        }
-
-        topHistMsgs = U.newHashMap(topHist.size());
-
-        topHist.forEach((id, nodes) ->
-            topHistMsgs.put(id, nodes.stream().map(TcpDiscoveryNodeMessage::new).collect(Collectors.toList())));
+    public void topologyHistory(@Nullable Map<Long, Collection<TcpDiscoveryNode>> topHist) {
+        this.topHist = topHist;
     }
 
     /**

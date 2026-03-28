@@ -152,7 +152,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     TcpDiscoveryJoinRequestMessage joinReq = (TcpDiscoveryJoinRequestMessage)msg;
 
-                    if (joinReq.nodeMsg.id.equals(node2Id))
+                    if (joinReq.node().id().equals(node2Id))
                         joinReqsCntr.incrementAndGet();
                 }
             }
@@ -195,14 +195,14 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
                     int joinReqsCnt = joinReqsCntr.get();
 
-                    if (joinReq.nodeMsg.id.equals(node2Id) && joinReqsCnt == 1)
+                    if (joinReq.node().id().equals(node2Id) && joinReqsCnt == 1)
                         throw new RuntimeException("Stop node1 exception by subsequent join req");
                 }
 
                 if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                     TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                    if (addedMsg.nodeMsg.discPort == 47503)
+                    if (addedMsg.node().discoveryPort() == 47503)
                         throw new RuntimeException("Stop node1 exception by new node added msg");
                 }
             }
