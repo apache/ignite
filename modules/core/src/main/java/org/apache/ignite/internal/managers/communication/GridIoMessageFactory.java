@@ -378,7 +378,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
     @Override public void registerAll(MessageFactory factory) {
         // -54 is reserved for SQL.
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
-        factory.register(-101, CompressedMessage::new);
+        factory.register(-67, CompressedMessage::new);
         factory.register(-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(-65, TxInfo::new, new TxInfoSerializer());
         factory.register(-64, TxEntriesInfo::new, new TxEntriesInfoSerializer());
