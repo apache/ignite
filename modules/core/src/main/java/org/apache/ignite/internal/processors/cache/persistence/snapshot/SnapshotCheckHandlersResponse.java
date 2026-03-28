@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
@@ -27,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 public class SnapshotCheckHandlersResponse implements Message {
     /** Per metas result: snapshot part's consistent id -> check result per handler name. */
     @Order(0)
-    Map<String, SnapshotCheckHandlersNodeResponse> perMetaResults;
+    Map<String, Map<String, SnapshotHandlerResult<Message>>> perMetaResults;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotCheckHandlersResponse() {
@@ -36,12 +35,12 @@ public class SnapshotCheckHandlersResponse implements Message {
 
     /** */
     public SnapshotCheckHandlersResponse(Map<String, Map<String, SnapshotHandlerResult<Message>>> res) {
-        perMetaResults = F.viewReadOnly(res, SnapshotCheckHandlersNodeResponse::new);
+        perMetaResults = res;
     }
 
     /** */
     public Map<String, Map<String, SnapshotHandlerResult<Message>>> handlerResults() {
-        return F.viewReadOnly(perMetaResults, SnapshotCheckHandlersNodeResponse::handlerResults);
+        return perMetaResults;
     }
 
     /** {@inheritDoc} */

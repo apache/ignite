@@ -15,41 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.internal.management.event;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 
-/** Partitions to reload. */
-public class PartitionsToReload implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 511;
+/** */
+public class EventCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
 
-    /** Set of partitions to reload. */
+    /** */
     @Order(0)
-    Set<Integer> parts;
+    @Positional
+    @Argument(
+        description = "Comma separated list of events",
+        example = "event1[,...,eventN]")
+    String[] events;
 
-    /**
-     * @return Set of partitions to reload.
-     */
-    public Set<Integer> partitions() {
-        return parts;
+    /** */
+    public String[] events() {
+        return events;
     }
 
-    /**
-     * @param partId Partition ID.
-     */
-    public void add(int partId) {
-        if (parts == null)
-            parts = new HashSet<>();
-
-        parts.add(partId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
+    /** */
+    public void events(String[] events) {
+        this.events = events;
     }
 }

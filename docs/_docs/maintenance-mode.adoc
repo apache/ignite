@@ -94,7 +94,7 @@ Another restart will then be needed to bring the node back into the cluster.
 
 Commands that trigger maintenance mode on the next restart:
 
-- `control.sh --defragmentation` - node defragmentation;
+- `control.sh --defragmentation schedule` - node defragmentation scheduling;
 - `control.sh --cache schedule_indexes_rebuild` - schedule rebuilding cache data indexes in Maintenance Mode.
 
 More details about these commands can be found in the "Control Script" section under subsections "link:tools/control-script#defragmentation[Defragmentation]" and "link:tools/control-script#rebuild_index[Rebuild index]".

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
 
     /** */
     @Order(0)
-    Map<UUID, CachePartitionsToReloadMap> map;
+    Map<UUID, Map<Integer, Set<Integer>>> map;
 
     /**
      * @param nodeId Node ID.
@@ -48,17 +49,9 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         if (map == null)
             return Collections.emptySet();
 
-        CachePartitionsToReloadMap nodeMap = map.get(nodeId);
+        Map<Integer, Set<Integer>> nodeMap = map.get(nodeId);
 
-        if (nodeMap == null)
-            return Collections.emptySet();
-
-        PartitionsToReload partsToReload = nodeMap.get(cacheId);
-
-        if (partsToReload == null)
-            return Collections.emptySet();
-
-        return (Set<Integer>)F.emptyIfNull(partsToReload.partitions());
+        return nodeMap == null ? Collections.emptySet() : (Set<Integer>)F.emptyIfNull(nodeMap.get(cacheId));
     }
 
     /**
@@ -70,15 +63,9 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         if (map == null)
             map = new HashMap<>();
 
-        CachePartitionsToReloadMap nodeMap = map.computeIfAbsent(nodeId, k -> new CachePartitionsToReloadMap());
+        Map<Integer, Set<Integer>> nodeMap = map.computeIfAbsent(nodeId, k -> new HashMap<>());
 
-        PartitionsToReload parts = nodeMap.get(cacheId);
-
-        if (parts == null) {
-            parts = new PartitionsToReload();
-
-            nodeMap.put(cacheId, parts);
-        }
+        Set<Integer> parts = nodeMap.computeIfAbsent(cacheId, k -> new HashSet<>());
 
         parts.add(partId);
     }
