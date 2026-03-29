@@ -239,7 +239,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
             consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
 
         if (metricsMsg != null)
-            metricsMsg = new TcpDiscoveryNodeMetricsMessage(metrics);
+            metrics = new ClusterMetricsSnapshot(metricsMsg);
 
         attrsBytes = null;
         consistentIdBytes = null;
