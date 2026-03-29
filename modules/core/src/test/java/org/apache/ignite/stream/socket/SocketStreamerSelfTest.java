@@ -50,6 +50,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@link SocketStreamer}.

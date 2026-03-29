@@ -33,6 +33,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests of extended logging of class loading problems.

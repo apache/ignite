@@ -40,6 +40,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Thin client async cache tests.
  */
@@ -115,8 +120,8 @@ public class CacheAsyncTest extends AbstractThinClientTest {
                 .getCause();
 
         assertEquals(ClientException.class, t.getClass());
-        assertTrue(t.getMessage(), t.getMessage().contains(
-                "Failed to start cache (a cache with the same name is already started): tmp_cache"));
+        assertTrue(t.getMessage().contains(
+                "Failed to start cache (a cache with the same name is already started): tmp_cache"), t.getMessage());
     }
 
     /**
@@ -158,8 +163,8 @@ public class CacheAsyncTest extends AbstractThinClientTest {
                 .getCause();
 
         assertEquals(ClientException.class, t.getClass());
-        assertTrue(t.getMessage(), t.getMessage().contains(
-                "Failed to start cache (a cache with the same name is already started): tmp_cache"));
+        assertTrue(t.getMessage().contains(
+                "Failed to start cache (a cache with the same name is already started): tmp_cache"), t.getMessage());
     }
 
     /**
@@ -302,8 +307,8 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertTrue(fut.isDone());
 
         assertTrue(GridTestUtils.waitForCondition(() -> completionThreadName.get() != null, TIMEOUT));
-        assertFalse("Async operation should not complete on thin client listener thread",
-                completionThreadName.get().startsWith("thin-client-channel"));
+        assertFalse(completionThreadName.get().startsWith("thin-client-channel"),
+            "Async operation should not complete on thin client listener thread");
     }
 
     /**

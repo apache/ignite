@@ -30,6 +30,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
@@ -41,11 +44,9 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
 
     /**
      * Tests for CREATE INDEX command.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testCreateIndex() throws Exception {
+    public void testCreateIndex() {
         // Base.
         parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);
         parseValidate(null, "CREATE INDEX idx ON tbl(a);", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);

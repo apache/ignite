@@ -36,6 +36,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest {
@@ -80,7 +83,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
                     else {
                         assertEquals(SRV_NODES - 1, res.values().size());
                         assertEquals(1, err.size());
-                        assertTrue(err.get(grid(1).localNode().id()) instanceof AssertionError);
+                        assertInstanceOf(AssertionError.class, err.get(grid(1).localNode().id()));
                     }
 
                     latch.countDown();
@@ -104,7 +107,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
                     else {
                         assertEquals(SRV_NODES - 1, res.values().size());
                         assertEquals(1, err.size());
-                        assertTrue(err.get(grid(1).localNode().id()) instanceof AssertionError);
+                        assertInstanceOf(AssertionError.class, err.get(grid(1).localNode().id()));
                     }
 
                     latch.countDown();

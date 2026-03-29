@@ -51,6 +51,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This tests check that the following scenario will work correctly.
@@ -164,7 +166,7 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
             fut.get(getTestTimeout());
 
             // Checkpoint will happens two time because of segment archivation.
-            assertEquals("Should successfully wait for current segment archivation", 3, cntr.get());
+            assertEquals(3, cntr.get(), "Should successfully wait for current segment archivation");
 
             IgniteWalIteratorFactory.IteratorParametersBuilder builder =
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()

@@ -54,6 +54,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test partition awareness of thin client on stable topology.
@@ -174,7 +176,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         // with grid(0)
         Integer keyForUnknownNode = primaryKey(grid(0).cache(PART_CACHE_NAME));
 
-        assertNotNull("Not found key for node " + grid(0).localNode().id(), keyForUnknownNode);
+        assertNotNull(keyForUnknownNode, "Not found key for node " + grid(0).localNode().id());
 
         clientCache.put(keyForUnknownNode, 0);
 

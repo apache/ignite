@@ -50,6 +50,9 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test of session siblings cancellation from future.
@@ -157,7 +160,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
 
         try {
             // Wait until jobs begin execution.
-            assertTrue("Jobs did not start.", startSig[num].await(WAIT_TIME, TimeUnit.MILLISECONDS));
+            assertTrue(startSig[num].await(WAIT_TIME, TimeUnit.MILLISECONDS), "Jobs did not start.");
 
             Collection<ComputeJobSibling> jobSiblings = fut.getTaskSession().getJobSiblings();
 
@@ -171,7 +174,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
             assertThat(res, equalTo("interrupt-task-data"));
 
             // Wait for all jobs to finish.
-            assertTrue("Jobs did not cancel.", stopSig[num].await(WAIT_TIME, TimeUnit.MILLISECONDS));
+            assertTrue(stopSig[num].await(WAIT_TIME, TimeUnit.MILLISECONDS), "Jobs did not cancel.");
 
             assertThat(interruptCnt[num].get(), equalTo(SPLIT_COUNT));
         }

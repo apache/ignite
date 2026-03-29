@@ -35,6 +35,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Tests off-heap map.
  */
@@ -958,8 +965,8 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
             }
 
             assertTrue(evictCnt.get() > 10 * parts);
-            assertTrue("Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']',
-                map.freeSize() >= 0);
+            assertTrue(map.freeSize() >= 0,
+                "Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']');
         }
     }
 
@@ -1018,8 +1025,8 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
         info("Map stats [evicted=" + evictCnt + ", size=" + map.size() + ", allocated=" + map.allocatedSize() +
             ", freeSize=" + map.freeSize() + ']');
 
-        assertTrue("Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']',
-            map.freeSize() >= 0);
+        assertTrue(map.freeSize() >= 0,
+            "Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']');
     }
 
     /**

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.client.thin;
 import java.util.BitSet;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test requests to connections distribution by thin client.
  */

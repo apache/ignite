@@ -43,6 +43,11 @@ import org.junit.jupiter.api.Test;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test marshaller context.
@@ -205,9 +210,9 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         List list = U.field(ctx, "allCaches");
 
-        assertNotNull("Mapping cache is null for platformId: 0", list.get(0));
-        assertNull("Mapping cache is not null for platformId: 1", list.get(1));
-        assertNotNull("Mapping cache is null for platformId: 2", list.get(2));
+        assertNotNull(list.get(0), "Mapping cache is null for platformId: 0");
+        assertNull(list.get(1), "Mapping cache is not null for platformId: 1");
+        assertNotNull(list.get(2), "Mapping cache is null for platformId: 2");
 
         boolean excObserved = false;
         try {
@@ -216,7 +221,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         catch (ArrayIndexOutOfBoundsException ignored) {
             excObserved = true;
         }
-        assertTrue("ArrayIndexOutOfBoundsException had to be thrown", excObserved);
+        assertTrue(excObserved, "ArrayIndexOutOfBoundsException had to be thrown");
     }
 
     /**
@@ -237,8 +242,8 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         List list = U.field(ctx, "allCaches");
 
-        assertNotNull("Mapping cache is null for platformId: 0", list.get(0));
-        assertNotNull("Mapping cache is null for platformId: 1", list.get(1));
+        assertNotNull(list.get(0), "Mapping cache is null for platformId: 0");
+        assertNotNull(list.get(1), "Mapping cache is null for platformId: 1");
 
         boolean excObserved = false;
 
@@ -249,7 +254,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
             excObserved = true;
         }
 
-        assertTrue("ArrayIndexOutOfBoundsException had to be thrown", excObserved);
+        assertTrue(excObserved, "ArrayIndexOutOfBoundsException had to be thrown");
     }
 
     /**

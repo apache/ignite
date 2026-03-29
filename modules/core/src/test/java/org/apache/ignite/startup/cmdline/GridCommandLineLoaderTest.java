@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Command line loader test.

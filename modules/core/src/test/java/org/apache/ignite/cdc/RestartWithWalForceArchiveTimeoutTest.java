@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 @ParameterizedClass(name = "walMode={0}")

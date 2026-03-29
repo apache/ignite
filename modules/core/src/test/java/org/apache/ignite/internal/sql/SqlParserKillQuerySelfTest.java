@@ -24,6 +24,10 @@ import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests for processing of KILL QUERY syntax.
  */
@@ -119,7 +123,7 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
     private static void assertKillQuery(String sql, UUID nodeIdExp, long qryIdExp, boolean async) {
         SqlCommand cmd = parse(sql);
 
-        assertTrue(cmd instanceof SqlKillQueryCommand);
+        assertInstanceOf(SqlKillQueryCommand.class, cmd);
 
         SqlKillQueryCommand killQryCmd = (SqlKillQueryCommand)cmd;
 

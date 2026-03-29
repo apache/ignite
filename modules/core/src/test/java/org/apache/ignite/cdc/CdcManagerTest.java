@@ -58,6 +58,10 @@ import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cdc.CdcManagerTest.TestCdcManager.cdcMgr;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 @ParameterizedClass(name = "persistentEnabled={0}")
@@ -252,12 +256,12 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
             IgniteEx ign = startGrid(0);
 
-            assertTrue(m.toString(), cdcWarnLsnr.check());
+            assertTrue(cdcWarnLsnr.check(), m.toString());
 
             if (cdcStart)
-                assertTrue(cdcMgr(ign) instanceof TestCdcManager);
+                assertInstanceOf(TestCdcManager.class, cdcMgr(ign));
             else
-                assertTrue(ign.context().cache().context().cdc() instanceof CdcUtilityActiveCdcManager);
+                assertInstanceOf(CdcUtilityActiveCdcManager.class, ign.context().cache().context().cdc());
         }
     }
 

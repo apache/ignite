@@ -39,6 +39,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test partition awareness of thin client in multi data-center environment.
  */
@@ -274,6 +276,6 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
 
         assertTrue(F.contains(expChannelIdxs, channelIdx));
 
-        assertTrue("Ops queue not empty: " + opsQueue, F.isEmpty(opsQueue));
+        assertTrue(F.isEmpty(opsQueue), "Ops queue not empty: " + opsQueue);
     }
 }

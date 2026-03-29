@@ -49,6 +49,9 @@ import static java.util.stream.IntStream.range;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test partition awareness of thin client on unstable topology.
@@ -136,7 +139,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         Integer key = primaryKey(grid(3).cache(cacheName));
 
-        assertNotNull("Not found key for node 3", key);
+        assertNotNull(key, "Not found key for node 3");
 
         cache.put(key, 0);
 
@@ -203,7 +206,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         Integer key = primaryKey(grid(disconnectNodeIdx).cache(cacheName));
 
-        assertNotNull("Not found key for node " + disconnectNodeIdx, key);
+        assertNotNull(key, "Not found key for node " + disconnectNodeIdx);
 
         cache.put(key, 0);
 

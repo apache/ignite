@@ -45,6 +45,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Cancel unused job test.
@@ -106,7 +109,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         assertNotNull(fut);
 
         // Wait until jobs begin execution.
-        assertTrue("Jobs did not start.", startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS));
+        assertTrue(startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS), "Jobs did not start.");
 
         info("Test task result: " + fut);
 
@@ -114,13 +117,13 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         assertThat(fut.get(getTestTimeout()), equalTo(1));
 
         // Wait for all jobs to finish.
-        assertTrue("Jobs did not stop.", stopSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS));
+        assertTrue(stopSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS), "Jobs did not stop.");
 
         // One is definitely processed. But there might be some more processed or cancelled or processed and cancelled.
         // Thus total number should be at least SPLIT_COUNT and at most (SPLIT_COUNT - 1) *2 +1
         assertTrue(
-            "Invalid cancel count value: " + cancelCnt,
-            (cancelCnt + processedCnt) >= SPLIT_COUNT && (cancelCnt + processedCnt) <= (SPLIT_COUNT - 1) * 2 + 1
+            (cancelCnt + processedCnt) >= SPLIT_COUNT && (cancelCnt + processedCnt) <= (SPLIT_COUNT - 1) * 2 + 1,
+            "Invalid cancel count value: " + cancelCnt
         );
     }
 

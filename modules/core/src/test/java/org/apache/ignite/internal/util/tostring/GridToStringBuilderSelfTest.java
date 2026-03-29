@@ -51,6 +51,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENG
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.compact;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.identity;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.joinToString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link GridToStringBuilder}.
@@ -337,8 +339,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         info(arrOfStr);
         info(arrStr);
 
-        assertTrue("Collection limit error in array of type " + arrOf.getClass().getName()
-            + " error, normal arr: <" + arrStr + ">, overflowed arr: <" + arrOfStr + ">", arrStr.equals(arrOfStr));
+        assertEquals(arrStr, arrOfStr, "Collection limit error in array of type " + arrOf.getClass().getName()
+            + " error, normal arr: <" + arrStr + ">, overflowed arr: <" + arrOfStr + ">");
     }
 
     /**
@@ -371,8 +373,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         byteArr[0] = 1;
         assertEquals(Arrays.toString(byteArr), GridToStringBuilder.arrayToString(byteArr));
         byteArr = Arrays.copyOf(byteArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(byteArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(byteArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         boolean[] boolArr = new boolean[1];
 

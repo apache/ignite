@@ -104,7 +104,11 @@ import static org.apache.ignite.internal.util.IgniteUtils.shortToBytes;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Grid utils tests.
@@ -204,7 +208,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < 30; i++) {
                     Collection<String> macs = U.allLocalMACs();
 
-                    assertTrue("Mac address are not defined.", !macs.isEmpty());
+                    assertTrue(!macs.isEmpty(), "Mac address are not defined.");
                 }
             }
         }, 32, "thread");
@@ -883,7 +887,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw timeout exception");
         }
         catch (Exception e) {
-            assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
+            assertTrue(X.hasCause(e, TimeoutException.class), e.toString());
         }
         finally {
             executorSrvc.shutdownNow();
@@ -1530,7 +1534,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             byte[] bytes = IgniteUtils.uuidToBytes(uuid);
 
-            assertTrue(e.getKey(), Arrays.equals(e.getValue(), bytes));
+            assertTrue(Arrays.equals(e.getValue(), bytes), e.getKey());
         }
     }
 

@@ -39,6 +39,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -104,7 +108,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
 
         if (expEvt) {
             assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
-            assertTrue(evt.get() instanceof ManagementTaskEvent);
+            assertInstanceOf(ManagementTaskEvent.class, evt.get());
             assertEquals(arg, ((ManagementTaskEvent)evt.get()).argument().getArgument());
         }
         else

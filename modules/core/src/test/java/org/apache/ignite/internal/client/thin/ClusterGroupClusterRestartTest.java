@@ -26,6 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class ClusterGroupClusterRestartTest extends AbstractThinClientTest {

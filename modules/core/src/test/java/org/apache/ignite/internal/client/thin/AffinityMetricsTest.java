@@ -40,6 +40,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.A
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.AFF_KEY_MISSES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.AFF_QRY_HITS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.AFF_QRY_MISSES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test thin client affinity hits/misses metrics.

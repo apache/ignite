@@ -20,6 +20,10 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests for SQL parser: CREATE INDEX.
  */

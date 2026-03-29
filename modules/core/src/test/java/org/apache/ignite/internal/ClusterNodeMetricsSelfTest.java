@@ -52,6 +52,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Grid node metrics self test.
@@ -201,9 +203,9 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getTotalExecutedTasks() == 1;
         assert metrics.getTotalJobsExecutionTime() > 0;
 
-        assertTrue("MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
-            " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime(),
-            metrics.getMaximumJobExecuteTime() >= metrics.getAverageJobExecuteTime());
+        assertTrue(metrics.getMaximumJobExecuteTime() >= metrics.getAverageJobExecuteTime(),
+            "MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
+                " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime());
     }
 
     /**
@@ -246,9 +248,9 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getTotalExecutedTasks() == 0;
         assert metrics.getTotalJobsExecutionTime() == 0;
 
-        assertTrue("MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
-            " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime(),
-            metrics.getMaximumJobExecuteTime() >= metrics.getAverageJobExecuteTime());
+        assertTrue(metrics.getMaximumJobExecuteTime() >= metrics.getAverageJobExecuteTime(),
+            "MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
+                " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime());
     }
 
     /**

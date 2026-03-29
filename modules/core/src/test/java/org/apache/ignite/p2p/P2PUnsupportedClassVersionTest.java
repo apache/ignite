@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.p2p.P2PScanQueryUndeployTest.PREDICATE_CLASSNAME;
 import static org.apache.ignite.p2p.SharedDeploymentTest.RUN_LAMBDA;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests user error (not server node failure) in case compute task compiled in unsupported bytecode version. */
 public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {

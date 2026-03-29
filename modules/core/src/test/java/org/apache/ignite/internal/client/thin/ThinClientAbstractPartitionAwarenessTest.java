@@ -50,6 +50,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Abstract thin client partition awareness test.
@@ -176,14 +179,15 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
         T2<TestTcpClientChannel, ClientOperation> queuedOp = opsQueue.peek();
 
-        assertNotNull("Unexpected (null) next operation [expCh=" + expCh + ", expOp=" + expOp + ']', nextChOp);
+        assertNotNull(nextChOp, "Unexpected (null) next operation [expCh=" + expCh + ", expOp=" + expOp + ']');
 
-        assertEquals("Unexpected operation on channel [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expOp, nextChOp.get2());
+        assertEquals(expOp, nextChOp.get2(), "Unexpected operation on channel [expCh=" + expCh + ", expOp=" + expOp +
+            ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']');
 
         if (expCh != null) {
-            assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expCh, nextChOp.get1());
+            assertEquals(expCh, nextChOp.get1(),
+                "Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
+                    ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']');
         }
     }
 
@@ -277,8 +281,8 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     protected void awaitChannelsInit(int... chIdxs) throws IgniteInterruptedCheckedException {
         // Wait until all channels initialized.
         for (int ch : chIdxs) {
-            assertTrue("Failed to wait for channel[" + ch + "] init",
-                GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT));
+            assertTrue(GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT),
+                "Failed to wait for channel[" + ch + "] init");
         }
     }
 

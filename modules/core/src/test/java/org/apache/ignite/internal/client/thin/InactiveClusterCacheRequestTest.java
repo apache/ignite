@@ -31,6 +31,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /** */
 public class InactiveClusterCacheRequestTest extends AbstractThinClientTest {
     /** {@inheritDoc} */

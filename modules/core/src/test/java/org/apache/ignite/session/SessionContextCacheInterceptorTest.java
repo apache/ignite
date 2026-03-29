@@ -44,12 +44,15 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -249,8 +252,8 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
             String retAsync = cacheApp.getAndReplaceAsync(KEYS + i, "1" + i).get(getTestTimeout());
 
             if (syncMode != CacheWriteSynchronizationMode.FULL_ASYNC) {
-                assertEquals(String.valueOf(i), ret);
-                assertEquals(String.valueOf(KEYS + i), retAsync);
+                Assertions.assertEquals(String.valueOf(i), ret);
+                Assertions.assertEquals(String.valueOf(KEYS + i), retAsync);
             }
 
             assertEquals("sessionOnPut" + j, () -> cacheApp.get(j));
@@ -449,7 +452,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     /** */
     private void assertEquals(Object exp, Supplier<Object> act) {
         if (syncMode == CacheWriteSynchronizationMode.FULL_SYNC)
-            assertEquals(exp, act.get());
+            Assertions.assertEquals(exp, act.get());
         else {
             try {
                 assertTrue(GridTestUtils.waitForCondition(() -> exp.equals(act.get()), getTestTimeout(), 10L));

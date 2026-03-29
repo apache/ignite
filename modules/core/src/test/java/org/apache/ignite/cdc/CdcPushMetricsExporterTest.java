@@ -44,6 +44,9 @@ import org.junit.jupiter.api.Test;
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class CdcPushMetricsExporterTest extends AbstractCdcTest {

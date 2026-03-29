@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {

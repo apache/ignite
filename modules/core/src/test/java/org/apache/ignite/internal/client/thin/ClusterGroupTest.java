@@ -34,6 +34,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Checks cluster groups for thin client.
  */
@@ -86,7 +92,7 @@ public class ClusterGroupTest extends AbstractThinClientTest {
             // (for example values of type byte[]), so we can't compare whole attribute maps using assertEquals.
             assertEquals(igniteNode.attributes().keySet(), clientNode.attributes().keySet());
             assertEquals((Integer)igniteNode.attribute(GRID_IDX_ATTR_NAME), clientNode.attribute(GRID_IDX_ATTR_NAME));
-            assertEquals(igniteNode.attribute(CUSTOM_ATTR_NAME), clientNode.attribute(CUSTOM_ATTR_NAME));
+            assertEquals((String)igniteNode.attribute(CUSTOM_ATTR_NAME), clientNode.attribute(CUSTOM_ATTR_NAME));
             assertEquals(new HashSet<>(igniteNode.addresses()), new HashSet<>(clientNode.addresses()));
             assertEquals(new HashSet<>(igniteNode.hostNames()), new HashSet<>(clientNode.hostNames()));
             assertEquals(igniteNode.order(), clientNode.order());

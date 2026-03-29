@@ -25,6 +25,10 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests unsafe memory.
  */
@@ -292,7 +296,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
      * @param s String.
      * @throws Exception If failed.
      */
-    public void checkCompare(String s) throws Exception {
+    public void checkCompare(String s) {
         byte[] bytes = s.getBytes();
 
         int size = bytes.length + 8;

@@ -26,6 +26,9 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 /**
  * Multi-JVM test for dynamic proxy serialization.
  */
@@ -116,7 +119,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws Exception {
+        @Override public Integer call() {
             return p.value();
         }
     }
@@ -133,7 +136,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws Exception {
+        @Override public Integer call() {
             return bo.<MyProxy>field("proxy").value();
         }
     }

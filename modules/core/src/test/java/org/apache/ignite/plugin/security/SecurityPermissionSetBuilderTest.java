@@ -40,6 +40,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOK
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for check correct work {@link SecurityPermissionSetBuilder permission builder}

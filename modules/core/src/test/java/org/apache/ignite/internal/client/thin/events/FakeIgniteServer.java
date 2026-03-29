@@ -48,6 +48,8 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.testframework.junits.JUnitAssertAware;
 import org.jetbrains.annotations.Nullable;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * A fake ignite server for testing handshake and connection errors handling on the thin client side.
  */

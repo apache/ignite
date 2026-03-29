@@ -91,6 +91,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
@@ -247,19 +251,19 @@ public class CdcSelfTest extends AbstractCdcTest {
                 Integer key = (Integer)evt.key();
 
                 if (evt.value() == null || key % 2 != 0) {
-                    assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
+                    assertEquals(CU.EXPIRE_TIME_ETERNAL, evt.expireTime(), "Expire time must not be set [key=" + key + ']');
 
                     return;
                 }
 
                 assertTrue(
-                    "Expire must be set [key=" + key + ']',
-                    evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
+                    evt.expireTime() != CU.EXPIRE_TIME_ETERNAL,
+                        "Expire must be set [key=" + key + ']'
                 );
 
                 long ttl = evt.expireTime() - System.currentTimeMillis();
 
-                assertTrue("Expire for operation", ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL));
+                assertTrue(ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL), "Expire for operation");
 
                 seen.add(key);
             }
@@ -359,7 +363,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
-        assertTrue("DataRecord(List<DataEntry>) should be logged.", waitForCondition(() -> {
+        assertTrue(waitForCondition(() -> {
             try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
                 while (iter.hasNext()) {
                     DataRecord rec = (DataRecord)iter.next().get2();
@@ -373,7 +377,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
 
             return false;
-        }, getTestTimeout()));
+        }, getTestTimeout()), "DataRecord(List<DataEntry>) should be logged.");
 
         for (int i = 0; i < 2; i++) {
             IgniteEx grid = grid(i);

@@ -47,6 +47,10 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
@@ -144,20 +148,20 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     private void invokeScanQueryAndStopClient(Ignite client, Class predCls) throws Exception {
         IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
 
-        assertEquals("Invalid number of sent grid deployment requests", 0, MessageCountingCommunicationSpi.deploymentRequestCount());
+        assertEquals(0, MessageCountingCommunicationSpi.deploymentRequestCount(), "Invalid number of sent grid deployment requests");
 
-        assertFalse(PREDICATE_CLASSNAME + " mustn't be cached! ", igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME));
+        assertFalse(igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME), PREDICATE_CLASSNAME + " mustn't be cached! ");
 
         cache.query(new ScanQuery<>((IgniteBiPredicate<Integer, String>)predCls.newInstance())).getAll();
 
         // first request is GridDeployment.java 716 and second is GridDeployment.java 501
-        assertEquals("Invalid number of sent grid deployment requests", 2, MessageCountingCommunicationSpi.deploymentRequestCount());
+        assertEquals(2, MessageCountingCommunicationSpi.deploymentRequestCount(), "Invalid number of sent grid deployment requests");
 
-        assertTrue(PREDICATE_CLASSNAME + " must be cached! ", igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME));
+        assertTrue(igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME), PREDICATE_CLASSNAME + " must be cached! ");
 
         client.close();
 
-        assertFalse(PREDICATE_CLASSNAME + " mustn't be cached! ", igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME));
+        assertFalse(igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME), PREDICATE_CLASSNAME + " mustn't be cached! ");
     }
 
     /**

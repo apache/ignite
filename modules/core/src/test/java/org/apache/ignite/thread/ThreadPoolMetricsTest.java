@@ -62,6 +62,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_PO
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -231,24 +232,24 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             String errMsg = "pool=" + mreg.name();
 
             assertTrue(GridTestUtils.waitForCondition(() -> cntr.get() == 0, getTestTimeout()));
-            assertFalse(errMsg, ((BooleanMetric)mreg.findMetric("Shutdown")).value());
-            assertFalse(errMsg, ((BooleanMetric)mreg.findMetric("Terminated")).value());
-            assertTrue(errMsg, ((IntMetric)mreg.findMetric("ActiveCount")).value() > 0);
-            assertTrue(errMsg, stream(execTimeMetric.value()).sum() >= taskCnt);
+            assertFalse(((BooleanMetric)mreg.findMetric("Shutdown")).value(), errMsg);
+            assertFalse(((BooleanMetric)mreg.findMetric("Terminated")).value(), errMsg);
+            assertTrue(((IntMetric)mreg.findMetric("ActiveCount")).value() > 0, errMsg);
+            assertTrue(stream(execTimeMetric.value()).sum() >= taskCnt, errMsg);
 
             if (stripedExecutor) {
-                assertTrue(errMsg, ((IntMetric)mreg.findMetric("StripesCount")).value() > 0);
-                assertTrue(errMsg, ((LongMetric)mreg.findMetric("TotalCompletedTasksCount")).value() >= taskCnt);
+                assertTrue(((IntMetric)mreg.findMetric("StripesCount")).value() > 0, errMsg);
+                assertTrue(((LongMetric)mreg.findMetric("TotalCompletedTasksCount")).value() >= taskCnt, errMsg);
 
                 continue;
             }
 
-            assertTrue(errMsg, ((LongMetric)mreg.findMetric("CompletedTaskCount")).value() >= taskCnt);
-            assertFalse(errMsg, F.isEmpty(mreg.findMetric("ThreadFactoryClass").getAsString()));
-            assertFalse(errMsg, F.isEmpty(mreg.findMetric("RejectedExecutionHandlerClass").getAsString()));
-            assertTrue(errMsg, ((IntMetric)mreg.findMetric("CorePoolSize")).value() > 0);
-            assertTrue(errMsg, ((IntMetric)mreg.findMetric("LargestPoolSize")).value() > 0);
-            assertTrue(errMsg, ((IntMetric)mreg.findMetric("MaximumPoolSize")).value() > 0);
+            assertTrue(((LongMetric)mreg.findMetric("CompletedTaskCount")).value() >= taskCnt, errMsg);
+            assertFalse(F.isEmpty(mreg.findMetric("ThreadFactoryClass").getAsString()), errMsg);
+            assertFalse(F.isEmpty(mreg.findMetric("RejectedExecutionHandlerClass").getAsString()), errMsg);
+            assertTrue(((IntMetric)mreg.findMetric("CorePoolSize")).value() > 0, errMsg);
+            assertTrue(((IntMetric)mreg.findMetric("LargestPoolSize")).value() > 0, errMsg);
+            assertTrue(((IntMetric)mreg.findMetric("MaximumPoolSize")).value() > 0, errMsg);
         }
 
         longTaskLatch.countDown();

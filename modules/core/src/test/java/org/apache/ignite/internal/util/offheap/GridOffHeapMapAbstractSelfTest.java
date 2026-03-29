@@ -35,6 +35,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests off-heap map.
  */
@@ -151,7 +157,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
             map.insert(hash(key), key.getBytes(), val.getBytes());
 
-            assertTrue("Failed to insert for index: " + i, map.contains(hash(key), key.getBytes()));
+            assertTrue(map.contains(hash(key), key.getBytes()), "Failed to insert for index: " + i);
             assertEquals(val, new String(map.get(hash(key), key.getBytes())));
             assertEquals(i + 1, map.totalSize());
         }
@@ -622,8 +628,8 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         }
 
         assertTrue(evictCnt.get() > 10);
-        assertTrue("Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']',
-            map.freeSize() >= 0);
+        assertTrue(map.freeSize() >= 0,
+            "Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']');
     }
 
     /**

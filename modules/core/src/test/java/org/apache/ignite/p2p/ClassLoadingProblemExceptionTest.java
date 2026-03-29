@@ -59,6 +59,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -152,8 +153,8 @@ public class ClassLoadingProblemExceptionTest extends GridCommonAbstractTest imp
             exceptionThrown.get().printStackTrace();
 
         assertTrue(
-            "Wrong exception: " + exceptionThrown.get(),
-            exceptionThrown.get() == null && eExp == null || X.hasCause(exceptionThrown.get(), eExp)
+            exceptionThrown.get() == null && eExp == null || X.hasCause(exceptionThrown.get(), eExp),
+                "Wrong exception: " + exceptionThrown.get()
         );
     }
 

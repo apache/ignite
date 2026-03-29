@@ -34,6 +34,10 @@ import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.PRINT_PROPS_COMMAND;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.PROPS_CLS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests print Ignite system properties. */
 public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
@@ -53,14 +57,14 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
 
                 SystemProperty ann = field.getAnnotation(SystemProperty.class);
 
-                assertNotNull("Field " + field.getName() + " has no SystemProperty annotation.", ann);
+                assertNotNull(ann, "Field " + field.getName() + " has no SystemProperty annotation.");
 
-                assertFalse(field.getName() + " value shouldn't ends with dot.", ann.value().endsWith("."));
-                assertFalse(field.getName() + " defaults shouldn't ends with dot.", ann.defaults().endsWith("."));
+                assertFalse(ann.value().endsWith("."), field.getName() + " value shouldn't ends with dot.");
+                assertFalse(ann.defaults().endsWith("."), field.getName() + " defaults shouldn't ends with dot.");
 
-                assertTrue("Ignite system property must be annotated by @" +
-                        SystemProperty.class.getSimpleName() + " [field=" + field + ']',
-                    field.isAnnotationPresent(SystemProperty.class));
+                assertTrue(field.isAnnotationPresent(SystemProperty.class),
+                        "Ignite system property must be annotated by @" +
+                                SystemProperty.class.getSimpleName() + " [field=" + field + ']');
             }
         }
 
@@ -74,8 +78,8 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
                 if (ann == null)
                     continue;
 
-                assertFalse(field.getName() + " value shouldn't ends with dot.", ann.value().endsWith("."));
-                assertFalse(field.getName() + " defaults shouldn't ends with dot.", ann.defaults().endsWith("."));
+                assertFalse(ann.value().endsWith("."), field.getName() + " value shouldn't ends with dot.");
+                assertFalse(ann.defaults().endsWith("."), field.getName() + " defaults shouldn't ends with dot.");
 
                 expProps.put(U.staticField(cls, field.getName()), field);
             }
@@ -97,11 +101,11 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
 
                     Field field = expProps.remove(name);
 
-                    assertNotNull("Unexpected or duplicated property found [name=" + name + ']', field);
+                    assertNotNull(field, "Unexpected or duplicated property found [name=" + name + ']');
 
                     assertEquals(field.isAnnotationPresent(Deprecated.class), deprecated);
 
-                    assertFalse("Description is empty.", desc.isEmpty());
+                    assertFalse(desc.isEmpty(), "Description is empty.");
                 }
             },
             null);
@@ -110,6 +114,6 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
 
         assertEquals(0, proc.getProcess().exitValue());
 
-        assertTrue("Not all properties printed: " + expProps, expProps.isEmpty());
+        assertTrue(expProps.isEmpty(), "Not all properties printed: " + expProps);
     }
 }

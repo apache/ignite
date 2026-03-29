@@ -52,6 +52,9 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Session cancellation tests.
@@ -157,7 +160,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
         try {
             // Wait until jobs begin execution.
-            assertTrue("Jobs did not start.", startSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS));
+            assertTrue(startSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS), "Jobs did not start.");
 
             Object res = fut.get(getTestTimeout());
 
@@ -165,8 +168,8 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
             // Wait for all jobs to finish.
             assertTrue(
-                "Jobs did not cancel [interruptCount=" + Arrays.toString(interruptCnt) + ']',
-                stopSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS)
+                stopSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS),
+                "Jobs did not cancel [interruptCount=" + Arrays.toString(interruptCnt) + ']'
             );
 
             assertThat(interruptCnt[num].get(), equalTo(SPLIT_COUNT - 1));

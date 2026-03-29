@@ -49,6 +49,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Thin client timeouts tests.
@@ -99,8 +102,8 @@ public class TimeoutTest extends AbstractThinClientTest {
 
                 long ts1 = System.currentTimeMillis();
 
-                assertTrue("Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']',
-                    ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2);
+                assertTrue(ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2,
+                    "Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']');
             }
             finally {
                 s.close();
@@ -157,8 +160,8 @@ public class TimeoutTest extends AbstractThinClientTest {
 
         long ts1 = System.currentTimeMillis();
 
-        assertTrue("Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']',
-            ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2);
+        assertTrue(ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2,
+            "Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']');
 
         fut.get();
     }
@@ -210,8 +213,8 @@ public class TimeoutTest extends AbstractThinClientTest {
 
                 long ts1 = System.currentTimeMillis();
 
-                assertTrue("Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']',
-                    ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2);
+                assertTrue(ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2,
+                    "Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']');
 
                 fut.get();
             }

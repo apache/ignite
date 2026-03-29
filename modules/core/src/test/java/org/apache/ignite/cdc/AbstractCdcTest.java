@@ -72,6 +72,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public abstract class AbstractCdcTest extends GridCommonAbstractTest {
@@ -193,7 +198,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         assertEquals(to - from, keys.size());
 
         for (int i = from; i < to; i++)
-            assertTrue(Integer.toString(i), keys.contains(i));
+            assertTrue(keys.contains(i), Integer.toString(i));
 
         assertTrue(cnsmr.stopped());
     }

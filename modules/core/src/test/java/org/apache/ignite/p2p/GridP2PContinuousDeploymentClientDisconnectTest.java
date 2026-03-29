@@ -51,6 +51,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for client disconnection during continuous query deployment.

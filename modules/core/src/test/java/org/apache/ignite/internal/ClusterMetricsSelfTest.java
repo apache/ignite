@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests for projection metrics.

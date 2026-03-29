@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests checks case when one node is unable to connect to next in a ring,

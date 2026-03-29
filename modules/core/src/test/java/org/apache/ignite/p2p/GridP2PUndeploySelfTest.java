@@ -36,6 +36,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */

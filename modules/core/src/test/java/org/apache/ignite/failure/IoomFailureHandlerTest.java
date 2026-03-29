@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * IgniteOutOfMemoryError failure handler test.
  */

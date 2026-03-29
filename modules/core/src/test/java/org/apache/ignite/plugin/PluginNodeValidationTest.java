@@ -28,6 +28,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Test node validation on join by plugin.
  */
@@ -65,7 +68,7 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
             startGrid(1);
         }
         catch (Exception ex) {
-            assertTrue("Wrong exception type for validation error", X.hasCause(ex, IgniteSpiException.class));
+            assertTrue(X.hasCause(ex, IgniteSpiException.class), "Wrong exception type for validation error");
 
             return;
         }

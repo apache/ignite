@@ -67,6 +67,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Check only {@link DataRecord} written to the WAL for in-memory cache. */
 @ParameterizedClass(name = "mode={0}, atomicityMode={1}")
@@ -257,19 +260,19 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         assertTrue(finishSgmnt > startSgmnt);
         assertTrue(
-            "Wait for start segment archivation",
-            waitForCondition(() -> startSgmnt <= wal.lastArchivedSegment(), getTestTimeout())
+            waitForCondition(() -> startSgmnt <= wal.lastArchivedSegment(), getTestTimeout()),
+                "Wait for start segment archivation"
         );
 
         File startSgmntArchived = ft.walArchiveSegment(startSgmnt);
 
-        assertTrue("Check archived segment file exists", startSgmntArchived.exists());
+        assertTrue(startSgmntArchived.exists(), "Check archived segment file exists");
 
         createData.accept((int)(archiveSz / KB));
 
         assertTrue(
-            "Wait for archived segment cleaned",
-            waitForCondition(() -> !startSgmntArchived.exists(), getTestTimeout())
+            waitForCondition(() -> !startSgmntArchived.exists(), getTestTimeout()),
+                    "Wait for archived segment cleaned"
         );
     }
 
@@ -306,8 +309,8 @@ public class WalForCdcTest extends GridCommonAbstractTest {
                     long startSgmnt = wal.currentSegment();
 
                     assertTrue(
-                        "Timeout rollover must happen",
-                        waitForCondition(() -> startSgmnt < wal.currentSegment(), WAL_ARCHIVE_TIMEOUT * 2)
+                        waitForCondition(() -> startSgmnt < wal.currentSegment(), WAL_ARCHIVE_TIMEOUT * 2),
+                        "Timeout rollover must happen"
                     );
                 }
             }

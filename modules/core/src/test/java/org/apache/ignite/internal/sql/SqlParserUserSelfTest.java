@@ -22,6 +22,8 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
@@ -29,11 +31,9 @@ import org.junit.jupiter.api.Test;
 public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for CREATE USER command.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testCreateUser() throws Exception {
+    public void testCreateUser() {
         // Base.
         parseValidateCreate("CREATE USER test WITH PASSWORD 'test'", "TEST", "test");
         parseValidateCreate("CREATE USER \"test\" WITH PASSWORD 'test'", "test", "test");

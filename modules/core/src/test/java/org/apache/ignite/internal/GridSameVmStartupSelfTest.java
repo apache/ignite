@@ -35,6 +35,7 @@ import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Starts two grids on the same vm, checks topologies of each grid and discovery

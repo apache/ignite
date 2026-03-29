@@ -33,6 +33,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Checks count of tries to load class directly from class loader.
  */
@@ -137,7 +141,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
             }
             catch (IgniteDeploymentException e) {
                 if (depMode != DeploymentMode.CONTINUOUS)
-                    assertTrue(e.getMessage(), e.getMessage().contains("Unknown task name or failed to auto-deploy task"));
+                    assertTrue(e.getMessage().contains("Unknown task name or failed to auto-deploy task"), e.getMessage());
                 else
                     fail(e.getMessage());
             }

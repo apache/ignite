@@ -64,6 +64,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Thin client cache entry listeners test.
@@ -310,7 +316,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             long ts2 = U.currentTimeMillis();
 
             // Ensure that item was received after timeout.
-            assertTrue("ts2 - ts1 = " + (ts2 - ts1), ts2 - ts1 >= TIMEOUT);
+            assertTrue(ts2 - ts1 >= TIMEOUT, "ts2 - ts1 = " + (ts2 - ts1));
         }
     }
 

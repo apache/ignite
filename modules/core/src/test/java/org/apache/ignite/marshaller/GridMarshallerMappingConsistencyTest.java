@@ -32,6 +32,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -152,8 +155,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         startGrid(1);
         Ignite g2 = startGrid(2);
 
-        assertTrue("Failed to wait for automatic grid activation",
-            GridTestUtils.waitForCondition(() -> g2.cluster().state().active(), getTestTimeout()));
+        assertTrue(GridTestUtils.waitForCondition(() -> g2.cluster().state().active(), getTestTimeout()),
+                "Failed to wait for automatic grid activation");
 
         IgniteCache<Integer, DummyObject> c2 = g2.cache(CACHE_NAME);
 
