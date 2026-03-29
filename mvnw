@@ -46,6 +46,8 @@ if [ -z "$MAVEN_SKIP_RC" ] ; then
 
 fi
 
+echo ">>> Starting Maven Wrapper..."
+
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
 darwin=false;
