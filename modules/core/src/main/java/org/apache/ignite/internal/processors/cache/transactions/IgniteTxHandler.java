@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishSalvagedWriteThroughRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -100,6 +102,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -222,6 +225,9 @@ public class IgniteTxHandler {
 
         ctx.io().addCacheHandler(GridDhtTxFinishRequest.class, (UUID nodeId, GridCacheMessage msg) ->
             processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg));
+
+        ctx.io().addCacheHandler(GridDhtTxFinishSalvagedWriteThroughRequest.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxFinishSalvageWriteThroughRequest((GridDhtTxFinishSalvagedWriteThroughRequest)msg));
 
         ctx.io().addCacheHandler(GridDhtTxOnePhaseCommitAckRequest.class, (UUID nodeId, GridCacheMessage msg) ->
             processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg));
@@ -1342,6 +1348,29 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param req Finish request.
+     */
+    private void processDhtTxFinishSalvageWriteThroughRequest(GridDhtTxFinishSalvagedWriteThroughRequest req) {
+        boolean needRecovery = ctx.tm().recoveryUncommitedSalvagedTx(req.version());
+
+        if (needRecovery) {
+            Collection<IgniteInternalTx> activeTx = ctx.tm().activeTransactions();
+
+            for (IgniteInternalTx active : activeTx) {
+                if (active.nearXidVersion().equals(req.version())) {
+                    assert active instanceof GridDhtTxRemote : active;
+                    GridDhtTxRemote salvagedTx = (GridDhtTxRemote)active;
+
+                    if (salvagedTx.finalizationStatus() == RECOVERY_FINISH_WT) {
+                        finishWithSalvaged(salvagedTx);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1411,6 +1440,22 @@ public class IgniteTxHandler {
                 sendReply(nodeId, req, true, null);
 
             assert req.txState() != null || (dhtTx == null && nearTx == null) : req + " tx=" + dhtTx + " nearTx=" + nearTx;
+        }
+    }
+
+    /**
+     * Finish if uncommited tx is found.
+     * It can be in such a state only if writeThrough is enabled and {@link IgniteTxAdapter#finalizationStatus()} is
+     * {@link IgniteInternalTx.FinalizationStatus#RECOVERY_FINISH_WT}.
+     *
+     * @see CacheConfiguration#setWriteThrough(boolean)
+     */
+    private void finishWithSalvaged(GridDistributedTxRemoteAdapter tx) {
+        try {
+            tx.commitRemoteTx();
+        }
+        catch (IgniteCheckedException ex) {
+            U.error(log, "Failed to commit salvaged transaction: " + tx, ex);
         }
     }
 

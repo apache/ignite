@@ -85,6 +85,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -405,6 +406,13 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      */
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
+            if (finalizationStatus() == RECOVERY_FINISH_WT) {
+                if (cctx.tm().skipCommitSalvagedTx(nearXidVersion()))
+                    return;
+                else
+                    cctx.tm().removeUncommitedSalvagedTx(nearXidVersion());
+            }
+
             for (IgniteTxEntry txEntry : writeEntries()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
@@ -817,7 +825,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         if (optimistic())
             state(PREPARED);
 
-        if (!state(COMMITTING)) {
+        // RECOVERY_FINISH_WT enabled flag is a special case for suspended for commit transactions.
+        // In such a case the transaction still will be in the state of: COMMITTING.
+        if (!state(COMMITTING) && finalizationStatus() != RECOVERY_FINISH_WT) {
             TransactionState state = state();
 
             // If other thread is doing commit, then no-op.
@@ -838,6 +848,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         }
 
         try {
+            assert finalizationStatus() != RECOVERY_FINISH_WT || state() == COMMITTING : state();
+
             commitIfLocked();
         }
         catch (IgniteTxHeuristicCheckedException e) {
