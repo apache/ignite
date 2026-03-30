@@ -1072,33 +1072,33 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   final public SqlNode SqlStmt() throws ParseException {
     SqlNode stmt;
     if (jj_2_52(2)) {
-      stmt = SqlQueryOrExprWithForUpdate();
-    } else if (jj_2_53(2)) {
       stmt = SqlAlterTable();
-    } else if (jj_2_54(2)) {
+    } else if (jj_2_53(2)) {
       stmt = SqlAlterUser();
-    } else if (jj_2_55(2)) {
+    } else if (jj_2_54(2)) {
       stmt = SqlKillScanQuery();
-    } else if (jj_2_56(2)) {
+    } else if (jj_2_55(2)) {
       stmt = SqlKillContinuousQuery();
-    } else if (jj_2_57(2)) {
+    } else if (jj_2_56(2)) {
       stmt = SqlKillService();
-    } else if (jj_2_58(2)) {
+    } else if (jj_2_57(2)) {
       stmt = SqlKillTransaction();
-    } else if (jj_2_59(2)) {
+    } else if (jj_2_58(2)) {
       stmt = SqlKillComputeTask();
-    } else if (jj_2_60(2)) {
+    } else if (jj_2_59(2)) {
       stmt = SqlKillQuery();
-    } else if (jj_2_61(2)) {
+    } else if (jj_2_60(2)) {
       stmt = SqlCommitTransaction();
-    } else if (jj_2_62(2)) {
+    } else if (jj_2_61(2)) {
       stmt = SqlRollbackTransaction();
-    } else if (jj_2_63(2)) {
+    } else if (jj_2_62(2)) {
       stmt = SqlStatisticsAnalyze();
-    } else if (jj_2_64(2)) {
+    } else if (jj_2_63(2)) {
       stmt = SqlStatisticsRefresh();
-    } else if (jj_2_65(2)) {
+    } else if (jj_2_64(2)) {
       stmt = SqlStatisticsDrop();
+    } else if (jj_2_65(2)) {
+      stmt = SqlQueryOrExprWithForUpdate();
     } else if (jj_2_66(2)) {
       stmt = SqlSetOption(Span.of(), null);
     } else if (jj_2_67(2)) {
@@ -28628,7 +28628,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_103() {
+  final private boolean jj_3R_102() {
     if (jj_scan_token(ANALYZE)) return true;
     if (jj_3R_353()) return true;
     return false;
@@ -28701,7 +28701,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_104() {
+  final private boolean jj_3R_103() {
     if (jj_scan_token(REFRESH)) return true;
     if (jj_scan_token(STATISTICS)) return true;
     return false;
@@ -28718,7 +28718,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_105() {
+  final private boolean jj_3R_104() {
     if (jj_scan_token(DROP)) return true;
     if (jj_scan_token(STATISTICS)) return true;
     return false;
@@ -29093,7 +29093,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_102() {
+  final private boolean jj_3R_101() {
     if (jj_scan_token(ROLLBACK)) return true;
     Token xsp;
     xsp = jj_scanpos;
@@ -29124,7 +29124,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_101() {
+  final private boolean jj_3R_100() {
     if (jj_scan_token(COMMIT)) return true;
     Token xsp;
     xsp = jj_scanpos;
@@ -29137,7 +29137,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_100() {
+  final private boolean jj_3R_99() {
     if (jj_scan_token(KILL)) return true;
     if (jj_scan_token(QUERY)) return true;
     return false;
@@ -29174,7 +29174,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_99() {
+  final private boolean jj_3R_98() {
     if (jj_scan_token(KILL)) return true;
     if (jj_scan_token(COMPUTE)) return true;
     return false;
@@ -29186,7 +29186,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_97() {
+  final private boolean jj_3R_96() {
     if (jj_scan_token(KILL)) return true;
     if (jj_scan_token(SERVICE)) return true;
     return false;
@@ -29219,7 +29219,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_98() {
+  final private boolean jj_3R_97() {
     if (jj_scan_token(KILL)) return true;
     if (jj_scan_token(TRANSACTION)) return true;
     return false;
@@ -29241,7 +29241,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_96() {
+  final private boolean jj_3R_95() {
     if (jj_scan_token(KILL)) return true;
     if (jj_scan_token(CONTINUOUS)) return true;
     return false;
@@ -29279,7 +29279,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_95() {
+  final private boolean jj_3R_94() {
     if (jj_scan_token(KILL)) return true;
     if (jj_scan_token(SCAN)) return true;
     return false;
@@ -29358,7 +29358,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_94() {
+  final private boolean jj_3R_93() {
     if (jj_scan_token(ALTER)) return true;
     if (jj_scan_token(USER)) return true;
     return false;
@@ -29454,7 +29454,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_93() {
+  final private boolean jj_3R_92() {
     if (jj_scan_token(ALTER)) return true;
     if (jj_scan_token(TABLE)) return true;
     return false;
@@ -30804,7 +30804,7 @@ final String p;
     return false;
   }
 
-  final private boolean jj_3R_92() {
+  final private boolean jj_3R_105() {
     if (jj_3R_79()) return true;
     Token xsp;
     xsp = jj_scanpos;

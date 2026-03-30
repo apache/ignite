@@ -433,7 +433,6 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
-      "SqlQueryOrExprWithForUpdate()",
       "SqlAlterTable()",
       "SqlAlterUser()",
       "SqlKillScanQuery()",
@@ -447,6 +446,8 @@ data: {
       "SqlStatisticsAnalyze()"
       "SqlStatisticsRefresh()"
       "SqlStatisticsDrop()"
+      # Keep query parser last to avoid shadowing custom statements such as KILL/ANALYZE.
+      "SqlQueryOrExprWithForUpdate()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
