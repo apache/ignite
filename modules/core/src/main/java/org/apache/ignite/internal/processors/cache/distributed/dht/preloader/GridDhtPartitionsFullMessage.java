@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
@@ -83,7 +84,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(4)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionsToReloadMap partsToReload;
+    Map<UUID, Map<Integer, Set<Integer>>> partsToReload;
 
     /** Partition sizes. */
     @Order(5)
@@ -145,7 +146,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
-        @Nullable IgniteDhtPartitionsToReloadMap partsToReload) {
+        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload) {
         super(id, lastVer);
 
         assert id == null || topVer.equals(id.topologyVersion());
@@ -336,7 +337,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partsToReload == null)
             return Collections.emptySet();
 
-        return partsToReload.get(nodeId, grpId);
+        Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
+
+        return nodeMap == null ? Collections.emptySet() : (Set<Integer>)F.emptyIfNull(nodeMap.get(grpId));
     }
 
     /**
@@ -448,7 +451,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
         if (partsToReload == null)
-            partsToReload = new IgniteDhtPartitionsToReloadMap();
+            partsToReload = new ConcurrentHashMap<>();
 
         if (errs == null)
             errs = new HashMap<>();

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -108,13 +108,17 @@ public class CompressedMessageTest {
     /** */
     private GridDhtPartitionsFullMessage fullMessage() {
         IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
-        IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
+        Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new ConcurrentHashMap<>();
 
         for (int i = 0; i < 500; i++) {
             UUID uuid = UUID.randomUUID();
 
             partHistSuppliers.put(uuid, i, i + 1, i + 2);
-            partsToReload.put(uuid, i, i + 1);
+
+            Map<Integer, Set<Integer>> nodeMap = new ConcurrentHashMap<>();
+            nodeMap.put(i, Set.of(i + 1));
+
+            partsToReload.put(uuid, nodeMap);
         }
 
         return new GridDhtPartitionsFullMessage(null, null, new AffinityTopologyVersion(0), partHistSuppliers, partsToReload);
@@ -130,8 +134,8 @@ public class CompressedMessageTest {
         for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> entry : expHistSuppliers.entrySet())
             assertEquals(entry.getValue(), actHistSuppliers.get(entry.getKey()));
 
-        Map<UUID, Map<Integer, Set<Integer>>> expPartsToReload = U.field((Object)U.field(expected, "partsToReload"), "map");
-        Map<UUID, Map<Integer, Set<Integer>>> actPartsToReload = U.field((Object)U.field(actual, "partsToReload"), "map");
+        Map<UUID, Map<Integer, Set<Integer>>> expPartsToReload = U.field(expected, "partsToReload");
+        Map<UUID, Map<Integer, Set<Integer>>> actPartsToReload = U.field(actual, "partsToReload");
 
         assertEquals(expPartsToReload.size(), actPartsToReload.size());
 
