@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
@@ -72,7 +71,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(2)
     @Compress
     @GridToStringInclude
-    Map<Integer, CachePartitionFullCountersMap> partCntrs;
+    IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
     @Order(3)
@@ -280,10 +279,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     public void addPartitionUpdateCounters(int grpId, CachePartitionFullCountersMap cntrMap) {
         if (partCntrs == null)
-            partCntrs = new ConcurrentHashMap<>();
+            partCntrs = new IgniteDhtPartitionCountersMap();
 
-        if (!partCntrs.containsKey(grpId))
-            partCntrs.put(grpId, cntrMap);
+        partCntrs.putIfAbsent(grpId, cntrMap);
     }
 
     /**
@@ -444,7 +442,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parts = new HashMap<>();
 
         if (partCntrs == null)
-            partCntrs = new ConcurrentHashMap<>();
+            partCntrs = new IgniteDhtPartitionCountersMap();
 
         if (partHistSuppliers == null)
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
