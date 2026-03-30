@@ -63,10 +63,6 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
         return metricsMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 13;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {

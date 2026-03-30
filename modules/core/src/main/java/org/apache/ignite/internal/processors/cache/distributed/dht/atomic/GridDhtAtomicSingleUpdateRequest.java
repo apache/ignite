@@ -367,10 +367,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         prevVal = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -36;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -95,10 +95,6 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 37;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

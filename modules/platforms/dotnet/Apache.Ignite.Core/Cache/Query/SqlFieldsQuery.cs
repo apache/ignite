@@ -59,6 +59,9 @@ namespace Apache.Ignite.Core.Cache.Query
 
             PageSize = DefaultPageSize;
             UpdateBatchSize = DefaultUpdateBatchSize;
+#pragma warning disable 618
+            Lazy = true;
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -154,6 +157,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
         /// consumption at the cost of moderate performance hit.
         /// </summary>
+        [Obsolete("Deprecated for removal. Use the page size instead.")]
         public bool Lazy { get; set; }
 
         /// <summary>
@@ -186,12 +190,13 @@ namespace Apache.Ignite.Core.Cache.Query
             var parts = Partitions == null
                 ? ""
                 : string.Join(", ", Partitions.Select(x => x.ToString()));
-
+#pragma warning disable 618
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, Partitions=[{7}], " +
                                  "UpdateBatchSize={8}, Colocated={9}, Schema={10}, Lazy={11}]", Sql, args, Local,
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, parts,
                                  UpdateBatchSize, Colocated, Schema, Lazy);
+#pragma warning restore 618
         }
 
         /** <inheritdoc /> */
@@ -213,7 +218,9 @@ namespace Apache.Ignite.Core.Cache.Query
 
             writer.WriteBoolean(EnableDistributedJoins);
             writer.WriteBoolean(EnforceJoinOrder);
+#pragma warning disable 618
             writer.WriteBoolean(Lazy); // Lazy flag.
+#pragma warning restore 618
             writer.WriteInt((int) Timeout.TotalMilliseconds);
 #pragma warning disable 618
             writer.WriteBoolean(ReplicatedOnly);

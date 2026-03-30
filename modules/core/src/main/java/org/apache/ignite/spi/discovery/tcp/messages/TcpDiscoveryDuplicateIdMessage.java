@@ -65,8 +65,4 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
         return S.toString(TcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 12;
-    }
 }

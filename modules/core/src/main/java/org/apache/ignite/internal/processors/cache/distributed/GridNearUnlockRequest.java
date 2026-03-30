@@ -95,10 +95,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
         return ctx.txLockMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 57;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -113,10 +113,6 @@ public class ChangeCacheEncryptionRequest implements Message {
         return Objects.equals(reqId, ((ChangeCacheEncryptionRequest)o).reqId);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 38;
-    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {

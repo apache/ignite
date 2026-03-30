@@ -108,10 +108,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 10;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

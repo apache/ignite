@@ -22,13 +22,10 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -46,9 +43,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Test Managers to add and remove local message listener.
  */
 public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final short DIRECT_TYPE = 210;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -219,11 +213,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(DIRECT_TYPE, GridIoUserMessage::new);
-                }
-            });
+            // No-op.
         }
     }
 }

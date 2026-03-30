@@ -124,8 +124,4 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         return S.toString(TcpDiscoveryJoinRequestMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 20;
-    }
 }

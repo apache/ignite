@@ -121,8 +121,4 @@ public class InitMessage<I extends Message> implements Message, DiscoveryCustomM
         return S.toString(InitMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 31;
-    }
 }

@@ -265,10 +265,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         return ctx.txFinishMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 23;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

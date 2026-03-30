@@ -42,8 +42,4 @@ public class TestIntegerMessage implements Message {
         return val;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 10_000;
-    }
 }

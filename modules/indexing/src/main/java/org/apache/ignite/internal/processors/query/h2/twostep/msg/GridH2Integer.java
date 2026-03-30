@@ -51,10 +51,6 @@ public class GridH2Integer extends GridH2ValueMessage {
         return ValueInt.get(x);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -8;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {

@@ -64,8 +64,4 @@ public class SnapshotHandlerResult<T extends Message> implements Message {
         return (Exception)ErrorMessage.error(errMsg);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 521;
-    }
 }

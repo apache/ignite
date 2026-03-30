@@ -113,10 +113,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         return ver;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 103;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

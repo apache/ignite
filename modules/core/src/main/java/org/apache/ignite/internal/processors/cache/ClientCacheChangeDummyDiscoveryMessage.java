@@ -131,10 +131,6 @@ public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartiti
             startReqs = U.unmarshal(marsh, startRequestsBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 533;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

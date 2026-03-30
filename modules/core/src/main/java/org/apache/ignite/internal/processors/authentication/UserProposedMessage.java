@@ -85,8 +85,4 @@ public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage, Me
         return S.toString(UserProposedMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 511;
-    }
 }

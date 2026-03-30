@@ -406,10 +406,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 41;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

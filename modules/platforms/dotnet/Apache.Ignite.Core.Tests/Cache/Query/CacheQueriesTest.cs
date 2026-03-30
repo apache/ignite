@@ -398,7 +398,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 #pragma warning restore 618
                 Local = loc,
                 Timeout = TimeSpan.FromSeconds(2),
+#pragma warning disable 618
                 Lazy = lazy
+#pragma warning restore 618
             };
 
             using (var cursor = cache.Query(qry))
