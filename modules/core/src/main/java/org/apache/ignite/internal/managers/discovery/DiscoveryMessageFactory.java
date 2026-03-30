@@ -227,8 +227,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
-        factory.register((short)-117, TcpDiscoveryNode::new, new TcpDiscoveryNodeMarshallableSerializer(marsh, clsLdr));
-        factory.register((short)-116, IgniteProductVersion::new, new IgniteProductVersionSerializer());
+        factory.register(-117, TcpDiscoveryNode::new, new TcpDiscoveryNodeMarshallableSerializer(marsh, clsLdr));
+        factory.register(-116, IgniteProductVersion::new, new IgniteProductVersionSerializer());
         factory.register(-115, SchemaAlterTableAddColumnOperation::new, new SchemaAlterTableAddColumnOperationSerializer());
         factory.register(-114, SchemaIndexCreateOperation::new, new SchemaIndexCreateOperationMarshallableSerializer(marsh, clsLdr));
         factory.register(-113, SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
