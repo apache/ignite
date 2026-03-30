@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -960,8 +961,20 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      * Ensures parser accepts {@code FOR UPDATE} for plain SELECT.
      */
     @Test
-    public void testSelectForUpdateWithoutOrderBy() throws SqlParseException {
+    public void testSelectForUpdate() throws SqlParseException {
         SqlSelect selectWithForUpdate = parse("SELECT id, val FROM TEST FOR UPDATE");
+
+        assertTrue(selectWithForUpdate.isForUpdate());
+    }
+
+    /**
+     * Ensures parser accepts {@code FOR UPDATE} in {@code EXPLAIN PLAN FOR ...} query body.
+     */
+    @Test
+    public void testExplainPlanSelectForUpdate() throws SqlParseException {
+        SqlExplain explainWithForUpdate = parse("EXPLAIN PLAN FOR SELECT id, val FROM TEST FOR UPDATE");
+
+        SqlSelect selectWithForUpdate = (SqlSelect)explainWithForUpdate.getExplicandum();
 
         assertTrue(selectWithForUpdate.isForUpdate());
     }

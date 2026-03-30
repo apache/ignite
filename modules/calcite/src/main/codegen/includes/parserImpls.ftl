@@ -49,6 +49,49 @@ SqlNode SqlQueryOrExprWithForUpdate() :
     }
 }
 
+/** Parses an EXPLAIN PLAN statement with FOR UPDATE support in query body. */
+SqlNode SqlExplainWithForUpdate() :
+{
+    SqlNode stmt;
+    SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+    SqlExplain.Depth depth;
+    final SqlExplainFormat format;
+}
+{
+    <EXPLAIN> <PLAN>
+    [ detailLevel = ExplainDetailLevel() ]
+    depth = ExplainDepth()
+    (
+        <AS> <XML> { format = SqlExplainFormat.XML; }
+    |
+        <AS> <JSON> { format = SqlExplainFormat.JSON; }
+    |
+        <AS> <DOT_FORMAT> { format = SqlExplainFormat.DOT; }
+    |
+        { format = SqlExplainFormat.TEXT; }
+    )
+    <FOR>
+    (
+        stmt = SqlQueryOrExprWithForUpdate()
+    |
+        stmt = SqlInsert()
+    |
+        stmt = SqlDelete()
+    |
+        stmt = SqlUpdate()
+    |
+        stmt = SqlMerge()
+    )
+    {
+        return new SqlExplain(getPos(),
+            stmt,
+            detailLevel.symbol(SqlParserPos.ZERO),
+            depth.symbol(SqlParserPos.ZERO),
+            format.symbol(SqlParserPos.ZERO),
+            nDynamicParams);
+    }
+}
+
 SqlNodeList WithCreateTableOptionList() :
 {
     List<SqlNode> list = new ArrayList<SqlNode>();

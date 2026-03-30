@@ -446,6 +446,7 @@ data: {
       "SqlStatisticsAnalyze()"
       "SqlStatisticsRefresh()"
       "SqlStatisticsDrop()"
+      "SqlExplainWithForUpdate()"
       # Keep query parser last to avoid shadowing custom statements such as KILL/ANALYZE.
       "SqlQueryOrExprWithForUpdate()"
     ]
