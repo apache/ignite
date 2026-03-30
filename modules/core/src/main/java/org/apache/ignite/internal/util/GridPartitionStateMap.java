@@ -37,9 +37,6 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     /** Empty map. */
     public static final GridPartitionStateMap EMPTY = new GridPartitionStateMap(0);
 
-    /** Type code. */
-    public static final short TYPE_CODE = 517;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -251,8 +248,4 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
         return 31 * states.hashCode() + size;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

@@ -281,8 +281,4 @@ public class DataStreamerRequest implements Message {
         return S.toString(DataStreamerRequest.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 62;
-    }
 }

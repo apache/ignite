@@ -26,9 +26,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 
 /** Wraps transaction prepare request with application attributes. */
 public class TransactionAttributesAwareRequest extends GridCacheMessage {
-    /** */
-    public static final short TYPE_CODE = 181;
-
     /** Original transaction prepare message. */
     @Order(0)
     GridDistributedTxPrepareRequest payload;
@@ -75,8 +72,4 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

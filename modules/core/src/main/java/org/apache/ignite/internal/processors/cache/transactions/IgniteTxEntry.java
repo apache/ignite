@@ -1092,10 +1092,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         serReadVer = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 100;
-    }
 
     /** {@inheritDoc} */
     @Override public Class<?> deployClass() {

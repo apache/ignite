@@ -32,9 +32,6 @@ public class StatisticsDecimalMessage implements Message, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 184;
-
-    /** */
     @Order(0)
     int scale;
 
@@ -73,10 +70,6 @@ public class StatisticsDecimalMessage implements Message, Serializable {
         return new BigDecimal(new BigInteger(b), scale);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

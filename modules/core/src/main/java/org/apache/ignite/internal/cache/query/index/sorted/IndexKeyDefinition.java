@@ -54,11 +54,6 @@ public class IndexKeyDefinition implements Message {
             this.precision = (int)precision;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 113;
-    }
-
     /** */
     public boolean ascending() {
         return asc;

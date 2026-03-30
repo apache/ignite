@@ -305,10 +305,6 @@ public class GridJobExecuteResponse implements Message {
             U.error(log, msg, e);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 2;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

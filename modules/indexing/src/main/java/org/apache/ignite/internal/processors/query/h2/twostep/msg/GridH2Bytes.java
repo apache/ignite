@@ -53,10 +53,6 @@ public class GridH2Bytes extends GridH2ValueMessage {
         return ValueBytes.getNoCopy(b);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -16;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

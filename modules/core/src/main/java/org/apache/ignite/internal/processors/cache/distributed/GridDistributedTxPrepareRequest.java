@@ -452,10 +452,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return (flags & mask) != 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 25;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

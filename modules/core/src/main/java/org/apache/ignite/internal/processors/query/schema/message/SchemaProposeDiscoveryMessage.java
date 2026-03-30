@@ -110,8 +110,4 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
         return S.toString(SchemaProposeDiscoveryMessage.class, this, "parent", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 504;
-    }
 }

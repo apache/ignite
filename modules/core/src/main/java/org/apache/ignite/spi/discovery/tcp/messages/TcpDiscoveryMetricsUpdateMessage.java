@@ -213,10 +213,6 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 14;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

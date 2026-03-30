@@ -31,9 +31,6 @@ public class StatisticsKeyMessage implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final short TYPE_CODE = 183;
-
     /** Object schema. */
     @Order(0)
     String schema;
@@ -87,10 +84,6 @@ public class StatisticsKeyMessage implements Message, Serializable {
         return colNames;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

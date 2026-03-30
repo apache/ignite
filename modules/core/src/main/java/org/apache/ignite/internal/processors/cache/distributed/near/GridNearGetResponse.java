@@ -203,10 +203,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         return addDepInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 50;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

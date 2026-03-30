@@ -198,10 +198,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         addValue(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 52;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

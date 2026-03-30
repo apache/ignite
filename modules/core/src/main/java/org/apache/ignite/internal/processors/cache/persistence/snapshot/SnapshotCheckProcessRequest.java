@@ -107,10 +107,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         return incIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 33;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -253,10 +253,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Marshal
             baselineTopology = U.unmarshal(marsh, baselineTopologyBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 532;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

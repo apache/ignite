@@ -76,11 +76,6 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate, Marshall
         this.locked = locked;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 98;
-    }
-
     /** */
     public PredicateType type() {
         return type;

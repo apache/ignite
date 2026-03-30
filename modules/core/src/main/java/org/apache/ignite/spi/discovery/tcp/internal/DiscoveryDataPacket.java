@@ -463,8 +463,4 @@ public class DiscoveryDataPacket implements Serializable, Message {
         unmarshalledJoiningNodeData = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -106;
-    }
 }

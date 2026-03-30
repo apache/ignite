@@ -174,10 +174,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 22;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

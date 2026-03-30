@@ -157,8 +157,4 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
         return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 21;
-    }
 }

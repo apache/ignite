@@ -145,8 +145,4 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         return S.toString(TcpDiscoveryNodeAddFinishedMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 19;
-    }
 }

@@ -143,10 +143,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         return keys.size();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 42;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

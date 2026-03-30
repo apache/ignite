@@ -106,8 +106,4 @@ public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
             partHashRes = U.unmarshal(marsh, partHashResBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 524;
-    }
 }

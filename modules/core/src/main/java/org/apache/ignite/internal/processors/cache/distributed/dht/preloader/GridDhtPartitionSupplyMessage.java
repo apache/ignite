@@ -257,10 +257,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         return getInfosSafe().size();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 114;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

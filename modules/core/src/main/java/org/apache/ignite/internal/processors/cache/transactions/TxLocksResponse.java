@@ -208,8 +208,4 @@ public class TxLocksResponse extends GridCacheMessage {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -23;
-    }
 }

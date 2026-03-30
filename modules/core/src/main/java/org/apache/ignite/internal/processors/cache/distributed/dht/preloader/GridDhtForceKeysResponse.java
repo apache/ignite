@@ -166,10 +166,6 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         return addDepInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 43;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

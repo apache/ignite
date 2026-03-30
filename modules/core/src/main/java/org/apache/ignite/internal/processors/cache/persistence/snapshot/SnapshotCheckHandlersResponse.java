@@ -43,8 +43,4 @@ public class SnapshotCheckHandlersResponse implements Message {
         return perMetaResults;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 528;
-    }
 }

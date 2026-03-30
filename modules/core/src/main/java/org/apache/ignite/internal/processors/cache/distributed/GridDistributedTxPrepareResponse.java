@@ -111,11 +111,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 26;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxPrepareResponse.class, this, "err",
             error() == null ? "null" : error().toString(), "super", super.toString());

@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * an appropriate channel is opened.
  */
 public class SessionChannelMessage implements Message {
-    /** Initial channel message type (value is {@code 175}). */
-    public static final short TYPE_CODE = 175;
-
     /** Channel session unique identifier. */
     @Order(0)
     IgniteUuid sesId;
@@ -56,10 +53,6 @@ public class SessionChannelMessage implements Message {
         return sesId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

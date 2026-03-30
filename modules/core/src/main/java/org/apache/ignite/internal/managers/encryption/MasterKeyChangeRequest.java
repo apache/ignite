@@ -95,10 +95,6 @@ public class MasterKeyChangeRequest implements Message {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 35;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
