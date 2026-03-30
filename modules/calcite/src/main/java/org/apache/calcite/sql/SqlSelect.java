@@ -512,6 +512,11 @@ public class SqlSelect extends SqlCall {
         else {
             writer.getDialect().unparseCall(writer, this, leftPrec, rightPrec);
         }
+
+        if (isForUpdate()) {
+            writer.keyword("FOR");
+            writer.keyword("UPDATE");
+        }
     }
 
     /**

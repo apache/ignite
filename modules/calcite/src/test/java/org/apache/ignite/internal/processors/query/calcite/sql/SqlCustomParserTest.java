@@ -956,6 +956,16 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         );
     }
 
+    /**
+     * Ensures parser accepts {@code FOR UPDATE} for plain SELECT.
+     */
+    @Test
+    public void testSelectForUpdateWithoutOrderBy() throws SqlParseException {
+        SqlSelect selectWithForUpdate = parse("SELECT id, val FROM TEST FOR UPDATE");
+
+        assertTrue(selectWithForUpdate.isForUpdate());
+    }
+
     /** */
     private void checkStatisticsCommand(
         String sql,

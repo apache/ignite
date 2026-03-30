@@ -36,7 +36,7 @@ import org.junit.Test;
 /**
  * Integration tests for {@code SELECT ... FOR UPDATE} parsing in Calcite engine.
  */
-public class SelectForUpdateParsingIntegrationTest extends GridCommonAbstractTest {
+public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     /** Test cache name. */
     private static final String CACHE_NAME = "TEST_CACHE";
 
@@ -102,6 +102,32 @@ public class SelectForUpdateParsingIntegrationTest extends GridCommonAbstractTes
             () -> sql("SELECT id, COUNT(*) FROM TEST GROUP BY id FOR UPDATE"),
             SqlValidatorException.class,
             "FOR UPDATE with GROUP BY"
+        );
+    }
+
+    /**
+     * Ensures that {@code FOR UPDATE} combined with {@code DISTINCT} is rejected by validator.
+     */
+    @Test
+    public void testSelectForUpdateWithDistinctIsRejected() {
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> sql("SELECT DISTINCT id, COUNT(*) FROM TEST FOR UPDATE"),
+            SqlValidatorException.class,
+            "FOR UPDATE with DISTINCT"
+        );
+    }
+
+    /**
+     * Ensures that {@code FOR UPDATE} combined with {@code HAVING} is rejected by validator.
+     */
+    @Test
+    public void testSelectForUpdateWithHavingIsRejected() {
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> sql("SELECT id, COUNT(*) FROM TEST HAVING COUNT(*) > 100 FOR UPDATE"),
+            SqlValidatorException.class,
+            "FOR UPDATE with HAVING"
         );
     }
 

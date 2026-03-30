@@ -46,6 +46,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
@@ -255,6 +256,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     private void validateForUpdate(SqlSelect select) {
         if (!select.isForUpdate())
             return;
+
+        SqlNode distinct = select.getModifierNode(SqlSelectKeyword.DISTINCT);
+
+        if (distinct != null)
+            throw newValidationError(
+                distinct,
+                IgniteResource.INSTANCE.unsupportedClause("FOR UPDATE with DISTINCT")
+            );
 
         SqlNodeList grp = select.getGroup();
 

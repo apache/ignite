@@ -19,8 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityValueColumnAliasTest;
-import org.apache.ignite.internal.processors.cache.SelectForUpdateParsingIntegrationTest;
-import org.apache.ignite.internal.processors.cache.SelectForUpdateParsingTest;
+import org.apache.ignite.internal.processors.cache.SelectForUpdateIntegrationTest;
 import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorPropertiesTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
@@ -164,8 +163,7 @@ import org.junit.runners.Suite;
     ViewsIntegrationTest.class,
     OperatorsExtensionIntegrationTest.class,
     SessionContextSqlFunctionTest.class,
-    SelectForUpdateParsingIntegrationTest.class,
-    SelectForUpdateParsingTest.class,
+    SelectForUpdateIntegrationTest.class,
     SqlPlanHistoryIntegrationTest.class,
     QueryBlockingTaskExecutorIntegrationTest.class,
     ScalarInIntegrationTest.class,
