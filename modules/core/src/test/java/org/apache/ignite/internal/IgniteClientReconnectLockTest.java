@@ -25,6 +25,9 @@ import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * The test check that lock properly work after client node reconnected.
  */
@@ -119,7 +122,7 @@ public class IgniteClientReconnectLockTest extends IgniteClientReconnectAbstract
                 lock.unlock();
             }
 
-            assertTrue("Condition was not achived.", awaited);
+            assertTrue(awaited, "Condition was not achived.");
         });
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(() -> {

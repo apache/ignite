@@ -50,6 +50,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Multithreaded job stealing test.
  */
@@ -149,21 +154,21 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
-        assertNull("Test failed with exception: ", fail.get());
+        assertNull(fail.get(), "Test failed with exception: ");
 
         // Total jobs number is threadsNum * 2
-        assertEquals("Incorrect processed jobs number", threadsNum * 2, stolen.get() + noneStolen.get());
+        assertEquals(threadsNum * 2, stolen.get() + noneStolen.get(), "Incorrect processed jobs number");
 
-        assertFalse("No jobs were stolen.", stolen.get() == 0);
+        assertNotEquals(0, stolen.get(), "No jobs were stolen.");
 
         for (Ignite g : G.allGrids())
-            assertTrue("Node get no jobs.", nodes.contains(g.name()));
+            assertTrue(nodes.contains(g.name()), "Node get no jobs.");
 
         // Under these circumstances we should not have  more than 2 jobs
         // difference.
         //(but muted to 4 due to very rare fails and low priority of fix)
-        assertTrue("Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
-            Math.abs(stolen.get() - noneStolen.get()) <= 4);
+        assertTrue(Math.abs(stolen.get() - noneStolen.get()) <= 4,
+            "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']');
     }
 
     /**
@@ -222,18 +227,18 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         fut.get();
 
-        assertNull("Test failed with exception: ", fail.get());
+        assertNull(fail.get(), "Test failed with exception: ");
 
         // Total jobs number is threadsNum * 4
-        assertEquals("Incorrect processed jobs number", threadsNum * jobsPerTask, stolen.get() + noneStolen.get());
+        assertEquals(threadsNum * jobsPerTask, stolen.get() + noneStolen.get(), "Incorrect processed jobs number");
 
-        assertFalse("No jobs were stolen.", stolen.get() == 0);
+        assertNotEquals(0, stolen.get(), "No jobs were stolen.");
 
         for (Ignite g : G.allGrids())
-            assertTrue("Node get no jobs.", nodes.contains(g.name()));
+            assertTrue(nodes.contains(g.name()), "Node get no jobs.");
 
-        assertTrue("Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
-            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 8);
+        assertTrue(Math.abs(stolen.get() - 2 * noneStolen.get()) <= 8,
+            "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']');
     }
 
     /**

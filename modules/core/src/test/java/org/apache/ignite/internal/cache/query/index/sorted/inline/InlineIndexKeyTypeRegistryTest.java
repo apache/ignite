@@ -27,6 +27,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /** */
 public class InlineIndexKeyTypeRegistryTest extends GridCommonAbstractTest {
     /** */

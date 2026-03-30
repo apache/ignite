@@ -50,6 +50,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Event storage tests.
@@ -227,8 +228,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @param evt Event to check.
      */
     private void checkGridInternalEvent(Event evt) {
-        assertFalse("Found TASK event for task marked with @GridInternal [evtType=" + evt.type() + "]", evt instanceof TaskEvent);
-        assertFalse("Found JOB event for task marked with @GridInternal [evtType=" + evt.type() + "]", evt instanceof JobEvent);
+        assertFalse(evt instanceof TaskEvent, "Found TASK event for task marked with @GridInternal [evtType=" + evt.type() + "]");
+        assertFalse(evt instanceof JobEvent, "Found JOB event for task marked with @GridInternal [evtType=" + evt.type() + "]");
     }
 
     /**

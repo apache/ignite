@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for the standard JMX beans registered by the kernal.

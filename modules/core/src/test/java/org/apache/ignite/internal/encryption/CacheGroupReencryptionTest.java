@@ -71,6 +71,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Cache re-encryption tests.
@@ -677,8 +681,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        assertFalse("Re-encryption must be started.", node0.context().encryption().reencryptionFuture(grpId).isDone());
-        assertFalse("Re-encryption must be started.", node1.context().encryption().reencryptionFuture(grpId).isDone());
+        assertFalse(node0.context().encryption().reencryptionFuture(grpId).isDone(), "Re-encryption must be started.");
+        assertFalse(node1.context().encryption().reencryptionFuture(grpId).isDone(), "Re-encryption must be started.");
 
         node0.cluster().state(ClusterState.INACTIVE);
 
@@ -686,8 +690,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         stopGrid(GRID_1);
         node1 = startGrid(GRID_1);
 
-        assertTrue("Re-encryption should not start ", node0.context().encryption().reencryptionFuture(grpId).isDone());
-        assertTrue("Re-encryption should not start ", node1.context().encryption().reencryptionFuture(grpId).isDone());
+        assertTrue(node0.context().encryption().reencryptionFuture(grpId).isDone(), "Re-encryption should not start ");
+        assertTrue(node1.context().encryption().reencryptionFuture(grpId).isDone(), "Re-encryption should not start ");
 
         node0.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
         node1.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);

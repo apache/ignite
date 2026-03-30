@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEYS_PREFIX;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  */

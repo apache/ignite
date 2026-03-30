@@ -23,6 +23,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Check logging local node metrics with PDS enabled.
  */
@@ -68,7 +70,7 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
 
         String msg = "Metrics are missing in the log or have an unexpected format";
 
-        assertTrue(msg, logOutput.matches("(?s).*Ignite persistence \\[used=[\\d]+MB].*"));
+        assertTrue(logOutput.matches("(?s).*Ignite persistence \\[used=[\\d]+MB].*"), msg);
     }
 
     /** */

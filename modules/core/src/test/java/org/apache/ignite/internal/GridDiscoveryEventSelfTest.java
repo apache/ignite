@@ -40,6 +40,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests discovery event topology snapshots.
@@ -102,7 +106,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             UUID id2 = startGrid(2).cluster().localNode().id();
             UUID id3 = startGrid(3).cluster().localNode().id();
 
-            assertTrue("Wrong count of events received: " + evts, latch.await(3000, MILLISECONDS));
+            assertTrue(latch.await(3000, MILLISECONDS), "Wrong count of events received: " + evts);
 
             Collection<ClusterNode> top0 = evts.get(0);
 
@@ -168,7 +172,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             stopGrid(2);
             stopGrid(1);
 
-            assertTrue("Wrong count of events received: " + evts, latch.await(3000, MILLISECONDS));
+            assertTrue(latch.await(3000, MILLISECONDS), "Wrong count of events received: " + evts);
 
             Collection<ClusterNode> top2 = evts.get(0);
 
@@ -243,8 +247,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             stopGrid(4);
 
-            assertTrue("Wrong count of events received [cnt= " + evts.size() + ", evts=" + evts + ']',
-                latch.await(3000, MILLISECONDS));
+            assertTrue(latch.await(3000, MILLISECONDS),
+                "Wrong count of events received [cnt= " + evts.size() + ", evts=" + evts + ']');
 
             Collection<ClusterNode> top0 = evts.get(0);
 
@@ -364,7 +368,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 assertTrue(F.viewReadOnly(snapshot, NODE_2ID).contains(id0));
 
                 for (ClusterNode n : snapshot)
-                    assertTrue("Wrong node order in snapshot [i=" + i + ", node=" + n + ']', n.order() <= 2 + i);
+                    assertTrue(n.order() <= 2 + i,
+                        "Wrong node order in snapshot [i=" + i + ", node=" + n + ']');
             }
 
             Collection<UUID> ids = F.viewReadOnly(evts.get(9), NODE_2ID);

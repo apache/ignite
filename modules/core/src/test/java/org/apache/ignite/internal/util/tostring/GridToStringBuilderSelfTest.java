@@ -381,56 +381,56 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         boolArr[0] = true;
         assertEquals(Arrays.toString(boolArr), GridToStringBuilder.arrayToString(boolArr));
         boolArr = Arrays.copyOf(boolArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(boolArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(boolArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         short[] shortArr = new short[1];
 
         shortArr[0] = 100;
         assertEquals(Arrays.toString(shortArr), GridToStringBuilder.arrayToString(shortArr));
         shortArr = Arrays.copyOf(shortArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(shortArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(shortArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         int[] intArr = new int[1];
 
         intArr[0] = 10000;
         assertEquals(Arrays.toString(intArr), GridToStringBuilder.arrayToString(intArr));
         intArr = Arrays.copyOf(intArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(intArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(intArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         long[] longArr = new long[1];
 
         longArr[0] = 10000000;
         assertEquals(Arrays.toString(longArr), GridToStringBuilder.arrayToString(longArr));
         longArr = Arrays.copyOf(longArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(longArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(longArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         float[] floatArr = new float[1];
 
         floatArr[0] = 1.f;
         assertEquals(Arrays.toString(floatArr), GridToStringBuilder.arrayToString(floatArr));
         floatArr = Arrays.copyOf(floatArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(floatArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(floatArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         double[] doubleArr = new double[1];
 
         doubleArr[0] = 1.;
         assertEquals(Arrays.toString(doubleArr), GridToStringBuilder.arrayToString(doubleArr));
         doubleArr = Arrays.copyOf(doubleArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(doubleArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(doubleArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         char[] cArr = new char[1];
 
         cArr[0] = 'a';
         assertEquals(Arrays.toString(cArr), GridToStringBuilder.arrayToString(cArr));
         cArr = Arrays.copyOf(cArr, 101);
-        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
-            GridToStringBuilder.arrayToString(cArr).contains("... and 1 more"));
+        assertTrue(GridToStringBuilder.arrayToString(cArr).contains("... and 1 more"),
+            "Can't find \"... and 1 more\" in overflowed array string!");
 
         Map<String, String> strMap = new TreeMap<>();
         List<String> strList = new ArrayList<>(limit + 1);
@@ -495,8 +495,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         info(testClsStrOf);
         info(testClsStrOfR);
 
-        assertTrue("Collection limit error in Map or List, normal: <" + testClsStr + ">, overflowed: <"
-            + testClsStrOf + ">", testClsStr.length() == testClsStrOfR.length());
+        assertEquals(testClsStr.length(), testClsStrOfR.length(),
+            "Collection limit error in Map or List, normal: <" + testClsStr + ">, overflowed: <" +
+                testClsStrOf + ">");
     }
 
     /**
@@ -539,7 +540,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         info(k.toString());
 
-        assertTrue("Wrong string: " + k, k.toString().startsWith("IgniteTxKey ["));
+        assertTrue(k.toString().startsWith("IgniteTxKey ["), "Wrong string: " + k);
     }
 
     /**
@@ -591,8 +592,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         log.info("Memory allocated by GridToStringBuilder for " + objCnt + " objects: " + (allocated1 - allocated0));
 
-        assertTrue("Too much memory allocated by GridToStringBuilder: " + (allocated1 - allocated0),
-            allocated1 - allocated0 < 1_000_000);
+        assertTrue(allocated1 - allocated0 < 1_000_000,
+            "Too much memory allocated by GridToStringBuilder: " + (allocated1 - allocated0));
     }
 
 

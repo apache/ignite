@@ -27,6 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests compound future contracts.
  */
@@ -52,11 +55,9 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
         assertTrue(fut.isDone());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testCompleteOnReducer() throws Exception {
+    public void testCompleteOnReducer() {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         List<GridFutureAdapter<Boolean>> futs = new ArrayList<>(5);

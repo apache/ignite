@@ -37,6 +37,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link ClusterGroup#forCacheNodes(String)} method.
@@ -145,7 +149,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        assertEquals("Invalid projection: " + prj.nodes(), 3, prj.nodes().size());
+        assertEquals(3, prj.nodes().size(), "Invalid projection: " + prj.nodes());
         assert !prj.nodes().contains(grid(0).localNode());
         assert prj.nodes().contains(grid(1).localNode());
         assert prj.nodes().contains(grid(2).localNode());
@@ -173,7 +177,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         ClusterGroup prj = ignite.cluster().forClientNodes(CACHE_NAME);
 
         assert prj != null;
-        assertEquals("Invalid projection: " + prj.nodes(), 1, prj.nodes().size());
+        assertEquals(1, prj.nodes().size(), "Invalid projection: " + prj.nodes());
         assert prj.nodes().contains(grid(1).localNode());
     }
 

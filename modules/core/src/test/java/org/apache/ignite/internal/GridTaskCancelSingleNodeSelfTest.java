@@ -44,6 +44,8 @@ import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_JOB_REJECTED;
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for task cancellation issue.
@@ -131,20 +133,20 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
             try {
                 if (timeoutBeforeCancel == 0L) {
                     if (jobStarted.get())
-                        assertTrue("Failed on iteration [i=" + i + ", finished=" + finished.get() +
-                            ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']',
-                            finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0);
+                        assertTrue(finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0,
+                            "Failed on iteration [i=" + i + ", finished=" + finished.get() +
+                            ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']');
                     else {
                         // job can be rejected if was concurrently cancelled before started
-                        assertTrue("Failed on iteration [i=" + i + ", finished=" + finished.get() +
-                                ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']',
-                            finished.get() == 0 && cancelled.get() == 0 && rejected.get() <= 1);
+                        assertTrue(finished.get() == 0 && cancelled.get() == 0 && rejected.get() <= 1,
+                            "Failed on iteration [i=" + i + ", finished=" + finished.get() +
+                                ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']');
                     }
                 }
                 else
-                    assertTrue("Failed on iteration [i=" + i + ", finished=" + finished.get() +
-                        ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']',
-                        finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0);
+                    assertTrue(finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0,
+                        "Failed on iteration [i=" + i + ", finished=" + finished.get() +
+                        ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']');
             }
             catch (AssertionError e) {
                 info("Check failed: " + e.getMessage());

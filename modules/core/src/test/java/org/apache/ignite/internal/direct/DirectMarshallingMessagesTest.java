@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Messages marshalling test.
@@ -63,7 +65,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
         boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(msgFactory)));
-        assertTrue("The message was not written completely.", fullyWritten);
+        assertTrue(fullyWritten, "The message was not written completely.");
 
         buf.flip();
 
@@ -78,7 +80,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
         boolean fullyRead = loopBuffer(buf, buf.position(),
             buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory, null)));
-        assertTrue("The message was not read completely.", fullyRead);
+        assertTrue(fullyRead, "The message was not read completely.");
 
         return resMsg;
     }

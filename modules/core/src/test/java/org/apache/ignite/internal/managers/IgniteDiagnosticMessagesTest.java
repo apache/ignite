@@ -73,6 +73,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -525,7 +527,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            assertTrue("Unable to found diagnostic messages.", wait);
+            assertTrue(wait, "Unable to found diagnostic messages.");
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
@@ -695,7 +697,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                             str.contains("Failed to find cache with id: " + cacheCtx.cacheId()) ||
                             str.contains("Cache entries [cacheId=" + cacheCtx.cacheId() + ", cacheName=" + DEFAULT_CACHE_NAME);
 
-                    assertTrue("Unexpected message: " + msg,
+                    assertTrue(
                         msg.contains("Test diagnostic") &&
                             msg.contains("Remote Tx message") &&
                             msg.contains("Exchange message") &&
@@ -704,7 +706,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                             msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer=") &&
                             msg.contains(searchExchangeMsg) &&
                             msg.contains(searchTxMsg) &&
-                            txKeyMsgPred.test(msg));
+                            txKeyMsgPred.test(msg),
+                        "Unexpected message: " + msg);
                 }
             }
         }

@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests multiple parallel jobs execution, accessing services(), while starting new nodes.
  */
@@ -114,7 +116,7 @@ public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
             }
         }
 
-        assertEquals("Jobs cnt != Results cnt", jobsCnt.get() - threads, resCnt.get());
+        assertEquals(jobsCnt.get() - threads, resCnt.get(), "Jobs cnt != Results cnt");
     }
 
     /**

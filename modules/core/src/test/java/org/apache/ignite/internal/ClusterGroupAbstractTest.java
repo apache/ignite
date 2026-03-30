@@ -59,6 +59,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}

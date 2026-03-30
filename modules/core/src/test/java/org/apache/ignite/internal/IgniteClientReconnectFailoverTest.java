@@ -40,6 +40,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -129,7 +131,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
         final IgniteTransactions txs = client.transactions();
 
         reconnectFailover(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 try {
                     TreeMap<Integer, Integer> map = new TreeMap<>();
 

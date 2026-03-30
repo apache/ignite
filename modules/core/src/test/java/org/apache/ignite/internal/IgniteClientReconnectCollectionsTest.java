@@ -34,6 +34,10 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -479,7 +483,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         reconnectClientNode(client, srv, null);
 
-        assertTrue("Future was not failed. Atomic mode: " + colCfg.getAtomicityMode() + ".", (Boolean)fut.get());
+        assertTrue((Boolean)fut.get(), "Future was not failed. Atomic mode: " + colCfg.getAtomicityMode() + ".");
 
         assertTrue(clientQueue.add("3"));
 

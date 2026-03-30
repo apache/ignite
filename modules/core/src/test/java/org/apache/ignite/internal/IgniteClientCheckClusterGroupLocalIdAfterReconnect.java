@@ -37,6 +37,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests that localId for cluster groups will be changed after reconnect.
  */
@@ -86,7 +89,7 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
 
         ClusterGroup cg1 = client.cluster().forLocal();
 
-        assertNotNull("Local client ID is different with local ClusterGroup node id. ", cg1.node(clientId));
+        assertNotNull(cg1.node(clientId), "Local client ID is different with local ClusterGroup node id. ");
 
         // check sending messages is possible while connected
         IgniteMessaging messaging = client.message(client.cluster().forLocal());
@@ -112,7 +115,7 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
 
         server.close();
 
-        assertTrue("client did not disconnect", discSignal.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
+        assertTrue(discSignal.await(LATCH_TIMEOUT, TimeUnit.SECONDS), "client did not disconnect");
 
         startGrid(0);
 
@@ -127,7 +130,7 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
 
         UUID newClientId = client.cluster().localNode().id();
 
-        assertNotNull("Local client ID wasn't changed for local ClusterGroup.", cg2.node(newClientId));
+        assertNotNull(cg2.node(newClientId), "Local client ID wasn't changed for local ClusterGroup.");
 
         awaitPartitionMapExchange();
 
@@ -137,6 +140,6 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
 
         messaging.send("topic", new External());
 
-        assertTrue("Message wasn't received", topicSignal.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
+        assertTrue(topicSignal.await(LATCH_TIMEOUT, TimeUnit.SECONDS), "Message wasn't received");
     }
 }

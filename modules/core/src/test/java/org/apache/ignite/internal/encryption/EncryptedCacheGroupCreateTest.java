@@ -29,6 +29,9 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  */
 public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
@@ -85,9 +88,9 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
         assertEquals(key.key(), key2.key());
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
+    public void testCreateNotEncryptedCacheInEncryptedGroupFails() {
         createEncryptedCache(ENCRYPTED_CACHE + "3", ENCRYPTED_GROUP + "3");
 
         IgniteEx grid = grid(0);

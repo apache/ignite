@@ -32,6 +32,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Check logging local node metrics
  */
@@ -48,7 +52,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     public static final String IN_MEMORY_REGION = "userTransientDataRegion";
 
     /** */
-    private GridStringLogger strLog = new GridStringLogger(false, this.log);
+    private final GridStringLogger strLog = new GridStringLogger(false, this.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -115,24 +119,24 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         String msg = "Metrics are missing in the log or have an unexpected format";
 
         // Don't check the format strictly, but check that all expected metrics are present.
-        assertTrue(msg, fullLog.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
-        assertTrue(msg, fullLog.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Cluster \\[hosts=.*, CPUs=.*, servers=.*, clients=.*, topVer=.*, minorTopVer=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Network \\[addrs=\\[.*], localHost=.*, discoPort=.*, commPort=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*CPU \\[CPUs=.*, curLoad=.*, avgLoad=.*, GC=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Page memory \\[pages=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Off-heap memory \\[used=.*, free=.*, allocated=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).* region \\[type=internal, persistence=(true|false), lazyAlloc=(true|false).*"));
-        assertTrue(msg, fullLog.matches("(?s).* region \\[type=default, persistence=(true|false), lazyAlloc=(true|false).*"));
-        assertTrue(msg, fullLog.matches("(?s).*... initCfg=.*, maxCfg=.*, usedRam=.*, freeRam=.*, allocRam=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Query thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Striped thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(fullLog.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"), msg);
+        assertTrue(fullLog.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Cluster \\[hosts=.*, CPUs=.*, servers=.*, clients=.*, topVer=.*, minorTopVer=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Network \\[addrs=\\[.*], localHost=.*, discoPort=.*, commPort=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*CPU \\[CPUs=.*, curLoad=.*, avgLoad=.*, GC=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Page memory \\[pages=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Off-heap memory \\[used=.*, free=.*, allocated=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).* region \\[type=internal, persistence=(true|false), lazyAlloc=(true|false).*"), msg);
+        assertTrue(fullLog.matches("(?s).* region \\[type=default, persistence=(true|false), lazyAlloc=(true|false).*"), msg);
+        assertTrue(fullLog.matches("(?s).*... initCfg=.*, maxCfg=.*, usedRam=.*, freeRam=.*, allocRam=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Query thread pool \\[active=.*, idle=.*, qSize=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*Striped thread pool \\[active=.*, idle=.*, qSize=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"), msg);
+        assertTrue(fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"), msg);
     }
 
     /**
@@ -159,16 +163,16 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             int alloc = Integer.parseInt(matcher.group("alloc"));
             boolean persistent = Boolean.parseBoolean(matcher.group("persistent"));
 
-            assertTrue(init + " should be non negative: " + subj, init >= 0);
-            assertTrue(max + " is less then " + init + ": " + subj, max >= init);
-            assertTrue(used + " should be non negative: " + subj, used >= 0);
-            assertTrue(alloc + " is less then " + used + ": " + subj, alloc >= used);
-            assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
+            assertTrue(init >= 0, init + " should be non negative: " + subj);
+            assertTrue(max >= init, max + " is less then " + init + ": " + subj);
+            assertTrue(used >= 0, used + " should be non negative: " + subj);
+            assertTrue(alloc >= used, alloc + " is less then " + used + ": " + subj);
+            assertTrue(0 <= free && free <= 100, free + " is not between 0 and 100: " + subj);
 
             if (persistent) {
                 int total = Integer.parseInt(matcher.group("total"));
 
-                assertTrue(total + " is less then " + used + ": " + subj, total >= used);
+                assertTrue(total >= used, total + " is less then " + used + ": " + subj);
             }
             else
                 assertTrue(F.isEmpty(matcher.group("total")));
@@ -182,9 +186,9 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             .map(v -> v.config().getName().trim())
             .collect(Collectors.toSet());
 
-        assertFalse("No data regions in the log.", regions.isEmpty());
+        assertFalse(regions.isEmpty(), "No data regions in the log.");
 
-        assertEquals("Unexpected names of data regions.", expRegions, regions);
+        assertEquals(expRegions, regions, "Unexpected names of data regions.");
     }
 
     /**
@@ -197,21 +201,21 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
                 "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, allocated=(?<comm>[-.\\d]*).*]")
             .matcher(logOutput);
 
-        assertTrue("Off-heap metrics not found in the log.", matcher.find());
+        assertTrue(matcher.find(), "Off-heap metrics not found in the log.");
 
         String subj = logOutput.substring(matcher.start(), matcher.end());
 
-        assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
-        assertFalse("\"free\" cannot be empty: " + subj, F.isEmpty(matcher.group("free")));
-        assertFalse("\"comm\" cannot be empty: " + subj, F.isEmpty(matcher.group("comm")));
+        assertFalse(F.isEmpty(matcher.group("used")), "\"used\" cannot be empty: " + subj);
+        assertFalse(F.isEmpty(matcher.group("free")), "\"free\" cannot be empty: " + subj);
+        assertFalse(F.isEmpty(matcher.group("comm")), "\"comm\" cannot be empty: " + subj);
 
         int used = Integer.parseInt(matcher.group("used"));
         int comm = Integer.parseInt(matcher.group("comm"));
         double free = Double.parseDouble(matcher.group("free"));
 
-        assertTrue(used + " should be non negative: " + subj, used >= 0);
-        assertTrue(comm + " is less then " + used + ": " + subj, comm >= used);
-        assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
+        assertTrue(used >= 0, used + " should be non negative: " + subj);
+        assertTrue(comm >= used, comm + " is less then " + used + ": " + subj);
+        assertTrue(0 <= free && free <= 100, free + " is not between 0 and 100: " + subj);
     }
 
     /** */

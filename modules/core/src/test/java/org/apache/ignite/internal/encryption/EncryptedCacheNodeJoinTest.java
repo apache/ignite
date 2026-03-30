@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  */

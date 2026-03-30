@@ -68,6 +68,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Cache group key change distributed process tests.
@@ -725,8 +727,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
-        assertEquals(node0.cluster().localNode().id().toString(), 1, encrMgr0.groupKeyIds(grpId).size());
-        assertEquals(node1.cluster().localNode().id().toString(), 1, encrMgr1.groupKeyIds(grpId).size());
+        assertEquals(1, encrMgr0.groupKeyIds(grpId).size(), node0.cluster().localNode().id().toString());
+        assertEquals(1, encrMgr1.groupKeyIds(grpId).size(), node1.cluster().localNode().id().toString());
     }
 
     /**

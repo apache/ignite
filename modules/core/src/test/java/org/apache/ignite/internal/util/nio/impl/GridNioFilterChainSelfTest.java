@@ -32,6 +32,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 /**
  * Tests filter chain event processing.
  */
@@ -171,8 +175,8 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         assertEquals("ABCD", sndEvt.get());
         assertEquals("ABCD", closeEvt.get());
 
-        assertTrue(snd == sndMsgObj.get());
-        assertTrue(rcvd == rcvdMsgObj.get());
+        assertSame(snd, sndMsgObj.get());
+        assertSame(rcvd, rcvdMsgObj.get());
     }
 
     /**

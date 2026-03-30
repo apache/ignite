@@ -41,6 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks basic node start/stop operations.
@@ -220,6 +221,6 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
             .map(e -> e.getKey() + " not terminated.")
             .collect(Collectors.joining("\n"));
 
-        assertTrue(errs, errs == null || errs.isEmpty());
+        assertTrue(errs == null || errs.isEmpty(), errs);
     }
 }

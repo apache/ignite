@@ -32,6 +32,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test cases for emulation of delayed messages sending with {@link TestRecordingCommunicationSpi} for blocking and
  * resending messages at the moment we need it.

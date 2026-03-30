@@ -62,6 +62,7 @@ import static org.apache.ignite.compute.ComputeTaskSessionScope.SESSION_SCOPE;
 import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_SAVED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *

@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -98,7 +100,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
         // +1 for extra client node.
         startGridsMultiThreaded(GRID_CNT + 1);
 
-        assertEquals((Boolean)clientMode, client().configuration().isClientMode());
+        assertEquals(clientMode, client().configuration().isClientMode());
 
         final AtomicBoolean stop = new AtomicBoolean();
 

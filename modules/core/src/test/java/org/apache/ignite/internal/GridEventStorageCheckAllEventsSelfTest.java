@@ -77,6 +77,9 @@ import static org.apache.ignite.events.EventType.EVT_TASK_REDUCED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test event storage.

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class BinaryObjectToStringTest extends AbstractBinaryArraysTest {

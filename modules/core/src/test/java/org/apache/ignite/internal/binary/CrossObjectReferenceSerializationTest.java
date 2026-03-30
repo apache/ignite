@@ -48,6 +48,10 @@ import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /** */
 @ParameterizedClass(name = "innerObjectType={0}, outerObjectType={1}, isCompactFooterEnabled={2}, serializationMode={3}")
 @MethodSource("allTypesArgs")

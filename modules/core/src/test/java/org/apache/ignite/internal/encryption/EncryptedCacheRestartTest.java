@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /** */
 public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */

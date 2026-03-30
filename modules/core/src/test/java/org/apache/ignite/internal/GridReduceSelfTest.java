@@ -28,6 +28,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test reduce with long operations.
  */
@@ -71,7 +75,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
             assertTrue(closures.get(0).isFinished);
 
             for (int i = 1; i < closures.size(); i++)
-                assertFalse("Closure #" + i + " is not interrupted.", closures.get(i).isFinished);
+                assertFalse(closures.get(i).isFinished, "Closure #" + i + " is not interrupted.");
         }
         finally {
             stopAllGrids();
@@ -114,7 +118,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
             assertTrue(closures.get(0).isFinished);
 
             for (int i = 1; i < closures.size(); i++)
-                assertFalse("Closure #" + i + " is not interrupted.", closures.get(i).isFinished);
+                assertFalse(closures.get(i).isFinished, "Closure #" + i + " is not interrupted.");
         }
         finally {
             stopAllGrids();

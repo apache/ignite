@@ -23,6 +23,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for {@link GridUnsafeDataOutput}.
@@ -146,7 +150,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
                 return out.internalArray().length == len;
             }
             catch (Exception e) {
-                assertTrue("Unexpected exception: " + e.getMessage(), false);
+                fail("Unexpected exception: " + e.getMessage());
                 return false;
             }
         }

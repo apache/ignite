@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -67,7 +68,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /** */
     private final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
         @Override public boolean apply(Event evt) {
-            assertNotNull("Topology lost nodes before stopTempNodes() was called.", latch);
+            assertNotNull(latch, "Topology lost nodes before stopTempNodes() was called.");
 
             latch.countDown();
 

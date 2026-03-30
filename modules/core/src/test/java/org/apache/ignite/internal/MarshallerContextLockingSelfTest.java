@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test marshaller context.

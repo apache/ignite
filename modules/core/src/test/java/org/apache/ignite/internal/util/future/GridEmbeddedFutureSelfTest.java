@@ -30,6 +30,10 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_MAX_CONCURRENT_ASYNC_OPS;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests grid embedded future use cases.
@@ -105,8 +109,8 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
                 },
                 origFut);
 
-            assertFalse("Expect original future is not complete.", origFut.isDone());
-            assertFalse("Expect embedded future is not complete.", embFut.isDone());
+            assertFalse(origFut.isDone(), "Expect original future is not complete.");
+            assertFalse(embFut.isDone(), "Expect embedded future is not complete.");
 
             // Finish original future in separate thread.
             Thread t = new Thread() {
@@ -118,8 +122,8 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             t.start();
             t.join();
 
-            assertTrue("Expect original future is complete.", origFut.isDone());
-            assertTrue("Expect embedded future is complete.", embFut.isDone());
+            assertTrue(origFut.isDone(), "Expect original future is complete.");
+            assertTrue(embFut.isDone(), "Expect embedded future is complete.");
 
             // Wait for embedded future completes.
             try {

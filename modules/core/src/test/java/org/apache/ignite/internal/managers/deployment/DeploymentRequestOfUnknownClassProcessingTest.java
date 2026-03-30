@@ -34,6 +34,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the processing of deployment request with an attempt to load a class with an unknown class name.
@@ -108,14 +111,14 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
 
                     GridDeploymentResponse resp = (GridDeploymentResponse)msg;
 
-                    assertFalse("Unexpected response result, success=" + resp.success(), resp.success());
+                    assertFalse(resp.success(), "Unexpected response result, success=" + resp.success());
 
                     String errMsg = resp.errorMessage();
 
-                    assertNotNull("Response should contain an error message.", errMsg);
+                    assertNotNull(errMsg, "Response should contain an error message.");
 
-                    assertTrue("Response contains unexpected error message, errorMessage=" + errMsg,
-                        errMsg.matches("Requested resource not found \\(ignoring locally\\).*?" + UNKNOWN_CLASS_NAME + ".*"));
+                    assertTrue(errMsg.matches("Requested resource not found \\(ignoring locally\\).*?" + UNKNOWN_CLASS_NAME + ".*"),
+                        "Response contains unexpected error message, errorMessage=" + errMsg);
 
                     testResultFut.onDone();
                 }

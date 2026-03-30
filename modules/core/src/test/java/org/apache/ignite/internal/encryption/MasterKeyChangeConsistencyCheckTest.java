@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests master key change process with master key consistency issues. */
 @SuppressWarnings("ThrowableNotThrown")

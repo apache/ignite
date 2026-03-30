@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests IgniteCacheFutureImpl.
  */

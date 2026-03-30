@@ -55,6 +55,12 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests for new NIO server.
@@ -147,9 +153,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             U.sleep(100);
 
-            assertNull("Exception occurred in server", err.get());
+            assertNull(err.get(), "Exception occurred in server");
 
-            assertEquals("Invalid count of sessions", RECONNECT_MSG_CNT * THREAD_CNT, sesSet.size());
+            assertEquals(RECONNECT_MSG_CNT * THREAD_CNT, sesSet.size(), "Invalid count of sessions");
         }
         finally {
             srvr.stop();
@@ -257,7 +263,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             srvr.stop();
         }
 
-        assertNull("Unexpected exception on socket close", err.get());
+        assertNull(err.get(), "Unexpected exception on socket close");
     }
 
     /**
@@ -414,7 +420,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             srvr.stop();
         }
 
-        assertNull("Unexpected exception on socket close", err.get());
+        assertNull(err.get(), "Unexpected exception on socket close");
     }
 
     /**
@@ -509,7 +515,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 assertEquals(msg.length, res.length);
 
                 for (int i = 0; i < msg.length; i++)
-                    assertEquals("Mismatch in position " + i, msg[i], res[i]);
+                    assertEquals(msg[i], res[i], "Mismatch in position " + i);
             }
             finally {
                 s.close();
@@ -547,7 +553,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         assertEquals(msg.length, res.length);
 
         for (int i = 0; i < msg.length; i++)
-            assertEquals("Mismatch in position " + i, msg[i], res[i]);
+            assertEquals(msg[i], res[i], "Mismatch in position " + i);
     }
 
     /**
@@ -661,7 +667,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
+            assertEquals(10, lsnr.getMessageCount(), "Unexpected message count");
         }
         finally {
             srvr.stop();
@@ -699,7 +705,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
+            assertEquals(10, lsnr.getMessageCount(), "Unexpected message count");
         }
         finally {
             if (ses != null)
@@ -751,8 +757,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
-            assertFalse("Size check failed", lsnr.isSizeFailed());
+            assertEquals(MSG_CNT * THREAD_CNT, lsnr.getMessageCount(), "Unexpected message count");
+            assertFalse(lsnr.isSizeFailed(), "Size check failed");
         }
         finally {
             srvr.stop();
@@ -916,8 +922,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
-            assertFalse("Size check failed", lsnr.isSizeFailed());
+            assertEquals(MSG_CNT * THREAD_CNT, lsnr.getMessageCount(), "Unexpected message count");
+            assertFalse(lsnr.isSizeFailed(), "Size check failed");
 
             printDurationStatistics(deliveryDurations, sndTimes, MSG_CNT * THREAD_CNT, 300);
         }

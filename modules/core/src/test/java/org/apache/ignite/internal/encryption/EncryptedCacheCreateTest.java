@@ -36,6 +36,9 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /** */
 public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     /** Non-persistent data region name. */
@@ -156,7 +159,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
                     boolean notFound = Bytes.indexOf(fileBytes, encValBytes) == -1;
 
-                    assertTrue("Value should be encrypted in persisted file. " + f.getFileName(), notFound);
+                    assertTrue(notFound, "Value should be encrypted in persisted file. " + f.getFileName());
 
                     plainBytesFound[0] = plainBytesFound[0] || Bytes.indexOf(fileBytes, plainValBytes) != -1;
 
@@ -166,6 +169,6 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
                 }
             });
 
-        assertTrue("Plain value should be found in persistent store", plainBytesFound[0]);
+        assertTrue(plainBytesFound[0], "Plain value should be found in persistent store");
     }
 }

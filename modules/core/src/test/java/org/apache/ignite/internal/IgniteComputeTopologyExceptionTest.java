@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *

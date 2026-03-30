@@ -50,6 +50,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *  GridDiscovery self test.
@@ -281,7 +282,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                     }
                 }));
 
-                assertEquals("Expects correct cache nodes for topology version: " + ver, exp, act);
+                assertEquals(exp, act, "Expects correct cache nodes for topology version: " + ver);
             }
         }
         finally {

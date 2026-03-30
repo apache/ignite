@@ -21,6 +21,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  *
  */
@@ -42,11 +44,9 @@ public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
         assertEquals("1", csb2.toString());
     }
 
-    /**
-    * @throws Exception If failed.
-    */
+    /** */
     @Test
-    public void testCSBOverflow() throws Exception {
+    public void testCSBOverflow() {
         testSB(3, "1234", 2, "234");
         testSB(4, "1234", 2, "1234");
         testSB(5, "1234", 2, "41234");

@@ -41,6 +41,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test for checkpoint cleanup.
  */
@@ -83,7 +85,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
 
-        assertEquals(cntr.get(), 0);
+        assertEquals(0, cntr.get());
     }
 
     /**

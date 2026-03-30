@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for {@link org.apache.ignite.IgniteCluster}.
@@ -155,11 +156,9 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
         assertEquals(cnt.get(), g.cluster().nodes().size());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testForOthers() throws Exception {
+    public void testForOthers() {
         ClusterNode node0 = grid(0).localNode();
         ClusterNode node1 = grid(1).localNode();
         ClusterNode node2 = grid(2).localNode();

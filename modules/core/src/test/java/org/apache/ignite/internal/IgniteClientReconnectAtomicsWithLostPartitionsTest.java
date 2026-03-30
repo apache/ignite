@@ -31,6 +31,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -285,7 +289,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         assertNotNull(atomic);
 
-        assertEquals("Unexpected initial value.", 1L, atomic.get());
+        assertEquals(1L, atomic.get(), "Unexpected initial value.");
 
         // Restart the cluster without waiting for rebalancing.
         // It should lead to data loss because there are no backups in the atomic configuration.
@@ -293,11 +297,11 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         checkAtomicOperation(atomic, op, "Failed to find atomic long: " + atomicName);
 
-        assertTrue("Atomic long instance should be removed.", atomic.removed());
+        assertTrue(atomic.removed(), "Atomic long instance should be removed.");
 
         IgniteAtomicLong recreatedAtomicLong = client.atomicLong(atomicName, 100L, true);
 
-        assertEquals("Unexpected initial value.", 100L, recreatedAtomicLong.get());
+        assertEquals(100L, recreatedAtomicLong.get(), "Unexpected initial value.");
     }
 
     /**
@@ -319,7 +323,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         assertNotNull(atomic);
 
-        assertEquals("Unexpected initial value.", 1L, atomic.get());
+        assertEquals(1L, atomic.get(), "Unexpected initial value.");
 
         // Restart the cluster without waiting for rebalancing.
         // It should lead to data loss because there are no backups in the atomic configuration.
@@ -327,11 +331,11 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         checkAtomicOperation(atomic, op, "Failed to find atomic reference with given name: " + atomicName);
 
-        assertTrue("Atomic instance should be removed.", atomic.removed());
+        assertTrue(atomic.removed(), "Atomic instance should be removed.");
 
         IgniteAtomicReference recreatedAtomic = client.atomicReference(atomicName, 100L, true);
 
-        assertEquals("Unexpected initial value.", 100L, recreatedAtomic.get());
+        assertEquals(100L, recreatedAtomic.get(), "Unexpected initial value.");
     }
 
     /**
@@ -366,7 +370,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         checkAtomicOperation(atomic, op, "Failed to find atomic stamped with given name: " + atomicName);
 
-        assertTrue("Atomic instance should be removed.", atomic.removed());
+        assertTrue(atomic.removed(), "Atomic instance should be removed.");
 
         IgniteAtomicStamped<String, String> recreatedAtomic = client.atomicStamped(atomicName, initVal, initStamp, true);
 
@@ -402,18 +406,18 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         assertNotNull(atomic);
 
-        assertEquals("Unexpected initial value.", 1L, atomic.get());
+        assertEquals(1L, atomic.get(), "Unexpected initial value.");
 
         // It should lead to data loss because there are no backups in the atomic configuration.
         restartClusterWithoutRebalancing();
 
         checkAtomicOperation(atomic, op, "Failed to find atomic sequence with the given name: " + atomicName);
 
-        assertTrue("Atomic sequnce instance should be removed.", atomic.removed());
+        assertTrue(atomic.removed(), "Atomic sequnce instance should be removed.");
 
         IgniteAtomicSequence recreatedAtomicLong = client.atomicSequence(atomicName, atomicCfg, 100L, true);
 
-        assertEquals("Unexpected initial value.", 100L, recreatedAtomicLong.get());
+        assertEquals(100L, recreatedAtomicLong.get(), "Unexpected initial value.");
     }
 
     /**
