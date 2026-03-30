@@ -454,10 +454,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             errs = new HashMap<>();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 46;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

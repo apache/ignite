@@ -120,8 +120,4 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
         return S.toString(TxTimeoutOnPartitionMapExchangeChangeMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 509;
-    }
 }

@@ -46,8 +46,8 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -542,7 +542,10 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     }
 
     /** */
-    private static class TestMessage extends GridTestMessage {
+    private static class TestMessage implements Message {
+        /** */
+        public static final short DIRECT_TYPE = 200;
+
         /** */
         private final int writeDelay;
 
@@ -567,7 +570,22 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 }
             }
 
-            return super.writeTo(buf, writer);
+            writer.setBuffer(buf);
+
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            return DIRECT_TYPE;
         }
     }
 }

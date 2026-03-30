@@ -35,9 +35,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Partition map from single node.
  */
 public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 518;
-
     /** Node ID. */
     @Order(0)
     protected UUID nodeId;
@@ -280,8 +277,4 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Mes
         return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

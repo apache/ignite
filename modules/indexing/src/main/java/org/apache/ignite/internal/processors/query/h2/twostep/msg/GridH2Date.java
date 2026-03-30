@@ -53,10 +53,6 @@ public class GridH2Date extends GridH2ValueMessage {
         return ValueDate.fromDateValue(date);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -14;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

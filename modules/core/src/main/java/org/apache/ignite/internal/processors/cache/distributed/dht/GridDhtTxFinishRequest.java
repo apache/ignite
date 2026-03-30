@@ -198,10 +198,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         return updCntrs;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 32;
-    }
 
     /** {@inheritDoc} */
     @Override public int partition() {

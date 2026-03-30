@@ -131,10 +131,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
         return ctx.txRecoveryMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 16;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

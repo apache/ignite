@@ -45,10 +45,6 @@ public class GridH2Null extends GridH2ValueMessage {
         return ValueNull.INSTANCE;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -4;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

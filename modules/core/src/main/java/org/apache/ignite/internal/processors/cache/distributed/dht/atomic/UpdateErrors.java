@@ -125,10 +125,6 @@ public class UpdateErrors implements Message {
         msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -49;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

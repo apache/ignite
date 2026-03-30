@@ -104,11 +104,6 @@ public class UserManagementOperation implements Serializable, Message {
         return id.hashCode();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -108;
-    }
-
     /**
      * User action type.
      */

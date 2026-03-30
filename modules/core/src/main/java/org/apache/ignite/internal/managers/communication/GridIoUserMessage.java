@@ -201,10 +201,6 @@ public class GridIoUserMessage implements Message {
         return dep;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 9;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

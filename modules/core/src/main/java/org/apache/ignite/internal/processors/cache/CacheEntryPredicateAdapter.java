@@ -67,11 +67,6 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
         this.locked = locked;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 98;
-    }
-
     /** */
     public CacheEntryPredicateType type() {
         return type;

@@ -54,6 +54,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -65,6 +66,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -83,6 +85,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.EVENT_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -385,10 +388,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to enable.
      */
-    public synchronized void enableEvents(int[] types) {
-        assert types != null;
-
+    public void enableEvents(int[] types) {
         ctx.security().authorize(SecurityPermission.EVENTS_ENABLE);
+
+        enableEvents0(types);
+    }
+
+    /**
+     * Enables provided events (without authorization).
+     *
+     * @param types Events to enable.
+     */
+    private synchronized void enableEvents0(int[] types) {
+        assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -427,10 +439,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    public synchronized void disableEvents(int[] types) {
-        assert types != null;
-
+    public void disableEvents(int[] types) {
         ctx.security().authorize(SecurityPermission.EVENTS_DISABLE);
+
+        disableEvents0(types);
+    }
+
+    /**
+     * Disables provided events (without authorization).
+     *
+     * @param types Events to disable.
+     */
+    private synchronized void disableEvents0(int[] types) {
+        assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -440,12 +461,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         int userTypesLen = 0;
 
         for (int type : types) {
-            if (binarySearch(cfgInclEvtTypes, type)) {
-                U.warn(log, "Can't disable event since it was enabled in configuration: " + U.gridEventName(type));
-
-                continue;
-            }
-
             if (type < len) {
                 userRecordableEvts0[type] = false;
 
@@ -1149,6 +1164,52 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         assert arr != null;
 
         return Arrays.copyOf(arr, arr.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.EVENT_MGR;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        if (data.commonData() == null)
+            return;
+
+        if (ctx.clientNode())
+            return;
+
+        GridIntList clusterData = new GridIntList((int[])data.commonData());
+        GridIntList nodeData = new GridIntList(enabledEvents());
+
+        GridIntList toEnable = new GridIntList(clusterData.size());
+        GridIntList toDisable = new GridIntList(nodeData.size());
+
+        for (int i = 0; i < clusterData.size(); i++) {
+            if (!nodeData.contains(clusterData.get(i)))
+                toEnable.add(clusterData.get(i));
+        }
+
+        for (int i = 0; i < nodeData.size(); i++) {
+            if (!clusterData.contains(nodeData.get(i)))
+                toDisable.add(nodeData.get(i));
+        }
+
+        if (!toEnable.isEmpty())
+            enableEvents0(toEnable.arrayCopy());
+
+        if (!toDisable.isEmpty())
+            disableEvents0(toDisable.arrayCopy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (dataBag.isJoiningNodeClient() && dataBag.commonDataCollectedFor(EVENT_MGR.ordinal()))
+            return;
+
+        int[] clusterData = enabledEvents();
+
+        dataBag.addGridCommonData(EVENT_MGR.ordinal(), clusterData);
     }
 
     /**

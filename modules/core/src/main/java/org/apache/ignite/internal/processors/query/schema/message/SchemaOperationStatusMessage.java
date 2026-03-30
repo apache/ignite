@@ -110,10 +110,6 @@ public class SchemaOperationStatusMessage implements Message {
         return nop;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -53;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

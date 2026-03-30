@@ -65,10 +65,6 @@ public class GridJobSiblingsRequest implements Message {
         return topicId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 3;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

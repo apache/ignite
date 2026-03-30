@@ -94,10 +94,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 24;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

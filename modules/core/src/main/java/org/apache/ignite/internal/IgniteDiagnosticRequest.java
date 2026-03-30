@@ -136,10 +136,6 @@ public class IgniteDiagnosticRequest implements Message {
         return infos;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -61;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

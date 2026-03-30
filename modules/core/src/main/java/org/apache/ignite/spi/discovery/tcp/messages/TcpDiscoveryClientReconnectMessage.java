@@ -123,10 +123,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
             Objects.equals(lastMsgId, other.lastMsgId);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 28;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

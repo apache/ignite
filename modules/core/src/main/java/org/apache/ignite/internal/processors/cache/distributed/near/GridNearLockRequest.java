@@ -296,10 +296,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         return txLbl;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 51;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

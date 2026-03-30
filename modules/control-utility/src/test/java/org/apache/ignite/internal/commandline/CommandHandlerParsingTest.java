@@ -69,6 +69,7 @@ import org.apache.ignite.internal.management.defragmentation.DefragmentationComm
 import org.apache.ignite.internal.management.encryption.EncryptionChangeCacheKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
+import org.apache.ignite.internal.management.event.EventCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
@@ -1401,6 +1402,7 @@ public class CommandHandlerParsingTest {
             cmd == DefragmentationCommand.class ||
             cmd == PerformanceStatisticsCommand.class ||
             cmd == ConsistencyCommand.class ||
-            cmd == CdcCommand.class;
+            cmd == CdcCommand.class ||
+            cmd == EventCommand.class;
     }
 }

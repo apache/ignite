@@ -237,10 +237,6 @@ public class GridEventStorageMessage implements MarshallableMessage {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 13;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

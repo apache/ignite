@@ -49,10 +49,6 @@ public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
         this.nearVer = nearVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -65;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

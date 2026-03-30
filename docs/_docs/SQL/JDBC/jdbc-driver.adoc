@@ -130,6 +130,10 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 | Whether to use `TCP_NODELAY` option.
 |`true`
 
+|`keepBinary`
+| Enables xref:keep-binary[] mode, required for operations with custom objects involved.
+|`false`
+
 |`skipReducerOnUpdate`
 |Enables server side updates.
 When Ignite executes a DML operation, it fetches all the affected intermediate rows and sends them to the query initiator (also known as reducer) for analysis. Then it prepares batches of updated values to be sent to remote nodes.
@@ -173,6 +177,60 @@ The example below shows how to pass three addresses via the connection string:
 include::{javaFile}[tags=multiple-endpoints, indent=0]
 ----
 
+=== Keep Binary [[keep-binary]]
+
+The keepBinary parameter is required for operations involving fields that contain complex objects. In case this flag is set to true such fields are not deserialized upon return to the user, instead being retained in inner binary object format.
+
+[source, java]
+----
+// Suppose custom object looks like as follows:
+class TestObject implements Serializable {
+    @QuerySqlField
+    int id;
+
+    @QuerySqlField
+    TestInnerObject objVal;
+
+    TestObject(int id) {
+        this.id = id;
+    }
+}
+
+// And appropriate inner class:
+class TestInnerObject implements Serializable {
+    int intFld;
+
+    String strFld;
+
+    TestInnerObject(int intFld, String strFld) {
+        this.intFld = intFld;
+        this.strFld = strFld;
+    }
+}
+
+TestObject testObj = new TestObject(1);
+testObj.objVal = new TestInnerObject(100, "Some");
+
+// Now let`s put it through key value api:
+IgniteCache<Integer, TestObject> cache = ignite.cache(DEFAULT_CACHE_NAME);
+cache.put(1, testObj);
+
+// Open the JDBC connection via DriverManager with 'keepBinary=true' to have a possibility to interact with custom objects.
+Connection conn = DriverManager.getConnection("jdbc:ignite:thin://192.168.0.50?keepBinary=true");
+
+PreparedStatement stmt = conn.prepareStatement("SELECT id, objVal FROM TestObject WHERE objVal IS NOT DISTINCT FROM ?");
+
+stmt.setObject(1, new TestInnerObject(100, "Some"));
+
+ResultSet rs = stmt.executeQuery();
+
+while (rs.next()) {
+    Object obj = rs.getObject("objVal");
+    Assert.assertTrue(obj instanceof BinaryObject);
+    BinaryObject bo = (BinaryObject)obj;
+    Assert.assertEquals("Some", bo.field("strFld"));
+}
+----
 
 === Partition Awareness [[partition-awareness]]
 
