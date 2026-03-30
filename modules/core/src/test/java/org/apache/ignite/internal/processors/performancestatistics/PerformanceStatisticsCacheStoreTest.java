@@ -17,27 +17,20 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.util.Collection;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,7 +83,7 @@ public class PerformanceStatisticsCacheStoreTest extends AbstractPerformanceStat
             .setReadThrough(true)
             .setWriteThrough(true)
             .setWriteBehindEnabled(writeBehind)
-            .setCacheStoreFactory(FactoryBuilder.factoryOf(TestCacheStore.class))
+            .setCacheStoreFactory(FactoryBuilder.factoryOf(MapCacheStoreStrategy.MapCacheStore.class))
         );
 
         return cfg;
@@ -174,54 +167,5 @@ public class PerformanceStatisticsCacheStoreTest extends AbstractPerformanceStat
         });
 
         assertEquals("Unexpected operations for cache " + DEFAULT_CACHE_NAME, expOps, actOps);
-    }
-
-    /** Test cache store. */
-    public static class TestCacheStore implements CacheStore<Integer, Integer> {
-        /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args) throws CacheLoaderException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer load(Integer key) throws CacheLoaderException {
-            return key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<Integer, Integer> loadAll(Iterable<? extends Integer> keys) throws CacheLoaderException {
-            Map<Integer, Integer> vals = new HashMap<>();
-
-            for (Integer key : keys)
-                vals.put(key, key);
-
-            return vals;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) throws CacheWriterException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries)
-            throws CacheWriterException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) throws CacheWriterException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sessionEnd(boolean commit) {
-            // No-op.
-        }
     }
 }
