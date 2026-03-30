@@ -71,7 +71,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(2)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionCountersMap partCntrs;
+    Map<Integer, CachePartitionFullCountersMap> partCntrs;
 
     /** Partitions history suppliers. */
     @Order(3)
@@ -126,6 +126,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(12)
     @GridToStringExclude
     Map<Integer, int[]> lostParts;
+
+    /** Mutex. */
+    private final Object mux = new Object();
 
     /**
      * Empty constructor.
@@ -278,10 +281,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param cntrMap Partition update counters.
      */
     public void addPartitionUpdateCounters(int grpId, CachePartitionFullCountersMap cntrMap) {
-        if (partCntrs == null)
-            partCntrs = new IgniteDhtPartitionCountersMap();
+        synchronized (mux) {
+            if (partCntrs == null)
+                partCntrs = new HashMap<>();
 
-        partCntrs.putIfAbsent(grpId, cntrMap);
+            if (!partCntrs.containsKey(grpId))
+                partCntrs.put(grpId, cntrMap);
+        }
     }
 
     /**
@@ -319,7 +325,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition update counters.
      */
     public CachePartitionFullCountersMap partitionUpdateCounters(int grpId) {
-        return partCntrs == null ? null : partCntrs.get(grpId);
+        synchronized (mux) {
+            return partCntrs == null ? null : partCntrs.get(grpId);
+        }
     }
 
     /**
@@ -442,7 +450,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parts = new HashMap<>();
 
         if (partCntrs == null)
-            partCntrs = new IgniteDhtPartitionCountersMap();
+            partCntrs = new HashMap<>();
 
         if (partHistSuppliers == null)
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
