@@ -326,8 +326,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-            long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-            long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+            long start = perfStatEnabled ? System.nanoTime() : 0;
 
             try {
                 val = singleThreadGate.load(storeKey);
@@ -345,11 +344,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             finally {
                 if (perfStatEnabled)
-                    cctx.kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_LOAD,
-                        cctx.cacheId(),
-                        startTime,
-                        System.nanoTime() - startNanos);
+                    writeStatistics(OperationType.CACHE_LOAD, start);
 
                 IgniteInternalTx tx0 = tx;
 
@@ -469,8 +464,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-            long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-            long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+            long start = perfStatEnabled ? System.nanoTime() : 0;
 
             try {
                 IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
@@ -513,11 +507,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             finally {
                 if (perfStatEnabled)
-                    cctx.kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_LOAD_ALL,
-                        cctx.cacheId(),
-                        startTime,
-                        System.nanoTime() - startNanos);
+                    writeStatistics(OperationType.CACHE_LOAD_ALL, start);
 
                 sessionEnd0(tx, threwEx);
             }
@@ -539,8 +529,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-            long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-            long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+            long start = perfStatEnabled ? System.nanoTime() : 0;
 
             try {
                 store.loadCache(new IgniteBiInClosure<Object, Object>() {
@@ -573,11 +562,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             finally {
                 if (perfStatEnabled)
-                    cctx.kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_LOAD_CACHE,
-                        cctx.cacheId(),
-                        startTime,
-                        System.nanoTime() - startNanos);
+                    writeStatistics(OperationType.CACHE_LOAD_CACHE, start);
 
                 sessionEnd0(null, threwEx);
             }
@@ -617,8 +602,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-            long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-            long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+            long start = perfStatEnabled ? System.nanoTime() : 0;
 
             try {
                 store.write(new CacheEntryImpl<>(key0, locStore ? F.t(val0, ver) : val0));
@@ -636,11 +620,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             finally {
                 if (perfStatEnabled)
-                    cctx.kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_WRITE,
-                        cctx.cacheId(),
-                        startTime,
-                        System.nanoTime() - startNanos);
+                    writeStatistics(OperationType.CACHE_WRITE, start);
 
                 sessionEnd0(tx, threwEx);
             }
@@ -684,8 +664,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                 boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-                long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-                long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+                long start = perfStatEnabled ? System.nanoTime() : 0;
 
                 try {
                     store.writeAll(entries);
@@ -712,11 +691,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 }
                 finally {
                     if (perfStatEnabled)
-                        cctx.kernalContext().performanceStatistics().cacheOperation(
-                            OperationType.CACHE_WRITE_ALL,
-                            cctx.cacheId(),
-                            startTime,
-                            System.nanoTime() - startNanos);
+                        writeStatistics(OperationType.CACHE_WRITE_ALL, start);
 
                     sessionEnd0(tx, threwEx);
                 }
@@ -749,8 +724,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-            long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-            long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+            long start = perfStatEnabled ? System.nanoTime() : 0;
 
             try {
                 store.delete(key0);
@@ -768,11 +742,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             finally {
                 if (perfStatEnabled)
-                    cctx.kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_DELETE,
-                        cctx.cacheId(),
-                        startTime,
-                        System.nanoTime() - startNanos);
+                    writeStatistics(OperationType.CACHE_DELETE, start);
 
                 sessionEnd0(tx, threwEx);
             }
@@ -813,8 +783,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             boolean perfStatEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-            long startTime = perfStatEnabled ? U.currentTimeMillis() : 0;
-            long startNanos = perfStatEnabled ? System.nanoTime() : 0;
+            long start = perfStatEnabled ? System.nanoTime() : 0;
 
             try {
                 store.deleteAll(keys0);
@@ -835,11 +804,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             finally {
                 if (perfStatEnabled)
-                    cctx.kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_DELETE_ALL,
-                        cctx.cacheId(),
-                        startTime,
-                        System.nanoTime() - startNanos);
+                    writeStatistics(OperationType.CACHE_DELETE_ALL, start);
 
                 sessionEnd0(tx, threwEx);
             }
@@ -1038,6 +1003,20 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      * @return Cache configuration.
      */
     protected abstract CacheConfiguration cacheConfiguration();
+
+    /**
+     * Writes cache store operation performance statistics.
+     *
+     * @param op Operation type.
+     * @param start Start time in nanoseconds.
+     */
+    protected void writeStatistics(OperationType op, long start) {
+        cctx.kernalContext().performanceStatistics().cacheOperation(
+            op,
+            cctx.cacheId(),
+            U.currentTimeMillis(),
+            System.nanoTime() - start);
+    }
 
     /**
      *
