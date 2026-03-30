@@ -19,7 +19,9 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -33,6 +35,9 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
 
     /** Count of entries in EMP table. */
     protected static final int EMP_CNT = 10_000;
+
+    /** Counter for forcing query replanning in cold benchmark. */
+    private final AtomicInteger planRnd = new AtomicInteger();
 
     /**
      * Initiate new tables.
@@ -67,6 +72,66 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
 
         if (res.size() != BATCH_SIZE)
             throw new AssertionError("Unexpected result size: " + res.size());
+    }
+
+    /**
+     * LEFT JOIN with DISTINCT subquery - regression test for query splitter optimization.
+     */
+    @Benchmark
+    public void leftJoinDistinctRegression(Blackhole bh) {
+        List<List<?>> res = executeSql(
+                "SELECT e.empid, e.name, d.deptid " +
+                        "FROM (SELECT DISTINCT * FROM emp) e " +
+                        "LEFT JOIN dept d ON e.deptid = d.deptid " +
+                        "WHERE d.name = ?",
+                "Department 5"
+        );
+
+        if (res == null)
+            throw new AssertionError("Query returned null");
+
+        bh.consume(res);
+    }
+
+    /**
+     * LEFT JOIN without DISTINCT subquery - baseline for comparison.
+     */
+    @Benchmark
+    public void leftJoinNoDistinctBaseline(Blackhole bh) {
+        List<List<?>> res = executeSql(
+                "SELECT e.empid, e.name, d.deptid " +
+                        "FROM emp e " +
+                        "LEFT JOIN dept d ON e.deptid = d.deptid " +
+                        "WHERE d.name = ?",
+                "Department 5"
+        );
+
+        if (res == null)
+            throw new AssertionError("Query returned null");
+
+        bh.consume(res);
+    }
+
+    /**
+     * LEFT JOIN with DISTINCT where query text is changed every run to bypass plan cache.
+     */
+    @Benchmark
+    public void leftJoinDistinctRegressionCold(Blackhole bh) {
+        int rnd = planRnd.incrementAndGet();
+
+        List<List<?>> res = executeSql(
+                "/*rnd=" + rnd + "*/ " +
+                        "SELECT e.empid, e.name, d.deptid " +
+                        "FROM (SELECT DISTINCT * FROM emp) e " +
+                        "LEFT JOIN dept d ON e.deptid = d.deptid " +
+                        "WHERE d.name = ?",
+                "Department 5"
+        );
+
+        if (res == null)
+            throw new AssertionError("Query returned null");
+
+        bh.consume(res);
     }
 
     /**
