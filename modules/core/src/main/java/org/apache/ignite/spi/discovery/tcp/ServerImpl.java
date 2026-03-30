@@ -386,7 +386,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.upcast(ring.visibleRemoteNodes());
+        return upcast(ring.visibleRemoteNodes());
     }
 
     /** {@inheritDoc} */
@@ -643,7 +643,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     processed.add(n);
 
-                    Collection<ClusterNode> top = F.upcast(U.arrayList(nodes, F.notIn(processed)));
+                    Collection<ClusterNode> top = upcast(U.arrayList(nodes, F.notIn(processed)));
 
                     topVer++;
 
@@ -1716,7 +1716,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
             }
 
-            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = upcast(ring.visibleNodes());
 
             NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -2448,6 +2448,18 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
+    }
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    private static <P, C extends P> Collection<P> upcast(Collection<C> c) {
+        return (Collection<P>)c;
     }
 
     /**
