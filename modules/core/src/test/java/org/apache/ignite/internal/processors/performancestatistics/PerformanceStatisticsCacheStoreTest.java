@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,8 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_DELETE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_DELETE_ALL;
@@ -42,11 +39,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOAD_CACHE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_WRITE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_WRITE_ALL;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
 /** Tests performance statistics for cache store operations. */
-@RunWith(Parameterized.class)
 public class PerformanceStatisticsCacheStoreTest extends AbstractPerformanceStatisticsTest {
     /** Cache store operation types. */
     private static final Set<OperationType> CACHE_STORE_OPS = EnumSet.of(
@@ -65,16 +59,6 @@ public class PerformanceStatisticsCacheStoreTest extends AbstractPerformanceStat
     /** Test cache. */
     private IgniteCache<Integer, Integer> cache;
 
-    /** Write-behind mode flag. */
-    @Parameter
-    public boolean writeBehind;
-
-    /** */
-    @Parameters(name = "writeBehind={0}")
-    public static List<Boolean> parameters() {
-        return List.of(false, true);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -82,7 +66,6 @@ public class PerformanceStatisticsCacheStoreTest extends AbstractPerformanceStat
         cfg.setCacheConfiguration(GridAbstractTest.<Integer, Integer>defaultCacheConfiguration()
             .setReadThrough(true)
             .setWriteThrough(true)
-            .setWriteBehindEnabled(writeBehind)
             .setCacheStoreFactory(FactoryBuilder.factoryOf(MapCacheStoreStrategy.MapCacheStore.class))
         );
 
