@@ -27,9 +27,4 @@ public interface CalciteMessage extends Message {
      * @return Message type.
      */
     MessageType type();
-
-    /** {@inheritDoc} */
-    @Override default short directType() {
-        return type().directType();
-    }
 }

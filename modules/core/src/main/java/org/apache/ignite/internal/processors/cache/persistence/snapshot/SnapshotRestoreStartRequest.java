@@ -44,10 +44,6 @@ public class SnapshotRestoreStartRequest implements Message {
         return reqId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 37;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

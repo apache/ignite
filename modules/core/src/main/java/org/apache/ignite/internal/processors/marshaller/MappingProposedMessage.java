@@ -142,10 +142,6 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
         return conflictingClsName;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 518;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

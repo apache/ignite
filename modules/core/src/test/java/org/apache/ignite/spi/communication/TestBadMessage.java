@@ -15,47 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.spi.communication;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
-/** Partition reload map for cache. */
-public class CachePartitionsToReloadMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 512;
+/**
+ * Test message class.
+ */
+public class TestBadMessage extends GridCacheMessage {
+    /** */
+    public static final short DIRECT_TYPE = 204;
 
-    /** Partition reload map for cache. */
+    /** Node id. */
     @Order(0)
-    Map<Integer, PartitionsToReload> map;
+    UUID nodeId;
 
-    /**
-     * @param cacheId Cache id.
-     * @return Partitions to reload for this cache.
-     */
-    public @Nullable PartitionsToReload get(int cacheId) {
-        if (map == null)
-            return null;
+    /** Integer field. */
+    @Order(1)
+    int id;
 
-        return map.get(cacheId);
-    }
+    /** Body. */
+    @Order(2)
+    String body;
 
-    /**
-     * @param cacheId Cache id.
-     * @param parts Partitions to reload.
-     */
-    public void put(int cacheId, PartitionsToReload parts) {
-        if (map == null)
-            map = new HashMap<>();
+    /** */
+    @Order(3)
+    Message msg;
 
-        map.put(cacheId, parts);
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TYPE_CODE;
+        return DIRECT_TYPE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        throw new RuntimeException("Exception while log message");
     }
 }

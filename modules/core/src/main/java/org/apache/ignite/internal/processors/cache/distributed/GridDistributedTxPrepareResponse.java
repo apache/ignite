@@ -82,13 +82,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return part;
     }
 
-    /**
-     * @param part New Partition ID this message is targeted to.
-     */
-    public void partition(int part) {
-        this.part = part;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public Throwable error() {
         return ErrorMessage.error(errMsg);
@@ -115,25 +108,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txPrepareMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 26;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

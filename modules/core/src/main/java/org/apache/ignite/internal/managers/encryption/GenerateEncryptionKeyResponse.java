@@ -73,10 +73,6 @@ public class GenerateEncryptionKeyResponse implements Message {
         return masterKeyDigest;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 163;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

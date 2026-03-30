@@ -291,10 +291,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 30;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

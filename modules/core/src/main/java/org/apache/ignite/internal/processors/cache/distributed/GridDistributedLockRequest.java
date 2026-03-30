@@ -365,10 +365,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         finishUnmarshalCacheObjects(keys, cctx, ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 21;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

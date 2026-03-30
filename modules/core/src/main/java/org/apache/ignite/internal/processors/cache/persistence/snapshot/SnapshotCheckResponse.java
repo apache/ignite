@@ -67,8 +67,4 @@ public final class SnapshotCheckResponse<T extends Message> implements Message {
         return (T)result;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 523;
-    }
 }

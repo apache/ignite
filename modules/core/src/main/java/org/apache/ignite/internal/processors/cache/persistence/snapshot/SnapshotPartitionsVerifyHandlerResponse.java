@@ -62,8 +62,4 @@ public class SnapshotPartitionsVerifyHandlerResponse implements MarshallableMess
             res = U.unmarshal(marsh, resBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 530;
-    }
 }

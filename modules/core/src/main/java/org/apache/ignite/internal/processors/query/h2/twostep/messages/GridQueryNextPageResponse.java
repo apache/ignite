@@ -164,11 +164,6 @@ public class GridQueryNextPageResponse implements Message {
         return plainRows;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 109;
-    }
-
     /**
      * @return Retry topology version.
      */

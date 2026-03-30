@@ -187,10 +187,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Marshall
             reqs = U.unmarshal(marsh, requestsBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 534;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

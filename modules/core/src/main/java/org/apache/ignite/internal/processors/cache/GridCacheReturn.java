@@ -376,10 +376,6 @@ public class GridCacheReturn implements Message {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 88;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

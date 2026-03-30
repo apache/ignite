@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
@@ -65,7 +64,7 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /** */
     @Order(3)
-    Map<UUID, NodeSpecificData> nodeSpecificData = new HashMap<>();
+    Map<UUID, Map<Integer, byte[]>> nodeSpecificData = new HashMap<>();
 
     /** */
     private transient boolean joiningNodeClient;
@@ -109,7 +108,7 @@ public class DiscoveryDataPacket implements Serializable, Message {
             filterDuplicatedData(marshLocNodeSpecificData);
 
             if (!marshLocNodeSpecificData.isEmpty())
-                nodeSpecificData.put(nodeId, new NodeSpecificData(marshLocNodeSpecificData));
+                nodeSpecificData.put(nodeId, marshLocNodeSpecificData);
         }
     }
 
@@ -143,11 +142,8 @@ public class DiscoveryDataPacket implements Serializable, Message {
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
 
-            for (Map.Entry<UUID, NodeSpecificData> nodeBinEntry : nodeSpecificData.entrySet()) {
-                if (nodeBinEntry.getValue() == null)
-                    continue;
-
-                Map<Integer, byte[]> nodeBinData = nodeBinEntry.getValue().nodeSpecificData();
+            for (Map.Entry<UUID, Map<Integer, byte[]>> nodeBinEntry : nodeSpecificData.entrySet()) {
+                Map<Integer, byte[]> nodeBinData = nodeBinEntry.getValue();
 
                 if (nodeBinData == null || nodeBinData.isEmpty())
                     continue;
@@ -274,17 +270,12 @@ public class DiscoveryDataPacket implements Serializable, Message {
         }
 
         if (nodeSpecificData.size() != mrgdSpecifDataKeys.size()) {
-            for (Map.Entry<UUID, NodeSpecificData> e : nodeSpecificData.entrySet()) {
+            for (Map.Entry<UUID, Map<Integer, byte[]>> e : nodeSpecificData.entrySet()) {
                 if (!mrgdSpecifDataKeys.contains(e.getKey())) {
-                    NodeSpecificData dataMsg = existingDataPacket.nodeSpecificData.get(e.getKey());
+                    Map<Integer, byte[]> data = existingDataPacket.nodeSpecificData.get(e.getKey());
 
-                    if (dataMsg == null)
-                        continue;
-
-                    Map<Integer, byte[]> data = dataMsg.nodeSpecificData();
-
-                    if (data != null && mapsEqual(e.getValue().nodeSpecificData(), data)) {
-                        e.setValue(new NodeSpecificData(data));
+                    if (data != null && mapsEqual(e.getValue(), data)) {
+                        e.setValue(data);
 
                         boolean add = mrgdSpecifDataKeys.add(e.getKey());
 
@@ -428,15 +419,13 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /** */
     private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
-        for (NodeSpecificData existingData : nodeSpecificData.values()) {
+        for (Map<Integer, byte[]> existingData : nodeSpecificData.values()) {
             Iterator<Map.Entry<Integer, byte[]>> it = discoData.entrySet().iterator();
 
             while (it.hasNext()) {
                 Map.Entry<Integer, byte[]> discoDataEntry = it.next();
 
-                byte[] curData = (existingData == null || existingData.nodeSpecificData() == null)
-                    ? null
-                    : existingData.nodeSpecificData().get(discoDataEntry.getKey());
+                byte[] curData = existingData.get(discoDataEntry.getKey());
 
                 if (Arrays.equals(curData, discoDataEntry.getValue()))
                     it.remove();
@@ -474,8 +463,4 @@ public class DiscoveryDataPacket implements Serializable, Message {
         unmarshalledJoiningNodeData = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -106;
-    }
 }

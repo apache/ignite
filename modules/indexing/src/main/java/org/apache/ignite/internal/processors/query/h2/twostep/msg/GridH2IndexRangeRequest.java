@@ -135,10 +135,6 @@ public class GridH2IndexRangeRequest implements Message {
         return batchLookupId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -30;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

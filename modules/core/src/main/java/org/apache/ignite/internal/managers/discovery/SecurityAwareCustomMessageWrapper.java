@@ -93,10 +93,6 @@ public class SecurityAwareCustomMessageWrapper implements DiscoverySpiCustomMess
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 501;
-    }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {

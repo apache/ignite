@@ -97,8 +97,4 @@ public class GridQueryFailResponse implements Message {
         return S.toString(GridQueryFailResponse.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 107;
-    }
 }

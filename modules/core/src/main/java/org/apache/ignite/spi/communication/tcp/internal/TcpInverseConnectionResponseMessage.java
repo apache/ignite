@@ -46,10 +46,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         return connIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 177;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -85,11 +85,6 @@ public class GridH2RowRange implements Message {
         return (flags & FLAG_PARTIAL) == FLAG_PARTIAL;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -34;
-    }
-
     /**
      * @return Number of rows.
      */

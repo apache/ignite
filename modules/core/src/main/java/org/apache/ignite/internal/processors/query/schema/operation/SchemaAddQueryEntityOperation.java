@@ -109,8 +109,4 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -111;
-    }
 }

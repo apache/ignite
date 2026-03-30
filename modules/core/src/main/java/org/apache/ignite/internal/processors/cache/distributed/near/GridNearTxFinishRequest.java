@@ -138,10 +138,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         this.miniId = miniId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 53;
-    }
 
     /** {@inheritDoc} */
     @Override public int partition() {

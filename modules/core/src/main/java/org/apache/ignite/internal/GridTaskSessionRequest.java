@@ -86,10 +86,6 @@ public class GridTaskSessionRequest implements Message {
         return jobId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 6;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

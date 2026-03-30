@@ -15,36 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.management.event;
 
-import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 
 /** */
-public class SnapshotCheckHandlersNodeResponse implements Message {
-    /** Check result per handler name. */
+public class EventListCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Order(0)
-    Map<String, SnapshotHandlerResult<Message>> hndRes;
+    @Argument(
+        optional = true,
+        description = "Filter only enabled events")
+    boolean enabled;
 
-    /** Default constructor for {@link MessageFactory}. */
-    public SnapshotCheckHandlersNodeResponse() {
-        // No-op.
+    /** */
+    public boolean enabled() {
+        return enabled;
     }
 
     /** */
-    public SnapshotCheckHandlersNodeResponse(Map<String, SnapshotHandlerResult<Message>> hndRes) {
-        this.hndRes = hndRes;
-    }
-
-    /** */
-    public Map<String, SnapshotHandlerResult<Message>> handlerResults() {
-        return hndRes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 529;
+    public void enabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }
