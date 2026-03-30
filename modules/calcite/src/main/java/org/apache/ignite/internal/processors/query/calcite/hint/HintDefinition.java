@@ -77,6 +77,19 @@ public enum HintDefinition {
         }
     },
 
+    /** Marks table scans that originate from {@code SELECT ... FOR UPDATE}. */
+    FOR_UPDATE {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return HintPredicates.TABLE_SCAN;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_EMPTY;
+        }
+    },
+
     /** Disables indexes. */
     NO_INDEX {
         /** {@inheritDoc} */

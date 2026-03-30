@@ -164,7 +164,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 if (!corrIds.isEmpty())
                     traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
-                return new IgniteTableScan(rel.getCluster(), traits, rel.getTable(),
+                return new IgniteTableScan(rel.getCluster(), traits, rel.getTable(), rel.getHints(),
                     rel.getRowType(), rel.projects(), rel.condition(), rel.requiredColumns());
             }
         };

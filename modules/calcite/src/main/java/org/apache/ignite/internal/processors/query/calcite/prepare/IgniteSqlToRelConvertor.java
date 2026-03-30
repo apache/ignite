@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -27,6 +28,8 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.hint.Hintable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
@@ -41,6 +44,7 @@ import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -51,6 +55,7 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,6 +65,9 @@ import static java.util.Objects.requireNonNull;
  * Converts a SQL parse tree into a relational algebra operators.
  */
 public class IgniteSqlToRelConvertor extends SqlToRelConverter {
+    /** Rel-hint name used to mark scans produced from {@code SELECT ... FOR UPDATE}. */
+    public static final String FOR_UPDATE_HINT_NAME = HintDefinition.FOR_UPDATE.name();
+
     /** */
     private final Deque<SqlCall> datasetStack = new ArrayDeque<>();
 
@@ -96,6 +104,23 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
         datasetStack.pop();
 
         return rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelNode convertSelect(SqlSelect select, boolean top) {
+        RelNode rel = super.convertSelect(select, top);
+
+        if (!select.isForUpdate() || !(rel instanceof Hintable))
+            return rel;
+
+        Hintable hintable = (Hintable)rel;
+
+        for (RelHint hint : hintable.getHints()) {
+            if (FOR_UPDATE_HINT_NAME.equals(hint.hintName))
+                return rel;
+        }
+
+        return hintable.attachHints(Collections.singletonList(RelHint.builder(FOR_UPDATE_HINT_NAME).build()));
     }
 
     /** {@inheritDoc} */

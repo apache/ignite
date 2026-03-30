@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -64,7 +65,7 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
         RelTraitSet traits,
         RelOptTable tbl
     ) {
-        this(cluster, traits, tbl, null, null, null, null);
+        this(cluster, traits, tbl, ImmutableList.of(), null, null, null, null);
     }
 
     /**
@@ -72,6 +73,7 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
+     * @param hints Hints.
      * @param rowType Row type.
      * @param proj Projects.
      * @param cond Filters.
@@ -81,19 +83,22 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
+        List<RelHint> hints,
         @Nullable RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColunms
     ) {
-        this(-1L, cluster, traits, tbl, rowType, proj, cond, requiredColunms);
+        this(-1L, cluster, traits, tbl, hints, rowType, proj, cond, requiredColunms);
     }
 
     /**
      * Creates a TableScan.
+     * @param sourceId Source ID.
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
+     * @param hints Hints.
      * @param rowType Row type.
      * @param proj Projects.
      * @param cond Filters.
@@ -104,12 +109,13 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
+        List<RelHint> hints,
         @Nullable RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, rowType, proj, cond, requiredColunms);
+        super(cluster, traits, hints, tbl, rowType, proj, cond, requiredColunms);
         this.sourceId = sourceId;
     }
 
@@ -131,13 +137,13 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteTableScan(sourceId, getCluster(), getTraitSet(), getTable(), rowType, projects, condition,
-            requiredColumns);
+        return new IgniteTableScan(sourceId, getCluster(), getTraitSet(), getTable(), getHints(), rowType, projects,
+            condition, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteTableScan(sourceId, cluster, getTraitSet(), getTable(), rowType, projects, condition,
-            requiredColumns);
+        return new IgniteTableScan(sourceId, cluster, getTraitSet(), getTable(), getHints(), rowType, projects,
+            condition, requiredColumns);
     }
 }
