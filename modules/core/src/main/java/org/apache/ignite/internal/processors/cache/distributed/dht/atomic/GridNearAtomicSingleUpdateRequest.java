@@ -248,10 +248,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             key = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 125;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

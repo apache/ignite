@@ -88,10 +88,6 @@ public class ErrorMessage implements MarshallableMessage {
         return errorMsg == null ? null : errorMsg.error();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -66;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

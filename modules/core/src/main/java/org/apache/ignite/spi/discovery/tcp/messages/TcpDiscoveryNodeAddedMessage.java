@@ -275,10 +275,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     }
 
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 29;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

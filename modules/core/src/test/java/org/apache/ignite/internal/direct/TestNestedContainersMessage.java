@@ -45,8 +45,4 @@ class TestNestedContainersMessage implements Message {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE;
-    }
 }

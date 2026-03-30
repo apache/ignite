@@ -53,10 +53,6 @@ public class GridH2JavaObject extends GridH2ValueMessage {
         return ValueJavaObject.getNoCopy(null, b, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -19;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

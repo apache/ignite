@@ -57,11 +57,6 @@ public class MissingMappingRequestMessage implements Message {
         this.typeId = typeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 78;
-    }
-
     /** */
     public byte platformId() {
         return platformId;

@@ -139,10 +139,6 @@ public class GridDeploymentRequest implements Message {
         this.nodeIds = nodeIds;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 11;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

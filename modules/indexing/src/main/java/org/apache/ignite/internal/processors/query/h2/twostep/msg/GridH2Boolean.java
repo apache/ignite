@@ -51,10 +51,6 @@ public class GridH2Boolean extends GridH2ValueMessage {
         return ValueBoolean.get(x);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -5;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -54,10 +54,6 @@ public class NodeSpecificData implements Message, Serializable {
         return nodeSpecificData;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -107;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

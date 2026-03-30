@@ -69,10 +69,6 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
         return item;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 517;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

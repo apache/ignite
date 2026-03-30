@@ -79,10 +79,6 @@ public class SnapshotOperationEndRequest implements Message {
         return warnings;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 36;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

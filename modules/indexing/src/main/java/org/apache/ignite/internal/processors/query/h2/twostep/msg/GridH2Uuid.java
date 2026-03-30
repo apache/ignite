@@ -58,10 +58,6 @@ public class GridH2Uuid extends GridH2ValueMessage {
         return ValueUuid.get(high, low);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -20;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

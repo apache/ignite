@@ -35,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     /** */
-    public static final short TYPE_CODE = 501;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
@@ -186,8 +183,4 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
         return S.toString(IgniteDhtDemandedPartitionsMap.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

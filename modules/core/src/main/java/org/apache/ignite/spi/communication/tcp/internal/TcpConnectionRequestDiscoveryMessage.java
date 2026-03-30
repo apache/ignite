@@ -88,10 +88,6 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 23;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

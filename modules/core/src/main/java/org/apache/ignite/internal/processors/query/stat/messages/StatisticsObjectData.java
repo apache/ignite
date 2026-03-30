@@ -30,9 +30,6 @@ public class StatisticsObjectData implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final short TYPE_CODE = 185;
-
     /** Statistics key. */
     @Order(0)
     StatisticsKeyMessage key;
@@ -130,11 +127,6 @@ public class StatisticsObjectData implements Message, Serializable {
      */
     public StatisticsObjectData() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
 }

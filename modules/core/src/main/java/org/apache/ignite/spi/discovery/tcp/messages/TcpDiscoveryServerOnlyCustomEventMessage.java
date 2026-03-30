@@ -44,8 +44,4 @@ public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustom
         super(creatorNodeId, msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 22;
-    }
 }

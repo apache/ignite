@@ -338,10 +338,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -55;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

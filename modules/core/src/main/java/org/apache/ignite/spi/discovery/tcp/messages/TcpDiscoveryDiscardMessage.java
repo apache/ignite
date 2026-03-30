@@ -81,8 +81,4 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
         return S.toString(TcpDiscoveryDiscardMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 9;
-    }
 }

@@ -60,8 +60,4 @@ public class SnapshotMetadataResponse implements MarshallableMessage {
             metadata = U.unmarshal(marsh, metadataBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 526;
-    }
 }

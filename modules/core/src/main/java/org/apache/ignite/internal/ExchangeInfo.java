@@ -44,10 +44,6 @@ public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseIn
         this.topVer = topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -63;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

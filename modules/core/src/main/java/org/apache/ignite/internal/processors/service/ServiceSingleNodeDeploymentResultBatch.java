@@ -71,10 +71,6 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
         return depId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 168;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

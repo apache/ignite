@@ -54,10 +54,6 @@ public class GridH2Time extends GridH2ValueMessage {
         return ValueTime.fromNanos(nanos);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -13;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

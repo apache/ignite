@@ -101,8 +101,4 @@ public class SchemaAlterTableDropColumnOperation extends SchemaAbstractOperation
         return S.toString(SchemaAlterTableDropColumnOperation.class, this, "parent", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -112;
-    }
 }

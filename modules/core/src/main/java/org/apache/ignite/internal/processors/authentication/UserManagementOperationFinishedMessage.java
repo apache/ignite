@@ -72,10 +72,6 @@ public class UserManagementOperationFinishedMessage implements Message {
         return errorMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 130;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

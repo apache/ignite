@@ -59,10 +59,6 @@ public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperation
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 32;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
