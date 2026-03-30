@@ -44,11 +44,6 @@ public class MetadataResponseMessage implements Message {
         this.typeId = typeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 81;
-    }
-
     /**
      * @return Binary metadata version info.
      */

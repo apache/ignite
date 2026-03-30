@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Node compound metrics message. */
 public class NodeFullMetricsMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 138;
-
     /** Node metrics wrapper message. */
     @Order(0)
     public NodeMetricsMessage nodeMetricsMsg;
@@ -73,10 +70,6 @@ public class NodeFullMetricsMessage implements Message {
         this.nodeMetricsMsg = nodeMetricsMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

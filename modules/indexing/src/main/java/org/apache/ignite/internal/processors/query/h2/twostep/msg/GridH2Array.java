@@ -64,10 +64,6 @@ public class GridH2Array extends GridH2ValueMessage {
         return ValueArray.get(fillArray(x.iterator(), new Value[x.size()], ctx));
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -18;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

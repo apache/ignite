@@ -290,10 +290,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return (flags & mask) != 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 55;
-    }
 
     /** {@inheritDoc} */
     @Override public int partition() {

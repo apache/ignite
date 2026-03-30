@@ -127,10 +127,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 127;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

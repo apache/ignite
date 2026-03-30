@@ -54,7 +54,7 @@ namespace ignite
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
-                    lazy(false),
+                    lazy(true),
                     args()
                 {
                     // No-op.
@@ -73,7 +73,7 @@ namespace ignite
                     loc(loc),
                     distributedJoins(false),
                     enforceJoinOrder(false),
-                    lazy(false),
+                    lazy(true),
                     args()
                 {
                     // No-op.
@@ -220,6 +220,7 @@ namespace ignite
                  * See SetLazy(bool) for more information.
                  *
                  * @return Lazy flag.
+                 * @deprecated Deprecated for removal. Use the page size instead.
                  */
                 bool IsLazy() const
                 {
@@ -240,6 +241,7 @@ namespace ignite
                  * Defaults to @c false, meaning that the whole result set is fetched to memory eagerly.
                  *
                  * @param lazy Lazy query execution flag.
+                 * @deprecated Deprecated for removal. Use the page size instead.
                  */
                 void SetLazy(bool lazy)
                 {

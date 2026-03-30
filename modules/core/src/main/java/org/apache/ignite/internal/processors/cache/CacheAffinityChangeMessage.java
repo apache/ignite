@@ -208,10 +208,6 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage, Messa
         return discoCache.copy(topVer, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 515;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -25,9 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Message indicating a failure occurred during processing snapshot files request.
  */
 public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
-    /** Snapshot response message type (value is {@code 179}). */
-    public static final short TYPE_CODE = 179;
-
     /** Exception message which is occurred during snapshot request processing. */
     @Order(0)
     String errMsg;
@@ -56,10 +53,6 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
         return errMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

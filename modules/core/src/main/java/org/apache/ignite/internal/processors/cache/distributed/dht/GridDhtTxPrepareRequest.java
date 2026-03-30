@@ -391,10 +391,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 34;
-    }
 
     /** {@inheritDoc} */
     @Override public int partition() {

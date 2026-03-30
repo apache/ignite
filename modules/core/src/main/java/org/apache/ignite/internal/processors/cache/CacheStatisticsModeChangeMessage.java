@@ -141,8 +141,4 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
         return S.toString(CacheStatisticsModeChangeMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 500;
-    }
 }

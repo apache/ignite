@@ -100,10 +100,6 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 28;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -42,8 +42,4 @@ public class DataStreamerUpdatesHandlerResult implements Message {
         return streamerWarning;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 522;
-    }
 }

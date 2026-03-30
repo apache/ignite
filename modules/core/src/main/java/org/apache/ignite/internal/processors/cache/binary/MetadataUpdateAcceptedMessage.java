@@ -99,10 +99,6 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Me
         this.duplicated = duplicated;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 508;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

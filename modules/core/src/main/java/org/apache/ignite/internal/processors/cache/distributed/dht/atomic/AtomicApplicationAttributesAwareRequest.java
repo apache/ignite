@@ -25,9 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /** Wraps atomic updates with application attributes. */
 public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
-    /** */
-    public static final short TYPE_CODE = 180;
-
     /** Original update message. */
     @Order(0)
     GridNearAtomicAbstractUpdateRequest payload;
@@ -75,8 +72,4 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

@@ -62,10 +62,6 @@ public class IgniteDiagnosticResponse implements Message {
         return respInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -62;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

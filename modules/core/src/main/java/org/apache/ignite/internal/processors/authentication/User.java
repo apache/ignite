@@ -145,8 +145,4 @@ public class User implements Serializable, Message {
         return S.toString(User.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -109;
-    }
 }

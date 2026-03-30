@@ -78,8 +78,4 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
         return S.toString(TcpDiscoveryLoopbackProblemMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 5;
-    }
 }

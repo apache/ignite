@@ -96,8 +96,4 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage, Message {
         return S.toString(UserAcceptedMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 510;
-    }
 }

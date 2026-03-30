@@ -83,10 +83,6 @@ public class CalciteErrorMessage implements CalciteMarshalableMessage {
         return MessageType.QUERY_ERROR_MESSAGE;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return MessageType.QUERY_ERROR_MESSAGE.directType();
-    }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {

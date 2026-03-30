@@ -151,10 +151,6 @@ public class CacheInvokeDirectResult implements Message {
             res.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 93;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

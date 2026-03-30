@@ -554,10 +554,6 @@ public class IgniteIoTestMessage implements Message {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -43;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

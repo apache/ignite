@@ -86,10 +86,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return conflictVersion();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 104;
-    }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {

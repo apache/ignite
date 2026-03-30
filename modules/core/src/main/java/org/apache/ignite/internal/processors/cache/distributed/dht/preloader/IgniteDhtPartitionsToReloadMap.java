@@ -33,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Partition reload map.
  */
 public class IgniteDhtPartitionsToReloadMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 513;
-
     /** */
     @Order(0)
     Map<UUID, Map<Integer, Set<Integer>>> map;
@@ -75,8 +72,4 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         return S.toString(IgniteDhtPartitionsToReloadMap.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }
