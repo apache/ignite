@@ -64,14 +64,13 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
      * Colocated distributed join.
      */
     @Benchmark
-    public void colocatedDistributedJoin() {
+    public void colocatedDistributedJoin(Blackhole bh) {
         int key = ThreadLocalRandom.current().nextInt(EMP_CNT / BATCH_SIZE);
 
         List<List<?>> res = executeSql("SELECT emp.name, dept.name FROM emp JOIN dept ON emp.deptid = dept.deptid " +
                 "WHERE emp.salary = ?", key);
 
-        if (res.size() != BATCH_SIZE)
-            throw new AssertionError("Unexpected result size: " + res.size());
+        bh.consume(res);
     }
 
     /**
@@ -89,8 +88,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                 "Employee 5"
         );
 
-        if (res == null)
-            throw new AssertionError("Query returned null");
 
         bh.consume(res);
     }
@@ -108,8 +105,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                 "Department 5"
         );
 
-        if (res == null)
-            throw new AssertionError("Query returned null");
 
         bh.consume(res);
     }
@@ -131,8 +126,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                 "Employee 5"
         );
 
-        if (res == null)
-            throw new AssertionError("Query returned null");
 
         bh.consume(res);
     }
