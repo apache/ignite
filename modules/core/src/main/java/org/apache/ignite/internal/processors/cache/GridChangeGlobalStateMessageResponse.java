@@ -67,10 +67,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
         return ErrorMessage.error(errMsg);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -45;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {

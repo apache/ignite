@@ -76,10 +76,6 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
         this.errors = errors;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 169;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

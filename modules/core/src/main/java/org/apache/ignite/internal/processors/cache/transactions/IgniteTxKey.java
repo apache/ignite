@@ -110,10 +110,6 @@ public class IgniteTxKey implements Message {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 94;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -105,6 +105,14 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
                     "Registration of new message types is forbidden.");
         }
 
+        try {
+            supplier.get().registerAsDirectType(directType);
+        }
+        catch (NoClassDefFoundError | ExceptionInInitializerError e) {
+            // Optional dependency not available (e.g. JTS for GridH2Geometry).
+            // Registration will succeed when used in an environment with the dependency.
+        }
+
         int idx = directTypeToIndex(directType);
 
         Supplier<Message> curr = msgSuppliers[idx];

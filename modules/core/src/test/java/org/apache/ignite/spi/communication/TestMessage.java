@@ -15,46 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.spi.communication;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 
-/**
- * Map for storing integer to long value mapping (e.g. partition size or partition history counter for
- * a partition of a given id).
- */
-public class IntLongMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 514;
+/** */
+public class TestMessage extends GridCacheMessage {
+    /** */
+    public static final short DIRECT_TYPE = 202;
 
-    /** Map. */
+    /** */
     @Order(0)
-    @Nullable Map<Integer, Long> map;
+    Collection<TestMessage1> entries = new ArrayList<>();
 
-    /** Default constructor. */
-    public IntLongMap() {
-        // No-op.
+    /** @param entry Entry. */
+    public void add(TestMessage1 entry) {
+        entries.add(entry);
     }
 
-    /**
-     * @param map Map.
-     */
-    public IntLongMap(@Nullable Map<Integer, Long> map) {
-        this.map = map;
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
-    /**
-     * @return Map.
-     */
-    public @Nullable Map<Integer, Long> map() {
-        return map;
+    /** @return Collection of test messages. */
+    public Collection<TestMessage1> entries() {
+        return entries;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TYPE_CODE;
+        return DIRECT_TYPE;
     }
 }

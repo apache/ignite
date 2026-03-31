@@ -138,32 +138,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.onePhaseCommit = onePhaseCommit;
     }
 
-    /**
-     * @return One-phase commit on primary flag.
-     */
+    /** @return One-phase commit on primary flag. */
     public boolean onePhaseCommit() {
         return onePhaseCommit;
     }
 
-    /**
-     * @param onePhaseCommit New one-phase commit on primary flag.
-     */
-    public void onePhaseCommit(boolean onePhaseCommit) {
-        this.onePhaseCommit = onePhaseCommit;
-    }
-
-    /**
-     * @return Topology version, which is set when client node should remap lock request.
-     */
+    /** @return Topology version, which is set when client node should remap lock request. */
     @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
-    }
-
-    /**
-     * @param clientRemapVer New topology version, which is set when client node should remap lock request.
-     */
-    public void clientRemapVersion(@Nullable AffinityTopologyVersion clientRemapVer) {
-        this.clientRemapVer = clientRemapVer;
     }
 
     /**
@@ -180,60 +162,24 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.pending = pending;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
     }
 
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return DHT version.
-     */
+    /** @return DHT version. */
     public GridCacheVersion dhtVersion() {
         return dhtVer;
     }
 
-    /**
-     * @param dhtVer New DHT version.
-     */
-    public void dhtVersion(GridCacheVersion dhtVer) {
-        this.dhtVer = dhtVer;
-    }
-
-    /**
-     * @return Write version.
-     */
+    /** @return Write version. */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer New write version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -262,18 +208,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
     }
 
-    /**
-     * @return Cache return value.
-     */
+    /** @return Cache return value. */
     public GridCacheReturn returnValue() {
         return retVal;
-    }
-
-    /**
-     * @param retVal New cache return value.
-     */
-    public void returnValue(GridCacheReturn retVal) {
-        this.retVal = retVal;
     }
 
     /**
@@ -296,34 +233,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      */
     public boolean hasOwnedValue(IgniteTxKey key) {
         return F.mapContainsKey(ownedVals, key);
-    }
-
-    /**
-     * @return OwnedVals' keys for marshalling.
-     */
-    public @Nullable Collection<IgniteTxKey> ownedValuesKeys() {
-        return ownedValKeys;
-    }
-
-    /**
-     * @param ownedValKeys New ownedVals' keys for marshalling.
-     */
-    public void ownedValuesKeys(@Nullable Collection<IgniteTxKey> ownedValKeys) {
-        this.ownedValKeys = ownedValKeys;
-    }
-
-    /**
-     * @return OwnedVals' values for marshalling.
-     */
-    public @Nullable Collection<CacheVersionedValue> ownedValuesValues() {
-        return ownedValVals;
-    }
-
-    /**
-     * @param ownedValVals New ownedVals' values for marshalling.
-     */
-    public void ownedValuesValues(@Nullable Collection<CacheVersionedValue> ownedValVals) {
-        this.ownedValVals = ownedValVals;
     }
 
     /** {@inheritDoc} */
@@ -416,10 +325,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 56;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

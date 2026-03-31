@@ -27,9 +27,9 @@ import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionReservationsMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -122,13 +122,13 @@ public class CompressedMessageTest {
 
     /** */
     private void assertEqualsFullMsg(GridDhtPartitionsFullMessage expected, GridDhtPartitionsFullMessage actual) {
-        Map<UUID, PartitionReservationsMap> expHistSuppliers = U.field(expected.partitionHistorySuppliers(), "map");
-        Map<UUID, PartitionReservationsMap> actHistSuppliers = U.field(actual.partitionHistorySuppliers(), "map");
+        Map<UUID, Map<GroupPartitionIdPair, Long>> expHistSuppliers = U.field(expected.partitionHistorySuppliers(), "map");
+        Map<UUID, Map<GroupPartitionIdPair, Long>> actHistSuppliers = U.field(actual.partitionHistorySuppliers(), "map");
 
         assertEquals(expHistSuppliers.size(), actHistSuppliers.size());
 
-        for (Map.Entry<UUID, PartitionReservationsMap> entry : expHistSuppliers.entrySet())
-            assertEquals(entry.getValue().reservations(), actHistSuppliers.get(entry.getKey()).reservations());
+        for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> entry : expHistSuppliers.entrySet())
+            assertEquals(entry.getValue(), actHistSuppliers.get(entry.getKey()));
 
         Map<UUID, Map<Integer, Set<Integer>>> expPartsToReload = U.field((Object)U.field(expected, "partsToReload"), "map");
         Map<UUID, Map<Integer, Set<Integer>>> actPartsToReload = U.field((Object)U.field(actual, "partsToReload"), "map");

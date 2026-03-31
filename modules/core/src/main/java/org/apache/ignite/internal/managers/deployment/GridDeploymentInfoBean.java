@@ -139,10 +139,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
             clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 10;
-    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {

@@ -261,10 +261,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 29;
-    }
 
     /**
      * @param ctx Context.

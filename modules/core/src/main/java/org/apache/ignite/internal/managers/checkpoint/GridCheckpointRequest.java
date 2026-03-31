@@ -83,10 +83,6 @@ public class GridCheckpointRequest implements Message {
         return cpSpi;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 7;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

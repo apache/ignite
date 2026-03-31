@@ -159,10 +159,6 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
         return retVal;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 33;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -65,10 +65,6 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         return restoreExchId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 48;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

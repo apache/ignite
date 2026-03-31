@@ -52,8 +52,4 @@ public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage imple
         return S.toString(StopRoutineDiscoveryMessage.class, this, "routineId", routineId());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 514;
-    }
 }

@@ -68,10 +68,6 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
         return creatorAddrMsg.address();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 11;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

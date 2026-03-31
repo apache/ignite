@@ -102,10 +102,6 @@ public class GridDeploymentResponse implements Message {
         this.errMsg = errMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 12;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

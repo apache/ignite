@@ -141,10 +141,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 45;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -363,7 +363,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
-            new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode, grpDesc.persistenceEnabled()));
+            new CacheGroupAffinity(filter, cacheMode, grpDesc.persistenceEnabled()));
 
         assert old == null : old;
     }
@@ -3389,9 +3389,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      */
     private static class CacheGroupAffinity {
-        /** */
-        private final String name;
-
         /** Nodes filter. */
         private final IgnitePredicate<ClusterNode> cacheFilter;
 
@@ -3402,17 +3399,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final boolean persistentCacheGrp;
 
         /**
-         * @param name Name.
          * @param cacheFilter Node filter.
          * @param cacheMode Cache mode.
          * @param persistentCacheGrp Persistence is configured for cache or not.
          */
-        CacheGroupAffinity(
-                String name,
-                IgnitePredicate<ClusterNode> cacheFilter,
-                CacheMode cacheMode,
-                boolean persistentCacheGrp) {
-            this.name = name;
+        CacheGroupAffinity(IgnitePredicate<ClusterNode> cacheFilter, CacheMode cacheMode, boolean persistentCacheGrp) {
             this.cacheFilter = cacheFilter;
             this.cacheMode = cacheMode;
             this.persistentCacheGrp = persistentCacheGrp;

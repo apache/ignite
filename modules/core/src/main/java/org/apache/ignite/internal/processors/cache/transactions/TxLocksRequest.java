@@ -118,8 +118,4 @@ public class TxLocksRequest extends GridCacheMessage {
         txKeysArr = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -24;
-    }
 }

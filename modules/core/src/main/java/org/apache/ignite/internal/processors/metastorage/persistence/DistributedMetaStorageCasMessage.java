@@ -70,10 +70,6 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
         return new DistributedMetaStorageCasAckMessage(requestId(), matches);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 26;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

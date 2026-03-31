@@ -62,25 +62,9 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
         return routineId;
     }
 
-    /**
-     * @param routineId Routine ID.
-     */
-    public void routineId(UUID routineId) {
-        this.routineId = routineId;
-    }
-
-    /**
-     * @return Update counters.
-     */
-    public Map<Integer, Long> updateCntrs() {
+    /** @return Update counters. */
+    public Map<Integer, Long> updateCounters() {
         return updateCntrs;
-    }
-
-    /**
-     * @param updateCntrs Update counters.
-     */
-    public void updateCntrs(Map<Integer, Long> updateCntrs) {
-        this.updateCntrs = updateCntrs;
     }
 
     /** {@inheritDoc} */
@@ -88,10 +72,6 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 118;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

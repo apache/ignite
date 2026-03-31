@@ -110,10 +110,6 @@ public class WalStateAckMessage implements Message {
         this.sndNodeId = sndNodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 129;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

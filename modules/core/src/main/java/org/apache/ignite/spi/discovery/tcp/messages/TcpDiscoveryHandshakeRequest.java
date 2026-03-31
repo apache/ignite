@@ -83,10 +83,6 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
         this.dcId = dcId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 8;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

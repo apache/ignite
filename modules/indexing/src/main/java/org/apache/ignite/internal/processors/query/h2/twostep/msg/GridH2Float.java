@@ -51,10 +51,6 @@ public class GridH2Float extends GridH2ValueMessage {
         return ValueFloat.get(x);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -12;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

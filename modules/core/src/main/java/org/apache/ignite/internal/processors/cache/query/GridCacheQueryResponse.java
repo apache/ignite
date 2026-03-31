@@ -209,28 +209,9 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.data = (Collection<Object>)data;
     }
 
-    /**
-     * @return If this is last response for this request or not.
-     */
+    /** @return If this is last response for this request or not. */
     public boolean finished() {
         return finished;
-    }
-
-    /**
-     * @param finished If this is last response for this request or not.
-     */
-    public void finished(boolean finished) {
-        this.finished = finished;
-    }
-
-    /** */
-    public Collection<byte[]> dataBytes() {
-        return dataBytes;
-    }
-
-    /** */
-    public void dataBytes(Collection<byte[]> dataBytes) {
-        this.dataBytes = dataBytes;
     }
 
     /**
@@ -240,29 +221,9 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return reqId;
     }
 
-    /** */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
     /** {@inheritDoc} */
     @Override public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /** */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /** */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** */
-    public void fields(boolean fields) {
-        this.fields = fields;
     }
 
     /**
@@ -272,10 +233,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return fields;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 59;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

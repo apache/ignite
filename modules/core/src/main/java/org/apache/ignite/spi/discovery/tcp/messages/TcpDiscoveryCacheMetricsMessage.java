@@ -38,10 +38,6 @@ public class TcpDiscoveryCacheMetricsMessage extends CacheMetricsMessage {
         super(cacheMetricsMsg);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -103;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

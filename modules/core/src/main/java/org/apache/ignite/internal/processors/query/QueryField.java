@@ -185,8 +185,4 @@ public class QueryField implements Serializable, MarshallableMessage {
         return S.toString(QueryField.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -110;
-    }
 }

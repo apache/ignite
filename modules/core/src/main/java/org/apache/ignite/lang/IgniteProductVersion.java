@@ -26,7 +26,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.
  */
-public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
+public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,25 +55,31 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
-    private byte major;
+    @Order(0)
+    byte major;
 
     /** Minor version number. */
-    private byte minor;
+    @Order(1)
+    byte minor;
 
     /** Maintenance version number. */
-    private byte maintenance;
+    @Order(2)
+    byte maintenance;
 
     /** Stage of development. */
-    private String stage;
+    @Order(3)
+    String stage;
 
     /** Revision timestamp. */
-    private long revTs;
+    @Order(4)
+    long revTs;
 
     /** Revision hash. */
-    private byte[] revHash;
+    @Order(5)
+    byte[] revHash;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required by {@link Externalizable} and {@link DiscoveryMessageFactory}.
      */
     public IgniteProductVersion() {
         // No-op.
@@ -263,6 +272,11 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         maintenance = in.readByte();
         revTs = in.readLong();
         revHash = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -116;
     }
 
     /** {@inheritDoc} */

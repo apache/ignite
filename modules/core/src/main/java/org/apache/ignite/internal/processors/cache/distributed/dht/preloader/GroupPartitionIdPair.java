@@ -23,9 +23,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Pair of group ID and partition ID. */
 public class GroupPartitionIdPair implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 508;
-
     /** Group ID. */
     @Order(0)
     int grpId;
@@ -62,10 +59,6 @@ public class GroupPartitionIdPair implements Message {
         return partId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

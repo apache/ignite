@@ -87,7 +87,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partition sizes. */
     @Order(5)
-    Map<Integer, IntLongMap> partsSizes;
+    Map<Integer, Map<Integer, Long>> partsSizes;
 
     /** Topology version. */
     @Order(6)
@@ -344,14 +344,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      *
      * @param partsSizes Partitions sizes map.
      */
-    public void partitionSizes(Map<Integer, IntLongMap> partsSizes) {
+    public void partitionSizes(Map<Integer, Map<Integer, Long>> partsSizes) {
         this.partsSizes = partsSizes;
     }
 
     /**
      * @return Partition sizes map (grpId, (partId, partSize)).
      */
-    public Map<Integer, IntLongMap> partitionSizes() {
+    public Map<Integer, Map<Integer, Long>> partitionSizes() {
         return partsSizes;
     }
 
@@ -454,10 +454,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             errs = new HashMap<>();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 46;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
