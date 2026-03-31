@@ -76,15 +76,17 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
 
     /**
      * LEFT JOIN with DISTINCT subquery - regression test for query splitter optimization.
+     * DISTINCT is applied to the smaller table (dept), then LEFT JOINed with the larger table (emp),
+     * and filtered by a condition on the right table.
      */
     @Benchmark
     public void leftJoinDistinctRegression(Blackhole bh) {
         List<List<?>> res = executeSql(
-                "SELECT e.empid, e.name, d.deptid " +
-                        "FROM (SELECT DISTINCT * FROM emp) e " +
-                        "LEFT JOIN dept d ON e.deptid = d.deptid " +
-                        "WHERE d.name = ?",
-                "Department 5"
+                "SELECT d.deptid, d.name, e.empid " +
+                        "FROM (SELECT DISTINCT * FROM dept) d " +
+                        "LEFT JOIN emp e ON d.deptid = e.deptid " +
+                        "WHERE e.name = ?",
+                "Employee 5"
         );
 
         if (res == null)
@@ -114,6 +116,7 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
 
     /**
      * LEFT JOIN with DISTINCT where query text is changed every run to bypass plan cache.
+     * This tests the cold path where query optimization and planning happens every time.
      */
     @Benchmark
     public void leftJoinDistinctRegressionCold(Blackhole bh) {
@@ -121,11 +124,11 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
 
         List<List<?>> res = executeSql(
                 "/*rnd=" + rnd + "*/ " +
-                        "SELECT e.empid, e.name, d.deptid " +
-                        "FROM (SELECT DISTINCT * FROM emp) e " +
-                        "LEFT JOIN dept d ON e.deptid = d.deptid " +
-                        "WHERE d.name = ?",
-                "Department 5"
+                        "SELECT d.deptid, d.name, e.empid " +
+                        "FROM (SELECT DISTINCT * FROM dept) d " +
+                        "LEFT JOIN emp e ON d.deptid = e.deptid " +
+                        "WHERE e.name = ?",
+                "Employee 5"
         );
 
         if (res == null)
