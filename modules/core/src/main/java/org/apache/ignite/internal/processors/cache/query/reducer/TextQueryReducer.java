@@ -31,8 +31,8 @@ public class TextQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public TextQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
-        super(pageStreams);
+    public TextQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams, int limit, int pageSize) {
+        super(pageStreams, limit, pageSize);
     }
 
     /** {@inheritDoc} */
