@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,8 +25,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class FragmentDescription implements CalciteMarshalableMessage {
@@ -41,14 +38,11 @@ public class FragmentDescription implements CalciteMarshalableMessage {
 
     /** */
     @Order(2)
-    Map<Long, UUIDCollectionMessage> remoteSources0;
+    Map<Long, List<UUID>> remoteSources;
 
     /** */
     @Order(3)
     ColocationGroup target;
-
-    /** */
-    private Map<Long, List<UUID>> remoteSources;
 
     /** */
     public FragmentDescription() {
@@ -103,16 +97,6 @@ public class FragmentDescription implements CalciteMarshalableMessage {
         this.mapping = mapping;
     }
 
-    /** */
-    public Map<Long, UUIDCollectionMessage> remoteSources0() {
-        return remoteSources0;
-    }
-
-    /** */
-    public void remoteSources0(Map<Long, UUIDCollectionMessage> remoteSources0) {
-        this.remoteSources0 = remoteSources0;
-    }
-
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.FRAGMENT_DESCRIPTION;
@@ -128,13 +112,6 @@ public class FragmentDescription implements CalciteMarshalableMessage {
 
         if (mapping != null)
             mapping.prepareMarshal(ctx);
-
-        if (remoteSources0 == null && remoteSources != null) {
-            remoteSources0 = U.newHashMap(remoteSources.size());
-
-            for (Map.Entry<Long, List<UUID>> e : remoteSources.entrySet())
-                remoteSources0.put(e.getKey(), new UUIDCollectionMessage(e.getValue()));
-        }
     }
 
     /** {@inheritDoc} */
@@ -142,12 +119,5 @@ public class FragmentDescription implements CalciteMarshalableMessage {
         target.prepareUnmarshal(ctx);
 
         mapping.prepareUnmarshal(ctx);
-
-        if (remoteSources == null && remoteSources0 != null) {
-            remoteSources = U.newHashMap(remoteSources0.size());
-
-            for (Map.Entry<Long, UUIDCollectionMessage> e : remoteSources0.entrySet())
-                remoteSources.put(e.getKey(), new ArrayList<>(e.getValue().uuids()));
-        }
     }
 }

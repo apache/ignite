@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,7 +42,7 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** Locks for near txKeys of near transactions. */
     @GridToStringInclude
-    private final Map<IgniteTxKey, TxLockList> nearTxKeyLocks = new HashMap<>();
+    private final Map<IgniteTxKey, List<TxLock>> nearTxKeyLocks = new HashMap<>();
 
     /** Remote keys involved into transactions. Doesn't include near keys. */
     @GridToStringInclude
@@ -59,7 +61,7 @@ public class TxLocksResponse extends GridCacheMessage {
     /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
     @Order(3)
-    TxLockList[] locksArr;
+    List<TxLock>[] locksArr;
 
     /**
      * Default constructor.
@@ -85,7 +87,7 @@ public class TxLocksResponse extends GridCacheMessage {
     /**
      * @return Lock lists for all tx nearTxKeysArr.
      */
-    public Map<IgniteTxKey, TxLockList> txLocks() {
+    public Map<IgniteTxKey, List<TxLock>> txLocks() {
         return nearTxKeyLocks;
     }
 
@@ -93,7 +95,7 @@ public class TxLocksResponse extends GridCacheMessage {
      * @param txKey Tx key.
      * @return Lock list for given tx key.
      */
-    public TxLockList txLocks(IgniteTxKey txKey) {
+    public List<TxLock> txLocks(IgniteTxKey txKey) {
         return nearTxKeyLocks.get(txKey);
     }
 
@@ -102,10 +104,7 @@ public class TxLocksResponse extends GridCacheMessage {
      * @param txLock Tx lock.
      */
     public void addTxLock(IgniteTxKey txKey, TxLock txLock) {
-        TxLockList lockList = nearTxKeyLocks.get(txKey);
-
-        if (lockList == null)
-            nearTxKeyLocks.put(txKey, lockList = new TxLockList());
+        List<TxLock> lockList = nearTxKeyLocks.computeIfAbsent(txKey, k -> new ArrayList<>());
 
         lockList.add(txLock);
     }
@@ -145,11 +144,11 @@ public class TxLocksResponse extends GridCacheMessage {
             int len = nearTxKeyLocks.size();
 
             nearTxKeysArr = new IgniteTxKey[len];
-            locksArr = new TxLockList[len];
+            locksArr = (List<TxLock>[])new List[len];
 
             int i = 0;
 
-            for (Map.Entry<IgniteTxKey, TxLockList> entry : nearTxKeyLocks.entrySet()) {
+            for (Map.Entry<IgniteTxKey, List<TxLock>> entry : nearTxKeyLocks.entrySet()) {
                 IgniteTxKey key = entry.getKey();
 
                 key.prepareMarshal(ctx.cacheContext(key.cacheId()));
@@ -209,8 +208,4 @@ public class TxLocksResponse extends GridCacheMessage {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -23;
-    }
 }

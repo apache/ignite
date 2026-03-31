@@ -161,10 +161,6 @@ public class PartitionUpdateCountersMessage implements MarshallableMessage {
             data = Arrays.copyOf(data, data.length << 1);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 157;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

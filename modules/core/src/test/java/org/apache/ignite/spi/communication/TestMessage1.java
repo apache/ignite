@@ -15,59 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.spi.communication;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * List of transaction locks for particular key.
+ * Test message class.
  */
-public class TxLockList implements Message {
-    /** Tx locks. */
-    @GridToStringInclude
+public class TestMessage1 extends GridCacheMessage {
+    /** */
+    public static final short DIRECT_TYPE = 203;
+
+    /** Body. */
     @Order(0)
-    List<TxLock> txLocks = new ArrayList<>();
+    String body;
+
+    /** */
+    @Order(1)
+    Message msg;
 
     /**
-     * Default constructor.
+     * @param msg Message.
+     * @param body Message body.
      */
-    public TxLockList() {
-        // No-op.
-    }
-
-    /**
-     * @return Lock list.
-     */
-    public List<TxLock> transactionLocks() {
-        return txLocks;
-    }
-
-    /**
-     * @param txLock Tx lock.
-     */
-    public void add(TxLock txLock) {
-        txLocks.add(txLock);
-    }
-
-    /**
-     * @return {@code True} if lock list is empty.
-     */
-    public boolean isEmpty() {
-        return txLocks.isEmpty();
+    public void init(Message msg, String body) {
+        this.msg = msg;
+        this.body = body;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TxLockList.class, this);
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
+    /** @return Body. */
+    public String body() {
+        return body;
+    }
+
+    /** @return Message. */
+    public Message message() {
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -26;
+        return DIRECT_TYPE;
     }
 }

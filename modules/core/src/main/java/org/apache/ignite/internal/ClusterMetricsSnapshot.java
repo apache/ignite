@@ -109,6 +109,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      * Creates snapshot based on the handled message.
      */
     public ClusterMetricsSnapshot(NodeMetricsMessage m) {
+        // As in #deserialize().
+        m.lastUpdateTime = U.currentTimeMillis();
+
         this.m = m;
     }
 

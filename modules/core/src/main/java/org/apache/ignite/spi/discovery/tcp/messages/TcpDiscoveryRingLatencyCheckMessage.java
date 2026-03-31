@@ -76,10 +76,6 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
         return curHops == maxHops;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 7;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

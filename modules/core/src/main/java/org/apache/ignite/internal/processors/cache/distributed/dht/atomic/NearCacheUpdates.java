@@ -194,10 +194,6 @@ public class NearCacheUpdates implements Message {
         return nearVals.get(idx);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -51;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -134,8 +134,4 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
         return S.toString(MetadataRemoveProposedMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 503;
-    }
 }

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageW
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -183,7 +184,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                DiscoveryCustomMessage customMsg = getFieldValue(msg, "serMsg");
+                DiscoverySpiCustomMessage customMsg = getFieldValue(msg, "serMsg");
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 

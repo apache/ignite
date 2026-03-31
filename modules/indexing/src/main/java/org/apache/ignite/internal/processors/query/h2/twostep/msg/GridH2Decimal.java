@@ -62,10 +62,6 @@ public class GridH2Decimal extends GridH2ValueMessage {
         return ValueDecimal.get(new BigDecimal(new BigInteger(b), scale));
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -10;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

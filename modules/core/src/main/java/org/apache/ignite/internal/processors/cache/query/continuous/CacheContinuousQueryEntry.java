@@ -359,10 +359,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         return depInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 96;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

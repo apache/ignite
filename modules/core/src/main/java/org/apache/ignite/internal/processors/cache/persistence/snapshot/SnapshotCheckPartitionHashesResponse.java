@@ -62,8 +62,4 @@ public class SnapshotCheckPartitionHashesResponse implements MarshallableMessage
             perMetaResults = U.unmarshal(marsh, perMetaResultsBytes, clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 527;
-    }
 }

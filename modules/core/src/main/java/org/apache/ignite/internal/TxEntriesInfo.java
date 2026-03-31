@@ -53,10 +53,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.keys = new HashSet<>(keys);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -64;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

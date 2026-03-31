@@ -39,9 +39,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtPartitionFullMap
     extends AbstractMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 519;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -343,8 +340,4 @@ public class GridDhtPartitionFullMap
         return map.entrySet();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

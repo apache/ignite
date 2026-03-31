@@ -65,8 +65,4 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
         return addDepInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -27;
-    }
 }

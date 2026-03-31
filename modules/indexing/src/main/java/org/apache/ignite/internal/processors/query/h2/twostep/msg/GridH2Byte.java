@@ -51,10 +51,6 @@ public class GridH2Byte extends GridH2ValueMessage {
         return ValueByte.get(x);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -6;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -143,8 +143,4 @@ public class TxEntryValueHolder implements Message {
         return S.toString(TxEntryValueHolder.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 101;
-    }
 }

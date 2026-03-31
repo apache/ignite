@@ -38,10 +38,6 @@ public class TcpDiscoveryNodeMetricsMessage extends NodeMetricsMessage {
         super(nodeMetrics);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -102;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
