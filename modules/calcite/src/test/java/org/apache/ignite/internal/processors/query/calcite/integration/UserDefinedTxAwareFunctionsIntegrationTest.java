@@ -28,6 +28,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -58,6 +59,12 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
     @Parameterized.Parameters(name = "sqlTxMode={0}")
     public static Collection<?> parameters() {
         return List.of(SqlTransactionMode.ALL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setQueryThreadPoolSize(16);
     }
 
     /** Check tx aware udf execution results. */
@@ -129,6 +136,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
 
         IgniteCache<Integer, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
+        /*The pool size should be greater than the maximum number of concurrent queries initiated by UDFs*/
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             for (int iter = 0; iter < 10; ++iter) {
                 try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -139,7 +147,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
                         cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, ?)").setArgs(i, i)).getAll();
                     }
 
-                    List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT customTableFunc() AS result")).getAll();
+                    List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT customNestedTableFunc() AS result")).getAll();
 
                     assertThat(res.get(0).get(0), equalTo(refResults));
 
@@ -148,7 +156,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
             }
         }, 10, "calcite-tx-with-udf");
 
-        fut.get(20_000);
+        fut.get(30_000);
     }
 
     /** */
