@@ -340,7 +340,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(534, DynamicCacheChangeBatch::new,
             new DynamicCacheChangeBatchMarshallableSerializer(marsh, clsLdr));
-        factory.register(535, MetadataUpdateProposedMessage::new,
-            new MetadataUpdateProposedMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register(535, MetadataUpdateProposedMessage::new, new MetadataUpdateProposedMessageMarshallableSerializer(marsh, clsLdr));
     }
 }

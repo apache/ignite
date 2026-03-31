@@ -245,11 +245,6 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 531;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MetadataUpdateProposedMessage.class, this);
     }
