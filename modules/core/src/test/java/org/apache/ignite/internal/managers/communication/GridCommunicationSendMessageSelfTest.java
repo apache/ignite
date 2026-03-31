@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,8 +26,6 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -71,7 +68,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend(new TestMessage(), TestMessage.class);
+            doSend(new GridCommunicationSendTestMessage(), GridCommunicationSendTestMessage.class);
         }
         finally {
             stopAllGrids();
@@ -86,7 +83,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend(new TestOverByteIdMessage(), TestOverByteIdMessage.class);
+            doSend(new GridCommunicationSendOverByteIdTestMessage(), GridCommunicationSendOverByteIdTestMessage.class);
         }
         finally {
             stopAllGrids();
@@ -101,7 +98,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend(new TestMessage(), TestMessage.class);
+            doSend(new GridCommunicationSendTestMessage(), GridCommunicationSendTestMessage.class);
         }
         finally {
             stopAllGrids();
@@ -147,53 +144,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         info(">>>");
     }
 
-    /** */
-    private static class TestMessage implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE;
-        }
-    }
-
-    /** */
-    private static class TestOverByteIdMessage implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE_OVER_BYTE;
-        }
-    }
-
-    /** */
+    /** Registers test messages with explicit direct types to cover both byte-range and over-byte ids. */
     public static class TestPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
@@ -204,8 +155,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(MessageFactory factory) {
-                    factory.register(DIRECT_TYPE, TestMessage::new);
-                    factory.register(DIRECT_TYPE_OVER_BYTE, TestOverByteIdMessage::new);
+                    factory.register(DIRECT_TYPE, GridCommunicationSendTestMessage::new,
+                        new GridCommunicationSendTestMessageSerializer());
+                    factory.register(DIRECT_TYPE_OVER_BYTE, GridCommunicationSendOverByteIdTestMessage::new,
+                        new GridCommunicationSendOverByteIdTestMessageSerializer());
                 }
             });
         }
