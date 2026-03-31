@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
@@ -91,7 +93,8 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
         this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
         this.cacheNames = cacheNames;
-        this.exchangeErrors = F.viewReadOnly(exchangeErrors, ErrorMessage::new);
+        this.exchangeErrors = exchangeErrors.entrySet().stream().collect(
+            Collectors.toMap(Map.Entry::getKey, e -> new ErrorMessage(e.getValue()), (a, b) -> a, HashMap::new));
     }
 
     /** {@inheritDoc} */
