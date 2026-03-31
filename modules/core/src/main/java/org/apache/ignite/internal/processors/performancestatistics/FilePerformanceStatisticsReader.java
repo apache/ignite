@@ -91,7 +91,7 @@ public class FilePerformanceStatisticsReader {
         "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /** File name pattern. */
-    private static final Pattern FILE_NODE_ID_PATTERN = Pattern.compile("^node-(" + UUID_STR_PATTERN + ")[^.]*\\.prf$");
+    private static final Pattern FILE_NODE_ID_PATTERN = Pattern.compile("^node-(" + UUID_STR_PATTERN + ").*\\.prf$");
 
     /** No-op handler. */
     private static final PerformanceStatisticsHandler[] NOOP_HANDLER = {};

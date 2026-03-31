@@ -39,6 +39,7 @@ import static com.google.common.collect.Collections2.permutations;
 import static com.google.common.collect.Lists.cartesianProduct;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeIgniteUuid;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
@@ -86,7 +87,7 @@ public class ForwardReadTest extends AbstractPerformanceStatisticsTest {
     private Map<String, Integer> createStatistics(File dir) throws Exception {
         Map<String, Integer> expTasks;
 
-        File file = new File(dir, "node-" + randomUUID() + ".prf");
+        File file = new File(dir, "node-" + randomUUID() + "-v" + VER_STR + ".prf");
 
         try (FileIO fileIo = new RandomAccessFileIOFactory().create(file)) {
             ByteBuffer buf = ByteBuffer.allocate(10 * 1024).order(ByteOrder.nativeOrder());

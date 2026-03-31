@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import static java.util.UUID.randomUUID;
 import static java.util.function.Function.identity;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
@@ -190,7 +191,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
 
     /** Creates test performance statistics file. */
     private List<String> createStatistics(File dir) throws Exception {
-        File file = new File(dir, "node-" + randomUUID() + ".prf");
+        File file = new File(dir, "node-" + randomUUID() + "-v" + VER_STR + ".prf");
 
         try (FileIO fileIo = new RandomAccessFileIOFactory().create(file)) {
             ByteBuffer buf = ByteBuffer.allocate(1024).order(ByteOrder.nativeOrder());
