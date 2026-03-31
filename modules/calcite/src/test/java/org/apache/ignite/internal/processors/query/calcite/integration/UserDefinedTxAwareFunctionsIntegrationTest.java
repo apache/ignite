@@ -139,7 +139,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
                         cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, ?)").setArgs(i, i)).getAll();
                     }
 
-                    List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT customNestedTableFunc() AS result")).getAll();
+                    List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT customTableFunc() AS result")).getAll();
 
                     assertThat(res.get(0).get(0), equalTo(refResults));
 
