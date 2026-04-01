@@ -21,7 +21,6 @@ import org.apache.ignite.internal.managers.communication.AbstractMessageSerializ
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
-import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** Serialization test for discovery messages. */
@@ -29,28 +28,5 @@ public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSeri
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new DiscoveryMessageFactory(jdk(), U.gridClassLoader());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected AbstractTestMessageReader createMessageReader(int capacity) {
-        return new TestIoMessageReader(capacity);
-    }
-
-    /** */
-    private static class TestIoMessageReader extends AbstractTestMessageReader {
-        /** */
-        private static final byte[] BYTE_ARR = toBytes(null);
-
-        /** */
-        public TestIoMessageReader(int capacity) {
-            super(capacity);
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte[] readByteArray() {
-            super.readByteArray();
-
-            return BYTE_ARR;
-        }
     }
 }

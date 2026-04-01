@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
-import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessageMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
@@ -363,8 +363,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(537, ServiceDeploymentRequest::new,
             new ServiceDeploymentRequestMarshallableSerializer(marsh, clsLdr));
         factory.register(538, ServiceUndeploymentRequest::new, new ServiceUndeploymentRequestSerializer());
-        factory.register(534, DynamicCacheChangeBatch::new,
-            new DynamicCacheChangeBatchMarshallableSerializer(marsh, clsLdr));
-        factory.register(535, MetadataUpdateProposedMessage::new, new MetadataUpdateProposedMessageMarshallableSerializer(marsh, clsLdr));
+        factory.register(539, MetadataUpdateProposedMessage::new, new MetadataUpdateProposedMessageSerializer());
     }
 }
