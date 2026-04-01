@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscove
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatchMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
+import org.apache.ignite.internal.processors.cache.ExchangeFailureMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
@@ -57,6 +59,8 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAccepted
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessageSerializer;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
@@ -308,6 +312,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(38, ChangeCacheEncryptionRequest::new, new ChangeCacheEncryptionRequestSerializer());
 
         factory.register(86, GridCacheVersion::new, new GridCacheVersionSerializer());
+        factory.register(87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
 
         factory.register(167, ServiceDeploymentProcessId::new, new ServiceDeploymentProcessIdSerializer());
         factory.register(169, ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer());
@@ -363,6 +368,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(537, ServiceDeploymentRequest::new,
             new ServiceDeploymentRequestMarshallableSerializer(marsh, clsLdr));
         factory.register(538, ServiceUndeploymentRequest::new, new ServiceUndeploymentRequestSerializer());
-        factory.register(539, MetadataUpdateProposedMessage::new, new MetadataUpdateProposedMessageSerializer());
+        factory.register(539, ExchangeFailureMessage::new, new ExchangeFailureMessageSerializer());
+        factory.register(540, MetadataUpdateProposedMessage::new, new MetadataUpdateProposedMessageSerializer());
     }
 }
