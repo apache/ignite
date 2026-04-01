@@ -133,7 +133,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
      */
     public static List<File> systemViewStatisticsFiles(List<File> files) {
         return files.stream()
-            .filter(file1 -> file1.getName().matches("node-.*-system-views-v[^-]+(?:-[^-]+)*(-\\d+)?\\.prf"))
+            .filter(file1 -> file1.getName().matches("node-.*-system-views(-\\d+)?\\.prf"))
             .collect(Collectors.toList());
     }
 

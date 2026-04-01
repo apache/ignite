@@ -25,8 +25,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-
 /**
  * Tests performance statistics multiple start.
  */
@@ -67,7 +65,6 @@ public class PerformanceStatisticsMultipleStartTest extends AbstractPerformanceS
 
             assertEquals(i, performanceStatisticsFiles(files).size());
             assertEquals(i, systemViewStatisticsFiles(files).size());
-            assertTrue(files.stream().allMatch(file -> file.getName().contains("-v" + VER_STR)));
         }
     }
 }

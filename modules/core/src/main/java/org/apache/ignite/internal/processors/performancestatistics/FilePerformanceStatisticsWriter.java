@@ -46,7 +46,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
@@ -92,9 +91,6 @@ public class FilePerformanceStatisticsWriter {
 
     /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
     public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
-
-    /** Ignite version marker in performance statistics file names. */
-    private static final String IGNITE_VERSION_FILE_SUFFIX = "-v" + VER_STR;
 
     /**
      * File format version. This version should be incremented each time when format of existing events are
@@ -490,16 +486,14 @@ public class FilePerformanceStatisticsWriter {
 
         File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
 
-        String statisticsFileName = fileName + IGNITE_VERSION_FILE_SUFFIX;
-
-        File file = new File(fileDir, statisticsFileName + ".prf");
+        File file = new File(fileDir, fileName + ".prf");
 
         int idx = 0;
 
         while (file.exists()) {
             idx++;
 
-            file = new File(fileDir, statisticsFileName + '-' + idx + ".prf");
+            file = new File(fileDir, fileName + '-' + idx + ".prf");
         }
 
         return file;

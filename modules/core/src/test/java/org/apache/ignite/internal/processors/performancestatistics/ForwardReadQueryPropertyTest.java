@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeUuid;
@@ -66,7 +65,7 @@ public class ForwardReadQueryPropertyTest extends AbstractPerformanceStatisticsT
 
     /** Creates test performance statistics file. */
     private Map<String, String> createStatistics(File dir) throws Exception {
-        File file = new File(dir, "node-" + randomUUID() + "-v" + VER_STR + ".prf");
+        File file = new File(dir, "node-" + randomUUID() + ".prf");
 
         try (FileIO fileIo = new RandomAccessFileIOFactory().create(file)) {
             ByteBuffer buf = ByteBuffer.allocate(1024).order(ByteOrder.nativeOrder());
