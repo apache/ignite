@@ -236,6 +236,7 @@ public interface MessageReader {
      *
      * @param type Array component type.
      * @param <T> Type of the read object.
+     * @param msg Message.
      * @return Array of objects.
      */
     public <T> T[] readObjectArray(MessageArrayType type, Message msg);
@@ -245,6 +246,7 @@ public interface MessageReader {
      *
      * @param type Collection item type.
      * @param <C> Type of the read collection.
+     * @param msg Message.
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg);
@@ -254,6 +256,7 @@ public interface MessageReader {
      *
      * @param type Map type.
      * @param <M> Type of the read map.
+     * @param msg Message.
      * @return Map.
      */
     public default <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg) {
@@ -264,6 +267,7 @@ public interface MessageReader {
      * Reads map.
      *
      * @param type Map type.
+     * @param msg Message.
      * @param compress Whether map should be compressed.
      * @param <M> Type of the read map.
      * @return Map.

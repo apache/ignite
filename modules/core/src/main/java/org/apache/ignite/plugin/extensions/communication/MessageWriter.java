@@ -289,6 +289,7 @@ public interface MessageWriter {
      * @param arr Array of objects.
      * @param type Array component type.
      * @param <T> Type of the objects that array contains.
+     * @param msg Message.
      * @return Whether array was fully written.
      */
     public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, Message msg);
@@ -299,6 +300,7 @@ public interface MessageWriter {
      * @param col Collection.
      * @param type Collection item type.
      * @param <T> Type of the objects that collection contains.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
     public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, Message msg);
@@ -310,10 +312,11 @@ public interface MessageWriter {
      * @param type Map type.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
     public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, Message msg) {
-        return writeMap(map, type, msg,false);
+        return writeMap(map, type, msg, false);
     }
 
     /**
@@ -321,6 +324,7 @@ public interface MessageWriter {
      *
      * @param map Map.
      * @param type Map type.
+     * @param msg Message.
      * @param compress Whether map should be compressed.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.

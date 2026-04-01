@@ -93,7 +93,8 @@ public class DirectByteBufferStream {
 
     /** */
     private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
-    
+
+    /** */
     private static final ThreadLocal<CacheObjectContext> cotx = new ThreadLocal<>();
 
     /** */
@@ -2319,7 +2320,7 @@ public class DirectByteBufferStream {
         }
     }
 
-    /** {@inheritDoc} */
+    /** */
     private void setContext(Message msg) {
         if (msg instanceof GridCacheIdMessage)
             cotx.set(ctx.cache().context().cacheContext(((GridCacheIdMessage)msg).cacheId).cacheObjectContext());
@@ -2328,7 +2329,7 @@ public class DirectByteBufferStream {
             cotx.set(ctx.cache().context().cacheContext(((GridCacheGroupIdMessage)msg).grpId).cacheObjectContext());
     }
 
-    /** {@inheritDoc} */
+    /** */
     private void removeContext(Message msg) {
         if (msg instanceof GridCacheIdMessage | msg instanceof GridCacheGroupIdMessage) {
             assert cotx.get() != null;
@@ -2337,8 +2338,8 @@ public class DirectByteBufferStream {
         }
     }
 
-    /** {@inheritDoc} */
-    private CacheObjectContext context(){
+    /** */
+    private CacheObjectContext context() {
         return cotx.get();
     }
 
