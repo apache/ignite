@@ -139,8 +139,8 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
     public IgniteCheckedException createFailureCompoundException() {
         IgniteCheckedException ex = new IgniteCheckedException("Failed to complete exchange process.");
 
-        for (Map.Entry<UUID, Throwable> entry : exchangeErrors().entrySet())
-            U.addSuppressed(ex, entry.getValue());
+        for (Throwable err : exchangeErrors().values())
+            U.addSuppressed(ex, err);
 
         return ex;
     }
