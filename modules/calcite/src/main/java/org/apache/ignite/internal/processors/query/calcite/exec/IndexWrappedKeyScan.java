@@ -86,7 +86,7 @@ public class IndexWrappedKeyScan<Row> extends IndexScan<Row> {
             assert fieldDesc != null : String.format("idx=%s, o=%s, keyName=%s", idx.name(), o, keyName);
 
             Object field = o.field(keyName);
-            Object key = TypeUtils.fromInternal(ectx, field, fieldsStoreTypes[fieldDesc.fieldIndex()]);
+            Object key = TypeUtils.fromInternal(ectx, field, fieldDesc.storageType());
 
             keys[i++] = wrapIndexKey(key, e.getValue().indexKeyType());
         }

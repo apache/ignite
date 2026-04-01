@@ -67,13 +67,13 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     protected final InlineIndex idx;
 
     /** Mapping from index keys to row fields. */
-    protected final ImmutableIntList idxFieldMapping;
+    private final ImmutableIntList idxFieldMapping;
 
     /** Mapping from row fields to index keys. */
     private final int[] fieldIdxMapping;
 
     /** Types of key fields stored in index. */
-    protected final Type[] fieldsStoreTypes;
+    private final Type[] fieldsStoreTypes;
 
     /** Transaction changes. */
     private final TransactionChanges<IndexRow> txChanges;
