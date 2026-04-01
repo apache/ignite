@@ -70,7 +70,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(2)
     @Compress
     @GridToStringInclude
-    Map<Integer, CachePartitionFullCountersMap> partCntrs = new HashMap<>();
+    Map<Integer, CachePartitionFullCountersMap> partCntrs;
 
     /** Partitions history suppliers. */
     @Order(3)
@@ -152,6 +152,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
         this.partHistSuppliers = partHistSuppliers;
         this.partsToReload = partsToReload;
+        partCntrs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -491,7 +492,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     public void cleanUp() {
         locParts = null;
-        partCntrs.clear();
+        partCntrs = null;
     }
 
     /** */
