@@ -20,18 +20,17 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -74,33 +73,30 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             .setKeyFieldName("id")
             .setValueFieldName("name");
 
-        var entity1 = new QueryEntity()
-            .setTableName("CITY")
-            .setKeyType(Integer.class.getName())
-            .setValueType(City.class.getName())
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("name", String.class.getName(), null)
-            .setKeyFieldName("id");
-
-        var entity2 = new QueryEntity()
-            .setTableName("PERSON")
-            .setKeyType(Integer.class.getName())
-            .setValueType(Person.class.getName())
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("name", String.class.getName(), null)
-            .addQueryField("city_id", Integer.class.getName(), null)
-            .setKeyFieldName("id");
-
-        var cacheCfg = new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
+        var personCfg = new CacheConfiguration<Integer, Object>("person")
             .setAtomicityMode(TRANSACTIONAL)
             .setSqlSchema("PUBLIC")
             .setInterceptor(new TestCacheInterceptor(keepBinary))
-            .setQueryEntities(List.of(entity1, entity2));
+            .setQueryEntities(List.of(new QueryEntity(Integer.class, Person.class)
+                .setTableName("PERSON")
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ));
 
-        var pureCacheCfg = new CacheConfiguration<Integer, Object>("Pure")
+        var cityCfg = new CacheConfiguration<Integer, Object>("city")
             .setAtomicityMode(TRANSACTIONAL)
             .setSqlSchema("PUBLIC")
-            .setInterceptor(new TestAlwaysUnwrappedValCacheInterceptor())
+            .setInterceptor(new TestCacheInterceptor(keepBinary))
+            .setQueryEntities(List.of(new QueryEntity(Integer.class, City.class)
+                .setTableName("CITY")
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ));
+
+        var pureCacheCfg = new CacheConfiguration<Integer, Object>("pure")
+            .setAtomicityMode(TRANSACTIONAL)
+            .setSqlSchema("PUBLIC")
+            .setInterceptor(new TestCacheInterceptor(false))
             .setQueryEntities(List.of(entity0));
 
         var calciteQryEngineCfg = new CalciteQueryEngineConfiguration().setDefault(true);
@@ -108,49 +104,44 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(calciteQryEngineCfg))
             .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true))
-            .setCacheConfiguration(cacheCfg, pureCacheCfg);
+            .setCacheConfiguration(pureCacheCfg, cityCfg, personCfg);
     }
 
     /** Test object unwrapped on interceptor side if applicable. */
     @Test
     public void testInterceptorUnwrapValIfNeeded() throws Exception {
         startGrid(0);
-        Ignite client = startClientGrid("client");
-
-        IgniteCache<Integer, Object> cache = client.cache(DEFAULT_CACHE_NAME);
-
-        if (keepBinary)
-            cache = cache.withKeepBinary();
+        IgniteEx client = startClientGrid("client");
 
         int incParam = 0;
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            cache.query(new SqlFieldsQuery("insert into PUBLIC.PURE(id, name) values (?, 'val')").setArgs(incParam++)).getAll();
-            cache.query(new SqlFieldsQuery("insert into PUBLIC.CITY(id, name) values (?, 'val')").setArgs(incParam++)).getAll();
-            cache.query(new SqlFieldsQuery("insert into PUBLIC.PERSON(id, name, city_id) values (?, 'val', 1)").setArgs(incParam++))
-                .getAll();
+            client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PURE(id, name) values (?, 'val')")
+                .setArgs(incParam++), keepBinary).getAll();
+            client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.CITY(id, name) values (?, 'val')")
+                .setArgs(incParam++), keepBinary).getAll();
+            client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PERSON(id, name, city_id) values (?, 'val', 1)")
+                    .setArgs(incParam++), keepBinary).getAll();
 
             tx.commit();
         }
 
-        cache.query(new SqlFieldsQuery("insert into PUBLIC.PURE(id, name) values (?, 'val')").setArgs(incParam++)).getAll();
-        cache.query(new SqlFieldsQuery("insert into PUBLIC.CITY(id, name) values (?, 'val')").setArgs(incParam++)).getAll();
-        cache.query(new SqlFieldsQuery("insert into PUBLIC.PERSON(id, name, city_id) values (?, 'val', 1)").setArgs(incParam)).getAll();
+        client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PURE(id, name) values (?, 'val')")
+            .setArgs(incParam++), keepBinary).getAll();
+        client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.CITY(id, name) values (?, 'val')")
+            .setArgs(incParam++), keepBinary).getAll();
+        client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PERSON(id, name, city_id) values (?, 'val', 1)")
+            .setArgs(incParam), keepBinary).getAll();
     }
 
     /** */
     private static class City {
         /** */
-        @GridToStringInclude
-        int id;
-
-        /** */
-        @GridToStringInclude
+        @QuerySqlField
         String name;
 
         /** */
-        City(int id, String name) {
-            this.id = id;
+        City(String name) {
             this.name = name;
         }
     }
@@ -158,32 +149,17 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
     /** */
     private static class Person {
         /** */
-        @GridToStringInclude
-        int id;
-
-        /** */
-        @GridToStringInclude
+        @QuerySqlField
         String name;
 
         /** */
-        @GridToStringInclude
+        @QuerySqlField
         int city_id;
 
         /** */
-        Person(int id, String name, int city_id) {
-            this.id = id;
+        Person(String name, int city_id) {
             this.name = name;
             this.city_id = city_id;
-        }
-    }
-
-    /** */
-    private static class TestAlwaysUnwrappedValCacheInterceptor extends CacheInterceptorAdapter<Integer, Object> {
-        /** {@inheritDoc} */
-        @Override public @Nullable Object onBeforePut(Cache.Entry<Integer, Object> entry, Object newVal) {
-            assertFalse(newVal instanceof BinaryObject);
-
-            return newVal;
         }
     }
 
@@ -201,10 +177,7 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public @Nullable Object onBeforePut(Cache.Entry<Integer, Object> entry, Object newVal) {
-            if (keepBinary)
-                assertTrue(newVal instanceof BinaryObject);
-            else
-                assertFalse(newVal instanceof BinaryObject);
+            assertEquals(keepBinary, newVal instanceof BinaryObject);
 
             return newVal;
         }
