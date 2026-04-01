@@ -50,43 +50,23 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheIndexImpl implements IgniteIndex {
     /** */
-    private final RelCollation collation;
+    protected final RelCollation collation;
 
     /** */
-    private final String idxName;
+    protected final String idxName;
 
     /** */
-    private final @Nullable Index idx;
+    protected final @Nullable Index idx;
 
     /** */
-    private final IgniteCacheTable tbl;
-
-    /** */
-    private final RelCollation targetCollation;
-
-    /** */
-    private final boolean unwrapKeyFieldForPkIndex;
+    protected final IgniteCacheTable tbl;
 
     /** */
     public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
-        this(collation, name, idx, tbl, collation, false);
-    }
-
-    /** */
-    public CacheIndexImpl(
-        RelCollation collation,
-        String name,
-        @Nullable Index idx,
-        IgniteCacheTable tbl,
-        RelCollation targetCollation,
-        boolean unwrapKeyFieldForPkIndex
-    ) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
         this.tbl = tbl;
-        this.targetCollation = targetCollation;
-        this.unwrapKeyFieldForPkIndex = unwrapKeyFieldForPkIndex;
     }
 
     /** */
@@ -117,10 +97,8 @@ public class CacheIndexImpl implements IgniteIndex {
         @Nullable ImmutableBitSet requiredColumns
     ) {
         UUID locNodeId = execCtx.localNodeId();
-        if (grp.nodeIds().contains(locNodeId) && idx != null) {
-            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), targetCollation.getKeys(),
-                grp.partitions(locNodeId), ranges, requiredColumns, unwrapKeyFieldForPkIndex);
-        }
+        if (grp.nodeIds().contains(locNodeId) && idx != null)
+            return createIndexScan(execCtx, grp, ranges, requiredColumns);
 
         return Collections.emptyList();
     }
@@ -133,19 +111,8 @@ public class CacheIndexImpl implements IgniteIndex {
         @Nullable ImmutableBitSet requiredColumns
     ) {
         UUID locNodeId = ectx.localNodeId();
-
-        if (grp.nodeIds().contains(locNodeId) && idx != null) {
-            return new IndexFirstLastScan<>(
-                first,
-                ectx,
-                tbl.descriptor(),
-                idx.unwrap(InlineIndexImpl.class),
-                targetCollation.getKeys(),
-                grp.partitions(locNodeId),
-                requiredColumns,
-                unwrapKeyFieldForPkIndex
-            );
-        }
+        if (grp.nodeIds().contains(locNodeId) && idx != null)
+            return createIndexFirstLastScan(first, ectx, grp, requiredColumns);
 
         return Collections.emptyList();
     }
@@ -174,15 +141,8 @@ public class CacheIndexImpl implements IgniteIndex {
         if (requiredColumns != null)
             collation = collation.apply(Commons.mapping(requiredColumns, rowType.getFieldCount()));
 
-        if (!collation.getFieldCollations().isEmpty()) {
-            return RexUtils.buildSortedSearchBounds(
-                cluster,
-                collation,
-                cond,
-                rowType,
-                requiredColumns
-            );
-        }
+        if (!collation.getFieldCollations().isEmpty())
+            return buildSearchBounds(cluster, collation, cond, rowType, requiredColumns);
 
         // Empty index find predicate.
         return null;
@@ -202,7 +162,7 @@ public class CacheIndexImpl implements IgniteIndex {
         if (requiredColumns == null)
             requiredColumns = ImmutableBitSet.range(tbl.descriptor().columnDescriptors().size());
 
-        ImmutableIntList idxKeys = targetCollation.getKeys();
+        ImmutableIntList idxKeys = collation.getKeys();
 
         // All indexed keys should be inlined, all required colummns should be inlined.
         if (idxKeys.size() < requiredColumns.cardinality() || !ImmutableBitSet.of(idxKeys).contains(requiredColumns))
@@ -220,12 +180,57 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    public RelCollation targetCollation() {
-        return targetCollation;
+    protected List<SearchBounds> buildSearchBounds(
+        RelOptCluster cluster,
+        RelCollation collation,
+        @Nullable RexNode cond,
+        RelDataType rowType,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        return RexUtils.buildSortedSearchBounds(
+            cluster,
+            collation,
+            cond,
+            rowType,
+            requiredColumns
+        );
     }
 
     /** */
-    public boolean isUnwrapKeyFieldForPkIndex() {
-        return unwrapKeyFieldForPkIndex;
+    protected <Row> IndexScan<Row> createIndexScan(
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        RangeIterable<Row> ranges,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        return new IndexScan<>(
+            ectx,
+            tbl.descriptor(),
+            idx.unwrap(InlineIndex.class),
+            collation.getKeys(),
+            grp.partitions(ectx.localNodeId()),
+            ranges,
+            requiredColumns
+        );
+    }
+
+    /** */
+    protected <Row> IndexScan<Row> createIndexFirstLastScan(
+        boolean first, ExecutionContext<Row> ectx, ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns
+    ) {
+        return new IndexFirstLastScan<>(
+            first,
+            ectx,
+            tbl.descriptor(),
+            idx.unwrap(InlineIndexImpl.class),
+            collation.getKeys(),
+            grp.partitions(ectx.localNodeId()),
+            requiredColumns
+        );
+    }
+
+    /** */
+    protected CacheIndexImpl copyWithNewTable(IgniteCacheTable newTbl) {
+        return new CacheIndexImpl(collation, idxName, idx, newTbl);
     }
 }

@@ -20,12 +20,10 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jetbrains.annotations.Nullable;
@@ -45,9 +43,6 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param parts Mapping from index keys to row fields.
      * @param requiredColumns Required columns.
-     * @param unwrapKeyFieldForPkIndex {@code true} for a proxy composite pk index for which the boundaries need to be
-     *      unwrapped from {@link BinaryObject}/Key class into index fields. For example,
-     *      {@value QueryUtils#KEY_FIELD_NAME} -> Row[idx_field_2, idx_field_3].
      */
     public IndexFirstLastScan(
         boolean first,
@@ -56,10 +51,9 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         InlineIndexImpl idx,
         ImmutableIntList idxFieldMapping,
         int[] parts,
-        @Nullable ImmutableBitSet requiredColumns,
-        boolean unwrapKeyFieldForPkIndex
+        @Nullable ImmutableBitSet requiredColumns
     ) {
-        super(ectx, desc, idx, idxFieldMapping, parts, null, requiredColumns, unwrapKeyFieldForPkIndex);
+        super(ectx, desc, idx, idxFieldMapping, parts, null, requiredColumns);
 
         this.first = first;
     }
@@ -82,7 +76,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
     }
 
     /** */
-    private static class FirstLastIndexWrapper extends IndexScan.TreeIndexWrapper {
+    static class FirstLastIndexWrapper extends IndexScan.TreeIndexWrapper {
         /** */
         private final boolean first;
 
@@ -91,7 +85,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
          * @param qctx  Query context.
          * @param first {@code True} to take first index value. {@code False} to take last value.
          */
-        protected FirstLastIndexWrapper(InlineIndex idx, IndexQueryContext qctx, boolean first) {
+        FirstLastIndexWrapper(InlineIndex idx, IndexQueryContext qctx, boolean first) {
             super(idx, qctx);
 
             this.first = first;

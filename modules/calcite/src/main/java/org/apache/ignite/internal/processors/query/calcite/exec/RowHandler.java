@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -74,8 +73,5 @@ public interface RowHandler<Row> {
 
         /** */
         Row create(Object... fields);
-
-        /** */
-        Row create(int size);
     }
 }

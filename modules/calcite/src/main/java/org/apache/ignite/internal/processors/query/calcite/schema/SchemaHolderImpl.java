@@ -208,18 +208,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
 
         // Recreate indexes for the new table without columns shift.
-        for (IgniteIndex idx : oldTbl.indexes().values()) {
-            CacheIndexImpl idx0 = (CacheIndexImpl)idx;
-
-            newTbl.addIndex(new CacheIndexImpl(
-                idx0.collation(),
-                idx0.name(),
-                idx0.queryIndex(),
-                newTbl,
-                idx0.targetCollation(),
-                idx0.isUnwrapKeyFieldForPkIndex()
-            ));
-        }
+        for (IgniteIndex idx : oldTbl.indexes().values())
+            newTbl.addIndex(((CacheIndexImpl)idx).copyWithNewTable(newTbl));
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
     }
@@ -247,17 +237,19 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         Mappings.TargetMapping mapping = Commons.mapping(retainedCols.build(), colsCnt);
 
         for (IgniteIndex idx : oldTbl.indexes().values()) {
-            CacheIndexImpl idx0 = (CacheIndexImpl)idx;
+            if (idx instanceof CacheWrappedKeyIndexImpl) {
+                CacheWrappedKeyIndexImpl idx0 = (CacheWrappedKeyIndexImpl)idx;
 
-            if (idx0.isUnwrapKeyFieldForPkIndex()) {
-                RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(newTbl);
+                RelCollation newKeyFieldCollation = deriveKeyFieldIndexCollation(newTbl);
                 RelCollation newCollation = RelCollations.permute(idx0.targetCollation(), mapping);
 
-                newTbl.addIndex(new CacheIndexImpl(
-                    keyFieldCollation, idx0.name(), idx0.queryIndex(), newTbl, newCollation, true
+                newTbl.addIndex(new CacheWrappedKeyIndexImpl(
+                    newKeyFieldCollation, idx0.name(), idx0.queryIndex(), newTbl, newCollation
                 ));
             }
             else {
+                CacheIndexImpl idx0 = (CacheIndexImpl)idx;
+
                 RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
 
                 newTbl.addIndex(new CacheIndexImpl(newCollation, idx0.name(), idx0.queryIndex(), newTbl));
@@ -331,8 +323,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         if (idxDesc.isPk() && idxDesc.isComposite()) {
             RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
 
-            tbl.addIndex(new CacheIndexImpl(
-                keyFieldCollation, idxName + "_proxy", idxDesc.index(), tbl, idxCollation, true
+            tbl.addIndex(new CacheWrappedKeyIndexImpl(
+                keyFieldCollation, idxName + "_proxy", idxDesc.index(), tbl, idxCollation
             ));
         }
     }
@@ -358,21 +350,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         }
 
         return RelCollations.of(collations);
-    }
-
-    /** */
-    private static RelCollation deriveKeyFieldIndexCollation(IgniteCacheTable tbl) {
-        ColumnDescriptor desc = tbl.descriptor().columnDescriptor(QueryUtils.KEY_FIELD_NAME);
-        assert desc != null : String.format(
-            "cacheName=%s, schemaName=%s, tableName=%s",
-            tbl.descriptor().typeDescription().cacheName(),
-            tbl.descriptor().typeDescription().tableName(),
-            tbl.descriptor().typeDescription().tableName()
-        );
-
-        int fieldIdx = desc.fieldIndex();
-
-        return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));
     }
 
     /** {@inheritDoc} */
@@ -515,5 +492,20 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             schema.register(newCalciteSchema, frameworkCfg);
 
         calciteSchema = newCalciteSchema;
+    }
+
+    /** */
+    private static RelCollation deriveKeyFieldIndexCollation(IgniteCacheTable tbl) {
+        ColumnDescriptor desc = tbl.descriptor().columnDescriptor(QueryUtils.KEY_FIELD_NAME);
+        assert desc != null : String.format(
+            "cacheName=%s, schemaName=%s, tableName=%s",
+            tbl.descriptor().typeDescription().cacheName(),
+            tbl.descriptor().typeDescription().tableName(),
+            tbl.descriptor().typeDescription().tableName()
+        );
+
+        int fieldIdx = desc.fieldIndex();
+
+        return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));
     }
 }
