@@ -88,7 +88,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                 "Employee 5"
         );
 
-
         bh.consume(res);
     }
 
@@ -104,7 +103,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                         "WHERE d.name = ?",
                 "Department 5"
         );
-
 
         bh.consume(res);
     }
@@ -125,8 +123,7 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                         "WHERE e.name = ?",
                 "Employee 5"
         );
-
-
+        
         bh.consume(res);
     }
 
