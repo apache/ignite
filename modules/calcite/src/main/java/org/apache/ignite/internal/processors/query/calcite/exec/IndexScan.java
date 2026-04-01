@@ -24,7 +24,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
@@ -42,11 +41,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.TransformRangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -70,22 +67,16 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     protected final InlineIndex idx;
 
     /** Mapping from index keys to row fields. */
-    private final ImmutableIntList idxFieldMapping;
+    protected final ImmutableIntList idxFieldMapping;
 
     /** Mapping from row fields to index keys. */
     private final int[] fieldIdxMapping;
 
     /** Types of key fields stored in index. */
-    private final Type[] fieldsStoreTypes;
+    protected final Type[] fieldsStoreTypes;
 
     /** Transaction changes. */
     private final TransactionChanges<IndexRow> txChanges;
-
-    /** */
-    private final boolean unwrapKeyFieldForPkIndex;
-
-    /** */
-    private final int rowSizeForUnwrapBinaryObject;
 
     /**
      * @param ectx Execution context.
@@ -93,9 +84,6 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Physical index.
      * @param ranges Index scan bounds.
-     * @param unwrapKeyFieldForPkIndex {@code true} for a proxy composite pk index for which the boundaries need to be
-     *      unwrapped from {@link BinaryObject}/Key class into index fields. For example,
-     *      {@value QueryUtils#KEY_FIELD_NAME} -> Row[idx_field_2, idx_field_3].
      */
     public IndexScan(
         ExecutionContext<Row> ectx,
@@ -104,8 +92,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         ImmutableIntList idxFieldMapping,
         int[] parts,
         RangeIterable<Row> ranges,
-        @Nullable ImmutableBitSet requiredColumns,
-        boolean unwrapKeyFieldForPkIndex
+        @Nullable ImmutableBitSet requiredColumns
     ) {
         super(ectx, desc, parts, requiredColumns);
         this.ranges = ranges;
@@ -114,7 +101,6 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         kctx = cctx.kernalContext();
 
         this.idxFieldMapping = idxFieldMapping;
-        this.unwrapKeyFieldForPkIndex = unwrapKeyFieldForPkIndex;
 
         RelDataType srcRowType = desc.rowType(ectx.getTypeFactory(), null);
         IgniteTypeFactory typeFactory = ectx.getTypeFactory();
@@ -137,8 +123,6 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         }
         else
             txChanges = TransactionChanges.empty();
-
-        rowSizeForUnwrapBinaryObject = getRowSizeForUnwrapBinaryObject();
     }
 
     /**
@@ -223,9 +207,6 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
-
-        if (unwrapKeyFieldForPkIndex)
-            bound = unwrapKeyFieldForPkIndex(bound);
 
         InlineIndexRowHandler idxRowHnd = idx.segment(0).rowHandler();
         RowHandler<Row> rowHnd = ectx.rowHandler();
@@ -504,49 +485,5 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /** */
-    private int getRowSizeForUnwrapBinaryObject() {
-        int max = -1;
-
-        for (int i = 0; i < idxFieldMapping.size(); i++)
-            max = Math.max(max, idxFieldMapping.getInt(i));
-
-        return max + 1;
-    }
-
-    /** */
-    private Row unwrapKeyFieldForPkIndex(Row row) {
-        RowHandler<Row> rowHnd = ectx.rowHandler();
-
-        Object key = rowHnd.get(QueryUtils.KEY_COL, row);
-        assert key != null : String.format("idxName=%s, row=%s", idx.name(), rowHnd.toString(row));
-
-        if (key instanceof BinaryObject)
-            return toRowForPk((BinaryObject)key);
-
-        // TODO: IGNITE-28374 Implement for POJO key class
-        return row;
-    }
-
-    /** */
-    private Row toRowForPk(BinaryObject o) {
-        assert o.type().typeName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
-            "idx=%s, o=%s, oType=%s, idxKeyType=%s",
-            idx.name(), o, o.type().typeName(), idx.indexDefinition().typeDescriptor().keyTypeName()
-        );
-
-        RowHandler<Row> rowHnd = ectx.rowHandler();
-        Row row = factory.create(rowSizeForUnwrapBinaryObject);
-
-        for (String keyName : idx.indexDefinition().indexKeyDefinitions().keySet()) {
-            ColumnDescriptor fieldDesc = desc.columnDescriptor(keyName);
-            assert fieldDesc != null : String.format("idx=%s, o=%s, keyName=%s", idx.name(), o, keyName);
-
-            rowHnd.set(fieldDesc.fieldIndex(), row, o.field(keyName));
-        }
-
-        return row;
     }
 }

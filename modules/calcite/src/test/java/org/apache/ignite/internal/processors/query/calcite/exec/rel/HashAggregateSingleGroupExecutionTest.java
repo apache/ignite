@@ -511,7 +511,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
     /** */
     protected RowHandler.RowFactory<Object[]> rowFactory() {
-        return new RowHandler.RowFactory<>() {
+        return new RowHandler.RowFactory<Object[]>() {
             /** */
             @Override public RowHandler<Object[]> handler() {
                 return ArrayRowHandler.INSTANCE;
@@ -525,11 +525,6 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
             /** */
             @Override public Object[] create(Object... fields) {
                 return fields;
-            }
-
-            /** */
-            @Override public Object[] create(int size) {
-                return new Object[size];
             }
         };
     }
