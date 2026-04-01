@@ -263,6 +263,7 @@ public interface MessageWriter {
      * Writes {@link CacheObject}.
      *
      * @param obj Cache object.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
     public boolean writeCacheObject(CacheObject obj, Message msg);
@@ -271,6 +272,7 @@ public interface MessageWriter {
      * Writes {@link KeyCacheObject}.
      *
      * @param obj Key cache object.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
     public boolean writeKeyCacheObject(KeyCacheObject obj, Message msg);

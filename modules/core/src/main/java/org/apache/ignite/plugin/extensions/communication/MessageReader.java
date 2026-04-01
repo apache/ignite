@@ -212,6 +212,7 @@ public interface MessageReader {
 
     /**
      * Reads {@link CacheObject}.
+     * @param msg Message.
      *
      * @return Cache object.
      */
@@ -219,6 +220,7 @@ public interface MessageReader {
 
     /**
      * Reads {@link KeyCacheObject}.
+     * @param msg Message.
      *
      * @return Key cache object.
      */
