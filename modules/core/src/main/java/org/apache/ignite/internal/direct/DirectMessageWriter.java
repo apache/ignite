@@ -349,19 +349,19 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeCacheObject(@Nullable CacheObject obj) {
+    @Override public boolean writeCacheObject(@Nullable CacheObject obj, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeCacheObject(obj);
+        stream.writeCacheObject(msg, obj);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeKeyCacheObject(KeyCacheObject obj) {
+    @Override public boolean writeKeyCacheObject(KeyCacheObject obj, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeKeyCacheObject(obj);
+        stream.writeKeyCacheObject(msg, obj);
 
         return stream.lastFinished();
     }
@@ -376,35 +376,35 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
+    @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeObjectArray(arr, type, this);
+        stream.writeObjectArray(arr, type, msg, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
+    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeCollection(col, type, this);
+        stream.writeCollection(col, type, msg, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
+    @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, Message msg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         if (compress)
             writeCompressedMessage(
-                tmpWriter -> tmpWriter.state.item().stream.writeMap(map, type, tmpWriter),
+                tmpWriter -> tmpWriter.state.item().stream.writeMap(map, type, msg, tmpWriter),
                 map == null,
                 stream
             );
         else
-            stream.writeMap(map, type, this);
+            stream.writeMap(map, type, msg, this);
 
         return stream.lastFinished();
     }

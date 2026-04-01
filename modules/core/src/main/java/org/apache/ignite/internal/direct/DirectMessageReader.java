@@ -352,10 +352,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject readCacheObject() {
+    @Override public CacheObject readCacheObject(Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        CacheObject val = stream.readCacheObject();
+        CacheObject val = stream.readCacheObject(msg);
 
         lastRead = stream.lastFinished();
 
@@ -363,10 +363,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject readKeyCacheObject() {
+    @Override public KeyCacheObject readKeyCacheObject(Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        KeyCacheObject key = stream.readKeyCacheObject();
+        KeyCacheObject key = stream.readKeyCacheObject(msg);
 
         lastRead = stream.lastFinished();
 
@@ -385,21 +385,21 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(MessageArrayType type) {
+    @Override public <T> T[] readObjectArray(MessageArrayType type, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        T[] msg = stream.readObjectArray(type, this);
+        T[] arr = stream.readObjectArray(type, msg, this);
 
         lastRead = stream.lastFinished();
 
-        return msg;
+        return arr;
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        C col = stream.readCollection(type, this);
+        C col = stream.readCollection(type, msg, this);
 
         lastRead = stream.lastFinished();
 
@@ -407,7 +407,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
+    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         M map;
@@ -415,10 +415,10 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             map = readCompressedMessageAndDeserialize(
                 stream,
-                tmpReader -> tmpReader.state.item().stream.readMap(type, tmpReader)
+                tmpReader -> tmpReader.state.item().stream.readMap(type, msg, tmpReader)
             );
         else {
-            map = stream.readMap(type, this);
+            map = stream.readMap(type, msg, this);
 
             lastRead = stream.lastFinished();
         }

@@ -37,6 +37,8 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -91,6 +93,8 @@ public class DirectByteBufferStream {
 
     /** */
     private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
+    
+    private static final ThreadLocal<CacheObjectContext> cotx = new ThreadLocal<>();
 
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
@@ -355,9 +359,6 @@ public class DirectByteBufferStream {
     /** */
     final GridKernalContext ctx;
 
-    /** */
-    final CacheObjectContext fakeCacheObjCtx;
-
     /**
      * Constructror for stream used for reading messages.
      *
@@ -368,9 +369,6 @@ public class DirectByteBufferStream {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
         this.ctx = ctx;
-
-        fakeCacheObjCtx = new CacheObjectContext(
-            ctx, null, null, false, false, false, false);
     }
 
     /**
@@ -838,7 +836,7 @@ public class DirectByteBufferStream {
     /**
      * @param obj Cache object.
      */
-    public void writeCacheObject(CacheObject obj) {
+    public void writeCacheObject(Message msg, CacheObject obj) {
         try {
             if (obj != null) {
                 switch (cacheObjState) {
@@ -851,7 +849,11 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 1:
-                        writeByteArray(obj.valueBytes(fakeCacheObjCtx));
+                        setContext(msg);
+                        
+                        writeByteArray(obj.valueBytes(context()));
+                        
+                        removeContext(msg);
 
                         if (!lastFinished)
                             return;
@@ -870,7 +872,7 @@ public class DirectByteBufferStream {
     /**
      * @param keyObj Key cache object.
      */
-    public void writeKeyCacheObject(KeyCacheObject keyObj) {
+    public void writeKeyCacheObject(Message msg, KeyCacheObject keyObj) {
         try {
             if (keyObj != null) {
                 switch (cacheObjState) {
@@ -883,7 +885,11 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 1:
-                        writeByteArray(keyObj.valueBytes(fakeCacheObjCtx));
+                        setContext(msg);
+                        
+                        writeByteArray(keyObj.valueBytes(context()));
+                        
+                        removeContext(msg);
 
                         if (!lastFinished)
                             return;
@@ -937,7 +943,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageArrayType type, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageArrayType type, Message msg, MessageWriter writer) {
         if (arr != null) {
             int len = arr.length;
 
@@ -954,7 +960,7 @@ public class DirectByteBufferStream {
                 if (arrCur == NULL)
                     arrCur = arr[arrPos++];
 
-                write(type.valueType(), arrCur, writer);
+                write(type.valueType(), msg, arrCur, writer);
 
                 if (!lastFinished)
                     return;
@@ -973,10 +979,10 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionType type, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageCollectionType type, Message msg, MessageWriter writer) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
-                writeRandomAccessList((List<T>)col, type, writer);
+                writeRandomAccessList((List<T>)col, type, msg, writer);
             else {
                 if (it == null) {
                     writeInt(col.size());
@@ -991,7 +997,7 @@ public class DirectByteBufferStream {
                     if (cur == NULL)
                         cur = it.next();
 
-                    write(type.valueType(), cur, writer);
+                    write(type.valueType(), msg, cur, writer);
 
                     if (!lastFinished)
                         return;
@@ -1011,7 +1017,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param writer Writer.
      */
-    private <T> void writeRandomAccessList(List<T> list, MessageCollectionType type, MessageWriter writer) {
+    private <T> void writeRandomAccessList(List<T> list, MessageCollectionType type, Message msg, MessageWriter writer) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
@@ -1029,7 +1035,7 @@ public class DirectByteBufferStream {
             if (arrCur == NULL)
                 arrCur = list.get(arrPos++);
 
-            write(type.valueType(), arrCur, writer);
+            write(type.valueType(), msg, arrCur, writer);
 
             if (!lastFinished)
                 return;
@@ -1045,7 +1051,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param writer Writer.
      */
-    public <K, V> void writeMap(Map<K, V> map, MessageMapType type, MessageWriter writer) {
+    public <K, V> void writeMap(Map<K, V> map, MessageMapType type, Message msg, MessageWriter writer) {
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -1065,7 +1071,7 @@ public class DirectByteBufferStream {
                 e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
-                    write(type.keyType(), e.getKey(), writer);
+                    write(type.keyType(), msg, e.getKey(), writer);
 
                     if (!lastFinished)
                         return;
@@ -1073,7 +1079,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(type.valueType(), e.getValue(), writer);
+                write(type.valueType(), msg, e.getValue(), writer);
 
                 if (!lastFinished)
                     return;
@@ -1473,7 +1479,7 @@ public class DirectByteBufferStream {
     /**
      * @return Value.
      */
-    public KeyCacheObject readKeyCacheObject() {
+    public KeyCacheObject readKeyCacheObject(Message msg) {
         switch (cacheObjState) {
             case 0:
                 cacheObjType = readByte();
@@ -1501,7 +1507,11 @@ public class DirectByteBufferStream {
         }
 
         try {
-            KeyCacheObject key = cacheObjProc.toKeyCacheObject(fakeCacheObjCtx, cacheObjType, cacheObjArr);
+            setContext(msg);
+            
+            KeyCacheObject key = cacheObjProc.toKeyCacheObject(context(), cacheObjType, cacheObjArr);
+            
+            removeContext(msg);
 
             if (keyCacheObjPart != -1)
                 key.partition(keyCacheObjPart);
@@ -1516,7 +1526,7 @@ public class DirectByteBufferStream {
     /**
      * @return Value.
      */
-    public CacheObject readCacheObject() {
+    public CacheObject readCacheObject(Message msg) {
         switch (cacheObjState) {
             case 0:
                 cacheObjType = readByte();
@@ -1535,7 +1545,13 @@ public class DirectByteBufferStream {
                 cacheObjState = 0;
         }
 
-        return cacheObjProc.toCacheObject(fakeCacheObjCtx, cacheObjType, cacheObjArr);
+        setContext(msg);
+
+        CacheObject res = cacheObjProc.toCacheObject(context(), cacheObjType, cacheObjArr);
+        
+        removeContext(msg);
+        
+        return res;
     }
 
     /**
@@ -1596,7 +1612,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return Array.
      */
-    public <T> T[] readObjectArray(MessageArrayType type, MessageReader reader) {
+    public <T> T[] readObjectArray(MessageArrayType type, Message msg, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1611,7 +1627,7 @@ public class DirectByteBufferStream {
                 objArr = type.clazz() != null ? (Object[])Array.newInstance(type.clazz(), readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(type.valueType(), reader);
+                Object item = read(type.valueType(), msg, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1640,7 +1656,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return {@link ArrayList} or a {@link HashSet}.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader) {
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1655,7 +1671,7 @@ public class DirectByteBufferStream {
                 col = type.set() ? U.newHashSet(readSize) : new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(type.valueType(), reader);
+                Object item = read(type.valueType(), msg, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1682,7 +1698,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageMapType type, MessageReader reader) {
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1698,7 +1714,7 @@ public class DirectByteBufferStream {
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(type.keyType(), reader);
+                    Object key = read(type.keyType(), msg, reader);
 
                     if (!lastFinished)
                         return null;
@@ -1707,7 +1723,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(type.valueType(), reader);
+                Object val = read(type.valueType(), msg, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1988,7 +2004,7 @@ public class DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    protected <K, V> void write(MessageType type, Object val, MessageWriter writer) {
+    protected <K, V> void write(MessageType type, Message msg, Object val, MessageWriter writer) {
         switch (type.type()) {
             case BYTE:
                 writeByte((Byte)val);
@@ -2096,12 +2112,12 @@ public class DirectByteBufferStream {
                 break;
 
             case KEY_CACHE_OBJECT:
-                writeKeyCacheObject((KeyCacheObject)val);
+                writeKeyCacheObject(msg, (KeyCacheObject)val);
 
                 break;
 
             case CACHE_OBJECT:
-                writeCacheObject((CacheObject)val);
+                writeCacheObject(msg, (CacheObject)val);
 
                 break;
 
@@ -2111,17 +2127,17 @@ public class DirectByteBufferStream {
                 break;
 
             case MAP:
-                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type));
+                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type, msg));
 
                 break;
 
             case COLLECTION:
-                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type));
+                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type, msg));
 
                 break;
 
             case ARRAY:
-                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type));
+                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type, msg));
 
                 break;
 
@@ -2152,7 +2168,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return Value.
      */
-    protected Object read(MessageType type, MessageReader reader) {
+    protected Object read(MessageType type, Message msg, MessageReader reader) {
         switch (type.type()) {
             case BYTE:
                 return readByte();
@@ -2218,22 +2234,22 @@ public class DirectByteBufferStream {
                 return readAffinityTopologyVersion();
 
             case KEY_CACHE_OBJECT:
-                return readKeyCacheObject();
+                return readKeyCacheObject(msg);
 
             case CACHE_OBJECT:
-                return readCacheObject();
+                return readCacheObject(msg);
 
             case GRID_LONG_LIST:
                 return readGridLongList();
 
             case MAP:
-                return nestedRead(reader, () -> reader.readMap((MessageMapType)type));
+                return nestedRead(reader, () -> reader.readMap((MessageMapType)type, msg));
 
             case COLLECTION:
-                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type));
+                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type, msg));
 
             case ARRAY:
-                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type));
+                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type, msg));
 
             case MSG:
                 return readMessage(reader);
@@ -2301,6 +2317,29 @@ public class DirectByteBufferStream {
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    private void setContext(Message msg) {
+        if (msg instanceof GridCacheIdMessage)
+            cotx.set(ctx.cache().context().cacheContext(((GridCacheIdMessage)msg).cacheId).cacheObjectContext());
+
+        if (msg instanceof GridCacheGroupIdMessage)
+            cotx.set(ctx.cache().context().cacheContext(((GridCacheGroupIdMessage)msg).grpId).cacheObjectContext());
+    }
+
+    /** {@inheritDoc} */
+    private void removeContext(Message msg) {
+        if (msg instanceof GridCacheIdMessage | msg instanceof GridCacheGroupIdMessage) {
+            assert cotx.get() != null;
+
+            cotx.remove();
+        }
+    }
+
+    /** {@inheritDoc} */
+    private CacheObjectContext context(){
+        return cotx.get();
     }
 
     /** {@inheritDoc} */

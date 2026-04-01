@@ -215,14 +215,14 @@ public interface MessageReader {
      *
      * @return Cache object.
      */
-    public CacheObject readCacheObject();
+    public CacheObject readCacheObject(Message msg);
 
     /**
      * Reads {@link KeyCacheObject}.
      *
      * @return Key cache object.
      */
-    public KeyCacheObject readKeyCacheObject();
+    public KeyCacheObject readKeyCacheObject(Message msg);
 
     /**
      * Reads {@link GridLongList}.
@@ -238,7 +238,7 @@ public interface MessageReader {
      * @param <T> Type of the read object.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(MessageArrayType type);
+    public <T> T[] readObjectArray(MessageArrayType type, Message msg);
 
     /**
      * Reads any collection.
@@ -247,7 +247,7 @@ public interface MessageReader {
      * @param <C> Type of the read collection.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionType type);
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg);
 
     /**
      * Reads map.
@@ -256,8 +256,8 @@ public interface MessageReader {
      * @param <M> Type of the read map.
      * @return Map.
      */
-    public default <M extends Map<?, ?>> M readMap(MessageMapType type) {
-        return readMap(type, false);
+    public default <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg) {
+        return readMap(type, msg, false);
     }
 
     /**
@@ -268,7 +268,7 @@ public interface MessageReader {
      * @param <M> Type of the read map.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress);
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg, boolean compress);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

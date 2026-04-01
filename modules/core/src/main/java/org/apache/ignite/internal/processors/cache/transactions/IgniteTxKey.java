@@ -20,24 +20,20 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class IgniteTxKey implements Message {
+public class IgniteTxKey extends GridCacheIdMessage {
     /** Key. */
     @Order(0)
     @GridToStringInclude(sensitive = true)
     KeyCacheObject key;
-
-    /** Cache ID. */
-    @Order(1)
-    int cacheId;
 
     /**
      * Empty constructor.
@@ -60,13 +56,6 @@ public class IgniteTxKey implements Message {
      */
     public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
     }
 
     /**
@@ -110,6 +99,10 @@ public class IgniteTxKey implements Message {
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

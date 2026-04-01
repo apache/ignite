@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -47,7 +48,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Message {
+public class IgniteTxEntry extends GridCacheIdMessage implements GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -106,17 +106,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @Order(0)
     KeyCacheObject key;
 
-    /** Cache ID. */
-    @GridToStringExclude
-    @Order(1)
-    int cacheId;
-
     /** Transient tx key. */
     private IgniteTxKey txKey;
 
     /** Cache value. */
     @GridToStringInclude
-    @Order(2)
+    @Order(1)
     TxEntryValueHolder val = new TxEntryValueHolder();
 
     /** Visible value for peek. */
@@ -125,7 +120,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Old value before update. */
     @GridToStringInclude
-    @Order(3)
+    @Order(2)
     TxEntryValueHolder oldVal = new TxEntryValueHolder();
 
     /** Transform. */
@@ -137,24 +132,24 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Transform closure bytes. */
     @GridToStringExclude
-    @Order(4)
+    @Order(3)
     byte[] transformClosBytes;
 
     /** Time to live. */
-    @Order(5)
+    @Order(4)
     long ttl;
 
     /** DR expire time (explicit) */
-    @Order(6)
+    @Order(5)
     long conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
 
     /** Conflict version. */
-    @Order(7)
+    @Order(6)
     GridCacheVersion conflictVer;
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
-    @Order(8)
+    @Order(7)
     GridCacheVersion explicitVer;
 
     /** DHT version. */
@@ -162,7 +157,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Put filters. */
     @GridToStringInclude
-    @Order(9)
+    @Order(8)
     CacheEntryPredicate[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
@@ -196,18 +191,18 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private boolean transferExpiryPlc;
 
     /** Expiry policy bytes. */
-    @Order(10)
+    @Order(9)
     byte[] expiryPlcBytes;
 
     /** Additional flags. */
-    @Order(11)
+    @Order(10)
     byte flags;
 
     /** Partition update counter. */
     private long partUpdateCntr;
 
     /** */
-    @Order(12)
+    @Order(11)
     GridCacheVersion serReadVer;
 
     /**
@@ -485,13 +480,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
     }
 
     /**
@@ -1107,6 +1095,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** {@inheritDoc} */
     @Override public ClassLoader classLoader() {
         return deployClass().getClassLoader();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */
