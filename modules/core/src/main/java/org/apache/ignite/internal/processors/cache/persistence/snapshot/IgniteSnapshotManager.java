@@ -435,10 +435,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .order(ByteOrder.nativeOrder()));
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
-            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
+            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new,
+            req -> req.incremental() ?
+                "Incremental snapshot creation is not allowed when rolling upgrade is enabled." : null);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
-            this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
+            this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true),
+            req -> null);
 
         marsh = ctx.marshallerContext().jdkMarshaller();
 

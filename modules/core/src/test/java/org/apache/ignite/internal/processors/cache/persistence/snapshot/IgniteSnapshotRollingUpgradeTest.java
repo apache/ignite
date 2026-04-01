@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
 public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
@@ -36,7 +36,8 @@ public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setWalCompactionEnabled(true));
 
         return cfg;
     }
@@ -48,13 +49,49 @@ public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /** Tests that snapshot creation fails when rolling upgrade is enabled. */
+    /** Tests that full snapshot creation is allowed when rolling upgrade is enabled. */
     @Test
-    public void testSnapshotCreationFailsDuringRollingUpgrade() throws Exception {
+    public void testSnapshotCreationSucceedsDuringRollingUpgrade() throws Exception {
         IgniteEx srv = startGrid(0);
 
         srv.cluster().state(ClusterState.ACTIVE);
 
+        srv.getOrCreateCache(DEFAULT_CACHE_NAME).put(0, 0);
+
+        enableRollingUpgrade(srv);
+
+        assertTrue(srv.context().rollingUpgrade().enabled());
+
+        srv.snapshot().createSnapshot("test").get(getTestTimeout());
+
+        assertTrue("Full snapshot was not created",
+            srv.context().cache().context().snapshotMgr().localSnapshotNames(null).contains("test"));
+    }
+
+    /** Tests that incremental snapshot creation is blocked during rolling upgrade. */
+    @Test
+    public void testIncrementalSnapshotCreationFailsDuringRollingUpgrade() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        srv.getOrCreateCache(DEFAULT_CACHE_NAME).put(0, 0);
+
+        srv.snapshot().createSnapshot("test").get(getTestTimeout());
+
+        enableRollingUpgrade(srv);
+
+        assertTrue(srv.context().rollingUpgrade().enabled());
+
+        assertThrowsAnyCause(log,
+            () -> srv.snapshot().createIncrementalSnapshot("test").get(getTestTimeout()),
+            IgniteException.class,
+            "Incremental snapshot creation is not allowed when rolling upgrade is enabled."
+        );
+    }
+
+    /** Enables rolling upgrade. */
+    private void enableRollingUpgrade(IgniteEx srv) throws Exception {
         IgniteProductVersion curVer = srv.context().discovery().localNode().version();
 
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(curVer.major()
@@ -62,14 +99,5 @@ public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
             + "." + curVer.maintenance() + 1);
 
         srv.context().rollingUpgrade().enable(targetVer, false);
-
-        assertTrue(srv.context().rollingUpgrade().enabled());
-
-        Throwable ex = assertThrowsWithCause(
-            () -> srv.snapshot().createSnapshot("test").get(getTestTimeout()),
-            IgniteException.class
-        );
-
-        assertTrue(ex.getMessage().contains("Failed to start distributed process START_SNAPSHOT: rolling upgrade is enabled"));
     }
 }

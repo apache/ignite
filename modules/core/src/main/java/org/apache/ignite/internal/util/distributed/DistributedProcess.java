@@ -119,6 +119,26 @@ public class DistributedProcess<I extends Message, R extends Message> {
         CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
+        this(ctx, type, exec, finish, initMsgFactory,
+            req -> "Failed to start distributed process " + type + ": rolling upgrade is enabled");
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param type Process type.
+     * @param exec Execute action and returns future with the single node result to send to the coordinator.
+     * @param finish Finish process closure. Called on each node when all single nodes results received.
+     * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
+     * @param rollingUpgradeValidator Rolling upgrade validator. Returns rejection reason or {@code null} if the process is allowed.
+     */
+    public DistributedProcess(
+        GridKernalContext ctx,
+        DistributedProcessType type,
+        Function<I, IgniteInternalFuture<R>> exec,
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
+        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory,
+        Function<I, String> rollingUpgradeValidator
+    ) {
         this.ctx = ctx;
         this.type = type;
         this.initMsgFactory = initMsgFactory;
@@ -154,12 +174,14 @@ public class DistributedProcess<I extends Message, R extends Message> {
             try {
                 IgniteInternalFuture<R> fut;
 
-                if (ctx.rollingUpgrade().enabled()) {
-                    fut = new GridFinishedFuture<>(new IgniteException("Failed to start distributed process "
-                        + type + ": rolling upgrade is enabled"));
-                }
+                I req = (I)msg.request();
+
+                String rejectMsg = ctx.rollingUpgrade().enabled() ? rollingUpgradeValidator.apply(req) : null;
+
+                if (rejectMsg != null)
+                    fut = new GridFinishedFuture<>(new IgniteException(rejectMsg));
                 else
-                    fut = exec.apply((I)msg.request());
+                    fut = exec.apply(req);
 
                 fut.listen(() -> {
                     if (fut.error() != null)
