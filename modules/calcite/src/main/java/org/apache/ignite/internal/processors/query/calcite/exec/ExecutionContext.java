@@ -145,15 +145,14 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private Object[] correlations = new Object[16];
 
-    /** Modified entries holder. */
-    @Nullable private final TxAwareModifiedEntriesHolder modifiedEntriesHolder;
+    /** Entries holder per execution thread. */
+    private static final ThreadLocal<Collection<QueryTxEntry>> txEntriesHolder = new ThreadLocal<>();
 
     /**
      * @param qctx Parent base query context.
      * @param qryId Query ID.
      * @param fragmentDesc Partitions information.
      * @param params Parameters.
-     * @param mofiedEntriesHolder Modified entries holder.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
@@ -170,8 +169,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         IoTracker ioTracker,
         long timeout,
         Map<String, Object> params,
-        @Nullable Collection<QueryTxEntry> qryTxEntries,
-        @Nullable TxAwareModifiedEntriesHolder mofiedEntriesHolder
+        @Nullable Collection<QueryTxEntry> qryTxEntries
     ) {
         super(qctx);
 
@@ -187,8 +185,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
-        this.qryTxEntries = qryTxEntries;
-        this.modifiedEntriesHolder = mofiedEntriesHolder;
+        this.qryTxEntries = qryTxEntries == null ? txEntriesHolder.get() : qryTxEntries;
 
         startTs = U.currentTimeMillis();
 
@@ -427,8 +424,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
-                if (modifiedEntriesHolder != null)
-                    modifiedEntriesHolder.store(qryTxEntries);
+                txEntriesHolder.set(qryTxEntries);
 
                 if (!isCancelled())
                     task.run();
@@ -437,8 +433,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
                 onError.accept(e);
             }
             finally {
-                if (modifiedEntriesHolder != null)
-                    modifiedEntriesHolder.detach();
+                txEntriesHolder.remove();
             }
         });
     }

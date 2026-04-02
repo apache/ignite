@@ -176,7 +176,7 @@ import org.junit.runners.Suite;
     CacheStoreTest.class,
     MultiDcQueryMappingTest.class,
     TxWithExceptionalInterceptorTest.class,
-    UserDefinedTxAwareFunctionsIntegrationTest.class
+    UserDefinedTxAwareFunctionsIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

@@ -361,7 +361,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             NoOpIoTracker.INSTANCE,
             0,
             ImmutableMap.of(),
-            null,
             null);
     }
 }

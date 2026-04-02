@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -27,19 +26,17 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -50,72 +47,65 @@ import static org.junit.Assert.assertThat;
  * Integration test for user defined functions with tx aware.
  */
 @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
-public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    /** */
-    @Parameterized.Parameter()
-    public SqlTransactionMode sqlTxMode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sqlTxMode={0}")
-    public static Collection<?> parameters() {
-        return List.of(SqlTransactionMode.ALL);
-    }
-
+public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setQueryThreadPoolSize(16);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+        cfg.setQueryThreadPoolSize(16);
+
+        return cfg;
     }
 
-    /** Check tx aware udf execution results. */
+    /** Check tx aware UDF execution results. */
     @Test
     public void testTxAwareUserDefinedFunc() {
         assertTrue(nodeCount() > 1);
         int nodeCnt = nodeCount();
 
-        client.getOrCreateCache(cacheConfig());
-
         List<List<Object>> refResults = new ArrayList<>();
 
-        IgniteCache<Integer, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = client.getOrCreateCache(cacheConfig());
 
         refResults.add(List.of(0, Integer.toString(0)));
         // Insert outside tx.
-        cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, ?)").setArgs(0, 0)).getAll();
+        cache.query(new SqlFieldsQuery("INSERT INTO Employer(id, name) VALUES (?, ?)").setArgs(0, 0)).getAll();
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             for (int i = 1; i < 2 * nodeCnt; ++i) {
                 refResults.add(List.of(i, Integer.toString(i)));
-                cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, ?)").setArgs(i, i)).getAll();
+                cache.query(new SqlFieldsQuery("INSERT INTO Employer(id, name) VALUES (?, ?)").setArgs(i, i)).getAll();
             }
 
-            // Simple select without udf.
+            // Simple select without UDF.
             List<List<?>> selectResult = cache
-                .query(new SqlFieldsQuery("SELECT id, name FROM PUBLIC.CITY ORDER BY id"))
+                .query(new SqlFieldsQuery("SELECT id, name FROM Employer ORDER BY id"))
                 .getAll();
 
             assertThat(selectResult, equalTo(refResults));
 
-            // Select with udf.
+            // Select with UDF.
             List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT customTableFunc() AS result")).getAll();
 
             assertThat(res.get(0).get(0), equalTo(refResults));
 
-            // Select with nested udf.
+            // Select with nested UDF.
             res = cache.query(new SqlFieldsQuery("SELECT customNestedTableFunc() AS result")).getAll();
 
             assertThat(res.get(0).get(0), equalTo(refResults));
 
-            // Udf participate in dml.
-            res = cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (100, nameAsStr(1))")).getAll();
+            // UDF participate in DML.
+            cache.query(new SqlFieldsQuery("INSERT INTO Employer(id, name) VALUES (100, nameAsStr(1))")).getAll();
 
-            res = cache.query(new SqlFieldsQuery("SELECT name FROM PUBLIC.CITY WHERE id = 100")).getAll();
+            res = cache.query(new SqlFieldsQuery("SELECT name FROM Employer WHERE id = 100")).getAll();
 
             assertEquals("1", res.get(0).get(0));
 
             for (int i = 0; i < 2 * nodeCnt; ++i) {
-                // A bit different case of udf.
-                List<List<?>> res1 = cache.query(new SqlFieldsQuery("SELECT name(?) AS result").setArgs(i)).getAll();
+                // A bit different case of UDF.
+                List<List<?>> res1 = cache.query(new SqlFieldsQuery("SELECT nameTableFunc(?) AS result").setArgs(i)).getAll();
 
                 List<List<?>> res2 = (List<List<?>>)res1.get(0).get(0);
 
@@ -132,11 +122,9 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
         assertTrue(nodeCount() > 1);
         int nodeCnt = nodeCount();
 
-        client.getOrCreateCache(cacheConfig());
+        IgniteCache<Integer, Object> cache = client.getOrCreateCache(cacheConfig());
 
-        IgniteCache<Integer, Object> cache = client.cache(DEFAULT_CACHE_NAME);
-
-        /*The pool size should be greater than the maximum number of concurrent queries initiated by UDFs*/
+        /* The pool size should be greater than the maximum number of concurrent queries initiated by UDFs. */
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             for (int iter = 0; iter < 10; ++iter) {
                 try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -144,7 +132,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
 
                     for (int i = 0; i < 2 * nodeCnt; ++i) {
                         refResults.add(List.of(i, Integer.toString(i)));
-                        cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, ?)").setArgs(i, i)).getAll();
+                        cache.query(new SqlFieldsQuery("INSERT INTO Employer(id, name) VALUES (?, ?)").setArgs(i, i)).getAll();
                     }
 
                     List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT customNestedTableFunc() AS result")).getAll();
@@ -161,20 +149,15 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
 
     /** */
     private CacheConfiguration<Integer, Object> cacheConfig() {
-        var entity = new QueryEntity()
-            .setTableName("CITY")
-            .setKeyType(Integer.class.getName())
-            .setValueType(City.class.getName())
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("name", String.class.getName(), null)
-            .setKeyFieldName("id");
-
-        return new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
-            .setCacheMode(PARTITIONED)
-            .setAtomicityMode(TRANSACTIONAL)
-            .setSqlSchema("PUBLIC")
+        return this.<Integer, Object>cacheConfiguration()
+            .setName(DEFAULT_CACHE_NAME)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
+                .setTableName("Employer")
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ))
             .setSqlFunctionClasses(InnerSqlFunctionsLibrary.class)
-            .setQueryEntities(List.of(entity));
+            .setAtomicityMode(TRANSACTIONAL);
     }
 
     /** */
@@ -185,7 +168,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
             Ignite ignite = Ignition.localIgnite();
 
             return ignite.cache(DEFAULT_CACHE_NAME)
-                .query(new SqlFieldsQuery("SELECT id, name FROM PUBLIC.CITY ORDER BY id"))
+                .query(new SqlFieldsQuery("SELECT id, name FROM Employer ORDER BY id"))
                 .getAll();
         }
 
@@ -195,7 +178,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
             Ignite ignite = Ignition.localIgnite();
 
             Object res = ignite.cache(DEFAULT_CACHE_NAME)
-                .query(new SqlFieldsQuery("SELECT customTableFuncInner() AS result"))
+                .query(new SqlFieldsQuery("SELECT customTableFunc() AS result"))
                 .getAll().get(0).get(0);
 
             return (List<List<?>>)res;
@@ -203,21 +186,11 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
 
         /** */
         @QuerySqlFunction
-        public List<List<?>> customTableFuncInner() {
+        public static List<List<?>> nameTableFunc(int id) {
             Ignite ignite = Ignition.localIgnite();
 
             return ignite.cache(DEFAULT_CACHE_NAME)
-                .query(new SqlFieldsQuery("SELECT id, name FROM PUBLIC.CITY ORDER BY id"))
-                .getAll();
-        }
-
-        /** */
-        @QuerySqlFunction
-        public static List<List<?>> name(int id) {
-            Ignite ignite = Ignition.localIgnite();
-
-            return ignite.cache(DEFAULT_CACHE_NAME)
-                .query(new SqlFieldsQuery("SELECT name FROM PUBLIC.CITY WHERE id = ?").setArgs(id))
+                .query(new SqlFieldsQuery("SELECT name FROM Employer WHERE id = ?").setArgs(id))
                 .getAll();
         }
 
@@ -227,32 +200,10 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
             Ignite ignite = Ignition.localIgnite();
 
             List<List<?>> res = ignite.cache(DEFAULT_CACHE_NAME)
-                .query(new SqlFieldsQuery("SELECT name FROM PUBLIC.CITY WHERE id = ?").setArgs(id))
+                .query(new SqlFieldsQuery("SELECT name FROM Employer WHERE id = ?").setArgs(id))
                 .getAll();
 
             return (String)res.get(0).get(0);
-        }
-    }
-
-    /** */
-    private static class City {
-        /** */
-        @GridToStringInclude
-        int id;
-
-        /** */
-        @GridToStringInclude
-        String name;
-
-        /** */
-        City(int id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        /** */
-        @Override public String toString() {
-            return S.toString(City.class, this);
         }
     }
 }
