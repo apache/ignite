@@ -382,12 +382,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             marshalTx(reads, ctx);
 
         if (dhtVers != null && dhtVerKeys == null) {
-            for (IgniteTxKey key : dhtVers.keySet()) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
-
             dhtVerKeys = dhtVers.keySet();
             dhtVerVals = dhtVers.values();
         }
@@ -414,8 +408,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
             while (keyIt.hasNext()) {
                 IgniteTxKey key = keyIt.next();
-
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
 
                 dhtVers.put(key, verIt.next());
             }
