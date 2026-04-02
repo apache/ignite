@@ -54,7 +54,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
         cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
-        cfg.setQueryThreadPoolSize(16);
+        cfg.setQueryThreadPoolSize(11);
 
         return cfg;
     }

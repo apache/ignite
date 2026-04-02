@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +37,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -80,7 +78,6 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
-import org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
