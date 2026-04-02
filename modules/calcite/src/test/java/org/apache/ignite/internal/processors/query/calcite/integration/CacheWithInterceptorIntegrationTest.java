@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -83,6 +84,16 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
                 .setKeyFieldName("ID")
             ));
 
+        var personAtomicCfg = new CacheConfiguration<Integer, Object>("personAtomic")
+            .setAtomicityMode(ATOMIC)
+            .setSqlSchema("PUBLIC")
+            .setInterceptor(new TestCacheInterceptor(keepBinary))
+            .setQueryEntities(List.of(new QueryEntity(Integer.class, Person.class)
+                .setTableName("PERSON_ATOMIC")
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ));
+
         var cityCfg = new CacheConfiguration<Integer, Object>("city")
             .setAtomicityMode(TRANSACTIONAL)
             .setSqlSchema("PUBLIC")
@@ -104,7 +115,7 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(calciteQryEngineCfg))
             .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true))
-            .setCacheConfiguration(pureCacheCfg, cityCfg, personCfg);
+            .setCacheConfiguration(pureCacheCfg, cityCfg, personCfg, personAtomicCfg);
     }
 
     /** Test object unwrapped on interceptor side if applicable. */
@@ -116,21 +127,23 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
         int incParam = 0;
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PURE(id, name) values (?, 'val')")
+            client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PURE(id, name) VALUES (?, 'val')")
                 .setArgs(incParam++), keepBinary).getAll();
-            client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.CITY(id, name) values (?, 'val')")
+            client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, 'val')")
                 .setArgs(incParam++), keepBinary).getAll();
-            client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PERSON(id, name, city_id) values (?, 'val', 1)")
+            client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PERSON(id, name, city_id) VALUES (?, 'val', 1)")
                     .setArgs(incParam++), keepBinary).getAll();
 
             tx.commit();
         }
 
-        client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PURE(id, name) values (?, 'val')")
+        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PURE(id, name) VALUES (?, 'val')")
             .setArgs(incParam++), keepBinary).getAll();
-        client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.CITY(id, name) values (?, 'val')")
+        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, 'val')")
             .setArgs(incParam++), keepBinary).getAll();
-        client.context().query().querySqlFields(new SqlFieldsQuery("insert into PUBLIC.PERSON(id, name, city_id) values (?, 'val', 1)")
+        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PERSON(id, name, city_id) VALUES (?, 'val', 1)")
+            .setArgs(incParam), keepBinary).getAll();
+        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PERSON_ATOMIC(id, name, city_id) VALUES (?, 'val', 1)")
             .setArgs(incParam), keepBinary).getAll();
     }
 
