@@ -933,11 +933,12 @@ public class DirectByteBufferStream {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 CacheObjectContext ctx = setContext(msg);
-                
+
                 nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
-                
+
                 removeContext(ctx);
-            }else
+            }
+            else
                 lastFinished = false;
         }
         else

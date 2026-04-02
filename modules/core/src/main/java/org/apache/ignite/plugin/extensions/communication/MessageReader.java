@@ -205,6 +205,7 @@ public interface MessageReader {
     /**
      * Reads nested message.
      *
+     * @param encMsg Message.
      * @param compress Whether message should be decompressed.
      * @param <T> Type of the message.
      * @return Message.
