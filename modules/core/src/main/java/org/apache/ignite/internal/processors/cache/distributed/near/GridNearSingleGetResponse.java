@@ -153,8 +153,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
             if (res instanceof CacheObject)
                 prepareMarshalCacheObject((CacheObject)res, cctx);
-            else if (res instanceof CacheVersionedValue)
-                ((CacheVersionedValue)res).prepareMarshal(cctx.cacheObjectContext());
             else if (res instanceof GridCacheEntryInfo)
                 ((GridCacheEntryInfo)res).marshal(cctx);
         }
@@ -169,8 +167,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
             if (res instanceof CacheObject)
                 ((CacheObject)res).finishUnmarshal(cctx.cacheObjectContext(), ldr);
-            else if (res instanceof CacheVersionedValue)
-                ((CacheVersionedValue)res).finishUnmarshal(cctx, ldr);
             else if (res instanceof GridCacheEntryInfo)
                 ((GridCacheEntryInfo)res).unmarshal(cctx, ldr);
         }

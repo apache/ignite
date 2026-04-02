@@ -253,8 +253,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
 
                 entry.getKey().prepareMarshal(cacheCtx);
-
-                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
             }
         }
 
@@ -301,8 +299,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 CacheVersionedValue val = valIter.next();
 
                 key.finishUnmarshal(cctx, ldr);
-
-                val.finishUnmarshal(cctx, ldr);
 
                 ownedVals.put(key, val);
             }

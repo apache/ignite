@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -68,32 +65,6 @@ public class CacheVersionedValue implements Message {
     public CacheObject value() {
         return val;
     }
-
-    /**
-     * This method is called before the whole message is sent
-     * and is responsible for pre-marshalling state.
-     *
-     * @param ctx Cache object context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        if (val != null)
-            val.prepareMarshal(ctx);
-    }
-
-    /**
-     * This method is called after the whole message is received
-     * and is responsible for unmarshalling state.
-     *
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
