@@ -282,15 +282,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         lockEntry();
 
         try {
-            key.prepareMarshal(cctx.cacheObjectContext());
-
             kb = key.valueBytes(cctx.cacheObjectContext());
 
-            if (val != null) {
-                val.prepareMarshal(cctx.cacheObjectContext());
-
+            if (val != null) 
                 vb = val.valueBytes(cctx.cacheObjectContext());
-            }
 
             extrasSize = extrasSize();
         }
