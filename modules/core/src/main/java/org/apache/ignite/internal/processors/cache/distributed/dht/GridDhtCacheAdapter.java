@@ -1214,9 +1214,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 res0 = info;
                             }
                             else if (req.needVersion())
-                                res0 = new CacheVersionedValue(info.value(), info.version());
+                                res0 = new CacheVersionedValue(info.value(), info.version(), req.cacheId);
                             else
-                                res0 = new CacheVersionedValue(info.value(), null);
+                                res0 = new CacheVersionedValue(info.value(), null, req.cacheId);
                         }
 
                         res = new GridNearSingleGetResponse(

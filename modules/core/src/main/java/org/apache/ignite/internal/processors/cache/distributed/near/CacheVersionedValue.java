@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Cache object and version.
  */
-public class CacheVersionedValue implements Message {
+public class CacheVersionedValue extends GridCacheIdMessage implements Message {
     /** Value. */
     @Order(0)
     @GridToStringInclude
@@ -47,9 +48,10 @@ public class CacheVersionedValue implements Message {
      * @param val Cache value.
      * @param ver Cache version.
      */
-    public CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
+    public CacheVersionedValue(CacheObject val, GridCacheVersion ver, int cacheId) {
         this.val = val;
         this.ver = ver;
+        this.cacheId = cacheId;
     }
 
     /**
@@ -64,6 +66,11 @@ public class CacheVersionedValue implements Message {
      */
     public CacheObject value() {
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */

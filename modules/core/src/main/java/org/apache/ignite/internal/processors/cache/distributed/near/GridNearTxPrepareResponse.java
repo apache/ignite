@@ -196,7 +196,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(val, ver);
+        CacheVersionedValue oVal = new CacheVersionedValue(val, ver, key.cacheId);
 
         ownedVals.put(key, oVal);
     }
