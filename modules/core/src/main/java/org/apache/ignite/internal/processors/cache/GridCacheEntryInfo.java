@@ -216,11 +216,6 @@ public class GridCacheEntryInfo implements Message {
     public void marshal(CacheObjectContext ctx) throws IgniteCheckedException {
         assert key != null;
 
-        key.prepareMarshal(ctx);
-
-        if (val != null)
-            val.prepareMarshal(ctx);
-
         if (expireTime == 0)
             expireTime = -1;
         else {
@@ -250,11 +245,6 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(CacheObjectContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx, clsLdr);
-
-        if (val != null)
-            val.finishUnmarshal(ctx, clsLdr);
-
         long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
