@@ -983,6 +983,7 @@ public class DirectByteBufferStream {
     /**
      * @param col Collection.
      * @param type Type.
+     * @param msg Message.
      * @param writer Writer.
      */
     public <T> void writeCollection(Collection<T> col, MessageCollectionType type, Message msg, MessageWriter writer) {
