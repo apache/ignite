@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.benchmarks.jmh.sql;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.QueryEntity;
@@ -60,11 +60,11 @@ public class JmhCacheWithInterceptorBenchmark extends JmhSqlAbstractBenchmark {
     @Param({"true", "false"})
     protected boolean keepBinary;
 
-    /** */
-    AtomicInteger inc = new AtomicInteger();
-
     /** Target cache. */
     protected IgniteCache cache;
+
+    /** Items count. */
+    protected static final int CNT = 100;
 
     /**
      * Create Ignite configuration.
@@ -100,12 +100,17 @@ public class JmhCacheWithInterceptorBenchmark extends JmhSqlAbstractBenchmark {
 
         if (keepBinary)
             cache = cache.withKeepBinary();
+
+        for (int i = 0; i < CNT; ++i)
+            executeSql("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, '')", i);
     }
 
-    /** Test insert operation. */
+    /** Test update operation. */
     @Benchmark
-    public void put(Blackhole bh) throws Exception {
-        List<?> res = executeSql("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, 'val')", inc.incrementAndGet());
+    public void update(Blackhole bh) {
+        int key = ThreadLocalRandom.current().nextInt(CNT);
+        int valSuffix = ThreadLocalRandom.current().nextInt();
+        List<?> res = executeSql("UPDATE CITY SET name = ? WHERE ID = ?", "val" + valSuffix, key);
 
         bh.consume(res);
     }
