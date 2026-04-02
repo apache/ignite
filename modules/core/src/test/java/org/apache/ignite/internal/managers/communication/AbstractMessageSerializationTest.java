@@ -522,7 +522,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(boolean compress) {
+        @Override public <T extends Message> T readMessage(Message encMsg, boolean compress) {
             readField(Message.class);
 
             return null;

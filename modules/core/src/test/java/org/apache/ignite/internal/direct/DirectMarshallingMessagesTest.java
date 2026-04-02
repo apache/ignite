@@ -128,7 +128,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
             reader.setBuffer(chunk);
 
-            resMsg = reader.readMessage(false);
+            resMsg = reader.readMessage(srcMsg, false);
 
             pos += chunk.position();
         }

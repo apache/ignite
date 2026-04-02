@@ -193,12 +193,13 @@ public interface MessageReader {
 
     /**
      * Reads nested message.
+     * @param encMsg Message.
      *
      * @param <T> Type of the message.
      * @return Message.
      */
-    public default <T extends Message> T readMessage() {
-        return readMessage(false);
+    public default <T extends Message> T readMessage(Message encMsg) {
+        return readMessage(encMsg, false);
     }
 
     /**
@@ -208,7 +209,7 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage(boolean compress);
+    public <T extends Message> T readMessage(Message encMsg, boolean compress);
 
     /**
      * Reads {@link CacheObject}.

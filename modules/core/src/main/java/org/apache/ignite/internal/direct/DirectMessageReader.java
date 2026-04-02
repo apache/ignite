@@ -332,7 +332,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage(boolean compress) {
+    @Nullable @Override public <T extends Message> T readMessage(Message encMsg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         T msg;
@@ -340,10 +340,11 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             msg = readCompressedMessageAndDeserialize(
                 stream,
-                tmpReader -> tmpReader.state.item().stream.readMessage(tmpReader)
+                tmpReader -> tmpReader.state.item().stream.readMessage(encMsg, tmpReader),
+                encMsg
             );
         else {
-            msg = stream.readMessage(this);
+            msg = stream.readMessage(encMsg, this);
 
             lastRead = stream.lastFinished();
         }
@@ -415,7 +416,8 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             map = readCompressedMessageAndDeserialize(
                 stream,
-                tmpReader -> tmpReader.state.item().stream.readMap(type, msg, tmpReader)
+                tmpReader -> tmpReader.state.item().stream.readMap(type, msg, tmpReader),
+                msg
             );
         else {
             map = stream.readMap(type, msg, this);
@@ -469,8 +471,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** @return Deserialized object. */
-    private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Function<DirectMessageReader, T> fun) {
-        Message msg = stream.readMessage(this);
+    private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Function<DirectMessageReader, T> fun, Message encMsg) {
+        Message msg = stream.readMessage(encMsg, this);
 
         lastRead = stream.lastFinished();
 

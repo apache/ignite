@@ -694,9 +694,9 @@ public class MessageSerializerGenerator {
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
                 if (compress)
-                    returnFalseIfReadFailed(field, "reader.readMessage", "true");
+                    returnFalseIfReadFailed(field, "reader.readMessage", "msg", "true");
                 else
-                    returnFalseIfReadFailed(field, "reader.readMessage");
+                    returnFalseIfReadFailed(field, "reader.readMessage", "msg");
             }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {

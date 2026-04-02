@@ -98,7 +98,7 @@ public class CompressedMessageTest {
 
         reader.setBuffer(msgBuf);
 
-        Message readMsg = reader.readMessage(true);
+        Message readMsg = reader.readMessage(fullMsg, true);
 
         assertTrue(readMsg instanceof GridDhtPartitionsFullMessage);
 
