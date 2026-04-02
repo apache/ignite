@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -38,9 +39,6 @@ public interface RowHandler<Row> {
 
     /** */
     int columnCount(Row row);
-
-    /** */
-    String toString(Row row);
 
     /** */
     default RowFactory<Row> factory(IgniteTypeFactory typeFactory, RelDataType rowType) {

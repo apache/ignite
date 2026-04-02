@@ -44,7 +44,11 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
 
     /** */
     CacheWrappedKeyIndexImpl(
-        RelCollation collation, String idxName, Index idx, IgniteCacheTable tbl, RelCollation targetCollation
+        RelCollation collation,
+        String idxName,
+        Index idx,
+        IgniteCacheTable tbl,
+        RelCollation targetCollation
     ) {
         super(collation, idxName, idx, tbl);
 

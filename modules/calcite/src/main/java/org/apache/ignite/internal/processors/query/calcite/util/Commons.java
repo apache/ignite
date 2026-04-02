@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
@@ -538,5 +539,22 @@ public final class Commons {
      */
     public static @Nullable GridCacheVersion queryTransactionVersion(Context ctx) {
         return ctx.unwrap(GridCacheVersion.class);
+    }
+
+    /** Returns a string representation of the contents of the specified row. */
+    public static <Row> String toString(RowHandler<Row> hnd, @Nullable Row r) {
+        if (r == null)
+            return "null";
+
+        SB sb = new SB('[');
+
+        for (int i = 0; i < hnd.columnCount(r); i++) {
+            if (i != 0)
+                sb.a(", ");
+
+            sb.a(hnd.get(i, r));
+        }
+
+        return sb.a(']').toString();
     }
 }

@@ -216,7 +216,10 @@ public class CacheIndexImpl implements IgniteIndex {
 
     /** */
     protected <Row> IndexScan<Row> createIndexFirstLastScan(
-        boolean first, ExecutionContext<Row> ectx, ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
     ) {
         return new IndexFirstLastScan<>(
             first,

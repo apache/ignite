@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Map;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,13 +61,15 @@ public class IndexWrappedKeyScan<Row> extends IndexScan<Row> {
         RowHandler<Row> rowHnd = ectx.rowHandler();
 
         Object key = rowHnd.get(QueryUtils.KEY_COL, bound);
-        assert key != null : String.format("idxName=%s, bound=%s", idx.name(), rowHnd.toString(bound));
+        assert key != null : String.format("idxName=%s, bound=%s", idx.name(), Commons.toString(rowHnd, bound));
 
         if (key instanceof BinaryObject)
             return binaryObject2indexRow((BinaryObject)key);
 
-        // TODO: IGNITE-28374 Implement for POJO key class
-        return super.row2indexRow(bound);
+        throw new IgniteException(String.format(
+            "Unsupported type for index boundary: [expected=%s, current=%s]",
+            BinaryObject.class.getName(), key.getClass().getName()
+        ));
     }
 
     /** */

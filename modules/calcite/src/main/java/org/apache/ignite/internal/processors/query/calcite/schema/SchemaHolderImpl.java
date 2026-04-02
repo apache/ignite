@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -324,7 +325,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
 
             tbl.addIndex(new CacheWrappedKeyIndexImpl(
-                keyFieldCollation, idxName + "_proxy", idxDesc.index(), tbl, idxCollation
+                keyFieldCollation, SchemaManager.generateProxyIdxName(idxName), idxDesc.index(), tbl, idxCollation
             ));
         }
     }
@@ -500,7 +501,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         assert desc != null : String.format(
             "cacheName=%s, schemaName=%s, tableName=%s",
             tbl.descriptor().typeDescription().cacheName(),
-            tbl.descriptor().typeDescription().tableName(),
+            tbl.descriptor().typeDescription().schemaName(),
             tbl.descriptor().typeDescription().tableName()
         );
 

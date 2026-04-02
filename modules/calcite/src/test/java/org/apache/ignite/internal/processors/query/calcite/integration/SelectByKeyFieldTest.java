@@ -149,7 +149,9 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void checkCompositePk(
-        boolean setKeyTypeToCreateTblDdl, boolean useBinaryObject, @Nullable Runnable executeBeforeChecks
+        boolean setKeyTypeToCreateTblDdl,
+        boolean useBinaryObject,
+        @Nullable Runnable executeBeforeChecks
     ) {
         if (setKeyTypeToCreateTblDdl) {
             // Order of the primary key columns has been deliberately changed.
