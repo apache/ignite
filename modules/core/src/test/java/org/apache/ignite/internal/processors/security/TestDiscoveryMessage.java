@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.distributed;
+package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public class TestIntegerMessage implements Message {
+public class TestDiscoveryMessage implements DiscoveryCustomMessage, Message {
     /** */
     @Order(0)
-    int val;
+    IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Default constructor for {@link MessageFactory}. */
-    public TestIntegerMessage() {
+    /** Constructor for {@link MessageFactory}. */
+    public TestDiscoveryMessage() {
         // No-op.
     }
 
-    /** */
-    public TestIntegerMessage(int val) {
-        this.val = val;
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
-    /** */
-    public int value() {
-        return val;
+    /** {@inheritDoc} */
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
+        return new TestDiscoveryAcknowledgeMessage();
     }
 }
