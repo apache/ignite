@@ -176,16 +176,6 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /**
      * @param ctx Cache object context.
      * @return Marshalled size.
      * @throws IgniteCheckedException If failed.
