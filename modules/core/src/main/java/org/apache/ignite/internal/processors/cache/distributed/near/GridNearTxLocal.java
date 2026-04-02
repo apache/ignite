@@ -2391,21 +2391,28 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
                                 if (needReadVer) {
-                                    getRes = primaryLocal(entry) ?
-                                        entry.innerGetVersioned(
-                                            null,
-                                            this,
-                                            /*metrics*/true,
-                                            /*event*/true,
-                                            null,
-                                            resolveTaskName(),
-                                            accessPlc,
-                                            !deserializeBinary,
-                                            null) : null;
+                                    cctx.database().checkpointReadLock();
 
-                                    if (getRes != null) {
-                                        val = getRes.value();
-                                        readVer = getRes.version();
+                                    try {
+                                        getRes = primaryLocal(entry) ?
+                                            entry.innerGetVersioned(
+                                                null,
+                                                this,
+                                                /*metrics*/true,
+                                                /*event*/true,
+                                                null,
+                                                resolveTaskName(),
+                                                accessPlc,
+                                                !deserializeBinary,
+                                                null) : null;
+
+                                        if (getRes != null) {
+                                            val = getRes.value();
+                                            readVer = getRes.version();
+                                        }
+                                    }
+                                    finally {
+                                        cctx.database().checkpointReadUnlock();
                                     }
                                 }
                                 else {

@@ -457,8 +457,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean deferred = false;
         GridCacheVersion ver0 = null;
 
-        cctx.shared().database().checkpointReadLock();
-
         lockEntry();
 
         try {
@@ -494,8 +492,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             unlockEntry();
-
-            cctx.shared().database().checkpointReadUnlock();
         }
 
         if (obsolete) {
