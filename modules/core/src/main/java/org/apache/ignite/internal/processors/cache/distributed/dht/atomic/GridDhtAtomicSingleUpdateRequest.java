@@ -314,14 +314,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalObject(key, cctx);
-
-        prepareMarshalObject(val, cctx);
-
-        prepareMarshalObject(prevVal, cctx);
     }
 
     /** {@inheritDoc} */
@@ -335,16 +327,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         finishUnmarshalObject(val, cctx, ldr);
 
         finishUnmarshalObject(prevVal, cctx, ldr);
-    }
-
-    /**
-     * @param obj CacheObject to marshal
-     * @param ctx context
-     * @throws IgniteCheckedException if error
-     */
-    private void prepareMarshalObject(CacheObject obj, GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
-        if (obj != null)
-            obj.prepareMarshal(ctx.cacheObjectContext());
     }
 
     /**
