@@ -37,6 +37,7 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -2322,20 +2323,22 @@ public class DirectByteBufferStream {
 
     /** */
     private void setContext(Message msg) {
+        GridCacheContext<?, ?> gcctx = null;
+
         if (msg instanceof GridCacheIdMessage)
-            cotx.set(ctx.cache().context().cacheContext(((GridCacheIdMessage)msg).cacheId).cacheObjectContext());
+            gcctx = ctx.cache().context().cacheContext(((GridCacheIdMessage)msg).cacheId);
 
         if (msg instanceof GridCacheGroupIdMessage)
-            cotx.set(ctx.cache().context().cacheContext(((GridCacheGroupIdMessage)msg).grpId).cacheObjectContext());
+            gcctx = ctx.cache().context().cacheContext(((GridCacheGroupIdMessage)msg).grpId);
+
+        if (gcctx != null)
+            cotx.set(gcctx.cacheObjectContext());
     }
 
     /** */
     private void removeContext(Message msg) {
-        if (msg instanceof GridCacheIdMessage | msg instanceof GridCacheGroupIdMessage) {
-            assert cotx.get() != null;
-
+        if (msg instanceof GridCacheIdMessage | msg instanceof GridCacheGroupIdMessage)
             cotx.remove();
-        }
     }
 
     /** */
