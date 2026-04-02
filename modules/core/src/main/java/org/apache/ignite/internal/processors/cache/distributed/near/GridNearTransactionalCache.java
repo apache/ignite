@@ -476,6 +476,30 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
+        removeLocks(ver, keys, false);
+    }
+
+    /**
+     * Removes locks regardless of whether they are owned or not for given
+     * version and keys. In savepoint mode lock version is not marked as globally cancelled.
+     *
+     * @param ver Lock version.
+     * @param keys Keys.
+     */
+    public void removeLocksForSavepoint(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
+        removeLocks(ver, keys, true);
+    }
+
+    /**
+     * @param ver Lock version.
+     * @param keys Keys.
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    private void removeLocks(
+        GridCacheVersion ver,
+        Collection<KeyCacheObject> keys,
+        boolean forSavepoint
+    ) {
         if (keys.isEmpty())
             return;
 
@@ -523,13 +547,20 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                         req.version(ver);
+                                        req.forSavepoint(forSavepoint);
                                     }
                                 }
 
                                 // Remove candidate from local node first.
                                 if (entry.removeLock(cand.version())) {
                                     if (primary.isLocal()) {
-                                        dht.removeLocks(primary.id(), ver, F.asList(key), true);
+                                        dht.removeLocks(
+                                            primary.id(),
+                                            ver,
+                                            F.asList(key),
+                                            true,
+                                            forSavepoint
+                                        );
 
                                         assert req == null;
 
