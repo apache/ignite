@@ -929,8 +929,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         for (CacheContinuousQueryEntry e : entries) {
             GridCacheDeploymentManager depMgr = cctx.deploy();
 
-            ClassLoader ldr = depMgr.globalLoader();
-
             try {
                 if (ctx.config().isPeerClassLoadingEnabled()) {
                     GridDeploymentInfo depInfo = e.deployInfo();
