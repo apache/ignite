@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
@@ -338,9 +337,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partsToReload == null)
             return Collections.emptySet();
 
-        Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
+        synchronized (partsToReload) {
+            Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
 
-        return nodeMap == null ? Collections.emptySet() : (Set<Integer>)F.emptyIfNull(nodeMap.get(grpId));
+            return nodeMap == null ? Collections.emptySet() : (Set<Integer>)F.emptyIfNull(nodeMap.get(grpId));
+        }
     }
 
     /**
@@ -447,7 +448,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
         if (partsToReload == null)
-            partsToReload = new ConcurrentHashMap<>();
+            partsToReload = new HashMap<>();
 
         errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }

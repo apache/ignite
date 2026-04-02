@@ -340,7 +340,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     @GridToStringExclude
-    private final Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new HashMap<>();
 
     /** */
     private final AtomicBoolean done = new AtomicBoolean();
@@ -3426,11 +3426,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             Set<Integer> parts = e.getValue();
 
             for (int part : parts) {
-                Map<Integer, Set<Integer>> nodeMap = partsToReload.computeIfAbsent(nodeId, k -> new ConcurrentHashMap<>());
+                synchronized (partsToReload) {
+                    Map<Integer, Set<Integer>> nodeMap = partsToReload.computeIfAbsent(nodeId, k -> new HashMap<>());
 
-                Set<Integer> partsToReload = nodeMap.computeIfAbsent(top.groupId(), k -> new HashSet<>());
+                    Set<Integer> partsToReload = nodeMap.computeIfAbsent(top.groupId(), k -> new HashSet<>());
 
-                partsToReload.add(part);
+                    partsToReload.add(part);
+                }
             }
         }
     }

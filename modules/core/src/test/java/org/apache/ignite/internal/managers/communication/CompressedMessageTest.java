@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -108,17 +108,13 @@ public class CompressedMessageTest {
     /** */
     private GridDhtPartitionsFullMessage fullMessage() {
         IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
-        Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new ConcurrentHashMap<>();
+        Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new HashMap<>();
 
         for (int i = 0; i < 500; i++) {
             UUID uuid = UUID.randomUUID();
 
             partHistSuppliers.put(uuid, i, i + 1, i + 2);
-
-            Map<Integer, Set<Integer>> nodeMap = new ConcurrentHashMap<>();
-            nodeMap.put(i, Set.of(i + 1));
-
-            partsToReload.put(uuid, nodeMap);
+            partsToReload.put(uuid, Map.of(i, Set.of(i + 1)));
         }
 
         return new GridDhtPartitionsFullMessage(null, null, new AffinityTopologyVersion(0), partHistSuppliers, partsToReload);
