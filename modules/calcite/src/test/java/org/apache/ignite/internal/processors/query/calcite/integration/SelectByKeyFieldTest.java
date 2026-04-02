@@ -24,6 +24,8 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -31,6 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Checks that using {@link QueryUtils#KEY_FIELD_NAME} in condition will use
@@ -100,6 +104,72 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
     public void testCompositePkWithKeyTypeAndPersonCompositeKey() {
         checkCompositePk(true, false, null);
+    }
+
+    /** */
+    @Test
+    public void testCompositePkWithOrderByKey() {
+        sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
+
+        for (int i = 0; i < 10; i++) {
+            sql(
+                "insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)",
+                i, "foo" + i, "bar" + i, 18 + i
+            );
+        }
+
+        List<List<?>> sqlRs = sql("select id, name, age, _key from PUBLIC.PERSON");
+        sqlRs.sort((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3)));
+
+        QueryChecker queryChecker = assertQuery("select id, name, age, _key from PUBLIC.PERSON order by _key")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
+
+        sqlRs.forEach(objects -> queryChecker.returns(objects.toArray(Object[]::new)));
+
+        queryChecker.check();
+    }
+
+    /** */
+    @Test
+    public void testCompositePkWithDifferentCmpOperations() {
+        checkCompositePkWithDifferentCmpOperations(true);
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
+    public void testCompositePkWithPersonCompositeKeyAndDifferentCmpOperations() {
+        checkCompositePkWithDifferentCmpOperations(false);
+    }
+
+    /** */
+    @Test
+    public void testCompositePkWithMinMaxByKey() {
+        sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
+
+        for (int i = 0; i < 10; i++) {
+            sql(
+                "insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)",
+                i, "foo" + i, "bar" + i, 18 + i
+            );
+        }
+
+        List<List<?>> sqlRs = sql("select id, name, age, _key from PUBLIC.PERSON order by id");
+        List<?> min = sqlRs.stream().min((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3))).orElseThrow();
+        List<?> max = sqlRs.stream().max((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3))).orElseThrow();
+
+        assertQuery("select min(_key) from PUBLIC.PERSON")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(min.toArray(Object[]::new))
+            .check();
+
+        assertQuery("select max(_key) from PUBLIC.PERSON")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(max.toArray(Object[]::new))
+            .check();
     }
 
     /** */
@@ -207,6 +277,41 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    private void checkCompositePkWithDifferentCmpOperations(boolean useBinaryObject) {
+        sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
+
+        for (int i = 0; i < 10; i++) {
+            sql(
+                "insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)",
+                i, "foo" + i, "bar" + i, 18 + i
+            );
+        }
+
+        List<List<?>> sqlRs = sql("select id, name, age, _key from PUBLIC.PERSON order by id");
+        BinaryObjectImpl _key8 = (BinaryObjectImpl)sqlRs.get(8).get(3);
+
+        for (CmpOp cmpOp : CmpOp.values()) {
+            if (cmpOp == CmpOp.EQ)
+                continue;
+
+            List<List<?>> expRows = sqlRs.stream()
+                .filter(objects -> cmpOp.expRowByKeyPred.test((BinaryObjectImpl) objects.get(3), _key8))
+                .collect(toList());
+
+            QueryChecker queryChecker = assertQuery(String.format(
+                "select id, name, age, _key from PUBLIC.PERSON where _key %s ?", cmpOp.sql
+            ))
+                .withParams(useBinaryObject ? _key8 : _key8.deserialize())
+                .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+                .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
+
+            expRows.forEach(objects -> queryChecker.returns(objects.toArray(Object[]::new)));
+
+            queryChecker.check();
+        }
+    }
+
+    /** */
     public static class PersonCompositeKey {
         /** */
         @GridToStringInclude
@@ -241,6 +346,46 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @FunctionalInterface
+    private interface ExpRowByKeyPredicate {
+        /** */
+        boolean test(BinaryObjectImpl rowKey, BinaryObjectImpl targetKey);
+    }
+
+    /** */
+    private enum CmpOp {
+        /** */
+        GE(">=", (rowKey, targetKey) -> binaryObjectCmpForDml(rowKey, targetKey) >= 0),
+
+        /** */
+        GT(">", (rowKey, targetKey) -> binaryObjectCmpForDml(rowKey, targetKey) > 0),
+
+        /** */
+        LE("<=", (rowKey, targetKey) -> binaryObjectCmpForDml(rowKey, targetKey) <= 0),
+
+        /** */
+        LT("<", (rowKey, targetKey) -> binaryObjectCmpForDml(rowKey, targetKey) < 0),
+
+        /** */
+        EQ("=", (rowKey, targetKey) -> binaryObjectCmpForDml(rowKey, targetKey) == 0),
+
+        /** */
+        NE("<>", (rowKey, targetKey) -> binaryObjectCmpForDml(rowKey, targetKey) != 0);
+
+        /** */
+        private final String sql;
+
+        /** */
+        private final ExpRowByKeyPredicate expRowByKeyPred;
+
+        /** */
+        CmpOp(String sql, ExpRowByKeyPredicate expRowByKeyPred) {
+            this.sql = sql;
+            this.expRowByKeyPred = expRowByKeyPred;
+        }
+    }
+
+    /** */
     private void executeAlterTableAddColumn() {
         sql("alter table PUBLIC.PERSON add email varchar");
     }
@@ -248,5 +393,10 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     /** */
     private void executeAlterTableDropColumn() {
         sql("alter table PUBLIC.PERSON drop column surname");
+    }
+
+    /** */
+    private static int binaryObjectCmpForDml(Object o1, Object o2) {
+        return BinaryUtils.binariesFactory.compareForDml(o1, o2);
     }
 }
