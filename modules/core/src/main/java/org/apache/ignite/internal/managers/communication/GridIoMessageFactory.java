@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.authentication.UserAuthenticateResp
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapterMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapterSerializer;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
@@ -189,8 +189,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gro
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPairSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMapSerializer;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionCountersMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionCountersMapSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMapSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
@@ -475,7 +473,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(95, DataStreamerEntry::new, new DataStreamerEntrySerializer());
         factory.register(96, CacheContinuousQueryEntry::new, new CacheContinuousQueryEntryMarshallableSerializer(marsh, clsLdr));
         factory.register(97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
-        factory.register(98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterMarshallableSerializer(marsh, clsLdr));
+        factory.register(98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
         factory.register(100, IgniteTxEntry::new, new IgniteTxEntrySerializer());
         factory.register(101, TxEntryValueHolder::new, new TxEntryValueHolderSerializer());
         factory.register(102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
@@ -548,8 +546,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new BinaryMetadataVersionInfoSerializer());
         factory.register(506, CachePartitionFullCountersMap::new,
             new CachePartitionFullCountersMapSerializer());
-        factory.register(507, IgniteDhtPartitionCountersMap::new,
-            new IgniteDhtPartitionCountersMapSerializer());
         factory.register(508, GroupPartitionIdPair::new, new GroupPartitionIdPairSerializer());
         factory.register(510, IgniteDhtPartitionHistorySuppliersMap::new,
             new IgniteDhtPartitionHistorySuppliersMapSerializer());

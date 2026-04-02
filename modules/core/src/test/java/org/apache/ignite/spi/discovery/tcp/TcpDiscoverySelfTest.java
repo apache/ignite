@@ -19,7 +19,9 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,6 +98,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.net.NetworkInterface.getNetworkInterfaces;
+import static java.util.Collections.list;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -146,6 +150,31 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public TcpDiscoverySelfTest() throws Exception {
         super(false);
+    }
+
+    /**
+     * Finds a non-loopback, non-point-to-point address suitable for multicast.
+     * Point-to-point interfaces (VPN tunnels) don't support multicast properly on macOS.
+     *
+     * @return Address string or {@code null} if none found.
+     */
+    @Nullable private static String findMulticastAddress() {
+        try {
+            for (NetworkInterface itf : list(getNetworkInterfaces())) {
+                if (!itf.isUp() || itf.isLoopback() || itf.isPointToPoint())
+                    continue;
+
+                for (InetAddress addr : list(itf.getInetAddresses())) {
+                    if (!addr.isLoopbackAddress() && addr.getAddress().length == 4) // IPv4 only.
+                        return addr.getHostAddress();
+                }
+            }
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -230,8 +259,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             // Loopback multicast discovery is not working on Mac OS
             // (possibly due to http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7122846).
-            if (U.isMacOs())
-                spi.setLocalAddress(F.first(U.allLocalIps()));
+            if (U.isMacOs()) {
+                String mcastAddr = findMulticastAddress();
+
+                if (mcastAddr != null) {
+                    spi.setLocalAddress(mcastAddr);
+                    finder.setLocalAddress(mcastAddr);
+                }
+                else
+                    spi.setLocalAddress(F.first(U.allLocalIps()));
+            }
         }
         else if (igniteInstanceName.contains("testPingInterruptedOnNodeFailedPingingNode"))
             cfg.setFailureDetectionTimeout(30_000);

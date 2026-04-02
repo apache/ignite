@@ -643,12 +643,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     processed.add(n);
 
-                    List<ClusterNode> top = U.arrayList(nodes, F.notIn(processed));
+                    Collection<ClusterNode> top = upcast(U.arrayList(nodes, F.notIn(processed)));
 
                     topVer++;
 
-                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
-                        Collections.unmodifiableList(top));
+                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
                     lsnr.onDiscovery(
                         new DiscoveryNotification(EVT_NODE_FAILED, topVer, n, top, hist, null, null)
@@ -1907,7 +1906,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist = new TreeMap<>(topHist);
                 }
 
-                nodeAddedMsg.topologyHistory(hist);
+                nodeAddedMsg.topologyHistory(downcast(hist));
             }
         }
     }
@@ -2449,6 +2448,31 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
+    }
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    private static <P, C extends P> Collection<P> upcast(Collection<C> c) {
+        return (Collection<P>)c;
+    }
+
+    /**
+     * Downcasts type of map's collection value.
+     *
+     * @param <K> Map key type.
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param m Initial collections map.
+     * @return Resulting map.
+     */
+    private static <K, P, C extends P> Map<K, Collection<C>> downcast(Map<K, Collection<P>> m) {
+        return (Map<K, Collection<C>>)(Map)m;
     }
 
     /**
@@ -5086,7 +5110,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
-                            topHist.putAll(msg.topologyHistory());
+                            topHist.putAll(upcast(msg.topologyHistory()));
 
                             pendingMsgs.reset(msg.messages());
                         }
