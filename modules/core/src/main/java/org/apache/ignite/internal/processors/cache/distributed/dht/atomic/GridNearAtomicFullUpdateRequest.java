@@ -362,8 +362,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
         if (operation() == TRANSFORM) {
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
@@ -371,8 +369,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             if (invokeArgsBytes != null && invokeArgs == null)
                 invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
         }
-        else
-            finishUnmarshalCacheObjects(vals, cctx, ldr);
     }
 
     /** {@inheritDoc} */

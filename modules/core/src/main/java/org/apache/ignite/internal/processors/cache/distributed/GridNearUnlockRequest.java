@@ -86,8 +86,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */

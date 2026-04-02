@@ -152,9 +152,6 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        if (missedKeys != null)
-            finishUnmarshalCacheObjects(missedKeys, cctx, ldr);
-
         if (infos != null) {
             for (GridCacheEntryInfo info : infos)
                 info.unmarshal(cctx.cacheObjectContext(), ldr);

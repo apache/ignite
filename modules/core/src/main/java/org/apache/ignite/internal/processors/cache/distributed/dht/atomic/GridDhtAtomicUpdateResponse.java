@@ -136,13 +136,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
-
-        if (errs != null)
-            errs.finishUnmarshal(this, cctx, ldr);
     }
 
     /** {@inheritDoc} */

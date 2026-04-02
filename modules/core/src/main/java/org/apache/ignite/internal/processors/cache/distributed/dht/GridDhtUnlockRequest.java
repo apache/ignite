@@ -80,8 +80,6 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */

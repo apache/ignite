@@ -182,9 +182,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (errs != null)
-            errs.finishUnmarshal(this, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */

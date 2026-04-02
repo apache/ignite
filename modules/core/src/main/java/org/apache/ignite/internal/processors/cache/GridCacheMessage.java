@@ -308,11 +308,8 @@ public abstract class GridCacheMessage implements Message {
 
                 CacheObject val = info.value();
 
-                if (val != null) {
-                    val.finishUnmarshal(cacheObjCtx, ctx.deploy().globalLoader());
-
+                if (val != null) 
                     prepareObject(val.value(cacheObjCtx, false), ctx);
-                }
             }
         }
     }
@@ -559,50 +556,7 @@ public abstract class GridCacheMessage implements Message {
             }
         }
     }
-
-    /**
-     * @param col Collection.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
-        GridCacheContext ctx,
-        ClassLoader ldr
-    ) throws IgniteCheckedException {
-        if (col == null)
-            return;
-
-        int size = col.size();
-
-        for (int i = 0; i < size; i++) {
-            CacheObject obj = col.get(i);
-
-            if (obj != null)
-                obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-        }
-    }
-
-    /**
-     * @param col Collection.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final void finishUnmarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
-        GridCacheContext ctx,
-        ClassLoader ldr
-    ) throws IgniteCheckedException {
-        if (col == null)
-            return;
-
-        for (CacheObject obj : col) {
-            if (obj != null)
-                obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-        }
-    }
-
+    
     /**
      * @param byteCol Collection to unmarshal.
      * @param ctx Context.
