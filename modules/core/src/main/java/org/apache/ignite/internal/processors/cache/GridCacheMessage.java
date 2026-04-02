@@ -537,8 +537,6 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void prepareMarshalCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
         if (obj != null) {
-            obj.prepareMarshal(ctx.cacheObjectContext());
-
             if (addDepInfo)
                 prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
         }
@@ -556,8 +554,6 @@ public abstract class GridCacheMessage implements Message {
 
         for (CacheObject obj : col) {
             if (obj != null) {
-                obj.prepareMarshal(ctx.cacheObjectContext());
-
                 if (addDepInfo)
                     prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
             }
