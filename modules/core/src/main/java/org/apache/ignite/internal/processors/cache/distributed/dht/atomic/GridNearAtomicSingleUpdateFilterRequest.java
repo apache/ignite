@@ -94,37 +94,11 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (filter != null) {
-            boolean hasFilter = false;
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null) {
-                    hasFilter = true;
-
-                    p.prepareMarshal(cctx);
-                }
-            }
-
-            if (!hasFilter)
-                filter = null;
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
     }
 
 

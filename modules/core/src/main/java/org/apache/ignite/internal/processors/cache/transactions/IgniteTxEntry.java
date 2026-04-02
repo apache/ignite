@@ -917,13 +917,6 @@ public class IgniteTxEntry extends GridCacheIdMessage implements GridPeerDeployA
      * @throws IgniteCheckedException If failed.
      */
     public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
-        if (filters != null) {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.prepareMarshal(this.ctx);
-            }
-        }
-
         // Do not serialize filters if they are null.
         if (transformClosBytes == null && entryProcessorsCol != null)
             transformClosBytes = CU.marshal(this.ctx, entryProcessorsCol);
@@ -1005,12 +998,6 @@ public class IgniteTxEntry extends GridCacheIdMessage implements GridPeerDeployA
 
         if (filters == null)
             filters = CU.empty0();
-        else {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.finishUnmarshal(this.ctx, clsLdr);
-            }
-        }
 
         key.finishUnmarshal(coctx, clsLdr);
 
