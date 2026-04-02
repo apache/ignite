@@ -76,4 +76,24 @@ public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl
     @Override public long timeout(long timeout) {
         throw new UnsupportedOperationException();
     }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name, boolean overwrite) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(String name) {
+        throw new UnsupportedOperationException();
+    }
 }
