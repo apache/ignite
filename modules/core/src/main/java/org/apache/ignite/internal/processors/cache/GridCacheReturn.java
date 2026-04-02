@@ -334,9 +334,6 @@ public class GridCacheReturn implements Message {
      */
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         assert !loc;
-
-        if (cacheObj != null)
-            cacheObj.prepareMarshal(ctx.cacheObjectContext());
     }
 
     /**
@@ -347,11 +344,8 @@ public class GridCacheReturn implements Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
-        if (cacheObj != null) {
-            cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-
+        if (cacheObj != null) 
             v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
-        }
 
         if (invokeRes && invokeResCol != null) {
             Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
