@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Message {
+public class GridCacheReturn extends GridCacheIdMessage {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
@@ -60,10 +60,6 @@ public class GridCacheReturn implements Message {
 
     /** Local result flag, if non local then do not need unwrap cache objects. */
     private boolean loc;
-
-    /** Cache Id. */
-    @Order(4)
-    int cacheId;
 
     /**
      * Empty constructor.
@@ -286,13 +282,6 @@ public class GridCacheReturn implements Message {
     }
 
     /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /**
      * @param other Other result to merge with.
      */
     public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
@@ -362,6 +351,10 @@ public class GridCacheReturn implements Message {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
