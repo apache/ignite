@@ -24,6 +24,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -64,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
@@ -218,6 +222,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** Tx label. */
     @Nullable private final String lb;
+
+    /** Savepoints created for this transaction. */
+    private LinkedList<TxSavepoint> savepoints;
 
     /**
      * @param ctx Cache registry.
@@ -3022,6 +3029,280 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Creates savepoint for a pessimistic transaction.
+     *
+     * @param name Savepoint name.
+     * @param overwrite Whether to overwrite an existing savepoint with the same name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void savepoint(String name, boolean overwrite) throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        synchronized (this) {
+            checkValid();
+
+            if (implicit())
+                throw new IgniteCheckedException("Savepoints can be used only inside explicit transactions.");
+
+            if (!pessimistic())
+                throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
+
+            ListIterator<TxSavepoint> spIter = findSavepoint(name);
+
+            if (spIter != null) {
+                if (overwrite)
+                    spIter.remove();
+                else {
+                    throw new IllegalArgumentException("Savepoint \"" + name + "\" already exists. " +
+                        "Use savepoint(name, true) to overwrite it.");
+                }
+            }
+
+            if (savepoints == null)
+                savepoints = new LinkedList<>();
+
+            savepoints.add(new TxSavepoint(name, savepointState()));
+        }
+    }
+
+    /**
+     * Rolls back transaction changes to the specified savepoint.
+     *
+     * @param name Savepoint name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rollbackToSavepoint(String name) throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        synchronized (this) {
+            checkValid();
+
+            if (implicit())
+                throw new IgniteCheckedException("Savepoints can be used only inside explicit transactions.");
+
+            if (!pessimistic())
+                throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
+
+            ListIterator<TxSavepoint> spIter = findSavepoint(name);
+
+            if (spIter == null)
+                throw new IllegalArgumentException("No such savepoint [name=" + name + ']');
+
+            TxSavepoint savepoint = spIter.next();
+
+            rollbackToSavepoint(savepoint);
+
+            while (spIter.hasNext()) {
+                spIter.next();
+                spIter.remove();
+            }
+        }
+    }
+
+    /**
+     * Releases savepoint.
+     *
+     * @param name Savepoint name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void releaseSavepoint(String name) throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        synchronized (this) {
+            checkValid();
+
+            if (savepoints == null)
+                return;
+
+            ListIterator<TxSavepoint> spIter = findSavepoint(name);
+
+            if (spIter != null)
+                spIter.remove();
+        }
+    }
+
+    /**
+     * @return Current transaction state snapshot.
+     */
+    private Map<IgniteTxKey, TxSavepointEntryState> savepointState() {
+        Map<IgniteTxKey, TxSavepointEntryState> res = new LinkedHashMap<>();
+
+        for (IgniteTxEntry entry : allEntries())
+            res.put(entry.txKey(), new TxSavepointEntryState(entry, entry.copy()));
+
+        return res;
+    }
+
+    /**
+     * @param name Savepoint name.
+     * @return Iterator positioned on the found savepoint, or {@code null} if no savepoint exists.
+     */
+    @Nullable private ListIterator<TxSavepoint> findSavepoint(String name) {
+        if (savepoints == null)
+            return null;
+
+        ListIterator<TxSavepoint> iter = savepoints.listIterator(savepoints.size());
+
+        while (iter.hasPrevious()) {
+            TxSavepoint sp = iter.previous();
+
+            if (sp.name.equals(name))
+                return iter;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param savepoint Savepoint.
+     */
+    private void rollbackToSavepoint(TxSavepoint savepoint) {
+        assert savepoint != null;
+
+        Map<IgniteTxKey, TxSavepointEntryState> savepointState = savepoint.entries;
+
+        Collection<IgniteTxEntry> curEntries = new ArrayList<>(allEntries());
+        Collection<IgniteTxEntry> entriesToUnlock = new ArrayList<>();
+
+        for (IgniteTxEntry curEntry : curEntries) {
+            if (!savepointState.containsKey(curEntry.txKey())) {
+                txState().removeEntry(curEntry.txKey());
+                removeEntryMappings(curEntry);
+                entriesToUnlock.add(curEntry);
+            }
+        }
+
+        for (Map.Entry<IgniteTxKey, TxSavepointEntryState> e : savepointState.entrySet()) {
+            IgniteTxEntry curEntry = entry(e.getKey());
+            TxSavepointEntryState state = e.getValue();
+
+            if (curEntry == null) {
+                curEntry = state.entry;
+                txState().addEntry(curEntry);
+            }
+
+            boolean unlockAfterRestore = curEntry.locked() && !state.snapshot.locked();
+
+            curEntry.restoreFrom(state.snapshot);
+
+            if (unlockAfterRestore)
+                entriesToUnlock.add(curEntry);
+        }
+
+        unlockTxEntries(entriesToUnlock);
+    }
+
+    /**
+     * Removes entry from all node mappings used by the transaction.
+     *
+     * @param entry Entry.
+     */
+    private void removeEntryMappings(IgniteTxEntry entry) {
+        removeEntryFromMappings(entry);
+        removeEntryFromMappings(entry, dhtMap);
+        removeEntryFromMappings(entry, nearMap);
+    }
+
+    /**
+     * @param entry Entry.
+     */
+    private void removeEntryFromMappings(IgniteTxEntry entry) {
+        if (mappings.single()) {
+            GridDistributedTxMapping mapping = mappings.singleMapping();
+
+            if (mapping != null && mapping.removeEntry(entry) && mapping.empty())
+                mappings.remove(mapping.primary().id());
+
+            return;
+        }
+
+        Collection<GridDistributedTxMapping> mappings0 = mappings.mappings();
+
+        if (F.isEmpty(mappings0))
+            return;
+
+        for (GridDistributedTxMapping mapping : new ArrayList<>(mappings0)) {
+            if (mapping.removeEntry(entry) && mapping.empty())
+                mappings.remove(mapping.primary().id());
+        }
+    }
+
+    /**
+     * @param entry Entry.
+     * @param map Mappings.
+     */
+    private void removeEntryFromMappings(IgniteTxEntry entry, Map<UUID, GridDistributedTxMapping> map) {
+        for (Map.Entry<UUID, GridDistributedTxMapping> mapEntry : map.entrySet()) {
+            GridDistributedTxMapping mapping = mapEntry.getValue();
+
+            if (mapping.removeEntry(entry) && mapping.empty())
+                map.remove(mapEntry.getKey(), mapping);
+        }
+    }
+
+    /**
+     * Unlocks entries if lock was acquired after the savepoint.
+     *
+     * @param entries Entries to unlock.
+     */
+    private void unlockTxEntries(Collection<IgniteTxEntry> entries) {
+        if (F.isEmpty(entries))
+            return;
+
+        Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> nearKeys = new HashMap<>();
+        Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> colocatedKeys = new HashMap<>();
+
+        for (IgniteTxEntry entry : entries) {
+            GridCacheContext<?, ?> cacheCtx = entry.context();
+
+            if (cacheCtx == null || entry.key() == null)
+                continue;
+
+            if (cacheCtx.cache().isNear())
+                nearKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
+            else if (cacheCtx.cache().isColocated())
+                colocatedKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
+        }
+
+        for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : nearKeys.entrySet())
+            e.getKey().nearTx().removeLocks(xidVersion(), e.getValue());
+
+        for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : colocatedKeys.entrySet())
+            e.getKey().colocated().unlockAll((Collection)e.getValue());
+
+        for (IgniteTxEntry entry : entries)
+            unlockTxEntryLocally(entry);
+    }
+
+    /**
+     * Unlocks entry locally.
+     *
+     * @param txEntry Entry.
+     */
+    private void unlockTxEntryLocally(IgniteTxEntry txEntry) {
+        while (true) {
+            try {
+                GridCacheEntryEx cacheEntry = txEntry.cached();
+
+                if (cacheEntry == null || cacheEntry.detached())
+                    return;
+
+                cacheEntry.txUnlock(this);
+
+                return;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                try {
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
+                }
+                catch (GridDhtInvalidPartitionException e) {
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
      * @param maps Mappings.
      */
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
@@ -4448,6 +4729,42 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (sysStartTime0 > 0)
             sysTime.addAndGet(System.nanoTime() - sysStartTime0);
+    }
+
+    /** Savepoint descriptor. */
+    private static class TxSavepoint {
+        /** Name. */
+        private final String name;
+
+        /** Entry states by key. */
+        private final Map<IgniteTxKey, TxSavepointEntryState> entries;
+
+        /**
+         * @param name Name.
+         * @param entries Entry states by key.
+         */
+        private TxSavepoint(String name, Map<IgniteTxKey, TxSavepointEntryState> entries) {
+            this.name = name;
+            this.entries = entries;
+        }
+    }
+
+    /** Entry state captured in a savepoint. */
+    private static class TxSavepointEntryState {
+        /** Entry reference from transaction state at savepoint creation time. */
+        private final IgniteTxEntry entry;
+
+        /** Snapshot of entry state. */
+        private final IgniteTxEntry snapshot;
+
+        /**
+         * @param entry Entry reference.
+         * @param snapshot Snapshot.
+         */
+        private TxSavepointEntryState(IgniteTxEntry entry, IgniteTxEntry snapshot) {
+            this.entry = entry;
+            this.snapshot = snapshot;
+        }
     }
 
     /**
