@@ -177,8 +177,6 @@ public class TxLocksResponse extends GridCacheMessage {
                 for (int i = 0; i < nearTxKeysArr.length; i++) {
                     IgniteTxKey txKey = nearTxKeysArr[i];
 
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
                     txLocks().put(txKey, locksArr[i]);
                 }
 
@@ -189,11 +187,8 @@ public class TxLocksResponse extends GridCacheMessage {
             if (txKeysArr != null) {
                 txKeys = U.newHashSet(txKeysArr.length);
 
-                for (IgniteTxKey txKey : txKeysArr) {
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
+                for (IgniteTxKey txKey : txKeysArr) 
                     txKeys.add(txKey);
-                }
 
                 txKeysArr = null;
             }
