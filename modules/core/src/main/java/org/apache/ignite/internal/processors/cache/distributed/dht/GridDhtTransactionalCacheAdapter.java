@@ -1488,7 +1488,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert ctx.affinityNode();
         assert nodeId != null;
 
-        removeLocks(nodeId, req.version(), req.keys(), true);
+        removeLocks(nodeId, req.version(), req.keys(), true, req.forSavepoint());
     }
 
     /**
@@ -1565,6 +1565,23 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param unmap Flag for un-mapping version.
      */
     public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap) {
+        removeLocks(nodeId, ver, keys, unmap, false);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Version.
+     * @param keys Keys.
+     * @param unmap Flag for un-mapping version.
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    public void removeLocks(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        boolean forSavepoint
+    ) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1574,7 +1591,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
-        ctx.mvcc().addRemoved(ctx, ver);
+        if (!forSavepoint)
+            ctx.mvcc().addRemoved(ctx, ver);
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
@@ -1674,6 +1692,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
             req.version(dhtVer);
+            req.forSavepoint(forSavepoint);
 
             try {
                 for (KeyCacheObject key : keyBytes)
@@ -1708,6 +1727,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
                 req.version(dhtVer);
+                req.forSavepoint(forSavepoint);
 
                 try {
                     for (KeyCacheObject key : keyBytes)

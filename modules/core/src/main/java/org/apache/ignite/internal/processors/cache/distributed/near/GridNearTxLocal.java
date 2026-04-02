@@ -3265,10 +3265,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : nearKeys.entrySet())
-            e.getKey().nearTx().removeLocks(xidVersion(), e.getValue());
+            e.getKey().nearTx().removeLocksForSavepoint(xidVersion(), e.getValue());
 
         for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : colocatedKeys.entrySet())
-            e.getKey().colocated().unlockAll((Collection)e.getValue());
+            e.getKey().dhtTx().removeLocks(cctx.localNodeId(), xidVersion(), e.getValue(), true, true);
 
         for (IgniteTxEntry entry : entries)
             unlockTxEntryLocally(entry);
@@ -3285,6 +3285,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 GridCacheEntryEx cacheEntry = txEntry.cached();
 
                 if (cacheEntry == null || cacheEntry.detached())
+                    return;
+
+                if (cacheEntry.candidate(xidVersion()) == null)
                     return;
 
                 cacheEntry.txUnlock(this);
