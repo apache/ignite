@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -448,11 +447,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
             idxQryDescBytes = CU.marshal(cctx, idxQryDesc);
         }
-
-        if (!F.isEmpty(skipKeys)) {
-            for (KeyCacheObject k : skipKeys)
-                k.prepareMarshal(cctx.cacheObjectContext());
-        }
     }
 
     /** {@inheritDoc} */
@@ -477,13 +471,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         if (idxQryDescBytes != null && idxQryDesc == null)
             idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, clsLdr);
-
-        if (!F.isEmpty(skipKeys)) {
-            CacheObjectContext objCtx = ctx.cacheObjectContext(cacheId);
-
-            for (KeyCacheObject k : skipKeys)
-                k.finishUnmarshal(objCtx, ldr);
-        }
     }
 
     /** {@inheritDoc} */
