@@ -337,11 +337,6 @@ public class GridCacheReturn implements Message {
 
         if (cacheObj != null)
             cacheObj.prepareMarshal(ctx.cacheObjectContext());
-
-        if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.prepareMarshal(ctx);
-        }
     }
 
     /**
@@ -359,9 +354,6 @@ public class GridCacheReturn implements Message {
         }
 
         if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.finishUnmarshal(ctx, ldr);
-
             Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
 
             for (CacheInvokeDirectResult res : invokeResCol) {
