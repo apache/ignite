@@ -2361,10 +2361,10 @@ public class DirectByteBufferStream {
         }
 
         if (msg instanceof GridCacheGroupIdMessage) {
-            int groupId = ((GridCacheGroupIdMessage)msg).groupId();
+            int grpId = ((GridCacheGroupIdMessage)msg).groupId();
 
-            if (groupId != CU.UNDEFINED_CACHE_ID)
-                gcctx = ctx.cache().context().cacheContext(groupId);
+            if (grpId != CU.UNDEFINED_CACHE_ID)
+                gcctx = ctx.cache().context().cacheContext(grpId);
         }
         
         boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
@@ -2393,8 +2393,8 @@ public class DirectByteBufferStream {
     private CacheObjectContext context() {
         List<CacheObjectContext> list = coCtxs.get();
         
-//        if (list.isEmpty())
-//            return null;
+        if (list.isEmpty())
+            return null;
 
         CacheObjectContext cand = list.get(list.size() - 1);
 
