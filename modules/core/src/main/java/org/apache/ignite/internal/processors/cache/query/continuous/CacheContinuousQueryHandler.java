@@ -807,8 +807,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     private void prepareEntry(GridCacheContext cctx, UUID nodeId, CacheContinuousQueryEntry entry)
         throws IgniteCheckedException {
-        if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null) 
+        if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null) {
+            entry.prepareMarshal(cctx);
+
             cctx.deploy().prepare(entry);
+        }
+        else
+            entry.prepareMarshal(cctx);
     }
 
     /**
@@ -929,6 +934,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         for (CacheContinuousQueryEntry e : entries) {
             GridCacheDeploymentManager depMgr = cctx.deploy();
 
+            ClassLoader ldr = depMgr.globalLoader();
+
             try {
                 if (ctx.config().isPeerClassLoadingEnabled()) {
                     GridDeploymentInfo depInfo = e.deployInfo();
@@ -943,6 +950,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         );
                     }
                 }
+
+                e.unmarshal(cctx, ldr);
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);
 
