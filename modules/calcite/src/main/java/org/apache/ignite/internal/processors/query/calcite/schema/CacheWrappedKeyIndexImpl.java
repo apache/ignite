@@ -104,7 +104,7 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
         if (cond == null || !cond.isA(SqlKind.EQUALS))
             return false;
 
-        RexCall cond1 = (RexCall) cond;
+        RexCall cond1 = (RexCall)cond;
 
         return matchByEqOperand(cond1.getOperands().get(0)) || matchByEqOperand(cond1.getOperands().get(1));
     }
@@ -114,6 +114,6 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
         if (!(n instanceof RexLocalRef))
             return false;
 
-        return ((RexSlot) n).getIndex() == QueryUtils.KEY_COL;
+        return ((RexSlot)n).getIndex() == QueryUtils.KEY_COL;
     }
 }
