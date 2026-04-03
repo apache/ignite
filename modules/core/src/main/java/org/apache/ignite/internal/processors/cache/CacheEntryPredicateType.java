@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.service;
-
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Abstract class for service change requests.
+ * Type of {@link CacheEntryPredicateAdapter}.
  */
-abstract class ServiceChangeAbstractRequest implements Message {
-    /** Service id. */
-    @Order(0)
-    IgniteUuid srvcId;
-
+public enum CacheEntryPredicateType {
     /**
-     * @return Service id.
+     * Predicate that entry has specified value.
      */
-    public IgniteUuid serviceId() {
-        return srvcId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ServiceChangeAbstractRequest.class, this);
-    }
+    VALUE,
+    /**
+     * Predicate that entry has any value.
+     */
+    HAS_VALUE,
+    /**
+     * Predicate that entry has no value.
+     */
+    HAS_NO_VALUE,
+    /**
+     * Predicate that is always {@code false}.
+     */
+    ALWAYS_FALSE,
+    /**
+     * Any other predicate.
+     */
+    OTHER
 }

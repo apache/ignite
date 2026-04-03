@@ -33,7 +33,6 @@ import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -71,7 +70,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(2)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionCountersMap partCntrs;
+    Map<Integer, CachePartitionFullCountersMap> partCntrs;
 
     /** Partitions history suppliers. */
     @Order(3)
@@ -153,6 +152,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
         this.partHistSuppliers = partHistSuppliers;
         this.partsToReload = partsToReload;
+        partCntrs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -278,10 +278,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param cntrMap Partition update counters.
      */
     public void addPartitionUpdateCounters(int grpId, CachePartitionFullCountersMap cntrMap) {
-        if (partCntrs == null)
-            partCntrs = new IgniteDhtPartitionCountersMap();
-
-        partCntrs.putIfAbsent(grpId, cntrMap);
+        synchronized (partCntrs) {
+            partCntrs.putIfAbsent(grpId, cntrMap);
+        }
     }
 
     /**
@@ -319,7 +318,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition update counters.
      */
     public CachePartitionFullCountersMap partitionUpdateCounters(int grpId) {
-        return partCntrs == null ? null : partCntrs.get(grpId);
+        synchronized (partCntrs) {
+            return partCntrs.get(grpId);
+        }
     }
 
     /**
@@ -384,11 +385,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
+
+        errMsgs = errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
     }
 
     /**
@@ -406,9 +407,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
@@ -441,17 +440,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (parts == null)
             parts = new HashMap<>();
 
-        if (partCntrs == null)
-            partCntrs = new IgniteDhtPartitionCountersMap();
-
         if (partHistSuppliers == null)
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
         if (partsToReload == null)
             partsToReload = new IgniteDhtPartitionsToReloadMap();
 
-        if (errs == null)
-            errs = new HashMap<>();
+        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 
 
@@ -514,15 +509,5 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         }
 
         return map;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        errMsgs = errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 }
