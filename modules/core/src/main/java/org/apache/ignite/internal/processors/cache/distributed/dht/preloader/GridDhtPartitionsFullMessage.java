@@ -447,9 +447,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partHistSuppliers == null)
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
-        if (partsToReload == null)
-            partsToReload = new HashMap<>();
-
         errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 
