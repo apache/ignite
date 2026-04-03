@@ -200,6 +200,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageMarshallableSerializer;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
@@ -247,7 +249,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         // -105 is former TcpDiscoveryNodeFullMetricsMessage.
         // -104 is former TcpDiscoveryClientNodesMetricsMessage.
         // -103 is former TcpDiscoveryCacheMetricsMessage.
-        // -102 is former TcpDiscoveryNodeMetricsMessage.
+        factory.register(-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register(-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register(-100, InetAddressMessage::new, new InetAddressMessageSerializer());
         factory.register(-66, ErrorMessage::new, new ErrorMessageMarshallableSerializer(marsh, clsLdr));
