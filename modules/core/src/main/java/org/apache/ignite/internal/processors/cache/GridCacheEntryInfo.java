@@ -23,12 +23,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Message {
+public class GridCacheEntryInfo extends GridCacheIdMessage {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -37,24 +36,20 @@ public class GridCacheEntryInfo implements Message {
     @GridToStringInclude
     KeyCacheObject key;
 
-    /** Cache ID. */
-    @Order(1)
-    int cacheId;
-
     /** Cache value. */
-    @Order(2)
+    @Order(1)
     CacheObject val;
 
     /** Time to live. */
-    @Order(3)
+    @Order(2)
     long ttl;
 
     /** Expiration time. */
-    @Order(4)
+    @Order(3)
     long expireTime;
 
     /** Entry version. */
-    @Order(5)
+    @Order(4)
     GridCacheVersion ver;
 
     /** New flag. */
@@ -62,13 +57,6 @@ public class GridCacheEntryInfo implements Message {
 
     /** Deleted flag. */
     private boolean deleted;
-
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
 
     /**
      * @param cacheId Cache ID.
@@ -242,6 +230,11 @@ public class GridCacheEntryInfo implements Message {
         // Account for overflow.
         if (expireTime < 0)
             expireTime = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */
