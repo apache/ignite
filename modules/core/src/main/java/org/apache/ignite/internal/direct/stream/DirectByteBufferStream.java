@@ -100,8 +100,8 @@ public class DirectByteBufferStream {
     private static final ThreadLocal<List<CacheObjectContext>> coCtxs = new ThreadLocal<>();
     
     /** */
-    private static final CacheObjectContext NULL_CACHE_CTX = 
-        new CacheObjectContext(null, null, null,false,false, false, false);
+    private static final CacheObjectContext NULL_CACHE_CTX =
+        new CacheObjectContext(null, null, null, false, false, false, false);
 
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
@@ -2367,7 +2367,7 @@ public class DirectByteBufferStream {
             CacheObjectContext coCtx = skipMarsh ? NULL_CACHE_CTX : gcctx.cacheObjectContext();
 
             coCtxs.get().add(coCtx);
-            
+
             return coCtx;
         }
         
