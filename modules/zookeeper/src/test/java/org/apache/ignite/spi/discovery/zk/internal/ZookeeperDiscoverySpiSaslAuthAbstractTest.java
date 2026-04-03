@@ -51,6 +51,12 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
     private static final String SASL_CONFIG = "java.security.auth.login.config";
 
     /** */
+    private static final String ZK_FIPS_MODE = "zookeeper.fips-mode";
+
+    /** */
+    private String prevZkFipsMode;
+
+    /** */
     private long joinTimeout = 2_000;
 
     /** */
@@ -89,6 +95,8 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
 
         prepareSaslSystemProperties();
 
+        disableZookeeperFipsMode();
+
         startZooKeeperServer();
     }
 
@@ -101,6 +109,25 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
         clearSaslSystemProperties();
 
         clearTmpDir();
+
+        restoreZookeeperFipsMode();
+    }
+
+    /** */
+    private void disableZookeeperFipsMode() {
+        prevZkFipsMode = System.getProperty(ZK_FIPS_MODE);
+
+        System.setProperty(ZK_FIPS_MODE, "false");
+    }
+
+    /** */
+    private void restoreZookeeperFipsMode() {
+        if (prevZkFipsMode == null)
+            System.clearProperty(ZK_FIPS_MODE);
+        else
+            System.setProperty(ZK_FIPS_MODE, prevZkFipsMode);
+
+        prevZkFipsMode = null;
     }
 
     /** */

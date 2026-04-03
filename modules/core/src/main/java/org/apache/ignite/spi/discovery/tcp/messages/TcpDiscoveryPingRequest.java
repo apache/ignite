@@ -31,8 +31,8 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage impleme
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    @Order(5)
-    private @Nullable UUID clientNodeId;
+    @Order(0)
+    @Nullable UUID clientNodeId;
 
     /** */
     public TcpDiscoveryPingRequest() {
@@ -56,20 +56,9 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage impleme
         return clientNodeId;
     }
 
-    /**
-     * @param clientNodeId New pinged client node ID.
-     */
-    public void clientNodeId(@Nullable UUID clientNodeId) {
-        this.clientNodeId = clientNodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryPingRequest.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 1;
-    }
 }

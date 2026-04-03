@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQueryDefaults)
     BOOST_CHECK(!qry.IsCollocated());
     BOOST_CHECK(!qry.IsDistributedJoins());
     BOOST_CHECK(!qry.IsEnforceJoinOrder());
-    BOOST_CHECK(!qry.IsLazy());
+    BOOST_CHECK(qry.IsLazy());
 }
 
 BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)

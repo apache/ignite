@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -268,7 +268,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     private void doSqlAs(int nodeIdx, String sql, String login, String pwd) throws Exception {
         SecurityContext secCtx = authenticate(grid(0), login, pwd);
 
-        try (OperationSecurityContext ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
+        try (Scope ignored = grid(nodeIdx).context().security().withContext(secCtx)) {
             doSql(nodeIdx, sql);
         }
     }

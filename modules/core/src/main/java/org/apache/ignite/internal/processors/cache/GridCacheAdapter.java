@@ -112,9 +112,10 @@ import org.apache.ignite.internal.processors.performancestatistics.OperationType
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArrayMap;
 import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArraySet;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -152,7 +153,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -890,15 +890,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false, null);
 
         return (V)val;
-    }
-
-    /**
-     * Undeploys and removes all entries for class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     */
-    public final void onUndeploy(ClassLoader ldr) {
-        ctx.deploy().onUndeploy(ldr, context());
     }
 
     /**
@@ -3914,7 +3905,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 ctx.operationContextPerCall(opCtx);
                                 ctx.shared().txContextReset();
 
-                                try (OperationSecurityContext ignored = ctx.kernalContext().security().withContext(secCtx)) {
+                                try (Scope ignored = ctx.kernalContext().security().withContext(secCtx)) {
                                     opFut = op.op(tx0).chain(clo);
                                 }
                                 catch (Throwable e) {
@@ -5908,8 +5899,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ttl,
                 0,
                 ver.conflictVersion());
-
-            e.prepareDirectMarshal(ctx.cacheObjectContext());
 
             col.add(e);
 

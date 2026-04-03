@@ -32,9 +32,6 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * It can be updated dynamically from different nodes and threads on the same node.
  */
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 505;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,21 +40,21 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
 
     /** Serialized binary metadata. */
     @Order(0)
-    private transient byte[] metadataBytes;
+    transient byte[] metadataBytes;
 
     /**
      * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
      * for this type. When a metadata update is proposed, this version is incremented.
      */
-    @Order(value = 1, method = "pendingVersion")
-    private int pendingVer;
+    @Order(1)
+    int pendingVer;
 
     /**
      * The version of metadata that has been accepted by the entire cluster.
      * This represents the number of updates that have been confirmed across all nodes.
      */
-    @Order(value = 2, method = "acceptedVersion")
-    private int acceptedVer;
+    @Order(2)
+    int acceptedVer;
 
     /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;
@@ -120,13 +117,6 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param pendingVer The version of metadata that has been proposed for update.
-     */
-    public void pendingVersion(int pendingVer) {
-        this.pendingVer = pendingVer;
-    }
-
-    /**
      * @return The version of metadata that has been accepted by the entire cluster.
      */
     public int acceptedVersion() {
@@ -134,31 +124,10 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param acceptedVer The version of metadata that has been accepted by the entire cluster.
-     */
-    public void acceptedVersion(int acceptedVer) {
-        this.acceptedVer = acceptedVer;
-    }
-
-    /**
      * @return {@code true} is the metadata is removing now.
      */
     boolean removing() {
         return removing;
-    }
-
-    /**
-     * @return Serialized binary metadata.
-     */
-    public byte[] metadataBytes() {
-        return metadataBytes;
-    }
-
-    /**
-     * @param metadataBytes Serialized binary metadata.
-     */
-    public void metadataBytes(byte[] metadataBytes) {
-        this.metadataBytes = metadataBytes;
     }
 
     /**
@@ -194,8 +163,4 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
             "]";
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

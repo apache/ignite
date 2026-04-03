@@ -35,12 +35,12 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     private static final long serialVersionUID = 0L;
 
     /** Count of service's instances. */
-    @Order(value = 0, method = "count")
-    private int cnt;
+    @Order(0)
+    int cnt;
 
     /** Serialized exceptions. */
     @Order(1)
-    private Collection<byte[]> errors;
+    Collection<byte[]> errors;
 
     /**
      * Empty constructor for marshalling purposes.
@@ -63,13 +63,6 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     }
 
     /**
-     * @param cnt Count of service's instances.
-     */
-    public void count(int cnt) {
-        this.cnt = cnt;
-    }
-
-    /**
      * @return Serialized exceptions.
      */
     @NotNull public Collection<byte[]> errors() {
@@ -83,10 +76,6 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
         this.errors = errors;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 169;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

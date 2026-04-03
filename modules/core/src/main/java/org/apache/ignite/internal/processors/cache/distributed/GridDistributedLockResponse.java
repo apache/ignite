@@ -38,17 +38,17 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** Future ID. */
-    @Order(value = 7, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    public IgniteUuid futId;
 
     /** Error. */
-    @Order(value = 8, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(1)
+    public ErrorMessage errMsg;
 
     /** Values. */
     @GridToStringInclude
-    @Order(value = 9, method = "values")
-    private List<CacheObject> vals;
+    @Order(2)
+    public List<CacheObject> vals;
 
     /**
      * Empty constructor.
@@ -62,14 +62,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param cnt Key count.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        int cnt,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        int cnt) {
+        super(lockVer, cnt, false);
 
         assert futId != null;
 
@@ -84,14 +82,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock ID.
      * @param futId Future ID.
      * @param err Error.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        Throwable err,
-        boolean addDepInfo) {
-        super(lockVer, 0, addDepInfo);
+        Throwable err) {
+        super(lockVer, 0, false);
 
         assert futId != null;
 
@@ -106,15 +102,13 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param futId Future ID.
      * @param cnt Count.
      * @param err Error.
-     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
-        Throwable err,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        Throwable err) {
+        super(lockVer, cnt, false);
 
         assert futId != null;
 
@@ -125,52 +119,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         vals = new ArrayList<>(cnt);
     }
 
-    /**
-     *
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @return Values.
-     */
-    public List<CacheObject> values() {
-        return vals;
-    }
-
-    /**
-     * @param vals New values.
-     */
-    public void values(List<CacheObject> vals) {
-        this.vals = vals;
     }
 
     /**
@@ -218,10 +174,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 22;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -31,8 +31,8 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** ID of the node with duplicate ID. */
-    @Order(5)
-    private UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
     /** */
     public TcpDiscoveryDuplicateIdMessage() {
@@ -60,20 +60,9 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node with duplicate ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 12;
-    }
 }

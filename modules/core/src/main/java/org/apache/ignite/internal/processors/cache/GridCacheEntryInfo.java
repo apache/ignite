@@ -35,27 +35,27 @@ public class GridCacheEntryInfo implements Message {
     /** Cache key. */
     @Order(0)
     @GridToStringInclude
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** Cache ID. */
     @Order(1)
-    private int cacheId;
+    int cacheId;
 
     /** Cache value. */
-    @Order(value = 2, method = "value")
-    private CacheObject val;
+    @Order(2)
+    CacheObject val;
 
     /** Time to live. */
     @Order(3)
-    private long ttl;
+    long ttl;
 
     /** Expiration time. */
     @Order(4)
-    private long expireTime;
+    long expireTime;
 
     /** Entry version. */
-    @Order(value = 5, method = "version")
-    private GridCacheVersion ver;
+    @Order(5)
+    GridCacheVersion ver;
 
     /** New flag. */
     private boolean isNew;
@@ -175,11 +175,6 @@ public class GridCacheEntryInfo implements Message {
         this.deleted = deleted;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 91;
-    }
-
     /**
      * @param ctx Context.
      * @param ldr Loader.
@@ -229,7 +224,7 @@ public class GridCacheEntryInfo implements Message {
         if (expireTime == 0)
             expireTime = -1;
         else {
-            expireTime = expireTime - U.currentTimeMillis();
+            expireTime -= U.currentTimeMillis();
 
             if (expireTime < 0)
                 expireTime = 0;

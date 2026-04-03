@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** */
 public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
-    @Order(value = 0, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(0)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.
@@ -44,20 +44,6 @@ public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseIn
         this.topVer = topVer;
     }
 
-    /** */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /** */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -63;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

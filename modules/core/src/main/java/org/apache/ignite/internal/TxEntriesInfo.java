@@ -31,11 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)
-    private int cacheId;
+    int cacheId;
 
     /** */
     @Order(1)
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.
@@ -53,30 +53,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.keys = new HashSet<>(keys);
     }
 
-    /** */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /** */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /** */
-    public Collection<KeyCacheObject> keys() {
-        return keys;
-    }
-
-    /** */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -64;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

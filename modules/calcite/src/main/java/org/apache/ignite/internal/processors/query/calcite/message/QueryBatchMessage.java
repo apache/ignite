@@ -27,33 +27,33 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 /**
  *
  */
-public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
+public class QueryBatchMessage implements CalciteMarshalableMessage, ExecutionContextAware {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(2)
-    private long exchangeId;
+    long exchangeId;
 
     /** */
     @Order(3)
-    private int batchId;
+    int batchId;
 
     /** */
     @Order(4)
-    private boolean last;
+    boolean last;
 
     /** */
     private List<Object> rows;
 
     /** */
-    @Order(value = 5, method = "messageRows")
-    private List<ValueMessage> mRows;
+    @Order(5)
+    List<ValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {
@@ -74,23 +74,9 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         return qryId;
     }
 
-    /**
-     * @param qryId Query ID.
-     */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
-    }
-
-    /**
-     * @param fragmentId Fragment ID.
-     */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
     }
 
     /**
@@ -101,24 +87,10 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @param exchangeId Exchange ID.
-     */
-    public void exchangeId(long exchangeId) {
-        this.exchangeId = exchangeId;
-    }
-
-    /**
      * @return Batch ID.
      */
     public int batchId() {
         return batchId;
-    }
-
-    /**
-     * @param batchId Batch ID.
-     */
-    public void batchId(int batchId) {
-        this.batchId = batchId;
     }
 
     /**
@@ -129,31 +101,10 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @param last Last batch flag.
-     */
-    public void last(boolean last) {
-        this.last = last;
-    }
-
-    /**
      * @return Rows.
      */
     public List<Object> rows() {
         return rows;
-    }
-
-    /**
-     * @return Message rows.
-     */
-    public List<ValueMessage> messageRows() {
-        return mRows;
-    }
-
-    /**
-     * @param mRows Message rows.
-     */
-    public void messageRows(List<ValueMessage> mRows) {
-        this.mRows = mRows;
     }
 
     /** {@inheritDoc} */

@@ -25,12 +25,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public class GridIoSecurityAwareMessage extends GridIoMessage {
-    /** */
-    public static final short TYPE_CODE = 174;
-
     /** Security subject ID that will be used during message processing on a remote node. */
-    @Order(value = 8, method = "securitySubjectId")
-    private UUID secSubjId;
+    @Order(0)
+    UUID secSubjId;
 
     /**
      * Default constructor.
@@ -71,15 +68,4 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         return secSubjId;
     }
 
-    /**
-     * @param secSubjId Security subject ID.
-     */
-    public void securitySubjectId(UUID secSubjId) {
-        this.secSubjId = secSubjId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

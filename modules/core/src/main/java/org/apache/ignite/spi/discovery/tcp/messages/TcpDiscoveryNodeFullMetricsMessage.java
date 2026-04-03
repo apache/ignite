@@ -32,10 +32,6 @@ public class TcpDiscoveryNodeFullMetricsMessage extends NodeFullMetricsMessage {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -105;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

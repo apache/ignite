@@ -31,7 +31,7 @@ public final class GenericValueMessage implements ValueMessage {
 
     /** */
     @Order(0)
-    private byte[] serialized;
+    byte[] serialized;
 
     /** */
     public GenericValueMessage() {
@@ -46,20 +46,6 @@ public final class GenericValueMessage implements ValueMessage {
     /** {@inheritDoc} */
     @Override public Object value() {
         return val;
-    }
-
-    /**
-     * @return Serialized value.
-     */
-    public byte[] serialized() {
-        return serialized;
-    }
-
-    /**
-     * @param serialized Serialized value.
-     */
-    public void serialized(byte[] serialized) {
-        this.serialized = serialized;
     }
 
     /** {@inheritDoc} */

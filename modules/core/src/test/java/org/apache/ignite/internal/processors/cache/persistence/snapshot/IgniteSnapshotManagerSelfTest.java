@@ -617,7 +617,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         LogListener matchFinish = LogListener.matches("Cluster-wide snapshot operation finished successfully: ").times(entriesCnt).build();
         listenLog.registerListener(matchFinish);
 
-        LogListener matchFullParams = LogListener.matches("incremental=false, incIdx=-1").times(4).build();
+        LogListener matchFullParams = LogListener.matches("incremental=false, incIdx=-1").times(5).build();
         listenLog.registerListener(matchFullParams);
 
         LogListener matchIncParams = LogListener.matches("incremental=true").times(4 * (entriesCnt - 1)).build();

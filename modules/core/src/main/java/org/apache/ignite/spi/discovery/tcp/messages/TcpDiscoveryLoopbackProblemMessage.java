@@ -32,12 +32,12 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** Remote node addresses. */
-    @Order(value = 5, method = "addresses")
-    private Collection<String> addrs;
+    @Order(0)
+    Collection<String> addrs;
 
     /** Remote node host names. */
-    @Order(6)
-    private Collection<String> hostNames;
+    @Order(1)
+    Collection<String> hostNames;
 
     /** */
     public TcpDiscoveryLoopbackProblemMessage() {
@@ -67,24 +67,10 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
-     * @param addrs Remote node addresses.
-     */
-    public void addresses(Collection<String> addrs) {
-        this.addrs = addrs;
-    }
-
-    /**
      * @return Remote node host names.
      */
     public Collection<String> hostNames() {
         return hostNames;
-    }
-
-    /**
-     * @param hostNames Remote node host names.
-     */
-    public void hostNames(Collection<String> hostNames) {
-        this.hostNames = hostNames;
     }
 
     /** {@inheritDoc} */
@@ -92,8 +78,4 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
         return S.toString(TcpDiscoveryLoopbackProblemMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 5;
-    }
 }

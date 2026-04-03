@@ -26,8 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridTaskCancelRequest implements Message {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /**
      * Default constructor.
@@ -54,17 +54,6 @@ public class GridTaskCancelRequest implements Message {
         return sesId;
     }
 
-    /**
-     * @param sesId New session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 5;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

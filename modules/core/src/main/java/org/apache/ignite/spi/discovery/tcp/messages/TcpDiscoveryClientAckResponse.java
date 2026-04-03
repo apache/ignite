@@ -31,8 +31,8 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 5, method = "messageId")
-    private IgniteUuid msgId;
+    @Order(0)
+    IgniteUuid msgId;
 
     /** */
     public TcpDiscoveryClientAckResponse() {
@@ -56,13 +56,6 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
         return msgId;
     }
 
-    /**
-     * @param msgId Acknowledged message ID.
-     */
-    public void messageId(IgniteUuid msgId) {
-        this.msgId = msgId;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
         return true;
@@ -78,8 +71,4 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
         return S.toString(TcpDiscoveryClientAckResponse.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 15;
-    }
 }

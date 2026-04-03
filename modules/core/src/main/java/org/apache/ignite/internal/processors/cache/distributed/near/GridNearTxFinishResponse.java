@@ -30,16 +30,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Error message. */
-    @Order(value = 6, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(0)
+    @Nullable ErrorMessage errMsg;
 
     /** Mini future ID. */
-    @Order(7)
-    private int miniId;
+    @Order(1)
+    int miniId;
 
     /** Near tx thread ID. */
-    @Order(value = 8, method = "threadId")
-    private long nearThreadId;
+    @Order(2)
+    long nearThreadId;
 
     /**
      * Empty constructor.
@@ -77,51 +77,9 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
         return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * Sets mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
-     * @return Near thread ID.
-     */
-    public long threadId() {
-        return nearThreadId;
-    }
-
-    /**
-     * Sets near thread ID.
-     */
-    public void threadId(long nearThreadId) {
-        this.nearThreadId = nearThreadId;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * Sets error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 54;
     }
 
     /** {@inheritDoc} */

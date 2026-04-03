@@ -20,15 +20,10 @@ package org.apache.ignite.spi.discovery.zk;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.curator.test.TestingCluster;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
@@ -88,53 +83,6 @@ public class ZookeeperDiscoverySpiTestConfigurator {
         }
         finally {
             lock.unlock();
-        }
-    }
-
-    /** */
-    private static class TestZookeeperDiscoverySpi extends ZookeeperDiscoverySpi implements IgniteDiscoverySpiInternalListenerSupport {
-        /** */
-        private volatile IgniteDiscoverySpiInternalListener internalLsnr;
-
-        /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-            if (internalLsnr != null && !internalLsnr.beforeSendCustomEvent(this, log, msg))
-                return;
-
-            super.sendCustomEvent(msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void beforeJoinTopology(ClusterNode locNode) {
-            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-            if (internalLsnr != null)
-                internalLsnr.beforeJoin(locNode, log);
-        }
-
-        /** */
-        @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-            internalLsnr = lsnr;
-        }
-
-        /**
-         * Creates copy of current SPI instance. Is called by test framework using reflection
-         * (see {@link GridAbstractTest#startRemoteGrid}).
-         *
-         * @return Copy of current SPI instance.
-         */
-        public ZookeeperDiscoverySpi cloneSpiConfiguration() {
-            ZookeeperDiscoverySpi spi = new TestZookeeperDiscoverySpi();
-
-            spi.setZkRootPath(getZkRootPath());
-            spi.setZkConnectionString(getZkConnectionString());
-            spi.setSessionTimeout(getSessionTimeout());
-            spi.setJoinTimeout(getJoinTimeout());
-            spi.setClientReconnectDisabled(isClientReconnectDisabled());
-
-            return spi;
         }
     }
 }

@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Node ID message.
@@ -35,7 +34,7 @@ public class NodeIdMessage implements Message {
 
     /** */
     @Order(0)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public NodeIdMessage() {
@@ -58,17 +57,6 @@ public class NodeIdMessage implements Message {
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node ID bytes.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TcpCommunicationSpi.NODE_ID_MSG_TYPE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

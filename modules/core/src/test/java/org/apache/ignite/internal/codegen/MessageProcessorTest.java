@@ -52,7 +52,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
     }
 
@@ -66,7 +66,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
     }
 
@@ -80,7 +80,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMapMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
     }
 
@@ -127,7 +127,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
     }
 
@@ -141,11 +141,11 @@ public class MessageProcessorTest {
         assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
     }
 
@@ -184,7 +184,7 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.DefaultMapperEnumFieldsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
     }
 
@@ -224,8 +224,20 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.CustomMapperEnumFieldsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testMarshallableMessage() {
+        Compilation compilation = compile("TestMarshallableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshallableSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshallableSerializer.java"));
     }
 
     /**
@@ -268,6 +280,40 @@ public class MessageProcessorTest {
             "TransactionIsolationEnumMapper.java");
 
         assertThat(compilation).succeeded();
+    }
+
+    /**
+     * Negative test that verifies the compilation failed if the CompressedMessage type is used in Message.
+     */
+    @Test
+    public void testCompressedMessageExplicitUsageFails() {
+        String errMsg = "CompressedMessage should not be used explicitly. To compress the required field use the @Compress annotation.";
+
+        Compilation compilation = compile("TestCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestCollectionsCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestMapCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Negative test that verifies the compilation failed if the Compress annotation is used for unsupported types.
+     */
+    @Test
+    public void testCompressAnnotationFailsForUnsupportedTypes() {
+        Compilation compilation = compile("TestCompressUnsupportedTypeMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Compress annotation is used for an unsupported type: java.util.List");
     }
 
     /** */

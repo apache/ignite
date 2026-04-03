@@ -20,14 +20,20 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage {
+public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public StopRoutineDiscoveryMessage() {
+        // No-op.
+    }
 
     /**
      * @param routineId Routine id.
@@ -45,4 +51,5 @@ public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage {
     @Override public String toString() {
         return S.toString(StopRoutineDiscoveryMessage.class, this, "routineId", routineId());
     }
+
 }

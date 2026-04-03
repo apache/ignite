@@ -45,52 +45,52 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
-    @Order(9)
-    private @Nullable Collection<GridCacheVersion> pending;
+    @Order(0)
+    @Nullable Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(11)
-    private int miniId;
+    @Order(2)
+    int miniId;
 
     /** DHT version. */
-    @Order(value = 12, method = "dhtVersion")
-    private GridCacheVersion dhtVer;
+    @Order(3)
+    GridCacheVersion dhtVer;
 
     /** Write version. */
-    @Order(value = 13, method = "writeVersion")
-    private GridCacheVersion writeVer;
+    @Order(4)
+    GridCacheVersion writeVer;
 
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
     /** OwnedVals' keys for marshalling. */
-    @Order(value = 14, method = "ownedValuesKeys")
-    private @Nullable Collection<IgniteTxKey> ownedValKeys;
+    @Order(5)
+    @Nullable Collection<IgniteTxKey> ownedValKeys;
 
     /** OwnedVals' values for marshalling. */
-    @Order(value = 15, method = "ownedValuesValues")
-    private @Nullable Collection<CacheVersionedValue> ownedValVals;
+    @Order(6)
+    @Nullable Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
-    @Order(value = 16, method = "returnValue")
-    private GridCacheReturn retVal;
+    @Order(7)
+    GridCacheReturn retVal;
 
     /** Keys that did not pass the filter. */
-    @Order(17)
-    private @Nullable Collection<IgniteTxKey> filterFailedKeys;
+    @Order(8)
+    @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(value = 18, method = "clientRemapVersion")
-    private @Nullable AffinityTopologyVersion clientRemapVer;
+    @Order(9)
+    @Nullable AffinityTopologyVersion clientRemapVer;
 
     /** One-phase commit on primary flag. */
-    @Order(19)
-    private boolean onePhaseCommit;
+    @Order(10)
+    boolean onePhaseCommit;
 
     /**
      * Empty constructor.
@@ -138,32 +138,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.onePhaseCommit = onePhaseCommit;
     }
 
-    /**
-     * @return One-phase commit on primary flag.
-     */
+    /** @return One-phase commit on primary flag. */
     public boolean onePhaseCommit() {
         return onePhaseCommit;
     }
 
-    /**
-     * @param onePhaseCommit New one-phase commit on primary flag.
-     */
-    public void onePhaseCommit(boolean onePhaseCommit) {
-        this.onePhaseCommit = onePhaseCommit;
-    }
-
-    /**
-     * @return Topology version, which is set when client node should remap lock request.
-     */
+    /** @return Topology version, which is set when client node should remap lock request. */
     @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
-    }
-
-    /**
-     * @param clientRemapVer New topology version, which is set when client node should remap lock request.
-     */
-    public void clientRemapVersion(@Nullable AffinityTopologyVersion clientRemapVer) {
-        this.clientRemapVer = clientRemapVer;
     }
 
     /**
@@ -180,60 +162,24 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.pending = pending;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
     }
 
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return DHT version.
-     */
+    /** @return DHT version. */
     public GridCacheVersion dhtVersion() {
         return dhtVer;
     }
 
-    /**
-     * @param dhtVer New DHT version.
-     */
-    public void dhtVersion(GridCacheVersion dhtVer) {
-        this.dhtVer = dhtVer;
-    }
-
-    /**
-     * @return Write version.
-     */
+    /** @return Write version. */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer New write version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -262,18 +208,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
     }
 
-    /**
-     * @return Cache return value.
-     */
+    /** @return Cache return value. */
     public GridCacheReturn returnValue() {
         return retVal;
-    }
-
-    /**
-     * @param retVal New cache return value.
-     */
-    public void returnValue(GridCacheReturn retVal) {
-        this.retVal = retVal;
     }
 
     /**
@@ -296,34 +233,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      */
     public boolean hasOwnedValue(IgniteTxKey key) {
         return F.mapContainsKey(ownedVals, key);
-    }
-
-    /**
-     * @return OwnedVals' keys for marshalling.
-     */
-    public @Nullable Collection<IgniteTxKey> ownedValuesKeys() {
-        return ownedValKeys;
-    }
-
-    /**
-     * @param ownedValKeys New ownedVals' keys for marshalling.
-     */
-    public void ownedValuesKeys(@Nullable Collection<IgniteTxKey> ownedValKeys) {
-        this.ownedValKeys = ownedValKeys;
-    }
-
-    /**
-     * @return OwnedVals' values for marshalling.
-     */
-    public @Nullable Collection<CacheVersionedValue> ownedValuesValues() {
-        return ownedValVals;
-    }
-
-    /**
-     * @param ownedValVals New ownedVals' values for marshalling.
-     */
-    public void ownedValuesValues(@Nullable Collection<CacheVersionedValue> ownedValVals) {
-        this.ownedValVals = ownedValVals;
     }
 
     /** {@inheritDoc} */
@@ -416,10 +325,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 56;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

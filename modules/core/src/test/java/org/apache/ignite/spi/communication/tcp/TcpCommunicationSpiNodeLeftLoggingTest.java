@@ -17,12 +17,11 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MemorizingAppender;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -30,7 +29,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -110,19 +108,10 @@ public class TcpCommunicationSpiNodeLeftLoggingTest extends GridCommonAbstractTe
     private void sendFailingMessage(Ignite sourceIgnite, ClusterNode targetNode) {
         GridTestUtils.assertThrows(
             log,
-            () -> sourceIgnite.configuration().getCommunicationSpi().sendMessage(targetNode, someMessage()),
+            () -> sourceIgnite.configuration().getCommunicationSpi().sendMessage(targetNode, new GridByteArrayList()),
             Exception.class,
             null
         );
-    }
-
-    /**
-     * Returns some message.
-     *
-     * @return Some message.
-     */
-    private UUIDCollectionMessage someMessage() {
-        return new UUIDCollectionMessage(singletonList(UUID.randomUUID()));
     }
 
     /**

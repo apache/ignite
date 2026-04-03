@@ -17,46 +17,52 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation start request for {@link DistributedProcess} initiate message.
  */
-abstract class AbstractSnapshotOperationRequest implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+abstract class AbstractSnapshotOperationRequest implements Message {
     /** Request ID. */
-    @GridToStringInclude
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Snapshot name. */
-    @GridToStringInclude
-    private final String snpName;
+    @Order(1)
+    String snpName;
 
     /** Snapshot directory path. */
-    @GridToStringInclude
-    private final String snpPath;
+    @Order(2)
+    String snpPath;
 
     /** Collection of cache group names. */
+    @Order(3)
     @GridToStringInclude
-    private final Collection<String> grps;
+    Collection<String> grps;
 
     /** Start time. */
-    @GridToStringInclude
-    private final long startTime;
+    @Order(4)
+    long startTime;
 
     /** IDs of the nodes that must be alive to complete the operation. */
     @GridToStringInclude
-    private final Set<UUID> nodes;
+    @Order(5)
+    Set<UUID> nodes;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public AbstractSnapshotOperationRequest() {
+        // No-op.
+    }
 
     /**
      * @param reqId Request ID.

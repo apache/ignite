@@ -187,12 +187,15 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -227,10 +230,10 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -261,7 +264,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
@@ -702,6 +704,15 @@ public abstract class IgniteUtils extends CommonUtils {
         String name = GRID_EVT_NAMES.get(type);
 
         return name != null ? name : Integer.toString(type);
+    }
+
+    /**
+     * Gets known grid events with names.
+     *
+     * @return Map of event types to names.
+     */
+    public static Map<Integer, String> gridEventNames() {
+        return Collections.unmodifiableMap(GRID_EVT_NAMES);
     }
 
     /**
@@ -4178,22 +4189,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static ClassLoader detectClassLoader(Class<?> cls) {
         return GridClassLoaderCache.classLoader(cls);
-    }
-
-    /**
-     * Detects class loader for given object's class.
-     *
-     * @param obj Object to find class loader for class of.
-     * @return Class loader for given object (possibly {@code null}).
-     */
-    @Nullable public static ClassLoader detectObjectClassLoader(@Nullable Object obj) {
-        if (obj == null)
-            return null;
-
-        if (obj instanceof GridPeerDeployAware)
-            return ((GridPeerDeployAware)obj).classLoader();
-
-        return detectClassLoader(obj.getClass());
     }
 
     /**
@@ -8113,7 +8108,7 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static String validateRamUsage(GridKernalContext ctx) {
-        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+        long ram = getTotalMemoryAvailable();
 
         if (ram != -1) {
             String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
@@ -8304,5 +8299,15 @@ public abstract class IgniteUtils extends CommonUtils {
                InvocationTargetException e) {
             return (IgniteDataTransferObjectSerializer<T>)EMPTY_DTO_SERIALIZER;
         }
+    }
+
+    /**
+     * Unwraps messsage if it is wrapped by {@link SecurityAwareCustomMessageWrapper}.
+     *
+     * @param msg Message.
+     */
+    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
+        return msg instanceof SecurityAwareCustomMessageWrapper ?
+            ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
     }
 }

@@ -30,16 +30,13 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public final class ClusterMetricsUpdateMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 133;
-
     /** Single node metrics message. */
     @Order(0)
-    @Nullable private NodeFullMetricsMessage singleNodeMetricsMsg;
+    @Nullable NodeFullMetricsMessage singleNodeMetricsMsg;
 
     /** All-nodes cache metrics messages. */
     @Order(1)
-    @Nullable private Map<UUID, NodeFullMetricsMessage> allNodesMetrics;
+    @Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics;
 
     /** Default constructor. Required for {@link GridIoMessageFactory}. */
     public ClusterMetricsUpdateMessage() {
@@ -64,22 +61,8 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public void allNodesMetrics(@Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics) {
-        assert allNodesMetrics == null || singleNodeMetricsMsg == null;
-
-        this.allNodesMetrics = allNodesMetrics;
-    }
-
-    /** */
     public @Nullable NodeFullMetricsMessage singleNodeMetricsMsg() {
         return singleNodeMetricsMsg;
-    }
-
-    /** */
-    public void singleNodeMetricsMsg(@Nullable NodeFullMetricsMessage singleNodeMetricsMsg) {
-        assert singleNodeMetricsMsg == null || allNodesMetrics == null;
-
-        this.singleNodeMetricsMsg = singleNodeMetricsMsg;
     }
 
     /** */
@@ -89,10 +72,6 @@ public final class ClusterMetricsUpdateMessage implements Message {
         return singleNodeMetricsMsg != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
