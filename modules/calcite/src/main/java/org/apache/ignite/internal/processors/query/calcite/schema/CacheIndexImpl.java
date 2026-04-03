@@ -229,7 +229,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
     /** */
     protected CacheIndexImpl copy(IgniteCacheTable newTbl, RelCollation newCollation) {
-        return new CacheIndexImpl(collation, idxName, idx, newTbl);
+        return new CacheIndexImpl(newCollation, idxName, idx, newTbl);
     }
 
     /** */

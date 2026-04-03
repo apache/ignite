@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -34,20 +33,15 @@ import org.apache.ignite.internal.processors.query.calcite.exec.IndexWrappedKeyS
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
 
 /** Extension for column {@value QueryUtils#KEY_FIELD_NAME} in case of composite primary key. */
 class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
-    /** */
-    private final RelCollation keyFieldCollation;
 
     /** */
     CacheWrappedKeyIndexImpl(RelCollation collation, String idxName, Index idx, IgniteCacheTable tbl) {
         super(collation, idxName, idx, tbl);
-
-        keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
     }
 
     /** */
@@ -57,8 +51,7 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
         RelDataType rowType,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        if (cond == null ||
-            mapByRequireColumns(keyFieldCollation, rowType, requiredColumns).getFieldCollations().isEmpty())
+        if (cond == null)
             return null; // Empty index find predicate.
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
@@ -100,20 +93,5 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
     /** */
     @Override protected CacheIndexImpl copy(IgniteCacheTable newTbl, RelCollation newCollation) {
         return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
-    }
-
-    /** */
-    private static RelCollation deriveKeyFieldIndexCollation(IgniteCacheTable tbl) {
-        ColumnDescriptor desc = tbl.descriptor().columnDescriptor(QueryUtils.KEY_FIELD_NAME);
-        assert desc != null : String.format(
-            "cacheName=%s, schemaName=%s, tableName=%s",
-            tbl.descriptor().typeDescription().cacheName(),
-            tbl.descriptor().typeDescription().schemaName(),
-            tbl.descriptor().typeDescription().tableName()
-        );
-
-        int fieldIdx = desc.fieldIndex();
-
-        return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));
     }
 }
