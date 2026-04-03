@@ -195,6 +195,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
             valBytes = valueBytesFromArray(ctx);
+
+        ctx.waitMetadataWriteIfNeeded(typeId());
         
         return valBytes;
     }
