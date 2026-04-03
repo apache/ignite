@@ -210,7 +210,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         // Recreate indexes for the new table without columns shift.
         for (IgniteIndex idx : oldTbl.indexes().values())
-            newTbl.addIndex(((CacheIndexImpl)idx).copyWithNewTable(newTbl));
+            newTbl.addIndex(((CacheIndexImpl)idx).copy(newTbl));
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
     }
@@ -242,7 +242,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
             RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
 
-            newTbl.addIndex(idx0.copyWithNewTableAndCollation(newTbl, newCollation));
+            newTbl.addIndex(idx0.copy(newTbl, newCollation));
         }
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);

@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
 
 /** Extension for column {@value QueryUtils#KEY_FIELD_NAME} in case of composite primary key. */
-public class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
+class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
     /** */
     private final RelCollation keyFieldCollation;
 
@@ -93,21 +93,13 @@ public class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
     }
 
     /** */
-    @Override protected CacheIndexImpl copyWithNewTable(IgniteCacheTable newTbl) {
+    @Override protected CacheIndexImpl copy(IgniteCacheTable newTbl) {
         return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
     }
 
     /** */
-    @Override protected CacheIndexImpl copyWithNewTableAndCollation(
-        IgniteCacheTable newTbl,
-        RelCollation newCollation
-    ) {
+    @Override protected CacheIndexImpl copy(IgniteCacheTable newTbl, RelCollation newCollation) {
         return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
-    }
-
-    /** */
-    public RelCollation keyFieldCollation() {
-        return keyFieldCollation;
     }
 
     /** */

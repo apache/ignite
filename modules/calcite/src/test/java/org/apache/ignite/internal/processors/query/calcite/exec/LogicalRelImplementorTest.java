@@ -319,8 +319,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             filter,
             RexUtils.buildSortedSearchBounds(cluster, idxCollation, filter, rowType, requiredColumns),
             requiredColumns,
-            idxCollation,
-            null
+            idxCollation
         );
 
         IgniteIndexScan scan;
@@ -428,8 +427,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             filterOneField,
             RexUtils.buildSortedSearchBounds(cluster, idxCollation, filterOneField, rowType, requiredColumns),
             requiredColumns,
-            idxCollation,
-            null
+            idxCollation
         );
 
         // Not all fields participating in filter, it worth to create ScanTableRowNode.
@@ -459,8 +457,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             filters,
             templateScan.searchBounds(),
             requiredColumns,
-            templateScan.collation(),
-            null
+            templateScan.collation()
         );
     }
 

@@ -404,12 +404,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<SearchBounds> searchBounds = rel.searchBounds();
 
         RelDataType inputRowType = rel.getDataSourceRowType();
-        RelCollation rangeCollation = Objects.requireNonNullElse(rel.keyFieldCollation(), rel.collation());
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, inputRowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, inputRowType);
         RangeIterable<Row> ranges = searchBounds == null ? null :
-            expressionFactory.ranges(searchBounds, rangeCollation, tbl.getRowType(typeFactory));
+            expressionFactory.ranges(searchBounds, rel.collation(), tbl.getRowType(typeFactory));
 
         ColocationGroup grp = ctx.group(rel.sourceId());
 

@@ -76,7 +76,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
     }
 
     /** */
-    static class FirstLastIndexWrapper extends IndexScan.TreeIndexWrapper {
+    private static class FirstLastIndexWrapper extends IndexScan.TreeIndexWrapper {
         /** */
         private final boolean first;
 
@@ -85,7 +85,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
          * @param qctx  Query context.
          * @param first {@code True} to take first index value. {@code False} to take last value.
          */
-        FirstLastIndexWrapper(InlineIndex idx, IndexQueryContext qctx, boolean first) {
+        protected FirstLastIndexWrapper(InlineIndex idx, IndexQueryContext qctx, boolean first) {
             super(idx, qctx);
 
             this.first = first;

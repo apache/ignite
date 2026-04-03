@@ -223,12 +223,12 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    protected CacheIndexImpl copyWithNewTable(IgniteCacheTable newTbl) {
+    protected CacheIndexImpl copy(IgniteCacheTable newTbl) {
         return new CacheIndexImpl(collation, idxName, idx, newTbl);
     }
 
     /** */
-    protected CacheIndexImpl copyWithNewTableAndCollation(IgniteCacheTable newTbl, RelCollation newCollation) {
+    protected CacheIndexImpl copy(IgniteCacheTable newTbl, RelCollation newCollation) {
         return new CacheIndexImpl(collation, idxName, idx, newTbl);
     }
 

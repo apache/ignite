@@ -27,8 +27,6 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,12 +43,6 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     private final RelCollation collation;
 
     /**
-     * Composite primary key index collation for the {@value QueryUtils#KEY_FIELD_NAME} field to get ranges,
-     * {@code null} for all other indexes.
-     */
-    private final @Nullable RelCollation keyFieldCollation;
-
-    /**
      * Constructor used for deserialization.
      *
      * @param input Serialized representation.
@@ -65,11 +57,6 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
             sourceId = ((Number)srcIdObj).longValue();
         else
             sourceId = -1;
-
-        if (input.get("keyFieldCollation") != null)
-            keyFieldCollation = ((RelInputEx)input).getCollation("keyFieldCollation");
-        else
-            keyFieldCollation = null;
     }
 
     /**
@@ -83,8 +70,6 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @param cond Filters.
      * @param requiredCols Participating columns.
      * @param collation Index collation.
-     * @param keyFieldCollation Composite primary key index collation for the {@value QueryUtils#KEY_FIELD_NAME} field
-     *      to get ranges, {@code null} for all other indexes.
      */
     public IgniteIndexScan(
         RelOptCluster cluster,
@@ -96,11 +81,9 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet requiredCols,
-        RelCollation collation,
-        @Nullable RelCollation keyFieldCollation
+        RelCollation collation
     ) {
-        this(-1L, cluster, traits, tbl, idxName, rowType, proj, cond, searchBounds, requiredCols, collation,
-            keyFieldCollation);
+        this(-1L, cluster, traits, tbl, idxName, rowType, proj, cond, searchBounds, requiredCols, collation);
     }
 
     /**
@@ -114,8 +97,6 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @param cond Filters.
      * @param requiredCols Participating colunms.
      * @param collation Index collation.
-     * @param keyFieldCollation Composite primary key index collation for the {@value QueryUtils#KEY_FIELD_NAME} field
-     *      to get ranges, {@code null} for all other indexes.
      */
     private IgniteIndexScan(
         long sourceId,
@@ -128,14 +109,12 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet requiredCols,
-        RelCollation collation,
-        @Nullable RelCollation keyFieldCollation
+        RelCollation collation
     ) {
         super(cluster, traits, tbl, idxName, rowType, proj, cond, searchBounds, requiredCols);
 
         this.sourceId = sourceId;
         this.collation = collation;
-        this.keyFieldCollation = keyFieldCollation;
     }
 
     /** {@inheritDoc} */
@@ -147,8 +126,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     @Override protected RelWriter explainTerms0(RelWriter pw) {
         return super.explainTerms0(pw)
             .itemIf("sourceId", sourceId, sourceId != -1)
-            .item("collation", collation())
-            .item("keyFieldCollation", keyFieldCollation());
+            .item("collation", collation());
     }
 
     /** {@inheritDoc} */
@@ -159,25 +137,17 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
         return new IgniteIndexScan(sourceId, getCluster(), getTraitSet(), getTable(),
-            idxName, rowType, projects, condition, searchBounds, requiredColumns, collation, keyFieldCollation);
+            idxName, rowType, projects, condition, searchBounds, requiredColumns, collation);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexScan(sourceId, cluster, getTraitSet(), getTable(),
-            idxName, rowType, projects, condition, searchBounds, requiredColumns, collation, keyFieldCollation);
+            idxName, rowType, projects, condition, searchBounds, requiredColumns, collation);
     }
 
     /** {@inheritDoc} */
     @Override public RelCollation collation() {
         return collation;
-    }
-
-    /**
-     * Returns composite primary key index collation for the {@value QueryUtils#KEY_FIELD_NAME} field to get ranges,
-     * {@code null} for all other indexes.
-     */
-    public @Nullable RelCollation keyFieldCollation() {
-        return keyFieldCollation;
     }
 }

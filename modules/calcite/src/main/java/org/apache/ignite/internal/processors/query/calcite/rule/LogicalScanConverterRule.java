@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheWrappedKeyIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
@@ -107,10 +106,6 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 if (!corrIds.isEmpty())
                     traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
-                RelCollation keyFieldCollation = null;
-                if (idx instanceof CacheWrappedKeyIndexImpl)
-                    keyFieldCollation = ((CacheWrappedKeyIndexImpl)idx).keyFieldCollation();
-
                 return new IgniteIndexScan(
                     cluster,
                     traits,
@@ -121,8 +116,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     rel.condition(),
                     rel.searchBounds(),
                     rel.requiredColumns(),
-                    idx.collation(),
-                    keyFieldCollation
+                    idx.collation()
                 );
             }
         };
