@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscove
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatchMarshallableSerializer;
+import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
+import org.apache.ignite.internal.processors.cache.ExchangeFailureMessageSerializer;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessageSerializer;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
@@ -55,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResultSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
@@ -125,10 +129,26 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexC
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperationMarshallableSerializer;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperationSerializer;
+import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
+import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequestSerializer;
+import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
+import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
+import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatchSerializer;
+import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultSerializer;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessIdSerializer;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentRequest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentRequestMarshallableSerializer;
+import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
+import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultSerializer;
+import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
+import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequestSerializer;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.FullMessageSerializer;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.InitMessageSerializer;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteProductVersionSerializer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -136,6 +156,8 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDisc
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacketSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodeMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
@@ -221,6 +243,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
+        factory.register(-117, TcpDiscoveryNode::new, new TcpDiscoveryNodeMarshallableSerializer(marsh, clsLdr));
+        factory.register(-116, IgniteProductVersion::new, new IgniteProductVersionSerializer());
         factory.register(-115, SchemaAlterTableAddColumnOperation::new, new SchemaAlterTableAddColumnOperationSerializer());
         factory.register(-114, SchemaIndexCreateOperation::new, new SchemaIndexCreateOperationMarshallableSerializer(marsh, clsLdr));
         factory.register(-113, SchemaIndexDropOperation::new, new SchemaIndexDropOperationSerializer());
@@ -284,6 +308,11 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(38, ChangeCacheEncryptionRequest::new, new ChangeCacheEncryptionRequestSerializer());
 
         factory.register(86, GridCacheVersion::new, new GridCacheVersionSerializer());
+        factory.register(87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
+
+        factory.register(167, ServiceDeploymentProcessId::new, new ServiceDeploymentProcessIdSerializer());
+        factory.register(169, ServiceSingleNodeDeploymentResult::new, new ServiceSingleNodeDeploymentResultSerializer());
+        factory.register(170, ServiceClusterDeploymentResult::new, new ServiceClusterDeploymentResultSerializer());
 
         // DiscoveryCustomMessage
         factory.register(500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
@@ -328,7 +357,13 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new ChangeGlobalStateMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(533, ClientCacheChangeDummyDiscoveryMessage::new,
             new ClientCacheChangeDummyDiscoveryMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(534, DynamicCacheChangeBatch::new,
-            new DynamicCacheChangeBatchMarshallableSerializer(marsh, clsLdr));
+        factory.register(534, DynamicCacheChangeBatch::new, new DynamicCacheChangeBatchMarshallableSerializer(marsh, clsLdr));
+        factory.register(535, ServiceClusterDeploymentResultBatch::new,
+            new ServiceClusterDeploymentResultBatchSerializer());
+        factory.register(536, ServiceChangeBatchRequest::new, new ServiceChangeBatchRequestSerializer());
+        factory.register(537, ServiceDeploymentRequest::new,
+            new ServiceDeploymentRequestMarshallableSerializer(marsh, clsLdr));
+        factory.register(538, ServiceUndeploymentRequest::new, new ServiceUndeploymentRequestSerializer());
+        factory.register(539, ExchangeFailureMessage::new, new ExchangeFailureMessageSerializer());
     }
 }
