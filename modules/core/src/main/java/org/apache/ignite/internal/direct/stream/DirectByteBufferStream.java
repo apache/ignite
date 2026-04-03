@@ -2392,6 +2392,9 @@ public class DirectByteBufferStream {
     /** */
     private CacheObjectContext context() {
         List<CacheObjectContext> list = coCtxs.get();
+        
+        if (list.isEmpty())
+            return null;
 
         CacheObjectContext cand = list.get(list.size() - 1);
 
