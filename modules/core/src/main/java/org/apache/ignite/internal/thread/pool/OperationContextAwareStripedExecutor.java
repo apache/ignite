@@ -19,13 +19,12 @@ package org.apache.ignite.internal.thread.pool;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class OperationContextAwareStripedExecutor extends StripedExecutor {
+public class OperationContextAwareStripedExecutor extends IgniteStripedExecutor {
     /** */
     public OperationContextAwareStripedExecutor(
         int cnt,

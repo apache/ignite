@@ -100,7 +100,7 @@ public class GridCacheSqlQuery implements Message {
      * @return {@code this}.
      */
     public GridCacheSqlQuery columns(LinkedHashMap<String, ?> columns) {
-        this.cols = columns;
+        cols = columns;
 
         return this;
     }
@@ -136,11 +136,6 @@ public class GridCacheSqlQuery implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSqlQuery.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 112;
     }
 
     /**
@@ -274,7 +269,7 @@ public class GridCacheSqlQuery implements Message {
      * @return {@code this}.
      */
     public GridCacheSqlQuery treatReplicatedAsPartitioned(boolean trearPartitionedAsReplicated) {
-        this.treatPartitionedAsReplicated = trearPartitionedAsReplicated;
+        treatPartitionedAsReplicated = trearPartitionedAsReplicated;
 
         return this;
     }

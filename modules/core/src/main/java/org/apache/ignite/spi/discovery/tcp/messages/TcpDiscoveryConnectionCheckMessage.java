@@ -51,10 +51,6 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 6;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

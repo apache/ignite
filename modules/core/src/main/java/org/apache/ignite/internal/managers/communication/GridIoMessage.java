@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ExecutorAwareMessage;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -27,13 +28,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport {
+public class GridIoMessage implements MarshallableMessage, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -119,13 +121,6 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param plc Policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Topic.
      */
     Object topic() {
@@ -140,31 +135,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @return Topic bytes.
-     */
-    public byte[] topicBytes() {
-        return topicBytes;
-    }
-
-    /**
-     * @param topicBytes Topic bytes.
-     */
-    public void topicBytes(byte[] topicBytes) {
-        this.topicBytes = topicBytes;
-    }
-
-    /**
      * @return Topic ordinal.
      */
     public int topicOrdinal() {
         return topicOrd;
-    }
-
-    /**
-     * @param topicOrd Topic ordinal.
-     */
-    public void topicOrdinal(int topicOrd) {
-        this.topicOrd = topicOrd;
     }
 
     /**
@@ -175,24 +149,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param msg Message.
-     */
-    public void message(Message msg) {
-        this.msg = msg;
-    }
-
-    /**
      * @return Message timeout.
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout Message timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
     }
 
     /**
@@ -203,24 +163,10 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /**
-     * @param skipOnTimeout Whether message can be skipped on timeout.
-     */
-    public void skipOnTimeout(boolean skipOnTimeout) {
-        this.skipOnTimeout = skipOnTimeout;
-    }
-
-    /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
     public boolean isOrdered() {
         return ordered;
-    }
-
-    /**
-     * @param ordered {@code True} if message is ordered, {@code false} otherwise.
-     */
-    public void isOrdered(boolean ordered) {
-        this.ordered = ordered;
     }
 
     /** {@inheritDoc} */
@@ -233,10 +179,6 @@ public class GridIoMessage implements Message, SpanTransport {
         throw new AssertionError();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 8;
-    }
 
     /** {@inheritDoc} */
     @Override public void span(byte[] span) {
@@ -272,24 +214,21 @@ public class GridIoMessage implements Message, SpanTransport {
         return null;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (topic != null && topicBytes == null)
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (topicOrd < 0 && topic != null)
             topicBytes = U.marshal(marsh, topic);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (topicBytes != null && topic == null) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (topicOrd < 0 && topicBytes != null) {
             topic = U.unmarshal(marsh, topicBytes, ldr);
 
             topicBytes = null;
         }
+        else if (topicOrd >= 0)
+            topic = GridTopic.fromOrdinal(topicOrd);
     }
 
     /** {@inheritDoc} */

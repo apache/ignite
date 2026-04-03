@@ -57,11 +57,6 @@ public class QueryStartResponse implements CalciteMessage {
         return qryId;
     }
 
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
     /**
      * @return Fragment ID.
      */
@@ -69,26 +64,11 @@ public class QueryStartResponse implements CalciteMessage {
         return fragmentId;
     }
 
-    /** */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
-    }
-
     /**
      * @return Error.
      */
     public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /** */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /** */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

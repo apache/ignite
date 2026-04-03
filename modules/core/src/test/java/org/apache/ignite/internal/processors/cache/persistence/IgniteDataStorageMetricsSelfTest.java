@@ -63,14 +63,17 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
+import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -89,7 +92,10 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private static final String GROUP2 = "grp2";
 
     /** */
-    private static final String NO_PERSISTENCE = "no-persistence";
+    private static final String NO_PERSISTENCE_1 = "no-persistence-1";
+
+    /** */
+    private static final String NO_PERSISTENCE_2 = "no-persistence-2";
 
     /** */
     private static final String PERSISTENCE_REGION_1 = "persistence-1";
@@ -137,7 +143,14 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                     .setMaxSize(maxRegionSize)
                     .setPersistenceEnabled(false)
                     .setMetricsEnabled(true)
-                    .setName(NO_PERSISTENCE))
+                    .setName(NO_PERSISTENCE_1)
+                    .setPageEvictionMode(RANDOM_LRU),
+                new DataRegionConfiguration()
+                    .setMaxSize(maxRegionSize)
+                    .setPersistenceEnabled(false)
+                    .setMetricsEnabled(true)
+                    .setName(NO_PERSISTENCE_2)
+                    .setPageEvictionMode(RANDOM_LRU))
             .setWalMode(WALMode.LOG_ONLY)
             .setMetricsEnabled(true);
 
@@ -148,7 +161,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
             cacheConfiguration(GROUP2, "cache2", PARTITIONED, ATOMIC, 1, PERSISTENCE_REGION_2),
-            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
+            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE_1),
+            cacheConfiguration(null, "cache-np2", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE_2));
 
         cfg.setGridLogger(listeningLog);
 
@@ -191,7 +205,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ccfg.setDataRegionName(dataRegName);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        if (NO_PERSISTENCE.equals(dataRegName))
+        if (NO_PERSISTENCE_1.equals(dataRegName))
             ccfg.setDiskPageCompression(null);
 
         return ccfg;
@@ -226,7 +240,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             assertTrue(memMetrics.getDirtyPages() > 0);
             assertTrue(memMetrics.getPagesFillFactor() > 0);
 
-            memMetrics = ig.dataRegionMetrics("no-persistence");
+            memMetrics = ig.dataRegionMetrics(NO_PERSISTENCE_1);
 
             assertNotNull(memMetrics);
             assertTrue(memMetrics.getTotalAllocatedPages() > 0);
@@ -503,6 +517,63 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         disableWal(n, true);
 
         checkWalArchiveAndTotalSize(n, false);
+    }
+
+    /**
+     * Verifies that the 'EvictionsStarted' metric is tracked per data region and becomes {@code true} only for the
+     * region where page eviction is triggered, remaining unaffected by evictions in other regions. If eviction starts
+     * in multiple regions, the metric becomes {@code true} independently for each of them.
+     */
+    @Test
+    public void testEvictionsStartedMetric() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        String template = "Page-based evictions started. Consider increasing 'maxSize' on Data Region configuration: ";
+
+        LogListener lsnr = LogListener.matches(template + NO_PERSISTENCE_1).build();
+
+        listeningLog.registerListener(lsnr);
+
+        DataRegionMetrics memMetrics1 = ignite.dataRegionMetrics(NO_PERSISTENCE_1);
+        DataRegionMetrics memMetrics2 = ignite.dataRegionMetrics(NO_PERSISTENCE_2);
+
+        assertNotNull(memMetrics1);
+        assertNotNull(memMetrics2);
+
+        assertFalse(memMetrics1.isEvictionsStarted());
+        assertFalse(memMetrics2.isEvictionsStarted());
+
+        IgniteCache<Object, Object> cacheNp1 = ignite.cache("cache-np");
+        IgniteCache<Object, Object> cacheNp2 = ignite.cache("cache-np2");
+
+        String big = repeat('X', 256 * 1024);
+
+        int entryCnt = 0;
+
+        for (int i = 0; i < 1_000_000 && !lsnr.check(); i++) {
+            cacheNp1.put(i, new Person("first-" + i + "-" + big, "last-" + i + "-" + big));
+
+            entryCnt++;
+        }
+
+        assertTrue(lsnr.check());
+
+        memMetrics1 = ignite.dataRegionMetrics(NO_PERSISTENCE_1);
+        memMetrics2 = ignite.dataRegionMetrics(NO_PERSISTENCE_2);
+
+        assertTrue(memMetrics1.isEvictionsStarted());
+        assertFalse(memMetrics2.isEvictionsStarted());
+
+        for (int i = 0; i < entryCnt + 10; i++)
+            cacheNp2.put(i, new Person("first-" + i + "-" + big, "last-" + i + "-" + big));
+
+        memMetrics1 = ignite.dataRegionMetrics(NO_PERSISTENCE_1);
+        memMetrics2 = ignite.dataRegionMetrics(NO_PERSISTENCE_2);
+
+        assertTrue(memMetrics1.isEvictionsStarted());
+        assertTrue(memMetrics2.isEvictionsStarted());
     }
 
     /**

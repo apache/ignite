@@ -59,13 +59,6 @@ public class UserManagementOperationFinishedMessage implements Message {
     }
 
     /**
-     * @param opId New operation ID.
-     */
-    public void operationId(IgniteUuid opId) {
-        this.opId = opId;
-    }
-
-    /**
      * @return Success flag.
      */
     public boolean success() {
@@ -79,17 +72,6 @@ public class UserManagementOperationFinishedMessage implements Message {
         return errorMsg;
     }
 
-    /**
-     * @param errorMsg New error message.
-     */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 130;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

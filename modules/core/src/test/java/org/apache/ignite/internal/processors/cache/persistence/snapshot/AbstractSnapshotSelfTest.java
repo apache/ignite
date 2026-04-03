@@ -68,7 +68,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
@@ -89,6 +88,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -182,17 +182,20 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
     public static Collection<Object[]> params() {
-        boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
-            ? new boolean[] {false}
-            : new boolean[] {false, true};
-
         List<Object[]> res = new ArrayList<>();
 
-        for (boolean enc: encVals)
-            for (boolean onlyPrimary: new boolean[] {true, false})
-                res.add(new Object[] { enc, onlyPrimary});
+        for (boolean enc : encryptionParameters())
+            for (boolean onlyPrimary : new boolean[] {true, false})
+                res.add(new Object[] {enc, onlyPrimary});
 
         return res;
+    }
+
+    /** */
+    protected static Collection<Boolean> encryptionParameters() {
+        return DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
+            ? F.asList(false)
+            : F.asList(false, true);
     }
 
     /** {@inheritDoc} */
@@ -910,24 +913,22 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** */
     protected static class BlockingCustomMessageDiscoverySpi extends TcpDiscoverySpi {
         /** List of messages which have been blocked. */
-        private final List<DiscoverySpiCustomMessage> blocked = new CopyOnWriteArrayList<>();
+        private final List<DiscoveryCustomMessage> blocked = new CopyOnWriteArrayList<>();
 
         /** Discovery custom message filter. */
         private volatile IgnitePredicate<DiscoveryCustomMessage> blockPred;
 
         /** {@inheritDoc} */
         @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            if (msg instanceof CustomMessageWrapper) {
-                DiscoveryCustomMessage msg0 = ((CustomMessageWrapper)msg).delegate();
+            DiscoveryCustomMessage msg0 = U.unwrapCustomMessage(msg);
 
-                if (blockPred != null && blockPred.apply(msg0)) {
-                    blocked.add(msg);
+            if (blockPred != null && blockPred.apply(msg0)) {
+                blocked.add((DiscoveryCustomMessage)msg);
 
-                    if (log.isInfoEnabled())
-                        log.info("Discovery message has been blocked: " + msg0);
+                if (log.isInfoEnabled())
+                    log.info("Discovery message has been blocked: " + msg0);
 
-                    return;
-                }
+                return;
             }
 
             super.sendCustomEvent(msg);
@@ -954,11 +955,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         /** Releases the blocked messages. */
         private void releaseBlocked() {
-            List<DiscoverySpiCustomMessage> blocked = new CopyOnWriteArrayList<>(this.blocked);
+            List<DiscoveryCustomMessage> blocked = new CopyOnWriteArrayList<>(this.blocked);
 
             this.blocked.clear();
 
-            for (DiscoverySpiCustomMessage msg : blocked)
+            for (DiscoveryCustomMessage msg : blocked)
                 sendCustomEvent(msg);
         }
 

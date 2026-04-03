@@ -31,7 +31,7 @@ public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage i
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    @Order(5)
+    @Order(0)
     @Nullable UUID nodeToPing;
 
     /** */
@@ -56,20 +56,9 @@ public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage i
         return nodeToPing;
     }
 
-    /**
-     * @param nodeToPing Pinged client node ID.
-     */
-    public void nodeToPing(@Nullable UUID nodeToPing) {
-        this.nodeToPing = nodeToPing;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryClientPingRequest.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 3;
-    }
 }

@@ -62,8 +62,8 @@ public class TestMessage implements Message {
     @Order(10)
     BitSet bitSet;
 
-    @Order(value = 11, method = "overridenFieldMethod")
-    private String field;
+    @Order(value = 11)
+    String field;
 
     @Order(12)
     KeyCacheObject keyCacheObject;

@@ -47,29 +47,6 @@ public class GridClientClusterStateRequest extends GridClientAbstractMessage {
         return state;
     }
 
-    /**
-     * @return Current read-only mode request.
-     */
-    public static GridClientClusterStateRequest currentState() {
-        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
-
-        msg.reqCurrentState = true;
-
-        return msg;
-    }
-
-    /**
-     * @param state New cluster state.
-     * @return Cluster state change request.
-     */
-    public static GridClientClusterStateRequest state(ClusterState state) {
-        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
-
-        msg.state = state;
-
-        return msg;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);

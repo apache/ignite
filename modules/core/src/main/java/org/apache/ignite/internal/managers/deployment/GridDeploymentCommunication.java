@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteNotPeerDeployable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -72,9 +72,6 @@ class GridDeploymentCommunication {
     /** */
     private final GridBusyLock busyLock = new GridBusyLock();
 
-    /** */
-    private final Marshaller marsh;
-
     /**
      * Creates new instance of deployment communication.
      *
@@ -92,8 +89,6 @@ class GridDeploymentCommunication {
                 processDeploymentRequest(nodeId, msg);
             }
         };
-
-        marsh = ctx.marshaller();
     }
 
     /**
@@ -137,7 +132,7 @@ class GridDeploymentCommunication {
         try {
             GridDeploymentRequest req = (GridDeploymentRequest)msg;
 
-            if (req.isUndeploy())
+            if (req.undeploy())
                 processUndeployRequest(nodeId, req);
             else {
                 assert activeReqNodeIds.get() == null;
@@ -185,18 +180,6 @@ class GridDeploymentCommunication {
     private void processResourceRequest(UUID nodeId, GridDeploymentRequest req) {
         if (log.isDebugEnabled())
             log.debug("Received peer class/resource loading request [originatingNodeId=" + nodeId + ", req=" + req + ']');
-
-        if (req.responseTopic() == null) {
-            try {
-                req.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to process deployment request (will ignore) [" +
-                    "originatingNodeId=" + nodeId + ", req=" + req + ']', e);
-
-                return;
-            }
-        }
 
         GridDeploymentResponse res = new GridDeploymentResponse();
 
@@ -361,7 +344,7 @@ class GridDeploymentCommunication {
             ctx.io().sendToGridTopic(
                 rmtNodes,
                 TOPIC_CLASSLOAD,
-                new GridDeploymentRequest(null, null, rsrcName, true),
+                new GridDeploymentRequest(rsrcName),
                 GridIoPolicy.P2P_POOL);
         }
     }
@@ -393,9 +376,9 @@ class GridDeploymentCommunication {
                     ", requesters=" + nodeIds + ']');
         }
 
-        Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        GridTopic.T1 resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
-        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName, false);
+        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName);
 
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);
@@ -416,9 +399,6 @@ class GridDeploymentCommunication {
             ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
             long start = U.currentTimeMillis();
-
-            if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
-                req.prepareMarshal(marsh);
 
             ctx.io().sendToGridTopic(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 

@@ -42,33 +42,33 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** Future ID. */
-    @Order(4)
+    @Order(0)
     IgniteUuid futId;
 
     /** Sub ID. */
-    @Order(5)
+    @Order(1)
     IgniteUuid miniId;
 
     /** Version. */
-    @Order(6)
+    @Order(2)
     GridCacheVersion ver;
 
     /** Result. */
     @GridToStringInclude
-    @Order(value = 7, method = "entries")
+    @Order(3)
     Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
-    @Order(8)
+    @Order(4)
     Collection<Integer> invalidParts = new GridLeanSet<>();
 
     /** Topology version if invalid partitions is not empty. */
-    @Order(9)
+    @Order(5)
     AffinityTopologyVersion topVer;
 
     /** Error message. */
-    @Order(10)
+    @Order(6)
     @Nullable ErrorMessage errMsg;
 
     /**
@@ -101,44 +101,19 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         this.addDepInfo = addDepInfo;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Sub ID.
-     */
+    /** @return Sub ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Sub ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
-    }
-
-    /**
-     * @param ver Version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
     }
 
     /**
@@ -185,13 +160,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         return topVer != null ? topVer : super.topologyVersion();
     }
 
-    /**
-     * @param topVer Topology version if this response has invalid partitions.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
     /** {@inheritDoc} */
     @Override public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
@@ -203,20 +171,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     public void error(@Nullable Throwable err) {
         if (err != null)
             errMsg = new ErrorMessage(err);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc}
@@ -249,10 +203,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         return addDepInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 50;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -65,24 +65,10 @@ public class DataStreamerResponse implements Message {
     }
 
     /**
-     * @param reqId Request ID.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
-    /**
      * @return Error bytes.
      */
     public @Nullable byte[] errorBytes() {
         return errBytes;
-    }
-
-    /**
-     * @param errBytes Error bytes.
-     */
-    public void errorBytes(@Nullable byte[] errBytes) {
-        this.errBytes = errBytes;
     }
 
     /**
@@ -127,8 +113,4 @@ public class DataStreamerResponse implements Message {
         return S.toString(DataStreamerResponse.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 63;
-    }
 }

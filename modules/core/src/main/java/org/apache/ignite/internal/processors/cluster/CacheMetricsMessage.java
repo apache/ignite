@@ -26,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Cache metrics message. */
 public class CacheMetricsMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 136;
-
     /** Number of reads. */
     @Order(0)
     public long cacheGets;
@@ -1010,11 +1007,6 @@ public class CacheMetricsMessage implements Message {
     }
 
     /** */
-    public long estimateRebalancingFinishTime() {
-        return rebalanceFinishTime;
-    }
-
-    /** */
     public long rebalancingStartTime() {
         return rebalanceStartTime;
     }
@@ -1155,11 +1147,6 @@ public class CacheMetricsMessage implements Message {
     }
 
     /** */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
-    }
-
-    /** */
     public void cacheSize(long cacheSize) {
         this.cacheSize = cacheSize;
     }
@@ -1255,58 +1242,8 @@ public class CacheMetricsMessage implements Message {
     }
 
     /** */
-    public void indexRebuildInProgress(boolean idxRebuildInProgress) {
-        this.idxRebuildInProgress = idxRebuildInProgress;
-    }
-
-    /** */
-    public void indexRebuildKeysProcessed(long idxRebuildKeyProcessed) {
-        this.idxRebuildKeyProcessed = idxRebuildKeyProcessed;
-    }
-
-    /** */
     public void empty(boolean empty) {
         this.empty = empty;
-    }
-
-    /** */
-    public void managementEnabled(boolean managementEnabled) {
-        this.managementEnabled = managementEnabled;
-    }
-
-    /** */
-    public void readThrough(boolean readThrough) {
-        this.readThrough = readThrough;
-    }
-
-    /** */
-    public void statisticsEnabled(boolean statisticsEnabled) {
-        this.statisticsEnabled = statisticsEnabled;
-    }
-
-    /** */
-    public void storeByValue(boolean storeByVal) {
-        this.storeByVal = storeByVal;
-    }
-
-    /** */
-    public void validForReading(boolean validForReading) {
-        this.validForReading = validForReading;
-    }
-
-    /** */
-    public void validForWriting(boolean validForWriting) {
-        this.validForWriting = validForWriting;
-    }
-
-    /** */
-    public void writeBehindEnabled(boolean writeBehindEnabled) {
-        this.writeBehindEnabled = writeBehindEnabled;
-    }
-
-    /** */
-    public void writeThrough(boolean writeThrough) {
-        this.writeThrough = writeThrough;
     }
 
     /** */
@@ -1317,11 +1254,6 @@ public class CacheMetricsMessage implements Message {
     /** */
     public void keysToRebalanceLeft(long keysToRebalanceLeft) {
         this.keysToRebalanceLeft = keysToRebalanceLeft;
-    }
-
-    /** */
-    public void keyType(String keyType) {
-        this.keyType = keyType;
     }
 
     /** */
@@ -1382,16 +1314,6 @@ public class CacheMetricsMessage implements Message {
     /** */
     public void averagePutTime(float putAvgTimeNanos) {
         averagePutTime = putAvgTimeNanos;
-    }
-
-    /** */
-    public void puts(long puts) {
-        cachePuts = puts;
-    }
-
-    /** */
-    public void reads(long reads) {
-        cacheGets = reads;
     }
 
     /** */
@@ -1540,16 +1462,6 @@ public class CacheMetricsMessage implements Message {
     }
 
     /** */
-    public void valueType(String valType) {
-        this.valType = valType;
-    }
-
-    /** */
-    public void writeBehindBufferSize(int writeBehindBufSize) {
-        this.writeBehindBufSize = writeBehindBufSize;
-    }
-
-    /** */
     public void writeBehindCriticalOverflowCount(int writeBehindCriticalOverflowCnt) {
         this.writeBehindCriticalOverflowCnt = writeBehindCriticalOverflowCnt;
     }
@@ -1560,33 +1472,8 @@ public class CacheMetricsMessage implements Message {
     }
 
     /** */
-    public void writeBehindFlushFrequency(long writeBehindFlushFreq) {
-        this.writeBehindFlushFreq = writeBehindFlushFreq;
-    }
-
-    /** */
-    public void writeBehindFlushSize(int writeBehindFlushSize) {
-        this.writeBehindFlushSize = writeBehindFlushSize;
-    }
-
-    /** */
-    public void writeBehindFlushThreadCount(int writeBehindFlushThreadCnt) {
-        this.writeBehindFlushThreadCnt = writeBehindFlushThreadCnt;
-    }
-
-    /** */
-    public void writeBehindStoreBatchSize(int writeBehindStoreBatchSize) {
-        this.writeBehindStoreBatchSize = writeBehindStoreBatchSize;
-    }
-
-    /** */
     public void writeBehindTotalCriticalOverflowCount(int writeBehindTotalCriticalOverflowCnt) {
         this.writeBehindTotalCriticalOverflowCnt = writeBehindTotalCriticalOverflowCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /** */

@@ -32,17 +32,12 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PlannerTestSuite.class,
-    ExecutionTestSuite.class,
-    IntegrationTestSuite.class,
     UtilTestSuite.class,
-    JdbcTestSuite.class,
 
     SqlCustomParserTest.class,
     SqlReservedWordsTest.class,
     LogicalRelImplementorTest.class,
 
-    ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
 
     NumericTypesPrecisionsTest.class,

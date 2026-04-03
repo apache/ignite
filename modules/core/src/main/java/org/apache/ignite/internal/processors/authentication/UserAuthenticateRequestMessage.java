@@ -63,24 +63,10 @@ public class UserAuthenticateRequestMessage implements Message {
     }
 
     /**
-     * @param name New username.
-     */
-    public void name(String name) {
-        this.name = name;
-    }
-
-    /**
      * @return User password.
      */
     public String password() {
         return passwd;
-    }
-
-    /**
-     * @param passwd New user password.
-     */
-    public void password(String passwd) {
-        this.passwd = passwd;
     }
 
     /**
@@ -90,17 +76,6 @@ public class UserAuthenticateRequestMessage implements Message {
         return id;
     }
 
-    /**
-     * @param id New request ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 131;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

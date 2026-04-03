@@ -86,9 +86,11 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
-            throws IOException, IgniteSpiOperationTimeoutException {
-
+        @Override protected Socket openSocket(
+            Socket sock,
+            InetSocketAddress remAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
             try {
                 return super.openSocket(sock, remAddr, timeoutHelper);
             }

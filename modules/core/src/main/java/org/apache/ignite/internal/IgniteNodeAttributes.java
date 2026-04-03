@@ -121,9 +121,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
 
     /** Internal attribute name constant. */
-    public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
 
     /** Internal attribute name constant. */

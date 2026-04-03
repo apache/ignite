@@ -62,19 +62,19 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future ID on primary. */
-    @Order(4)
+    @Order(0)
     protected long futId;
 
     /** Write version. */
-    @Order(5)
+    @Order(1)
     protected GridCacheVersion writeVer;
 
     /** Topology version. */
-    @Order(6)
+    @Order(2)
     protected AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(7)
+    @Order(3)
     protected int taskNameHash;
 
     /** Node ID. */
@@ -84,15 +84,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     private boolean onRes;
 
     /** */
-    @Order(8)
+    @Order(4)
     UUID nearNodeId;
 
     /** */
-    @Order(9)
+    @Order(5)
     long nearFutId;
 
     /** Additional flags. */
-    @Order(10)
+    @Order(6)
     protected byte flags;
 
     /**
@@ -114,7 +114,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
         boolean readRepairRecovery
@@ -127,7 +126,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.writeVer = writeVer;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
-        this.addDepInfo = addDepInfo;
 
         if (skipStore)
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);
@@ -140,13 +138,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** {@inheritDoc} */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -181,13 +172,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return nearNodeId;
     }
 
-    /**
-     * @param nearNodeId New near node id.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -205,13 +189,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public final byte flags() {
         return flags;
-    }
-
-    /**
-     * @param flags New additional flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /**
@@ -320,24 +297,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param taskNameHash New task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Future ID on primary node.
      */
     public final long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId New future ID on primary node.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /**
@@ -348,24 +311,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param nearFutId New near future id.
-     */
-    public void nearFutureId(long nearFutId) {
-        this.nearFutId = nearFutId;
-    }
-
-    /**
      * @return Write version.
      */
     public final GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer New write version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**

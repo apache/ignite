@@ -179,8 +179,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
-            if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareMarshal(ctx);
+            if (msg instanceof CalciteMarshalableMessage)
+                ((CalciteMarshalableMessage)msg).prepareMarshal(ctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -192,8 +192,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
-            if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareUnmarshal(ctx);
+            if (msg instanceof CalciteMarshalableMessage)
+                ((CalciteMarshalableMessage)msg).prepareUnmarshal(ctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

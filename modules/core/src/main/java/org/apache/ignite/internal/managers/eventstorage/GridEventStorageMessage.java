@@ -32,13 +32,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Event storage message.
  */
-public class GridEventStorageMessage implements Message {
+public class GridEventStorageMessage implements MarshallableMessage {
     /** */
     private Object resTopic;
 
@@ -82,7 +82,7 @@ public class GridEventStorageMessage implements Message {
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @Order(value = 8, method = "loaderParticipants")
+    @Order(8)
     Map<UUID, IgniteUuid> ldrParties;
 
     /** */
@@ -143,34 +143,6 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @return Serialized response topic.
-     */
-    public byte[] responseTopicBytes() {
-        return resTopicBytes;
-    }
-
-    /**
-     * @param resTopicBytes Serialized response topic.
-     */
-    public void responseTopicBytes(byte[] resTopicBytes) {
-        this.resTopicBytes = resTopicBytes;
-    }
-
-    /**
-     * @return Filter.
-     */
-    public byte[] filterBytes() {
-        return filterBytes;
-    }
-
-    /**
-     * @param filterBytes Filter bytes.
-     */
-    public void filterBytes(byte[] filterBytes) {
-        this.filterBytes = filterBytes;
-    }
-
-    /**
      * @return Filter.
      */
     public IgnitePredicate<?> filter() {
@@ -185,31 +157,10 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @return Serialized events.
-     */
-    public byte[] eventsBytes() {
-        return evtsBytes;
-    }
-
-    /**
-     * @param evtsBytes Serialized events.
-     */
-    public void eventsBytes(byte[] evtsBytes) {
-        this.evtsBytes = evtsBytes;
-    }
-
-    /**
      * @return the Class loader ID.
      */
     public IgniteUuid classLoaderId() {
         return clsLdrId;
-    }
-
-    /**
-     * @param clsLdrId the Class loader ID.
-     */
-    public void classLoaderId(IgniteUuid clsLdrId) {
-        this.clsLdrId = clsLdrId;
     }
 
     /**
@@ -220,24 +171,10 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @param depMode Deployment mode.
-     */
-    public void deploymentMode(DeploymentMode depMode) {
-        this.depMode = depMode;
-    }
-
-    /**
      * @return Filter class name.
      */
     public String filterClassName() {
         return filterClsName;
-    }
-
-    /**
-     * @param filterClsName Filter class name.
-     */
-    public void filterClassName(String filterClsName) {
-        this.filterClsName = filterClsName;
     }
 
     /**
@@ -248,24 +185,10 @@ public class GridEventStorageMessage implements Message {
     }
 
     /**
-     * @param userVer User version.
-     */
-    public void userVersion(String userVer) {
-        this.userVer = userVer;
-    }
-
-    /**
      * @return Node class loader participant map.
      */
     public @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
-    }
-
-    /**
-     * @param ldrParties Node class loader participant map.
-     */
-    public void loaderParticipants(@Nullable Map<UUID, IgniteUuid> ldrParties) {
-        this.ldrParties = ldrParties;
     }
 
     /**
@@ -275,63 +198,45 @@ public class GridEventStorageMessage implements Message {
         return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (resTopic != null && resTopicBytes == null)
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (resTopic != null)
             resTopicBytes = U.marshal(marsh, resTopic);
 
-        if (filter != null && filterBytes == null)
+        if (filter != null)
             filterBytes = U.marshal(marsh, filter);
 
-        if (evts != null && evtsBytes == null)
+        if (evts != null)
             evtsBytes = U.marshal(marsh, evts);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     * @param filterClsLdr Class loader for filter.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr, ClassLoader filterClsLdr) throws IgniteCheckedException {
-        if (resTopicBytes != null && resTopic == null) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (resTopicBytes != null) {
             resTopic = U.unmarshal(marsh, resTopicBytes, ldr);
 
             resTopicBytes = null;
         }
 
-        if (filterBytes != null && filter == null && filterClsLdr != null) {
-            filter = U.unmarshal(marsh, filterBytes, filterClsLdr);
-
-            filterBytes = null;
-        }
-
-        if (evtsBytes != null && evts == null) {
+        if (evtsBytes != null) {
             evts = U.unmarshal(marsh, evtsBytes, ldr);
 
             evtsBytes = null;
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 13;
+    /**
+     * @param marsh Marshaller.
+     * @param filterClsLdr Class loader for filter.
+     */
+    public void finishUnmarshalFilters(Marshaller marsh, ClassLoader filterClsLdr) throws IgniteCheckedException {
+        if (filterBytes != null && filter == null) {
+            filter = U.unmarshal(marsh, filterBytes, filterClsLdr);
+
+            filterBytes = null;
+        }
     }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

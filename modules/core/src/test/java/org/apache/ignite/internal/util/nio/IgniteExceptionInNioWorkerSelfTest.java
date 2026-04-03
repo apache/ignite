@@ -84,7 +84,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
                 return (byte)242;
             }
 
-            return super.directType();
+            return -61;
         }
     }
 }

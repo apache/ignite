@@ -70,24 +70,10 @@ public class GridCheckpointRequest implements Message {
     }
 
     /**
-     * @param sesId Session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
-    /**
      * @return Checkpoint key.
      */
     public String key() {
         return key;
-    }
-
-    /**
-     * @param key Checkpoint key.
-     */
-    public void key(String key) {
-        this.key = key;
     }
 
     /**
@@ -97,17 +83,6 @@ public class GridCheckpointRequest implements Message {
         return cpSpi;
     }
 
-    /**
-     * @param cpSpi Checkpoint SPI.
-     */
-    public void checkpointSpi(String cpSpi) {
-        this.cpSpi = cpSpi;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 7;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

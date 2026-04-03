@@ -70,9 +70,9 @@ public class GridCacheRebalanceOrderTest extends GridCommonAbstractTest {
             }, new int[] {EVT_CACHE_REBALANCE_STOPPED});
 
             cfg.setLocalEventListeners(listeners);
-
-            cfg.setIncludeEventTypes(EventType.EVTS_ALL);
         }
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

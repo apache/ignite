@@ -70,30 +70,12 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(@Nullable AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Requests id.
      */
     public @Nullable IgniteUuid requestId() {
         return reqId;
     }
 
-    /**
-     * @param reqId Request's id.
-     */
-    public void requestId(@Nullable IgniteUuid reqId) {
-        this.reqId = reqId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 167;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

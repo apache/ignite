@@ -73,24 +73,10 @@ public class ContinuousRoutineStartResultMessage implements Message {
     }
 
     /**
-     * @param cntrsMap Counters map.
-     */
-    public void countersMap(@Nullable CachePartitionPartialCountersMap cntrsMap) {
-        this.cntrsMap = cntrsMap;
-    }
-
-    /**
      * @return Routine ID.
      */
     public UUID routineId() {
         return routineId;
-    }
-
-    /**
-     * @param routineId Routine ID.
-     */
-    public void routineId(UUID routineId) {
-        this.routineId = routineId;
     }
 
     /**
@@ -100,17 +86,6 @@ public class ContinuousRoutineStartResultMessage implements Message {
         return errMsg;
     }
 
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 134;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

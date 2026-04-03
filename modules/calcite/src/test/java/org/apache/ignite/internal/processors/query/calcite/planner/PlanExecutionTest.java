@@ -61,9 +61,9 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.junit.Assert;
 import org.junit.Test;
 

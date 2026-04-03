@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class TxEntryValueHolder implements Message {
     /** Stored value. */
-    @Order(value = 0, method = "storedValue")
+    @Order(0)
     @GridToStringInclude(sensitive = true)
     @Nullable CacheObject val;
 
@@ -92,31 +92,6 @@ public class TxEntryValueHolder implements Message {
     }
 
     /**
-     * @param val Stored value.
-     */
-    public void value(@Nullable CacheObject val) {
-        this.val = val;
-    }
-
-    /**
-     * Used only in serializer.
-     *
-     * @return Stored value or null.
-     */
-    public @Nullable CacheObject storedValue() {
-        return hasWriteVal ? val : null;
-    }
-
-    /**
-     * Used only in serializer.
-     *
-     * @param val Stored value.
-     */
-    public void storedValue(@Nullable CacheObject val) {
-        this.val = val;
-    }
-
-    /**
      * @return Cache operation.
      */
     public GridCacheOperation operation() {
@@ -135,13 +110,6 @@ public class TxEntryValueHolder implements Message {
      */
     public boolean hasWriteValue() {
         return hasWriteVal;
-    }
-
-    /**
-     * @param hasWriteVal Flag indicating that value has been set for write.
-     */
-    public void hasWriteValue(boolean hasWriteVal) {
-        this.hasWriteVal = hasWriteVal;
     }
 
     /**
@@ -175,8 +143,4 @@ public class TxEntryValueHolder implements Message {
         return S.toString(TxEntryValueHolder.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 101;
-    }
 }

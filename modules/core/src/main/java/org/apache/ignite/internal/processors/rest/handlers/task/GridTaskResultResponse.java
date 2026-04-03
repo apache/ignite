@@ -55,20 +55,6 @@ public class GridTaskResultResponse implements Message {
     }
 
     /**
-     * @param resBytes Serialized result.
-     */
-    public void resultBytes(byte[] resBytes) {
-        this.resBytes = resBytes;
-    }
-
-    /**
-     * @return Serialized result.
-     */
-    public byte[] resultBytes() {
-        return resBytes;
-    }
-
-    /**
      * @return {@code true} if finished.
      */
     public boolean finished() {
@@ -108,11 +94,6 @@ public class GridTaskResultResponse implements Message {
      */
     public void error(String err) {
         this.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 77;
     }
 
     /**

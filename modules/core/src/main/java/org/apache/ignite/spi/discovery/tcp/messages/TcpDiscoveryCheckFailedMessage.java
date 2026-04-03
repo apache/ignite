@@ -30,7 +30,7 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** Coordinator version. */
-    @Order(5)
+    @Order(0)
     String err;
 
     /** */
@@ -56,17 +56,6 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
         return err;
     }
 
-    /**
-     * @param err message from coordinator.
-     */
-    public void error(String err) {
-        this.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 0;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -124,11 +124,6 @@ public class IgniteDiagnosticRequest implements Message {
         return nodeId;
     }
 
-    /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
     /**
      * @return Future ID.
      */
@@ -136,25 +131,11 @@ public class IgniteDiagnosticRequest implements Message {
         return futId;
     }
 
-    /** */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
     /** @return Compound diagnostic infos. */
     public @Nullable Set<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
-    /** Sets compound diagnostic infos. */
-    public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
-        this.infos = infos;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -61;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

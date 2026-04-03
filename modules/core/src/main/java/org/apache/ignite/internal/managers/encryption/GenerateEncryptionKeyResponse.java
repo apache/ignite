@@ -62,24 +62,10 @@ public class GenerateEncryptionKeyResponse implements Message {
     }
 
     /**
-     * @param id Request id.
-     */
-    public void requestId(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /**
      * @return Encryption keys.
      */
     public Collection<byte[]> encryptionKeys() {
         return encKeys;
-    }
-
-    /**
-     * @param encKeys Encryption keys.
-     */
-    public void encryptionKeys(Collection<byte[]> encKeys) {
-        this.encKeys = encKeys;
     }
 
     /** @return Master key digest that encrypted group encryption keys. */
@@ -87,17 +73,6 @@ public class GenerateEncryptionKeyResponse implements Message {
         return masterKeyDigest;
     }
 
-    /**
-     * @param masterKeyDigest Master key digest that encrypted group encryption keys.
-     */
-    public void masterKeyDigest(byte[] masterKeyDigest) {
-        this.masterKeyDigest = masterKeyDigest;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 163;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
