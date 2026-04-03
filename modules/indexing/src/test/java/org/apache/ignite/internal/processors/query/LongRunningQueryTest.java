@@ -194,7 +194,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      *
      */
     @Test
-    public void testLongDistributedLazy() {
+    public void testLongDistributed() {
         local = false;
 
         checkLongRunning();
@@ -205,7 +205,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      *
      */
     @Test
-    public void testLongDistributedLazyWithMergeTable() {
+    public void testLongDistributedWithMergeTable() {
         local = false;
 
         withMergeTable = true;
@@ -222,7 +222,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      *
      */
     @Test
-    public void testLongLocalLazy() {
+    public void testLongLocal() {
         local = true;
 
         checkLongRunning();
@@ -330,10 +330,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * the execution of distributed queries.
      */
     @Test
-    public void testDistributedLazyWithExternalWait() {
+    public void testDistributedWithExternalWait() {
         local = false;
 
-        checkLazyWithExternalWait();
+        checkWithExternalWait();
     }
 
     /**
@@ -341,10 +341,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * the execution of local queries.
      */
     @Test
-    public void testlocalLazyWithExternalWait() {
+    public void testLocalWithExternalWait() {
         local = true;
 
-        checkLazyWithExternalWait();
+        checkWithExternalWait();
     }
 
     /**
@@ -652,7 +652,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    public void checkLazyWithExternalWait() {
+    public void checkWithExternalWait() {
         pageSize = 1;
 
         LogListener lsnr = LogListener

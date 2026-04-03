@@ -340,7 +340,6 @@ namespace ignite
 
                     writer.WriteBool(distributedJoins);
                     writer.WriteBool(enforceJoinOrder);
-                    writer.WriteBool(true);     // Lazy flag.
                     writer.WriteInt32(0);       // Timeout, ms
                     writer.WriteBool(false);    // ReplicatedOnly
                     writer.WriteBool(false);    // Colocated

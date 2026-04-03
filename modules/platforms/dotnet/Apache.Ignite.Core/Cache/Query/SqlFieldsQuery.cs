@@ -200,7 +200,6 @@ namespace Apache.Ignite.Core.Cache.Query
 
             writer.WriteBoolean(EnableDistributedJoins);
             writer.WriteBoolean(EnforceJoinOrder);
-            writer.WriteBoolean(true); // Lazy flag.
             writer.WriteInt((int) Timeout.TotalMilliseconds);
 #pragma warning disable 618
             writer.WriteBoolean(ReplicatedOnly);

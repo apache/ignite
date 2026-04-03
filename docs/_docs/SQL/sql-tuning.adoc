@@ -52,10 +52,10 @@ Avoid having too many columns in the result set of a `SELECT` query. Due to limi
 
 == Lazy Loading
 
-Ignite always operates in lazy loading mode. Query results are not loaded entirely into memory — data is streamed to
-the client in pages as the result set is iterated. The page size determines how many rows are fetched per network round
-trip, allowing you to balance memory consumption and performance and eliminating the risk of prolonged GC pauses
-and `OutOfMemoryError` exceptions for large result sets.
+Ignite always operates in lazy loading mode. Query results are not loaded entirely into memory when possible. Data
+is streamed to the client in pages as the result set is iterated. The page size determines how many rows are fetched
+per network round trip, allowing you to balance memory consumption and performance and eliminating the risk of
+prolonged GC pauses and `OutOfMemoryError` exceptions for large result sets.
 
 == Querying Colocated Data
 

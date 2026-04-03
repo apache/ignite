@@ -64,9 +64,6 @@ public class H2QueryInfo implements TrackableQuery {
     /** Join batch enabled (distributed join). */
     private final boolean distributedJoin;
 
-    /** Lazy mode. */
-    private final boolean lazy;
-
     /** Prepared statement. */
     private final Prepared stmt;
 
@@ -108,7 +105,6 @@ public class H2QueryInfo implements TrackableQuery {
 
             enforceJoinOrder = s.isForceJoinOrder();
             distributedJoin = s.isJoinBatchEnabled();
-            lazy = s.isLazyQueryExecution();
             this.stmt = GridSqlQueryParser.prepared(stmt);
         }
         catch (SQLException e) {

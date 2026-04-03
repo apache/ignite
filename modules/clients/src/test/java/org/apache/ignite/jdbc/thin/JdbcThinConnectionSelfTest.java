@@ -453,8 +453,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void assertHints(
-        Connection conn, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean skipReducerOnUpdate, boolean partitionAwarenessEnabled
+        Connection conn,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean skipReducerOnUpdate,
+        boolean partitionAwarenessEnabled
     ) throws Exception {
         for (JdbcThinTcpIo io: ios(conn)) {
             assertEquals(distributedJoins, io.connectionProperties().isDistributedJoins());

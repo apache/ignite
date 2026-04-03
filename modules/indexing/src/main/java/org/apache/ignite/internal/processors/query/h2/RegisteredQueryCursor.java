@@ -68,8 +68,13 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * @param qryId Registered running query id.
      * @param tracing Tracing processor.
      */
-    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
-        long qryId, Tracing tracing) {
+    public RegisteredQueryCursor(
+        Iterable<T> iterExec,
+        GridQueryCancel cancel,
+        RunningQueryManager runningQryMgr,
+        long qryId,
+        Tracing tracing
+    ) {
         super(iterExec, cancel, true);
 
         assert runningQryMgr != null;

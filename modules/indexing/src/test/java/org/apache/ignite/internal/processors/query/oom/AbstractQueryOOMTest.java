@@ -271,7 +271,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     @Test
-    public void testHeavyGroupByPkLazy() throws Exception {
+    public void testHeavyGroupByPk() throws Exception {
         checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true);
     }
 

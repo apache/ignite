@@ -125,8 +125,13 @@ public class FunctionalQueryTest {
      * @param expSize The size of the expected results.
      * @param exp Expected results.
      */
-    private void checkSqlFieldsQuery(ClientCache<Integer, Person> cache, int minId, int pageSize, int expSize,
-        Map<Integer, Person> exp) {
+    private void checkSqlFieldsQuery(
+        ClientCache<Integer, Person> cache,
+        int minId,
+        int pageSize,
+        int expSize,
+        Map<Integer, Person> exp
+    ) {
         SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
             .setArgs(minId)
             .setPageSize(pageSize);
