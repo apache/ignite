@@ -42,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** Extension for column {@value QueryUtils#KEY_FIELD_NAME} in case of composite primary key. */
 class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
-
     /** */
     CacheWrappedKeyIndexImpl(RelCollation collation, String idxName, Index idx, IgniteCacheTable tbl) {
         super(collation, idxName, idx, tbl);
