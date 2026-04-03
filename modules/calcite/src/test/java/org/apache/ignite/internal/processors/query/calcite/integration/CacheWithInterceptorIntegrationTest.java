@@ -75,6 +75,15 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             .setKeyFieldName("id")
             .setValueFieldName("name");
 
+        var entity1 = new QueryEntity()
+            .setTableName("Complex")
+            .setKeyType(Integer.class.getName())
+            .setValueType("ComplexKey")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("val", Integer.class.getName(), null)
+            .setKeyFieldName("id");
+
         var personCfg = new CacheConfiguration<Integer, Object>("person")
             .setAtomicityMode(TRANSACTIONAL)
             .setSqlSchema("PUBLIC")
@@ -113,12 +122,17 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             .setInterceptor(new TestCacheInterceptor(false))
             .setQueryEntities(List.of(entity0));
 
+        var complexCacheCfg = new CacheConfiguration<Integer, Object>("complex")
+            .setAtomicityMode(TRANSACTIONAL)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(List.of(entity1));
+
         var calciteQryEngineCfg = new CalciteQueryEngineConfiguration().setDefault(true);
 
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(calciteQryEngineCfg))
             .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true))
-            .setCacheConfiguration(pureCacheCfg, cityCfg, personCfg, personAtomicCfg);
+            .setCacheConfiguration(pureCacheCfg, cityCfg, personCfg, personAtomicCfg, complexCacheCfg);
     }
 
     /** Test object unwrapped on interceptor side if applicable. */
@@ -138,6 +152,10 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             cache.query(new SqlFieldsQuery("UPDATE PURE SET name = '' WHERE id = 1")).getAll();
             cache.query(new SqlFieldsQuery("DELETE FROM PURE WHERE id = 1")).getAll();
 
+            cache.query(new SqlFieldsQuery("INSERT INTO COMPLEX(id, name) VALUES (1, 'val')")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE COMPLEX SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("DELETE FROM COMPLEX WHERE id = 1")).getAll();
+
             cache.query(new SqlFieldsQuery("INSERT INTO CITY(id, name) VALUES (1, 'val')")).getAll();
             cache.query(new SqlFieldsQuery("UPDATE CITY SET name = '' WHERE id = 1")).getAll();
             cache.query(new SqlFieldsQuery("DELETE FROM CITY WHERE id = 1")).getAll();
@@ -152,6 +170,10 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
         cache.query(new SqlFieldsQuery("INSERT INTO PURE(id, name) VALUES (1, 'val')")).getAll();
         cache.query(new SqlFieldsQuery("UPDATE PURE SET name = '' WHERE id = 1")).getAll();
         cache.query(new SqlFieldsQuery("DELETE FROM PURE WHERE id = 1")).getAll();
+
+        cache.query(new SqlFieldsQuery("INSERT INTO COMPLEX(id, name) VALUES (1, 'val')")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE COMPLEX SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM COMPLEX WHERE id = 1")).getAll();
 
         cache.query(new SqlFieldsQuery("INSERT INTO CITY(id, name) VALUES (1, 'val')")).getAll();
         cache.query(new SqlFieldsQuery("UPDATE CITY SET name = '' WHERE id = 1")).getAll();
