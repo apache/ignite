@@ -21,7 +21,11 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSlot;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -51,7 +55,8 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
         RelDataType rowType,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        if (cond == null)
+        // Return the boundaries only if the _key = ?.
+        if (!matchByCondition(cond))
             return null; // Empty index find predicate.
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
@@ -93,5 +98,23 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
     /** */
     @Override protected CacheIndexImpl copy(IgniteCacheTable newTbl, RelCollation newCollation) {
         return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
+    }
+
+    /** */
+    private static boolean matchByCondition(@Nullable RexNode cond) {
+        if (cond == null || !cond.isA(SqlKind.EQUALS))
+            return false;
+
+        RexCall cond1 = (RexCall) cond;
+
+        return matchByEqOperand(cond1.getOperands().get(0)) || matchByEqOperand(cond1.getOperands().get(1));
+    }
+
+    /** */
+    private static boolean matchByEqOperand(@Nullable RexNode n) {
+        if (!(n instanceof RexLocalRef))
+            return false;
+
+        return ((RexSlot) n).getIndex() == QueryUtils.KEY_COL;
     }
 }

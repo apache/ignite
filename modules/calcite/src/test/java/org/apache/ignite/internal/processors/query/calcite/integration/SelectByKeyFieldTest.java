@@ -83,6 +83,38 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testCompositePkSearchByPartOfKEy() {
+        sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
+
+        for (int i = 0; i < 10; i++) {
+            sql(
+                "insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)",
+                i, "foo" + i, "bar" + i, 18 + i
+            );
+        }
+
+        List<List<?>> sqlRs = sql("select _key, id, name from PUBLIC.PERSON order by id");
+        BinaryObject _key = (BinaryObject)sqlRs.get(6).get(0);
+        int id = (Integer)sqlRs.get(6).get(1);
+        String name = (String)sqlRs.get(6).get(2);
+
+        assertQuery("select id, name, age, _key from PUBLIC.PERSON where id = ?")
+            .withParams(id)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(id, name, 24, _key)
+            .check();
+
+        assertQuery("select id, name, age, _key from PUBLIC.PERSON where name = ?")
+            .withParams(name)
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .returns(id, name, 24, _key)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testCompositePkAfterAddColumn() {
         checkCompositePk(false, true, this::executeAlterTableAddColumn);
     }
