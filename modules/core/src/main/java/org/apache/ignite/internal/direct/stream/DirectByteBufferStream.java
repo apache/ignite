@@ -367,6 +367,9 @@ public class DirectByteBufferStream {
     /** */
     final GridKernalContext ctx;
 
+    /** */
+    private final CacheObjectContext fakeCacheObjectCtx;
+
     /**
      * Constructror for stream used for reading messages.
      *
@@ -377,6 +380,8 @@ public class DirectByteBufferStream {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
         this.ctx = ctx;
+
+        fakeCacheObjectCtx = new CacheObjectContext(ctx, null, null, false, false, false, false);
     }
 
     /**
@@ -2351,36 +2356,39 @@ public class DirectByteBufferStream {
 
     /** */
     private CacheObjectContext setContext(Message msg) {
-        GridCacheContext<?, ?> gcctx = null;
+        CacheObjectContext coCtx = null;
 
-        if (msg instanceof GridCacheIdMessage) {
-            int cacheId = ((GridCacheIdMessage)msg).cacheId();
-        
-            if (cacheId != CU.UNDEFINED_CACHE_ID)
-                gcctx = ctx.cache().context().cacheContext(cacheId);
-        }
+        if (msg instanceof GridCacheIdMessage)
+            coCtx = resolveContext(((GridCacheIdMessage)msg).cacheId());
 
-        if (msg instanceof GridCacheGroupIdMessage) {
-            int grpId = ((GridCacheGroupIdMessage)msg).groupId();
+        if (msg instanceof GridCacheGroupIdMessage)
+            coCtx = resolveContext(((GridCacheGroupIdMessage)msg).groupId());
 
-            if (grpId != CU.UNDEFINED_CACHE_ID)
-                gcctx = ctx.cache().context().cacheContext(grpId);
-        }
-        
         boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
 
-        if (gcctx != null || skipMarsh) {
+        if (coCtx != null || skipMarsh) {
             if (coCtxs.get() == null)
                 coCtxs.set(new ArrayList<>());
 
-            CacheObjectContext coCtx = skipMarsh ? NULL_CACHE_CTX : gcctx.cacheObjectContext();
-
-            coCtxs.get().add(coCtx);
+            coCtxs.get().add(skipMarsh ? NULL_CACHE_CTX : coCtx);
 
             return coCtx;
         }
         
         return null;
+    }
+
+    private CacheObjectContext resolveContext(int cacheId) {
+        if (cacheId != CU.UNDEFINED_CACHE_ID) {
+            GridCacheContext<?, ?> gcCtx = ctx.cache().context().cacheContext(cacheId);
+
+            if (gcCtx == null)
+                return fakeCacheObjectCtx; // Cache was removed. Avoiding failure. Should be handled by message handler.
+            else
+                return gcCtx.cacheObjectContext();
+        }
+        else
+            return null;
     }
 
     /** */
@@ -2392,9 +2400,6 @@ public class DirectByteBufferStream {
     /** */
     private CacheObjectContext context() {
         List<CacheObjectContext> list = coCtxs.get();
-        
-        if (list == null || list.isEmpty())
-            return null;
 
         CacheObjectContext cand = list.get(list.size() - 1);
 
