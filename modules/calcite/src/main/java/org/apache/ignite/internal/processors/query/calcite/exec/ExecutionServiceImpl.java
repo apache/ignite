@@ -886,12 +886,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
 
             boolean keepBinaryMode = msg.keepBinaryMode();
-            QueryProperties queryProps = new QueryProperties(null, keepBinaryMode, false);
+            QueryProperties qryProps = new QueryProperties(null, keepBinaryMode, false);
 
             final BaseQueryContext qctx = createQueryContext(
                 msg.applicationAttributes() == null ?
-                    Contexts.of(queryProps) :
-                    Contexts.of(new SessionContextImpl(msg.applicationAttributes()), queryProps),
+                    Contexts.of(qryProps) :
+                    Contexts.of(new SessionContextImpl(msg.applicationAttributes()), qryProps),
                 msg.schema());
 
             FragmentPlan fragmentPlan = fragmentPlanCache.computeIfAbsent(msg.root(), k -> prepareFragment(qctx, k));
