@@ -121,13 +121,13 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         List<List<?>> sqlRs = sql("select id, name, age, _key from PUBLIC.PERSON");
         sqlRs.sort((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3)));
 
-        QueryChecker queryChecker = assertQuery("select id, name, age, _key from PUBLIC.PERSON order by _key")
+        QueryChecker qryChecker = assertQuery("select id, name, age, _key from PUBLIC.PERSON order by _key")
             .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
 
-        sqlRs.forEach(objects -> queryChecker.returns(objects.toArray(Object[]::new)));
+        sqlRs.forEach(objects -> qryChecker.returns(objects.toArray(Object[]::new)));
 
-        queryChecker.check();
+        qryChecker.check();
     }
 
     /** */
@@ -295,19 +295,19 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
                 continue;
 
             List<List<?>> expRows = sqlRs.stream()
-                .filter(objects -> cmpOp.expRowByKeyPred.test((BinaryObjectImpl) objects.get(3), _key8))
+                .filter(objects -> cmpOp.expRowByKeyPred.test((BinaryObjectImpl)objects.get(3), _key8))
                 .collect(toList());
 
-            QueryChecker queryChecker = assertQuery(String.format(
+            QueryChecker qryChecker = assertQuery(String.format(
                 "select id, name, age, _key from PUBLIC.PERSON where _key %s ?", cmpOp.sql
             ))
                 .withParams(useBinaryObject ? _key8 : _key8.deserialize())
                 .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
                 .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
 
-            expRows.forEach(objects -> queryChecker.returns(objects.toArray(Object[]::new)));
+            expRows.forEach(objects -> qryChecker.returns(objects.toArray(Object[]::new)));
 
-            queryChecker.check();
+            qryChecker.check();
         }
     }
 

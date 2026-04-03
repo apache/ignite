@@ -109,7 +109,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
                 RelCollation keyFieldCollation = null;
                 if (idx instanceof CacheWrappedKeyIndexImpl)
-                    keyFieldCollation = ((CacheWrappedKeyIndexImpl) idx).keyFieldCollation();
+                    keyFieldCollation = ((CacheWrappedKeyIndexImpl)idx).keyFieldCollation();
 
                 return new IgniteIndexScan(
                     cluster,

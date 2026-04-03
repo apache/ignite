@@ -67,7 +67,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
             sourceId = -1;
 
         if (input.get("keyFieldCollation") != null)
-            keyFieldCollation = ((RelInputEx) input).getCollation("keyFieldCollation");
+            keyFieldCollation = ((RelInputEx)input).getCollation("keyFieldCollation");
         else
             keyFieldCollation = null;
     }

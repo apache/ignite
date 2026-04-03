@@ -98,8 +98,10 @@ public class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
     }
 
     /** */
-    @Override
-    protected CacheIndexImpl copyWithNewTableAndCollation(IgniteCacheTable newTbl, RelCollation newCollation) {
+    @Override protected CacheIndexImpl copyWithNewTableAndCollation(
+        IgniteCacheTable newTbl,
+        RelCollation newCollation
+    ) {
         return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
     }
 
