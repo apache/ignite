@@ -220,11 +220,6 @@ public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionCo
             params = U.unmarshal(ctx, paramsBytes, ldr);
 
         fragmentDesc.prepareUnmarshal(ctx);
-
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.prepareUnmarshal(ctx, ldr);
-        }
     }
 
     /** {@inheritDoc} */
