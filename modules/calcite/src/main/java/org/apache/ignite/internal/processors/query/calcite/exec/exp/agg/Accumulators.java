@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.binary.BinaryUtils;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
@@ -234,7 +235,8 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
+            case OTHER:
+                return () -> new AnyMinMax<>(call, hnd, true);
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, true);
@@ -263,7 +265,8 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
+            case OTHER:
+                return () -> new AnyMinMax<>(call, hnd, false);
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, false);
@@ -1182,6 +1185,85 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeSupplier.apply(typeFactory);
+        }
+    }
+
+    /** */
+    private static class AnyMinMax<Row> extends AbstractAccumulator<Row> {
+        /** */
+        private final boolean min;
+
+        /** */
+        private Object val;
+
+        /** */
+        private boolean empty = true;
+
+        /** */
+        private AnyMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
+            super(aggCall, hnd);
+
+            this.min = min;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            Object in = get(0, row);
+
+            if (in == null)
+                return;
+
+            if (empty) {
+                val = in;
+                empty = false;
+                return;
+            }
+
+            int cmp = compare(val, in);
+            if ((min && cmp > 0) || (!min && cmp < 0))
+                val = in;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            AnyMinMax<Row> other0 = (AnyMinMax<Row>)other;
+
+            if (other0.empty)
+                return;
+
+            if (empty) {
+                val = other0.val;
+                empty = false;
+                return;
+            }
+
+            int cmp = compare(val, other0.val);
+            if ((min && cmp > 0) || (!min && cmp < 0))
+                val = other0.val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return empty ? null : val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(aggregateCall().getType(), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(aggregateCall().getType(), true);
+        }
+
+        /** */
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private int compare(Object a, Object b) {
+            if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
+                return BinaryUtils.binariesFactory.compareForDml(a, b);
+
+            return ((Comparable)a).compareTo(b);
         }
     }
 

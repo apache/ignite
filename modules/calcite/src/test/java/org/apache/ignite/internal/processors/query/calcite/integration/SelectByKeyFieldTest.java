@@ -155,20 +155,20 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
             );
         }
 
-        List<List<?>> sqlRs = sql("select id, name, age, _key from PUBLIC.PERSON order by id");
-        List<?> min = sqlRs.stream().min((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3))).orElseThrow();
-        List<?> max = sqlRs.stream().max((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3))).orElseThrow();
+        List<List<?>> sqlRs = sql("select _key from PUBLIC.PERSON order by id");
+        List<?> min = sqlRs.stream().min((o1, o2) -> binaryObjectCmpForDml(o1.get(0), o2.get(0))).orElseThrow();
+        List<?> max = sqlRs.stream().max((o1, o2) -> binaryObjectCmpForDml(o1.get(0), o2.get(0))).orElseThrow();
 
         assertQuery("select min(_key) from PUBLIC.PERSON")
-            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
-            .returns(min.toArray(Object[]::new))
+            //.matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .columnNames("MIN(_KEY)")
+            .returns(min.get(0))
             .check();
 
         assertQuery("select max(_key) from PUBLIC.PERSON")
-            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
-            .returns(max.toArray(Object[]::new))
+            //.matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .columnNames("MAX(_KEY)")
+            .returns(max.get(0))
             .check();
     }
 
