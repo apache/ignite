@@ -1251,29 +1251,29 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 GridCacheEntryEx entry = entryEx(cacheCtx, txKey, entryTopVer != null ? entryTopVer : topologyVersion());
 
                 try {
-                    entry.unswap(false);
-
-                    // Check if lock is being explicitly acquired by the same thread.
-                    if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
-                        entry.lockedByThread(threadId, xidVer)) {
-                        throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
-                            "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
-                            ", entry=" + entry +
-                            ", xidVer=" + xidVer +
-                            ", threadId=" + threadId +
-                            ", locNodeId=" + cctx.localNodeId() + ']');
-                    }
-
                     CacheObject old = null;
                     GridCacheVersion readVer = null;
 
-                    if (optimistic() && !implicit()) {
-                        try {
-                            if (needReadVer) {
-                                if (primaryLocal(entry)) {
-                                    cctx.database().checkpointReadLock();
+                    cctx.database().checkpointReadLock();
 
-                                    try {
+                    try {
+                        entry.unswap(false);
+
+                        // Check if lock is being explicitly acquired by the same thread.
+                        if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
+                            entry.lockedByThread(threadId, xidVer)) {
+                            throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
+                                "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
+                                ", entry=" + entry +
+                                ", xidVer=" + xidVer +
+                                ", threadId=" + threadId +
+                                ", locNodeId=" + cctx.localNodeId() + ']');
+                        }
+
+                        if (optimistic() && !implicit()) {
+                            try {
+                                if (needReadVer) {
+                                    if (primaryLocal(entry)) {
                                         EntryGetResult res = entry.innerGetVersioned(
                                             null,
                                             this,
@@ -1290,15 +1290,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             readVer = res.version();
                                         }
                                     }
-                                    finally {
-                                        cctx.database().checkpointReadUnlock();
-                                    }
                                 }
-                            }
-                            else {
-                                cctx.database().checkpointReadLock();
-
-                                try {
+                                else {
                                     old = entry.innerGet(
                                         null,
                                         this,
@@ -1310,19 +1303,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         null,
                                         keepBinary);
                                 }
-                                finally {
-                                    cctx.database().checkpointReadUnlock();
-                                }
+                            }
+                            catch (ClusterTopologyCheckedException e) {
+                                entry.touch();
+
+                                throw e;
                             }
                         }
-                        catch (ClusterTopologyCheckedException e) {
-                            entry.touch();
-
-                            throw e;
-                        }
+                        else
+                            old = entry.rawGet();
+                    } finally {
+                        cctx.database().checkpointReadUnlock();
                     }
-                    else
-                        old = entry.rawGet();
 
                     final GridCacheOperation op = rmv ? DELETE :
                         entryProc != null ? TRANSFORM : old != null ? UPDATE : CREATE;
