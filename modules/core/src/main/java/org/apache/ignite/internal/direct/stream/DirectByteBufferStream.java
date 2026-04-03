@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -2352,11 +2353,19 @@ public class DirectByteBufferStream {
     private CacheObjectContext setContext(Message msg) {
         GridCacheContext<?, ?> gcctx = null;
 
-        if (msg instanceof GridCacheIdMessage)
-            gcctx = ctx.cache().context().cacheContext(((GridCacheIdMessage)msg).cacheId);
+        if (msg instanceof GridCacheIdMessage) {
+            int cacheId = ((GridCacheIdMessage)msg).cacheId();
+        
+            if (cacheId != CU.UNDEFINED_CACHE_ID)
+                gcctx = ctx.cache().context().cacheContext(cacheId);
+        }
 
-        if (msg instanceof GridCacheGroupIdMessage)
-            gcctx = ctx.cache().context().cacheContext(((GridCacheGroupIdMessage)msg).grpId);
+        if (msg instanceof GridCacheGroupIdMessage) {
+            int groupId = ((GridCacheGroupIdMessage)msg).groupId();
+
+            if (groupId != CU.UNDEFINED_CACHE_ID)
+                gcctx = ctx.cache().context().cacheContext(groupId);
+        }
         
         boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
 
