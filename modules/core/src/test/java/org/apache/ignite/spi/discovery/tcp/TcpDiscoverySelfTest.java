@@ -833,7 +833,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
-fix
+
     /**
      * @throws Exception If any error occurs.
      */
