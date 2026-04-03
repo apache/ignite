@@ -135,17 +135,9 @@ public class CacheIndexImpl implements IgniteIndex {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        RelCollation collation = this.collation;
         RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
 
-        if (requiredColumns != null)
-            collation = collation.apply(Commons.mapping(requiredColumns, rowType.getFieldCount()));
-
-        if (!collation.getFieldCollations().isEmpty())
-            return buildSearchBounds(cluster, collation, cond, rowType, requiredColumns);
-
-        // Empty index find predicate.
-        return null;
+        return buildSearchBounds(cluster, cond, rowType, requiredColumns);
     }
 
     /** {@inheritDoc} */
@@ -180,20 +172,18 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    protected List<SearchBounds> buildSearchBounds(
+    protected @Nullable List<SearchBounds> buildSearchBounds(
         RelOptCluster cluster,
-        RelCollation collation,
         @Nullable RexNode cond,
         RelDataType rowType,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return RexUtils.buildSortedSearchBounds(
-            cluster,
-            collation,
-            cond,
-            rowType,
-            requiredColumns
-        );
+        RelCollation collation = mapByRequireColumns(this.collation, rowType, requiredColumns);
+
+        if (collation.getFieldCollations().isEmpty())
+            return null; // Empty index find predicate.
+
+        return RexUtils.buildSortedSearchBounds(cluster, collation, cond, rowType, requiredColumns);
     }
 
     /** */
@@ -235,5 +225,22 @@ public class CacheIndexImpl implements IgniteIndex {
     /** */
     protected CacheIndexImpl copyWithNewTable(IgniteCacheTable newTbl) {
         return new CacheIndexImpl(collation, idxName, idx, newTbl);
+    }
+
+    /** */
+    protected CacheIndexImpl copyWithNewTableAndCollation(IgniteCacheTable newTbl, RelCollation newCollation) {
+        return new CacheIndexImpl(collation, idxName, idx, newTbl);
+    }
+
+    /** */
+    static RelCollation mapByRequireColumns(
+        RelCollation collation,
+        RelDataType rowType,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        if (requiredColumns != null)
+            collation = collation.apply(Commons.mapping(requiredColumns, rowType.getFieldCount()));
+
+        return collation;
     }
 }

@@ -20,56 +20,46 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
-import org.apache.ignite.internal.processors.query.calcite.exec.IndexWrappedKeyFirstLastScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexWrappedKeyScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
 
 /** Extension for column {@value QueryUtils#KEY_FIELD_NAME} in case of composite primary key. */
 class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
     /** */
-    private final RelCollation targetCollation;
+    private final RelCollation keyFieldCollation;
 
     /** */
-    CacheWrappedKeyIndexImpl(
-        RelCollation collation,
-        String idxName,
-        Index idx,
-        IgniteCacheTable tbl,
-        RelCollation targetCollation
-    ) {
+    CacheWrappedKeyIndexImpl(RelCollation collation, String idxName, Index idx, IgniteCacheTable tbl) {
         super(collation, idxName, idx, tbl);
 
-        this.targetCollation = targetCollation;
+        keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
     }
 
     /** */
-    RelCollation targetCollation() {
-        return targetCollation;
-    }
-
-    /** */
-    @Override protected List<SearchBounds> buildSearchBounds(
+    @Override protected @Nullable List<SearchBounds> buildSearchBounds(
         RelOptCluster cluster,
-        RelCollation collation,
         @Nullable RexNode cond,
         RelDataType rowType,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        if (cond == null)
-            return null;
+        if (cond == null ||
+            mapByRequireColumns(keyFieldCollation, rowType, requiredColumns).getFieldCollations().isEmpty())
+            return null; // Empty index find predicate.
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
     }
@@ -85,7 +75,7 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
             ectx,
             tbl.descriptor(),
             idx.unwrap(InlineIndex.class),
-            targetCollation.getKeys(),
+            collation.getKeys(),
             grp.partitions(ectx.localNodeId()),
             ranges,
             requiredColumns
@@ -99,19 +89,31 @@ class CacheWrappedKeyIndexImpl extends CacheIndexImpl {
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return new IndexWrappedKeyFirstLastScan<>(
-            ectx,
-            tbl.descriptor(),
-            idx.unwrap(InlineIndexImpl.class),
-            targetCollation.getKeys(),
-            grp.partitions(ectx.localNodeId()),
-            requiredColumns,
-            first
-        );
+        throw new IgniteException(String.format("Should not be created for wrappped %s index", QueryUtils.KEY_FIELD_NAME));
     }
 
     /** */
     @Override protected CacheIndexImpl copyWithNewTable(IgniteCacheTable newTbl) {
-        return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl, targetCollation);
+        return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
+    }
+
+    @Override
+    protected CacheIndexImpl copyWithNewTableAndCollation(IgniteCacheTable newTbl, RelCollation newCollation) {
+        return new CacheWrappedKeyIndexImpl(collation, idxName, idx, newTbl);
+    }
+
+    /** */
+    private static RelCollation deriveKeyFieldIndexCollation(IgniteCacheTable tbl) {
+        ColumnDescriptor desc = tbl.descriptor().columnDescriptor(QueryUtils.KEY_FIELD_NAME);
+        assert desc != null : String.format(
+            "cacheName=%s, schemaName=%s, tableName=%s",
+            tbl.descriptor().typeDescription().cacheName(),
+            tbl.descriptor().typeDescription().schemaName(),
+            tbl.descriptor().typeDescription().tableName()
+        );
+
+        int fieldIdx = desc.fieldIndex();
+
+        return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));
     }
 }

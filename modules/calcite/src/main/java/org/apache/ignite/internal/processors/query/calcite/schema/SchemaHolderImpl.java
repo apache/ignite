@@ -238,23 +238,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         Mappings.TargetMapping mapping = Commons.mapping(retainedCols.build(), colsCnt);
 
         for (IgniteIndex idx : oldTbl.indexes().values()) {
-            if (idx instanceof CacheWrappedKeyIndexImpl) {
-                CacheWrappedKeyIndexImpl idx0 = (CacheWrappedKeyIndexImpl)idx;
+            CacheIndexImpl idx0 = (CacheIndexImpl)idx;
 
-                RelCollation newKeyFieldCollation = deriveKeyFieldIndexCollation(newTbl);
-                RelCollation newCollation = RelCollations.permute(idx0.targetCollation(), mapping);
+            RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
 
-                newTbl.addIndex(new CacheWrappedKeyIndexImpl(
-                    newKeyFieldCollation, idx0.name(), idx0.queryIndex(), newTbl, newCollation
-                ));
-            }
-            else {
-                CacheIndexImpl idx0 = (CacheIndexImpl)idx;
-
-                RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
-
-                newTbl.addIndex(new CacheIndexImpl(newCollation, idx0.name(), idx0.queryIndex(), newTbl));
-            }
+            newTbl.addIndex(idx0.copyWithNewTableAndCollation(newTbl, newCollation));
         }
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
@@ -322,10 +310,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         // For a composite PK index, we need to create another proxy index that will expand the passed boundaries into
         // index keys for BinaryObject/Key classes. That is, _key -> idx_field_0, idx_field_1, etc.
         if (idxDesc.isPk() && idxDesc.isComposite()) {
-            RelCollation keyFieldCollation = deriveKeyFieldIndexCollation(tbl);
-
             tbl.addIndex(new CacheWrappedKeyIndexImpl(
-                keyFieldCollation, SchemaManager.generateProxyIdxName(idxName), idxDesc.index(), tbl, idxCollation
+                RelCollations.EMPTY, SchemaManager.generateProxyIdxName(idxName), idxDesc.index(), tbl
             ));
         }
     }
@@ -493,20 +479,5 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             schema.register(newCalciteSchema, frameworkCfg);
 
         calciteSchema = newCalciteSchema;
-    }
-
-    /** */
-    private static RelCollation deriveKeyFieldIndexCollation(IgniteCacheTable tbl) {
-        ColumnDescriptor desc = tbl.descriptor().columnDescriptor(QueryUtils.KEY_FIELD_NAME);
-        assert desc != null : String.format(
-            "cacheName=%s, schemaName=%s, tableName=%s",
-            tbl.descriptor().typeDescription().cacheName(),
-            tbl.descriptor().typeDescription().schemaName(),
-            tbl.descriptor().typeDescription().tableName()
-        );
-
-        int fieldIdx = desc.fieldIndex();
-
-        return RelCollations.of(List.of(TraitUtils.createFieldCollation(fieldIdx, true)));
     }
 }

@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
@@ -121,6 +122,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -407,8 +409,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, inputRowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, inputRowType);
+
+        // TODO: IGNITE-28331 Вроде послденее что надо исправить
+        RelCollation collation1 = rel.collation();
+        if (SchemaManager.generateProxyIdxName(QueryUtils.PRIMARY_KEY_INDEX).equals(rel.indexName()))
+            collation1 = RelCollations.of(QueryUtils.KEY_COL);
+
         RangeIterable<Row> ranges = searchBounds == null ? null :
-            expressionFactory.ranges(searchBounds, rel.collation(), tbl.getRowType(typeFactory));
+            expressionFactory.ranges(searchBounds, collation1, tbl.getRowType(typeFactory));
 
         ColocationGroup grp = ctx.group(rel.sourceId());
 
@@ -443,7 +451,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             Node<Row> node = createStorageScan(tbl.name(), rowType, inputRowType, rowsIter,
                 filterHasCorrelation ? null : filters, projNodeRequired ? null : prj, requiredColumns, rel.conditionColumns());
 
-            RelCollation collation = rel.collation();
+            RelCollation collation = collation1;
 
             if ((!spoolNodeRequired && projects != null) || requiredColumns != null) {
                 collation = collation.apply(LogicalScanConverterRule.createMapping(

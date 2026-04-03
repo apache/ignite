@@ -122,7 +122,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         sqlRs.sort((o1, o2) -> binaryObjectCmpForDml(o1.get(3), o2.get(3)));
 
         QueryChecker queryChecker = assertQuery("select id, name, age, _key from PUBLIC.PERSON order by _key")
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
             .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
 
         sqlRs.forEach(objects -> queryChecker.returns(objects.toArray(Object[]::new)));
@@ -160,13 +160,13 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         List<?> max = sqlRs.stream().max((o1, o2) -> binaryObjectCmpForDml(o1.get(0), o2.get(0))).orElseThrow();
 
         assertQuery("select min(_key) from PUBLIC.PERSON")
-            //.matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
             .columnNames("MIN(_KEY)")
             .returns(min.get(0))
             .check();
 
         assertQuery("select max(_key) from PUBLIC.PERSON")
-            //.matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
             .columnNames("MAX(_KEY)")
             .returns(max.get(0))
             .check();
