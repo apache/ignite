@@ -724,7 +724,7 @@ public class MessageSerializerGenerator {
         String descName = field.getSimpleName() + "CollDesc";
         String typeName = desc.substring(desc.indexOf(' ') + 1, desc.indexOf('('));
 
-        fields.add("private final static " + typeName + " " + descName + " = " + desc + ";");
+        fields.add("private static final " + typeName + " " + descName + " = " + desc + ";");
 
         return descName;
     }
