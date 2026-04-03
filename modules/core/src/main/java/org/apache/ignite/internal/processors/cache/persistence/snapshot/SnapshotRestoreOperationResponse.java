@@ -85,9 +85,4 @@ public class SnapshotRestoreOperationResponse implements MarshallableMessage {
         if (metasBytes != null)
             metas = U.unmarshal(marsh, metasBytes, clsLdr);
     }
-    
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 525;
-    }
 }

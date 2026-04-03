@@ -33,15 +33,12 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class IgniteDhtPartitionHistorySuppliersMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 510;
-
     /** */
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** */
     @Order(0)
-    Map<UUID, PartitionReservationsMap> map;
+    Map<UUID, Map<GroupPartitionIdPair, Long>> map;
 
     /**
      * @return Empty map.
@@ -62,7 +59,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
 
         List<UUID> suppliers = new ArrayList<>();
 
-        for (Map.Entry<UUID, PartitionReservationsMap> e : map.entrySet()) {
+        for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> e : map.entrySet()) {
             UUID supplierNode = e.getKey();
 
             Long historyCounter = e.getValue().get(new GroupPartitionIdPair(grpId, partId));
@@ -78,7 +75,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
      * @param nodeId Node ID to check.
      * @return Reservations for the given node.
      */
-    @Nullable public synchronized PartitionReservationsMap getReservations(UUID nodeId) {
+    @Nullable public synchronized Map<GroupPartitionIdPair, Long> getReservations(UUID nodeId) {
         if (map == null)
             return null;
 
@@ -95,7 +92,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
         if (map == null)
             map = new HashMap<>();
 
-        PartitionReservationsMap nodeMap = map.computeIfAbsent(nodeId, k -> new PartitionReservationsMap());
+        Map<GroupPartitionIdPair, Long> nodeMap = map.computeIfAbsent(nodeId, k -> new HashMap<>());
 
         nodeMap.put(new GroupPartitionIdPair(grpId, partId), cntr);
     }
@@ -119,8 +116,4 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
         return S.toString(IgniteDhtPartitionHistorySuppliersMap.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

@@ -51,10 +51,6 @@ public class GridH2Double extends GridH2ValueMessage {
         return ValueDouble.get(x);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -11;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

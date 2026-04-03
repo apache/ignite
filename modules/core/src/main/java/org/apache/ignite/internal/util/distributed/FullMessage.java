@@ -119,10 +119,6 @@ public class FullMessage<R extends Message> implements DiscoveryCustomMessage, M
         return err == null ? null : F.viewReadOnly(err, e -> e.error());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 30;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

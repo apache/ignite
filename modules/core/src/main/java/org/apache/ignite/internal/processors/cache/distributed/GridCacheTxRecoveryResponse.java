@@ -73,46 +73,19 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         this.addDepInfo = addDepInfo;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public IgniteUuid miniId() {
         return miniId;
     }
 
-    /**
-     * @param miniId Mini future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
-     * @return {@code True} if all remote transactions were prepared.
-     */
+    /** @return {@code True} if all remote transactions were prepared. */
     public boolean success() {
         return success;
-    }
-
-    /**
-     * @param success {@code True} if all remote transactions were prepared.
-     */
-    public void success(boolean success) {
-        this.success = success;
     }
 
     /** {@inheritDoc} */
@@ -130,10 +103,6 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         return ctx.txRecoveryMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 17;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

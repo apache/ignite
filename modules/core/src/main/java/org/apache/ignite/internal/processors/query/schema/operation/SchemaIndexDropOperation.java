@@ -72,8 +72,4 @@ public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
         return S.toString(SchemaIndexDropOperation.class, this, "parent", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -113;
-    }
 }

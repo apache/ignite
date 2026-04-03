@@ -55,8 +55,4 @@ public class GridQueryCancelRequest implements Message {
         return S.toString(GridQueryCancelRequest.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 106;
-    }
 }

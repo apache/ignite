@@ -313,14 +313,18 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
 
     /**
      * @return Lazy query execution flag.
+     * @deprecated Use query page size property instead.
      */
+    @Deprecated(forRemoval = true)
     public boolean isLazy() {
         return props.isLazy();
     }
 
     /**
      * @param lazy Lazy query execution flag.
+     * @deprecated Use query page size property instead.
      */
+    @Deprecated(forRemoval = true)
     public void setLazy(boolean lazy) {
         props.setLazy(lazy);
     }

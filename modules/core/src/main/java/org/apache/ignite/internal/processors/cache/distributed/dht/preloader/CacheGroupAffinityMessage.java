@@ -241,10 +241,6 @@ public class CacheGroupAffinityMessage implements Message {
         return assignsDiff;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 128;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

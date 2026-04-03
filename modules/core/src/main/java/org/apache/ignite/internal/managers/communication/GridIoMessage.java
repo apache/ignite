@@ -179,10 +179,6 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
         throw new AssertionError();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 8;
-    }
 
     /** {@inheritDoc} */
     @Override public void span(byte[] span) {

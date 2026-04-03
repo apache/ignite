@@ -830,10 +830,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     req.cacheId(),
                     req.futureId(),
-                    req.miniId()
+                    req.miniId(),
+                    req.classError()
                 );
-
-                res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }

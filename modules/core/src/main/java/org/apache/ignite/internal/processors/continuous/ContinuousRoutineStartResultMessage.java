@@ -86,10 +86,6 @@ public class ContinuousRoutineStartResultMessage implements Message {
         return errMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 134;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

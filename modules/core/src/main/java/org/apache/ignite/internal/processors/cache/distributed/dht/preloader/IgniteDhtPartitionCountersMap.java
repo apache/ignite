@@ -27,9 +27,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Partition counters map.
  */
 public class IgniteDhtPartitionCountersMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 507;
-
     /** */
     @Order(0)
     Map<Integer, CachePartitionFullCountersMap> map;
@@ -59,8 +56,4 @@ public class IgniteDhtPartitionCountersMap implements Message {
         return cntrMap;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

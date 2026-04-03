@@ -76,10 +76,6 @@ public class UserAuthenticateRequestMessage implements Message {
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 131;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

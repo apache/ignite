@@ -74,10 +74,6 @@ public class GridH2Geometry extends GridH2ValueMessage {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -21;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -136,10 +136,5 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         return S.toString(GridH2DmlResponse.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -56;
-    }
-
 }
 

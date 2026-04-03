@@ -244,10 +244,6 @@ public class GridByteArrayList implements Message, Externalizable {
         in.readFully(data, 0, size);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 84;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

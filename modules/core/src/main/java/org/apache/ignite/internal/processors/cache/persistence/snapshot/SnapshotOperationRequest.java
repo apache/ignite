@@ -151,10 +151,6 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         return configOnly;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 34;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

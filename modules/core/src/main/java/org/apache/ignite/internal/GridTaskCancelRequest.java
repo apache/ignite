@@ -54,10 +54,6 @@ public class GridTaskCancelRequest implements Message {
         return sesId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 5;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

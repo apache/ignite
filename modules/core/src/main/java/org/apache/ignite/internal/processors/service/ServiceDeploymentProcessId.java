@@ -76,10 +76,6 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
         return reqId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 167;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

@@ -233,10 +233,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
         return Integer.compare(nodeOrder(), other.nodeOrder());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 86;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

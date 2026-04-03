@@ -26,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Query kill response.
  */
 public class GridQueryKillResponse implements Message {
-    /** */
-    public static final short TYPE_CODE = 173;
-
     /** Error text. */
     @Order(0)
     String errMsg;
@@ -67,10 +64,6 @@ public class GridQueryKillResponse implements Message {
         return errMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
