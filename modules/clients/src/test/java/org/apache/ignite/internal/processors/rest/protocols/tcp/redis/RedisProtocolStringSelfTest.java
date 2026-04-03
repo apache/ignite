@@ -26,6 +26,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.jedis.params.SetParams;
 
 /**
  * Tests for String commands of Redis protocol.
@@ -188,14 +189,14 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("b0", jcache().get("setKey2"));
 
             // test options.
-            jedis.set("setKey1", "2", "nx");
-            jedis.set("setKey3", "3", "nx", "px", EXPIRE_MS);
+            jedis.set("setKey1", "2", SetParams.setParams().nx());
+            jedis.set("setKey3", "3", SetParams.setParams().nx().px(EXPIRE_MS));
 
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("3", jcache().get("setKey3"));
 
-            jedis.set("setKey1", "2", "xx", "ex", EXPIRE_SEC);
-            jedis.set("setKey4", "4", "xx");
+            jedis.set("setKey1", "2", SetParams.setParams().xx().ex(EXPIRE_SEC));
+            jedis.set("setKey4", "4", SetParams.setParams().xx());
 
             Assert.assertEquals("2", jcache().get("setKey1"));
             Assert.assertNull(jcache().get("setKey4"));

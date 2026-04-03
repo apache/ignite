@@ -22,6 +22,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import redis.clients.jedis.ClientSetInfoConfig;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -59,7 +62,13 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
         jedisPoolCfg.setTestWhileIdle(true);
         jedisPoolCfg.setTimeBetweenEvictionRunsMillis(30000);
 
-        pool = new JedisPool(jedisPoolCfg, HOST, PORT, 10000);
+        DefaultJedisClientConfig clientCfg = DefaultJedisClientConfig.builder()
+                .connectionTimeoutMillis(10000)
+                .socketTimeoutMillis(10000)
+                .clientSetInfoConfig(ClientSetInfoConfig.DISABLED)
+                .build();
+
+        pool = new JedisPool(jedisPoolCfg, new HostAndPort(HOST, PORT), clientCfg);
     }
 
     /** {@inheritDoc} */
