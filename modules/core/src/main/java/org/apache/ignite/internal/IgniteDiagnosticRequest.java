@@ -143,11 +143,11 @@ public class IgniteDiagnosticRequest implements Message {
     }
 
     /** */
-    public abstract static class DiagnosticBaseInfo implements Message {
+    public interface DiagnosticBaseInfo extends Message {
         /**
          * @param other Another info of the same type.
          */
-        public void merge(DiagnosticBaseInfo other) {
+        default void merge(DiagnosticBaseInfo other) {
             // No-op.
         }
 
@@ -155,6 +155,6 @@ public class IgniteDiagnosticRequest implements Message {
          * @param sb String builder.
          * @param ctx Grid context.
          */
-        public abstract void appendInfo(StringBuilder sb, GridKernalContext ctx);
+        void appendInfo(StringBuilder sb, GridKernalContext ctx);
     }
 }

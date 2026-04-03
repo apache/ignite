@@ -22,18 +22,15 @@ import java.util.HashSet;
 import java.util.Objects;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
+public final class TxEntriesInfo extends GridCacheIdMessage implements IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)
-    int cacheId;
-
-    /** */
-    @Order(1)
     Collection<KeyCacheObject> keys;
 
     /**
@@ -100,5 +97,10 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(getClass(), cacheId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 }
