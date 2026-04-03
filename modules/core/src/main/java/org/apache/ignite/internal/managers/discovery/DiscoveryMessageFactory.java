@@ -198,8 +198,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessageMarshallableSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessageSerializer;
 
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
@@ -259,7 +257,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(15, TcpDiscoveryClientAckResponse::new, new TcpDiscoveryClientAckResponseSerializer());
         factory.register(16, TcpDiscoveryNodeLeftMessage::new, new TcpDiscoveryNodeLeftMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageMarshallableSerializer(marsh, clsLdr));
-        factory.register(18, TcpDiscoveryStatusCheckMessage::new, new TcpDiscoveryStatusCheckMessageSerializer());
+        // 18 is former Status check message.
         factory.register(19, TcpDiscoveryNodeAddFinishedMessage::new,
             new TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(20, TcpDiscoveryJoinRequestMessage::new,
