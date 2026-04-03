@@ -56,6 +56,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageType;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.SkipCacheObjectsMarshallingMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -97,6 +98,10 @@ public class DirectByteBufferStream {
 
     /** */
     private static final ThreadLocal<List<CacheObjectContext>> coCtxs = new ThreadLocal<>();
+    
+    /** */
+    private static final CacheObjectContext NULL_CACHE_CTX = 
+        new CacheObjectContext(null, null, null,false,false, false, false);
 
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
@@ -2352,13 +2357,15 @@ public class DirectByteBufferStream {
 
         if (msg instanceof GridCacheGroupIdMessage)
             gcctx = ctx.cache().context().cacheContext(((GridCacheGroupIdMessage)msg).grpId);
+        
+        boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
 
-        if (gcctx != null) {
+        if (gcctx != null || skipMarsh) {
             if (coCtxs.get() == null)
                 coCtxs.set(new ArrayList<>());
 
-            CacheObjectContext coCtx = gcctx.cacheObjectContext();
-            
+            CacheObjectContext coCtx = skipMarsh ? NULL_CACHE_CTX : gcctx.cacheObjectContext();
+
             coCtxs.get().add(coCtx);
             
             return coCtx;
@@ -2377,7 +2384,12 @@ public class DirectByteBufferStream {
     private CacheObjectContext context() {
         List<CacheObjectContext> list = coCtxs.get();
 
-        return list.get(list.size() - 1);
+        CacheObjectContext cand =  list.get(list.size() - 1);
+        
+        if (cand == NULL_CACHE_CTX)
+            return null;
+        
+        return cand;
     }
 
     /** {@inheritDoc} */
