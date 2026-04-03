@@ -2378,6 +2378,7 @@ public class DirectByteBufferStream {
         return null;
     }
 
+    /** */
     private CacheObjectContext resolveContext(int cacheId) {
         if (cacheId != CU.UNDEFINED_CACHE_ID) {
             GridCacheContext<?, ?> gcCtx = ctx.cache().context().cacheContext(cacheId);
