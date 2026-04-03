@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.QueryEntity;
@@ -46,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /** Cache interceptor related tests. */
 @RunWith(Parameterized.class)
 public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest {
-    /** Node role. */
+    /** Keep binary mode. */
     @Parameterized.Parameter(0)
     public boolean keepBinary;
 
@@ -81,6 +82,7 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             .setQueryEntities(List.of(new QueryEntity(Integer.class, Person.class)
                 .setTableName("PERSON")
                 .addQueryField("ID", Integer.class.getName(), null)
+                .addQueryField("CITYID", Integer.class.getName(), "city_id")
                 .setKeyFieldName("ID")
             ));
 
@@ -91,6 +93,7 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             .setQueryEntities(List.of(new QueryEntity(Integer.class, Person.class)
                 .setTableName("PERSON_ATOMIC")
                 .addQueryField("ID", Integer.class.getName(), null)
+                .addQueryField("CITYID", Integer.class.getName(), "city_id")
                 .setKeyFieldName("ID")
             ));
 
@@ -124,27 +127,43 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
         startGrid(0);
         IgniteEx client = startClientGrid("client");
 
-        int incParam = 0;
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL));
+
+        if (keepBinary)
+            cache = cache.withKeepBinary();
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PURE(id, name) VALUES (?, 'val')")
-                .setArgs(incParam++), keepBinary).getAll();
-            client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, 'val')")
-                .setArgs(incParam++), keepBinary).getAll();
-            client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PERSON(id, name, city_id) VALUES (?, 'val', 1)")
-                    .setArgs(incParam++), keepBinary).getAll();
+            cache.query(new SqlFieldsQuery("INSERT INTO PURE(id, name) VALUES (1, 'val')")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE PURE SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("DELETE FROM PURE WHERE id = 1")).getAll();
+
+            cache.query(new SqlFieldsQuery("INSERT INTO CITY(id, name) VALUES (1, 'val')")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE CITY SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("DELETE FROM CITY WHERE id = 1")).getAll();
+
+            cache.query(new SqlFieldsQuery("INSERT INTO PERSON(id, name, city_id) VALUES (1, 'val', 1)")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE PERSON SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("DELETE FROM PERSON WHERE id = 1")).getAll();
 
             tx.commit();
         }
 
-        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PURE(id, name) VALUES (?, 'val')")
-            .setArgs(incParam++), keepBinary).getAll();
-        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.CITY(id, name) VALUES (?, 'val')")
-            .setArgs(incParam++), keepBinary).getAll();
-        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.PERSON(id, name, city_id) VALUES (?, 'val', 1)")
-            .setArgs(incParam), keepBinary).getAll();
-        client.context().query().querySqlFields(new SqlFieldsQuery("INSERT INTO PERSON_ATOMIC(id, name, city_id) VALUES (?, 'val', 1)")
-            .setArgs(incParam), keepBinary).getAll();
+        cache.query(new SqlFieldsQuery("INSERT INTO PURE(id, name) VALUES (1, 'val')")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE PURE SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM PURE WHERE id = 1")).getAll();
+
+        cache.query(new SqlFieldsQuery("INSERT INTO CITY(id, name) VALUES (1, 'val')")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE CITY SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM CITY WHERE id = 1")).getAll();
+
+        cache.query(new SqlFieldsQuery("INSERT INTO PERSON(id, name, city_id) VALUES (1, 'val', 1)")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE PERSON SET name = 'a' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM PERSON WHERE id = 1")).getAll();
+
+        cache.query(new SqlFieldsQuery("INSERT INTO PERSON_ATOMIC(id, name, city_id) VALUES (1, 'val', 1)")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE PERSON_ATOMIC SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM PERSON_ATOMIC WHERE id = 1")).getAll();
     }
 
     /** */
@@ -167,12 +186,12 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
 
         /** */
         @QuerySqlField
-        int city_id;
+        int cityId;
 
         /** */
-        Person(String name, int city_id) {
+        Person(String name, int cityId) {
             this.name = name;
-            this.city_id = city_id;
+            this.cityId = cityId;
         }
     }
 
