@@ -149,10 +149,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @Order(9)
     IgniteProductVersion ver;
 
-    /** Alive check time (used by clients). */
-    @GridToStringExclude
-    private transient volatile long aliveCheckTimeNanos;
-
     /** Client router node ID. */
     @GridToStringExclude
     @Order(10)
@@ -529,35 +525,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         }
 
         return cacheCli;
-    }
-
-    /**
-     * Test alive check time value.
-     *
-     * @return {@code True} if client alive, {@code False} otherwise.
-     */
-    public boolean isClientAlive() {
-        assert isClient() : this;
-
-        return (aliveCheckTimeNanos - System.nanoTime()) >= 0;
-    }
-
-    /**
-     * Set client alive time.
-     *
-     * @param aliveTime Alive time interval.
-     */
-    public void clientAliveTime(long aliveTime) {
-        assert isClient() : this;
-
-        aliveCheckTimeNanos = System.nanoTime() + U.millisToNanos(aliveTime);
-    }
-
-    /**
-     * @return {@code true} if client alive check time initialized.
-     */
-    public boolean clientAliveTimeSet() {
-        return aliveCheckTimeNanos != 0;
     }
 
     /**

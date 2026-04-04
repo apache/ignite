@@ -212,15 +212,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
-    /** Maximal interval of connection check to next node in the ring. */
-    private static final long MAX_CON_CHECK_INTERVAL = 500;
-
-    /** Interval of checking connection to next node in the ring. */
-    private long connCheckInterval;
-
-    /** Fundamental value for connection checking actions. */
-    private long connCheckTick;
-
     /** */
     private final IgniteThreadPoolExecutor utilityPool;
 
@@ -296,9 +287,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Last time received message from ring. */
     private volatile long lastRingMsgReceivedTime;
-
-    /** Time of last sent and acknowledged message. */
-    private volatile long lastRingMsgSentTime;
 
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
@@ -401,20 +389,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
+        super.spiStart(igniteInstanceName);
+
         synchronized (mux) {
             spiState = DISCONNECTED;
         }
 
         lastRingMsgReceivedTime = 0;
-
-        lastRingMsgSentTime = 0;
-
-        // Foundumental timeout value for actions related to connection check.
-        connCheckTick = effectiveExchangeTimeout() / 3;
-
-        // Since we take in account time of last sent message, the interval should be quite short to give enough piece
-        // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(connCheckTick, MAX_CON_CHECK_INTERVAL);
 
         if (debugMode) {
             if (!log.isInfoEnabled())
@@ -2026,12 +2007,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         threads.removeAll(Collections.<IgniteSpiThread>singleton(null));
 
         return threads;
-    }
-
-    /** @return Complete timeout of single message exchange operation on established connection. */
-    protected long effectiveExchangeTimeout() {
-        return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
-            spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
     /** {@inheritDoc} */
@@ -5015,9 +4990,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (msg.client())
-                    node.clientAliveTime(spi.clientFailureDetectionTimeout());
-
                 boolean topChanged = ring.add(node);
 
                 if (topChanged) {
@@ -6222,7 +6194,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
 
             if (ring.hasRemoteServerNodes())
-                sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
+                sendMessageAcrossRing(connChkMsg);
         }
 
         /** {@inheritDoc} */
@@ -7095,6 +7067,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     clientMsgWorkers.remove(nodeId, clientMsgWrk);
 
                     U.interrupt(clientMsgWrk.runner());
+
+                    failNode(nodeId, "Connection failed.");
                 }
 
                 U.close(sock, log);
@@ -7215,10 +7189,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert node == null || node.clientRouterNodeId() != null;
 
-            if (node != null) {
+            if (node != null)
                 node.clientRouterNodeId(msg.routerNodeId());
-                node.clientAliveTime(spi.clientFailureDetectionTimeout());
-            }
 
             if (!msg.verified()) {
                 if (isLocNodeRouter || isLocalNodeCoordinator()) {
@@ -7482,12 +7454,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Socket. */
         private final Socket sock;
 
-        /** Current client metrics. */
-        private volatile ClusterMetrics metrics;
-
-        /** Last metrics update message receive time. */
-        private volatile long lastMetricsUpdateMsgTimeNanos;
-
         /** */
         private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
@@ -7508,8 +7474,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.clientNodeId = clientNodeId;
 
             clientMsgSer = new TcpDiscoveryMessageSerializer(spi);
-
-            lastMetricsUpdateMsgTimeNanos = System.nanoTime();
         }
 
         /**
@@ -7517,22 +7481,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         void clientVersion(IgniteProductVersion clientVer) {
             this.clientVer = clientVer;
-        }
-
-        /**
-         * @return Current client metrics.
-         */
-        ClusterMetrics metrics() {
-            return metrics;
-        }
-
-        /**
-         * @param metrics New current client metrics.
-         */
-        void metrics(ClusterMetrics metrics) {
-            lastMetricsUpdateMsgTimeNanos = System.nanoTime();
-
-            this.metrics = metrics;
         }
 
         /**
@@ -7724,7 +7672,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void noMessageLoop() {
-            if (U.millisSinceNanos(lastMetricsUpdateMsgTimeNanos) > spi.clientFailureDetectionTimeout()) {
+            if (U.millisSinceNanos(lastRingMsgReceivedTime) > spi.clientFailureDetectionTimeout()) {
                 TcpDiscoveryNode clientNode = ring.node(clientNodeId);
 
                 if (clientNode != null) {

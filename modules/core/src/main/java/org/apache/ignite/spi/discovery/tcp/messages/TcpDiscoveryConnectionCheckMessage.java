@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
  * Message used to check whether a node is still connected to the topology.
@@ -41,10 +41,10 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
     /**
      * Constructor.
      *
-     * @param creatorNode Node created this message.
+     * @param creatorNodeId If od the node created this message.
      */
-    public TcpDiscoveryConnectionCheckMessage(TcpDiscoveryNode creatorNode) {
-        super(creatorNode.id());
+    public TcpDiscoveryConnectionCheckMessage(UUID creatorNodeId) {
+        super(creatorNodeId);
     }
 
     /** {@inheritDoc} */

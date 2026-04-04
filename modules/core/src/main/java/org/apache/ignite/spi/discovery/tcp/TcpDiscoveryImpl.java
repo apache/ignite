@@ -45,6 +45,7 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,6 +68,9 @@ abstract class TcpDiscoveryImpl {
     /** Response join impossible. */
     protected static final int RES_JOIN_IMPOSSIBLE = 255;
 
+    /** Maximal interval of connection check to next node in the ring. */
+    private static final long MAX_CON_CHECK_INTERVAL = 500;
+
     /** Debug log date formatter. */
     private static final DateTimeFormatter DEBUG_FORMATTER =
         DateTimeFormatter.ofPattern("[HH:mm:ss,SSS]").withZone(ZoneId.systemDefault());
@@ -79,6 +83,18 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     protected volatile TcpDiscoveryNode locNode;
+
+    /** Fundamental value for connection checking actions. */
+    protected long connCheckTick;
+
+    /** Interval of checking connection to next node in the ring. */
+    protected volatile long connCheckInterval;
+
+    /** Time of last sent and acknowledged message. */
+    protected volatile long lastRingMsgSentTime;
+
+    /** Connection check message. */
+    protected volatile TcpDiscoveryConnectionCheckMessage connChkMsg;
 
     /** Debug mode. */
     protected boolean debugMode;
@@ -273,7 +289,18 @@ abstract class TcpDiscoveryImpl {
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
-    public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
+    public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        lastRingMsgSentTime = 0;
+
+        // Foundumental timeout value for actions related to connection check.
+        connCheckTick = effectiveExchangeTimeout() / 3;
+
+        // Since we take in account time of last sent message, the interval should be quite short to give enough piece
+        // of failure detection timeout as send-and-acknowledge timeout of the message to send.
+        connCheckInterval = Math.min(connCheckTick, MAX_CON_CHECK_INTERVAL);
+
+        connChkMsg = new TcpDiscoveryConnectionCheckMessage(getConfiguredNodeId());
+    }
 
     /**
      * Will start TCP server if applicable and not started yet.
@@ -290,6 +317,12 @@ abstract class TcpDiscoveryImpl {
      */
     public long connectionCheckInterval() {
         return 0;
+    }
+
+    /** @return Complete timeout of single message exchange operation on established connection. */
+    protected long effectiveExchangeTimeout() {
+        return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+            spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
     /**

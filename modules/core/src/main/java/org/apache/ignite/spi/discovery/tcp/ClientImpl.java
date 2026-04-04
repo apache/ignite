@@ -285,6 +285,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        super.spiStart(igniteInstanceName);
+
         spi.initLocalNode(
             0,
             true);
@@ -1405,9 +1407,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                             msg = queue.poll();
 
                         if (msg == null) {
-                            mux.wait();
+                            long heartbeatLeft = state == CONNECTED
+                                ? connCheckInterval - U.millisSinceNanos(lastRingMsgSentTime)
+                                : connCheckInterval;
 
-                            continue;
+                            if (heartbeatLeft < 0)
+                                msg = connChkMsg;
+                            else {
+                                mux.wait(U.nanosToMillis(heartbeatLeft));
+
+                                continue;
+                            }
                         }
                     }
                 }
@@ -1415,7 +1425,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                     msgLsnr.apply(msg);
 
-                boolean ack = !(msg instanceof TcpDiscoveryPingResponse);
+                boolean ack = msg != connChkMsg && !(msg instanceof TcpDiscoveryPingResponse);
 
                 try {
                     if (ack) {
@@ -1470,6 +1480,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (latencyCheckId != null && log.isInfoEnabled())
                             log.info("Latency check message has been acked: " + latencyCheckId);
                     }
+
+                    lastRingMsgSentTime = System.nanoTime();
                 }
                 catch (InterruptedException ignored) {
                     if (log.isDebugEnabled())
