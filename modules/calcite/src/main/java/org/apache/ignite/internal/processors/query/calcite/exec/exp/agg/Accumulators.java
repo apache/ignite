@@ -235,8 +235,11 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
+                return () -> new ComparableMinMax<>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(ANY), true));
             case OTHER:
-                return () -> new AnyMinMax<>(call, hnd, true);
+                return () -> new ComparableMinMax<>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.OTHER), true));
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, true);
@@ -265,8 +268,11 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
+                return () -> new ComparableMinMax<>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(ANY), true));
             case OTHER:
-                return () -> new AnyMinMax<>(call, hnd, false);
+                return () -> new ComparableMinMax<>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.OTHER), true));
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, false);
@@ -1119,7 +1125,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class ComparableMinMax<Row, T extends Comparable<T>> extends AbstractAccumulator<Row> {
+    private static class ComparableMinMax<Row, T> extends AbstractAccumulator<Row> {
         /** */
         private final boolean min;
 
@@ -1152,8 +1158,8 @@ public class Accumulators {
                 return;
 
             val = empty ? in : min ?
-                (val.compareTo(in) < 0 ? val : in) :
-                (val.compareTo(in) < 0 ? in : val);
+                (compare(val, in) < 0 ? val : in) :
+                (compare(val, in) < 0 ? in : val);
 
             empty = false;
         }
@@ -1166,8 +1172,8 @@ public class Accumulators {
                 return;
 
             val = empty ? other0.val : min ?
-                (val.compareTo(other0.val) < 0 ? val : other0.val) :
-                (val.compareTo(other0.val) < 0 ? other0.val : val);
+                (compare(val, other0.val) < 0 ? val : other0.val) :
+                (compare(val, other0.val) < 0 ? other0.val : val);
 
             empty = false;
         }
@@ -1186,82 +1192,19 @@ public class Accumulators {
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeSupplier.apply(typeFactory);
         }
-    }
-
-    /** */
-    private static class AnyMinMax<Row> extends AbstractAccumulator<Row> {
-        /** */
-        private final boolean min;
-
-        /** */
-        private Object val;
-
-        /** */
-        private boolean empty = true;
-
-        /** */
-        private AnyMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
-            super(aggCall, hnd);
-
-            this.min = min;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Row row) {
-            Object in = get(0, row);
-
-            if (in == null)
-                return;
-
-            if (empty) {
-                val = in;
-                empty = false;
-                return;
-            }
-
-            int cmp = compare(val, in);
-            if ((min && cmp > 0) || (!min && cmp < 0))
-                val = in;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator<Row> other) {
-            AnyMinMax<Row> other0 = (AnyMinMax<Row>)other;
-
-            if (other0.empty)
-                return;
-
-            if (empty) {
-                val = other0.val;
-                empty = false;
-                return;
-            }
-
-            int cmp = compare(val, other0.val);
-            if ((min && cmp > 0) || (!min && cmp < 0))
-                val = other0.val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return empty ? null : val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(aggregateCall().getType(), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(aggregateCall().getType(), true);
-        }
 
         /** */
         @SuppressWarnings({"rawtypes", "unchecked"})
         private int compare(Object a, Object b) {
             if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
                 return BinaryUtils.binariesFactory.compareForDml(a, b);
+
+            if (a.getClass() != b.getClass()) {
+                throw new UnsupportedOperationException(String.format(
+                    "%s() is not supported for different value types: [type0=%s, type1=%s]",
+                    min ? "MIN" : "MAX", a.getClass().getName(), b.getClass().getName()
+                ));
+            }
 
             return ((Comparable)a).compareTo(b);
         }
