@@ -1354,6 +1354,7 @@ public class IgniteTxHandler {
                 // GridDhtTxLocal possible
                 if (active instanceof GridDhtTxRemote) {
                     ctx.tm().salvageTx(active);
+                    break;
                 }
             }
         }

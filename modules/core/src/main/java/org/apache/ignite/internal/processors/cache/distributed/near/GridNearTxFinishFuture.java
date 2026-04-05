@@ -999,10 +999,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                         try {
                                             cctx.io().send(backup, req, tx.ioPolicy());
 
-                                            if (salvageReq == null)
-                                                salvageReq = new GridDhtTxSalvageMessage(tx.xidVersion());
+                                            if (tx.storeWriteThrough()) {
+                                                if (salvageReq == null)
+                                                    salvageReq = new GridDhtTxSalvageMessage(tx.xidVersion());
 
-                                            cctx.io().send(backup, salvageReq, tx.ioPolicy());
+                                                cctx.io().send(backup, salvageReq, tx.ioPolicy());
+                                            }
                                         }
                                         catch (ClusterTopologyCheckedException ignored) {
                                             mini.onNodeLeft(backupId, discoThread);
