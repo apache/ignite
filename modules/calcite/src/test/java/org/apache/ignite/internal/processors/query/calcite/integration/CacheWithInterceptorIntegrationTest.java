@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -234,6 +235,17 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
             assertEquals(keepBinary, newVal instanceof BinaryObject);
 
             return newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple<Boolean, Object> onBeforeRemove(Cache.Entry<Integer, Object> entry) {
+            Object val = entry.getValue();
+
+            if (val != null) {
+                assertEquals(keepBinary, entry.getValue() instanceof BinaryObject);
+            }
+
+            return new IgniteBiTuple<>(false, val);
         }
     }
 }
