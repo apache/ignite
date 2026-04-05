@@ -22,12 +22,22 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The interface represents performance statistics operations collection for purposes of troubleshooting and
  * performance analysis.
  */
 public interface PerformanceStatisticsHandler {
+    /**
+     * @param nodeId Node id.
+     * @param fileFormatVer Performance statistics file format version.
+     * @param igniteVer Ignite version stored in file header, if present.
+     */
+    default void version(UUID nodeId, short fileFormatVer, @Nullable String igniteVer) {
+        // No-op.
+    }
+
     /**
      * @param nodeId Node id.
      * @param cacheId Cache id.

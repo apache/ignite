@@ -50,6 +50,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
@@ -83,6 +84,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * @see FilePerformanceStatisticsWriter
  */
 public class FilePerformanceStatisticsReader {
+    /** Legacy format version without Ignite product version in header. */
+    static final short LEGACY_FILE_FORMAT_VERSION_1 = 1;
+
     /** Default file read buffer size. */
     private static final int DFLT_READ_BUFFER_SIZE = (int)(8 * U.MB);
 
@@ -229,15 +233,26 @@ public class FilePerformanceStatisticsReader {
             throw new IgniteException("Unsupported file format");
 
         if (opType == VERSION) {
-            if (buf.remaining() < OperationType.versionRecordSize())
+            if (buf.remaining() < Short.BYTES)
                 return false;
 
             short ver = buf.getShort();
+            String igniteVer = null;
 
-            if (ver != FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION) {
-                throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", supportedVer=" +
-                    FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION + ']');
+            if (ver == FILE_FORMAT_VERSION) {
+                ForwardableString verStr = readString(buf);
+
+                if (verStr == null)
+                    return false;
+
+                igniteVer = verStr.str;
             }
+            else if (ver != LEGACY_FILE_FORMAT_VERSION_1)
+                throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", currentVer=" +
+                    FILE_FORMAT_VERSION + ']');
+
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.version(nodeId, ver, igniteVer);
 
             return true;
         }
