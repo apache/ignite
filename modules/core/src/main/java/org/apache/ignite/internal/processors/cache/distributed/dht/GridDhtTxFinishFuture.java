@@ -702,7 +702,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         for (UUID backupId : backups) {
                             ClusterNode backup = cctx.discovery().node(backupId);
 
-                            if (!backup.isLocal()) {
+                            if (backup != null && !backup.isLocal()) {
                                 if (salvageReq == null)
                                     salvageReq = new GridDhtTxSalvageMessage(tx.nearXidVersion());
 
