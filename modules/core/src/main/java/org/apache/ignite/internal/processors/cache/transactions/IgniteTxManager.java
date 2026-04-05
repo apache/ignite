@@ -3140,6 +3140,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
+                    boolean localInMaster = tx.masterNodeIds().contains(cctx.localNodeId());
 
                     if (tx.storeWriteThrough() && txNodes != null
                         && tx.near() && txNodes.containsKey(evtNodeId)
@@ -3149,7 +3150,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         sendTxSalvage(tx, evtNodeId);
                     }
 
-                    if (tx.storeWriteThrough() && !tx.masterNodeIds().contains(cctx.localNodeId())
+                    if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) {
+                        if (localInMaster || tx.eventNodeId().equals(evtNodeId))
+                            salvageTx(tx, RECOVERY_FINISH);
+                    }
+                    else if (tx.storeWriteThrough() && !localInMaster
                         && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED) {
                         boolean fullSyncedOp = tx.writeEntries().stream().map(e ->
                             cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
