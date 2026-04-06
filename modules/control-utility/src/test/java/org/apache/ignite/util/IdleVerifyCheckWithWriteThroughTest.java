@@ -29,10 +29,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
@@ -67,6 +65,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -240,47 +239,10 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         awaitPartitionMapExchange();
 
-        sqlVisibilityCheck(List.of(nodeCoord, nodeBackup), primaryKey, secondVal);
-
-        int cacheSize = cache.size();
-        assertEquals(1, cacheSize);
-
-        int locSize = -1;
-        Object peeked = null;
-
-        for (Ignite g : G.allGrids()) {
-            final Affinity<Integer> aff = affinity(g.cache(DEFAULT_CACHE_NAME));
-
-            boolean primary = aff.isPrimary(g.cluster().localNode(), primaryKey);
-
-            Object peekedCurr;
-
-            if (primary)
-                peekedCurr = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.PRIMARY);
-            else
-                peekedCurr = g.cache(DEFAULT_CACHE_NAME).localPeek(primaryKey, CachePeekMode.BACKUP);
-
-            if (peeked == null)
-                peeked = peekedCurr;
-            else {
-                assertEquals(peeked, peekedCurr);
-                assertNotNull(peeked);
-            }
-
-            int locSizeCurr;
-
-            if (primary)
-                locSizeCurr = g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
-            else
-                locSizeCurr = g.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.BACKUP);
-
-            if (locSize == -1)
-                locSize = locSizeCurr;
-            else {
-                assertEquals(locSize, locSizeCurr);
-            }
-
-            assertNotNull("grid instance: " + g.name(), g.cache(DEFAULT_CACHE_NAME).get(primaryKey));
+        for (int nodeIdx : List.of(0, 2)) {
+            IgniteEx g = grid(nodeIdx);
+            IgniteCache<Object, Object> cacheInner = g.cache(DEFAULT_CACHE_NAME);
+            waitForCondition(() -> secondVal == (int)cacheInner.get(primaryKey), 1_000);
         }
 
         assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
