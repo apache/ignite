@@ -86,7 +86,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
             return (MessageSerializer<? extends Message>)U.newInstance(serCls);
         }
         catch (Exception e) {
-            throw new RuntimeException("Unable to found serializer for message: " + msgCls, e);
+            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
         }
     }
 }
