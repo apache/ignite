@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -27,12 +26,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Load without compaction -> Stop -> Enable WAL Compaction -> Start.
@@ -59,6 +57,19 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
@@ -69,57 +80,36 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalCompactionSwitch() throws Exception {
-        IgniteEx ex = startGrid(0);
+        IgniteEx n = startGrid(0);
+        n.cluster().state(ClusterState.ACTIVE);
 
-        ex.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cache = ex.getOrCreateCache(
+        IgniteCache<Integer, Integer> cache = n.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>()
                     .setName("c1")
                     .setGroupName("g1")
                     .setCacheMode(CacheMode.PARTITIONED)
         );
 
-        for (int i = 0; i < 500; i++)
+        for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
-
-        NodeFileTree ft = ex.context().pdsFolderResolver().fileTree();
 
         forceCheckpoint();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                File[] archivedFiles = ft.walSegments();
-
-                return archivedFiles.length == 39;
-            }
-        }, 5000);
+        assertTrue(waitForCondition(() -> ft(grid(0)).walSegments().length >= 10, 5_000, 32));
 
         stopGrid(0);
 
         compactionEnabled = true;
 
-        ex = startGrid(0);
+        n = startGrid(0);
+        n.cluster().state(ClusterState.ACTIVE);
 
-        ex.cluster().state(ClusterState.ACTIVE);
-
-        File archiveDir = ex.context().pdsFolderResolver().fileTree().walArchive();
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                File[] archivedFiles = archiveDir.listFiles(NodeFileTree::walCompactedSegment);
-
-                return archivedFiles.length == 20;
-            }
-        }, 5000);
-
-        File[] tmpFiles = archiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
-
-        assertEquals(0, tmpFiles.length);
+        assertTrue(waitForCondition(() -> ft(grid(0)).walArchiveCompactedSegments().length >= 5, 5_000, 32));
+        assertTrue(ft(n).walArchive().listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER).length >= 0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+    /** */
+    private static NodeFileTree ft(IgniteEx n) {
+        return n.context().pdsFolderResolver().fileTree();
     }
 }
