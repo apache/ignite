@@ -49,7 +49,7 @@ import org.junit.Test;
 /**
  * Tests for query execution check cases for correct table lock/unlock.
  */
-public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends AbstractIndexingCommonTest {
+public class IgniteQueryTableLockAndConnectionPoolSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 500;
 
@@ -292,17 +292,10 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             while (it.hasNext())
                 it.next();
 
-            if (lazy())
-                fail("Retry exception must be thrown");
+            fail("Retry exception must be thrown");
         }
         catch (Exception e) {
-            if (!lazy()) {
-                log.error("In lazy=false mode the query must be finished successfully", e);
-
-                fail("In lazy=false mode the query must be finished successfully");
-            }
-            else
-                assertNotNull(X.cause(e, QueryRetryException.class));
+            assertNotNull(X.cause(e, QueryRetryException.class));
         }
     }
 
@@ -327,7 +320,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                             "JOIN \"pers\".PERSON p on p.id = pers.id " +
                             "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
                             "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id", true)
-                            .setLazy(lazy())
                             .setLocal(local)
                             .setPageSize(PAGE_SIZE_SMALL));
 
@@ -338,11 +330,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);
-                        }
-                        else if (!lazy()) {
-                            log.error("Unexpected exception", e);
-
-                            fail("Unexpected QueryRetryException.");
                         }
                     }
                 }
@@ -379,7 +366,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
                             "SELECT pers.id, pers.name FROM \"pers\".PERSON")
-                            .setLazy(lazy())
                             .setPageSize(PAGE_SIZE_SMALL));
 
                         cursor.getAll();
@@ -392,11 +378,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);
-                        }
-                        else if (!lazy()) {
-                            log.error("Unexpected exception", e);
-
-                            fail("Unexpected QueryRetryException.");
                         }
                     }
                 }
@@ -434,8 +415,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                 while (!end.get()) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
-                            "SELECT * FROM TEST")
-                            .setLazy(lazy()));
+                            "SELECT * FROM TEST"));
 
                         cursor.getAll();
                     }
@@ -468,11 +448,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);
-                        }
-                        else if (!lazy()) {
-                            log.error("Unexpected exception", e);
-
-                            fail("Unexpected QueryRetryException.");
                         }
                     }
                 }
@@ -620,11 +595,10 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                 while (it.hasNext())
                     rows.add(it.next());
 
-                if (lazy())
-                    fail("Retry exception must be thrown");
+                fail("Retry exception must be thrown");
             }
             catch (Exception e) {
-                if (!lazy() || X.cause(e, QueryRetryException.class) == null) {
+                if (X.cause(e, QueryRetryException.class) == null) {
                     log.error("Invalid exception: ", e);
 
                     fail("QueryRetryException is expected");
@@ -876,7 +850,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
      * @return Cursor.
      */
     private FieldsQueryCursor<List<?>> execute(Ignite node, String sql) {
-        return ((IgniteEx)node).context().query().querySqlFields(new SqlFieldsQuery(sql).setLazy(lazy()), false);
+        return ((IgniteEx)node).context().query().querySqlFields(new SqlFieldsQuery(sql), false);
     }
 
     /**
@@ -887,13 +861,8 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
      * @return Cursor.
      */
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
-        return ((IgniteEx)node).context().query().querySqlFields(qry.setLazy(lazy()), false);
+        return ((IgniteEx)node).context().query().querySqlFields(qry, false);
     }
-
-    /**
-     * @return Lazy mode.
-     */
-    protected abstract boolean lazy();
 
     /**
      * Get name for ID.

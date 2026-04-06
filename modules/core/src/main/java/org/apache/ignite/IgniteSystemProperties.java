@@ -722,15 +722,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "parse the statement")
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /**
-     *  Force all SQL queries to be processed lazily regardless of what clients request.
-     *
-     * @deprecated Since version 2.8.
-     */
-    @Deprecated
-    @SystemProperty("Force all SQL queries to be processed lazily regardless of what clients request")
-    public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
-
     /** Disable SQL system views. */
     @SystemProperty("Disables SQL system views")
     public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";

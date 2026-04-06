@@ -563,7 +563,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
         else {
             QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.singletonList(
-                Collections.singletonList(0L)), null, false, false);
+                Collections.singletonList(0L)), null, false);
 
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 

@@ -38,9 +38,9 @@ import org.h2.result.ResultInterface;
 import org.junit.Test;
 
 /**
- * Tests for local query execution in lazy mode.
+ * Tests for local query execution.
  */
-public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
+public class LocalQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 10;
 
@@ -87,7 +87,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * Test local query execution.
      */
     @Test
-    public void testLocalLazyQuery() {
+    public void testLocalQuery() {
         Iterator[] iters = new Iterator[QRY_CNT];
 
         for (int i = 0; i < QRY_CNT; ++i) {
@@ -106,7 +106,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test use valid query context for local lazy queries.
+     * Test use valid query context for local queries.
      * @throws Exception On error.
      */
     @Test
@@ -160,7 +160,6 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         final Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM TBL0")
             .setLocal(true)
-            .setLazy(true)
             .setSchema("TEST")
             .setPageSize(1), false).iterator();
 
@@ -184,7 +183,6 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         final Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
             .setLocal(true)
-            .setLazy(true)
             .setSchema("TEST")
             .setPageSize(1), false).iterator();
 
@@ -213,7 +211,6 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
     private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLocal(true)
-            .setLazy(true)
             .setSchema("TEST")
             .setArgs(args), false);
     }
@@ -226,7 +223,6 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      */
     private FieldsQueryCursor<List<?>> sqlDistrubuted(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
-            .setLazy(true)
             .setSchema("TEST")
             .setArgs(args), false);
     }
