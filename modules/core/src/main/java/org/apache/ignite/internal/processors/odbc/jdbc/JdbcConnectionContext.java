@@ -173,12 +173,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean replicatedOnly = reader.readBoolean();
         boolean autoCloseCursors = reader.readBoolean();
 
-        boolean lazyExec = false;
         boolean skipReducerOnUpdate = false;
         String qryEngine = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
-            lazyExec = reader.readBoolean();
+            reader.readBoolean(); // Lazy query flag.
 
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
@@ -282,7 +281,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean loc = features.contains(JdbcThinFeature.LOCAL_QUERIES);
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, loc, skipReducerOnUpdate, qryEngine,
+            collocated, replicatedOnly, autoCloseCursors, loc, skipReducerOnUpdate, qryEngine,
             dataPageScanEnabled, updateBatchSize,
             concurrency, isolation, timeout, lb,
             ver, this);

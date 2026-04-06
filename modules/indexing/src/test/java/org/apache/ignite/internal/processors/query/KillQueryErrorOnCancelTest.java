@@ -113,12 +113,11 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testCancelAfterIteratorObtainedLazy() throws Exception {
+    public void testCancelAfterIteratorObtained() throws Exception {
         IgniteEx node = grid(0);
 
         FieldsQueryCursor<List<?>> cur = node.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer ORDER BY _val")
-                .setLazy(true)
                 .setPageSize(1), false);
 
         Iterator<List<?>> it = cur.iterator();

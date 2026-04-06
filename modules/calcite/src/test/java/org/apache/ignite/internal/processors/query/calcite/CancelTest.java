@@ -72,7 +72,7 @@ public class CancelTest extends GridCommonAbstractTest {
             .setKeyFieldName("id")
             .setValueFieldName("val")
             .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);;
+            .addQueryField("val", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
