@@ -76,7 +76,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(3)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
+    Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
     @Order(4)
@@ -143,7 +143,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        @Nullable Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
         @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload) {
         super(id, lastVer);
 
@@ -326,7 +326,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @return Partitions history suppliers.
      */
-    public IgniteDhtPartitionHistorySuppliersMap partitionHistorySuppliers() {
+    public Map<UUID, Map<GroupPartitionIdPair, Long>> partitionHistorySuppliers() {
         return partHistSuppliers;
     }
 
@@ -443,9 +443,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (parts == null)
             parts = new HashMap<>();
-
-        if (partHistSuppliers == null)
-            partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
         errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
