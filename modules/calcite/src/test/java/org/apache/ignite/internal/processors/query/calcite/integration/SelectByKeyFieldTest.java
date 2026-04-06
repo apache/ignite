@@ -26,11 +26,14 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.hamcrest.CoreMatchers;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.PRIMARY_KEY_INDEX;
 
 /**
  * Checks that using {@link QueryUtils#KEY_FIELD_NAME} in condition will use
@@ -68,7 +71,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testCompositePkSearchByPartOfKEy() {
+    public void testCompositePkSearchByPartOfKey() {
         sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
 
         for (int i = 0; i < 10; i++) {
@@ -85,16 +88,23 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where id = ?")
             .withParams(id)
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
             .check();
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where name = ?")
             .withParams(name)
             .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
+            .check();
+
+        assertQuery("select name, age from PUBLIC.PERSON where name = ?")
+            .withParams(name)
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX)))
+            .columnNames("NAME", "AGE")
+            .returns(name, 24)
             .check();
     }
 
@@ -140,7 +150,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         QueryChecker qryChecker = assertQuery("select id, name, age, _key from PUBLIC.PERSON order by _key")
             .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME);
 
         sqlRs.forEach(objects -> qryChecker.returns(objects.toArray(Object[]::new)));
 
@@ -212,24 +222,24 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(_key)
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
             .returns(id, "foo7", 25, _key)
             .check();
 
         // Let's check with a smaller number of columns.
         assertQuery("select id, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(_key)
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
-            .columnNames("ID", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX))
+            .columnNames("ID", "AGE", KEY_FIELD_NAME)
             .returns(id, 25, _key)
             .check();
 
         // Let's just make sure that PK search is not broken.
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where id = ?")
             .withParams(id)
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
             .returns(id, "foo7", 25, _key)
             .check();
     }
@@ -271,24 +281,24 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(useBinaryObject ? _key : _key.deserialize())
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX + "_proxy"))
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
             .check();
 
         // Let's check with a smaller number of columns.
         assertQuery("select id, age, _key from PUBLIC.PERSON where _key = ?")
             .withParams(useBinaryObject ? _key : _key.deserialize())
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX + "_proxy"))
-            .columnNames("ID", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX + "_proxy"))
+            .columnNames("ID", "AGE", KEY_FIELD_NAME)
             .returns(id, 24, _key)
             .check();
 
         // Let's just make sure that PK search is not broken.
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where id = ? and name = ?")
             .withParams(id, name)
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", QueryUtils.PRIMARY_KEY_INDEX))
-            .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX))
+            .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
             .returns(id, name, 24, _key)
             .check();
     }
@@ -320,7 +330,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
             ))
                 .withParams(useBinaryObject ? _key8 : _key8.deserialize())
                 .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON"))
-                .columnNames("ID", "NAME", "AGE", QueryUtils.KEY_FIELD_NAME);
+                .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME);
 
             expRows.forEach(objects -> qryChecker.returns(objects.toArray(Object[]::new)));
 
