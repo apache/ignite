@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -3140,7 +3141,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
-                    boolean localInMaster = tx.masterNodeIds().contains(cctx.localNodeId());
 
                     if (tx.storeWriteThrough() && txNodes != null
                         && tx.near() && txNodes.containsKey(evtNodeId)
@@ -3150,17 +3150,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         sendTxSalvage(tx, evtNodeId);
                     }
 
-                    if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) {
-                        if (localInMaster || tx.eventNodeId().equals(evtNodeId))
-                            salvageTx(tx, RECOVERY_FINISH);
-                    }
-                    else if (tx.storeWriteThrough() && !localInMaster
-                        && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED) {
-                        boolean fullSyncedOp = tx.writeEntries().stream().map(e ->
-                            cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
+                    Supplier<Boolean> fullSyncedOp = () -> tx.writeEntries().stream().map(e ->
+                        cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
 
-                        if (!fullSyncedOp)
-                            salvageTx(tx, RECOVERY_FINISH);
+                    if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId) && tx.eventNodeId().equals(evtNodeId))
+                        salvageTx(tx, RECOVERY_FINISH);
+                    else if (tx.storeWriteThrough() && !tx.masterNodeIds().contains(cctx.localNodeId())
+                        && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED && fullSyncedOp.get()) {
                         // Delay a commit, on backup. It will be raised further after near or coord. node will confirm it.
                     }
                     else if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
