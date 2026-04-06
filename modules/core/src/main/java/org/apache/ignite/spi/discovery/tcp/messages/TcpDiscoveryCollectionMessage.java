@@ -18,8 +18,10 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -80,6 +82,19 @@ public class TcpDiscoveryCollectionMessage implements MarshallableMessage {
 
             marshallableMsgs.put(idx++, m);
         }
+    }
+
+    /**
+     * Deep copy constructor.
+     *
+     * @param msg Message to copy.
+     */
+    public TcpDiscoveryCollectionMessage(TcpDiscoveryCollectionMessage msg) {
+        writableMsgs = msg.writableMsgs == null ? null : new HashMap<>(msg.writableMsgs);
+        marshallableMsgs = msg.marshallableMsgs == null ? null : new HashMap<>(msg.marshallableMsgs);
+        marshallableMsgsBytes = msg.marshallableMsgsBytes == null
+            ? null
+            : Arrays.copyOf(msg.marshallableMsgsBytes, msg.marshallableMsgsBytes.length);
     }
 
     /** @param marsh marshaller. */

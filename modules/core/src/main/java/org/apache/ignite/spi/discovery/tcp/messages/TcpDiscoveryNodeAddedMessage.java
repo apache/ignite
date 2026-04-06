@@ -17,8 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -111,6 +113,28 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         topHist = msg.topHist;
         dataPacket = msg.dataPacket;
         gridStartTime = msg.gridStartTime;
+    }
+
+    /**
+     * @return Deep copy for client-specific mutation.
+     */
+    public TcpDiscoveryNodeAddedMessage deepCopy() {
+        TcpDiscoveryNodeAddedMessage cp = new TcpDiscoveryNodeAddedMessage(this);
+
+        cp.dataPacket = dataPacket == null ? null : new DiscoveryDataPacket(dataPacket);
+        cp.pendingMsgsMsg = pendingMsgsMsg == null ? null : new TcpDiscoveryCollectionMessage(pendingMsgsMsg);
+        cp.top = top == null ? null : new ArrayList<>(top);
+        cp.clientTop = clientTop == null ? null : new ArrayList<>(clientTop);
+
+        if (topHist != null) {
+            cp.topHist = new TreeMap<>();
+
+            topHist.forEach((key, value) -> cp.topHist.put(key, value == null ? null : new ArrayList<>(value)));
+        }
+        else
+            cp.topHist = null;
+
+        return cp;
     }
 
     /**

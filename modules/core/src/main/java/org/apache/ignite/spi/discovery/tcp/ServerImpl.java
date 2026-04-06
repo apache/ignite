@@ -3289,33 +3289,34 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (clientMsgWorkers.isEmpty())
                     return;
 
-                byte[] msgBytes = null;
+                byte[] msgBytes;
 
-                if (!(msg instanceof TcpDiscoveryNodeAddedMessage)) {
-                    try {
-                        msgBytes = clientMsgSer.serializeMessage(msg);
-                    }
-                    catch (IgniteCheckedException | IOException e) {
-                        U.error(log, "Failed to serialize message: " + msg, e);
+                try {
+                    msgBytes = clientMsgSer.serializeMessage(msg);
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    U.error(log, "Failed to serialize message: " + msg, e);
 
-                        return;
-                    }
+                    return;
                 }
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     TcpDiscoveryAbstractMessage msg0 = msg;
+                    byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                         if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
-                            msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
+                            msg0 = nodeAddedMsg.deepCopy();
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+
+                            msgBytes0 = null;
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes);
+                    clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
         }
