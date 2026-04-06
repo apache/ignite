@@ -20,10 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -44,17 +40,6 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        SqlConfiguration sqlCfg = new SqlConfiguration().setQueryEnginesConfiguration(
-            new CalciteQueryEngineConfiguration().setDefault(true),
-            new IndexingQueryEngineConfiguration()
-        );
-
-        return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(sqlCfg);
     }
 
     /** */

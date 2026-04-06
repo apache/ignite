@@ -34,7 +34,6 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
@@ -298,48 +297,48 @@ public class IgniteSqlFunctions {
 
     /** SQL >=. */
     public static boolean geAny(Object a, Object b) {
-        if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-            return BinaryUtils.binariesFactory.compareForDml(a, b) >= 0;
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) >= 0;
 
         return SqlFunctions.geAny(a, b);
     }
 
     /** SQL >. */
     public static boolean gtAny(Object a, Object b) {
-        if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-            return BinaryUtils.binariesFactory.compareForDml(a, b) > 0;
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) > 0;
 
         return SqlFunctions.gtAny(a, b);
     }
 
     /** SQL <=. */
     public static boolean leAny(Object a, Object b) {
-        if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-            return BinaryUtils.binariesFactory.compareForDml(a, b) <= 0;
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) <= 0;
 
         return SqlFunctions.leAny(a, b);
     }
 
     /** SQL <. */
     public static boolean ltAny(Object a, Object b) {
-        if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-            return BinaryUtils.binariesFactory.compareForDml(a, b) < 0;
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) < 0;
 
         return SqlFunctions.ltAny(a, b);
     }
 
     /** SQL =. */
     public static boolean eqAny(Object a, Object b) {
-        if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-            return BinaryUtils.binariesFactory.compareForDml(a, b) == 0;
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) == 0;
 
         return SqlFunctions.eqAny(a, b);
     }
 
     /** SQL <>. */
     public static boolean neAny(Object a, Object b) {
-        if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-            return BinaryUtils.binariesFactory.compareForDml(a, b) != 0;
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) != 0;
 
         return SqlFunctions.neAny(a, b);
     }

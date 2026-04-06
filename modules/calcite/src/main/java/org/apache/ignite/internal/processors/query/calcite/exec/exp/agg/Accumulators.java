@@ -35,10 +35,10 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
@@ -1196,8 +1196,8 @@ public class Accumulators {
         /** */
         @SuppressWarnings({"rawtypes", "unchecked"})
         private int compare(Object a, Object b) {
-            if (BinaryUtils.isBinaryObjectImpl(a) || BinaryUtils.isBinaryObjectImpl(b))
-                return BinaryUtils.binariesFactory.compareForDml(a, b);
+            if (Commons.isBinaryComparable(a, b))
+                return Commons.compareBinary(a, b);
 
             if (a.getClass() != b.getClass()) {
                 throw new UnsupportedOperationException(String.format(

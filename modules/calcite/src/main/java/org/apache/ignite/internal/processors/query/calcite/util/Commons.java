@@ -57,8 +57,10 @@ import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -556,5 +558,15 @@ public final class Commons {
         }
 
         return sb.a(']').toString();
+    }
+
+    /** Checks if objects can be compared as {@link BinaryObject} via {@link #compareBinary(Object, Object)}. */
+    public static boolean isBinaryComparable(Object o1, Object o2) {
+        return BinaryUtils.isBinaryObjectImpl(o1) || BinaryUtils.isBinaryObjectImpl(o2);
+    }
+
+    /** Compares {@link BinaryObject} for DML operation. Before use, call {@link #isBinaryComparable(Object, Object)}. */
+    public static int compareBinary(Object o1, Object o2) {
+        return BinaryUtils.binariesFactory.compareForDml(o1, o2);
     }
 }
