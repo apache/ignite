@@ -863,10 +863,13 @@ public class DirectByteBufferStream {
 
                     case 1:
                         CacheObjectContext ctx = setContext(msg);
-                        
-                        writeByteArray(obj.valueBytes(context()));
-                        
-                        removeContext(ctx);
+
+                        try {
+                            writeByteArray(obj.valueBytes(context()));
+                        }
+                        finally {
+                            removeContext(ctx);
+                        }
 
                         if (!lastFinished)
                             return;
@@ -899,10 +902,13 @@ public class DirectByteBufferStream {
 
                     case 1:
                         CacheObjectContext ctx = setContext(msg);
-                        
-                        writeByteArray(keyObj.valueBytes(context()));
-                        
-                        removeContext(ctx);
+
+                        try {
+                            writeByteArray(keyObj.valueBytes(context()));
+                        }
+                        finally {
+                            removeContext(ctx);
+                        }
 
                         if (!lastFinished)
                             return;
@@ -945,9 +951,12 @@ public class DirectByteBufferStream {
             if (buf.hasRemaining()) {
                 CacheObjectContext ctx = setContext(msg);
 
-                nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
-
-                removeContext(ctx);
+                try {
+                    nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
+                }
+                finally {
+                    removeContext(ctx);
+                }
             }
             else
                 lastFinished = false;
@@ -1527,15 +1536,18 @@ public class DirectByteBufferStream {
 
         try {
             CacheObjectContext ctx = setContext(msg);
-            
-            KeyCacheObject key = cacheObjProc.toKeyCacheObject(context(), cacheObjType, cacheObjArr);
-            
-            removeContext(ctx);
 
-            if (keyCacheObjPart != -1)
-                key.partition(keyCacheObjPart);
+            try {
+                KeyCacheObject key = cacheObjProc.toKeyCacheObject(context(), cacheObjType, cacheObjArr);
 
-            return key;
+                if (keyCacheObjPart != -1)
+                    key.partition(keyCacheObjPart);
+
+                return key;
+            }
+            finally {
+                removeContext(ctx);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1566,11 +1578,12 @@ public class DirectByteBufferStream {
 
         CacheObjectContext ctx = setContext(msg);
 
-        CacheObject res = cacheObjProc.toCacheObject(context(), cacheObjType, cacheObjArr);
-        
-        removeContext(ctx);
-        
-        return res;
+        try {
+            return cacheObjProc.toCacheObject(context(), cacheObjType, cacheObjArr);
+        }
+        finally {
+            removeContext(ctx);
+        }
     }
 
     /**
@@ -1608,9 +1621,12 @@ public class DirectByteBufferStream {
 
                 CacheObjectContext ctx = setContext(encMsg);
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
-                
-                removeContext(ctx);
+                try {
+                    lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+                }
+                finally {
+                    removeContext(ctx);
+                }
             }
             finally {
                 reader.afterNestedRead(lastFinished);
@@ -2030,153 +2046,156 @@ public class DirectByteBufferStream {
      */
     protected <K, V> void write(MessageType type, Message msg, Object val, MessageWriter writer) {
         CacheObjectContext ctx = setContext(msg);
-        
-        switch (type.type()) {
-            case BYTE:
-                writeByte((Byte)val);
 
-                break;
+        try {
+            switch (type.type()) {
+                case BYTE:
+                    writeByte((Byte)val);
 
-            case SHORT:
-                writeShort((Short)val);
+                    break;
 
-                break;
+                case SHORT:
+                    writeShort((Short)val);
 
-            case INT:
-                writeInt((Integer)val);
+                    break;
 
-                break;
+                case INT:
+                    writeInt((Integer)val);
 
-            case LONG:
-                writeLong((Long)val);
+                    break;
 
-                break;
+                case LONG:
+                    writeLong((Long)val);
 
-            case FLOAT:
-                writeFloat((Float)val);
+                    break;
 
-                break;
+                case FLOAT:
+                    writeFloat((Float)val);
 
-            case DOUBLE:
-                writeDouble((Double)val);
+                    break;
 
-                break;
+                case DOUBLE:
+                    writeDouble((Double)val);
 
-            case CHAR:
-                writeChar((Character)val);
+                    break;
 
-                break;
+                case CHAR:
+                    writeChar((Character)val);
 
-            case BOOLEAN:
-                writeBoolean((Boolean)val);
+                    break;
 
-                break;
+                case BOOLEAN:
+                    writeBoolean((Boolean)val);
 
-            case BYTE_ARR:
-                writeByteArray((byte[])val);
+                    break;
 
-                break;
+                case BYTE_ARR:
+                    writeByteArray((byte[])val);
 
-            case SHORT_ARR:
-                writeShortArray((short[])val);
+                    break;
 
-                break;
+                case SHORT_ARR:
+                    writeShortArray((short[])val);
 
-            case INT_ARR:
-                writeIntArray((int[])val);
+                    break;
 
-                break;
+                case INT_ARR:
+                    writeIntArray((int[])val);
 
-            case LONG_ARR:
-                writeLongArray((long[])val);
+                    break;
 
-                break;
+                case LONG_ARR:
+                    writeLongArray((long[])val);
 
-            case FLOAT_ARR:
-                writeFloatArray((float[])val);
+                    break;
 
-                break;
+                case FLOAT_ARR:
+                    writeFloatArray((float[])val);
 
-            case DOUBLE_ARR:
-                writeDoubleArray((double[])val);
+                    break;
 
-                break;
+                case DOUBLE_ARR:
+                    writeDoubleArray((double[])val);
 
-            case CHAR_ARR:
-                writeCharArray((char[])val);
+                    break;
 
-                break;
+                case CHAR_ARR:
+                    writeCharArray((char[])val);
 
-            case BOOLEAN_ARR:
-                writeBooleanArray((boolean[])val);
+                    break;
 
-                break;
+                case BOOLEAN_ARR:
+                    writeBooleanArray((boolean[])val);
 
-            case STRING:
-                writeString((String)val);
+                    break;
 
-                break;
+                case STRING:
+                    writeString((String)val);
 
-            case BIT_SET:
-                writeBitSet((BitSet)val);
+                    break;
 
-                break;
+                case BIT_SET:
+                    writeBitSet((BitSet)val);
 
-            case UUID:
-                writeUuid((UUID)val);
+                    break;
 
-                break;
+                case UUID:
+                    writeUuid((UUID)val);
 
-            case IGNITE_UUID:
-                writeIgniteUuid((IgniteUuid)val);
+                    break;
 
-                break;
+                case IGNITE_UUID:
+                    writeIgniteUuid((IgniteUuid)val);
 
-            case AFFINITY_TOPOLOGY_VERSION:
-                writeAffinityTopologyVersion((AffinityTopologyVersion)val);
+                    break;
 
-                break;
+                case AFFINITY_TOPOLOGY_VERSION:
+                    writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
-            case KEY_CACHE_OBJECT:
-                writeKeyCacheObject(msg, (KeyCacheObject)val);
+                    break;
 
-                break;
+                case KEY_CACHE_OBJECT:
+                    writeKeyCacheObject(msg, (KeyCacheObject)val);
 
-            case CACHE_OBJECT:
-                writeCacheObject(msg, (CacheObject)val);
+                    break;
 
-                break;
+                case CACHE_OBJECT:
+                    writeCacheObject(msg, (CacheObject)val);
 
-            case GRID_LONG_LIST:
-                writeGridLongList((GridLongList)val);
+                    break;
 
-                break;
+                case GRID_LONG_LIST:
+                    writeGridLongList((GridLongList)val);
 
-            case MAP:
-                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type, msg));
+                    break;
 
-                break;
+                case MAP:
+                    nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type, msg));
 
-            case COLLECTION:
-                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type, msg));
+                    break;
 
-                break;
+                case COLLECTION:
+                    nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type, msg));
 
-            case ARRAY:
-                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type, msg));
+                    break;
 
-                break;
+                case ARRAY:
+                    nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type, msg));
 
-            case MSG:
-                writeMessage((Message)val, writer);
+                    break;
 
-                break;
+                case MSG:
+                    writeMessage((Message)val, writer);
 
-            default:
-                throw new IllegalArgumentException("Unknown type: " + type);
+                    break;
+
+                default:
+                    throw new IllegalArgumentException("Unknown type: " + type);
+            }
         }
-        
-        removeContext(ctx);
+        finally {
+            removeContext(ctx);
+        }
     }
 
     /** Performs a nested write with proper writer state enter/exit handling. */
