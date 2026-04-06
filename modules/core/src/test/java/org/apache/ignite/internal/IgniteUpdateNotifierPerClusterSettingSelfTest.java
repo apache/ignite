@@ -25,6 +25,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  */

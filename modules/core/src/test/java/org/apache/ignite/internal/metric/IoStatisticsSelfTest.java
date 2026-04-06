@@ -48,6 +48,8 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests for IO statistic manager.

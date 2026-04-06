@@ -62,6 +62,11 @@ import static org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobSta
 import static org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState.CANCELED;
 import static org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState.PASSIVE;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests for compute task {@link SystemView}. */
 public class SystemViewComputeJobTest extends GridCommonAbstractTest {

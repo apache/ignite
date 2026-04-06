@@ -43,6 +43,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test for various job callback annotations.
  */

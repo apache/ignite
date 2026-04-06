@@ -37,6 +37,10 @@ import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Wildcards test.
  */
@@ -660,7 +664,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         BinaryIdMapper mapper,
         BinarySerializer serializer,
         Collection<BinaryTypeConfiguration> cfgs
-    ) throws IgniteCheckedException {
+    ) {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
         BinaryConfiguration bCfg = new BinaryConfiguration();

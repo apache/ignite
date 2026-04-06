@@ -25,6 +25,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * The GirdGetOrStartSelfTest tests get or start semantics. See IGNITE-2941
  */
@@ -52,7 +55,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
             catch (IgniteException ignored) {
             }
             Ignite ignite2 = Ignition.getOrStart(cfg);
-            assertEquals("Must return same instance", ignite, ignite2);
+            assertEquals(ignite, ignite2, "Must return same instance");
         }
     }
 
@@ -70,7 +73,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
             catch (IgniteException ignored) {
             }
             Ignite ignite2 = Ignition.getOrStart(cfg);
-            assertEquals("Must return same instance", ignite, ignite2);
+            assertEquals(ignite, ignite2, "Must return same instance");
         }
     }
 }

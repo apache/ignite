@@ -59,6 +59,10 @@ import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcess
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.walDirs;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for testing diagnostics.

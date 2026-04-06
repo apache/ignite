@@ -25,6 +25,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests testing framewrok, epecially BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER test property.

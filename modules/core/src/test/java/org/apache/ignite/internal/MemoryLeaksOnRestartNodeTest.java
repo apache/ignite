@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests leaks on node restart with enabled persistence.
  */
@@ -103,9 +105,8 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
         final float leakSize = (float)(dumpFile.length() - size0) / 1024 / 1024 / NODES / RESTARTS;
 
-        assertTrue("Possible leaks detected. The " + leakSize + "M leaks per node restart after " + RESTARTS
-                + " restarts. See the '" + dumpFile.getAbsolutePath() + "'",
-            leakSize < ALLOW_LEAK_ON_RESTART_IN_MB);
+        assertTrue(leakSize < ALLOW_LEAK_ON_RESTART_IN_MB, "Possible leaks detected. The " + leakSize + "M leaks per node restart after " +
+            RESTARTS + " restarts. See the '" + dumpFile.getAbsolutePath() + "'");
 
         // Remove dump if successful.
         dumpFile.delete();

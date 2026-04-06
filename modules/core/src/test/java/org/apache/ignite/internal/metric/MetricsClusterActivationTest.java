@@ -45,6 +45,9 @@ import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.
 import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests metrics on a cluster activation.

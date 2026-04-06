@@ -49,6 +49,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  *
  */
@@ -124,11 +127,11 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
             for (int i = 0; i < 10; ++i) {
                 Integer res1 = ignite.compute().execute(taskCls, null);
                 assertNotNull(res1);
-                assertEquals("Invalid res1: ", expected, (int)res1);
+                assertEquals(expected, (int)res1, "Invalid res1: ");
 
                 res1 = client.compute(ignite.compute().clusterGroup().forNodeId(ignite.localNode().id())).execute(taskCls, null);
                 assertNotNull(res1);
-                assertEquals("Invalid res1: ", expected, (int)res1);
+                assertEquals(expected, (int)res1, "Invalid res1: ");
             }
         });
 
@@ -151,11 +154,11 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
             for (int i = 0; i < 10; ++i) {
                 Integer res1 = ignite.compute().execute(taskCls, null);
                 assertNotNull(res1);
-                assertEquals("Invalid res: ", expected, (int)res1);
+                assertEquals(expected, (int)res1, "Invalid res: ");
 
                 res1 = client.compute(ignite.compute().clusterGroup().forNodeId(ignite.localNode().id())).execute(taskCls, null);
                 assertNotNull(res1);
-                assertEquals("Invalid res: ", expected, (int)res1);
+                assertEquals(expected, (int)res1, "Invalid res: ");
             }
         });
 
@@ -431,13 +434,13 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                 Integer res1 = ignite.compute().execute(taskCls1.getName(), null);
 
                 assert res1 != null;
-                assertEquals("Invalid res1: ", 1, (int)res1);
+                assertEquals(1, (int)res1, "Invalid res1: ");
 
                 ignite.compute().localDeployTask(taskCls2, ldr2);
                 Integer res2 = ignite.compute().execute(taskCls2.getName(), null);
 
                 assert res2 != null;
-                assertEquals("Invalid res2: ", 2, (int)res2);
+                assertEquals(2, (int)res2, "Invalid res2: ");
             }
         }
         finally {

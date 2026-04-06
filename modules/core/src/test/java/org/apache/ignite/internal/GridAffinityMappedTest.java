@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests affinity mapping when {@link AffinityKeyMapper} is used.
@@ -96,7 +98,7 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList(0));
 
         assertNotNull(map);
-        assertEquals("Invalid map size: " + map.size(), 1, map.size());
+        assertEquals(1, map.size(), "Invalid map size: " + map.size());
         assertEquals(F.first(map.keySet()), first);
 
         UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1).id();

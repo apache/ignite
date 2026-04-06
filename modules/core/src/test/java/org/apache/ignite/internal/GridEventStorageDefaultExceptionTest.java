@@ -27,6 +27,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Event storage tests with default no-op spi.
  */
@@ -58,8 +60,8 @@ public class GridEventStorageDefaultExceptionTest extends GridCommonAbstractTest
         }
         catch (IgniteException e) {
             assertTrue(
-                "Wrong exception message: " + e.getMessage(),
-                e.getMessage().startsWith("Failed to query events because default no-op event storage SPI is used."));
+                e.getMessage().startsWith("Failed to query events because default no-op event storage SPI is used."),
+                "Wrong exception message: " + e.getMessage());
         }
     }
 
@@ -75,8 +77,8 @@ public class GridEventStorageDefaultExceptionTest extends GridCommonAbstractTest
         }
         catch (IgniteException e) {
             assertTrue(
-                "Wrong exception message: " + e.getMessage(),
-                e.getMessage().startsWith("Failed to query events due to exception on remote node."));
+                e.getMessage().startsWith("Failed to query events due to exception on remote node."),
+                "Wrong exception message: " + e.getMessage());
 
             boolean found = false;
 
@@ -91,7 +93,7 @@ public class GridEventStorageDefaultExceptionTest extends GridCommonAbstractTest
                 }
             }
 
-            assertTrue("Incorrect exception thrown.", found);
+            assertTrue(found, "Incorrect exception thrown.");
         }
     }
 }

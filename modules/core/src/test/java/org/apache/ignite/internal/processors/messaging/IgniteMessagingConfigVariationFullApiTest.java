@@ -29,6 +29,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * The test checks process messaging.
  */

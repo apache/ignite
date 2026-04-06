@@ -110,7 +110,14 @@ import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Binary marshaller tests.
@@ -521,7 +528,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         ArrayFieldClass o2 = marshalUnmarshal(o1);
 
-        assertSame("Same array should be returned because of HANDLE usage", o2.arr1, o2.arr2);
+        assertSame(o2.arr1, o2.arr2, "Same array should be returned because of HANDLE usage");
 
         assertArrayEquals(o1.arr1, o2.arr1);
     }
@@ -1116,7 +1123,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
                 // Must be assertSame but now BinaryObjectBuilder doesn't support handle to collection.
                 // Now we check only that BinaryObjectBuilder#getField doesn't crash and returns valid collection.
-                assertEquals("Check: " + flds, col, colHnd);
+                assertEquals(col, colHnd, "Check: " + flds);
             }
 
             bo = bob.build();
@@ -1605,8 +1612,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po1.field("val1"));
-        assertEquals(null, po1.field("val2"));
-        assertEquals(null, po1.field("val3"));
+        assertEquals(null, (Object)po1.field("val2"));
+        assertEquals(null, (Object)po1.field("val3"));
 
         DynamicObject do1 = po1.deserialize();
 
@@ -1618,7 +1625,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         assertEquals(new Integer(10), po2.field("val1"));
         assertEquals(new Integer(20), po2.field("val2"));
-        assertEquals(null, po2.field("val3"));
+        assertEquals(null, (Object)po2.field("val3"));
 
         DynamicObject do2 = po2.deserialize();
 

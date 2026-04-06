@@ -23,6 +23,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Ensures that system properties required by Visor are always passed to node attributes.
  */

@@ -207,6 +207,11 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -252,7 +257,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             for (CacheView row : caches)
                 cacheNames.remove(row.cacheName());
 
-            assertTrue(cacheNames.toString(), cacheNames.isEmpty());
+            assertTrue(cacheNames.isEmpty(), cacheNames.toString());
         }
     }
 
@@ -272,7 +277,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             for (CacheGroupView row : grps)
                 grpNames.remove(row.cacheGroupName());
 
-            assertTrue(grpNames.toString(), grpNames.isEmpty());
+            assertTrue(grpNames.isEmpty(), grpNames.toString());
         }
     }
 
@@ -649,7 +654,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     ComputeTaskView t = tasks.iterator().next();
 
-                    assertEquals("Expecting to see " + (internal ? "internal" : "user") + " task", internal, t.internal());
+                    assertEquals(internal, t.internal(), "Expecting to see " + (internal ? "internal" : "user") + " task");
                     assertNull(t.affinityCacheName());
                     assertEquals(-1, t.affinityPartitionId());
                     assertTrue(t.taskClassName().startsWith(getClass().getName()));
@@ -676,12 +681,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt; i++) {
             SystemView<ComputeJobView> jobs = grid(i).context().systemView().view(JOBS_VIEW);
 
-            assertTrue("Expecting to see " + (internal ? "internal" : "user") + " job", jobs.size() > 0);
+            assertTrue(jobs.size() > 0, "Expecting to see " + (internal ? "internal" : "user") + " job");
 
             ComputeJobView job = jobs.iterator().next();
 
             assertEquals(sesId, job.sessionId());
-            assertEquals("Expecting to see " + (internal ? "internal" : "user") + " job", internal, job.isInternal());
+            assertEquals(internal, job.isInternal(), "Expecting to see " + (internal ? "internal" : "user") + " job");
         }
 
         releaseJobLatch.countDown();
@@ -2333,8 +2338,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
                 assertNotNull(v.snapshotRecordSegment());
-                assertTrue("snapshotTime should be non-zero value",
-                        v.snapshotTime() > 0);
+                assertTrue(v.snapshotTime() > 0, "snapshotTime should be non-zero value");
 
                 Integer incIdx = v.incrementIndex();
 
@@ -2406,7 +2410,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 if (regionName.equals(view.dataRegionName())) {
                     if ((ts1 >= view.intervalStart().getTime() && ts1 <= view.intervalEnd().getTime()) ||
                         (ts2 >= view.intervalStart().getTime() && ts2 <= view.intervalEnd().getTime())) {
-                        assertTrue("Unexpected pages count: " + view.pagesCount(), view.pagesCount() > 0);
+                        assertTrue(view.pagesCount() > 0, "Unexpected pages count: " + view.pagesCount());
 
                         totalCnt += view.pagesCount();
                     }

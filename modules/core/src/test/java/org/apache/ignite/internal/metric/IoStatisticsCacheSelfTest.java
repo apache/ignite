@@ -48,6 +48,8 @@ import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanIm
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for cache IO statistics for inmemory mode.

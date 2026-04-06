@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test local class deployment on client reconnect.

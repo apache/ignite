@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** */
 public class LogExporterSpiTest extends AbstractExporterSpiTest {

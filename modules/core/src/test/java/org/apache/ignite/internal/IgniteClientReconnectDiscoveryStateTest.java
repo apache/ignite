@@ -32,6 +32,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -74,7 +78,7 @@ public class IgniteClientReconnectDiscoveryStateTest extends IgniteClientReconne
             for (Map.Entry<Integer, Integer> e : nodeCnt.entrySet()) {
                 Collection<ClusterNode> nodes = cluster.topology(e.getKey());
 
-                assertNotNull("No nodes for topology: " + e.getKey(), nodes);
+                assertNotNull(nodes, "No nodes for topology: " + e.getKey());
                 assertEquals((int)e.getValue(), nodes.size());
             }
         }
@@ -128,7 +132,7 @@ public class IgniteClientReconnectDiscoveryStateTest extends IgniteClientReconne
         for (Map.Entry<Integer, Integer> e : nodeCnt.entrySet()) {
             Collection<ClusterNode> nodes = cluster.topology(e.getKey());
 
-            assertNotNull("No nodes for topology: " + e.getKey(), nodes);
+            assertNotNull(nodes, "No nodes for topology: " + e.getKey());
             assertEquals((int)e.getValue(), nodes.size());
         }
 

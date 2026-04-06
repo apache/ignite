@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.metric.MetricsConfigurationTest.metricsBean;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test of local node IO statistics MX bean.
@@ -107,7 +108,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      * @throws Exception In case of failure.
      */
     @Test
-    public void testCacheBasic() throws Exception {
+    public void testCacheBasic() {
         int cnt = 100;
 
         populateCache(cnt);

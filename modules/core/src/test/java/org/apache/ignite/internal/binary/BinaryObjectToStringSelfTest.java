@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@code BinaryObject.toString()}.
@@ -91,14 +93,14 @@ public class BinaryObjectToStringSelfTest extends GridCommonAbstractTest {
         );
 
         for (String type : types) {
-            assertFalse(String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT - 1),
-                    containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT - 1)));
+            assertFalse(containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT - 1)),
+                String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT - 1));
 
-            assertFalse(String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT),
-                    containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT)));
+            assertFalse(containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT)),
+                String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT));
 
-            assertTrue(String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT + 1),
-                    containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT + 1)));
+            assertTrue(containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT + 1)),
+                String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT + 1));
         }
     }
 

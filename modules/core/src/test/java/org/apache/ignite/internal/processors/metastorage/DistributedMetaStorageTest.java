@@ -51,6 +51,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with disabled persistence.
@@ -219,7 +225,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             metastorage(i).write(key, val);
 
             for (int j = 0; j < cnt; j++)
-                assertEquals(i + " " + j, val, metastorage(j).read(key));
+                assertEquals(val, metastorage(j).read(key), i + " " + j);
         }
 
         for (int i = 1; i < cnt; i++)

@@ -34,6 +34,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * BinaryObjectExceptionSelfTest
  */
@@ -125,12 +128,12 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
 
                     Throwable t = ex;
 
-                    assertTrue(t.getMessage(), t.getMessage().contains(
-                        "object [typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value"));
+                    assertTrue(t.getMessage().contains("object [typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value"),
+                        t.getMessage());
 
                     t = t.getCause();
 
-                    assertTrue(t.getMessage(), t.getMessage().contains("field [name=" + f.getName()));
+                    assertTrue(t.getMessage().contains("field [name=" + f.getName()), t.getMessage());
 
                     ++unexpectedCnt;
                 }
@@ -141,7 +144,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
             a[i] = old;
         }
 
-        assertEquals("Fields count must match \"Unexpected field type\" exception count", fields.length, unexpectedCnt);
+        assertEquals(fields.length, unexpectedCnt, "Fields count must match \"Unexpected field type\" exception count");
     }
 
     /**

@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests usage of affinity in case when cache doesn't exist.
  */
@@ -71,7 +74,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         final Affinity<Object> aff = ignite.affinity("noCache");
 
-        assertFalse("Affinity proxy instance expected", aff instanceof GridCacheAffinityImpl);
+        assertFalse(aff instanceof GridCacheAffinityImpl, "Affinity proxy instance expected");
 
         final ClusterNode n = ignite.cluster().localNode();
 

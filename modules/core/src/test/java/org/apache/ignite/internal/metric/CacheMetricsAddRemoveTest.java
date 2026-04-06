@@ -45,6 +45,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /** */
 @ParameterizedClass(name = "cacheMode={0},nearEnabled={1}")

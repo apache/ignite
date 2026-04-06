@@ -37,6 +37,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Tests for ID and tag features of IgniteCluster.
  */
@@ -159,7 +165,7 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(reconnectEvt::get, 10_000));
 
-        assertEquals("OldID " + oldId, cluster0.id(), client0.cluster().id());
+        assertEquals(cluster0.id(), client0.cluster().id(), "OldID " + oldId);
         assertEquals(cluster0.tag(), client0.cluster().tag());
     }
 

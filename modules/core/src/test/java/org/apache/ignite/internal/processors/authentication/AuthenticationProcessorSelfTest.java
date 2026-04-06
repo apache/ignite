@@ -45,6 +45,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.

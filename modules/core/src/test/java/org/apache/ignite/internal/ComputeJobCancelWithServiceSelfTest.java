@@ -33,6 +33,10 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test cancellation of a job that depends on service.
  */
@@ -86,7 +90,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
          * @return Response.
          */
         public int hello() {
-            assertFalse("Service already cancelled!", cancelled);
+            assertFalse(cancelled, "Service already cancelled!");
 
             return 42;
         }

@@ -34,6 +34,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test PeriodicHistogramMetricImpl class.
  */
@@ -130,7 +133,7 @@ public class PeriodicHistogramMetricImplTest extends GridCommonAbstractTest {
                 long sum = Arrays.stream(buckets()).sum();
 
                 // Check that no buckets were lost during concurrent calculation.
-                assertTrue("Unexpected items count " + sum, sum >= valPerBucket * bucketsCnt);
+                assertTrue(sum >= valPerBucket * bucketsCnt, "Unexpected items count " + sum);
             }
         }, threadCnt, "histogram-updater");
 
@@ -237,8 +240,9 @@ public class PeriodicHistogramMetricImplTest extends GridCommonAbstractTest {
 
             long[] hist = buckets();
 
-            assertTrue("Unexpected items count " + hist[0] + ", expected between " + (i * threadCnt) + " and " +
-                (i + 1) * threadCnt, hist[0] >= i * threadCnt && hist[0] <= (i + 1) * threadCnt);
+            assertTrue(hist[0] >= i * threadCnt && hist[0] <= (i + 1) * threadCnt,
+                "Unexpected items count " + hist[0] + ", expected between " + (i * threadCnt) + " and " +
+                    (i + 1) * threadCnt);
 
             for (int j = 1; j < hist.length; j++)
                 assertEquals(0, hist[j]);

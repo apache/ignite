@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.

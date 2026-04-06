@@ -40,6 +40,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Tests for {@link CacheView} expiry policy factory representation. */
 @ParameterizedClass(name = "factory={0}, actual={1}")

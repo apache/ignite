@@ -34,6 +34,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for disabled {@link IgniteAuthenticationProcessor}.
@@ -229,6 +230,6 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         startGrid(clientCfg);
 
-        assertEquals("Unexpected cluster size", 2, grid(1).cluster().nodes().size());
+        assertEquals(2, grid(1).cluster().nodes().size(), "Unexpected cluster size");
     }
 }

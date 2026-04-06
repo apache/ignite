@@ -41,6 +41,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -521,7 +524,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @param size Expected cluster size.
      */
     private void assertClusterSize(int size) throws IgniteInterruptedCheckedException {
-        assertTrue("Expected cluster size: " + size + ", but was: " + Ignition.allGrids().size(),
-            waitForCondition(() -> Ignition.allGrids().size() == size, getTestTimeout()));
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == size, getTestTimeout()),
+            "Expected cluster size: " + size + ", but was: " + Ignition.allGrids().size());
     }
 }

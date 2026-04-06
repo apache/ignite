@@ -28,6 +28,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */

@@ -131,6 +131,11 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class JmxExporterSpiTest extends AbstractExporterSpiTest {
@@ -286,7 +291,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(res.containsAll(EXPECTED_ATTRIBUTES));
 
         for (String metricName : res)
-            assertNotNull(metricName, dataRegionMBean.getAttribute(metricName));
+            assertNotNull(dataRegionMBean.getAttribute(metricName), metricName);
 
         DataRegionConfiguration cfg =
             ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
@@ -370,7 +375,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             cacheNames.remove(row.get("cacheName"));
         }
 
-        assertTrue(cacheNames.toString(), cacheNames.isEmpty());
+        assertTrue(cacheNames.isEmpty(), cacheNames.toString());
     }
 
     /** */
@@ -391,7 +396,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             grpNames.remove(row.get("cacheGroupName"));
         }
 
-        assertTrue(grpNames.toString(), grpNames.isEmpty());
+        assertTrue(grpNames.isEmpty(), grpNames.toString());
     }
 
     /** */

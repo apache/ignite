@@ -27,6 +27,8 @@ import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Contains tests for compact offsets.
  */
@@ -152,7 +154,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
         assert field1Desc.exists(portObj);
         assert field2Desc.exists(portObj);
 
-        assert Arrays.equals(obj.field1, (byte[])field1Desc.value(portObj));
+        assert Arrays.equals(obj.field1, field1Desc.value(portObj));
         assert obj.field2 == (Integer)field2Desc.value(portObj);
 
         // 3. Test deserialize.

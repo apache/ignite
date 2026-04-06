@@ -39,6 +39,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.testframework.GridTestUtils.assertEqualsArraysAware;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {

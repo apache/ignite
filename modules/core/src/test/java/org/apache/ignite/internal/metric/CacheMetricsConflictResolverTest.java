@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Tests conflict resolver metrics per cache. */
 public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {

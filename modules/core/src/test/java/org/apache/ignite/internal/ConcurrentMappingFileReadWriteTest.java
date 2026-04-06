@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests concurrent read/write operations for {@code org.apache.ignite.internal.MarshallerMappingFileStore}.

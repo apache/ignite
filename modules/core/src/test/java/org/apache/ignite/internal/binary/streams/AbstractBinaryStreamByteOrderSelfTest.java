@@ -28,6 +28,7 @@ import static org.apache.ignite.GridTestIoUtils.getIntByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getLongByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getShortByByteLE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -113,7 +114,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testShortArray() throws Exception {
+    public void testShortArray() {
         short[] arr = new short[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -133,7 +134,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testChar() throws Exception {
+    public void testChar() {
         char val = (char)RND.nextLong();
 
         reset();

@@ -38,6 +38,9 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Contains tests for binary enums.
  */

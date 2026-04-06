@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_PO
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewClusterActivationTest extends GridCommonAbstractTest {

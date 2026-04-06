@@ -27,6 +27,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.
  */

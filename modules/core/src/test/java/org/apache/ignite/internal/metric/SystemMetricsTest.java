@@ -24,6 +24,8 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /** */
 public class SystemMetricsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -51,7 +53,7 @@ public class SystemMetricsTest extends GridCommonAbstractTest {
 
         double loadVal = cpuLoad.value();
 
-        assertTrue("CPU Load is negative: " + loadVal, loadVal >= 0);
+        assertTrue(loadVal >= 0, "CPU Load is negative: " + loadVal);
     }
 
     /**
@@ -61,6 +63,6 @@ public class SystemMetricsTest extends GridCommonAbstractTest {
     public void testTotalSystemMemory() {
         long phyMem = (long)grid(0).context().nodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM);
 
-        assertTrue("Total system memory size is negative: " + phyMem, phyMem >= 0);
+        assertTrue(phyMem >= 0, "Total system memory size is negative: " + phyMem);
     }
 }

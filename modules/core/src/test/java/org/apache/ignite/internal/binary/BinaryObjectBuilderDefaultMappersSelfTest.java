@@ -46,6 +46,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Binary builder test.
