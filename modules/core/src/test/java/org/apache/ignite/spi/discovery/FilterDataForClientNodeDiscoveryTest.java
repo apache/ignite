@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -121,7 +122,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     }
 
     /** */
-    private class TestDiscoverySpi extends org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi {
+    private class TestDiscoverySpi extends TestTcpDiscoverySpi {
         /** Test exchange. */
         private TestDiscoveryDataExchange testEx = new TestDiscoveryDataExchange();
 
