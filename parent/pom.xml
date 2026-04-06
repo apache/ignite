@@ -96,7 +96,7 @@
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.2</lucene.version>
         <lz4.version>1.10.1</lz4.version>
-        <maven.bundle.plugin.version>6.0.0</maven.bundle.plugin.version>
+        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
@@ -482,7 +482,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.6.1</version>
                 </plugin>
 
                 <plugin>
@@ -935,7 +935,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.7.0</version>
+                        <version>3.14.1</version>
                         <configuration>
                             <compilerArgs>
                                 <arg>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
@@ -1022,7 +1022,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.7.0</version>
+                        <version>3.14.1</version>
                         <configuration>
                             <compilerArgs>
                                 <arg>--add-exports</arg>
