@@ -32,9 +32,9 @@ public interface PerformanceStatisticsHandler {
     /**
      * @param nodeId Node id.
      * @param fileFormatVer Performance statistics file format version.
-     * @param igniteVer Ignite version stored in file header, if present.
+     * @param ignVer Ignite version stored in file header, if present.
      */
-    default void version(UUID nodeId, short fileFormatVer, @Nullable String igniteVer) {
+    default void version(UUID nodeId, short fileFormatVer, @Nullable String ignVer) {
         // No-op.
     }
 

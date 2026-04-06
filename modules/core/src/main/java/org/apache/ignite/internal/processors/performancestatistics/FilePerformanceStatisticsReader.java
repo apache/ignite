@@ -237,7 +237,7 @@ public class FilePerformanceStatisticsReader {
                 return false;
 
             short ver = buf.getShort();
-            String igniteVer = null;
+            String ignVer = null;
 
             if (ver == FILE_FORMAT_VERSION) {
                 ForwardableString verStr = readString(buf);
@@ -245,14 +245,14 @@ public class FilePerformanceStatisticsReader {
                 if (verStr == null)
                     return false;
 
-                igniteVer = verStr.str;
+                ignVer = verStr.str;
             }
             else if (ver != LEGACY_FILE_FORMAT_VERSION_1)
                 throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", currentVer=" +
                     FILE_FORMAT_VERSION + ']');
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.version(nodeId, ver, igniteVer);
+                hnd.version(nodeId, ver, ignVer);
 
             return true;
         }
