@@ -3219,15 +3219,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (tx.masterNodeIds().contains(nodeId))
                         continue;
 
-                    if (salvageReq == null)
-                        salvageReq = new GridDhtTxSalvageMessage(tx.nearXidVersion());
+                    ClusterNode involvedNode = cctx.discovery().node(nodeId);
 
-                    try {
-                        cctx.io().send(nodeId, salvageReq, tx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.warning("Failed to send salvage message [failedNodeId=" + evtNodeId +
-                            ", nodeId=" + nodeId + ']', e);
+                    if (involvedNode != null && !involvedNode.isLocal()) {
+                        if (salvageReq == null)
+                            salvageReq = new GridDhtTxSalvageMessage(tx.nearXidVersion());
+
+                        try {
+                            cctx.io().send(nodeId, salvageReq, tx.ioPolicy());
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.warning("Failed to send salvage message [failedNodeId=" + evtNodeId +
+                                ", nodeId=" + nodeId + ']', e);
+                        }
                     }
                 }
             }

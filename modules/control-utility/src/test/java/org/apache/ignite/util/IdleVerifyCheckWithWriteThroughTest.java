@@ -239,12 +239,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         awaitPartitionMapExchange();
 
-        for (int nodeIdx : List.of(0, 2)) {
-            IgniteEx g = grid(nodeIdx);
-            IgniteCache<Object, Object> cacheInner = g.cache(DEFAULT_CACHE_NAME);
-            waitForCondition(() -> secondVal == (int)cacheInner.get(primaryKey), 1_000);
-        }
-
         assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
 
         String out = testOut.toString();
@@ -263,6 +257,12 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
                 "updateCntr=1, partitionState=OWNING, size=1")), is(containsString(CORRECT_VERIFY_MSG))));
         }
         testOut.reset();
+
+        for (int nodeIdx : List.of(0, 2)) {
+            IgniteEx g = grid(nodeIdx);
+            IgniteCache<Object, Object> cacheInner = g.cache(DEFAULT_CACHE_NAME);
+            waitForCondition(() -> secondVal == (int)cacheInner.get(primaryKey), 1_000);
+        }
 
         if (withPersistence) {
             stopAllGrids();
