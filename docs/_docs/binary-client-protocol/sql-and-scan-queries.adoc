@@ -267,7 +267,7 @@ UPDATE = 2
 |bool|    Replicated only - Whether query contains only replicated tables or not.
 |bool|    Enforce join order.
 |bool|    Collocated - Whether your data is co-located or not.
-|bool|    Lazy query execution.
+|bool|    [Deprecated] Lazy query execution. This flag is not used anymore on server side.
 |long|    Timeout (milliseconds).
 |bool|    Include field names.
 |===
@@ -355,7 +355,7 @@ out.writeBoolean(false);
 out.writeBoolean(false);
 
 // Lazy
-out.writeBoolean(false);
+out.writeBoolean(true);
 
 // Timeout
 writeLongLittleEndian(5000, out);
@@ -631,4 +631,3 @@ readResponseHeader(in);
 ----
 
 --
-

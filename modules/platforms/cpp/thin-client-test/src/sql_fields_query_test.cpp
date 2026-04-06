@@ -109,7 +109,6 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQueryDefaults)
     BOOST_CHECK(!qry.IsCollocated());
     BOOST_CHECK(!qry.IsDistributedJoins());
     BOOST_CHECK(!qry.IsEnforceJoinOrder());
-    BOOST_CHECK(qry.IsLazy());
 }
 
 BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
@@ -127,7 +126,6 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
     qry.SetCollocated(true);
     qry.SetDistributedJoins(true);
     qry.SetEnforceJoinOrder(true);
-    qry.SetLazy(true);
 
     qry.SetUpdateBatchSize(42);
 
@@ -149,7 +147,6 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
     BOOST_CHECK(qry.IsCollocated());
     BOOST_CHECK(qry.IsDistributedJoins());
     BOOST_CHECK(qry.IsEnforceJoinOrder());
-    BOOST_CHECK(qry.IsLazy());
 
     BOOST_CHECK_EQUAL(qry.GetUpdateBatchSize(), 42);
 

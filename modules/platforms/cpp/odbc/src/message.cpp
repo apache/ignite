@@ -75,7 +75,7 @@ namespace ignite
             writer.WriteBool(config.IsCollocated());
 
             if (version >= ProtocolVersion::VERSION_2_1_5)
-                writer.WriteBool(config.IsLazy());
+                writer.WriteBool(true);
 
             if (version >= ProtocolVersion::VERSION_2_3_0)
                 writer.WriteBool(config.IsSkipReducerOnUpdate());

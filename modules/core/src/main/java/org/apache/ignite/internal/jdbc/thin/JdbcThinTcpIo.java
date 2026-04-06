@@ -287,7 +287,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isCollocated());
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
-        writer.writeBoolean(connProps.isLazy());
+        writer.writeBoolean(true); // Lazy flag.
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         if (ver.compareTo(VER_2_7_0) >= 0)

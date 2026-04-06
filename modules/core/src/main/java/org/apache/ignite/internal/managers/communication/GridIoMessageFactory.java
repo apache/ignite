@@ -189,12 +189,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gro
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPairSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMapSerializer;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionCountersMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionCountersMapSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMapSerializer;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessageSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
@@ -550,13 +546,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new BinaryMetadataVersionInfoSerializer());
         factory.register(506, CachePartitionFullCountersMap::new,
             new CachePartitionFullCountersMapSerializer());
-        factory.register(507, IgniteDhtPartitionCountersMap::new,
-            new IgniteDhtPartitionCountersMapSerializer());
         factory.register(508, GroupPartitionIdPair::new, new GroupPartitionIdPairSerializer());
         factory.register(510, IgniteDhtPartitionHistorySuppliersMap::new,
             new IgniteDhtPartitionHistorySuppliersMapSerializer());
-        factory.register(513, IgniteDhtPartitionsToReloadMap::new,
-            new IgniteDhtPartitionsToReloadMapSerializer());
         factory.register(517, GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
         factory.register(518, GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
         factory.register(519, GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer());

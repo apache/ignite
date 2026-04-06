@@ -353,11 +353,6 @@ namespace ignite
 
                     rowPos += ROW_HEIGHT;
 
-                    lazyCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
-                        "Lazy", ChildId::LAZY_CHECK_BOX, config.IsLazy());
-
-                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
-
                     skipReducerOnUpdateCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL, rowPos,
                         checkBoxSize, ROW_HEIGHT, "Skip reducer on update", ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
                         config.IsSkipReducerOnUpdate());
@@ -434,13 +429,6 @@ namespace ignite
                                     break;
                                 }
 
-                                case ChildId::LAZY_CHECK_BOX:
-                                {
-                                    lazyCheckBox->SetChecked(!lazyCheckBox->IsChecked());
-
-                                    break;
-                                }
-
                                 case ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX:
                                 {
                                     skipReducerOnUpdateCheckBox->SetChecked(!skipReducerOnUpdateCheckBox->IsChecked());
@@ -454,7 +442,6 @@ namespace ignite
                                     protocolVersionComboBox->GetText(versionStr);
 
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
-                                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
                                     skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
                                     engineModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_13_0);
 
@@ -613,7 +600,6 @@ namespace ignite
                     bool enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
                     bool replicatedOnly = replicatedOnlyCheckBox->IsChecked();
                     bool collocated = collocatedCheckBox->IsChecked();
-                    bool lazy = lazyCheckBox->IsChecked();
                     bool skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
                     LOG_MSG("Retrieving arguments:");
@@ -623,7 +609,6 @@ namespace ignite
                     LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
                     LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
                     LOG_MSG("Collocated:             " << (collocated ? "true" : "false"));
-                    LOG_MSG("Lazy:                   " << (lazy ? "true" : "false"));
                     LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
                     cfg.SetPageSize(pageSize);
@@ -632,7 +617,6 @@ namespace ignite
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);
                     cfg.SetCollocated(collocated);
-                    cfg.SetLazy(lazy);
                     cfg.SetSkipReducerOnUpdate(skipReducerOnUpdate);
                 }
             }

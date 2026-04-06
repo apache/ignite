@@ -349,10 +349,10 @@
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <artifactSet>
                                 <includes>
-                                    <include>${groupId}:ignite-commons</include>
-                                    <include>${groupId}:ignite-binary-api</include>
-                                    <include>${groupId}:ignite-binary-impl</include>
-                                    <include>${groupId}:ignite-grid-unsafe</include>
+                                    <include>${project.groupId}:ignite-commons</include>
+                                    <include>${project.groupId}:ignite-binary-api</include>
+                                    <include>${project.groupId}:ignite-binary-impl</include>
+                                    <include>${project.groupId}:ignite-grid-unsafe</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
