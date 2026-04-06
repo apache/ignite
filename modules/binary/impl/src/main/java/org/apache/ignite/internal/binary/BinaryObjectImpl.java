@@ -128,6 +128,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         this.valBytes = valBytes;
 
         arr = arrayFromValueBytes(coCtx);
+        
+        coCtx.waitMetadataWriteIfNeeded(typeId());
     }
 
     /** {@inheritDoc} */
@@ -236,8 +238,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             arr = arrayFromValueBytes(ctx);
 
         this.ctx = ctx.binaryContext();
-
-        ctx.waitMetadataWriteIfNeeded(typeId());
     }
 
     /** {@inheritDoc} */
