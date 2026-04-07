@@ -38,6 +38,7 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -1602,7 +1603,7 @@ public class DirectByteBufferStream {
             onUnmarshallingFailure(e);
 
             // Dummy cache object.
-            return new KeyCacheObjectImpl("", null, -1);
+            return new CacheObjectImpl();
         }
         finally {
             removeContext(ctx);
