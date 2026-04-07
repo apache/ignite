@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -27,6 +28,6 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new DiscoveryMessageFactory(jdk(), U.gridClassLoader());
+        return new CoreMessagesProvider(jdk(), U.gridClassLoader());
     }
 }

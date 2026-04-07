@@ -19,8 +19,8 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -63,7 +63,7 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
         this.connIdx = connIdx;
     }
 
-    /** Constructor for {@link DiscoveryMessageFactory}. */
+    /** Constructor for {@link CoreMessagesProvider}. */
     public TcpConnectionRequestDiscoveryMessage() {
         // No-op.
     }

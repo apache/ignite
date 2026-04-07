@@ -20,8 +20,8 @@ package org.apache.ignite.internal.direct;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 class TestNestedContainersMessage implements Message {
@@ -40,7 +40,7 @@ class TestNestedContainersMessage implements Message {
     @Order(2)
     Map<Integer, String[]> nestedArr;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public TestNestedContainersMessage() {
         // No-op.
     }

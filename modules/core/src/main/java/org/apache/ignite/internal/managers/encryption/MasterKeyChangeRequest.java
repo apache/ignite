@@ -21,9 +21,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Master key change request. */
 public class MasterKeyChangeRequest implements Message {
@@ -39,7 +39,7 @@ public class MasterKeyChangeRequest implements Message {
     @Order(2)
     byte[] digest;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public MasterKeyChangeRequest() {
         // No-op.
     }

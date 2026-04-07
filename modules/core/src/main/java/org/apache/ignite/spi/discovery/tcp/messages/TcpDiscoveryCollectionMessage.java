@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -52,7 +52,7 @@ public class TcpDiscoveryCollectionMessage implements MarshallableMessage {
     @GridToStringExclude
     @Nullable byte[] marshallableMsgsBytes;
 
-    /** Constructor for {@link DiscoveryMessageFactory}. */
+    /** Constructor for {@link CoreMessagesProvider}. */
     public TcpDiscoveryCollectionMessage() {
         // No-op.
     }

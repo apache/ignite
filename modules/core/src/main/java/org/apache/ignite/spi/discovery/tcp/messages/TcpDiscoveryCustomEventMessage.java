@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -53,7 +53,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     volatile @Nullable Message serMsg;
 
     /**
-     * Constructor for {@link DiscoveryMessageFactory}.
+     * Constructor for {@link CoreMessagesProvider}.
      */
     public TcpDiscoveryCustomEventMessage() {
         // No-op.

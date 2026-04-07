@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.distributed;
 
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -56,7 +56,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
             GridTestUtils.setFieldValue(this, TcpDiscoverySpi.class, "msgFactory", new IgniteMessageFactoryImpl(
-                new MessageFactoryProvider[] { new DiscoveryMessageFactory(jdk(), U.gridClassLoader()), FACTORY_PROVIDER}));
+                new MessageFactoryProvider[] { new CoreMessagesProvider(jdk(), U.gridClassLoader()), FACTORY_PROVIDER}));
 
             super.initLocalNode(srvPort, addExtAddrAttr);
         }

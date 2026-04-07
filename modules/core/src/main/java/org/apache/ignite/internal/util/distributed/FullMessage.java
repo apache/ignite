@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
@@ -28,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,7 +63,7 @@ public class FullMessage<R extends Message> implements DiscoveryCustomMessage, M
     @Order(4)
     Map<UUID, ErrorMessage> err;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public FullMessage() {
         // No-op.
     }

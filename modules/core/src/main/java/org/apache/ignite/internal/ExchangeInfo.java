@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.List;
 import java.util.Objects;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,7 +31,7 @@ public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseIn
     AffinityTopologyVersion topVer;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link CoreMessagesProvider}.
      */
     public ExchangeInfo() {
         // No-op.

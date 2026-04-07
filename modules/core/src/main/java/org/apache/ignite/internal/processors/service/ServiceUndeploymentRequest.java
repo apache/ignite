@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Service undeployment request.
  */
 public class ServiceUndeploymentRequest extends ServiceChangeAbstractRequest {
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public ServiceUndeploymentRequest() {
     }
 

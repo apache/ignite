@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -31,7 +31,7 @@ public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMe
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Constructor for {@link DiscoveryMessageFactory}. */
+    /** Constructor for {@link CoreMessagesProvider}. */
     public TcpDiscoveryNodeLeftMessage() {
         // No-op.
     }

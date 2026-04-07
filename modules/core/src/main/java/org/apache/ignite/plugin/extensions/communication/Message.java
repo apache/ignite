@@ -72,9 +72,8 @@ public interface Message {
         var clazz = getClass();
         Short type = REGISTRATIONS.get(clazz);
 
-        if (type == null) {
+        if (type == null)
             throw new IgniteException("No registration for class " + clazz.getSimpleName());
-        }
 
         return type;
     }

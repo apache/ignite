@@ -53,6 +53,7 @@ import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -109,7 +110,6 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.isRecoverableException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
@@ -832,7 +832,7 @@ public class GridNioServerWrapper {
 
                     @Override public MessageSerializer serializer(short type) {
                         // Enable sending wait message for a communication peer while context isn't initialized.
-                        if (impl == null && type == HANDSHAKE_WAIT_MSG_TYPE)
+                        if (impl == null && type == CoreMessagesProvider.HANDSHAKE_WAIT_MSG_TYPE)
                             return new HandshakeWaitMessageSerializer();
 
                         return get().serializer(type);

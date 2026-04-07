@@ -28,8 +28,8 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -65,8 +65,7 @@ public class DiscoveryMessageParser {
     /** */
     public DiscoveryMessageParser(Marshaller marsh) {
         this.marsh = marsh;
-        this.msgFactory = new IgniteMessageFactoryImpl(
-            new MessageFactoryProvider[] { new DiscoveryMessageFactory(marsh, U.gridClassLoader()) });
+        msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] { new CoreMessagesProvider(marsh, U.gridClassLoader()) });
     }
 
     /** Marshals discovery message to bytes array. */

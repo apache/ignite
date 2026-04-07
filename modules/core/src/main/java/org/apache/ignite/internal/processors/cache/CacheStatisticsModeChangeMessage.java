@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -58,7 +58,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
     byte flags;
 
     /**
-     * Constructor for {@link DiscoveryMessageFactory}.
+     * Constructor for {@link CoreMessagesProvider}.
      */
     public CacheStatisticsModeChangeMessage() {
         // No-op.

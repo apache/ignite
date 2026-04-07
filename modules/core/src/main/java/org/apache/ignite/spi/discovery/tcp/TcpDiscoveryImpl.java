@@ -39,6 +39,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -53,7 +54,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -409,7 +409,7 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     public void processCacheMetricsMessage(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
-        for (Map.Entry<UUID, TcpDiscoveryNodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
+        for (Map.Entry<UUID, NodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
             UUID srvrId = e.getKey();
             Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
             NodeMetricsMessage srvrMetricsMsg = e.getValue().nodeMetricsMessage();

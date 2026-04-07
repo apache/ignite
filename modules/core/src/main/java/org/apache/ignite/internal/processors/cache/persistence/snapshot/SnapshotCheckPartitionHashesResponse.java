@@ -21,11 +21,11 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class SnapshotCheckPartitionHashesResponse implements MarshallableMessage {
@@ -36,7 +36,7 @@ public class SnapshotCheckPartitionHashesResponse implements MarshallableMessage
     @Order(0)
     byte[] perMetaResultsBytes;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public SnapshotCheckPartitionHashesResponse() {
         // No-op.
     }

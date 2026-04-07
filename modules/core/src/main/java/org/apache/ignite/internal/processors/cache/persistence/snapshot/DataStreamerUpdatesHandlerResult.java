@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
@@ -27,7 +27,7 @@ public class DataStreamerUpdatesHandlerResult implements Message {
     @Order(0)
     boolean streamerWarning;
 
-    /** Default constructor for {@link GridIoMessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public DataStreamerUpdatesHandlerResult() {
         // No-op.
     }
@@ -41,5 +41,4 @@ public class DataStreamerUpdatesHandlerResult implements Message {
     public boolean streamerWarning() {
         return streamerWarning;
     }
-
 }

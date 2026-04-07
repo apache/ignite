@@ -21,8 +21,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +37,7 @@ public final class SnapshotCheckResponse<T extends Message> implements Message {
     @Order(1)
     @Nullable Map<String, ErrorMessage> errors;
 
-    /** Default constructor for {@link GridIoMessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public SnapshotCheckResponse() {
         // No-op.
     }

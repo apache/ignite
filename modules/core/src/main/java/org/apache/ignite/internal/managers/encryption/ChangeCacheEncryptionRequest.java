@@ -20,8 +20,8 @@ package org.apache.ignite.internal.managers.encryption;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Change cache group encryption key request.
@@ -48,7 +48,7 @@ public class ChangeCacheEncryptionRequest implements Message {
     @Order(4)
     byte[] masterKeyDigest;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public ChangeCacheEncryptionRequest() {
         // No-op.
     }

@@ -21,7 +21,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -35,7 +35,7 @@ public class InetAddressMessage implements Message {
     @Order(1)
     byte[] addrBytes;
 
-    /** Default constructor for {@link DiscoveryMessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public InetAddressMessage() {
         // No-op.
     }

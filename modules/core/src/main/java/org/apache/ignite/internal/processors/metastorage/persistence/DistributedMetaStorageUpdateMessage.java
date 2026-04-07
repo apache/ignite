@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -50,7 +50,7 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     @Order(3)
     byte[] valBytes;
 
-    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    /** Empty constructor for {@link CoreMessagesProvider}. */
     public DistributedMetaStorageUpdateMessage() {
         // No-op.
     }

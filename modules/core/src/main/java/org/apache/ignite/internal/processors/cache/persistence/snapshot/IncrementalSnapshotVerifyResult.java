@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
@@ -58,7 +58,7 @@ public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
     @Order(3)
     Collection<ErrorMessage> exceptions;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public IncrementalSnapshotVerifyResult() {
         // No-op.
     }

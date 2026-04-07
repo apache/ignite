@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class SnapshotCheckHandlersResponse implements Message {
@@ -28,7 +28,7 @@ public class SnapshotCheckHandlersResponse implements Message {
     @Order(0)
     Map<String, Map<String, SnapshotHandlerResult<Message>>> perMetaResults;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public SnapshotCheckHandlersResponse() {
         // No-op.
     }

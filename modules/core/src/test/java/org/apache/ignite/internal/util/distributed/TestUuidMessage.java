@@ -19,8 +19,8 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class TestUuidMessage implements Message {
@@ -28,7 +28,7 @@ public class TestUuidMessage implements Message {
     @Order(0)
     UUID val;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /** Default constructor for {@link CoreMessagesProvider}. */
     public TestUuidMessage() {
         // No-op.
     }

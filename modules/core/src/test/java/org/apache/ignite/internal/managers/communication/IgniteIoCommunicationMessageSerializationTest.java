@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -33,7 +34,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new GridIoMessageFactory(jdk(), U.gridClassLoader());
+        return new CoreMessagesProvider(jdk(), U.gridClassLoader());
     }
 
     /** {@inheritDoc} */

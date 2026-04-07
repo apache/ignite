@@ -26,6 +26,7 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
@@ -46,7 +47,7 @@ public class CompressedMessageTest {
     @Test
     public void testWriteReadHugeMessage() {
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new GridIoMessageFactory(jdk(), U.gridClassLoader())});
+            new CoreMessagesProvider(jdk(), U.gridClassLoader())});
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
