@@ -1602,7 +1602,7 @@ public class DirectByteBufferStream {
             onUnmarshallingFailure(e);
 
             // Dummy Key cache object.
-            return new KeyCacheObjectImpl("", null,-1);
+            return new KeyCacheObjectImpl("", null, -1);
         }
         finally {
             removeContext(ctx);
