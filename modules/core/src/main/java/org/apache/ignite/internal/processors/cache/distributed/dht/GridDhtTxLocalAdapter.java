@@ -605,7 +605,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                                         log.debug("Get removed entry: " + key);
                                 }
                             }
-                        } finally {
+                        }
+                        finally {
                             cctx.database().checkpointReadUnlock();
                         }
 

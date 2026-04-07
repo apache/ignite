@@ -1312,7 +1312,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
                         else
                             old = entry.rawGet();
-                    } finally {
+                    }
+                    finally {
                         cctx.database().checkpointReadUnlock();
                     }
 
