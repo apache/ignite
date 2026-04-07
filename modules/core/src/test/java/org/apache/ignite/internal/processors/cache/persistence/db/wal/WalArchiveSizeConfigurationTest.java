@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -40,12 +41,16 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  * Test suite for checking WAL archive size configuration validation.
  */
 public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
+    /** Log listener. */
+    private ListeningTestLogger listeningLog;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         stopAllGrids();
         cleanPersistenceDir();
+        listeningLog = new ListeningTestLogger(log());
     }
 
     /** {@inheritDoc} */
@@ -54,6 +59,13 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
 
         stopAllGrids();
         cleanPersistenceDir();
+        listeningLog.clearListeners();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setGridLogger(listeningLog);
     }
 
     /**
@@ -85,7 +97,7 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
      * Checks that an exception is thrown if WAL segment size is larger than max WAL archive size.
      */
     @Test
-    public void testIncorrectMaxArchiveSizeConfiguration() throws Exception {
+    public void testIncorrectMaxArchiveSizeConfiguration() {
         DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
             .setWalSegmentSize((int)U.MB)
             .setMaxWalArchiveSize(10)
@@ -93,12 +105,17 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration().setPersistenceEnabled(true)
             );
 
+        LogListener npeChecker = LogListener.matches(NullPointerException.class.getName()).build();
+        listeningLog.registerListener(npeChecker);
+
         assertThrowsAnyCause(
             log,
             () -> startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dataStorageConfiguration)),
             IgniteCheckedException.class,
             "maxWalArchiveSize must be no less than"
         );
+
+        assertFalse(npeChecker.check());
     }
 
     /**
