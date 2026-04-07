@@ -105,7 +105,7 @@ public class DirectByteBufferStream {
     private static final ThreadLocal<CacheObjectContext> coCtx = new ThreadLocal<>();
 
     /** */
-    private static final ThreadLocal<GridCacheMessage> cacheMsg = new ThreadLocal<>();
+    private static final ThreadLocal<List<GridCacheMessage>> cacheMsgs = new ThreadLocal<>();
     
     /** */
     private static final CacheObjectContext NULL_CACHE_CTX =
@@ -875,7 +875,7 @@ public class DirectByteBufferStream {
                             writeByteArray(obj.valueBytes(context()));
                         }
                         finally {
-                            removeContext(ctx);
+                            removeContext(ctx, msg);
                         }
 
                         if (!lastFinished)
@@ -914,7 +914,7 @@ public class DirectByteBufferStream {
                             writeByteArray(keyObj.valueBytes(context()));
                         }
                         finally {
-                            removeContext(ctx);
+                            removeContext(ctx, msg);
                         }
 
                         if (!lastFinished)
@@ -962,7 +962,7 @@ public class DirectByteBufferStream {
                     nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
                 }
                 finally {
-                    removeContext(ctx);
+                    removeContext(ctx, msg);
                 }
             }
             else
@@ -1559,7 +1559,7 @@ public class DirectByteBufferStream {
                 return new KeyCacheObjectImpl("", null, keyCacheObjPart);
             }
             finally {
-                removeContext(ctx);
+                removeContext(ctx, msg);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1601,7 +1601,7 @@ public class DirectByteBufferStream {
             return new CacheObjectImpl();
         }
         finally {
-            removeContext(ctx);
+            removeContext(ctx, msg);
         }
     }
 
@@ -1644,7 +1644,7 @@ public class DirectByteBufferStream {
                     lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
                 }
                 finally {
-                    removeContext(ctx);
+                    removeContext(ctx, msg);
                 }
             }
             finally {
@@ -2213,7 +2213,7 @@ public class DirectByteBufferStream {
             }
         }
         finally {
-            removeContext(ctx);
+            removeContext(ctx, msg);
         }
     }
 
@@ -2328,7 +2328,7 @@ public class DirectByteBufferStream {
             }
         }
         finally {
-            removeContext(ctx);
+            removeContext(ctx, msg);
         }
     }
 
@@ -2402,16 +2402,20 @@ public class DirectByteBufferStream {
         if (msg instanceof GridCacheGroupIdMessage)
             ctx = resolveContext(((GridCacheGroupIdMessage)msg).groupId());
 
+        if (msg instanceof GridCacheMessage) {
+            if (cacheMsgs.get() == null)
+                cacheMsgs.set(new ArrayList<>());
+
+            cacheMsgs.get().add((GridCacheMessage)msg);
+        }
+
         boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
 
         if (ctx != null || skipMarsh) {
             CacheObjectContext old = coCtx.get();
-            
-            assert old == null || old == ctx || old == NULL_CACHE_CTX : old;
           
             if (old == null) {
                 coCtx.set(skipMarsh ? NULL_CACHE_CTX : ctx);
-                cacheMsg.set((GridCacheMessage)msg);
 
                 return ctx;
             }
@@ -2435,9 +2439,12 @@ public class DirectByteBufferStream {
     }
 
     /** */
-    private void removeContext(CacheObjectContext ctx) {
+    private void removeContext(CacheObjectContext ctx, Message msg) {
         if (ctx != null)
             coCtx.remove();
+        
+        if (msg instanceof GridCacheMessage)
+            cacheMsgs.get().remove(msg);
     }
 
     /** */
@@ -2447,7 +2454,8 @@ public class DirectByteBufferStream {
 
     /** */
     private void onUnmarshallingFailure(Exception e) {
-        cacheMsg.get().onClassError(new IgniteCheckedException(e));
+        for (GridCacheMessage msg : cacheMsgs.get())
+            msg.onClassError(new IgniteCheckedException(e));
     }
 
     /** {@inheritDoc} */
