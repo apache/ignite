@@ -978,41 +978,41 @@ public class DirectByteBufferStream {
      * @param writer Writer.
      */
     public <T> void writeObjectArray(T[] arr, MessageArrayType type, Message msg, MessageWriter writer) {
-            if (arr != null) {
-                int len = arr.length;
+        if (arr != null) {
+            int len = arr.length;
 
-                if (arrPos == -1) {
-                    writeInt(len);
+            if (arrPos == -1) {
+                writeInt(len);
+
+                if (!lastFinished)
+                    return;
+
+                arrPos = 0;
+            }
+
+            CacheObjectContext ctx = setContext(msg);
+
+            try {
+                while (arrPos < len || arrCur != NULL) {
+                    if (arrCur == NULL)
+                        arrCur = arr[arrPos++];
+
+                    write(type.valueType(), msg, arrCur, writer);
 
                     if (!lastFinished)
                         return;
 
-                    arrPos = 0;
+                    arrCur = NULL;
                 }
-
-                CacheObjectContext ctx = setContext(msg);
-
-                try {
-                    while (arrPos < len || arrCur != NULL) {
-                        if (arrCur == NULL)
-                            arrCur = arr[arrPos++];
-
-                        write(type.valueType(), msg, arrCur, writer);
-
-                        if (!lastFinished)
-                            return;
-
-                        arrCur = NULL;
-                    }
-                }
-                finally {
-                    removeContext(ctx, msg);
-                }
-
-                arrPos = -1;
             }
-            else
-                writeInt(-1);
+            finally {
+                removeContext(ctx, msg);
+            }
+
+            arrPos = -1;
+        }
+        else
+            writeInt(-1);
     }
 
     /**
