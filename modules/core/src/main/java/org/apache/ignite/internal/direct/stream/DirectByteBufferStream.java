@@ -1555,7 +1555,7 @@ public class DirectByteBufferStream {
             catch (BinaryObjectException e) {
                 onUnmarshallingFailure(e);
 
-                // Dummy Key cache object.
+                // Dummy key cache object.
                 return new KeyCacheObjectImpl("", null, keyCacheObjPart);
             }
             finally {
