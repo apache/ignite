@@ -57,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessageSerializer;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessageMarshallableSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
@@ -379,5 +381,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(540, StartRoutineDiscoveryMessage::new, new StartRoutineDiscoveryMessageSerializer());
         factory.register(541, StartRoutineAckDiscoveryMessage::new, new StartRoutineAckDiscoveryMessageSerializer());
         factory.register(542, StartRoutineDiscoveryMessageV2::new, new StartRoutineDiscoveryMessageV2Serializer());
+        factory.register(543, MetadataUpdateProposedMessage::new, new MetadataUpdateProposedMessageMarshallableSerializer(marsh, clsLdr));
     }
 }

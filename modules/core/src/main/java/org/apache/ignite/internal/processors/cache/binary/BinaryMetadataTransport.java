@@ -550,7 +550,7 @@ final class BinaryMetadataTransport {
                 //coordinator receives update request
                 if (metaVerInfo != null) {
                     if (metaVerInfo.removing()) {
-                        msg.markRejected(new BinaryObjectException("The type is removing now [typeId=" + typeId + ']'));
+                        msg.markRejected("The type is removing now [typeId=" + typeId + ']');
 
                         pendingVer = REMOVED_VERSION;
                         acceptedVer = REMOVED_VERSION;
@@ -589,7 +589,7 @@ final class BinaryMetadataTransport {
                     catch (BinaryObjectException err) {
                         log.warning("Exception with merging metadata for typeId: " + typeId, err);
 
-                        msg.markRejected(err);
+                        msg.markRejected(err.getMessage());
                     }
                 }
             }
@@ -602,7 +602,7 @@ final class BinaryMetadataTransport {
                 MetadataUpdateResultFuture fut = unlabeledFutures.poll();
 
                 if (msg.rejected())
-                    fut.onDone(MetadataUpdateResult.createFailureResult(msg.rejectionError()));
+                    fut.onDone(MetadataUpdateResult.createFailureResult(msg.rejectionErrorMessage()));
                 else {
                     if (clientNode) {
                         boolean success = casBinaryMetadata(typeId, new BinaryMetadataVersionInfo(msg.metadata(), pendingVer, acceptedVer));
