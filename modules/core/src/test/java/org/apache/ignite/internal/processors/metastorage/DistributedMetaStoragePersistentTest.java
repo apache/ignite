@@ -38,10 +38,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with enabled persistence.
@@ -519,7 +519,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testVerFromDiscoveryClusterData() throws Exception {
         startGrid(0);
 
-        assumeThat(grid(0).context().config().getDiscoverySpi(), is(instanceOf(TcpDiscoverySpi.class)));
+        //assumeThat(grid(0).context().config().getDiscoverySpi(), is(instanceOf(TcpDiscoverySpi.class)));
 
         startGrid(1).cluster().state(ClusterState.ACTIVE);
 

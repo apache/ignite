@@ -122,6 +122,10 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base snapshot tests.
@@ -268,8 +272,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                     continue;
 
                 for (File tmpRoot : ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsTempRoots()) {
-                    assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + tmpRoot,
-                        0, U.fileCount(tmpRoot.toPath()));
+                    assertEquals(0, U.fileCount(tmpRoot.toPath()),
+                        "Snapshot working directory must be empty at the moment test execution stopped: " + tmpRoot);
                 }
             }
         }
@@ -287,7 +291,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected void waitForEvents(Integer... evts) throws IgniteInterruptedCheckedException {
         boolean caught = waitForCondition(() -> locEvts.containsAll(Arrays.asList(evts)), TIMEOUT);
 
-        assertTrue("Events must be caught [locEvts=" + locEvts + ']', caught);
+        assertTrue(caught, "Events must be caught [locEvts=" + locEvts + ']');
     }
 
     /**
@@ -305,20 +309,20 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
 
-            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
+            assertNull(desc, "nodeId=" + kctx.localNodeId() + ", cache=" + cacheName);
 
             boolean success = GridTestUtils.waitForCondition(
                 () -> !kctx.cache().context().snapshotMgr().isRestoring(),
                 TIMEOUT);
 
-            assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
+            assertTrue(success, "The process has not finished on the node " + kctx.localNodeId());
 
             File dir = kctx.pdsFolderResolver().fileTree().defaultCacheStorage(ccfg);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
 
-            assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
+            assertTrue(!dir.exists() || dir.list().length == 0, errMsg);
         }
     }
 
@@ -690,7 +694,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             Map<Integer, Integer> cacheParts = entry.getValue();
 
             for (int i = 0; i < parts; i++)
-                assertEquals("[cache=" + cache + ", part=" + i + ']', expPartCopiesInSnp, cacheParts.get(i));
+                assertEquals(expPartCopiesInSnp, cacheParts.get(i), "[cache=" + cache + ", part=" + i + ']');
         }
     }
 
@@ -719,8 +723,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         cache.query(new ScanQuery<>(null))
             .forEach(e -> keys.remove((Integer)e.getKey()));
 
-        assertTrue("Snapshot must contains pre-created cache data " +
-            "[cache=" + cache.getName() + ", keysLeft=" + keys + ']', keys.isEmpty());
+        assertTrue(keys.isEmpty(), "Snapshot must contains pre-created cache data " +
+            "[cache=" + cache.getName() + ", keysLeft=" + keys + ']');
     }
 
     /**
@@ -808,7 +812,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         File snpDir = new SharedFileTree(srv.configuration()).snapshotsRoot();
 
-        assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
+        assertEquals(0, snpDir.list().length, "Snapshot directory must be empty due to snapshot cancelled");
     }
 
     /**
@@ -878,7 +882,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             boolean finished = false;
 
             for (IgniteBiTuple<WALPointer, WALRecord> entry: it) {
-                assertFalse("IncrementalSnapshotFinishRecord must be the last record in snapshot", finished);
+                assertFalse(finished, "IncrementalSnapshotFinishRecord must be the last record in snapshot");
 
                 WALRecord rec = entry.getValue();
 

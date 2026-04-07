@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} issues with classloading.

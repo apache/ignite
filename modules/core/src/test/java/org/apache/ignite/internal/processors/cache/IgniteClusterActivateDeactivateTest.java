@@ -76,6 +76,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -1466,9 +1472,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 deactivator.action();
             }
             catch (JMException e) {
-                assertNull("A JMX exception should not contain any cause. JMX client might be launched with " +
-                        "other class path witout remote class loading and won't be able to deserialize teh stacktrace.",
-                    e.getCause());
+                assertNull(e.getCause(), "A JMX exception should not contain any cause. JMX client might be launched with " +
+                        "other class path witout remote class loading and won't be able to deserialize teh stacktrace.");
             }
         }
 
@@ -1543,7 +1548,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startFut2.get();
 
         for (int i = servers; i < nodesCnt; i++)
-            assertEquals(ignite(i).name(), INACTIVE, ignite(i).cluster().state());
+            assertEquals(INACTIVE, ignite(i).cluster().state(), ignite(i).name());
 
         ignite(servers).cluster().state(initialState.active() ? initialState : targetState);
 
@@ -1565,8 +1570,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     ) throws Exception {
         assertNotSame(initialState, targetState);
 
-        assertTrue(Arrays.toString(restartNodes) + " doesn't contain element 1", U.containsIntArray(restartNodes, 1));
-        assertTrue(Arrays.toString(restartNodes) + " doesn't contain element 4", U.containsIntArray(restartNodes, 4));
+        assertTrue(U.containsIntArray(restartNodes, 1), Arrays.toString(restartNodes) + " doesn't contain element 1");
+        assertTrue(U.containsIntArray(restartNodes, 4), Arrays.toString(restartNodes) + " doesn't contain element 4");
 
         final int servers = 4;
         final int clients = 4;
@@ -1753,9 +1758,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         GridCacheAdapter cache = ((IgniteEx)node).context().cache().internalCache(cacheName);
 
         if (exp)
-            assertNotNull("Cache not found [cache=" + cacheName + ", node=" + node.name() + ']', cache);
+            assertNotNull(cache, "Cache not found [cache=" + cacheName + ", node=" + node.name() + ']');
         else
-            assertNull("Unexpected cache found [cache=" + cacheName + ", node=" + node.name() + ']', cache);
+            assertNull(cache, "Unexpected cache found [cache=" + cacheName + ", node=" + node.name() + ']');
     }
 
     /**
@@ -1775,7 +1780,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {
         for (int i = 0; i < nodesCnt; i++)
-            assertEquals(ignite(i).name(), state, ignite(i).cluster().state());
+            assertEquals(state, ignite(i).cluster().state(), ignite(i).name());
     }
 
     /** */
@@ -1800,7 +1805,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
     /** */
     private static void checkStatesAreDifferent(ClusterState state1, ClusterState state2) {
-        assertTrue(state1 + " " + state2, state1.active() != state2.active());
+        assertTrue(state1.active() != state2.active(), state1 + " " + state2);
     }
 
     /** */

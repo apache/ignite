@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test for read through store.
@@ -113,12 +114,12 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
                         String key = "key" + k;
 
                         if (needVer) {
-                            assertNotNull("Null value for key: " + key, cache.getEntry(key));
-                            assertNotNull("Null value for key: " + key, cache.getEntry(key));
+                            assertNotNull(cache.getEntry(key), "Null value for key: " + key);
+                            assertNotNull(cache.getEntry(key), "Null value for key: " + key);
                         }
                         else {
-                            assertNotNull("Null value for key: " + key, cache.get(key));
-                            assertNotNull("Null value for key: " + key, cache.get(key));
+                            assertNotNull(cache.get(key), "Null value for key: " + key);
+                            assertNotNull(cache.get(key), "Null value for key: " + key);
                         }
                     }
 
@@ -165,9 +166,9 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
         for (int k = 0; k < 1000; k++) {
             String key = "key" + k;
             if (needVer)
-                assertNotNull("Null value for key: " + key, cache.getEntry(key));
+                assertNotNull(cache.getEntry(key), "Null value for key: " + key);
             else
-                assertNotNull("Null value for key: " + key, cache.get(key));
+                assertNotNull(cache.get(key), "Null value for key: " + key);
         }
     }
 }

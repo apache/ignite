@@ -41,6 +41,8 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Class with common logic for tests {@link IgniteCache} API when cluster in a {@link ClusterState#ACTIVE_READ_ONLY}
@@ -229,20 +231,20 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
 
     /** */
     private void commonChecks() {
-        assertEquals(kvMap.toString(), 3, kvMap.size());
+        assertEquals(3, kvMap.size(), kvMap.toString());
 
         for (Ignite node : G.allGrids()) {
-            assertEquals(node.name(), ClusterState.ACTIVE_READ_ONLY, node.cluster().state());
+            assertEquals(ClusterState.ACTIVE_READ_ONLY, node.cluster().state(), node.name());
 
             for (String cacheName : cacheNames) {
                 IgniteCache<Integer, Integer> cache = node.cache(cacheName);
 
-                assertEquals(node.name() + " " + cacheName, kvMap.size(), cache.size());
+                assertEquals(kvMap.size(), cache.size(), node.name() + " " + cacheName);
 
                 for (Map.Entry<Integer, Integer> entry : kvMap.entrySet())
-                    assertEquals(node.name() + " " + cacheName, entry.getValue(), cache.get(entry.getKey()));
+                    assertEquals(entry.getValue(), cache.get(entry.getKey()), node.name() + " " + cacheName);
 
-                assertNull(node.name() + " " + cacheName, cache.get(UNKNOWN_KEY));
+                assertNull(cache.get(UNKNOWN_KEY), node.name() + " " + cacheName);
             }
         }
     }

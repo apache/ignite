@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Affinity routing tests.
@@ -145,7 +146,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testAffinityCallRestart() throws Exception {
+    public void testAffinityCallRestart() {
         assertEquals(MAX_FAILOVER_ATTEMPTS,
             grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
                 new FailedCallable("key", MAX_FAILOVER_ATTEMPTS)));

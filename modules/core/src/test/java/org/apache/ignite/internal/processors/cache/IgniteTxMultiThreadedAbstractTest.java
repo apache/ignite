@@ -41,6 +41,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for local transactions.
@@ -308,7 +310,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
                 }
             }
 
-            assertTrue("Found duplicated values: " + duplicates, duplicates.isEmpty());
+            assertTrue(duplicates.isEmpty(), "Found duplicated values: " + duplicates);
 
             assertEquals((long)THREADS * ITERATIONS, total);
 

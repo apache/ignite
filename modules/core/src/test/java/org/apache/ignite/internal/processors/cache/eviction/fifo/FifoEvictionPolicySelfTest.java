@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.eviction.fifo;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * FIFO eviction policy tests.
  */

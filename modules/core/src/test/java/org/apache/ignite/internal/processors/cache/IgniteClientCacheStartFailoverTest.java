@@ -57,6 +57,11 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -345,9 +350,9 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
                         Map<Object, Object> map0 = cache.getAll(keys);
 
-                        assertEquals("[cache=" + cacheName +
+                        assertEquals(KEYS, map0.size(), "[cache=" + cacheName +
                             ", expected=" + KEYS +
-                            ", actual=" + map0.size() + ']', KEYS, map0.size());
+                            ", actual=" + map0.size() + ']');
 
                         int key = rnd.nextInt(KEYS);
 

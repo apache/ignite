@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommonAbstractTest {

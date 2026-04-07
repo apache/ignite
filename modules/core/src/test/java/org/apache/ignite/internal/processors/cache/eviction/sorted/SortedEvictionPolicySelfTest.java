@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.eviction.sorted;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Sorted eviction policy tests.
  */

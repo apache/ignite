@@ -39,6 +39,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -136,8 +138,8 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
         }
     }
 
-    /** @throws Exception If failed. */
-    private void reset() throws Exception {
+    /** */
+    private void reset() {
         evictLatch = new CountDownLatch(gridCnt);
 
         evictCnt.set(0);

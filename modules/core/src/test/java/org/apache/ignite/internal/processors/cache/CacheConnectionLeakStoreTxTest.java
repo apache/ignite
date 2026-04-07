@@ -44,6 +44,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -192,7 +194,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
                 cacheOp(cache);
             }
 
-            assertTrue("Session was leak on nodes: " + TestStore.sessions, TestStore.sessions.isEmpty());
+            assertTrue(TestStore.sessions.isEmpty(), "Session was leak on nodes: " + TestStore.sessions);
         }
         finally {
             cache.destroy();

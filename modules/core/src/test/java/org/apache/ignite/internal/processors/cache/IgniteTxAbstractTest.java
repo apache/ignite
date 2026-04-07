@@ -40,6 +40,7 @@ import org.apache.ignite.transactions.TransactionOptimisticException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests for local transactions.
@@ -224,7 +225,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
         Transaction tx = ignite(gridIdx).transactions().tx();
 
-        assertNull("Thread should not have transaction upon completion", tx);
+        assertNull(tx, "Thread should not have transaction upon completion");
 
         if (printMemoryStats()) {
             if (cntr.getAndIncrement() % 100 == 0)
@@ -365,7 +366,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                         Transaction tx = ignite(j).transactions().tx();
 
-                        assertNull("Transaction is not completed: " + tx, tx);
+                        assertNull(tx, "Transaction is not completed: " + tx);
 
                         if (j == 0) {
                             v1 = cache.get(i);

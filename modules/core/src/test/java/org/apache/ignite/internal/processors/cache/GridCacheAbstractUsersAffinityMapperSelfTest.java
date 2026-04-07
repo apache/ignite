@@ -36,6 +36,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Test affinity mapper.
@@ -186,8 +188,8 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         @Override public Object affinityKey(Object key) {
             GridArgumentCheck.notNull(key, "key");
 
-            assertFalse("GridCacheInternal entry mustn't be passed in user's key mapper.",
-                key instanceof GridCacheInternal);
+            assertFalse(key instanceof GridCacheInternal,
+                "GridCacheInternal entry mustn't be passed in user's key mapper.");
 
             return super.affinityKey(key);
         }

@@ -34,6 +34,10 @@ import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests most of public API methods of {@link IgniteCache} when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -83,7 +87,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                 for (Object o : qry.getAll()) {
                     IgniteBiTuple<Integer, Integer> tuple = (IgniteBiTuple<Integer, Integer>)o;
 
-                    assertEquals(o.toString(), kvMap.get(tuple.getKey()), tuple.getValue());
+                    assertEquals(kvMap.get(tuple.getKey()), tuple.getValue(), o.toString());
                 }
             }
         });
@@ -268,29 +272,29 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
     /** */
     @Test
     public void testContainsKeyAllowed() {
-        performAction(cache -> assertTrue(KEY + "", cache.containsKey(KEY)));
-        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKey(UNKNOWN_KEY)));
+        performAction(cache -> assertTrue(cache.containsKey(KEY), KEY + ""));
+        performAction(cache -> assertFalse(cache.containsKey(UNKNOWN_KEY), UNKNOWN_KEY + ""));
     }
 
     /** */
     @Test
     public void testContainsKeyAsyncAllowed() {
-        performAction(cache -> assertTrue(KEY + "", cache.containsKeyAsync(KEY).get()));
-        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKeyAsync(UNKNOWN_KEY).get()));
+        performAction(cache -> assertTrue(cache.containsKeyAsync(KEY).get(), KEY + ""));
+        performAction(cache -> assertFalse(cache.containsKeyAsync(UNKNOWN_KEY).get(), UNKNOWN_KEY + ""));
     }
 
     /** */
     @Test
     public void testContainsKeysAllowed() {
-        performAction(cache -> assertTrue(valueOf(kvMap.keySet()), cache.containsKeys(kvMap.keySet())));
-        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKeys(singleton(UNKNOWN_KEY))));
+        performAction(cache -> assertTrue(cache.containsKeys(kvMap.keySet()), valueOf(kvMap.keySet())));
+        performAction(cache -> assertFalse(cache.containsKeys(singleton(UNKNOWN_KEY)), UNKNOWN_KEY + ""));
     }
 
     /** */
     @Test
     public void testContainsKeysAsyncAllowed() {
-        performAction(cache -> assertTrue(valueOf(kvMap.keySet()), cache.containsKeysAsync(kvMap.keySet()).get()));
-        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKeysAsync(singleton(UNKNOWN_KEY)).get()));
+        performAction(cache -> assertTrue(cache.containsKeysAsync(kvMap.keySet()).get(), valueOf(kvMap.keySet())));
+        performAction(cache -> assertFalse(cache.containsKeysAsync(singleton(UNKNOWN_KEY)).get(), UNKNOWN_KEY + ""));
     }
 
     /** */

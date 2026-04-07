@@ -39,6 +39,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests that cache handles {@code setAllowEmptyEntries} flag correctly.
@@ -247,7 +249,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         tx = ignite.transactions().txStart();
 
         try {
-            assertTrue(((Map)cache.getAllAsync(F.asSet("key5", "key6")).get()).isEmpty());
+            assertTrue((cache.getAllAsync(F.asSet("key5", "key6")).get()).isEmpty());
 
             tx.commit();
         }

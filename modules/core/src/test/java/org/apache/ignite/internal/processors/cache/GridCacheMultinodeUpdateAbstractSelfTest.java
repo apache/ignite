@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Multinode update test.
@@ -109,14 +111,14 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
                 }
             }, THREADS, "invoke");
 
-            assertFalse("Got null in processor.", failed);
+            assertFalse(failed, "Got null in processor.");
 
             expVal += ITERATIONS_PER_THREAD * THREADS;
 
             for (int j = 0; j < gridCount(); j++) {
                 Integer val = (Integer)grid(j).cache(DEFAULT_CACHE_NAME).get(key);
 
-                assertEquals("Unexpected value for grid " + j, expVal, val);
+                assertEquals(expVal, val, "Unexpected value for grid " + j);
             }
         }
     }

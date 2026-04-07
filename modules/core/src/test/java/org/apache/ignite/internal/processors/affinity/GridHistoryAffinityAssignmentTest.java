@@ -35,6 +35,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests affinity history assignment diff calculation for history assignment.
  */
@@ -66,15 +70,15 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
         HistoryAffinityAssignment lateAssign =
             new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
 
-        assertEquals("Late", curr, lateAssign.assignment());
-        assertEquals("Ideal late", ideal, lateAssign.idealAssignment());
+        assertEquals(curr, lateAssign.assignment(), "Late");
+        assertEquals(ideal, lateAssign.idealAssignment(), "Ideal late");
 
         HistoryAffinityAssignment idealAssign = new
             HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
 
         assertSame(idealAssign.assignment(), idealAssign.idealAssignment());
 
-        assertEquals("Ideal", ideal, idealAssign.idealAssignment());
+        assertEquals(ideal, idealAssign.idealAssignment(), "Ideal");
     }
 
     /** */

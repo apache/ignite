@@ -53,6 +53,9 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest.EvictionPolicyProxy.proxy;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base class for eviction tests.
@@ -703,8 +706,8 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
                     for (int i = 0; i < gridCnt; i++) {
                         int actual = colocated(i).map().internalSize();
 
-                        assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
-                            actual <= endSize + (plcMaxMemSize > 0 ? 1 : plcBatchSize));
+                        assertTrue(actual <= endSize + (plcMaxMemSize > 0 ? 1 : plcBatchSize),
+                            "Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']');
                     }
                 }
 

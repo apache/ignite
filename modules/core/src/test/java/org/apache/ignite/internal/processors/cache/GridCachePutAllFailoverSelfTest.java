@@ -64,6 +64,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests putAll() method along with failover and different configurations.
@@ -349,7 +352,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             }
 
             if (!failedWait)
-                assertFalse("One or more jobs have failed.", jobFailed.get());
+                assertFalse(jobFailed.get(), "One or more jobs have failed.");
 
             Collection<Integer> absentKeys = findAbsentKeys(runningWorkers.get(0), testKeys);
 
@@ -574,7 +577,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             }
 
             if (!failedWait)
-                assertFalse("One or more jobs have failed.", jobFailed.get());
+                assertFalse(jobFailed.get(), "One or more jobs have failed.");
 
             Collection<Integer> absentKeys = findAbsentKeys(runningWorkers.get(0), testKeys);
 

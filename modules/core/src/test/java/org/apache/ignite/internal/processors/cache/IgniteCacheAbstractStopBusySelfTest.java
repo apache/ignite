@@ -53,6 +53,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -147,7 +150,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue("Unexpected nodes: " + nodes, nodes.isEmpty());
+        assertTrue(nodes.isEmpty(), "Unexpected nodes: " + nodes);
     }
 
     /**

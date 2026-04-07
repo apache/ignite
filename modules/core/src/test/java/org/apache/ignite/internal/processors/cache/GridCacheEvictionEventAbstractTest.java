@@ -39,6 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Eviction event self test.
@@ -108,6 +109,6 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         c.localEvict(Collections.singleton("1"));
 
-        assertTrue("Failed to wait for eviction event", latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(10, TimeUnit.SECONDS), "Failed to wait for eviction event");
     }
 }

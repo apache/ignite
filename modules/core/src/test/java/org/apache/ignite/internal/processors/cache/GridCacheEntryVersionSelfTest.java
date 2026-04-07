@@ -33,6 +33,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -111,7 +112,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                             (grid.context().discovery().gridStartTime() - TOP_VER_BASE_TIME) / 1000);
 
                         // Check node order.
-                        assertEquals("Failed for key: " + key, order, ver.nodeOrder());
+                        assertEquals(order, ver.nodeOrder(), "Failed for key: " + key);
                     }
                 }
             }
@@ -138,7 +139,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                             (grid.context().discovery().gridStartTime() - TOP_VER_BASE_TIME) / 1000);
 
                         // Check node order.
-                        assertEquals("Failed for key: " + key, order, ver.nodeOrder());
+                        assertEquals(order, ver.nodeOrder(), "Failed for key: " + key);
                     }
                 }
             }

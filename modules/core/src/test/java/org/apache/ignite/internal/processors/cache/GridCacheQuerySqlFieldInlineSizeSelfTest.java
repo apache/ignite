@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests cache configuration with inlineSize property of the QuerySqlField annotation.
  */
@@ -60,7 +62,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     @Test
-    public void testGroupIndex() throws Exception {
+    public void testGroupIndex() {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setIndexedTypes(Integer.class, TestValueGroupIndex.class);

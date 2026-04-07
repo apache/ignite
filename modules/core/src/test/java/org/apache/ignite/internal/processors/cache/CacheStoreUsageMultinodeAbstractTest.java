@@ -49,6 +49,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -224,9 +227,9 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
             }
         }, 1000);
 
-        assertTrue("Store is not updated", wait);
+        assertTrue(wait, "Store is not updated");
 
-        assertEquals("Write on wrong node: " + writeMap, locStore ? 2 : 1, writeMap.size());
+        assertEquals(locStore ? 2 : 1, writeMap.size(), "Write on wrong node: " + writeMap);
 
         if (!locStore)
             assertEquals(expNode, writeMap.keySet().iterator().next());

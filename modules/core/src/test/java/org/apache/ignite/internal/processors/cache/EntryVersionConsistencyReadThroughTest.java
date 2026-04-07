@@ -44,6 +44,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests consistency of entry's versions after invokeAll.
@@ -165,7 +167,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
 
                         e.unswap();
 
-                        assertNotNull("Failed to find entry on primary/backup node.", e.rawGet());
+                        assertNotNull(e.rawGet(), "Failed to find entry on primary/backup node.");
 
                         GridCacheVersion ver = e.version();
                         Object val = e.rawGet().value(cx.context().cacheObjectContext(), true);
@@ -175,10 +177,10 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
                             val0 = val;
                         }
 
-                        assertEquals("Invalid version for key: " + key, ver0, ver);
+                        assertEquals(ver0, ver, "Invalid version for key: " + key);
 
-                        assertNotNull("No value for key: " + key, val);
-                        assertEquals("Invalid value for key: " + key, val0, val);
+                        assertNotNull(val, "No value for key: " + key);
+                        assertEquals(val0, val, "Invalid value for key: " + key);
                     }
                 }
             }

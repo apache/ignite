@@ -34,6 +34,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * LRU near eviction tests for NEAR_ONLY distribution mode (GG-8884).
@@ -140,8 +141,8 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
                     ldr.addData(i, Integer.toString(i));
             }
 
-            assertTrue("Near cache size " + near(0).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
-                near(0).nearSize() <= EVICTION_MAX_SIZE);
+            assertTrue(near(0).nearSize() <= EVICTION_MAX_SIZE,
+                "Near cache size " + near(0).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE);
 
             info("Getting " + cnt + " keys from cache.");
 
@@ -151,8 +152,8 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }
 
-            assertTrue("Near cache size " + near(0).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
-                near(0).nearSize() <= EVICTION_MAX_SIZE);
+            assertTrue(near(0).nearSize() <= EVICTION_MAX_SIZE,
+                "Near cache size " + near(0).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE);
         }
         finally {
             stopAllGrids();

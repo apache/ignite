@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Affinity API tests.

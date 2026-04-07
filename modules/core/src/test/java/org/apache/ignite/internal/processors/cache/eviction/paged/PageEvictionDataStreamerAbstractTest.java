@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */

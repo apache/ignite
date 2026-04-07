@@ -33,6 +33,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -127,7 +132,7 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
 
         IgniteCache<Object, Object> clientCache = client.cache(CACHE_NAME);
 
-        assertNotNull("Cache should exists on client node", clientCache);
+        assertNotNull(clientCache, "Cache should exists on client node");
 
         IgniteInternalFuture<?> cacheGet = GridTestUtils.runAsync(() -> clientCache.get(0));
 
@@ -137,8 +142,8 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
             fail("Cache get operation should throw " + CacheStoppedException.class);
         }
         catch (Exception e) {
-            assertTrue("Got unexpected exception during cache get " + e,
-                X.hasCause(e, CacheStoppedException.class));
+            assertTrue(X.hasCause(e, CacheStoppedException.class),
+                "Got unexpected exception during cache get " + e);
         }
         finally {
             // Resume processing cache destroy on client node.
@@ -154,6 +159,6 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
             return topVer.equals(new AffinityTopologyVersion(4, 1));
         }, 5_000); // Reasonable timeout.
 
-        assertNull("Cache should be destroyed on client node", client.cache(CACHE_NAME));
+        assertNull(client.cache(CACHE_NAME), "Cache should be destroyed on client node");
     }
 }
