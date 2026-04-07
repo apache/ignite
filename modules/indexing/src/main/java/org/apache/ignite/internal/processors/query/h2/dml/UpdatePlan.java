@@ -522,6 +522,11 @@ public final class UpdatePlan {
     }
 
     /**
+     * We cannot use lazy mode when UPDATE query contains updated columns
+     * in WHERE condition because it may be cause of update one entry several times
+     * (when index for such columns is selected for scan):
+     * e.g. : UPDATE test SET val = val + 1 WHERE val >= ?
+     *
      * @return {@code true} is the SELECT query may be executed in lazy mode.
      */
     public boolean canSelectBeLazy() {

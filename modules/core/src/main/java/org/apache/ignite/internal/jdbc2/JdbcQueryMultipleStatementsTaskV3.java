@@ -46,15 +46,14 @@ class JdbcQueryMultipleStatementsTaskV3 extends JdbcQueryMultipleStatementsTask 
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce joins order flag.
-     * @param lazy Lazy query execution flag.
      * @param allowMultipleStatements Allow multiple statements flag.
      * @param qryInitiatorId Query initiator ID.
      */
     public JdbcQueryMultipleStatementsTaskV3(Ignite ignite, String schemaName, String sql,
         Boolean isQry, boolean loc, Object[] args, int fetchSize, boolean locQry, boolean collocatedQry,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean lazy,
+        boolean distributedJoins, boolean enforceJoinOrder,
         boolean allowMultipleStatements, String qryInitiatorId) {
-        super(ignite, schemaName, sql, isQry, loc, args, fetchSize, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy);
+        super(ignite, schemaName, sql, isQry, loc, args, fetchSize, locQry, collocatedQry, distributedJoins, enforceJoinOrder);
 
         this.allowMultipleStatements = allowMultipleStatements;
         this.qryInitiatorId = qryInitiatorId;

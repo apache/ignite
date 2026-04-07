@@ -67,7 +67,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     private static final String CIPHER_SUITE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
     /** Cipher suite not supported by cluster nodes. */
-    private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+    private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";
 
     /** Local server address. */
     private static final String LOCAL_CLIENT_ADDRESS = "127.0.0.1:10800";

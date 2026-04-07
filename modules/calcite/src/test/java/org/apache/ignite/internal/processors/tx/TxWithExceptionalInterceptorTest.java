@@ -107,14 +107,19 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        stopAllGrids();
-
         if (persistence)
             cleanPersistenceDir();
 
         strategy.resetStore();
 
         exceptionRaised.set(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids(true);
     }
 
     /** */

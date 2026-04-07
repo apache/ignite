@@ -543,7 +543,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     IgniteException ex = new IgniteException("Failed to lock partitions " +
                         "[jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
-                    U.error(log, "Failed to lock partitions [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);;
+                    U.error(log, "Failed to lock partitions [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
                     finishJob(null, ex, true);
 

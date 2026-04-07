@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -143,9 +141,9 @@ public class GridDifferentLocalDeploymentSelfTest extends GridCommonAbstractTest
 
         GridDeploymentStore store = GridTestUtils.getFieldValue(deploymentMgr, "locStore");
 
-        ConcurrentMap<String, Deque<GridDeployment>> cache = GridTestUtils.getFieldValue(store, "cache");
+        Map<String, Map<ClassLoader, GridDeployment>> depsByAlias = GridTestUtils.getFieldValue(store, "depsByAlias");
 
-        assertEquals(2, cache.get(TASK_NAME1).size());
+        assertEquals(2, depsByAlias.get(TASK_NAME1).size());
 
         deploymentMgr = server.context().deploy();
 
