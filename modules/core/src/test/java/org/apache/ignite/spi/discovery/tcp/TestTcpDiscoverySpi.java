@@ -112,7 +112,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
     }
 
     /**
-     * Sets test discovery messages factory provider. Note that {@link DiscoveryHook} must be set before SPI start.
+     * Sets test discovery messages factory provider. Note that {@link MessageFactoryProvider} must be set before SPI start.
      * Otherwise, this method call will take no effect.
      *
      * @param msgFactoryProvider Discovery messages factory provider.
