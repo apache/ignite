@@ -70,9 +70,6 @@ public class GridRunningQueryInfo {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
-    /** Lazy flag. */
-    private final boolean lazy;
-
     /** Distributed joins flag. */
     private final boolean distributedJoins;
 
@@ -93,7 +90,6 @@ public class GridRunningQueryInfo {
      * @param loc Local query flag.
      * @param qryInitiatorId Query's initiator identifier.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param lazy Lazy flag.
      * @param distributedJoins Distributed joins flag.
      * @param subjId Subject ID.
      */
@@ -109,7 +105,6 @@ public class GridRunningQueryInfo {
         boolean loc,
         String qryInitiatorId,
         boolean enforceJoinOrder,
-        boolean lazy,
         boolean distributedJoins,
         UUID subjId
     ) {
@@ -125,7 +120,6 @@ public class GridRunningQueryInfo {
         this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.lazy = lazy;
         this.distributedJoins = distributedJoins;
         this.subjId = subjId;
     }
@@ -242,13 +236,6 @@ public class GridRunningQueryInfo {
      */
     public boolean enforceJoinOrder() {
         return enforceJoinOrder;
-    }
-
-    /**
-     * @return Lazy flag.
-     */
-    public boolean lazy() {
-        return lazy;
     }
 
     /** @return Subject ID. */

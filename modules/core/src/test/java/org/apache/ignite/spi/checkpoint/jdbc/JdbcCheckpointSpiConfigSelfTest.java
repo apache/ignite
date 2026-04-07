@@ -20,7 +20,7 @@ package org.apache.ignite.spi.checkpoint.jdbc;
 import javax.sql.DataSource;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.hsqldb.jdbc.jdbcDataSource;
+import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Test;
 
 import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_CHECKPOINT_TABLE_NAME;
@@ -42,7 +42,7 @@ public class JdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<J
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new JdbcCheckpointSpi(), "dataSource", null);
 
-        DataSource ds = new jdbcDataSource();
+        DataSource ds = new JDBCDataSource();
 
         JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 

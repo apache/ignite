@@ -41,5 +41,4 @@ public class TestIntegerMessage implements Message {
     public int value() {
         return val;
     }
-
 }

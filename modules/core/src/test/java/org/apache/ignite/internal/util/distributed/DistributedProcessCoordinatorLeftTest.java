@@ -28,8 +28,8 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.distributed.MessagesPluginProvider.MessagesInjectedTcpDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -86,8 +86,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
             }
         });
 
-        cfg.setPluginProviders(new MessagesPluginProvider());
-        cfg.setDiscoverySpi(new MessagesInjectedTcpDiscoverySpi());
+        cfg.setPluginProviders(new MessagesPluginProvider(TestIntegerMessage.class, TestUuidMessage.class));
 
         return cfg;
     }

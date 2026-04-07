@@ -143,10 +143,8 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean replicatedOnly = reader.readBoolean();
         boolean collocated = reader.readBoolean();
 
-        boolean lazy = false;
-
         if (ver.compareTo(VER_2_1_5) >= 0)
-            lazy = reader.readBoolean();
+            reader.readBoolean(); // Lazy query flag.
 
         boolean skipReducerOnUpdate = false;
 
@@ -203,7 +201,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         initClientDescriptor("odbc");
 
         handler = new OdbcRequestHandler(ctx, busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            replicatedOnly, collocated, lazy, skipReducerOnUpdate, qryEngine, ver, this);
+            replicatedOnly, collocated, skipReducerOnUpdate, qryEngine, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);
 

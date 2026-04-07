@@ -245,7 +245,9 @@ public class GridCacheUtils {
     private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
 
     /** */
-    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {CacheEntryPredicateAdapter.ALWAYS_FALSE};
+    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {
+        new CacheEntryPredicateAdapter(CacheEntryPredicateType.ALWAYS_FALSE)
+    };
 
     /** Read filter. */
     public static final IgnitePredicate<IgniteTxEntry> READ_FILTER = new P1<IgniteTxEntry>() {

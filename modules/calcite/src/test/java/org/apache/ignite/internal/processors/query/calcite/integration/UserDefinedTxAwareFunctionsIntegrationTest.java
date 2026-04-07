@@ -48,13 +48,16 @@ import static org.junit.Assert.assertThat;
  */
 @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
 public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final int THREAD_NUM = 10;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
         cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
-        cfg.setQueryThreadPoolSize(16);
+        cfg.setQueryThreadPoolSize(2 * THREAD_NUM + 1);
 
         return cfg;
     }
@@ -142,7 +145,7 @@ public class UserDefinedTxAwareFunctionsIntegrationTest extends AbstractBasicInt
                     tx.rollback();
                 }
             }
-        }, 10, "calcite-tx-with-udf");
+        }, THREAD_NUM, "calcite-tx-with-udf");
 
         fut.get(30_000);
     }

@@ -230,6 +230,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /** @return New internal cache instance based on this one, but with skip read-through cache store flag enabled. */
     public IgniteInternalCache<K, V> withSkipReadThrough();
 
+    /** @return New internal cache instance based on this one, but with application attributes. */
+    public IgniteInternalCache<K, V> withApplicationAttributes(Map<String, String> attrs);
+
     /**
      * Creates projection that will operate with binary objects.
      * <p>

@@ -13,47 +13,35 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.internal.processors.security;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Partition counters map.
- */
-public class IgniteDhtPartitionCountersMap implements Message {
+/** */
+public class TestDiscoveryAcknowledgeMessage implements DiscoveryCustomMessage, Message {
     /** */
     @Order(0)
-    Map<Integer, CachePartitionFullCountersMap> map;
+    IgniteUuid id = IgniteUuid.randomUuid();
 
-    /**
-     * @param cacheId Cache ID.
-     * @param cntrMap Counters map.
-     */
-    public synchronized void putIfAbsent(int cacheId, CachePartitionFullCountersMap cntrMap) {
-        if (map == null)
-            map = new HashMap<>();
-
-        if (!map.containsKey(cacheId))
-            map.put(cacheId, cntrMap);
+    /** Constructor for {@link MessageFactory}. */
+    public TestDiscoveryAcknowledgeMessage() {
+        // No-op.
     }
 
-    /**
-     * @param cacheId Cache ID.
-     * @return Counters map.
-     */
-    public synchronized CachePartitionFullCountersMap get(int cacheId) {
-        if (map == null)
-            return null;
-
-        CachePartitionFullCountersMap cntrMap = map.get(cacheId);
-
-        return cntrMap;
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
 }

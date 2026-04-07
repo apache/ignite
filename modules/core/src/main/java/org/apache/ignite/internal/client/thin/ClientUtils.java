@@ -557,7 +557,7 @@ public final class ClientUtils {
         out.writeBoolean(qry.isReplicatedOnly());
         out.writeBoolean(qry.isEnforceJoinOrder());
         out.writeBoolean(qry.isCollocated());
-        out.writeBoolean(qry.isLazy());
+        out.writeBoolean(true); // Lazy flag.
         out.writeLong(qry.getTimeout());
         out.writeBoolean(true); // include column names
 
