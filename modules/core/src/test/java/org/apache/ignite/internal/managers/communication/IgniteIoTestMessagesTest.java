@@ -40,11 +40,9 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
         startClientGrid(4);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testIoTestMessages() throws Exception {
+    public void testIoTestMessages() {
         for (Ignite node : G.allGrids()) {
             IgniteKernal ignite = (IgniteKernal)node;
 

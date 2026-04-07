@@ -273,7 +273,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         SqlFieldsQuery curQry = qry;
 
         while (curQry != null) {
-            QueryParserResult parsed = parser.parse(schemaName, curQry, true);
+            QueryParserResult parsed = parser.parse(schemaName, curQry, true, true);
 
             metas.addAll(parsed.parametersMeta());
 
@@ -286,7 +286,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery qry)
         throws IgniteSQLException {
-        QueryParserResult parsed = parser.parse(schemaName, qry, true);
+        QueryParserResult parsed = parser.parse(schemaName, qry, true, true);
 
         if (parsed.remainingQuery() != null)
             return null;
@@ -354,7 +354,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 true,
                 null,
                 null,
-                false,
                 false,
                 false
             );
@@ -563,7 +562,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             null,
             qryInitiatorId,
             false,
-            false,
             false
         );
 
@@ -632,7 +630,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .setArgs(params)
                 .setLocal(true);
 
-            QueryParserResult selectParseRes = parser.parse(schemaName, selectQry, false);
+            QueryParserResult selectParseRes = parser.parse(schemaName, selectQry, true, false);
 
             GridQueryFieldsResult res = executeSelectLocal(
                 qryId,
@@ -658,7 +656,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return DML.
      */
     private QueryParserResultDml streamerParse(String schemaName, String qry) {
-        QueryParserResult parseRes = parser.parse(schemaName, new SqlFieldsQuery(qry), false);
+        QueryParserResult parseRes = parser.parse(schemaName, new SqlFieldsQuery(qry), true, false);
 
         QueryParserResultDml dml = parseRes.dml();
 
@@ -943,7 +941,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             try (TraceSurroundings ignored = MTC.supportContinual(qrySpan)) {
                 // Parse.
-                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, true, !failOnMultipleStmts);
 
                 qrySpan.addTag(SQL_QRY_TEXT, () -> parseRes.queryDescriptor().sql());
 
@@ -1094,7 +1092,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     @Override public Iterator<List<?>> iterator() {
                         return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                     }
-                }, cancel, true, false));
+                }, cancel, true));
             }
         }
         catch (IgniteException e) {
@@ -1160,7 +1158,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryParams.timeout());
 
             RegisteredQueryCursor<List<?>> cursor = new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(),
-                qryParams.lazy(), qryId, ctx.tracing());
+                qryId, ctx.tracing());
 
             cancel.add(cursor::cancel);
 
@@ -1197,10 +1195,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         long qryId,
         String schema,
         SqlFieldsQuery selectQry,
+        boolean lazy,
         GridQueryCancel cancel,
         int timeout
     ) {
-        QueryParserResult parseRes = parser.parse(schema, selectQry, false);
+        QueryParserResult parseRes = parser.parse(schema, selectQry, lazy, false);
 
         QueryParserResultSelect select = parseRes.select();
 
@@ -1216,7 +1215,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             timeout
         );
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(iter, cancel, true, parseRes.queryParameters().lazy());
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(iter, cancel, true);
 
         cursor.fieldsMeta(select.meta());
 
@@ -1320,7 +1319,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel,
             qryDesc.queryInitiatorId(),
             qryDesc.enforceJoinOrder(),
-            qryParams.lazy(),
             qryDesc.distributedJoins()
         );
 
@@ -1475,7 +1473,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         boolean loc
     ) throws IgniteCheckedException {
-        QueryParserResult parseRes = parser.parse(schemaName, qry, false);
+        QueryParserResult parseRes = parser.parse(schemaName, qry, true, false);
 
         assert parseRes.remainingQuery() == null;
 
@@ -1496,7 +1494,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException {
-        QueryParserResult parsed = parser.parse(schemaName, qry, true);
+        QueryParserResult parsed = parser.parse(schemaName, qry, true, true);
 
         return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
     }
@@ -2030,7 +2028,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 res.throwIfError();
 
                 QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList(
-                    singletonList(res.counter())), cancel, false, false);
+                    singletonList(res.counter())), cancel, false);
 
                 resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2053,7 +2051,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res.throwIfError();
 
             QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList(
-                singletonList(res.counter())), cancel, false, false);
+                singletonList(res.counter())), cancel, false);
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2207,12 +2205,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
                 .setLocal(qryDesc.local())
                 .setPageSize(qryParams.pageSize())
-                .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS)
-                // We cannot use lazy mode when UPDATE query contains updated columns
-                // in WHERE condition because it may be cause of update one entry several times
-                // (when index for such columns is selected for scan):
-                // e.g. : UPDATE test SET val = val + 1 WHERE val >= ?
-                .setLazy(qryParams.lazy() && plan.canSelectBeLazy());
+                .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
 
             Iterable<List<?>> cur;
 
@@ -2225,6 +2218,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     qryId,
                     qryDesc.schemaName(),
                     selectFieldsQry,
+                    plan.canSelectBeLazy(),
                     selectCancel,
                     qryParams.timeout()
                 );
@@ -2242,7 +2236,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             else {
                 selectFieldsQry.setLocal(true);
 
-                QueryParserResult selectParseRes = parser.parse(qryDesc.schemaName(), selectFieldsQry, false);
+                QueryParserResult selectParseRes = parser.parse(qryDesc.schemaName(),
+                    selectFieldsQry, plan.canSelectBeLazy(), false);
 
                 final GridQueryFieldsResult res = executeSelectLocal(
                     qryId,
@@ -2263,7 +2258,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             throw new IgniteException(e);
                         }
                     }
-                }, cancel, true, qryParams.lazy());
+                }, cancel, true);
 
                 dmlPlanInfo
                     .append("the following local query has been executed:").append(U.nl())

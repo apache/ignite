@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
-
 /**
  * Holds JDBC connection properties.
  */
@@ -89,10 +87,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** TCP no delay property. */
     private final BooleanProperty tcpNoDelay = new BooleanProperty(
         "tcpNoDelay", "TCP no delay flag", true, false);
-
-    /** Lazy query execution property. */
-    private final BooleanProperty lazy = new BooleanProperty(
-        "lazy", "Enable lazy query execution", DFLT_LAZY, false);
 
     /** Socket send buffer size property. */
     private final IntegerProperty socketSendBuffer = new IntegerProperty(
@@ -272,7 +266,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, loc, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
+        tcpNoDelay, loc, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         sslMode, sslCipherSuites, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
@@ -425,16 +419,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setTcpNoDelay(boolean val) {
         tcpNoDelay.setValue(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLazy() {
-        return lazy.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setLazy(boolean val) {
-        lazy.setValue(val);
     }
 
     /** {@inheritDoc} */

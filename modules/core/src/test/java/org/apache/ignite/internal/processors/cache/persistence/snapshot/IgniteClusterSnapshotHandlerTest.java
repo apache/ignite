@@ -36,8 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
-import org.apache.ignite.internal.util.distributed.MessagesPluginProvider;
-import org.apache.ignite.internal.util.distributed.MessagesPluginProvider.MessagesInjectedTcpDiscoverySpi;
+import org.apache.ignite.internal.util.distributed.TestIntegerMessage;
 import org.apache.ignite.internal.util.distributed.TestUuidMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,6 +47,7 @@ import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -76,8 +76,10 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(pluginProvider, new MessagesPluginProvider())
-            .setDiscoverySpi(new MessagesInjectedTcpDiscoverySpi());
+            .setPluginProviders(
+                pluginProvider,
+                new MessagesPluginProvider(TestIntegerMessage.class, TestUuidMessage.class)
+            );
     }
 
     /** {@inheritDoc} */

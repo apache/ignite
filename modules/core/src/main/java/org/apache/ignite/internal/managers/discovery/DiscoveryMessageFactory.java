@@ -95,6 +95,14 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessageSerializer;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessageMarshallableSerializer;
+import org.apache.ignite.internal.processors.continuous.StartRequestData;
+import org.apache.ignite.internal.processors.continuous.StartRequestDataSerializer;
+import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageSerializer;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2Serializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessageSerializer;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
@@ -245,6 +253,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(-200, TcpDiscoveryCollectionMessage::new,
             new TcpDiscoveryCollectionMessageMarshallableSerializer(marsh, clsLdr));
 
+        factory.register(-118, StartRequestData::new, new StartRequestDataSerializer());
         factory.register(-117, TcpDiscoveryNode::new, new TcpDiscoveryNodeMarshallableSerializer(marsh, clsLdr));
         factory.register(-116, IgniteProductVersion::new, new IgniteProductVersionSerializer());
         factory.register(-115, SchemaAlterTableAddColumnOperation::new, new SchemaAlterTableAddColumnOperationSerializer());
@@ -367,5 +376,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
             new ServiceDeploymentRequestMarshallableSerializer(marsh, clsLdr));
         factory.register(538, ServiceUndeploymentRequest::new, new ServiceUndeploymentRequestSerializer());
         factory.register(539, ExchangeFailureMessage::new, new ExchangeFailureMessageSerializer());
+        factory.register(540, StartRoutineDiscoveryMessage::new, new StartRoutineDiscoveryMessageSerializer());
+        factory.register(541, StartRoutineAckDiscoveryMessage::new, new StartRoutineAckDiscoveryMessageSerializer());
+        factory.register(542, StartRoutineDiscoveryMessageV2::new, new StartRoutineDiscoveryMessageV2Serializer());
     }
 }

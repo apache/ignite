@@ -162,7 +162,6 @@ For the list of security parameters, refer to the <<Using SSL>> section.
 - `jdbc:ignite:thin://myHost:11900;user=ignite;password=ignite` - connect to myHost on custom port 11900 with user credentials for authentication.
 - `jdbc:ignite:thin://myHost:11900;distributedJoins=true&autoCloseServerCursor=true` - connect to myHost on custom port 11900 with enabled distributed joins and autoCloseServerCursor optimization.
 - `jdbc:ignite:thin://myHost:11900/myschema;` - connect to myHost on custom port 11900 and access to MYSCHEMA.
-- `jdbc:ignite:thin://myHost:11900/"MySchema";lazy=false` - connect to myHost on custom port 11900 with disabled lazy query execution and access to MySchema (schema name is case sensitive).
 
 === Multiple Endpoints
 
@@ -676,21 +675,3 @@ The table below lists all the link:https://en.wikipedia.org/wiki/SQLSTATE[ANSI S
 |50000| Internal error.
 The code is not defined by ANSI and refers to an Ignite specific error. Refer to the `java.sql.SQLException` error message for more information.
 |=======================================================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

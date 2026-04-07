@@ -38,9 +38,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test to lazy query partitions has not been released too early.
+ * Test to query partitions has not been released too early.
  */
-public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractTest {
+public class GridCacheQueryPartitionsReleaseTest extends GridCommonAbstractTest {
     /** Cache name */
     private static final String PERSON_CACHE = "person";
 
@@ -69,12 +69,12 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
     }
 
     /**
-     * Lazy query release partitions test.
+     * Query release partitions test.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testLazyQueryPartitionsRelease() throws Exception {
+    public void testQueryPartitionsRelease() throws Exception {
         Ignite node1 = startGrid(0);
 
         IgniteCache<Integer, Person> cache = node1.cache(PERSON_CACHE);
@@ -117,12 +117,12 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
     }
 
     /**
-     * Lazy query release partitions on cursor close test.
+     * Query release partitions on cursor close test.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testLazyQueryPartitionsReleaseOnClose() throws Exception {
+    public void testQueryPartitionsReleaseOnClose() throws Exception {
         Ignite node1 = startGrid(0);
 
         IgniteCache<Integer, Person> cache = node1.cache(PERSON_CACHE);

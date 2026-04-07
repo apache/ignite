@@ -68,7 +68,6 @@ namespace ignite
                         loc(false),
                         distributedJoins(false),
                         enforceJoinOrder(false),
-                        lazy(true),
                         collocated(false),
                         parts(),
                         updateBatchSize(1),
@@ -91,7 +90,6 @@ namespace ignite
                         loc(other.loc),
                         distributedJoins(other.distributedJoins),
                         enforceJoinOrder(other.enforceJoinOrder),
-                        lazy(other.lazy),
                         collocated(other.collocated),
                         parts(other.parts),
                         updateBatchSize(other.updateBatchSize),
@@ -149,7 +147,6 @@ namespace ignite
                             swap(loc, other.loc);
                             swap(distributedJoins, other.distributedJoins);
                             swap(enforceJoinOrder, other.enforceJoinOrder);
-                            swap(lazy, other.lazy);
                             swap(collocated, other.collocated);
                             swap(parts, other.parts);
                             swap(args, other.args);
@@ -335,40 +332,6 @@ namespace ignite
                     }
 
                     /**
-                     * Gets lazy query execution flag.
-                     *
-                     * See SetLazy(bool) for more information.
-                     *
-                     * @return Lazy flag.
-                     * @deprecated Deprecated for removal. Use the page size instead.
-                     */
-                    bool IsLazy() const
-                    {
-                        return lazy;
-                    }
-
-                    /**
-                     * Sets lazy query execution flag.
-                     *
-                     * By default Ignite attempts to fetch the whole query result set to memory and send it to the
-                     * client. For small and medium result sets this provides optimal performance and minimize duration
-                     * of internal database locks, thus increasing concurrency.
-                     *
-                     * If result set is too big to fit in available memory this could lead to excessive GC pauses and
-                     * even OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus
-                     * minimizing memory consumption at the cost of moderate performance hit.
-                     *
-                     * Defaults to @c false, meaning that the whole result set is fetched to memory eagerly.
-                     *
-                     * @param lazy Lazy query execution flag.
-                     * @deprecated Deprecated for removal. Use the page size instead.
-                     */
-                    void SetLazy(bool lazy)
-                    {
-                        this->lazy = lazy;
-                    }
-
-                    /**
                      * Checks if this query is collocated.
                      *
                      * @return @c true If the query is collocated.
@@ -502,9 +465,6 @@ namespace ignite
 
                     /** Enforce join order flag. */
                     bool enforceJoinOrder;
-
-                    /** Lazy flag. */
-                    bool lazy;
 
                     /** Collocated flag. */
                     bool collocated;
