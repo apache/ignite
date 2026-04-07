@@ -978,34 +978,41 @@ public class DirectByteBufferStream {
      * @param writer Writer.
      */
     public <T> void writeObjectArray(T[] arr, MessageArrayType type, Message msg, MessageWriter writer) {
-        if (arr != null) {
-            int len = arr.length;
+            if (arr != null) {
+                int len = arr.length;
 
-            if (arrPos == -1) {
-                writeInt(len);
+                if (arrPos == -1) {
+                    writeInt(len);
 
-                if (!lastFinished)
-                    return;
+                    if (!lastFinished)
+                        return;
 
-                arrPos = 0;
+                    arrPos = 0;
+                }
+
+                CacheObjectContext ctx = setContext(msg);
+
+                try {
+                    while (arrPos < len || arrCur != NULL) {
+                        if (arrCur == NULL)
+                            arrCur = arr[arrPos++];
+
+                        write(type.valueType(), msg, arrCur, writer);
+
+                        if (!lastFinished)
+                            return;
+
+                        arrCur = NULL;
+                    }
+                }
+                finally {
+                    removeContext(ctx, msg);
+                }
+
+                arrPos = -1;
             }
-
-            while (arrPos < len || arrCur != NULL) {
-                if (arrCur == NULL)
-                    arrCur = arr[arrPos++];
-
-                write(type.valueType(), msg, arrCur, writer);
-
-                if (!lastFinished)
-                    return;
-
-                arrCur = NULL;
-            }
-
-            arrPos = -1;
-        }
-        else
-            writeInt(-1);
+            else
+                writeInt(-1);
     }
 
     /**
@@ -1027,17 +1034,24 @@ public class DirectByteBufferStream {
 
                     it = col.iterator();
                 }
+                
+                CacheObjectContext ctx = setContext(msg);
 
-                while (it.hasNext() || cur != NULL) {
-                    if (cur == NULL)
-                        cur = it.next();
+                try {
+                    while (it.hasNext() || cur != NULL) {
+                        if (cur == NULL)
+                            cur = it.next();
 
-                    write(type.valueType(), msg, cur, writer);
+                        write(type.valueType(), msg, cur, writer);
 
-                    if (!lastFinished)
-                        return;
+                        if (!lastFinished)
+                            return;
 
-                    cur = NULL;
+                        cur = NULL;
+                    }
+                }
+                finally {
+                    removeContext(ctx, msg);
                 }
 
                 it = null;
@@ -1045,6 +1059,7 @@ public class DirectByteBufferStream {
         }
         else
             writeInt(-1);
+        
     }
 
     /**
@@ -1066,16 +1081,23 @@ public class DirectByteBufferStream {
             arrPos = 0;
         }
 
-        while (arrPos < size || arrCur != NULL) {
-            if (arrCur == NULL)
-                arrCur = list.get(arrPos++);
+        CacheObjectContext ctx = setContext(msg);
 
-            write(type.valueType(), msg, arrCur, writer);
+        try {
+            while (arrPos < size || arrCur != NULL) {
+                if (arrCur == NULL)
+                    arrCur = list.get(arrPos++);
 
-            if (!lastFinished)
-                return;
+                write(type.valueType(), msg, arrCur, writer);
 
-            arrCur = NULL;
+                if (!lastFinished)
+                    return;
+
+                arrCur = NULL;
+            }
+        }
+        finally {
+            removeContext(ctx, msg);
         }
 
         arrPos = -1;
@@ -1097,30 +1119,37 @@ public class DirectByteBufferStream {
                 mapIt = map.entrySet().iterator();
             }
 
-            while (mapIt.hasNext() || mapCur != NULL) {
-                Map.Entry<K, V> e;
+            CacheObjectContext ctx = setContext(msg);
 
-                if (mapCur == NULL)
-                    mapCur = mapIt.next();
+            try {
+                while (mapIt.hasNext() || mapCur != NULL) {
+                    Map.Entry<K, V> e;
 
-                e = (Map.Entry<K, V>)mapCur;
+                    if (mapCur == NULL)
+                        mapCur = mapIt.next();
 
-                if (!keyDone) {
-                    write(type.keyType(), msg, e.getKey(), writer);
+                    e = (Map.Entry<K, V>)mapCur;
+
+                    if (!keyDone) {
+                        write(type.keyType(), msg, e.getKey(), writer);
+
+                        if (!lastFinished)
+                            return;
+
+                        keyDone = true;
+                    }
+
+                    write(type.valueType(), msg, e.getValue(), writer);
 
                     if (!lastFinished)
                         return;
 
-                    keyDone = true;
+                    mapCur = NULL;
+                    keyDone = false;
                 }
-
-                write(type.valueType(), msg, e.getValue(), writer);
-
-                if (!lastFinished)
-                    return;
-
-                mapCur = NULL;
-                keyDone = false;
+            }
+            finally {
+                removeContext(ctx, msg);
             }
 
             mapIt = null;
@@ -1644,7 +1673,7 @@ public class DirectByteBufferStream {
                     lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
                 }
                 finally {
-                    removeContext(ctx, msg);
+                    removeContext(ctx, encMsg);
                 }
             }
             finally {
@@ -1685,15 +1714,22 @@ public class DirectByteBufferStream {
             if (objArr == null)
                 objArr = type.clazz() != null ? (Object[])Array.newInstance(type.clazz(), readSize) : new Object[readSize];
 
-            for (int i = readItems; i < readSize; i++) {
-                Object item = read(type.valueType(), msg, reader);
+            CacheObjectContext ctx = setContext(msg);
 
-                if (!lastFinished)
-                    return null;
+            try {
+                for (int i = readItems; i < readSize; i++) {
+                    Object item = read(type.valueType(), msg, reader);
 
-                objArr[i] = item;
+                    if (!lastFinished)
+                        return null;
 
-                readItems++;
+                    objArr[i] = item;
+
+                    readItems++;
+                }
+            }
+            finally {
+                removeContext(ctx, msg);
             }
         }
 
@@ -1729,15 +1765,22 @@ public class DirectByteBufferStream {
             if (col == null)
                 col = type.set() ? U.newHashSet(readSize) : new ArrayList<>(readSize);
 
-            for (int i = readItems; i < readSize; i++) {
-                Object item = read(type.valueType(), msg, reader);
+            CacheObjectContext ctx = setContext(msg);
 
-                if (!lastFinished)
-                    return null;
+            try {
+                for (int i = readItems; i < readSize; i++) {
+                    Object item = read(type.valueType(), msg, reader);
 
-                col.add(item);
+                    if (!lastFinished)
+                        return null;
 
-                readItems++;
+                    col.add(item);
+
+                    readItems++;
+                }
+            }
+            finally {
+                removeContext(ctx, msg);
             }
         }
 
@@ -1771,27 +1814,34 @@ public class DirectByteBufferStream {
             if (map == null)
                 map = type.linked() ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
 
-            for (int i = readItems; i < readSize; i++) {
-                if (!keyDone) {
-                    Object key = read(type.keyType(), msg, reader);
+            CacheObjectContext ctx = setContext(msg);
+
+            try {
+                for (int i = readItems; i < readSize; i++) {
+                    if (!keyDone) {
+                        Object key = read(type.keyType(), msg, reader);
+
+                        if (!lastFinished)
+                            return null;
+
+                        mapCur = key;
+                        keyDone = true;
+                    }
+
+                    Object val = read(type.valueType(), msg, reader);
 
                     if (!lastFinished)
                         return null;
 
-                    mapCur = key;
-                    keyDone = true;
+                    map.put(mapCur, val);
+
+                    keyDone = false;
+
+                    readItems++;
                 }
-
-                Object val = read(type.valueType(), msg, reader);
-
-                if (!lastFinished)
-                    return null;
-
-                map.put(mapCur, val);
-
-                keyDone = false;
-
-                readItems++;
+            }
+            finally {
+                removeContext(ctx, msg);
             }
         }
 
@@ -2064,156 +2114,149 @@ public class DirectByteBufferStream {
      * @param writer Writer.
      */
     protected <K, V> void write(MessageType type, Message msg, Object val, MessageWriter writer) {
-        CacheObjectContext ctx = setContext(msg);
+        switch (type.type()) {
+            case BYTE:
+                writeByte((Byte)val);
 
-        try {
-            switch (type.type()) {
-                case BYTE:
-                    writeByte((Byte)val);
+                break;
 
-                    break;
+            case SHORT:
+                writeShort((Short)val);
 
-                case SHORT:
-                    writeShort((Short)val);
+                break;
 
-                    break;
+            case INT:
+                writeInt((Integer)val);
 
-                case INT:
-                    writeInt((Integer)val);
+                break;
 
-                    break;
+            case LONG:
+                writeLong((Long)val);
 
-                case LONG:
-                    writeLong((Long)val);
+                break;
 
-                    break;
+            case FLOAT:
+                writeFloat((Float)val);
 
-                case FLOAT:
-                    writeFloat((Float)val);
+                break;
 
-                    break;
+            case DOUBLE:
+                writeDouble((Double)val);
 
-                case DOUBLE:
-                    writeDouble((Double)val);
+                break;
 
-                    break;
+            case CHAR:
+                writeChar((Character)val);
 
-                case CHAR:
-                    writeChar((Character)val);
+                break;
 
-                    break;
+            case BOOLEAN:
+                writeBoolean((Boolean)val);
 
-                case BOOLEAN:
-                    writeBoolean((Boolean)val);
+                break;
 
-                    break;
+            case BYTE_ARR:
+                writeByteArray((byte[])val);
 
-                case BYTE_ARR:
-                    writeByteArray((byte[])val);
+                break;
 
-                    break;
+            case SHORT_ARR:
+                writeShortArray((short[])val);
 
-                case SHORT_ARR:
-                    writeShortArray((short[])val);
+                break;
 
-                    break;
+            case INT_ARR:
+                writeIntArray((int[])val);
 
-                case INT_ARR:
-                    writeIntArray((int[])val);
+                break;
 
-                    break;
+            case LONG_ARR:
+                writeLongArray((long[])val);
 
-                case LONG_ARR:
-                    writeLongArray((long[])val);
+                break;
 
-                    break;
+            case FLOAT_ARR:
+                writeFloatArray((float[])val);
 
-                case FLOAT_ARR:
-                    writeFloatArray((float[])val);
+                break;
 
-                    break;
+            case DOUBLE_ARR:
+                writeDoubleArray((double[])val);
 
-                case DOUBLE_ARR:
-                    writeDoubleArray((double[])val);
+                break;
 
-                    break;
+            case CHAR_ARR:
+                writeCharArray((char[])val);
 
-                case CHAR_ARR:
-                    writeCharArray((char[])val);
+                break;
 
-                    break;
+            case BOOLEAN_ARR:
+                writeBooleanArray((boolean[])val);
 
-                case BOOLEAN_ARR:
-                    writeBooleanArray((boolean[])val);
+                break;
 
-                    break;
+            case STRING:
+                writeString((String)val);
 
-                case STRING:
-                    writeString((String)val);
+                break;
 
-                    break;
+            case BIT_SET:
+                writeBitSet((BitSet)val);
 
-                case BIT_SET:
-                    writeBitSet((BitSet)val);
+                break;
 
-                    break;
+            case UUID:
+                writeUuid((UUID)val);
 
-                case UUID:
-                    writeUuid((UUID)val);
+                break;
 
-                    break;
+            case IGNITE_UUID:
+                writeIgniteUuid((IgniteUuid)val);
 
-                case IGNITE_UUID:
-                    writeIgniteUuid((IgniteUuid)val);
+                break;
 
-                    break;
+            case AFFINITY_TOPOLOGY_VERSION:
+                writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
-                case AFFINITY_TOPOLOGY_VERSION:
-                    writeAffinityTopologyVersion((AffinityTopologyVersion)val);
+                break;
 
-                    break;
+            case KEY_CACHE_OBJECT:
+                writeKeyCacheObject(msg, (KeyCacheObject)val);
 
-                case KEY_CACHE_OBJECT:
-                    writeKeyCacheObject(msg, (KeyCacheObject)val);
+                break;
 
-                    break;
+            case CACHE_OBJECT:
+                writeCacheObject(msg, (CacheObject)val);
 
-                case CACHE_OBJECT:
-                    writeCacheObject(msg, (CacheObject)val);
+                break;
 
-                    break;
+            case GRID_LONG_LIST:
+                writeGridLongList((GridLongList)val);
 
-                case GRID_LONG_LIST:
-                    writeGridLongList((GridLongList)val);
+                break;
 
-                    break;
+            case MAP:
+                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type, msg));
 
-                case MAP:
-                    nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type, msg));
+                break;
 
-                    break;
+            case COLLECTION:
+                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type, msg));
 
-                case COLLECTION:
-                    nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type, msg));
+                break;
 
-                    break;
+            case ARRAY:
+                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type, msg));
 
-                case ARRAY:
-                    nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type, msg));
+                break;
 
-                    break;
+            case MSG:
+                writeMessage((Message)val, writer);
 
-                case MSG:
-                    writeMessage((Message)val, writer);
+                break;
 
-                    break;
-
-                default:
-                    throw new IllegalArgumentException("Unknown type: " + type);
-            }
-        }
-        finally {
-            removeContext(ctx, msg);
+            default:
+                throw new IllegalArgumentException("Unknown type: " + type);
         }
     }
 
@@ -2235,100 +2278,93 @@ public class DirectByteBufferStream {
      * @return Value.
      */
     protected Object read(MessageType type, Message msg, MessageReader reader) {
-        CacheObjectContext ctx = setContext(msg);
-        
-        try {
-            switch (type.type()) {
-                case BYTE:
-                    return readByte();
+        switch (type.type()) {
+            case BYTE:
+                return readByte();
 
-                case SHORT:
-                    return readShort();
+            case SHORT:
+                return readShort();
 
-                case INT:
-                    return readInt();
+            case INT:
+                return readInt();
 
-                case LONG:
-                    return readLong();
+            case LONG:
+                return readLong();
 
-                case FLOAT:
-                    return readFloat();
+            case FLOAT:
+                return readFloat();
 
-                case DOUBLE:
-                    return readDouble();
+            case DOUBLE:
+                return readDouble();
 
-                case CHAR:
-                    return readChar();
+            case CHAR:
+                return readChar();
 
-                case BOOLEAN:
-                    return readBoolean();
+            case BOOLEAN:
+                return readBoolean();
 
-                case BYTE_ARR:
-                    return readByteArray();
+            case BYTE_ARR:
+                return readByteArray();
 
-                case SHORT_ARR:
-                    return readShortArray();
+            case SHORT_ARR:
+                return readShortArray();
 
-                case INT_ARR:
-                    return readIntArray();
+            case INT_ARR:
+                return readIntArray();
 
-                case LONG_ARR:
-                    return readLongArray();
+            case LONG_ARR:
+                return readLongArray();
 
-                case FLOAT_ARR:
-                    return readFloatArray();
+            case FLOAT_ARR:
+                return readFloatArray();
 
-                case DOUBLE_ARR:
-                    return readDoubleArray();
+            case DOUBLE_ARR:
+                return readDoubleArray();
 
-                case CHAR_ARR:
-                    return readCharArray();
+            case CHAR_ARR:
+                return readCharArray();
 
-                case BOOLEAN_ARR:
-                    return readBooleanArray();
+            case BOOLEAN_ARR:
+                return readBooleanArray();
 
-                case STRING:
-                    return readString();
+            case STRING:
+                return readString();
 
-                case BIT_SET:
-                    return readBitSet();
+            case BIT_SET:
+                return readBitSet();
 
-                case UUID:
-                    return readUuid();
+            case UUID:
+                return readUuid();
 
-                case IGNITE_UUID:
-                    return readIgniteUuid();
+            case IGNITE_UUID:
+                return readIgniteUuid();
 
-                case AFFINITY_TOPOLOGY_VERSION:
-                    return readAffinityTopologyVersion();
+            case AFFINITY_TOPOLOGY_VERSION:
+                return readAffinityTopologyVersion();
 
-                case KEY_CACHE_OBJECT:
-                    return readKeyCacheObject(msg);
+            case KEY_CACHE_OBJECT:
+                return readKeyCacheObject(msg);
 
-                case CACHE_OBJECT:
-                    return readCacheObject(msg);
+            case CACHE_OBJECT:
+                return readCacheObject(msg);
 
-                case GRID_LONG_LIST:
-                    return readGridLongList();
+            case GRID_LONG_LIST:
+                return readGridLongList();
 
-                case MAP:
-                    return nestedRead(reader, () -> reader.readMap((MessageMapType)type, msg));
+            case MAP:
+                return nestedRead(reader, () -> reader.readMap((MessageMapType)type, msg));
 
-                case COLLECTION:
-                    return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type, msg));
+            case COLLECTION:
+                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type, msg));
 
-                case ARRAY:
-                    return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type, msg));
+            case ARRAY:
+                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type, msg));
 
-                case MSG:
-                    return readMessage(msg, reader);
+            case MSG:
+                return readMessage(msg, reader);
 
-                default:
-                    throw new IllegalArgumentException("Unknown type: " + type);
-            }
-        }
-        finally {
-            removeContext(ctx, msg);
+            default:
+                throw new IllegalArgumentException("Unknown type: " + type);
         }
     }
 
