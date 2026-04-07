@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryMeta
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SelectByKeyFieldTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -177,6 +178,8 @@ import org.junit.runners.Suite;
     MultiDcQueryMappingTest.class,
     TxWithExceptionalInterceptorTest.class,
     CacheWithInterceptorIntegrationTest.class,
+    TxWithExceptionalInterceptorTest.class,
+    SelectByKeyFieldTest.class,
 })
 public class IntegrationTestSuite {
 }
