@@ -98,7 +98,7 @@ public class DirectByteBufferStream {
     private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
 
     /** */
-    private static final ThreadLocal<List<CacheObjectContext>> coCtxs = new ThreadLocal<>();
+    private static final ThreadLocal<CacheObjectContext> coCtx = new ThreadLocal<>();
     
     /** */
     private static final CacheObjectContext NULL_CACHE_CTX =
@@ -2375,23 +2375,26 @@ public class DirectByteBufferStream {
 
     /** */
     private CacheObjectContext setContext(Message msg) {
-        CacheObjectContext coCtx = null;
+        CacheObjectContext ctx = null;
 
         if (msg instanceof GridCacheIdMessage)
-            coCtx = resolveContext(((GridCacheIdMessage)msg).cacheId());
+            ctx = resolveContext(((GridCacheIdMessage)msg).cacheId());
 
         if (msg instanceof GridCacheGroupIdMessage)
-            coCtx = resolveContext(((GridCacheGroupIdMessage)msg).groupId());
+            ctx = resolveContext(((GridCacheGroupIdMessage)msg).groupId());
 
         boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
 
-        if (coCtx != null || skipMarsh) {
-            if (coCtxs.get() == null)
-                coCtxs.set(new ArrayList<>());
+        if (ctx != null || skipMarsh) {
+            CacheObjectContext old = coCtx.get();
+            
+            assert old == null || old == ctx || old == NULL_CACHE_CTX : old;
+          
+            if (old == null) {
+                coCtx.set(skipMarsh ? NULL_CACHE_CTX : ctx);
 
-            coCtxs.get().add(skipMarsh ? NULL_CACHE_CTX : coCtx);
-
-            return coCtx;
+                return ctx;
+            }
         }
         
         return null;
@@ -2412,21 +2415,14 @@ public class DirectByteBufferStream {
     }
 
     /** */
-    private void removeContext(CacheObjectContext coCtx) {
-        if (coCtx != null)
-            coCtxs.get().remove(coCtx);
+    private void removeContext(CacheObjectContext ctx) {
+        if (ctx != null)
+            coCtx.remove();
     }
 
     /** */
     private CacheObjectContext context() {
-        List<CacheObjectContext> list = coCtxs.get();
-
-        CacheObjectContext cand = list.get(list.size() - 1);
-
-        if (cand == NULL_CACHE_CTX)
-            return null;
-        
-        return cand;
+        return coCtx.get();
     }
 
     /** {@inheritDoc} */
