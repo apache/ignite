@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -144,20 +143,8 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
                 ((MetadataUpdateProposedMessage)((SecurityAwareCustomMessageWrapper)msg).delegate()).finishUnmarshal(marsh, ldr);
         }
         else {
-            try {
-                if (msgBytes != null)
-                    msg = U.unmarshal(marsh, msgBytes, ldr);
-            }
-            catch (IgniteCheckedException e) {
-                // Try to resurrect a message in a case of deserialization failure
-                if (e.getCause() instanceof IncompleteDeserializationException) {
-                    msg = ((IncompleteDeserializationException)e.getCause()).message();
-
-                    return;
-                }
-
-                throw e;
-            }
+            if (msgBytes != null)
+                msg = U.unmarshal(marsh, msgBytes, ldr);
         }
     }
 
