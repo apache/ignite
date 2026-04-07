@@ -451,11 +451,6 @@ public class NodeFileTree extends SharedFileTree {
         return wal().listFiles(NodeFileTree::walCompactedSegment);
     }
 
-    /** @return An array of archive compacted WAL segment files. */
-    public File[] walArchiveCompactedSegments() {
-        return walArchive().listFiles(NodeFileTree::walCompactedSegment);
-    }
-
     /** @return An array of compacted or raw WAL segment files. */
     public File[] walCompactedOrRawSegments() {
         return wal().listFiles(NodeFileTree::walCompactedOrRawSegment);
