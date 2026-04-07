@@ -102,7 +102,7 @@ public class DirectByteBufferStream {
     private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
 
     /** */
-    private static final ThreadLocal<CacheObjectContext> coCtx = new ThreadLocal<>();
+    private static final ThreadLocal<List<CacheObjectContext>> coCtxs = new ThreadLocal<>();
 
     /** */
     private static final ThreadLocal<List<GridCacheMessage>> cacheMsgs = new ThreadLocal<>();
@@ -2448,13 +2448,12 @@ public class DirectByteBufferStream {
         boolean skipMarsh = msg instanceof SkipCacheObjectsMarshallingMessage;
 
         if (ctx != null || skipMarsh) {
-            CacheObjectContext old = coCtx.get();
-          
-            if (old == null) {
-                coCtx.set(skipMarsh ? NULL_CACHE_CTX : ctx);
+            if (coCtxs.get() == null)
+                coCtxs.set(new ArrayList<>());
 
-                return ctx;
-            }
+            coCtxs.get().add(skipMarsh ? NULL_CACHE_CTX : ctx);
+
+            return ctx;
         }
         
         return null;
@@ -2477,7 +2476,7 @@ public class DirectByteBufferStream {
     /** */
     private void removeContext(CacheObjectContext ctx, Message msg) {
         if (ctx != null)
-            coCtx.remove();
+            coCtxs.get().remove(ctx);
         
         if (msg instanceof GridCacheMessage)
             cacheMsgs.get().remove(msg);
@@ -2485,7 +2484,14 @@ public class DirectByteBufferStream {
 
     /** */
     private CacheObjectContext context() {
-        return coCtx.get();
+        List<CacheObjectContext> list = coCtxs.get();
+
+        CacheObjectContext cand = list.get(list.size() - 1);
+
+        if (cand == NULL_CACHE_CTX)
+            return null;
+
+        return cand;
     }
 
     /** */
