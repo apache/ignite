@@ -32,6 +32,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -40,7 +41,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -99,6 +102,9 @@ public class DirectByteBufferStream {
 
     /** */
     private static final ThreadLocal<CacheObjectContext> coCtx = new ThreadLocal<>();
+
+    /** */
+    private static final ThreadLocal<GridCacheMessage> cacheMsg = new ThreadLocal<>();
     
     /** */
     private static final CacheObjectContext NULL_CACHE_CTX =
@@ -1545,6 +1551,17 @@ public class DirectByteBufferStream {
 
                 return key;
             }
+            catch (BinaryObjectException e) {
+                onUnmarshallingFailure(e);
+
+                // Dummy Key cache object.
+                KeyCacheObject key = new KeyCacheObjectImpl("", null, -1);
+
+                if (keyCacheObjPart != -1)
+                    key.partition(keyCacheObjPart);
+
+                return key;
+            }
             finally {
                 removeContext(ctx);
             }
@@ -1580,6 +1597,12 @@ public class DirectByteBufferStream {
 
         try {
             return cacheObjProc.toCacheObject(context(), cacheObjType, cacheObjArr);
+        }
+        catch (BinaryObjectException e) {
+            onUnmarshallingFailure(e);
+
+            // Dummy Key cache object.
+            return new KeyCacheObjectImpl("", null,-1);
         }
         finally {
             removeContext(ctx);
@@ -2392,6 +2415,7 @@ public class DirectByteBufferStream {
           
             if (old == null) {
                 coCtx.set(skipMarsh ? NULL_CACHE_CTX : ctx);
+                cacheMsg.set((GridCacheMessage)msg);
 
                 return ctx;
             }
@@ -2423,6 +2447,11 @@ public class DirectByteBufferStream {
     /** */
     private CacheObjectContext context() {
         return coCtx.get();
+    }
+
+    /** */
+    private void onUnmarshallingFailure(Exception e) {
+        cacheMsg.get().onClassError(new IgniteCheckedException(e));
     }
 
     /** {@inheritDoc} */
