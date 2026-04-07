@@ -1556,12 +1556,7 @@ public class DirectByteBufferStream {
                 onUnmarshallingFailure(e);
 
                 // Dummy Key cache object.
-                KeyCacheObject key = new KeyCacheObjectImpl("", null, -1);
-
-                if (keyCacheObjPart != -1)
-                    key.partition(keyCacheObjPart);
-
-                return key;
+                return new KeyCacheObjectImpl("", null, keyCacheObjPart);
             }
             finally {
                 removeContext(ctx);
