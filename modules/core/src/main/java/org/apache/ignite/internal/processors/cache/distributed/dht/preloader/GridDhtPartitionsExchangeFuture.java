@@ -591,11 +591,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return List of IDs of history supplier nodes or empty list if these doesn't exist.
      */
     public List<UUID> partitionHistorySupplier(int grpId, int partId, long cntrSince) {
+        List<UUID> histSuppliers;
+
         synchronized (suppliersMux) {
             if (partHistSuppliers == null)
                 return Collections.emptyList();
 
-            List<UUID> histSuppliers = new ArrayList<>();
+            histSuppliers = new ArrayList<>();
 
             for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> e : partHistSuppliers.entrySet()) {
                 Long historyCounter = e.getValue().get(new GroupPartitionIdPair(grpId, partId));
@@ -603,11 +605,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (historyCounter != null && historyCounter <= cntrSince)
                     histSuppliers.add(e.getKey());
             }
-
-            histSuppliers.removeIf(exclusionsFromHistoricalRebalance::contains);
-
-            return histSuppliers;
         }
+
+        histSuppliers.removeIf(exclusionsFromHistoricalRebalance::contains);
+
+        return histSuppliers;
     }
 
     /**
