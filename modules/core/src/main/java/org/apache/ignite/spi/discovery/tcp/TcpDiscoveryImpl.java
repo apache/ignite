@@ -35,33 +35,22 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
-import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
-import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 
 /**
  *
@@ -79,8 +68,8 @@ abstract class TcpDiscoveryImpl {
     /** Response join impossible. */
     protected static final int RES_JOIN_IMPOSSIBLE = 255;
 
-    /** How often the warning message should occur in logs to prevent log spam. */
-    public static final long LOG_WARN_MSG_TIMEOUT = 60 * 60 * 1000L;
+    /** Maximal interval of connection check to next node in the ring. */
+    private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Debug log date formatter. */
     private static final DateTimeFormatter DEBUG_FORMATTER =
@@ -95,6 +84,18 @@ abstract class TcpDiscoveryImpl {
     /** */
     protected volatile TcpDiscoveryNode locNode;
 
+    /** Fundamental value for connection checking actions. */
+    protected long connCheckTick;
+
+    /** Interval of checking connection to next node in the ring. */
+    protected volatile long connCheckInterval;
+
+    /** Time of last sent and acknowledged message. */
+    protected volatile long lastRingMsgSentTime;
+
+    /** Connection check message. */
+    protected volatile TcpDiscoveryConnectionCheckMessage connChkMsg;
+
     /** Debug mode. */
     protected boolean debugMode;
 
@@ -103,12 +104,6 @@ abstract class TcpDiscoveryImpl {
 
     /** Received messages. */
     protected ConcurrentLinkedDeque<String> debugLogQ;
-
-    /** Logging a warning message when metrics quantity exceeded a specified number. */
-    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, DFLT_DISCOVERY_METRICS_QNT_WARN);
-
-    /** */
-    protected long endTimeMetricsSizeProcessWait = System.currentTimeMillis();
 
     /** */
     protected final ServerImpl.DebugLogger debugLog = new DebugLogger() {
@@ -294,7 +289,18 @@ abstract class TcpDiscoveryImpl {
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
-    public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
+    public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        lastRingMsgSentTime = 0;
+
+        // Foundumental timeout value for actions related to connection check.
+        connCheckTick = effectiveExchangeTimeout() / 3;
+
+        // Since we take in account time of last sent message, the interval should be quite short to give enough piece
+        // of failure detection timeout as send-and-acknowledge timeout of the message to send.
+        connCheckInterval = Math.min(connCheckTick, MAX_CON_CHECK_INTERVAL);
+
+        connChkMsg = new TcpDiscoveryConnectionCheckMessage(getConfiguredNodeId());
+    }
 
     /**
      * Will start TCP server if applicable and not started yet.
@@ -311,6 +317,12 @@ abstract class TcpDiscoveryImpl {
      */
     public long connectionCheckInterval() {
         return 0;
+    }
+
+    /** @return Complete timeout of single message exchange operation on established connection. */
+    protected long effectiveExchangeTimeout() {
+        return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+            spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
     /**
@@ -405,49 +417,6 @@ abstract class TcpDiscoveryImpl {
         attrs.remove(ATTR_SECURITY_CREDENTIALS);
 
         node.setAttributes(attrs);
-    }
-
-    /** */
-    public void processCacheMetricsMessage(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
-        for (Map.Entry<UUID, TcpDiscoveryNodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
-            UUID srvrId = e.getKey();
-            Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
-            NodeMetricsMessage srvrMetricsMsg = e.getValue().nodeMetricsMessage();
-
-            assert srvrMetricsMsg != null;
-
-            Map<Integer, CacheMetrics> cacheMetrics;
-
-            if (!F.isEmpty(cacheMetricsMsgs)) {
-                cacheMetrics = U.newHashMap(cacheMetricsMsgs.size());
-
-                cacheMetricsMsgs.forEach((cacheId, cacheMetricsMsg) ->
-                    cacheMetrics.put(cacheId, new CacheMetricsSnapshot(cacheMetricsMsg)));
-            }
-            else
-                cacheMetrics = Collections.emptyMap();
-
-            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis() && cacheMetrics.size() >= METRICS_QNT_WARN) {
-                log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
-                    "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
-
-                endTimeMetricsSizeProcessWait = U.currentTimeMillis() + LOG_WARN_MSG_TIMEOUT;
-            }
-
-            updateMetrics(srvrId, new ClusterMetricsSnapshot(srvrMetricsMsg), cacheMetrics, tsNanos);
-
-            TcpDiscoveryClientNodesMetricsMessage clientsMetricsMsg = F.isEmpty(msg.connectedClientsMetricsMessages())
-                ? null
-                : msg.connectedClientsMetricsMessages().get(srvrId);
-
-            if (clientsMetricsMsg == null)
-                continue;
-
-            assert clientsMetricsMsg.nodesMetricsMessages() != null;
-
-            clientsMetricsMsg.nodesMetricsMessages().forEach((clientId, clientNodeMetricsMsg) ->
-                updateMetrics(clientId, new ClusterMetricsSnapshot(clientNodeMetricsMsg), cacheMetrics, tsNanos));
-        }
     }
 
     /**

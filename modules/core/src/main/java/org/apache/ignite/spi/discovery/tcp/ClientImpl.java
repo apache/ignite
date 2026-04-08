@@ -99,7 +99,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
@@ -108,7 +107,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -287,6 +285,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        super.spiStart(igniteInstanceName);
+
         spi.initLocalNode(
             0,
             true);
@@ -309,8 +309,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msgWorker.run();
             }
         }.start();
-
-        executorSrvc.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
 
         try {
             joinLatch.await();
@@ -1087,24 +1085,6 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Metrics sender.
-     */
-    private class MetricsSender implements Runnable {
-        /** {@inheritDoc} */
-        @Override public void run() {
-            if (!spi.getSpiContext().isStopping() && sockWriter.isOnline()) {
-                TcpDiscoveryClientMetricsUpdateMessage msg = new TcpDiscoveryClientMetricsUpdateMessage(
-                    getLocalNodeId(),
-                    spi.metricsProvider.metrics());
-
-                msg.client(true);
-
-                sockWriter.sendMessage(msg);
-            }
-        }
-    }
-
-    /**
      * Socket reader.
      */
     private class SocketReader extends IgniteSpiThread {
@@ -1427,9 +1407,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                             msg = queue.poll();
 
                         if (msg == null) {
-                            mux.wait();
+                            long heartbeatLeft = state == CONNECTED
+                                ? connCheckInterval - U.millisSinceNanos(lastRingMsgSentTime)
+                                : connCheckInterval;
 
-                            continue;
+                            if (heartbeatLeft < 0)
+                                msg = connChkMsg;
+                            else {
+                                mux.wait(U.nanosToMillis(heartbeatLeft));
+
+                                continue;
+                            }
                         }
                     }
                 }
@@ -1437,7 +1425,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                     msgLsnr.apply(msg);
 
-                boolean ack = !(msg instanceof TcpDiscoveryPingResponse);
+                boolean ack = msg != connChkMsg && !(msg instanceof TcpDiscoveryPingResponse);
 
                 try {
                     if (ack) {
@@ -1492,6 +1480,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (latencyCheckId != null && log.isInfoEnabled())
                             log.info("Latency check message has been acked: " + latencyCheckId);
                     }
+
+                    lastRingMsgSentTime = System.nanoTime();
                 }
                 catch (InterruptedException ignored) {
                     if (log.isDebugEnabled())
@@ -2169,8 +2159,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 processNodeLeftMessage((TcpDiscoveryNodeLeftMessage)msg);
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
-            else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
-                processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
             else if (msg instanceof TcpDiscoveryClientReconnectMessage)
                 processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
@@ -2514,25 +2502,6 @@ class ClientImpl extends TcpDiscoveryImpl {
             else {
                 if (log.isDebugEnabled())
                     log.debug("Ignore topology message, local node not added to topology: " + msg);
-            }
-        }
-
-        /**
-         * @param msg Message.
-         */
-        private void processMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
-            if (spi.getSpiContext().isStopping())
-                return;
-
-            if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                assert msg.senderNodeId() != null;
-
-                if (log.isDebugEnabled())
-                    log.debug("Received metrics response: " + msg);
-            }
-            else {
-                if (!F.isEmpty(msg.serversFullMetricsMessages()))
-                    processCacheMetricsMessage(msg, System.nanoTime());
             }
         }
 

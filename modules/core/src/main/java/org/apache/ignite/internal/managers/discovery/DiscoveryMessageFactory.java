@@ -172,16 +172,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCacheMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCacheMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponseSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
@@ -206,16 +200,12 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessageSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessageMarshallableSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessageMarshallableSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
@@ -265,9 +255,9 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(-109, User::new, new UserSerializer());
         factory.register(-108, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register(-106, DiscoveryDataPacket::new, new DiscoveryDataPacketSerializer());
-        factory.register(-105, TcpDiscoveryNodeFullMetricsMessage::new, new TcpDiscoveryNodeFullMetricsMessageSerializer());
-        factory.register(-104, TcpDiscoveryClientNodesMetricsMessage::new, new TcpDiscoveryClientNodesMetricsMessageSerializer());
-        factory.register(-103, TcpDiscoveryCacheMetricsMessage::new, new TcpDiscoveryCacheMetricsMessageSerializer());
+        // -105 is former TcpDiscoveryNodeFullMetricsMessage.
+        // -104 is former TcpDiscoveryClientNodesMetricsMessage.
+        // -103 is former TcpDiscoveryCacheMetricsMessage.
         factory.register(-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register(-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register(-100, InetAddressMessage::new, new InetAddressMessageSerializer());
@@ -287,8 +277,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register(10, TcpDiscoveryHandshakeResponse::new, new TcpDiscoveryHandshakeResponseSerializer());
         factory.register(11, TcpDiscoveryAuthFailedMessage::new, new TcpDiscoveryAuthFailedMessageSerializer());
         factory.register(12, TcpDiscoveryDuplicateIdMessage::new, new TcpDiscoveryDuplicateIdMessageSerializer());
-        factory.register(13, TcpDiscoveryClientMetricsUpdateMessage::new, new TcpDiscoveryClientMetricsUpdateMessageSerializer());
-        factory.register(14, TcpDiscoveryMetricsUpdateMessage::new, new TcpDiscoveryMetricsUpdateMessageSerializer());
+        // 12 is former TcpDiscoveryClientMetricsUpdateMessage.
+        // 12 is former TcpDiscoveryMetricsUpdateMessage.
         factory.register(15, TcpDiscoveryClientAckResponse::new, new TcpDiscoveryClientAckResponseSerializer());
         factory.register(16, TcpDiscoveryNodeLeftMessage::new, new TcpDiscoveryNodeLeftMessageMarshallableSerializer(marsh, clsLdr));
         factory.register(17, TcpDiscoveryNodeFailedMessage::new, new TcpDiscoveryNodeFailedMessageMarshallableSerializer(marsh, clsLdr));

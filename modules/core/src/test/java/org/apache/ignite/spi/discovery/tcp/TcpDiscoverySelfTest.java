@@ -84,7 +84,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -106,7 +105,6 @@ import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
@@ -832,80 +830,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assert cnt.await(20, SECONDS);
         }
         finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    @Test
-    public void testMetricsSending() throws Exception {
-        final AtomicBoolean stopping = new AtomicBoolean();
-
-        try {
-            final Ignite g1 = startGrid(1);
-
-            awaitMetricsUpdate(1);
-
-            final CountDownLatch latch1_1 = new CountDownLatch(1);
-            final CountDownLatch latch1_2 = new CountDownLatch(1);
-            final CountDownLatch latch2_1 = new CountDownLatch(1);
-            final CountDownLatch latch2_2 = new CountDownLatch(1);
-
-            final Ignite g2 = startGrid(2);
-
-            g2.events().localListen(
-                new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        if (stopping.get())
-                            return true;
-
-                        info(evt.message());
-
-                        UUID id = ((DiscoveryEvent)evt).eventNode().id();
-
-                        if (id.equals(g1.cluster().localNode().id()))
-                            latch2_1.countDown();
-                        else if (id.equals(g2.cluster().localNode().id()))
-                            latch2_2.countDown();
-                        else
-                            assert false : "Event fired for unknown node.";
-
-                        return true;
-                    }
-                },
-                EVT_NODE_METRICS_UPDATED
-            );
-
-            g1.events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (stopping.get())
-                        return true;
-
-                    info(evt.message());
-
-                    UUID id = ((DiscoveryEvent)evt).eventNode().id();
-
-                    if (id.equals(g1.cluster().localNode().id()))
-                        latch1_1.countDown();
-                    else if (id.equals(g2.cluster().localNode().id()))
-                        latch1_2.countDown();
-                    else
-                        assert false : "Event fired for unknown node.";
-
-                    return true;
-                }
-            }, EVT_NODE_METRICS_UPDATED);
-
-            assert latch1_1.await(10, SECONDS);
-            assert latch1_2.await(10, SECONDS);
-            assert latch2_1.await(10, SECONDS);
-            assert latch2_2.await(10, SECONDS);
-        }
-        finally {
-            stopping.set(true);
-
             stopAllGrids();
         }
     }
@@ -2619,7 +2543,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             boolean add = msgIds.add(msg.id());
 
-            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryMetricsUpdateMessage)) {
+            if (checkDuplicates && !add) {
                 log.error("Send duplicated message: " + msg);
 
                 failed = true;
