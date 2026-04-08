@@ -20,10 +20,10 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Holds map of thick client or server metrics messages per node id. */
 public class TcpDiscoveryClientNodesMetricsMessage implements Message {
@@ -31,7 +31,7 @@ public class TcpDiscoveryClientNodesMetricsMessage implements Message {
     @Order(0)
     Map<UUID, NodeMetricsMessage> nodesMetricsMsgs;
 
-    /** Constructor for {@link CoreMessagesProvider}. */
+    /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryClientNodesMetricsMessage() {
         // No-op.
     }

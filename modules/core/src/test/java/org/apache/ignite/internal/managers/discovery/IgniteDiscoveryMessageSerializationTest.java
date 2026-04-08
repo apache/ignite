@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;

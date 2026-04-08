@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,7 +50,7 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage, Messag
     @GridToStringExclude
     @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public ServiceChangeBatchRequest() {
     }
 

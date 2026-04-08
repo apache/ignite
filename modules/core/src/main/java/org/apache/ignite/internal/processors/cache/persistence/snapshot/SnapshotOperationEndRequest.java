@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,7 +48,7 @@ public class SnapshotOperationEndRequest implements Message {
     @Order(2)
     @Nullable List<String> warnings;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SnapshotOperationEndRequest() {
         // No-op.
     }
