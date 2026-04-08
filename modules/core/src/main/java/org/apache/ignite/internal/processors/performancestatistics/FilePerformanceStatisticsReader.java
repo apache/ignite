@@ -252,7 +252,7 @@ public class FilePerformanceStatisticsReader {
                     FILE_FORMAT_VERSION + ']');
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.version(nodeId, ver, ignVer);
+                hnd.version(nodeId, ignVer);
 
             return true;
         }

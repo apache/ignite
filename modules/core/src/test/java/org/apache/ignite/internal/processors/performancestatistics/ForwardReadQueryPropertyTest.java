@@ -71,8 +71,7 @@ public class ForwardReadQueryPropertyTest extends AbstractPerformanceStatisticsT
         Map<String, String> actualProps = new HashMap<>();
 
         new FilePerformanceStatisticsReader(BUFFER_SIZE, new TestHandler() {
-            @Override public void version(UUID nodeId, short fileFormatVer, String ignVer) {
-                assertEquals(ForwardReadQueryPropertyTest.this.fileFormatVer, fileFormatVer);
+            @Override public void version(UUID nodeId, String ignVer) {
                 assertEquals(ForwardReadQueryPropertyTest.this.fileFormatVer == LEGACY_FILE_FORMAT_VERSION_1 ? null : VER_STR, ignVer);
             }
 

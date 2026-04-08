@@ -31,10 +31,9 @@ import org.jetbrains.annotations.Nullable;
 public interface PerformanceStatisticsHandler {
     /**
      * @param nodeId Node id.
-     * @param fileFormatVer Performance statistics file format version.
      * @param ignVer Ignite version stored in file header, if present.
      */
-    default void version(UUID nodeId, short fileFormatVer, @Nullable String ignVer) {
+    default void version(UUID nodeId, @Nullable String ignVer) {
         // No-op.
     }
 
