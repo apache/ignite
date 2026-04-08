@@ -595,7 +595,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
 
-            marsh = ((IgniteEx)ignite).context().marshaller();
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
         }
     }
 
