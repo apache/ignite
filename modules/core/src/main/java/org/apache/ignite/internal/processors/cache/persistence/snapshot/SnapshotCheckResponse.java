@@ -21,10 +21,10 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** A DTO to transfer node's results for the both phases. */
@@ -37,7 +37,7 @@ public final class SnapshotCheckResponse<T extends Message> implements Message {
     @Order(1)
     @Nullable Map<String, ErrorMessage> errors;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SnapshotCheckResponse() {
         // No-op.
     }

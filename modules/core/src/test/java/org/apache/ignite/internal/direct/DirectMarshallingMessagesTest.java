@@ -20,7 +20,7 @@ package org.apache.ignite.internal.direct;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;

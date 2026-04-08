@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +55,7 @@ public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessa
     @GridToStringExclude
     @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public ServiceClusterDeploymentResultBatch() {
     }
 

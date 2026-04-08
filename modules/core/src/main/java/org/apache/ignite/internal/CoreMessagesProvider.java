@@ -15,22 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers;
+package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.ExchangeInfo;
-import org.apache.ignite.internal.GridJobCancelRequest;
-import org.apache.ignite.internal.GridJobExecuteRequest;
-import org.apache.ignite.internal.GridJobExecuteResponse;
-import org.apache.ignite.internal.GridJobSiblingsRequest;
-import org.apache.ignite.internal.GridJobSiblingsResponse;
-import org.apache.ignite.internal.GridTaskCancelRequest;
-import org.apache.ignite.internal.GridTaskSessionRequest;
-import org.apache.ignite.internal.IgniteDiagnosticRequest;
-import org.apache.ignite.internal.IgniteDiagnosticResponse;
-import org.apache.ignite.internal.TxEntriesInfo;
-import org.apache.ignite.internal.TxInfo;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -185,6 +173,10 @@ import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
+import org.apache.ignite.internal.processors.continuous.StartRequestData;
+import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -323,12 +315,10 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
         // [300..307, 350..352] - CalciteMessageFactory.
         // [-4..-22, -30..-35, -54..-57] - SQL
-        // [-42..-37] - former hadoop.
-        // [64..71] - former IGFS.
 
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
-        // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         msgIdx = 5000;
+        // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(msgIdx++, CompressedMessage::new);
         register(factory, ErrorMessage.class);
         register(factory, InetSocketAddressMessage.class);
@@ -344,20 +334,8 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         msgIdx = 5500;
         register(factory, TcpDiscoveryCollectionMessage.class);
 
-        // [5700 - 5800]: Schema operation messages. Most of them originally come from Discovery.
+        // [5700 - 5900]: TcpDiscoveryAbstractMessage.
         msgIdx = 5700;
-        register(factory, SchemaAlterTableAddColumnOperation.class);
-        register(factory, SchemaIndexCreateOperation.class);
-        register(factory, SchemaIndexDropOperation.class);
-        register(factory, SchemaAlterTableDropColumnOperation.class);
-        register(factory, SchemaAddQueryEntityOperation.class);
-        register(factory, QueryField.class);
-        register(factory, SchemaOperationStatusMessage.class);
-        register(factory, SchemaProposeDiscoveryMessage.class);
-        register(factory, SchemaFinishDiscoveryMessage.class);
-
-        // [5900 - 6100]: TcpDiscoveryAbstractMessage.
-        msgIdx = 5900;
         register(factory, TcpDiscoveryCheckFailedMessage.class);
         register(factory, TcpDiscoveryPingRequest.class);
         register(factory, TcpDiscoveryPingResponse.class);
@@ -376,7 +354,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, TcpDiscoveryClientAckResponse.class);
         register(factory, TcpDiscoveryNodeLeftMessage.class);
         register(factory, TcpDiscoveryNodeFailedMessage.class);
-        register(factory, TcpDiscoveryStatusCheckMessage.class);
         register(factory, TcpDiscoveryNodeAddFinishedMessage.class);
         register(factory, TcpDiscoveryJoinRequestMessage.class);
         register(factory, TcpDiscoveryCustomEventMessage.class);
@@ -384,8 +361,11 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, TcpDiscoveryNodeAddedMessage.class);
         register(factory, TcpDiscoveryClientReconnectMessage.class);
 
-        // [6200 - 6300]: Snapshot operation messages. Most of them originally come from Discovery.
-        msgIdx = 6200;
+        msgIdx = 5900;
+        register(factory, TcpDiscoveryStatusCheckMessage.class);
+
+        // [6000 - 6200]: Snapshot operation messages. Most of them originally come from Discovery.
+        msgIdx = 6000;
         register(factory, SnapshotStartDiscoveryMessage.class);
         register(factory, SnapshotCheckProcessRequest.class);
         register(factory, SnapshotOperationRequest.class);
@@ -404,8 +384,8 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, IncrementalSnapshotVerifyResult.class);
         register(factory, IncrementalSnapshotAwareMessage.class);
 
-        // [6400 - 6500]: Services messages. Most of them originally come from Discovery.
-        msgIdx = 6400;
+        // [6300 - 6400]: Services messages. Most of them originally come from Discovery.
+        msgIdx = 6300;
         register(factory, ServiceDeploymentProcessId.class);
         register(factory, ServiceSingleNodeDeploymentResult.class);
         register(factory, ServiceClusterDeploymentResult.class);
@@ -415,12 +395,8 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, ServiceChangeBatchRequest.class);
         register(factory, ServiceSingleNodeDeploymentResultBatch.class);
 
-        // [6600 - 6700]: Originally Discovery's messages.
-        msgIdx = 6600;
-
-
-        // [6800 - 7000]: DiscoveryCustomMessage
-        msgIdx = 6800;
+        // [6500 - 6700]: DiscoveryCustomMessage
+        msgIdx = 6500;
         register(factory, TcpConnectionRequestDiscoveryMessage.class);
         register(factory, DistributedMetaStorageUpdateMessage.class);
         register(factory, DistributedMetaStorageUpdateAckMessage.class);
@@ -518,6 +494,10 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, UpdateErrors.class);
         register(factory, LatchAckMessage.class);
         register(factory, AtomicApplicationAttributesAwareRequest.class);
+        register(factory, StartRequestData.class);
+        register(factory, StartRoutineDiscoveryMessage.class);
+        register(factory, StartRoutineAckDiscoveryMessage.class);
+        register(factory, StartRoutineDiscoveryMessageV2.class);
 
         // [10600-10800]: Affinity & partition maps.
         msgIdx = 10600;
@@ -542,8 +522,17 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, GridDhtPartitionsSingleMessage.class);
         register(factory, GridDhtPartitionsSingleRequest.class);
 
-        // [10900-11100]: Query and SQL related messages.
+        // [10900-11100]: Query, schema and SQL related messages.
         msgIdx = 10900;
+        register(factory, SchemaAlterTableAddColumnOperation.class);
+        register(factory, SchemaIndexCreateOperation.class);
+        register(factory, SchemaIndexDropOperation.class);
+        register(factory, SchemaAlterTableDropColumnOperation.class);
+        register(factory, SchemaAddQueryEntityOperation.class);
+        register(factory, SchemaOperationStatusMessage.class);
+        register(factory, SchemaProposeDiscoveryMessage.class);
+        register(factory, SchemaFinishDiscoveryMessage.class);
+        register(factory, QueryField.class);
         register(factory, GridCacheSqlQuery.class);
         register(factory, GridCacheQueryRequest.class);
         register(factory, GridCacheQueryResponse.class);
@@ -565,7 +554,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, CacheContinuousQueryBatchAck.class);
         register(factory, CacheContinuousQueryEntry.class);
 
-        // [11200 - 11300]: Compute and distributed process messages.
+        // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
         register(factory, GridJobCancelRequest.class);
         register(factory, GridJobExecuteRequest.class);
@@ -585,12 +574,12 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(factory, HandshakeMessage.class);
         register(factory, HandshakeWaitMessage.class);
         register(factory, GridIoMessage.class);
+        factory.register(msgIdx++, IgniteIoTestMessage::new);
         register(factory, GridIoUserMessage.class);
         register(factory, GridIoSecurityAwareMessage.class);
         register(factory, RecoveryLastReceivedMessage.class);
         register(factory, TcpInverseConnectionResponseMessage.class);
         register(factory, SessionChannelMessage.class);
-        factory.register(msgIdx++, IgniteIoTestMessage::new);
 
         // [11700 - 11800]: Datastreamer messages.
         msgIdx = 11700;

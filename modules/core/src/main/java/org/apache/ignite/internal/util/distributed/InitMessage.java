@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess.Distribute
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -62,7 +62,7 @@ public class InitMessage<I extends Message> implements Message, DiscoveryCustomM
     @Order(4)
     public boolean waitClnRes;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public InitMessage() {
         // No-op.
     }

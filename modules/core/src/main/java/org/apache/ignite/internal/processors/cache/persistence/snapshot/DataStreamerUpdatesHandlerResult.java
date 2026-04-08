@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class DataStreamerUpdatesHandlerResult implements Message {
@@ -27,7 +27,7 @@ public class DataStreamerUpdatesHandlerResult implements Message {
     @Order(0)
     boolean streamerWarning;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public DataStreamerUpdatesHandlerResult() {
         // No-op.
     }

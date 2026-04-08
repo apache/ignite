@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class SnapshotRestoreStartRequest implements Message {
@@ -29,7 +29,7 @@ public class SnapshotRestoreStartRequest implements Message {
     @Order(0)
     UUID reqId;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SnapshotRestoreStartRequest() {
         // No-op.
     }

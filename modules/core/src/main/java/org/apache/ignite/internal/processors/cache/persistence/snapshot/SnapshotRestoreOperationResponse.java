@@ -22,11 +22,11 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Snapshot operation prepare response. */
 public class SnapshotRestoreOperationResponse implements MarshallableMessage {
@@ -44,7 +44,7 @@ public class SnapshotRestoreOperationResponse implements MarshallableMessage {
     @Order(1)
     byte[] metasBytes;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SnapshotRestoreOperationResponse() {
         // No-op.
     }

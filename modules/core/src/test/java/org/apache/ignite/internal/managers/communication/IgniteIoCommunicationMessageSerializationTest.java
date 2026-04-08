@@ -19,7 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;

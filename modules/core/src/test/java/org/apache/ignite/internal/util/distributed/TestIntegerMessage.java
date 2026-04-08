@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.distributed;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
@@ -27,7 +26,7 @@ public class TestIntegerMessage implements Message {
     @Order(0)
     int val;
 
-    /** Default constructor for {@link CoreMessagesProvider}. */
+    /** Default constructor for {@link MessageFactory}. */
     public TestIntegerMessage() {
         // No-op.
     }

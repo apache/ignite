@@ -20,10 +20,10 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Metrics update message.
@@ -38,7 +38,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     @Order(0)
     NodeMetricsMessage metricsMsg;
 
-    /** Constructor for {@link CoreMessagesProvider}. */
+    /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryClientMetricsUpdateMessage() {
         // No-op.
     }
