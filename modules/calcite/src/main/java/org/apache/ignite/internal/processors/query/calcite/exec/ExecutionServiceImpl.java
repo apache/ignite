@@ -672,6 +672,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     try {
                         SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
 
+                        QueryProperties props = qry.context().unwrap(QueryProperties.class);
+                        boolean keepBinaryMode = props == null || props.keepBinary();
+
                         QueryStartRequest req = new QueryStartRequest(
                             qry.id(),
                             qry.localQueryId(),
@@ -684,7 +687,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             parametersMarshalled,
                             timeout,
                             ectx.getQryTxEntries(),
-                            sesCtx == null ? null : sesCtx.attributes()
+                            sesCtx == null ? null : sesCtx.attributes(),
+                            keepBinaryMode
                         );
 
                         messageService().send(nodeId, req);
@@ -881,8 +885,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
+            boolean keepBinaryMode = msg.keepBinaryMode();
+            QueryProperties qryProps = new QueryProperties(null, keepBinaryMode, false);
+
             final BaseQueryContext qctx = createQueryContext(
-                msg.applicationAttributes() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.applicationAttributes())),
+                msg.applicationAttributes() == null ?
+                    Contexts.of(qryProps) :
+                    Contexts.of(new SessionContextImpl(msg.applicationAttributes()), qryProps),
                 msg.schema());
 
             FragmentPlan fragmentPlan = fragmentPlanCache.computeIfAbsent(msg.root(), k -> prepareFragment(qctx, k));

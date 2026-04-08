@@ -21,13 +21,11 @@ import java.util.Arrays;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -118,23 +116,20 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
 
         cfg.setDiscoverySpi(testSpi);
 
+        cfg.setPluginProviders(new MessagesPluginProvider(MessageForServer.class));
+
         return cfg;
     }
 
-    /**
-     *
-     */
-    private class TestDiscoverySpi extends TcpDiscoverySpi {
+    /** */
+    private class TestDiscoverySpi extends TestTcpDiscoverySpi {
         /** Test exchange. */
         private TestDiscoveryDataExchange testEx = new TestDiscoveryDataExchange();
 
-        /**
-         *
-         */
+        /** */
         public TestDiscoverySpi() {
             exchange = testEx;
         }
-
 
         /** {@inheritDoc} */
         @Override public void setDataExchange(DiscoverySpiDataExchange exchange) {
@@ -169,27 +164,6 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
          */
         public void setExchange(DiscoverySpiDataExchange ex) {
             this.ex = ex;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class MessageForServer implements DiscoveryServerOnlyCustomMessage {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteUuid id = IgniteUuid.randomUuid();
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-            return null;
         }
     }
 }

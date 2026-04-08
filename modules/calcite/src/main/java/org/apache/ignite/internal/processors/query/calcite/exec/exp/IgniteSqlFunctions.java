@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Statistic;
@@ -292,5 +293,53 @@ public class IgniteSqlFunctions {
             SqlNode parent, CalciteConnectionConfig cfg) {
             return true;
         }
+    }
+
+    /** SQL >=. */
+    public static boolean geAny(Object a, Object b) {
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) >= 0;
+
+        return SqlFunctions.geAny(a, b);
+    }
+
+    /** SQL >. */
+    public static boolean gtAny(Object a, Object b) {
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) > 0;
+
+        return SqlFunctions.gtAny(a, b);
+    }
+
+    /** SQL <=. */
+    public static boolean leAny(Object a, Object b) {
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) <= 0;
+
+        return SqlFunctions.leAny(a, b);
+    }
+
+    /** SQL <. */
+    public static boolean ltAny(Object a, Object b) {
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) < 0;
+
+        return SqlFunctions.ltAny(a, b);
+    }
+
+    /** SQL =. */
+    public static boolean eqAny(Object a, Object b) {
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) == 0;
+
+        return SqlFunctions.eqAny(a, b);
+    }
+
+    /** SQL <>. */
+    public static boolean neAny(Object a, Object b) {
+        if (Commons.isBinaryComparable(a, b))
+            return Commons.compareBinary(a, b) != 0;
+
+        return SqlFunctions.neAny(a, b);
     }
 }
