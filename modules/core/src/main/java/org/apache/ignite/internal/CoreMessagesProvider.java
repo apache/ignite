@@ -649,7 +649,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
                 : (MessageSerializer<T>)serCls.getConstructor().newInstance();
         }
         catch (Exception e) {
-            throw new IgniteException("Failted to register message of type " + cls.getSimpleName(), e);
+            throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
         }
 
         factory.register(
@@ -659,7 +659,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
                     return ctor.newInstance();
                 }
                 catch (Exception e) {
-                    throw new IgniteException("Failted to create message of type " + cls.getSimpleName(), e);
+                    throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
                 }
             },
             serializer
