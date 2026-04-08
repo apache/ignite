@@ -642,7 +642,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
             boolean marshallable = MarshallableMessage.class.isAssignableFrom(cls);
 
-            Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "Marshallable" : "") + "Serializer");
+            Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
 
             serializer = marshallable
                 ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLdr)
