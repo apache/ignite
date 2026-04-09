@@ -47,7 +47,7 @@ public class CompressedMessageTest {
     @Test
     public void testWriteReadHugeMessage() {
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new CoreMessagesProvider(jdk(), U.gridClassLoader())});
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 

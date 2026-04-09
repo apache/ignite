@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -227,8 +228,10 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -285,11 +288,14 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     /** Handshake wait message type. */
     public static final short HANDSHAKE_WAIT_MSG_TYPE = HANDSHAKE_MSG_TYPE + 1;
 
-    /** Custom data marshaller. */
-    private final Marshaller marsh;
+    /** Binary marshaller. */
+    private final Marshaller schemaAwareMarhaller;
 
-    /** Class loader for the custom data marshalling. */
-    private final ClassLoader clsLdr;
+    /** Binary marshaller. */
+    private final Marshaller schemaLessMarshaller;
+
+    /** Resolved classloader. */
+    private final ClassLoader resolvedClsLdr;
 
     /** */
     private short msgIdx;
@@ -298,12 +304,14 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     private @Nullable MessageFactory factory;
 
     /**
-     * @param marsh Custom data marshaller.
-     * @param clsLdr Class loader for the custom data marshalling.
+     * @param schemaAwareMarhaller Schema-aware marshaller like {@link BinaryMarshaller}.
+     * @param schemaLessMarshaller Pure, schemaless marshaller like {@link JdkMarshaller}.
+     * @param resolvedClsLdr Resolved classloader.
      */
-    public CoreMessagesProvider(Marshaller marsh, ClassLoader clsLdr) {
-        this.marsh = marsh;
-        this.clsLdr = clsLdr;
+    public CoreMessagesProvider(Marshaller schemaAwareMarhaller, Marshaller schemaLessMarshaller, ClassLoader resolvedClsLdr) {
+        this.schemaAwareMarhaller = schemaAwareMarhaller;
+        this.schemaLessMarshaller = schemaLessMarshaller;
+        this.resolvedClsLdr = resolvedClsLdr;
     }
 
     /** {@inheritDoc} */
@@ -632,8 +640,13 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(WalStateAckMessage.class);
     }
 
-    /** Registers message incrementing {@link #msgIdx}. */
+    /** */
     private <T extends Message> void register(Class<T> cls) {
+        register(cls, schemaLessMarshaller, U.gridClassLoader());
+    }
+
+    /** Registers message using ane incrementing {@link #msgIdx} as the message id/type. */
+    private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLdr) {
         Constructor<T> ctor;
         MessageSerializer<T> serializer;
 
