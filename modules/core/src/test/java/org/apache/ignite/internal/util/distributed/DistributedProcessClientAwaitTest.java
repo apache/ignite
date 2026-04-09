@@ -28,10 +28,10 @@ import java.util.function.BiFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.util.distributed.MessagesPluginProvider.MessagesInjectedTcpDiscoverySpi;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -70,9 +70,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        cfg.setPluginProviders(new MessagesPluginProvider());
-        cfg.setDiscoverySpi(new MessagesInjectedTcpDiscoverySpi());
+        cfg.setPluginProviders(new MessagesPluginProvider(TestIntegerMessage.class, TestUuidMessage.class));
 
         return cfg;
     }

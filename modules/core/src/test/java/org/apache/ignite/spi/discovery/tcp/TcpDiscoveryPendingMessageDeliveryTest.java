@@ -24,13 +24,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -67,10 +65,12 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         else if (igniteInstanceName.startsWith("receiver"))
             disco = new DyingThreadDiscoverySpi();
         else
-            disco = new TcpDiscoverySpi();
+            disco = new TestTcpDiscoverySpi();
 
         disco.setIpFinder(sharedStaticIpFinder);
         cfg.setDiscoverySpi(disco);
+
+        cfg.setPluginProviders(new MessagesPluginProvider(DummyCustomDiscoveryMessage.class));
 
         return cfg;
     }
@@ -103,7 +103,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         receivedEnsuredMsgs.clear();
 
         // Initial custom message will travel across the ring and will be discarded.
-        sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
+        sendDummyCustomMessage(coordDisco);
 
         assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
             GridTestUtils.waitForCondition(() -> {
@@ -120,7 +120,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         int msgsNum = 2000;
 
         for (int i = 0; i < msgsNum; i++)
-            sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
+            sendDummyCustomMessage(coordDisco);
 
         mediator.close();
         victim.close();
@@ -149,7 +149,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         });
 
         // Custom message on a singleton cluster shouldn't break consistency of PendingMessages.
-        sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
+        sendDummyCustomMessage(coordDisco);
 
         // Victim doesn't send acknowledges, so we need an intermediate node to accept messages,
         // so the coordinator could mark them as pending.
@@ -172,7 +172,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         int msgsNum = 100;
 
         for (int i = 0; i < msgsNum; i++)
-            sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
+            sendDummyCustomMessage(coordDisco);
 
         mediator.close();
         victim.close();
@@ -229,18 +229,15 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs, delivered);
     }
 
-    /**
-     * @param disco Discovery SPI.
-     * @param id Message id.
-     */
-    private void sendDummyCustomMessage(TcpDiscoverySpi disco, IgniteUuid id) {
-        disco.sendCustomEvent(new DummyCustomDiscoveryMessage(id));
+    /** @param disco Discovery SPI. */
+    private void sendDummyCustomMessage(TcpDiscoverySpi disco) {
+        disco.sendCustomEvent(new DummyCustomDiscoveryMessage());
     }
 
     /**
      * Discovery SPI, that makes a thread to die when {@code blockMsgs} is set to {@code true}.
      */
-    private class DyingThreadDiscoverySpi extends TcpDiscoverySpi {
+    private class DyingThreadDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (blockMsgs)
@@ -251,7 +248,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      * Discovery SPI, that makes a node stop sending messages when {@code blockMsgs} is set to {@code true}.
      */
-    private class DyingDiscoverySpi extends TcpDiscoverySpi {
+    private class DyingDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
@@ -285,36 +282,11 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      *
      */
-    private class ListeningDiscoverySpi extends TcpDiscoverySpi {
+    private class ListeningDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (ensured(msg))
                 receivedEnsuredMsgs.add(msg);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class DummyCustomDiscoveryMessage implements DiscoveryCustomMessage {
-        /** */
-        private final IgniteUuid id;
-
-        /**
-         * @param id Message id.
-         */
-        DummyCustomDiscoveryMessage(IgniteUuid id) {
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-            return null;
         }
     }
 }

@@ -261,7 +261,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
-* Mon, 6 Apr 2026 Evgeniy Stanilovskiy <zstan@apache.org> - 2.18
+* Mon Apr 06 2026 Evgeniy Stanilovskiy <zstan@apache.org> - 2.18.0-1
 - Updated Apache Ignite to version 2.18
 
 * Fri Sep 09 2022 Taras Ledkov <tledkov@apache.org> - 2.13.0-1
