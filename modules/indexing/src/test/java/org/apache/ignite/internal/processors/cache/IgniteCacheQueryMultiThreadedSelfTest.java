@@ -115,7 +115,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return DURATION + 360_000;
+        return DURATION + 60_000;
     }
 
     /** @return {@code true} If evictions enabled. */
