@@ -28,8 +28,6 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -42,25 +40,14 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMe
  * Class is responsible for serializing discovery messages using RU-ready {@link MessageSerializer} mechanism.
  */
 public class DiscoveryMessageParser {
-    /** Leading byte for messages use {@link JdkMarshaller} for serialization. */
-    // TODO: remove these flags after refactoring all discovery messages.
-    private static final byte JAVA_SERIALIZATION = (byte)1;
-
-    /** Leading byte for messages use {@link MessageSerializer} for serialization. */
-    private static final byte MESSAGE_SERIALIZATION = (byte)2;
-
     /** Size for an intermediate buffer for serializing discovery messages. */
     private static final int MSG_BUFFER_SIZE = 100;
-
-    /** */
-    private final JdkMarshaller jdkMarshaller;
 
     /** */
     private final MessageFactory msgFactory;
 
     /** */
-    public DiscoveryMessageParser(JdkMarshaller jdkMarshaller, MessageFactory msgFactory) {
-        this.jdkMarshaller = jdkMarshaller;
+    public DiscoveryMessageParser(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 
@@ -69,16 +56,7 @@ public class DiscoveryMessageParser {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try (DeflaterOutputStream out = new DeflaterOutputStream(baos)) {
-            if (msg instanceof Message) {
-                out.write(MESSAGE_SERIALIZATION);
-
-                serializeMessage((Message)msg, out);
-            }
-            else {
-                out.write(JAVA_SERIALIZATION);
-
-                U.marshal(jdkMarshaller, msg, out);
-            }
+            serializeMessage((Message)msg, out);
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to serialize message: " + msg, e);
@@ -93,14 +71,6 @@ public class DiscoveryMessageParser {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             InflaterInputStream in = new InflaterInputStream(bais)
         ) {
-            byte mode = (byte)in.read();
-
-            if (mode == JAVA_SERIALIZATION)
-                return U.unmarshal(jdkMarshaller, in, U.gridClassLoader());
-
-            if (MESSAGE_SERIALIZATION != mode)
-                throw new IOException("Received unexpected byte while reading discovery message: " + mode);
-
             return (DiscoverySpiCustomMessage)deserializeMessage(in);
         }
         catch (Exception e) {

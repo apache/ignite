@@ -17,22 +17,29 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Zk Force Node Fail Message.
  */
-public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage, Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    long nodeInternalId;
 
     /** */
-    final long nodeInternalId;
+    @Order(1)
+    String warning;
 
-    /** */
-    final String warning;
+    /** Constructor for {@link MessageFactory}. */
+    public ZkForceNodeFailMessage() {
+        // No-op.
+    }
 
     /**
      * @param nodeInternalId Node ID.
