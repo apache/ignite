@@ -288,6 +288,9 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     /** Handshake wait message type. */
     public static final short HANDSHAKE_WAIT_MSG_TYPE = HANDSHAKE_MSG_TYPE + 1;
 
+    /** */
+    public static final short MAX_MESSAGE_ID = 15_000;
+
     /** Binary marshaller. */
     private final Marshaller schemaAwareMarhaller;
 
@@ -638,6 +641,8 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(IgniteDiagnosticRequest.class);
         register(IgniteDiagnosticResponse.class);
         register(WalStateAckMessage.class);
+
+        assert msgIdx <= MAX_MESSAGE_ID;
     }
 
     /** */
