@@ -177,6 +177,21 @@ tab:C#/.NET[unsupported]
 tab:C++[unsupported]
 --
 
+== Interaction with CacheInterceptor
+`CacheInterceptor` also take into account cache `keepBinary` mode and process a value appropriately.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=keepBinaryWithCacheInterceptor,indent=0]
+----
+
+tab:C#/.NET[unsupported]
+
+tab:C++[unsupported]
+--
 
 == Recommendations on Binary Objects Tuning
 
