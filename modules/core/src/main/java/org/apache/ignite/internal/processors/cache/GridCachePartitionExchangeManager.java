@@ -1348,7 +1348,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
-        @Nullable Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
+        Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
         @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload
     ) {
         Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();

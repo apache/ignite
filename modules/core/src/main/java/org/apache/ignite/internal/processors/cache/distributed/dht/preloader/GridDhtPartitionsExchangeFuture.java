@@ -326,10 +326,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers = new HashMap<>();
 
-    /** */
-    @GridToStringExclude
-    private final Object suppliersMux = new Object();
-
     /** Set of nodes that cannot be used for wal rebalancing due to some reason. */
     private final Set<UUID> exclusionsFromHistoricalRebalance = ConcurrentHashMap.newKeySet();
 
@@ -593,8 +589,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public List<UUID> partitionHistorySupplier(int grpId, int partId, long cntrSince) {
         List<UUID> histSuppliers;
 
-        synchronized (suppliersMux) {
-            if (partHistSuppliers == null)
+        synchronized (partHistSuppliers) {
+            if (partHistSuppliers.isEmpty())
                 return Collections.emptyList();
 
             histSuppliers = new ArrayList<>();
@@ -2456,8 +2452,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             Map<GroupPartitionIdPair, Long> locReserved;
 
-            synchronized (suppliersMux) {
-                locReserved = partHistSuppliers == null ? null : partHistSuppliers.get(cctx.localNodeId());
+            synchronized (partHistSuppliers) {
+                locReserved = partHistSuppliers.get(cctx.localNodeId());
             }
 
             if (locReserved != null) {
@@ -3566,10 +3562,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 break;
 
             if (preferWalRebalance || maxOwnerCntr - ceilingMinReserved < ownerSize) {
-                synchronized (suppliersMux) {
-                    if (partHistSuppliers == null)
-                        partHistSuppliers = new HashMap<>();
-
+                synchronized (partHistSuppliers) {
                     Map<GroupPartitionIdPair, Long> nodeMap = partHistSuppliers.computeIfAbsent(ownerId, k -> new HashMap<>());
 
                     nodeMap.put(new GroupPartitionIdPair(grpId, p), ceilingMinReserved);
@@ -3682,7 +3675,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             assert crd.isLocal();
 
-            assert F.isEmpty(partHistSuppliers) : partHistSuppliers;
+            synchronized (partHistSuppliers) {
+                assert partHistSuppliers.isEmpty() : partHistSuppliers;
+            }
 
             if (!exchCtx.mergeExchanges() && !crd.equals(events().discoveryCache().serverNodes().get(0))) {
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
@@ -4662,10 +4657,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void updatePartitionFullMap(AffinityTopologyVersion resTopVer, GridDhtPartitionsFullMessage msg) {
         cctx.versions().onExchange(msg.lastVersion().order());
 
-        assert F.isEmpty(partHistSuppliers);
+        synchronized (partHistSuppliers) {
+            assert partHistSuppliers.isEmpty();
 
-        synchronized (suppliersMux) {
-            partHistSuppliers = msg.partitionHistorySuppliers() == null ? null : msg.partitionHistorySuppliers();
+            if (msg.partitionHistorySuppliers() != null)
+                partHistSuppliers = msg.partitionHistorySuppliers();
         }
 
         // Reserve at least 2 threads for system operations.
