@@ -31,13 +31,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Message {
+public class GridCacheReturn extends GridCacheIdMessage {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
@@ -60,10 +59,6 @@ public class GridCacheReturn implements Message {
 
     /** Local result flag, if non local then do not need unwrap cache objects. */
     private boolean loc;
-
-    /** Cache Id. */
-    @Order(4)
-    int cacheId;
 
     /**
      * Empty constructor.
@@ -286,13 +281,6 @@ public class GridCacheReturn implements Message {
     }
 
     /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /**
      * @param other Other result to merge with.
      */
     public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
@@ -334,14 +322,6 @@ public class GridCacheReturn implements Message {
      */
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         assert !loc;
-
-        if (cacheObj != null)
-            cacheObj.prepareMarshal(ctx.cacheObjectContext());
-
-        if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.prepareMarshal(ctx);
-        }
     }
 
     /**
@@ -352,16 +332,10 @@ public class GridCacheReturn implements Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
-        if (cacheObj != null) {
-            cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-
+        if (cacheObj != null) 
             v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
-        }
 
         if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.finishUnmarshal(ctx, ldr);
-
             Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
 
             for (CacheInvokeDirectResult res : invokeResCol) {
@@ -376,6 +350,10 @@ public class GridCacheReturn implements Message {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

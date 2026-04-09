@@ -44,7 +44,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -164,17 +164,19 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
             }
         }
 
-        U.sleep(5000);
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (int i = 0; i < GRID_CNT; i++) {
+                for (String cacheName : grid(i).cacheNames()) {
+                    IgniteCache<Object, Object> c = grid(i).cache(cacheName);
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            for (String cacheName : grid(i).cacheNames()) {
-                IgniteCache<Object, Object> c = grid(i).cache(cacheName);
-
-                assertEquals(0, c.size(CachePeekMode.OFFHEAP));
-                assertEquals(0, c.size(CachePeekMode.PRIMARY));
-                assertEquals(0, c.size());
+                    assertEquals(0, c.size(CachePeekMode.OFFHEAP));
+                    assertEquals(0, c.size(CachePeekMode.PRIMARY));
+                    assertEquals(0, c.size());
+                }
             }
-        }
+
+            return true;
+        }, 120_000));
     }
 
     /** {@inheritDoc} */

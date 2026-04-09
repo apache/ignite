@@ -112,7 +112,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         // We have to skip this header at the further message reading.
         AtomicInteger initHdrSize = new AtomicInteger();
 
-        DirectMessageWriter msgWritter = new DirectMessageWriter(msgFactory) {
+        DirectMessageWriter msgWritter = new DirectMessageWriter(msgFactory, null, null) {
             @Override public void onHeaderWritten() {
                 super.onHeaderWritten();
 
@@ -127,7 +127,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         assertTrue(msgWritter.getBuffer().hasRemaining());
 
-        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null);
+        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null, null);
         msgReader.setBuffer(msgWritter.getBuffer());
 
         msgWritter.getBuffer().rewind();

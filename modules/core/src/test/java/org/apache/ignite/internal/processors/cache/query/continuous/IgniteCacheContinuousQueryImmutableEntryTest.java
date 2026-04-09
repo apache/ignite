@@ -153,7 +153,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory(jdk(), U.gridClassLoader())});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory, null, null);
 
         var serializer = msgFactory.serializer(e0.directType());
         assertNotNull("Serializer not found for message type " + e0.directType(), serializer);
@@ -166,7 +166,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
 
-        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null, null);
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 

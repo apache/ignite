@@ -120,12 +120,6 @@ public class UpdateErrors implements Message {
         msg.prepareMarshalCacheObjects(failedKeys, cctx);
     }
 
-    /** */
-    void finishUnmarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx, ClassLoader ldr) throws IgniteCheckedException {
-        msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
-    }
-
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UpdateErrors.class, this);

@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -314,49 +313,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalObject(key, cctx);
-
-        prepareMarshalObject(val, cctx);
-
-        prepareMarshalObject(prevVal, cctx);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalObject(key, cctx, ldr);
-
-        finishUnmarshalObject(val, cctx, ldr);
-
-        finishUnmarshalObject(prevVal, cctx, ldr);
-    }
-
-    /**
-     * @param obj CacheObject to marshal
-     * @param ctx context
-     * @throws IgniteCheckedException if error
-     */
-    private void prepareMarshalObject(CacheObject obj, GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
-        if (obj != null)
-            obj.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
-     * @param obj CacheObject un to marshal
-     * @param ctx context
-     * @param ldr class loader
-     * @throws IgniteCheckedException if error
-     */
-    private void finishUnmarshalObject(@Nullable CacheObject obj, GridCacheContext<?, ?> ctx,
-        ClassLoader ldr) throws IgniteCheckedException {
-        if (obj != null)
-            obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /**

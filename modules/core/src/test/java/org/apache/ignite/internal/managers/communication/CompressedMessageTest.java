@@ -48,7 +48,7 @@ public class CompressedMessageTest {
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
             new GridIoMessageFactory(jdk(), U.gridClassLoader())});
 
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory, null, null);
 
         ByteBuffer tmpBuf = ByteBuffer.allocate(4096);
 
@@ -94,11 +94,11 @@ public class CompressedMessageTest {
 
         msgBuf.flip();
 
-        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null, null);
 
         reader.setBuffer(msgBuf);
 
-        Message readMsg = reader.readMessage(true);
+        Message readMsg = reader.readMessage(fullMsg, true);
 
         assertTrue(readMsg instanceof GridDhtPartitionsFullMessage);
 

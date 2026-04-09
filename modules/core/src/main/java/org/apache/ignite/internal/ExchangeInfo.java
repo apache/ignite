@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
+public final class ExchangeInfo implements IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)
     AffinityTopologyVersion topVer;

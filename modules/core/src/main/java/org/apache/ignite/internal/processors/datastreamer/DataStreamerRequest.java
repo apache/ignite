@@ -23,6 +23,8 @@ import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class DataStreamerRequest implements Message {
+public class DataStreamerRequest extends GridCacheIdMessage implements Message {
     /** */
     @Order(0)
     long reqId;
@@ -162,6 +164,8 @@ public class DataStreamerRequest implements Message {
         this.forceLocDep = forceLocDep;
         this.topVer = topVer;
         this.partId = partId;
+        
+        cacheId = GridCacheUtils.cacheId(cacheName);
     }
 
     /**
@@ -267,6 +271,11 @@ public class DataStreamerRequest implements Message {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /**

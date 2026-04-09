@@ -23,12 +23,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Message {
+public class GridCacheEntryInfo extends GridCacheIdMessage {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -37,24 +36,20 @@ public class GridCacheEntryInfo implements Message {
     @GridToStringInclude
     KeyCacheObject key;
 
-    /** Cache ID. */
-    @Order(1)
-    int cacheId;
-
     /** Cache value. */
-    @Order(2)
+    @Order(1)
     CacheObject val;
 
     /** Time to live. */
-    @Order(3)
+    @Order(2)
     long ttl;
 
     /** Expiration time. */
-    @Order(4)
+    @Order(3)
     long expireTime;
 
     /** Entry version. */
-    @Order(5)
+    @Order(4)
     GridCacheVersion ver;
 
     /** New flag. */
@@ -62,13 +57,6 @@ public class GridCacheEntryInfo implements Message {
 
     /** Deleted flag. */
     private boolean deleted;
-
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
 
     /**
      * @param cacheId Cache ID.
@@ -176,16 +164,6 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /**
      * @param ctx Cache object context.
      * @return Marshalled size.
      * @throws IgniteCheckedException If failed.
@@ -216,11 +194,6 @@ public class GridCacheEntryInfo implements Message {
     public void marshal(CacheObjectContext ctx) throws IgniteCheckedException {
         assert key != null;
 
-        key.prepareMarshal(ctx);
-
-        if (val != null)
-            val.prepareMarshal(ctx);
-
         if (expireTime == 0)
             expireTime = -1;
         else {
@@ -250,11 +223,6 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(CacheObjectContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx, clsLdr);
-
-        if (val != null)
-            val.finishUnmarshal(ctx, clsLdr);
-
         long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
@@ -262,6 +230,11 @@ public class GridCacheEntryInfo implements Message {
         // Account for overflow.
         if (expireTime < 0)
             expireTime = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -417,7 +417,8 @@ public class MessageSerializerGenerator {
                 return;
             }
 
-            returnFalseIfWriteFailed(write, field, "writer.writeObjectArray", getExpr, messageCollectionItemTypes(field, type));
+            returnFalseIfWriteFailed(
+                write, field, "writer.writeObjectArray", getExpr, messageCollectionItemTypes(field, type), "msg");
 
             return;
         }
@@ -443,6 +444,7 @@ public class MessageSerializerGenerator {
 
                 args.add(getExpr);
                 args.add(messageCollectionItemTypes(field, type));
+                args.add("msg");
 
                 if (compress)
                     args.add("true"); // the value of the compress argument in the MessageWriter#writeMap method
@@ -451,10 +453,10 @@ public class MessageSerializerGenerator {
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
-                returnFalseIfWriteFailed(write, field, "writer.writeKeyCacheObject", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeKeyCacheObject", getExpr, "msg");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
-                returnFalseIfWriteFailed(write, field, "writer.writeCacheObject", getExpr);
+                returnFalseIfWriteFailed(write, field, "writer.writeCacheObject", getExpr, "msg");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, field, "writer.writeGridLongList", getExpr);
@@ -470,7 +472,8 @@ public class MessageSerializerGenerator {
             }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName())))
-                returnFalseIfWriteFailed(write, field, "writer.writeCollection", getExpr, messageCollectionItemTypes(field, type));
+                returnFalseIfWriteFailed(
+                    write, field, "writer.writeCollection", getExpr, messageCollectionItemTypes(field, type), "msg");
 
             else if (enumType(env, type)) {
                 Element element = env.getTypeUtils().asElement(type);
@@ -625,7 +628,7 @@ public class MessageSerializerGenerator {
             }
 
             if (componentType.getKind() == TypeKind.ARRAY) {
-                returnFalseIfReadFailed(field, "reader.readObjectArray", messageCollectionItemTypes(field, type));
+                returnFalseIfReadFailed(field, "reader.readObjectArray", messageCollectionItemTypes(field, type), "msg");
 
                 return;
             }
@@ -633,7 +636,7 @@ public class MessageSerializerGenerator {
             if (componentType.getKind() == TypeKind.DECLARED) {
                 Element componentElement = ((DeclaredType)componentType).asElement();
 
-                returnFalseIfReadFailed(field, "reader.readObjectArray", messageCollectionItemTypes(field, type));
+                returnFalseIfReadFailed(field, "reader.readObjectArray", messageCollectionItemTypes(field, type), "msg");
 
                 if (!"java.lang".equals(env.getElementUtils().getPackageOf(componentElement).getQualifiedName().toString())) {
                     String importCls = ((QualifiedNameable)componentElement).getQualifiedName().toString();
@@ -669,6 +672,7 @@ public class MessageSerializerGenerator {
                 List<String> args = new ArrayList<>();
 
                 args.add(messageCollectionItemTypes(field, type));
+                args.add("msg");
 
                 if (compress)
                     args.add("true"); // the value of the compress argument in the MessageReader#readMap method
@@ -677,10 +681,10 @@ public class MessageSerializerGenerator {
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
-                returnFalseIfReadFailed(field, "reader.readKeyCacheObject");
+                returnFalseIfReadFailed(field, "reader.readKeyCacheObject", "msg");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
-                returnFalseIfReadFailed(field, "reader.readCacheObject");
+                returnFalseIfReadFailed(field, "reader.readCacheObject", "msg");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(field, "reader.readGridLongList");
@@ -690,13 +694,13 @@ public class MessageSerializerGenerator {
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
                 if (compress)
-                    returnFalseIfReadFailed(field, "reader.readMessage", "true");
+                    returnFalseIfReadFailed(field, "reader.readMessage", "msg", "true");
                 else
-                    returnFalseIfReadFailed(field, "reader.readMessage");
+                    returnFalseIfReadFailed(field, "reader.readMessage", "msg");
             }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
-                returnFalseIfReadFailed(field, "reader.readCollection", messageCollectionItemTypes(field, type));
+                returnFalseIfReadFailed(field, "reader.readCollection", messageCollectionItemTypes(field, type), "msg");
             }
             else if (enumType(env, type)) {
                 String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());

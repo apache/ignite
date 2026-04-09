@@ -360,12 +360,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (errs != null)
-            errs.finishUnmarshal(this, cctx, ldr);
-
-        if (nearUpdates != null)
-            finishUnmarshalCacheObjects(nearUpdates.nearValues(), cctx, ldr);
-
         if (ret != null)
             ret.finishUnmarshal(cctx, ldr);
     }

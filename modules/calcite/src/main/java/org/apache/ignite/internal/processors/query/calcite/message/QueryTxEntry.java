@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.function.Function;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -38,21 +36,17 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * @see ExecutionContext#transactionChanges(int, int[], Function, Comparator)
  * @see QueryStartRequest#queryTransactionEntries()
  */
-public class QueryTxEntry implements CalciteMessage {
-    /** Cache id. */
-    @Order(0)
-    int cacheId;
-
+public class QueryTxEntry extends GridCacheIdMessage implements CalciteMessage {
     /** Entry key. */
-    @Order(1)
+    @Order(0)
     KeyCacheObject key;
 
     /** Entry value. */
-    @Order(2)
+    @Order(1)
     CacheObject val;
 
     /** Entry version. */
-    @Order(3)
+    @Order(2)
     GridCacheVersion ver;
 
     /**
@@ -75,11 +69,6 @@ public class QueryTxEntry implements CalciteMessage {
         this.ver = ver;
     }
 
-    /** @return Cache id. */
-    public int cacheId() {
-        return cacheId;
-    }
-
     /** @return Entry key. */
     public KeyCacheObject key() {
         return key;
@@ -95,24 +84,9 @@ public class QueryTxEntry implements CalciteMessage {
         return ver;
     }
 
-    /** */
-    public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        CacheObjectContext coctx = ctx.cacheContext(cacheId).cacheObjectContext();
-
-        key.prepareMarshal(coctx);
-
-        if (val != null)
-            val.prepareMarshal(coctx);
-    }
-
-    /** */
-    public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        CacheObjectContext coctx = ctx.cacheContext(cacheId).cacheObjectContext();
-
-        key.finishUnmarshal(coctx, ldr);
-
-        if (val != null)
-            val.finishUnmarshal(coctx, ldr);
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */

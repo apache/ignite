@@ -497,18 +497,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        finishUnmarshalCacheObjects(vals, cctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
-
-        finishUnmarshalCacheObjects(nearVals, cctx, ldr);
-
-        finishUnmarshalCacheObjects(prevVals, cctx, ldr);
-
         if (forceTransformBackups) {
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);

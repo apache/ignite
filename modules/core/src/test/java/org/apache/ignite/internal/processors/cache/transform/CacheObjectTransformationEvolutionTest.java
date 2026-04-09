@@ -157,6 +157,9 @@ public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectT
 
         totalCnt += cnt;
 
+        // Checking.
+        check(shifts, transformCnt, restoreCnt);
+
         // Already used value.
         for (int i = 0; i < cnt; i++) {
             for (int shift : shifts) {
@@ -181,6 +184,9 @@ public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectT
             // Will be transformed (and restored!) using the actual shift, while BinaryObject will keep the previous transformation result.
             restoreCnt += (NODES - 1) * cnt; // Put on backups.
 
+        // Checking.
+        check(shifts, transformCnt, restoreCnt);
+
         // Value got from the cache.
         for (int i = 0; i < cnt; i++) {
             for (int shift : shifts) {
@@ -202,6 +208,9 @@ public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectT
             transformCnt += cnt; // Put on primary.
             totalCnt += cnt;
         }
+
+        // Checking.
+        check(shifts, transformCnt, restoreCnt);
 
         // Value replace.
         for (int i = 0; i < cnt; i++) {
@@ -237,6 +246,9 @@ public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectT
         }
 
         totalCnt += cnt;
+
+        // Checking.
+        check(shifts, transformCnt, restoreCnt);
 
         // Value replace via Entry Processor.
         for (int i = 0; i < cnt; i++) {
@@ -290,17 +302,7 @@ public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectT
         totalCnt += cnt;
 
         // Checking.
-        for (int shift : shifts) {
-            if (shift != 0)
-                assertEquals(transformCnt, ControllableCacheObjectTransformer.tCntr.get(shift).get());
-            else
-                assertNull(ControllableCacheObjectTransformer.tCntr.get(shift));
-
-            if (shift != 0 && restoreCnt > 0)
-                assertEquals(restoreCnt, ControllableCacheObjectTransformer.rCntr.get(shift).get());
-            else
-                assertNull(ControllableCacheObjectTransformer.rCntr.get(shift));
-        }
+        check(shifts, transformCnt, restoreCnt);
 
         ControllableCacheObjectTransformer.tCntr.clear();
         ControllableCacheObjectTransformer.rCntr.clear();
@@ -332,6 +334,21 @@ public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectT
 
             if (shift != 0)
                 assertEquals(totalCnt, ControllableCacheObjectTransformer.rCntr.get(shift).get());
+            else
+                assertNull(ControllableCacheObjectTransformer.rCntr.get(shift));
+        }
+    }
+    
+    /** */
+    private void check(int[] shifts, int transformCnt, int restoreCnt) {
+        for (int shift : shifts) {
+            if (shift != 0)
+                assertEquals(transformCnt, ControllableCacheObjectTransformer.tCntr.get(shift).get());
+            else
+                assertNull(ControllableCacheObjectTransformer.tCntr.get(shift));
+
+            if (shift != 0 && restoreCnt > 0)
+                assertEquals(restoreCnt, ControllableCacheObjectTransformer.rCntr.get(shift).get());
             else
                 assertNull(ControllableCacheObjectTransformer.rCntr.get(shift));
         }

@@ -331,8 +331,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             for (IgniteTxKey key: ownedKeys) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
-                key.prepareMarshal(cctx);
-
                 if (addDepInfo)
                     prepareObject(key, cctx);
             }
@@ -360,11 +358,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(key.cacheId());
 
-                if (cacheCtx != null) {
-                    key.finishUnmarshal(cacheCtx, ldr);
-
+                if (cacheCtx != null)
                     owned.put(key, valIter.next());
-                }
             }
         }
 

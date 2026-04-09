@@ -275,12 +275,12 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeCacheObject(CacheObject obj) {
+        @Override public boolean writeCacheObject(CacheObject obj, Message msg) {
             return writeField(CacheObject.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeKeyCacheObject(KeyCacheObject obj) {
+        @Override public boolean writeKeyCacheObject(KeyCacheObject obj, Message msg) {
             return writeField(KeyCacheObject.class);
         }
 
@@ -295,17 +295,17 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
+        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, Message msg) {
             return writeField(Object[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
+        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, Message msg) {
             return writeField(type.set() ? Set.class : Collection.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
+        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, Message msg, boolean compress) {
             return writeField(type.linked() ? LinkedHashMap.class : HashMap.class);
         }
 
@@ -522,21 +522,21 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(boolean compress) {
+        @Override public <T extends Message> T readMessage(Message encMsg, boolean compress) {
             readField(Message.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject readCacheObject() {
+        @Override public CacheObject readCacheObject(Message msg) {
             readField(CacheObject.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public KeyCacheObject readKeyCacheObject() {
+        @Override public KeyCacheObject readKeyCacheObject(Message msg) {
             readField(KeyCacheObject.class);
 
             return null;
@@ -550,21 +550,21 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T[] readObjectArray(MessageArrayType type) {
+        @Override public <T> T[] readObjectArray(MessageArrayType type, Message msg) {
             readField(Object[].class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg) {
             readField(type.set() ? Set.class : Collection.class);
 
             return null;
         }
         
         /** {@inheritDoc} */
-        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
+        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg, boolean compress) {
             readField(type.linked() ? LinkedHashMap.class : HashMap.class);
 
             return null;

@@ -263,17 +263,19 @@ public interface MessageWriter {
      * Writes {@link CacheObject}.
      *
      * @param obj Cache object.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
-    public boolean writeCacheObject(CacheObject obj);
+    public boolean writeCacheObject(CacheObject obj, Message msg);
 
     /**
      * Writes {@link KeyCacheObject}.
      *
      * @param obj Key cache object.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
-    public boolean writeKeyCacheObject(KeyCacheObject obj);
+    public boolean writeKeyCacheObject(KeyCacheObject obj, Message msg);
 
     /**
      * Writes {@link GridLongList}.
@@ -289,9 +291,10 @@ public interface MessageWriter {
      * @param arr Array of objects.
      * @param type Array component type.
      * @param <T> Type of the objects that array contains.
+     * @param msg Message.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type);
+    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, Message msg);
 
     /**
      * Writes collection with its elements order.
@@ -299,9 +302,10 @@ public interface MessageWriter {
      * @param col Collection.
      * @param type Collection item type.
      * @param <T> Type of the objects that collection contains.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type);
+    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, Message msg);
 
     /**
      * Writes map.
@@ -310,10 +314,11 @@ public interface MessageWriter {
      * @param type Map type.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
+     * @param msg Message.
      * @return Whether value was fully written.
      */
-    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type) {
-        return writeMap(map, type, false);
+    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, Message msg) {
+        return writeMap(map, type, msg, false);
     }
 
     /**
@@ -321,12 +326,13 @@ public interface MessageWriter {
      *
      * @param map Map.
      * @param type Map type.
+     * @param msg Message.
      * @param compress Whether map should be compressed.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress);
+    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, Message msg, boolean compress);
 
     /**
      * @return Whether header of current message is already written.

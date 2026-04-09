@@ -193,36 +193,40 @@ public interface MessageReader {
 
     /**
      * Reads nested message.
+     * @param encMsg Message.
      *
      * @param <T> Type of the message.
      * @return Message.
      */
-    public default <T extends Message> T readMessage() {
-        return readMessage(false);
+    public default <T extends Message> T readMessage(Message encMsg) {
+        return readMessage(encMsg, false);
     }
 
     /**
      * Reads nested message.
      *
+     * @param encMsg Message.
      * @param compress Whether message should be decompressed.
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage(boolean compress);
+    public <T extends Message> T readMessage(Message encMsg, boolean compress);
 
     /**
      * Reads {@link CacheObject}.
+     * @param msg Message.
      *
      * @return Cache object.
      */
-    public CacheObject readCacheObject();
+    public CacheObject readCacheObject(Message msg);
 
     /**
      * Reads {@link KeyCacheObject}.
+     * @param msg Message.
      *
      * @return Key cache object.
      */
-    public KeyCacheObject readKeyCacheObject();
+    public KeyCacheObject readKeyCacheObject(Message msg);
 
     /**
      * Reads {@link GridLongList}.
@@ -236,39 +240,43 @@ public interface MessageReader {
      *
      * @param type Array component type.
      * @param <T> Type of the read object.
+     * @param msg Message.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(MessageArrayType type);
+    public <T> T[] readObjectArray(MessageArrayType type, Message msg);
 
     /**
      * Reads any collection.
      *
      * @param type Collection item type.
      * @param <C> Type of the read collection.
+     * @param msg Message.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionType type);
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg);
 
     /**
      * Reads map.
      *
      * @param type Map type.
      * @param <M> Type of the read map.
+     * @param msg Message.
      * @return Map.
      */
-    public default <M extends Map<?, ?>> M readMap(MessageMapType type) {
-        return readMap(type, false);
+    public default <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg) {
+        return readMap(type, msg, false);
     }
 
     /**
      * Reads map.
      *
      * @param type Map type.
+     * @param msg Message.
      * @param compress Whether map should be compressed.
      * @param <M> Type of the read map.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress);
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg, boolean compress);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

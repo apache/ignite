@@ -151,8 +151,6 @@ public class TxLocksResponse extends GridCacheMessage {
             for (Map.Entry<IgniteTxKey, List<TxLock>> entry : nearTxKeyLocks.entrySet()) {
                 IgniteTxKey key = entry.getKey();
 
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
                 nearTxKeysArr[i] = key;
                 locksArr[i] = entry.getValue();
 
@@ -165,11 +163,8 @@ public class TxLocksResponse extends GridCacheMessage {
 
             int i = 0;
 
-            for (IgniteTxKey key : txKeys) {
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
+            for (IgniteTxKey key : txKeys) 
                 txKeysArr[i++] = key;
-            }
         }
     }
 
@@ -182,8 +177,6 @@ public class TxLocksResponse extends GridCacheMessage {
                 for (int i = 0; i < nearTxKeysArr.length; i++) {
                     IgniteTxKey txKey = nearTxKeysArr[i];
 
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
                     txLocks().put(txKey, locksArr[i]);
                 }
 
@@ -194,11 +187,8 @@ public class TxLocksResponse extends GridCacheMessage {
             if (txKeysArr != null) {
                 txKeys = U.newHashSet(txKeysArr.length);
 
-                for (IgniteTxKey txKey : txKeysArr) {
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
+                for (IgniteTxKey txKey : txKeysArr) 
                     txKeys.add(txKey);
-                }
 
                 txKeysArr = null;
             }

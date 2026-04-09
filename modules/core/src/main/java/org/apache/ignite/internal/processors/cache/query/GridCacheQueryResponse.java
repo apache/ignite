@@ -25,12 +25,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -154,21 +152,8 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
         ClassLoader ldr0 = U.resolveClassLoader(ldr, ctx.gridConfig());
 
-        CacheObjectContext cacheObjCtx = null;
-
         for (byte[] bytes : byteCol) {
             Object obj = bytes == null ? null : marsh.<T>unmarshal(bytes, ldr0);
-
-            if (obj instanceof Map.Entry) {
-                Object key = ((Map.Entry)obj).getKey();
-
-                if (key instanceof KeyCacheObject) {
-                    if (cacheObjCtx == null)
-                        cacheObjCtx = ctx.cacheContext(cacheId).cacheObjectContext();
-
-                    ((KeyCacheObject)key).finishUnmarshal(cacheObjCtx, ldr0);
-                }
-            }
 
             col.add((T)obj);
         }

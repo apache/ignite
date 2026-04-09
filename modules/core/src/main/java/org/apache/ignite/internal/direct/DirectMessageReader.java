@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -57,6 +58,9 @@ public class DirectMessageReader implements MessageReader {
 
     /** Cache object processor. */
     private final IgniteCacheObjectProcessor cacheObjProc;
+    
+    /** */
+    private final GridKernalContext ctx;
 
     /** Buffer for reading. */
     private ByteBuffer buf;
@@ -68,13 +72,14 @@ public class DirectMessageReader implements MessageReader {
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
+        this.ctx = ctx;
 
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, cacheObjProc);
+                return new StateItem(msgFactory, cacheObjProc, ctx);
             }
         });
     }
@@ -327,7 +332,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage(boolean compress) {
+    @Nullable @Override public <T extends Message> T readMessage(Message encMsg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         T msg;
@@ -335,10 +340,11 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             msg = readCompressedMessageAndDeserialize(
                 stream,
-                tmpReader -> tmpReader.state.item().stream.readMessage(tmpReader)
+                tmpReader -> tmpReader.state.item().stream.readMessage(encMsg, tmpReader),
+                encMsg
             );
         else {
-            msg = stream.readMessage(this);
+            msg = stream.readMessage(encMsg, this);
 
             lastRead = stream.lastFinished();
         }
@@ -347,10 +353,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject readCacheObject() {
+    @Override public CacheObject readCacheObject(Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        CacheObject val = stream.readCacheObject();
+        CacheObject val = stream.readCacheObject(msg);
 
         lastRead = stream.lastFinished();
 
@@ -358,10 +364,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject readKeyCacheObject() {
+    @Override public KeyCacheObject readKeyCacheObject(Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        KeyCacheObject key = stream.readKeyCacheObject();
+        KeyCacheObject key = stream.readKeyCacheObject(msg);
 
         lastRead = stream.lastFinished();
 
@@ -380,21 +386,21 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(MessageArrayType type) {
+    @Override public <T> T[] readObjectArray(MessageArrayType type, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        T[] msg = stream.readObjectArray(type, this);
+        T[] arr = stream.readObjectArray(type, msg, this);
 
         lastRead = stream.lastFinished();
 
-        return msg;
+        return arr;
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type, Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        C col = stream.readCollection(type, this);
+        C col = stream.readCollection(type, msg, this);
 
         lastRead = stream.lastFinished();
 
@@ -402,7 +408,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
+    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, Message msg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
         M map;
@@ -410,10 +416,11 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             map = readCompressedMessageAndDeserialize(
                 stream,
-                tmpReader -> tmpReader.state.item().stream.readMap(type, tmpReader)
+                tmpReader -> tmpReader.state.item().stream.readMap(type, msg, tmpReader),
+                msg
             );
         else {
-            map = stream.readMap(type, this);
+            map = stream.readMap(type, msg, this);
 
             lastRead = stream.lastFinished();
         }
@@ -464,8 +471,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** @return Deserialized object. */
-    private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Function<DirectMessageReader, T> fun) {
-        Message msg = stream.readMessage(this);
+    private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Function<DirectMessageReader, T> fun, Message encMsg) {
+        Message msg = stream.readMessage(encMsg, this);
 
         lastRead = stream.lastFinished();
 
@@ -486,7 +493,7 @@ public class DirectMessageReader implements MessageReader {
         tmpBuf.put(uncompressed);
         tmpBuf.flip();
 
-        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+        DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc, ctx);
 
         tmpReader.setBuffer(tmpBuf);
 
@@ -510,8 +517,8 @@ public class DirectMessageReader implements MessageReader {
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
          */
-        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-            stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
+        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc, GridKernalContext ctx) {
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc, ctx);
         }
 
         /** {@inheritDoc} */

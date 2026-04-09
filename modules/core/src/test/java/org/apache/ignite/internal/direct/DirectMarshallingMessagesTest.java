@@ -90,7 +90,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private <T extends Message> T doMarshalUnmarshalChunked(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(256);
 
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory, null, null);
 
         boolean fullyWritten = false;
 
@@ -111,7 +111,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         buf.flip();
         buf.get(bytes);
 
-        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null, null);
 
         Message resMsg = null;
 
@@ -128,7 +128,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
             reader.setBuffer(chunk);
 
-            resMsg = reader.readMessage(false);
+            resMsg = reader.readMessage(srcMsg, false);
 
             pos += chunk.position();
         }

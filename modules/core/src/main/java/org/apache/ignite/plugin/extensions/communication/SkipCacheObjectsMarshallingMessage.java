@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.msg;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.SkipCacheObjectsMarshallingMessage;
-import org.h2.value.Value;
-
-/**
- * Abstract message wrapper for H2 values.
- */
-public abstract class GridH2ValueMessage implements Message, SkipCacheObjectsMarshallingMessage {
-    /**
-     * Gets H2 value.
-     *
-     * @param ctx Kernal context.
-     * @return Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public abstract Value value(GridKernalContext ctx) throws IgniteCheckedException;
+/** */
+public interface SkipCacheObjectsMarshallingMessage {
 }

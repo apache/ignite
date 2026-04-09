@@ -196,7 +196,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(val, ver);
+        CacheVersionedValue oVal = new CacheVersionedValue(val, ver, key.cacheId);
 
         ownedVals.put(key, oVal);
     }
@@ -248,14 +248,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             ownedValKeys = ownedVals.keySet();
 
             ownedValVals = ownedVals.values();
-
-            for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
-
-                entry.getKey().prepareMarshal(cacheCtx);
-
-                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
-            }
         }
 
         if (retVal != null && retVal.cacheId() != 0) {
@@ -264,14 +256,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             assert cctx != null : retVal.cacheId();
 
             retVal.prepareMarshal(cctx);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
         }
     }
 
@@ -296,13 +280,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
                 CacheVersionedValue val = valIter.next();
-
-                key.finishUnmarshal(cctx, ldr);
-
-                val.finishUnmarshal(cctx, ldr);
 
                 ownedVals.put(key, val);
             }
@@ -314,14 +292,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             assert cctx != null : retVal.cacheId();
 
             retVal.finishUnmarshal(cctx, ldr);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.finishUnmarshal(cctx, ldr);
-            }
         }
     }
 
