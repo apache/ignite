@@ -184,6 +184,18 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
     }
 
+    /**
+     * Asserts that executeSql throws an exception.
+     *
+     * @param ignite Ignite instance.
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    protected void assertThrows(IgniteEx ignite, String sql, Class<? extends Exception> cls, String msg, Object... args) {
+        assertThrowsAnyCause(log, () -> sql(ignite, sql, args), cls, msg);
+    }
+
     /** */
     protected void createAndPopulateTable() {
         createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
