@@ -22,8 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
-import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -105,15 +103,8 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
-        if (msg instanceof Message) {
-            if (msg instanceof MetadataUpdateProposedMessage)
-                ((MetadataUpdateProposedMessage)msg).prepareMarshal(marsh);
-            else if (msg instanceof SecurityAwareCustomMessageWrapper &&
-                ((SecurityAwareCustomMessageWrapper)msg).delegate() instanceof MetadataUpdateProposedMessage)
-                ((MetadataUpdateProposedMessage)((SecurityAwareCustomMessageWrapper)msg).delegate()).prepareMarshal(marsh);
-
+        if (msg instanceof Message)
             serMsg = (Message)msg;
-        }
         else {
             if (msg != null)
                 msgBytes = U.marshal(marsh, msg);
@@ -133,15 +124,8 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
         if (msg != null)
             return;
 
-        if (serMsg != null) {
+        if (serMsg != null)
             msg = (DiscoverySpiCustomMessage)serMsg;
-
-            if (msg instanceof MetadataUpdateProposedMessage)
-                ((MetadataUpdateProposedMessage)msg).finishUnmarshal(marsh, ldr);
-            else if (msg instanceof SecurityAwareCustomMessageWrapper &&
-                ((SecurityAwareCustomMessageWrapper)msg).delegate() instanceof MetadataUpdateProposedMessage)
-                ((MetadataUpdateProposedMessage)((SecurityAwareCustomMessageWrapper)msg).delegate()).finishUnmarshal(marsh, ldr);
-        }
         else {
             if (msgBytes != null)
                 msg = U.unmarshal(marsh, msgBytes, ldr);

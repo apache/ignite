@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,11 +70,8 @@ import org.jetbrains.annotations.Nullable;
  * (with <b>pending version</b> strictly greater than <b>accepted version</b>)
  * it gets blocked until {@link MetadataUpdateAcceptedMessage} arrives with <b>accepted version</b>
  * equals to <b>pending version</b> of this metadata to the moment when is was initially read by the thread.
- * <p>
- * We don't implement MarshallableMessage for this message because it leads to performance degradation when updating BinaryMetadata
- * (see test: BinaryMetadataUpdatesFlowTest#testConcurrentMetadataUpdates).
  */
-public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage, Message {
+public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -232,19 +229,14 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         return typeId;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (metadata != null)
             metadataBytes = U.marshal(marsh, metadata);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         if (metadataBytes != null)
             metadata = U.unmarshal(marsh, metadataBytes, ldr);
     }

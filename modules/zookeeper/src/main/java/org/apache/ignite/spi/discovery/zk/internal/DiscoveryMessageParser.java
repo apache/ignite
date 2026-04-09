@@ -30,8 +30,6 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
-import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -79,12 +77,6 @@ public class DiscoveryMessageParser {
             if (msg instanceof Message) {
                 out.write(MESSAGE_SERIALIZATION);
 
-                if (msg instanceof MetadataUpdateProposedMessage)
-                    ((MetadataUpdateProposedMessage)msg).prepareMarshal(marsh);
-                else if (msg instanceof SecurityAwareCustomMessageWrapper &&
-                    ((SecurityAwareCustomMessageWrapper)msg).delegate() instanceof MetadataUpdateProposedMessage)
-                    ((MetadataUpdateProposedMessage)((SecurityAwareCustomMessageWrapper)msg).delegate()).prepareMarshal(marsh);
-
                 serializeMessage((Message)msg, out);
             }
             else {
@@ -114,16 +106,7 @@ public class DiscoveryMessageParser {
             if (MESSAGE_SERIALIZATION != mode)
                 throw new IOException("Received unexpected byte while reading discovery message: " + mode);
 
-            DiscoverySpiCustomMessage msg = (DiscoverySpiCustomMessage)deserializeMessage(in);
-
-            if (msg instanceof MetadataUpdateProposedMessage)
-                ((MetadataUpdateProposedMessage)msg).finishUnmarshal(marsh, U.gridClassLoader());
-            else if (msg instanceof SecurityAwareCustomMessageWrapper &&
-                ((SecurityAwareCustomMessageWrapper)msg).delegate() instanceof MetadataUpdateProposedMessage)
-                ((MetadataUpdateProposedMessage)((SecurityAwareCustomMessageWrapper)msg).delegate())
-                    .finishUnmarshal(marsh, U.gridClassLoader());
-
-            return msg;
+            return (DiscoverySpiCustomMessage)deserializeMessage(in);
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to deserialize message.", e);
