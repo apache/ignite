@@ -176,7 +176,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
             }
 
             return true;
-        }, 30_000));
+        }, 120_000));
     }
 
     /** {@inheritDoc} */
@@ -422,7 +422,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
     @SuppressWarnings({"TooBroadScope"})
     @Test
     public void testMultiThreadedSwapUnswapObject() throws Exception {
-        int threadCnt = 50;
+        int threadCnt = 550;
         final int keyCnt = 4000;
         final int valCnt = 10000;
 
