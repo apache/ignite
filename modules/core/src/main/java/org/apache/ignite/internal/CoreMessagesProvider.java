@@ -432,7 +432,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
-        withNoSchema(DynamicCacheChangeBatch.class);
+        withSchema(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of the originally comes from Communication.
         msgIdx = 10000;
@@ -564,14 +564,14 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
         withNoSchema(GridJobCancelRequest.class);
-        withNoSchema(GridJobExecuteRequest.class);
-        withNoSchema(GridJobExecuteResponse.class);
+        withSchema(GridJobExecuteRequest.class);
+        withSchema(GridJobExecuteResponse.class);
         withNoSchema(GridJobSiblingsRequest.class);
-        withNoSchema(GridJobSiblingsResponse.class);
+        withSchema(GridJobSiblingsResponse.class);
         withNoSchema(GridTaskCancelRequest.class);
-        withNoSchema(GridTaskSessionRequest.class);
+        withSchema(GridTaskSessionRequest.class);
         withNoSchema(GridTaskResultRequest.class);
-        withNoSchema(GridTaskResultResponse.class);
+        withSchema(GridTaskResultResponse.class);
         withNoSchema(JobStealingRequest.class);
         withNoSchema(SingleNodeMessage.class);
 
@@ -635,7 +635,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
         // [13000 - 13300]: Control, diagnostincs and other messages.
         msgIdx = 13000;
-        withNoSchema(GridEventStorageMessage.class);
+        withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
         withNoSchema(GridChangeGlobalStateMessageResponse.class);
         withNoSchema(IgniteDiagnosticRequest.class);
