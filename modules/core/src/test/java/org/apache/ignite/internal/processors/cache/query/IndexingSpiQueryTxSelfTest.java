@@ -126,15 +126,16 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                 }, heuristic ? TransactionHeuristicException.class : IgniteException.class);
 
                 assertTrue(
-                    waitForCondition(() -> {
-                            try {
-                                checkFutures();
-                                return true;
-                            }
-                            catch (AssertionError err) {
-                                return false;
-                            }
-                        }, 5_000)
+                    waitForCondition(() ->
+                    {
+                        try {
+                            checkFutures();
+                            return true;
+                        }
+                        catch (AssertionError err) {
+                            return false;
+                        }
+                    }, 5_000)
                 );
             }
         }
