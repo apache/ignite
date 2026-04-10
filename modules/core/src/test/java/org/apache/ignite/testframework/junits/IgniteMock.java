@@ -238,8 +238,6 @@ public class IgniteMock implements IgniteEx {
         return false;
     }
 
-
-
     /** {@inheritDoc} */
     @Override public boolean eventUserRecordable(int type) {
         return false;
