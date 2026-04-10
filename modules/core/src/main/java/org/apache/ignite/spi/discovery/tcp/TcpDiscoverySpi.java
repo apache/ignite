@@ -596,6 +596,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setAddressResolver(ignite.configuration().getAddressResolver());
 
             marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
+
+            msgFactory = ((IgniteEx)ignite).context().messageFactory();
         }
     }
 
@@ -2130,8 +2132,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         initializeImpl();
 
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
-
-        msgFactory = ((IgniteEx)ignite).context().messageFactory();
 
         impl.spiStart(igniteInstanceName);
     }
