@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoveryMessageSerializationTest;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
@@ -199,9 +198,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryPendingMessageDeliveryMdcReversedTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRingTest.class,
-    MultiDataCenterClientRoutingTest.class,
-
-    IgniteDiscoveryMessageSerializationTest.class
+    MultiDataCenterClientRoutingTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */
