@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -419,6 +420,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(WalStateFinishMessage.class);
         withNoSchema(WalStateProposeMessage.class);
         withNoSchema(MetadataUpdateAcceptedMessage.class);
+        withNoSchema(MetadataUpdateProposedMessage.class);
         withNoSchema(TxTimeoutOnPartitionMapExchangeChangeMessage.class);
         withNoSchema(UserAcceptedMessage.class);
         withNoSchema(UserProposedMessage.class);
