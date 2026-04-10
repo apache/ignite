@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,32 +46,21 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     AffinityTopologyVersion topVer;
 
     /** */
-    private List<List<UUID>> affAssignmentIds;
-
-    /** */
     @Order(2)
-    byte[] affAssignmentIdsBytes;
+    List<List<UUID>> affAssignmentIds;
 
     /** */
-    private List<List<UUID>> idealAffAssignment;
-
-    /** Affinity assignment bytes. */
     @Order(3)
-    byte[] idealAffAssignmentBytes;
-
-    /** */
-    private GridDhtPartitionFullMap partMap;
+    List<List<UUID>> idealAffAssignment;
 
     /** */
     @Order(4)
-    byte[] partBytes;
+    @Compress
+    GridDhtPartitionFullMap partMap;
 
     /** Indicates that getting required affinity assignments has been failed. */
-    private IgniteCheckedException affAssignmentErr;
-
-    /** Serialized error. */
     @Order(5)
-    byte[] affAssignmentErrBytes;
+    ErrorMessage affAssignmentErrMsg;
 
     /**
      * Empty constructor.
@@ -98,11 +87,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
         affAssignmentIds = ids(affAssignment);
     }
 
-    /** */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
     /**
      * @return Future ID.
      */
@@ -113,11 +97,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** {@inheritDoc} */
     @Override public boolean partitionExchangeMessage() {
         return true;
-    }
-
-    /** */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -197,46 +176,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
         return partMap;
     }
 
-    /** */
-    public byte[] affinityAssignmentIdsBytes() {
-        return affAssignmentIdsBytes;
-    }
-
-    /** */
-    public void affinityAssignmentIdsBytes(byte[] affAssignmentIdsBytes) {
-        this.affAssignmentIdsBytes = affAssignmentIdsBytes;
-    }
-
-    /** */
-    public byte[] idealAffinityAssignmentsBytes() {
-        return idealAffAssignmentBytes;
-    }
-
-    /** */
-    public void idealAffinityAssignmentsBytes(byte[] idealAffAssignmentBytes) {
-        this.idealAffAssignmentBytes = idealAffAssignmentBytes;
-    }
-
-    /** */
-    public byte[] partitionBytes() {
-        return partBytes;
-    }
-
-    /** */
-    public void partitionBytes(byte[] partBytes) {
-        this.partBytes = partBytes;
-    }
-
-    /** */
-    public byte[] affinityAssignmentsErrorBytes() {
-        return affAssignmentErrBytes;
-    }
-
-    /** */
-    public void affinityAssignmentsErrorBytes(byte[] affAssignmentErrBytes) {
-        this.affAssignmentErrBytes = affAssignmentErrBytes;
-    }
-
     /**
      * @param assignments Assignment.
      * @return Assignment where cluster nodes are converted to their ids.
@@ -261,63 +200,20 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
         return null;
     }
 
-
-    /**
-     * @param ctx Context.
-     */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        assert affAssignmentIds != null;
-
-        affAssignmentIdsBytes = U.marshal(ctx, affAssignmentIds);
-
-        if (idealAffAssignment != null && idealAffAssignmentBytes == null)
-            idealAffAssignmentBytes = U.marshal(ctx, idealAffAssignment);
-
-        if (partMap != null && partBytes == null)
-            partBytes = U.zip(U.marshal(ctx.marshaller(), partMap));
-
-        if (affAssignmentErr != null && affAssignmentErrBytes == null)
-            affAssignmentErrBytes = U.marshal(ctx, affAssignmentErr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        assert affAssignmentIdsBytes != null;
-
-        ldr = U.resolveClassLoader(ldr, ctx.gridConfig());
-
-        affAssignmentIds = U.unmarshal(ctx, affAssignmentIdsBytes, ldr);
-
-        if (idealAffAssignmentBytes != null && idealAffAssignment == null)
-            idealAffAssignment = U.unmarshal(ctx, idealAffAssignmentBytes, ldr);
-
-        if (partBytes != null && partMap == null)
-            partMap = U.unmarshalZip(ctx.marshaller(), partBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (affAssignmentErrBytes != null && affAssignmentErr == null)
-            affAssignmentErr = U.unmarshal(ctx, affAssignmentErrBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
     /**
      * Error that caused failure to get affinity assignments.
      *
      * @param err Cause of failure to calculate/get affiniti assignments.
      */
     public void affinityAssignmentsError(IgniteCheckedException err) {
-        affAssignmentErr = err;
+        affAssignmentErrMsg = new ErrorMessage(err);
     }
 
     /**
-     * Returns error that caused failure to get affinity assignments.
-     *
      * @return Error that caused failure to get affinity assignments.
      */
-    public IgniteCheckedException affinityAssignmentsError() {
-        return affAssignmentErr;
+    public @Nullable Throwable affinityAssignmentsError() {
+        return ErrorMessage.error(affAssignmentErrMsg);
     }
 
     /** {@inheritDoc} */
