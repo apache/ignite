@@ -166,7 +166,7 @@ public class WorkingWithBinaryObjects {
         }
 
         @Nullable @Override public Object onBeforePut(Cache.Entry<Object, Object> entry, Object newVal) {
-            assertEquals(keepBinary, newVal instanceof BinaryObject);
+            assert keepBinary == newVal instanceof BinaryObject;
             // do smth.
         }
 
@@ -174,7 +174,7 @@ public class WorkingWithBinaryObjects {
             Object val = entry.getValue();
 
             if (val != null) {
-                assertEquals(keepBinary, entry.getValue() instanceof BinaryObject);
+                assert keepBinary == entry.getValue() instanceof BinaryObject;
             }
             // do smth.
         }
