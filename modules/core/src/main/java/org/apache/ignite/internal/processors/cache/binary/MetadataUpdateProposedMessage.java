@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
@@ -103,12 +104,10 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     int acceptedVer;
 
     /** Message acceptance status. */
-    @Order(6)
-    boolean rejected;
+    private boolean rejected;
 
     /** */
-    @Order(7)
-    String errMsg;
+    private BinaryObjectException err;
 
     /** Constructor. */
     public MetadataUpdateProposedMessage() {
@@ -152,11 +151,11 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     }
 
     /**
-     * @param errMsg Error message caused this update to be rejected.
+     * @param err Error caused this update to be rejected.
      */
-    void markRejected(String errMsg) {
+    void markRejected(BinaryObjectException err) {
         rejected = true;
-        this.errMsg = errMsg;
+        this.err = err;
     }
 
     /**
@@ -169,8 +168,8 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     /**
      *
      */
-    String rejectionErrorMessage() {
-        return errMsg;
+    BinaryObjectException rejectionError() {
+        return err;
     }
 
     /**
