@@ -50,6 +50,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
@@ -239,7 +240,7 @@ public class FilePerformanceStatisticsReader {
             short ver = buf.getShort();
             String ignVer = null;
 
-            if (ver == FILE_FORMAT_VERSION) {
+            if (ver > LEGACY_FILE_FORMAT_VERSION_1) {
                 ForwardableString verStr = readString(buf);
 
                 if (verStr == null)
@@ -247,12 +248,10 @@ public class FilePerformanceStatisticsReader {
 
                 ignVer = verStr.str;
             }
-            else if (ver != LEGACY_FILE_FORMAT_VERSION_1)
-                throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", currentVer=" +
-                    FILE_FORMAT_VERSION + ']');
 
-            for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.version(nodeId, ignVer);
+            if (ver != FILE_FORMAT_VERSION && ver != LEGACY_FILE_FORMAT_VERSION_1)
+                throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", fileIgniteVer=" + ignVer
+                    + ", currentFileVer=" + FILE_FORMAT_VERSION + ", currentIgniteVer=" + VER_STR + ']');
 
             return true;
         }
