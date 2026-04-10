@@ -48,13 +48,13 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
 
     /** */
     @Override protected void beforeTest() throws Exception {
-        resetJavaLoggerCfg();
+        resetLogManagerCfg();
         resetJavaLoggerInitedField();
     }
 
     /** */
     @Override protected void afterTest() throws Exception {
-        resetJavaLoggerCfg();
+        resetLogManagerCfg();
         resetJavaLoggerInitedField();
     }
 
@@ -191,7 +191,7 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static void resetJavaLoggerCfg() throws Exception {
+    private static void resetLogManagerCfg() throws Exception {
         System.clearProperty("java.util.logging.config.file");
 
         try (InputStream is = U.resolveIgniteUrl(DFLT_CONFIG_PATH).openStream()) {
