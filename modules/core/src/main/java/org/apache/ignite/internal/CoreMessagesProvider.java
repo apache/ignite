@@ -331,327 +331,332 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         msgIdx = 5000;
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(msgIdx++, CompressedMessage::new);
-        register(ErrorMessage.class);
-        register(InetSocketAddressMessage.class);
-        register(InetAddressMessage.class);
-        register(TcpDiscoveryNode.class);
-        register(IgniteProductVersion.class);
-        register(DiscoveryDataPacket.class);
-        register(GridByteArrayList.class);
-        register(CacheVersionedValue.class);
-        register(GridCacheVersion.class);
-        register(GridCacheVersionEx.class);
+        withNoSchema(ErrorMessage.class);
+        withNoSchema(InetSocketAddressMessage.class);
+        withNoSchema(InetAddressMessage.class);
+        withNoSchema(TcpDiscoveryNode.class);
+        withNoSchema(IgniteProductVersion.class);
+        withNoSchema(DiscoveryDataPacket.class);
+        withNoSchema(GridByteArrayList.class);
+        withNoSchema(CacheVersionedValue.class);
+        withNoSchema(GridCacheVersion.class);
+        withNoSchema(GridCacheVersionEx.class);
 
         msgIdx = 5500;
-        register(TcpDiscoveryCollectionMessage.class);
+        withNoSchema(TcpDiscoveryCollectionMessage.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
-        register(TcpDiscoveryHandshakeRequest.class);
-        register(TcpDiscoveryHandshakeResponse.class);
-        register(TcpDiscoveryJoinRequestMessage.class);
-        register(TcpDiscoveryNodeAddedMessage.class);
-        register(TcpDiscoveryNodeAddFinishedMessage.class);
-        register(TcpDiscoveryNodeLeftMessage.class);
-        register(TcpDiscoveryNodeFailedMessage.class);
-        register(TcpDiscoveryConnectionCheckMessage.class);
-        register(TcpDiscoveryPingRequest.class);
-        register(TcpDiscoveryPingResponse.class);
-        register(TcpDiscoveryClientPingRequest.class);
-        register(TcpDiscoveryClientPingResponse.class);
-        register(TcpDiscoveryClientAckResponse.class);
-        register(TcpDiscoveryClientReconnectMessage.class);
-        register(TcpDiscoveryDiscardMessage.class);
-        register(TcpDiscoveryCheckFailedMessage.class);
-        register(TcpDiscoveryLoopbackProblemMessage.class);
-        register(TcpDiscoveryRingLatencyCheckMessage.class);
-        register(TcpDiscoveryDuplicateIdMessage.class);
-        register(TcpDiscoveryCustomEventMessage.class);
-        register(TcpDiscoveryServerOnlyCustomEventMessage.class);
+        withNoSchema(TcpDiscoveryHandshakeRequest.class);
+        withNoSchema(TcpDiscoveryHandshakeResponse.class);
+        withNoSchema(TcpDiscoveryJoinRequestMessage.class);
+        withNoSchema(TcpDiscoveryNodeAddedMessage.class);
+        withNoSchema(TcpDiscoveryNodeAddFinishedMessage.class);
+        withNoSchema(TcpDiscoveryNodeLeftMessage.class);
+        withNoSchema(TcpDiscoveryNodeFailedMessage.class);
+        withNoSchema(TcpDiscoveryConnectionCheckMessage.class);
+        withNoSchema(TcpDiscoveryPingRequest.class);
+        withNoSchema(TcpDiscoveryPingResponse.class);
+        withNoSchema(TcpDiscoveryClientPingRequest.class);
+        withNoSchema(TcpDiscoveryClientPingResponse.class);
+        withNoSchema(TcpDiscoveryClientAckResponse.class);
+        withNoSchema(TcpDiscoveryClientReconnectMessage.class);
+        withNoSchema(TcpDiscoveryDiscardMessage.class);
+        withNoSchema(TcpDiscoveryCheckFailedMessage.class);
+        withNoSchema(TcpDiscoveryLoopbackProblemMessage.class);
+        withNoSchema(TcpDiscoveryRingLatencyCheckMessage.class);
+        withNoSchema(TcpDiscoveryDuplicateIdMessage.class);
+        withNoSchema(TcpDiscoveryCustomEventMessage.class);
+        withNoSchema(TcpDiscoveryServerOnlyCustomEventMessage.class);
 
         msgIdx = 5900;
-        register(TcpDiscoveryStatusCheckMessage.class);
+        withNoSchema(TcpDiscoveryStatusCheckMessage.class);
 
         // [6000 - 6200]: Snapshot operation messages. Most of them originally come from Discovery.
         msgIdx = 6000;
-        register(SnapshotStartDiscoveryMessage.class);
-        register(SnapshotCheckProcessRequest.class);
-        register(SnapshotOperationRequest.class);
-        register(SnapshotOperationEndRequest.class);
-        register(SnapshotRestoreStartRequest.class);
-        register(SnapshotOperationResponse.class);
-        register(SnapshotHandlerResult.class);
-        register(SnapshotCheckResponse.class);
-        register(SnapshotPartitionsVerifyHandlerResponse.class);
-        register(SnapshotRestoreOperationResponse.class);
-        register(SnapshotMetadataResponse.class);
-        register(SnapshotCheckPartitionHashesResponse.class);
-        register(SnapshotCheckHandlersResponse.class);
-        register(SnapshotFilesRequestMessage.class);
-        register(SnapshotFilesFailureMessage.class);
-        register(IncrementalSnapshotVerifyResult.class);
-        register(IncrementalSnapshotAwareMessage.class);
+        withNoSchema(SnapshotStartDiscoveryMessage.class);
+        withNoSchema(SnapshotCheckProcessRequest.class);
+        withNoSchema(SnapshotOperationRequest.class);
+        withNoSchema(SnapshotOperationEndRequest.class);
+        withNoSchema(SnapshotRestoreStartRequest.class);
+        withNoSchema(SnapshotOperationResponse.class);
+        withNoSchema(SnapshotHandlerResult.class);
+        withNoSchema(SnapshotCheckResponse.class);
+        withNoSchema(SnapshotPartitionsVerifyHandlerResponse.class);
+        withNoSchema(SnapshotRestoreOperationResponse.class);
+        withNoSchema(SnapshotMetadataResponse.class);
+        withNoSchema(SnapshotCheckPartitionHashesResponse.class);
+        withNoSchema(SnapshotCheckHandlersResponse.class);
+        withNoSchema(SnapshotFilesRequestMessage.class);
+        withNoSchema(SnapshotFilesFailureMessage.class);
+        withNoSchema(IncrementalSnapshotVerifyResult.class);
+        withNoSchema(IncrementalSnapshotAwareMessage.class);
 
         // [6300 - 6400]: Services messages. Most of them originally come from Discovery.
         msgIdx = 6300;
-        register(ServiceDeploymentProcessId.class);
-        register(ServiceSingleNodeDeploymentResult.class);
-        register(ServiceClusterDeploymentResult.class);
-        register(ServiceDeploymentRequest.class);
-        register(ServiceUndeploymentRequest.class);
-        register(ServiceClusterDeploymentResultBatch.class);
-        register(ServiceChangeBatchRequest.class);
-        register(ServiceSingleNodeDeploymentResultBatch.class);
+        withNoSchema(ServiceDeploymentProcessId.class);
+        withNoSchema(ServiceSingleNodeDeploymentResult.class);
+        withNoSchema(ServiceClusterDeploymentResult.class);
+        withNoSchema(ServiceDeploymentRequest.class);
+        withNoSchema(ServiceUndeploymentRequest.class);
+        withNoSchema(ServiceClusterDeploymentResultBatch.class);
+        withNoSchema(ServiceChangeBatchRequest.class);
+        withNoSchema(ServiceSingleNodeDeploymentResultBatch.class);
 
         // [6500 - 6700]: DiscoveryCustomMessage
         msgIdx = 6500;
-        register(TcpConnectionRequestDiscoveryMessage.class);
-        register(DistributedMetaStorageUpdateMessage.class);
-        register(DistributedMetaStorageUpdateAckMessage.class);
-        register(DistributedMetaStorageCasMessage.class);
-        register(DistributedMetaStorageCasAckMessage.class);
-        register(FullMessage.class);
-        register(InitMessage.class);
-        register(CacheStatisticsModeChangeMessage.class);
-        register(SecurityAwareCustomMessageWrapper.class);
-        register(MetadataRemoveAcceptedMessage.class);
-        register(MetadataRemoveProposedMessage.class);
-        register(WalStateFinishMessage.class);
-        register(WalStateProposeMessage.class);
-        register(MetadataUpdateAcceptedMessage.class);
-        register(TxTimeoutOnPartitionMapExchangeChangeMessage.class);
-        register(UserAcceptedMessage.class);
-        register(UserProposedMessage.class);
-        register(ChangeGlobalStateFinishMessage.class);
-        register(StopRoutineAckDiscoveryMessage.class);
-        register(StopRoutineDiscoveryMessage.class);
-        register(CacheAffinityChangeMessage.class);
-        register(ClientCacheChangeDiscoveryMessage.class);
-        register(MappingAcceptedMessage.class);
-        register(MappingProposedMessage.class);
-        register(ExchangeFailureMessage.class);
-        register(CacheStatisticsClearMessage.class);
-        register(ClientCacheChangeDummyDiscoveryMessage.class);
-        register(DynamicCacheChangeBatch.class);
+        withNoSchema(TcpConnectionRequestDiscoveryMessage.class);
+        withNoSchema(DistributedMetaStorageUpdateMessage.class);
+        withNoSchema(DistributedMetaStorageUpdateAckMessage.class);
+        withNoSchema(DistributedMetaStorageCasMessage.class);
+        withNoSchema(DistributedMetaStorageCasAckMessage.class);
+        withNoSchema(FullMessage.class);
+        withNoSchema(InitMessage.class);
+        withNoSchema(CacheStatisticsModeChangeMessage.class);
+        withNoSchema(SecurityAwareCustomMessageWrapper.class);
+        withNoSchema(MetadataRemoveAcceptedMessage.class);
+        withNoSchema(MetadataRemoveProposedMessage.class);
+        withNoSchema(WalStateFinishMessage.class);
+        withNoSchema(WalStateProposeMessage.class);
+        withNoSchema(MetadataUpdateAcceptedMessage.class);
+        withNoSchema(TxTimeoutOnPartitionMapExchangeChangeMessage.class);
+        withNoSchema(UserAcceptedMessage.class);
+        withNoSchema(UserProposedMessage.class);
+        withNoSchema(ChangeGlobalStateFinishMessage.class);
+        withNoSchema(StopRoutineAckDiscoveryMessage.class);
+        withNoSchema(StopRoutineDiscoveryMessage.class);
+        withNoSchema(CacheAffinityChangeMessage.class);
+        withNoSchema(ClientCacheChangeDiscoveryMessage.class);
+        withNoSchema(MappingAcceptedMessage.class);
+        withNoSchema(MappingProposedMessage.class);
+        withNoSchema(ExchangeFailureMessage.class);
+        withNoSchema(CacheStatisticsClearMessage.class);
+        withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
+        withNoSchema(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of the originally comes from Communication.
         msgIdx = 10000;
-        register(TxInfo.class);
-        register(TxEntriesInfo.class);
-        register(TxLock.class);
-        register(TxLocksRequest.class);
-        register(TxLocksResponse.class);
-        register(IgniteTxKey.class);
-        register(IgniteTxEntry.class);
-        register(TxEntryValueHolder.class);
-        register(GridCacheTxRecoveryRequest.class);
-        register(GridCacheTxRecoveryResponse.class);
-        register(GridDistributedTxFinishRequest.class);
-        register(GridDistributedTxFinishResponse.class);
-        register(GridDistributedTxPrepareRequest.class);
-        register(GridDistributedTxPrepareResponse.class);
-        register(GridDhtTxFinishRequest.class);
-        register(GridDhtTxFinishResponse.class);
-        register(GridDhtTxPrepareRequest.class);
-        register(GridDhtTxPrepareResponse.class);
-        register(GridNearTxFinishRequest.class);
-        register(GridNearTxFinishResponse.class);
-        register(GridNearTxPrepareRequest.class);
-        register(GridNearTxPrepareResponse.class);
-        register(GridDhtLockRequest.class);
-        register(GridDhtLockResponse.class);
-        register(GridDhtUnlockRequest.class);
-        register(GridNearLockRequest.class);
-        register(GridNearLockResponse.class);
-        register(GridNearUnlockRequest.class);
-        register(GridDistributedLockRequest.class);
-        register(GridDistributedLockResponse.class);
-        register(GridDhtTxOnePhaseCommitAckRequest.class);
-        register(TransactionAttributesAwareRequest.class);
+        withNoSchema(TxInfo.class);
+        withNoSchema(TxEntriesInfo.class);
+        withNoSchema(TxLock.class);
+        withNoSchema(TxLocksRequest.class);
+        withNoSchema(TxLocksResponse.class);
+        withNoSchema(IgniteTxKey.class);
+        withNoSchema(IgniteTxEntry.class);
+        withNoSchema(TxEntryValueHolder.class);
+        withNoSchema(GridCacheTxRecoveryRequest.class);
+        withNoSchema(GridCacheTxRecoveryResponse.class);
+        withNoSchema(GridDistributedTxFinishRequest.class);
+        withNoSchema(GridDistributedTxFinishResponse.class);
+        withNoSchema(GridDistributedTxPrepareRequest.class);
+        withNoSchema(GridDistributedTxPrepareResponse.class);
+        withNoSchema(GridDhtTxFinishRequest.class);
+        withNoSchema(GridDhtTxFinishResponse.class);
+        withNoSchema(GridDhtTxPrepareRequest.class);
+        withNoSchema(GridDhtTxPrepareResponse.class);
+        withNoSchema(GridNearTxFinishRequest.class);
+        withNoSchema(GridNearTxFinishResponse.class);
+        withNoSchema(GridNearTxPrepareRequest.class);
+        withNoSchema(GridNearTxPrepareResponse.class);
+        withNoSchema(GridDhtLockRequest.class);
+        withNoSchema(GridDhtLockResponse.class);
+        withNoSchema(GridDhtUnlockRequest.class);
+        withNoSchema(GridNearLockRequest.class);
+        withNoSchema(GridNearLockResponse.class);
+        withNoSchema(GridNearUnlockRequest.class);
+        withNoSchema(GridDistributedLockRequest.class);
+        withNoSchema(GridDistributedLockResponse.class);
+        withNoSchema(GridDhtTxOnePhaseCommitAckRequest.class);
+        withNoSchema(TransactionAttributesAwareRequest.class);
 
         // [10300 - 10500]: Cache, DHT messages.
         msgIdx = 10300;
-        register(GridDhtForceKeysRequest.class);
-        register(GridDhtForceKeysResponse.class);
-        register(GridDhtAtomicDeferredUpdateResponse.class);
-        register(GridDhtAtomicUpdateRequest.class);
-        register(GridDhtAtomicUpdateResponse.class);
-        register(GridNearAtomicFullUpdateRequest.class);
-        register(GridDhtAtomicSingleUpdateRequest.class);
-        register(GridNearAtomicUpdateResponse.class);
-        register(GridNearAtomicSingleUpdateRequest.class);
-        register(GridNearAtomicSingleUpdateInvokeRequest.class);
-        register(GridNearAtomicSingleUpdateFilterRequest.class);
-        register(GridNearAtomicCheckUpdateRequest.class);
-        register(NearCacheUpdates.class);
-        register(GridNearGetRequest.class);
-        register(GridNearGetResponse.class);
-        register(GridNearSingleGetRequest.class);
-        register(GridNearSingleGetResponse.class);
-        register(GridDhtAtomicNearResponse.class);
-        register(GridCacheTtlUpdateRequest.class);
-        register(GridCacheReturn.class);
-        register(GridCacheEntryInfo.class);
-        register(CacheInvokeDirectResult.class);
-        register(GridCacheRawVersionedEntry.class);
-        register(CacheEvictionEntry.class);
-        register(CacheEntryPredicateAdapter.class);
-        register(GridContinuousMessage.class);
-        register(ContinuousRoutineStartResultMessage.class);
-        register(UpdateErrors.class);
-        register(LatchAckMessage.class);
-        register(AtomicApplicationAttributesAwareRequest.class);
-        register(StartRequestData.class);
-        register(StartRoutineDiscoveryMessage.class);
-        register(StartRoutineAckDiscoveryMessage.class);
-        register(StartRoutineDiscoveryMessageV2.class);
+        withNoSchema(GridDhtForceKeysRequest.class);
+        withNoSchema(GridDhtForceKeysResponse.class);
+        withNoSchema(GridDhtAtomicDeferredUpdateResponse.class);
+        withNoSchema(GridDhtAtomicUpdateRequest.class);
+        withNoSchema(GridDhtAtomicUpdateResponse.class);
+        withNoSchema(GridNearAtomicFullUpdateRequest.class);
+        withNoSchema(GridDhtAtomicSingleUpdateRequest.class);
+        withNoSchema(GridNearAtomicUpdateResponse.class);
+        withNoSchema(GridNearAtomicSingleUpdateRequest.class);
+        withNoSchema(GridNearAtomicSingleUpdateInvokeRequest.class);
+        withNoSchema(GridNearAtomicSingleUpdateFilterRequest.class);
+        withNoSchema(GridNearAtomicCheckUpdateRequest.class);
+        withNoSchema(NearCacheUpdates.class);
+        withNoSchema(GridNearGetRequest.class);
+        withNoSchema(GridNearGetResponse.class);
+        withNoSchema(GridNearSingleGetRequest.class);
+        withNoSchema(GridNearSingleGetResponse.class);
+        withNoSchema(GridDhtAtomicNearResponse.class);
+        withNoSchema(GridCacheTtlUpdateRequest.class);
+        withNoSchema(GridCacheReturn.class);
+        withNoSchema(GridCacheEntryInfo.class);
+        withNoSchema(CacheInvokeDirectResult.class);
+        withNoSchema(GridCacheRawVersionedEntry.class);
+        withNoSchema(CacheEvictionEntry.class);
+        withNoSchema(CacheEntryPredicateAdapter.class);
+        withNoSchema(GridContinuousMessage.class);
+        withNoSchema(ContinuousRoutineStartResultMessage.class);
+        withNoSchema(UpdateErrors.class);
+        withNoSchema(LatchAckMessage.class);
+        withNoSchema(AtomicApplicationAttributesAwareRequest.class);
+        withNoSchema(StartRequestData.class);
+        withNoSchema(StartRoutineDiscoveryMessage.class);
+        withNoSchema(StartRoutineAckDiscoveryMessage.class);
+        withNoSchema(StartRoutineDiscoveryMessageV2.class);
 
         // [10600-10800]: Affinity & partition maps.
         msgIdx = 10600;
-        register(GridDhtAffinityAssignmentRequest.class);
-        register(GridDhtAffinityAssignmentResponse.class);
-        register(CacheGroupAffinityMessage.class);
-        register(ExchangeInfo.class);
-        register(PartitionUpdateCountersMessage.class);
-        register(CachePartitionPartialCountersMap.class);
-        register(IgniteDhtDemandedPartitionsMap.class);
-        register(CachePartitionFullCountersMap.class);
-        register(GroupPartitionIdPair.class);
-        register(IgniteDhtPartitionHistorySuppliersMap.class);
-        register(GridPartitionStateMap.class);
-        register(GridDhtPartitionMap.class);
-        register(GridDhtPartitionFullMap.class);
-        register(GridDhtPartitionExchangeId.class);
-        register(GridCheckpointRequest.class);
-        register(GridDhtPartitionDemandMessage.class);
-        register(GridDhtPartitionSupplyMessage.class);
-        register(GridDhtPartitionsFullMessage.class);
-        register(GridDhtPartitionsSingleMessage.class);
-        register(GridDhtPartitionsSingleRequest.class);
+        withNoSchema(GridDhtAffinityAssignmentRequest.class);
+        withNoSchema(GridDhtAffinityAssignmentResponse.class);
+        withNoSchema(CacheGroupAffinityMessage.class);
+        withNoSchema(ExchangeInfo.class);
+        withNoSchema(PartitionUpdateCountersMessage.class);
+        withNoSchema(CachePartitionPartialCountersMap.class);
+        withNoSchema(IgniteDhtDemandedPartitionsMap.class);
+        withNoSchema(CachePartitionFullCountersMap.class);
+        withNoSchema(GroupPartitionIdPair.class);
+        withNoSchema(IgniteDhtPartitionHistorySuppliersMap.class);
+        withNoSchema(GridPartitionStateMap.class);
+        withNoSchema(GridDhtPartitionMap.class);
+        withNoSchema(GridDhtPartitionFullMap.class);
+        withNoSchema(GridDhtPartitionExchangeId.class);
+        withNoSchema(GridCheckpointRequest.class);
+        withNoSchema(GridDhtPartitionDemandMessage.class);
+        withNoSchema(GridDhtPartitionSupplyMessage.class);
+        withNoSchema(GridDhtPartitionsFullMessage.class);
+        withNoSchema(GridDhtPartitionsSingleMessage.class);
+        withNoSchema(GridDhtPartitionsSingleRequest.class);
 
         // [10900-11100]: Query, schema and SQL related messages.
         msgIdx = 10900;
-        register(SchemaAlterTableAddColumnOperation.class);
-        register(SchemaIndexCreateOperation.class);
-        register(SchemaIndexDropOperation.class);
-        register(SchemaAlterTableDropColumnOperation.class);
-        register(SchemaAddQueryEntityOperation.class);
-        register(SchemaOperationStatusMessage.class);
-        register(SchemaProposeDiscoveryMessage.class);
-        register(SchemaFinishDiscoveryMessage.class);
-        register(QueryField.class);
-        register(GridCacheSqlQuery.class);
-        register(GridCacheQueryRequest.class);
-        register(GridCacheQueryResponse.class);
-        register(GridQueryCancelRequest.class);
-        register(GridQueryFailResponse.class);
-        register(GridQueryNextPageRequest.class);
-        register(GridQueryNextPageResponse.class);
-        register(GridQueryKillRequest.class);
-        register(GridQueryKillResponse.class);
-        register(IndexKeyDefinition.class);
-        register(IndexKeyTypeSettings.class);
-        register(IndexQueryResultMeta.class);
-        register(StatisticsKeyMessage.class);
-        register(StatisticsDecimalMessage.class);
-        register(StatisticsObjectData.class);
-        register(StatisticsColumnData.class);
-        register(StatisticsRequest.class);
-        register(StatisticsResponse.class);
-        register(CacheContinuousQueryBatchAck.class);
-        register(CacheContinuousQueryEntry.class);
+        withNoSchema(SchemaAlterTableAddColumnOperation.class);
+        withNoSchema(SchemaIndexCreateOperation.class);
+        withNoSchema(SchemaIndexDropOperation.class);
+        withNoSchema(SchemaAlterTableDropColumnOperation.class);
+        withNoSchema(SchemaAddQueryEntityOperation.class);
+        withNoSchema(SchemaOperationStatusMessage.class);
+        withNoSchema(SchemaProposeDiscoveryMessage.class);
+        withNoSchema(SchemaFinishDiscoveryMessage.class);
+        withNoSchema(QueryField.class);
+        withNoSchema(GridCacheSqlQuery.class);
+        withNoSchema(GridCacheQueryRequest.class);
+        withNoSchema(GridCacheQueryResponse.class);
+        withNoSchema(GridQueryCancelRequest.class);
+        withNoSchema(GridQueryFailResponse.class);
+        withNoSchema(GridQueryNextPageRequest.class);
+        withNoSchema(GridQueryNextPageResponse.class);
+        withNoSchema(GridQueryKillRequest.class);
+        withNoSchema(GridQueryKillResponse.class);
+        withNoSchema(IndexKeyDefinition.class);
+        withNoSchema(IndexKeyTypeSettings.class);
+        withNoSchema(IndexQueryResultMeta.class);
+        withNoSchema(StatisticsKeyMessage.class);
+        withNoSchema(StatisticsDecimalMessage.class);
+        withNoSchema(StatisticsObjectData.class);
+        withNoSchema(StatisticsColumnData.class);
+        withNoSchema(StatisticsRequest.class);
+        withNoSchema(StatisticsResponse.class);
+        withNoSchema(CacheContinuousQueryBatchAck.class);
+        withNoSchema(CacheContinuousQueryEntry.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
-        register(GridJobCancelRequest.class);
-        register(GridJobExecuteRequest.class);
-        register(GridJobExecuteResponse.class);
-        register(GridJobSiblingsRequest.class);
-        register(GridJobSiblingsResponse.class);
-        register(GridTaskCancelRequest.class);
-        register(GridTaskSessionRequest.class);
-        register(GridTaskResultRequest.class);
-        register(GridTaskResultResponse.class);
-        register(JobStealingRequest.class);
-        register(SingleNodeMessage.class);
+        withNoSchema(GridJobCancelRequest.class);
+        withNoSchema(GridJobExecuteRequest.class);
+        withNoSchema(GridJobExecuteResponse.class);
+        withNoSchema(GridJobSiblingsRequest.class);
+        withNoSchema(GridJobSiblingsResponse.class);
+        withNoSchema(GridTaskCancelRequest.class);
+        withNoSchema(GridTaskSessionRequest.class);
+        withNoSchema(GridTaskResultRequest.class);
+        withNoSchema(GridTaskResultResponse.class);
+        withNoSchema(JobStealingRequest.class);
+        withNoSchema(SingleNodeMessage.class);
 
         // [11500 - 11600]:  IO, networking messages.
         msgIdx = NODE_ID_MSG_TYPE;
-        register(NodeIdMessage.class);
-        register(HandshakeMessage.class);
-        register(HandshakeWaitMessage.class);
-        register(GridIoMessage.class);
-        register(IgniteIoTestMessage.class);
-        register(GridIoUserMessage.class);
-        register(GridIoSecurityAwareMessage.class);
-        register(RecoveryLastReceivedMessage.class);
-        register(TcpInverseConnectionResponseMessage.class);
-        register(SessionChannelMessage.class);
+        withNoSchema(NodeIdMessage.class);
+        withNoSchema(HandshakeMessage.class);
+        withNoSchema(HandshakeWaitMessage.class);
+        withNoSchema(GridIoMessage.class);
+        withNoSchema(IgniteIoTestMessage.class);
+        withNoSchema(GridIoUserMessage.class);
+        withNoSchema(GridIoSecurityAwareMessage.class);
+        withNoSchema(RecoveryLastReceivedMessage.class);
+        withNoSchema(TcpInverseConnectionResponseMessage.class);
+        withNoSchema(SessionChannelMessage.class);
 
         // [11700 - 11800]: Datastreamer messages.
         msgIdx = 11700;
-        register(DataStreamerUpdatesHandlerResult.class);
-        register(DataStreamerEntry.class);
-        register(DataStreamerRequest.class);
-        register(DataStreamerResponse.class);
+        withNoSchema(DataStreamerUpdatesHandlerResult.class);
+        withNoSchema(DataStreamerEntry.class);
+        withNoSchema(DataStreamerRequest.class);
+        withNoSchema(DataStreamerResponse.class);
 
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
-        register(CacheMetricsMessage.class);
-        register(NodeMetricsMessage.class);
-        register(NodeFullMetricsMessage.class);
-        register(ClusterMetricsUpdateMessage.class);
-        register(TcpDiscoveryClientNodesMetricsMessage.class);
-        register(TcpDiscoveryMetricsUpdateMessage.class);
-        register(TcpDiscoveryClientMetricsUpdateMessage.class);
+        withNoSchema(CacheMetricsMessage.class);
+        withNoSchema(NodeMetricsMessage.class);
+        withNoSchema(NodeFullMetricsMessage.class);
+        withNoSchema(ClusterMetricsUpdateMessage.class);
+        withNoSchema(TcpDiscoveryClientNodesMetricsMessage.class);
+        withNoSchema(TcpDiscoveryMetricsUpdateMessage.class);
+        withNoSchema(TcpDiscoveryClientMetricsUpdateMessage.class);
 
         // [12000 - 12100]: Authentication, security messages.
         msgIdx = 12000;
-        register(User.class);
-        register(UserManagementOperation.class);
-        register(UserManagementOperationFinishedMessage.class);
-        register(UserAuthenticateRequestMessage.class);
-        register(UserAuthenticateResponseMessage.class);
-        register(TcpDiscoveryAuthFailedMessage.class);
+        withNoSchema(User.class);
+        withNoSchema(UserManagementOperation.class);
+        withNoSchema(UserManagementOperationFinishedMessage.class);
+        withNoSchema(UserAuthenticateRequestMessage.class);
+        withNoSchema(UserAuthenticateResponseMessage.class);
+        withNoSchema(TcpDiscoveryAuthFailedMessage.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
-        register(GridDeploymentInfoBean.class);
-        register(GridDeploymentRequest.class);
-        register(GridDeploymentResponse.class);
-        register(MissingMappingRequestMessage.class);
-        register(MissingMappingResponseMessage.class);
-        register(MetadataRequestMessage.class);
-        register(MetadataResponseMessage.class);
-        register(MarshallerMappingItem.class);
-        register(BinaryMetadataVersionInfo.class);
+        withNoSchema(GridDeploymentInfoBean.class);
+        withNoSchema(GridDeploymentRequest.class);
+        withNoSchema(GridDeploymentResponse.class);
+        withNoSchema(MissingMappingRequestMessage.class);
+        withNoSchema(MissingMappingResponseMessage.class);
+        withNoSchema(MetadataRequestMessage.class);
+        withNoSchema(MetadataResponseMessage.class);
+        withNoSchema(MarshallerMappingItem.class);
+        withNoSchema(BinaryMetadataVersionInfo.class);
 
         // [12400 - 12500]: Encryption messages.
         msgIdx = 12400;
-        register(GenerateEncryptionKeyRequest.class);
-        register(GenerateEncryptionKeyResponse.class);
-        register(ChangeCacheEncryptionRequest.class);
-        register(MasterKeyChangeRequest.class);
+        withNoSchema(GenerateEncryptionKeyRequest.class);
+        withNoSchema(GenerateEncryptionKeyResponse.class);
+        withNoSchema(ChangeCacheEncryptionRequest.class);
+        withNoSchema(MasterKeyChangeRequest.class);
 
         // [13000 - 13300]: Control, diagnostincs and other messages.
         msgIdx = 13000;
-        register(GridEventStorageMessage.class);
-        register(ChangeGlobalStateMessage.class);
-        register(GridChangeGlobalStateMessageResponse.class);
-        register(IgniteDiagnosticRequest.class);
-        register(IgniteDiagnosticResponse.class);
-        register(WalStateAckMessage.class);
+        withNoSchema(GridEventStorageMessage.class);
+        withNoSchema(ChangeGlobalStateMessage.class);
+        withNoSchema(GridChangeGlobalStateMessageResponse.class);
+        withNoSchema(IgniteDiagnosticRequest.class);
+        withNoSchema(IgniteDiagnosticResponse.class);
+        withNoSchema(WalStateAckMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
 
-    /** */
-    private <T extends Message> void register(Class<T> cls) {
+    /** Registers message using {@link #schemaAwareMarhaller} and {@link #resolvedClsLdr}. */
+    private <T extends Message> void withSchema(Class<T> cls) {
+        register(cls, schemaAwareMarhaller, resolvedClsLdr);
+    }
+
+    /** Registers message using {@link #schemaLessMarshaller} and {@link U#gridClassLoader()}. */
+    private <T extends Message> void withNoSchema(Class<T> cls) {
         register(cls, schemaLessMarshaller, U.gridClassLoader());
     }
 
-    /** Registers message using ane incrementing {@link #msgIdx} as the message id/type. */
-    private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLdr) {
+    /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
+    private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLrd) {
         Constructor<T> ctor;
         MessageSerializer<T> serializer;
 
@@ -663,7 +668,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
             Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
 
             serializer = marshallable
-                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLdr)
+                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLrd)
                 : (MessageSerializer<T>)serCls.getConstructor().newInstance();
         }
         catch (Exception e) {
