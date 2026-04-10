@@ -18,13 +18,14 @@
 package org.apache.ignite.logger.java;
 
 import java.io.File;
+import java.io.InputStream;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -45,11 +46,16 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
      */
     private static final String LOG_CONFIG_DEBUG = "modules/core/src/test/config/jul-debug.properties";
 
-    /**
-     * Reset JavaLogger.
-     */
+    /** */
+    @Override protected void beforeTest() throws Exception {
+        resetJavaLoggerCfg();
+        resetJavaLoggerInitedField();
+    }
+
+    /** */
     @Override protected void afterTest() throws Exception {
-        GridTestUtils.setFieldValue(JavaLogger.class, JavaLogger.class, "inited", false);
+        resetJavaLoggerCfg();
+        resetJavaLoggerInitedField();
     }
 
     /**
@@ -60,11 +66,11 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
         IgniteLogger log1 = new JavaLogger();
         IgniteLogger log2 = log1.getLogger(getClass());
 
-        assertTrue(log1.toString().contains("JavaLogger"));
-        assertTrue(log1.toString().contains(DFLT_CONFIG_PATH));
+        assertTrue(log1.toString(), log1.toString().contains("JavaLogger"));
+        assertTrue(log1.toString(), log1.toString().contains(DFLT_CONFIG_PATH));
 
-        assertTrue(log2.toString().contains("JavaLogger"));
-        assertTrue(log2.toString().contains(DFLT_CONFIG_PATH));
+        assertTrue(log2.toString(), log2.toString().contains("JavaLogger"));
+        assertTrue(log2.toString(),log2.toString().contains(DFLT_CONFIG_PATH));
     }
 
     /**
@@ -73,12 +79,12 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
     @Test
     public void testNotInitializedLogger() {
         IgniteLogger log1 = new JavaLogger(Logger.getAnonymousLogger(), false);
-        assertTrue(log1.toString().contains("JavaLogger"));
-        assertTrue(log1.toString().contains("null"));
+        assertTrue(log1.toString(), log1.toString().contains("JavaLogger"));
+        assertTrue(log1.toString(), log1.toString().contains("null"));
 
         IgniteLogger log2 = log1.getLogger(getClass());
-        assertTrue(log2.toString().contains("JavaLogger"));
-        assertTrue(log2.toString().contains(DFLT_CONFIG_PATH));
+        assertTrue(log2.toString(), log2.toString().contains("JavaLogger"));
+        assertTrue(log2.toString(), log2.toString().contains(DFLT_CONFIG_PATH));
     }
 
     /**
@@ -96,14 +102,14 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
             LogManager.getLogManager().readConfiguration();
 
             IgniteLogger log1 = new JavaLogger();
-            assertTrue(log1.toString().contains("JavaLogger"));
-            assertTrue(log1.toString().contains(LOG_CONFIG_DEBUG));
-            assertTrue(log1.isDebugEnabled());
+            assertTrue(log1.toString(), log1.toString().contains("JavaLogger"));
+            assertTrue(log1.toString(), log1.toString().contains(LOG_CONFIG_DEBUG));
+            assertTrue(log1.toString(), log1.isDebugEnabled());
 
             IgniteLogger log2 = log1.getLogger(getClass());
-            assertTrue(log2.toString().contains("JavaLogger"));
-            assertTrue(log2.toString().contains(LOG_CONFIG_DEBUG));
-            assertTrue(log2.isDebugEnabled());
+            assertTrue(log2.toString(), log2.toString().contains("JavaLogger"));
+            assertTrue(log2.toString(), log2.toString().contains(LOG_CONFIG_DEBUG));
+            assertTrue(log2.toString(), log2.isDebugEnabled());
         }
         finally {
             if (oldPropVal == null)
@@ -139,16 +145,16 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
     public void testLogInitialize() throws Exception {
         JavaLogger log = new JavaLogger();
 
-        ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.fromString("00000000-1111-2222-3333-444444444444"));
+        log.setWorkDirectory(U.defaultWorkDirectory());
+        log.setApplicationAndNode(null, UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
-        assertTrue(log.toString().contains("JavaLogger"));
-        assertTrue(log.toString().contains(DFLT_CONFIG_PATH));
+        assertTrue(log.toString(), log.toString().contains("JavaLogger"));
+        assertTrue(log.toString(), log.toString().contains(DFLT_CONFIG_PATH));
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
 
-        assert log.isInfoEnabled();
+        assertTrue(log.toString(), log.isInfoEnabled());
 
         log.info("This is 'info' message.");
         log.warning("This is 'warning' message.");
@@ -156,26 +162,45 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
         log.error("This is 'error' message.");
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
-        assert log.getLogger(JavaLoggerTest.class.getName()) instanceof JavaLogger;
+        IgniteLogger log1 = log.getLogger(JavaLoggerTest.class.getName());
+        assertTrue(Objects.toString(log1), log1 instanceof JavaLogger);
 
-        assert log.fileName() != null;
+        String logFileName = log.fileName();
+        // Will fail if there is no JavaLoggerFileHandler in log configuration.
+        assertNotNull(log.toString(), logFileName);
 
         // Ensure we don't get pattern, only actual file name is allowed here.
-        assert !log.fileName().contains("%");
-        assert log.fileName().contains("ignite");
+        assertFalse(logFileName, logFileName.contains("%"));
+        assertTrue(logFileName, logFileName.contains("ignite"));
 
         System.clearProperty("java.util.logging.config.file");
-        GridTestUtils.setFieldValue(JavaLogger.class, JavaLogger.class, "inited", false);
+        resetJavaLoggerInitedField();
 
         log = new JavaLogger();
 
-        ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
-        ((IgniteLoggerEx)log).setApplicationAndNode("other-app", UUID.fromString("00000000-1111-2222-3333-444444444444"));
+        log.setWorkDirectory(U.defaultWorkDirectory());
+        log.setApplicationAndNode("other-app", UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
-        assert log.fileName() != null;
+        logFileName = log.fileName();
+        // Will fail if there is no JavaLoggerFileHandler in log configuration.
+        assertNotNull(log.toString(), logFileName);
 
         // Ensure we don't get pattern, only actual file name is allowed here.
-        assert !log.fileName().contains("%");
-        assert log.fileName().contains("other-app");
+        assertFalse(logFileName, logFileName.contains("%"));
+        assertTrue(logFileName, logFileName.contains("ignite"));
+    }
+
+    /** */
+    private static void resetJavaLoggerCfg() throws Exception {
+        System.clearProperty("java.util.logging.config.file");
+
+        try (InputStream is = U.resolveIgniteUrl(DFLT_CONFIG_PATH).openStream()) {
+            LogManager.getLogManager().readConfiguration(is);
+        }
+    }
+
+    /** */
+    private static void resetJavaLoggerInitedField() {
+        GridTestUtils.setFieldValue(JavaLogger.class, JavaLogger.class, "inited", false);
     }
 }
