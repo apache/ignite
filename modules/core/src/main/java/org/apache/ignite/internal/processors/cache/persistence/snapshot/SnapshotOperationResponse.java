@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -29,7 +29,7 @@ public class SnapshotOperationResponse implements Message {
     @Order(0)
     Map<String, SnapshotHandlerResult<Message>> hndResults;
 
-    /** Default constructor for {@link GridIoMessageFactory}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SnapshotOperationResponse() {
         // No-op.
     }

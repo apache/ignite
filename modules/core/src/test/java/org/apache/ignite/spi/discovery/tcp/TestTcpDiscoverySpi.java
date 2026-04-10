@@ -20,8 +20,8 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -121,7 +121,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         assert !started();
 
         this.msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new DiscoveryMessageFactory(jdk(), U.resolveClassLoader(ignite().configuration())),
+            new CoreMessagesProvider(jdk(), jdk(), U.resolveClassLoader(ignite().configuration())),
             msgFactoryProvider
         });
     }

@@ -20,9 +20,9 @@ package org.apache.ignite.internal.util.distributed;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,7 +50,7 @@ public class SingleNodeMessage<R extends Message> implements Message {
     @Order(3)
     @Nullable ErrorMessage errMsg;
 
-    /** Default constructor for {@link GridIoMessageFactory}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SingleNodeMessage() {
         // No-op.
     }

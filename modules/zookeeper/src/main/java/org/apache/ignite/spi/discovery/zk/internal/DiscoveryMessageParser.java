@@ -28,14 +28,10 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -57,16 +53,15 @@ public class DiscoveryMessageParser {
     private static final int MSG_BUFFER_SIZE = 100;
 
     /** */
+    private final JdkMarshaller jdkMarshaller;
+
+    /** */
     private final MessageFactory msgFactory;
 
     /** */
-    private final Marshaller marsh;
-
-    /** */
-    public DiscoveryMessageParser(Marshaller marsh) {
-        this.marsh = marsh;
-        this.msgFactory = new IgniteMessageFactoryImpl(
-            new MessageFactoryProvider[] { new DiscoveryMessageFactory(marsh, U.gridClassLoader()) });
+    public DiscoveryMessageParser(JdkMarshaller jdkMarshaller, MessageFactory msgFactory) {
+        this.jdkMarshaller = jdkMarshaller;
+        this.msgFactory = msgFactory;
     }
 
     /** Marshals discovery message to bytes array. */
@@ -82,7 +77,7 @@ public class DiscoveryMessageParser {
             else {
                 out.write(JAVA_SERIALIZATION);
 
-                U.marshal(marsh, msg, out);
+                U.marshal(jdkMarshaller, msg, out);
             }
         }
         catch (Exception e) {
@@ -101,7 +96,7 @@ public class DiscoveryMessageParser {
             byte mode = (byte)in.read();
 
             if (mode == JAVA_SERIALIZATION)
-                return U.unmarshal(marsh, in, U.gridClassLoader());
+                return U.unmarshal(jdkMarshaller, in, U.gridClassLoader());
 
             if (MESSAGE_SERIALIZATION != mode)
                 throw new IOException("Received unexpected byte while reading discovery message: " + mode);
