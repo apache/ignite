@@ -338,7 +338,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(IgniteProductVersion.class);
         withNoSchema(DiscoveryDataPacket.class);
         withNoSchema(GridByteArrayList.class);
-        withSchema(CacheVersionedValue.class);
+        withNoSchema(CacheVersionedValue.class);
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
 
@@ -432,7 +432,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
-        withNoSchema(DynamicCacheChangeBatch.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of the originally comes from Communication.
         msgIdx = 10000;
@@ -645,14 +645,19 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         assert msgIdx <= MAX_MESSAGE_ID;
     }
 
-    /** Registers message using {@link #schemaAwareMarhaller} and {@link #resolvedClsLdr}. */
+    /** Registers message using {@link #schemaAwareMarhaller} and {@link U#gridClassLoader()}. */
     private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarhaller, resolvedClsLdr);
+        register(cls, schemaAwareMarhaller, U.gridClassLoader());
     }
 
     /** Registers message using {@link #schemaLessMarshaller} and {@link U#gridClassLoader()}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
         register(cls, schemaLessMarshaller, U.gridClassLoader());
+    }
+
+    /** Registers message using {@link #schemaLessMarshaller} and {@link #resolvedClsLdr}. */
+    private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
+        register(cls, schemaLessMarshaller, resolvedClsLdr);
     }
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
