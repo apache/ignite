@@ -596,10 +596,10 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
-        withSchema(CacheMetricsMessage.class);
-        withSchema(NodeMetricsMessage.class);
-        withSchema(NodeFullMetricsMessage.class);
-        withSchema(ClusterMetricsUpdateMessage.class);
+        withNoSchema(CacheMetricsMessage.class);
+        withNoSchema(NodeMetricsMessage.class);
+        withNoSchema(NodeFullMetricsMessage.class);
+        withNoSchema(ClusterMetricsUpdateMessage.class);
         withNoSchema(TcpDiscoveryClientNodesMetricsMessage.class);
         withNoSchema(TcpDiscoveryMetricsUpdateMessage.class);
         withNoSchema(TcpDiscoveryClientMetricsUpdateMessage.class);
@@ -608,27 +608,27 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         msgIdx = 12000;
         withNoSchema(User.class);
         withNoSchema(UserManagementOperation.class);
-        withSchema(UserManagementOperationFinishedMessage.class);
-        withSchema(UserAuthenticateRequestMessage.class);
-        withSchema(UserAuthenticateResponseMessage.class);
+        withNoSchema(UserManagementOperationFinishedMessage.class);
+        withNoSchema(UserAuthenticateRequestMessage.class);
+        withNoSchema(UserAuthenticateResponseMessage.class);
         withNoSchema(TcpDiscoveryAuthFailedMessage.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
-        withSchema(GridDeploymentInfoBean.class);
-        withSchema(GridDeploymentRequest.class);
-        withSchema(GridDeploymentResponse.class);
-        withSchema(MissingMappingRequestMessage.class);
-        withSchema(MissingMappingResponseMessage.class);
-        withSchema(MetadataRequestMessage.class);
-        withSchema(MetadataResponseMessage.class);
+        withNoSchema(GridDeploymentInfoBean.class);
+        withNoSchema(GridDeploymentRequest.class);
+        withNoSchema(GridDeploymentResponse.class);
+        withNoSchema(MissingMappingRequestMessage.class);
+        withNoSchema(MissingMappingResponseMessage.class);
+        withNoSchema(MetadataRequestMessage.class);
+        withNoSchema(MetadataResponseMessage.class);
         withNoSchema(MarshallerMappingItem.class);
-        withSchema(BinaryMetadataVersionInfo.class);
+        withNoSchema(BinaryMetadataVersionInfo.class);
 
         // [12400 - 12500]: Encryption messages.
         msgIdx = 12400;
-        withSchema(GenerateEncryptionKeyRequest.class);
-        withSchema(GenerateEncryptionKeyResponse.class);
+        withNoSchema(GenerateEncryptionKeyRequest.class);
+        withNoSchema(GenerateEncryptionKeyResponse.class);
         withNoSchema(ChangeCacheEncryptionRequest.class);
         withNoSchema(MasterKeyChangeRequest.class);
 
@@ -639,7 +639,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withSchema(GridChangeGlobalStateMessageResponse.class);
         withSchema(IgniteDiagnosticRequest.class);
         withSchema(IgniteDiagnosticResponse.class);
-        withSchema(WalStateAckMessage.class);
+        withNoSchema(WalStateAckMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
