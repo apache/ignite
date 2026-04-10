@@ -38,6 +38,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -50,7 +51,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
@@ -112,7 +112,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** Node metrics message. */
     @GridToStringExclude
     @Order(6)
-    volatile TcpDiscoveryNodeMetricsMessage metricsMsg;
+    volatile NodeMetricsMessage metricsMsg;
 
     /** Node cache metrics. */
     @GridToStringExclude
@@ -227,7 +227,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         if (consistentId != null)
             consistentIdBytes = U.marshal(marsh, consistentId);
 
-        metricsMsg = new TcpDiscoveryNodeMetricsMessage(metrics);
+        metricsMsg = new NodeMetricsMessage(metrics);
     }
 
     /** {@inheritDoc} */
@@ -244,11 +244,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         attrsBytes = null;
         consistentIdBytes = null;
         metricsMsg = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -117;
     }
 
     /**

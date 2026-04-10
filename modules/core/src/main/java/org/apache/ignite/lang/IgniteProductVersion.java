@@ -25,9 +25,9 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
@@ -79,7 +79,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     byte[] revHash;
 
     /**
-     * Empty constructor required by {@link Externalizable} and {@link DiscoveryMessageFactory}.
+     * Empty constructor required by {@link Externalizable} and {@link CoreMessagesProvider}.
      */
     public IgniteProductVersion() {
         // No-op.
@@ -272,11 +272,6 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         maintenance = in.readByte();
         revTs = in.readLong();
         revHash = U.readByteArray(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -116;
     }
 
     /** {@inheritDoc} */

@@ -99,6 +99,7 @@ import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -209,6 +210,8 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
@@ -435,6 +438,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** The state object is used when reconnection occurs. See {@link IgniteKernal#onReconnected(boolean)}. */
     private final ReconnectState reconnectState = new ReconnectState();
+
+    /** Core message factory. */
+    private MessageFactory msgFactory;
 
     /**
      * No-arg constructor is required by externalization.
@@ -999,7 +1005,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
             startManager(new GridMetricManager(ctx));
             startManager(new GridSystemViewManager(ctx));
+
+            initMessageFactory();
+
             startManager(new GridIoManager(ctx));
+
             startManager(new GridCheckpointManager(ctx));
 
             startManager(new GridEventStorageManager(ctx));
@@ -1299,6 +1309,31 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             EventType.EVT_NODE_JOINED, localNode());
 
         startTimer.finishGlobalStage("Await exchange");
+    }
+
+    /** */
+    private void initMessageFactory() throws IgniteCheckedException {
+        MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
+
+        if (msgs == null)
+            msgs = new MessageFactoryProvider[0];
+
+        List<MessageFactoryProvider> compMsgs = new ArrayList<>();
+
+        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), ctx.marshallerContext().jdkMarshaller(),
+            U.resolveClassLoader(ctx.config())));
+
+        for (IgniteComponentType compType : IgniteComponentType.values()) {
+            MessageFactoryProvider f = compType.messageFactory();
+
+            if (f != null)
+                compMsgs.add(f);
+        }
+
+        if (!compMsgs.isEmpty())
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
+
+        msgFactory = new IgniteMessageFactoryImpl(msgs);
     }
 
     /**
@@ -3026,6 +3061,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
                 "join the cluster. To activate the cluster call Ignite.cluster().state(ClusterState.ACTIVE).");
         }
+    }
+
+    /** @return Core message factory. */
+    MessageFactory messageFactory() {
+        return msgFactory;
     }
 
     /**

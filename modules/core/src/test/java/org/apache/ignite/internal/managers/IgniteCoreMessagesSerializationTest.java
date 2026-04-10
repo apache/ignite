@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.managers;
 
 import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,10 +31,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** */
-public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
+public class IgniteCoreMessagesSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new GridIoMessageFactory(jdk(), U.gridClassLoader());
+        return new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader());
     }
 
     /** {@inheritDoc} */

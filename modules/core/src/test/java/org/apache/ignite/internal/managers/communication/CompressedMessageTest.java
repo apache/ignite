@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -46,7 +47,7 @@ public class CompressedMessageTest {
     @Test
     public void testWriteReadHugeMessage() {
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new GridIoMessageFactory(jdk(), U.gridClassLoader())});
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
