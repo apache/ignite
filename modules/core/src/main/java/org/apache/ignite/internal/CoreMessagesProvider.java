@@ -228,6 +228,7 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -576,11 +577,11 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
         // [11500 - 11600]:  IO, networking messages.
         msgIdx = NODE_ID_MSG_TYPE;
-        withSchema(NodeIdMessage.class);
-        withSchema(HandshakeMessage.class);
-        withSchema(HandshakeWaitMessage.class);
+        withNoSchema(NodeIdMessage.class);
+        withNoSchema(HandshakeMessage.class);
+        withNoSchema(HandshakeWaitMessage.class);
         withSchema(GridIoMessage.class);
-        factory.register(msgIdx++, IgniteIoTestMessage::new);
+        withNoSchema(IgniteIoTestMessage.class);
         withSchema(GridIoUserMessage.class);
         withSchema(GridIoSecurityAwareMessage.class);
         withSchema(RecoveryLastReceivedMessage.class);
@@ -644,18 +645,18 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         assert msgIdx <= MAX_MESSAGE_ID;
     }
 
-    /** Registers message using {@link #schemaAwareMarhaller}. */
+    /** Registers message using {@link #schemaAwareMarhaller} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarhaller);
+        register(cls, schemaAwareMarhaller, resolvedClsLdr);
     }
 
-    /** Registers message using {@link #schemaLessMarshaller}. */
+    /** Registers message using {@link #schemaLessMarshaller} and {@link U#gridClassLoader()}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        register(cls, schemaLessMarshaller);
+        register(cls, schemaLessMarshaller, U.gridClassLoader());
     }
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
-    private <T extends Message> void register(Class<T> cls, Marshaller marsh) {
+    private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLrd) {
         Constructor<T> ctor;
         MessageSerializer<T> serializer;
 
@@ -667,7 +668,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
             Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
 
             serializer = marshallable
-                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, resolvedClsLdr)
+                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLrd)
                 : (MessageSerializer<T>)serCls.getConstructor().newInstance();
         }
         catch (Exception e) {
