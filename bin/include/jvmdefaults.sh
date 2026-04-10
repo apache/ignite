@@ -32,6 +32,7 @@ getJavaSpecificOpts() {
           --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
           --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
           --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
+          --add-opens=java.base/java.nio=ALL-UNNAMED \
           --illegal-access=permit \
           ${current_value}"
 
@@ -44,6 +45,7 @@ getJavaSpecificOpts() {
             --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
             --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
             --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
+            --add-opens=java.base/java.nio=ALL-UNNAMED \
             --illegal-access=permit \
             ${current_value}"
 
