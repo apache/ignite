@@ -70,7 +70,7 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
         assertTrue(log1.toString(), log1.toString().contains(DFLT_CONFIG_PATH));
 
         assertTrue(log2.toString(), log2.toString().contains("JavaLogger"));
-        assertTrue(log2.toString(),log2.toString().contains(DFLT_CONFIG_PATH));
+        assertTrue(log2.toString(), log2.toString().contains(DFLT_CONFIG_PATH));
     }
 
     /**
