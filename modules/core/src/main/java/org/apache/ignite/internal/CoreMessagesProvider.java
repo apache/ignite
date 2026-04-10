@@ -581,7 +581,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         register(HandshakeMessage.class);
         register(HandshakeWaitMessage.class);
         register(GridIoMessage.class);
-        factory.register(msgIdx++, IgniteIoTestMessage::new);
+        register(IgniteIoTestMessage.class);
         register(GridIoUserMessage.class);
         register(GridIoSecurityAwareMessage.class);
         register(RecoveryLastReceivedMessage.class);
