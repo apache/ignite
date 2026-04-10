@@ -77,6 +77,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -228,7 +229,8 @@ public class ZookeeperDiscoveryImpl {
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
      * @param stats Zookeeper DiscoverySpi statistics collector.
-     * @param marsh Marshaller.
+     * @param jdkMarshaller JDK Marshaller.
+     * @param msgFactory Message Factory.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -239,7 +241,8 @@ public class ZookeeperDiscoveryImpl {
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
         ZookeeperDiscoveryStatistics stats,
-        JdkMarshaller marsh
+        JdkMarshaller jdkMarshaller,
+        MessageFactory msgFactory
     ) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
@@ -254,7 +257,7 @@ public class ZookeeperDiscoveryImpl {
         this.lsnr = lsnr;
         this.exchange = exchange;
         this.clientReconnectEnabled = locNode.isClient() && !spi.isClientReconnectDisabled();
-        this.marsh = marsh;
+        this.marsh = jdkMarshaller;
 
         int evtsAckThreshold = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD,
             DFLT_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD);
@@ -266,7 +269,7 @@ public class ZookeeperDiscoveryImpl {
 
         this.stats = stats;
 
-        msgParser = new DiscoveryMessageParser(marsh);
+        msgParser = new DiscoveryMessageParser(jdkMarshaller, msgFactory);
     }
 
     /**

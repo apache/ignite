@@ -58,8 +58,10 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
                 }
             });
         }
-        else
-            log.info("Collision resolution is disabled (all jobs will be activated upon arrival).");
+        else {
+            if (log.isInfoEnabled())
+                log.info("Collision resolution is disabled (all jobs will be activated upon arrival).");
+        }
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

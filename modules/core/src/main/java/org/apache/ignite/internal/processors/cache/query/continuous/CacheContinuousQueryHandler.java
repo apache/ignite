@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -200,10 +199,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient int cacheId;
 
     /** */
-    private transient volatile Map<Integer, T2<Long, Long>> initUpdCntrs;
+    private transient volatile Map<Integer, Long> initUpdCntrs;
 
     /** */
-    private transient volatile Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode;
+    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
 
     /** */
     private transient volatile AffinityTopologyVersion initTopVer;
@@ -224,7 +223,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient UUID routineId;
 
     /** Local update counters values on listener start. Used for skipping events fired before the listener start. */
-    private transient volatile Map<Integer, T2<Long, Long>> locInitUpdCntrs;
+    private transient volatile Map<Integer, Long> locInitUpdCntrs;
 
     /** */
     private transient GridKernalContext ctx;
@@ -361,15 +360,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
-        Map<Integer, T2<Long, Long>> cntrs) {
-        this.initUpdCntrsPerNode = cntrsPerNode;
-        this.initUpdCntrs = cntrs;
-        this.initTopVer = topVer;
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
+        initUpdCntrsPerNode = cntrsPerNode;
+        initUpdCntrs = cntrs;
+        initTopVer = topVer;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+    @Override public Map<Integer, Long> updateCounters() {
         return locInitUpdCntrs;
     }
 
@@ -1163,9 +1162,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         CacheContinuousQueryPartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            T2<Long, Long> partCntrs = null;
+            Long partCntr = null;
 
-            Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode = this.initUpdCntrsPerNode;
+            Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode = this.initUpdCntrsPerNode;
 
             if (initUpdCntrsPerNode != null) {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
@@ -1173,22 +1172,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 GridCacheAffinityManager aff = cctx.affinity();
 
                 for (ClusterNode node : aff.nodesByPartition(partId, topVer)) {
-                    Map<Integer, T2<Long, Long>> map = initUpdCntrsPerNode.get(node.id());
+                    Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
 
                     if (map != null) {
-                        partCntrs = map.get(partId);
+                        partCntr = map.get(partId);
 
                         break;
                     }
                 }
             }
             else if (initUpdCntrs != null)
-                partCntrs = initUpdCntrs.get(partId);
+                partCntr = initUpdCntrs.get(partId);
 
-            T2<Long, Long> partCntrs0 = partCntrs;
+            Long partCntr0 = partCntr;
             CacheContinuousQueryPartitionRecovery oldRec = rcvs.computeIfAbsent(partId, k ->
-                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
-                            partCntrs0 != null ? partCntrs0.get2() : null));
+                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer, partCntr0));
 
             if (oldRec != null)
                 rec = oldRec;

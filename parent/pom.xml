@@ -119,6 +119,8 @@
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
+        <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
+
         <sonar.organization>apache</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.exclusions>**/generated/**/*</sonar.exclusions>
@@ -620,11 +622,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M2</version>
+                <version>${maven.enforcer.plugin.version}</version>
                 <configuration>
                     <rules>
                         <requireMavenVersion>
-                            <version>[3.5.0,)</version>
+                            <version>[3.9.6]</version>
                         </requireMavenVersion>
                     </rules>
                 </configuration>

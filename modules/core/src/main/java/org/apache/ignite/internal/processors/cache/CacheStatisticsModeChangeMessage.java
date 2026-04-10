@@ -22,10 +22,10 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,7 +58,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
     byte flags;
 
     /**
-     * Constructor for {@link DiscoveryMessageFactory}.
+     * Constructor for {@link MessageFactory}.
      */
     public CacheStatisticsModeChangeMessage() {
         // No-op.

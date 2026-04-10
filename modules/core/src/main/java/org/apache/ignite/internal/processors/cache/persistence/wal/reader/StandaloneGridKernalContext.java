@@ -111,6 +111,7 @@ import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -445,6 +446,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public MaintenanceRegistry maintenanceRegistry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageFactory messageFactory() {
         return null;
     }
 

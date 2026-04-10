@@ -17,70 +17,81 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  *
  */
-@IgniteCodeGeneratingFail
-public class IgniteIoTestMessage implements Message {
+public class IgniteIoTestMessage implements MarshallableMessage {
     /** */
     private static final byte FLAG_PROC_FROM_NIO = 1;
 
     /** */
-    private long id;
+    @Order(0)
+    long id;
 
     /** */
-    private byte flags;
+    @Order(1)
+    byte flags;
 
     /** */
-    private boolean req;
+    @Order(2)
+    boolean req;
 
     /** */
-    private byte[] payload;
+    @Order(3)
+    byte[] payload;
 
     /** */
-    private long reqCreateTs;
+    @Order(4)
+    long reqCreateTs;
 
     /** */
-    private long reqSndTs;
+    @Order(5)
+    long reqSndTs;
 
     /** */
-    private long reqSndTsMillis;
+    @Order(6)
+    long reqSndTsMillis;
 
     /** */
-    private long reqRcvTs;
+    @Order(7)
+    long reqRcvTs;
 
     /** */
-    private long reqRcvTsMillis;
+    @Order(8)
+    long reqRcvTsMillis;
 
     /** */
-    private long reqProcTs;
+    @Order(9)
+    long reqProcTs;
 
     /** */
-    private long resSndTs;
+    @Order(10)
+    long resSndTs;
 
     /** */
-    private long resSndTsMillis;
+    @Order(11)
+    long resSndTsMillis;
 
     /** */
-    private long resRcvTs;
+    @Order(12)
+    long resRcvTs;
 
     /** */
-    private long resRcvTsMillis;
+    @Order(13)
+    long resRcvTsMillis;
 
     /** */
-    private long resProcTs;
+    @Order(14)
+    long resProcTs;
 
     /** */
-    @GridDirectTransient
     private UUID sndNodeId;
 
     /**
@@ -314,246 +325,14 @@ public class IgniteIoTestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         onBeforeWrite();
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(payload))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeBoolean(req))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeLong(reqCreateTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(reqProcTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(reqRcvTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeLong(reqRcvTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeLong(reqSndTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(reqSndTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeLong(resProcTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeLong(resRcvTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeLong(resRcvTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeLong(resSndTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeLong(resSndTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                id = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                payload = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                req = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                reqCreateTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                reqProcTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                reqRcvTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                reqRcvTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                reqSndTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                reqSndTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                resProcTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                resRcvTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                resRcvTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                resSndTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                resSndTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         onAfterRead();
-
-        return true;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

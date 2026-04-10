@@ -141,4 +141,9 @@ public class IndexDescriptor {
     public TableDescriptor table() {
         return tbl;
     }
+
+    /** */
+    public boolean isComposite() {
+        return keyDefs.size() > 1;
+    }
 }

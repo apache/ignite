@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.distributed;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class TestIntegerMessage implements Message {
@@ -41,5 +40,4 @@ public class TestIntegerMessage implements Message {
     public int value() {
         return val;
     }
-
 }

@@ -23,9 +23,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,7 +58,7 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     @Order(2)
     int status;
 
-    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    /** Empty constructor for {@link MessageFactory}. */
     public TcpDiscoveryStatusCheckMessage() {
        // No-op.
     }

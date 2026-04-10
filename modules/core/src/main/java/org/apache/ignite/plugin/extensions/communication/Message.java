@@ -63,18 +63,12 @@ public interface Message {
      *
      * @return Message type.
      */
-    /**
-     * Gets message type.
-     *
-     * @return Message type.
-     */
     default short directType() {
         var clazz = getClass();
         Short type = REGISTRATIONS.get(clazz);
 
-        if (type == null) {
+        if (type == null)
             throw new IgniteException("No registration for class " + clazz.getSimpleName());
-        }
 
         return type;
     }
@@ -91,8 +85,7 @@ public interface Message {
         var clazz = getClass();
         var type = REGISTRATIONS.putIfAbsent(clazz, directType);
 
-        if ((type != null) && (type != directType)) {
+        if ((type != null) && (type != directType))
             throw new IgniteException(clazz.getSimpleName() + " is already registered for direct type " + type);
-        }
     }
 }
