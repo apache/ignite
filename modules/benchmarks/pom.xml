@@ -64,7 +64,7 @@
         <dependency>
             <groupId>io.trino.tpch</groupId>
             <artifactId>tpch</artifactId>
-            <version>1.2</version>
+            <version>1.4</version>
         </dependency>
 
         <dependency>
@@ -76,7 +76,7 @@
         <dependency>
             <groupId>org.openjdk.jol</groupId>
             <artifactId>jol-core</artifactId>
-            <version>0.9</version>
+            <version>0.17</version>
         </dependency>
 
         <dependency>
