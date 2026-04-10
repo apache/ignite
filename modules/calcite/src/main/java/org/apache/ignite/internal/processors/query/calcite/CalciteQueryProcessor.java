@@ -272,9 +272,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final InjectResourcesService injectSvc;
 
     /** */
-    private final AtomicBoolean udfQryWarned = new AtomicBoolean();
-
-    /** */
     private volatile boolean started;
 
     /**

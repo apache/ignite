@@ -935,7 +935,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         );
 
         // Expect message with tips about switching to query blocking task executor.
-        String expMsg = "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true";
+        String expMsg = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR + "=true";
 
         // Check that error is thrown for UDF initiated query.
         assertThrows(ignite, "SELECT innerSql(?, ?, ?)", IgniteSQLException.class,
