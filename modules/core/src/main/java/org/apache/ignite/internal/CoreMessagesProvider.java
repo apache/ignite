@@ -636,8 +636,8 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [13000 - 13300]: Control, diagnostincs and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
-        withSchema(ChangeGlobalStateMessage.class);
-        withSchema(GridChangeGlobalStateMessageResponse.class);
+        withNoSchema(ChangeGlobalStateMessage.class);
+        withNoSchema(GridChangeGlobalStateMessageResponse.class);
         withSchema(IgniteDiagnosticRequest.class);
         withSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
