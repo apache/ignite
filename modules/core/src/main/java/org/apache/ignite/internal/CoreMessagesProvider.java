@@ -121,7 +121,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -517,7 +516,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withSchema(IgniteDhtDemandedPartitionsMap.class);
         withSchema(CachePartitionFullCountersMap.class);
         withSchema(GroupPartitionIdPair.class);
-        withSchema(IgniteDhtPartitionHistorySuppliersMap.class);
         withSchema(GridPartitionStateMap.class);
         withSchema(GridDhtPartitionMap.class);
         withSchema(GridDhtPartitionFullMap.class);
