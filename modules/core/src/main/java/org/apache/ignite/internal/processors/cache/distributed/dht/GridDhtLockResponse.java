@@ -86,18 +86,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         this.miniId = miniId;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -110,18 +101,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         invalidParts.add(part);
     }
 
-    /**
-     * @return Invalid partitions.
-     */
+    /** @return Invalid partitions. */
     public Collection<Integer> invalidPartitions() {
         return invalidParts;
-    }
-
-    /**
-     * @param invalidParts New invalid partitions.
-     */
-    public void invalidPartitions(Collection<Integer> invalidParts) {
-        this.invalidParts = invalidParts;
     }
 
     /**
@@ -136,18 +118,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         preloadEntries.add(info);
     }
 
-    /**
-     * @return Preload entries returned from backup.
-     */
+    /** @return Preload entries returned from backup. */
     public Collection<GridCacheEntryInfo> preloadEntries() {
         return preloadEntries;
-    }
-
-    /**
-     * @param preloadEntries New preload entries returned from backup.
-     */
-    public void preloadEntries(List<GridCacheEntryInfo> preloadEntries) {
-        this.preloadEntries = preloadEntries;
     }
 
     /** {@inheritDoc} */
@@ -168,10 +141,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 31;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

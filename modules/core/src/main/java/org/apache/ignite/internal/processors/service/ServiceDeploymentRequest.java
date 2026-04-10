@@ -17,27 +17,37 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Service deployment request.
  */
-public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest implements MarshallableMessage {
     /** Service configuration. */
-    private final LazyServiceConfiguration cfg;
+    private LazyServiceConfiguration cfg;
+
+    /** JDK serialization for {@link #cfg}. */
+    @Order(0)
+    byte[] cfgBytes;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceDeploymentRequest() {
+    }
 
     /**
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
     public ServiceDeploymentRequest(@NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg) {
-        super(srvcId);
-
+        this.srvcId = srvcId;
         this.cfg = cfg;
     }
 
@@ -46,6 +56,18 @@ public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
      */
     public LazyServiceConfiguration configuration() {
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (cfg != null)
+            cfgBytes = U.marshal(marsh, cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (cfgBytes != null)
+            cfg = U.unmarshal(marsh, cfgBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

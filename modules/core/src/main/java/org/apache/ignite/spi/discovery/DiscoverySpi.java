@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -154,7 +153,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param msg Custom message.
      * @throws IgniteException if failed to sent the event message.
      */
-    public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException;
+    public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 
     /**
      * Initiates failure of provided node.

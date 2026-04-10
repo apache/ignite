@@ -118,8 +118,4 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage, M
         return S.toString(ChangeGlobalStateFinishMessage.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 512;
-    }
 }

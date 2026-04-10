@@ -125,10 +125,6 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
         this.status = status;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 18;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {

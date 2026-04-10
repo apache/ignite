@@ -59,10 +59,6 @@ public class GridH2CacheObject extends GridH2ValueMessage {
         return new GridH2ValueCacheObject(obj, valCtx);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -22;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

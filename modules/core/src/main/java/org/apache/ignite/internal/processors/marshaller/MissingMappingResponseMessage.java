@@ -55,11 +55,6 @@ public class MissingMappingResponseMessage implements Message {
         this.clsName = clsName;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 79;
-    }
-
     /**
      *
      */

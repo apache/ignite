@@ -34,11 +34,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -85,6 +85,8 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi())
             .setIpFinder(new TcpDiscoveryVmIpFinder()
                 .setAddresses(Collections.singleton("127.0.0.1:47500")));
+
+        cfg.setPluginProviders(new MessagesPluginProvider(TestDiscoveryMessage.class, TestDiscoveryAcknowledgeMessage.class));
 
         return cfg;
     }
@@ -183,7 +185,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                DiscoveryCustomMessage customMsg = getFieldValue(msg, "serMsg");
+                DiscoverySpiCustomMessage customMsg = getFieldValue(msg, "serMsg");
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 
@@ -215,30 +217,6 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         Object impl = U.field(discoverySpis[0], "impl");
 
         return U.field(impl, "msgWorker");
-    }
-
-    /** */
-    public static class TestDiscoveryMessage extends AbstractTestDiscoveryMessage {
-        /** {@inheritDoc} */
-        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
-            return new TestDiscoveryAcknowledgeMessage();
-        }
-    }
-
-    /** */
-    public static class TestDiscoveryAcknowledgeMessage extends AbstractTestDiscoveryMessage { }
-
-    /** */
-    public abstract static class AbstractTestDiscoveryMessage implements DiscoveryCustomMessage {
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return IgniteUuid.randomUuid();
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
-            return null;
-        }
     }
 
     /** */

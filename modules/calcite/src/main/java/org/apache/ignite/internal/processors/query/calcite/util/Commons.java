@@ -57,8 +57,10 @@ import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -74,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
@@ -538,5 +541,32 @@ public final class Commons {
      */
     public static @Nullable GridCacheVersion queryTransactionVersion(Context ctx) {
         return ctx.unwrap(GridCacheVersion.class);
+    }
+
+    /** Returns a string representation of the contents of the specified row. */
+    public static <Row> String toString(RowHandler<Row> hnd, @Nullable Row r) {
+        if (r == null)
+            return "null";
+
+        SB sb = new SB('[');
+
+        for (int i = 0; i < hnd.columnCount(r); i++) {
+            if (i != 0)
+                sb.a(", ");
+
+            sb.a(hnd.get(i, r));
+        }
+
+        return sb.a(']').toString();
+    }
+
+    /** Checks if objects can be compared as {@link BinaryObject} via {@link #compareBinary(Object, Object)}. */
+    public static boolean isBinaryComparable(Object o1, Object o2) {
+        return BinaryUtils.isBinaryObjectImpl(o1) || BinaryUtils.isBinaryObjectImpl(o2);
+    }
+
+    /** Compares {@link BinaryObject} for DML operation. Before use, call {@link #isBinaryComparable(Object, Object)}. */
+    public static int compareBinary(Object o1, Object o2) {
+        return BinaryUtils.binariesFactory.compareForDml(o1, o2);
     }
 }

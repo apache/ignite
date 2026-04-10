@@ -24,7 +24,7 @@ concurrency:
 jobs:
   check-protected-classes:
     runs-on: ubuntu-latest
-    name: Check protected classes
+    name: Rolling Upgrade check
     permissions:
       issues: write
       pull-requests: write
@@ -34,7 +34,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Check for protected class modifications
+      - name: Rolling Upgrade check
         id: check
         run: |
           BASE_SHA=${{ github.event.pull_request.base.sha }}
@@ -88,20 +88,19 @@ jobs:
             const existing = comments.find(c => c.body.includes('Possible compatibility issues. Please, check rolling upgrade cases'));
 
             if (existing) {
-              await github.rest.issues.updateComment({
+              await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
               });
             }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
 
       - name: Add label
         if: steps.check.outputs.affected == 'true'
@@ -115,7 +114,7 @@ jobs:
               labels: ['compatibility'],
             });
 
-      - name: Failed on affected check
+      - name: Fail on affected check
         if: steps.check.outputs.affected == 'true'
         run: |
           exit 1

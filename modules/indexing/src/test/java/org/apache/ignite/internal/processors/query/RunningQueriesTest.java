@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -166,7 +167,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
                 DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
                 if (DynamicCacheChangeBatch.class.isAssignableFrom(delegate.getClass())) {

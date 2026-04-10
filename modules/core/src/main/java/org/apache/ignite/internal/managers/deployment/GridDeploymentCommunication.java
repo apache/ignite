@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteNotPeerDeployable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -73,9 +72,6 @@ class GridDeploymentCommunication {
     /** */
     private final GridBusyLock busyLock = new GridBusyLock();
 
-    /** */
-    private final Marshaller marsh;
-
     /**
      * Creates new instance of deployment communication.
      *
@@ -93,8 +89,6 @@ class GridDeploymentCommunication {
                 processDeploymentRequest(nodeId, msg);
             }
         };
-
-        marsh = ctx.marshaller();
     }
 
     /**

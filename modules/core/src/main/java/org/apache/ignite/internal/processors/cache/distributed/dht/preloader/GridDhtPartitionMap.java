@@ -18,20 +18,15 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -39,13 +34,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Partition map from single node.
  */
-public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 518;
-
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Message {
     /** Node ID. */
     @Order(0)
     protected UUID nodeId;
@@ -59,11 +48,12 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     protected AffinityTopologyVersion top;
 
     /** */
-    @Order(value = 3, method = "map")
+    @Order(3)
     protected GridPartitionStateMap map;
 
     /** */
-    private volatile int moving;
+    @Order(4)
+    volatile int moving;
 
     /** */
     private static final AtomicIntegerFieldUpdater<GridDhtPartitionMap> MOVING_FIELD_UPDATER =
@@ -207,17 +197,6 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     }
 
     /**
-     * @param map Partitions state map.
-     */
-    public void map(GridPartitionStateMap map) {
-        this.map = new GridPartitionStateMap();
-
-        if (map != null)
-            for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet())
-                put(entry.getKey(), entry.getValue());
-    }
-
-    /**
      * @return Node ID.
      */
     public UUID nodeId() {
@@ -272,66 +251,6 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-
-        out.writeLong(updateSeq);
-
-        int size = map.size();
-
-        out.writeInt(size);
-
-        int i = 0;
-
-        for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet()) {
-            int ordinal = entry.getValue().ordinal();
-
-            assert ordinal == (ordinal & 0x7);
-            assert entry.getKey() < CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
-
-            out.writeByte(ordinal);
-            out.writeShort(entry.getKey());
-
-            i++;
-        }
-
-        assert i == size : "Invalid size [size1=" + size + ", size2=" + i + ']';
-
-        if (top != null) {
-            out.writeLong(topologyVersion().topologyVersion());
-            out.writeInt(topologyVersion().minorTopologyVersion());
-        }
-        else {
-            out.writeLong(0);
-            out.writeInt(0);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-
-        updateSeq = in.readLong();
-
-        int size = in.readInt();
-
-        map = new GridPartitionStateMap();
-
-        for (int i = 0; i < size; i++) {
-            int ordinal = in.readUnsignedByte();
-            int part = in.readUnsignedShort();
-
-            put(part, GridDhtPartitionState.fromOrdinal(ordinal));
-        }
-
-        long ver = in.readLong();
-        int minorVer = in.readInt();
-
-        if (ver != 0)
-            top = new AffinityTopologyVersion(ver, minorVer);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -358,8 +277,4 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

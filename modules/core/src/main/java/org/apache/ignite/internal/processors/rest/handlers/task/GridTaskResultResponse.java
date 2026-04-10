@@ -96,11 +96,6 @@ public class GridTaskResultResponse implements Message {
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 77;
-    }
-
     /**
      * Marshals task result to byte array.
      *

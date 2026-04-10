@@ -64,8 +64,4 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage implem
         return S.toString(TcpDiscoveryPingResponse.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 2;
-    }
 }

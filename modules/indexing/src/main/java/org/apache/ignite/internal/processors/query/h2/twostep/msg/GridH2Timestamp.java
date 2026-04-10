@@ -58,10 +58,6 @@ public class GridH2Timestamp extends GridH2ValueMessage {
         return ValueTimestamp.fromDateValueAndNanos(date, nanos);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -15;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

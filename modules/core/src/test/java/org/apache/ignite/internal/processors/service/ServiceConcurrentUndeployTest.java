@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.service.inner.LongInitializedTestService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
         disco.setInternalListener(new DiscoverySpiTestListener() {
-            @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoveryCustomMessage msg) {
+            @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
                 if (spi.isClientMode()) {
                     if (U.unwrapCustomMessage(msg) instanceof ServiceChangeBatchRequest) {
                         ServiceChangeBatchRequest batch = (ServiceChangeBatchRequest)U.unwrapCustomMessage(msg);

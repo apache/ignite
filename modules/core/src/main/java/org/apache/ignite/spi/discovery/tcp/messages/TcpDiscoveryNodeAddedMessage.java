@@ -20,75 +20,50 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO: Use NodeMessage for {@link TcpDiscoveryNode} and {@link ClusterNode} after https://issues.apache.org/jira/browse/IGNITE-27899
  * Message telling nodes that new node should be added to topology.
  * When newly added node receives the message it connects to its next and finishes
  * join process.
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage implements MarshallableMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    private TcpDiscoveryNode node;
-
-    /** Marshalled {@link #node}. */
     @Order(0)
-    @GridToStringExclude
-    byte[] nodeBytes;
+    TcpDiscoveryNode node;
 
     /** */
     @Order(1)
     DiscoveryDataPacket dataPacket;
 
-    /** Pending messages from previous node. */
-    private Collection<TcpDiscoveryAbstractMessage> msgs;
-
-    /**
-     * TODO: Use direct messages or a message container after https://issues.apache.org/jira/browse/IGNITE-25883
-     * Marshalled {@link #msgs}.
-     */
+    /** Pending messages containner. */
     @Order(2)
-    @GridToStringExclude
-    byte[] msgsBytes;
+    @Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    private Collection<TcpDiscoveryNode> top;
-
-    /** Marshalled {@link #top}. */
     @Order(3)
-    @GridToStringExclude
-    @Nullable byte[] topBytes;
+    @Nullable Collection<TcpDiscoveryNode> top;
 
     /** */
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
-    private Map<Long, Collection<ClusterNode>> topHist;
-
-    /** Marshalled {@link #topHist}. */
     @Order(4)
-    @GridToStringExclude
-    @Nullable byte[] topHistBytes;
+    Map<Long, Collection<TcpDiscoveryNode>> topHist;
 
     /** Start time of the first grid node. */
     @Order(5)
@@ -130,14 +105,10 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         super(msg);
 
         node = msg.node;
-        nodeBytes = msg.nodeBytes;
-        msgs = msg.msgs;
-        msgsBytes = msg.msgsBytes;
+        pendingMsgsMsg = msg.pendingMsgsMsg;
         top = msg.top;
-        topBytes = msg.topBytes;
         clientTop = msg.clientTop;
         topHist = msg.topHist;
-        topHistBytes = msg.topHistBytes;
         dataPacket = msg.dataPacket;
         gridStartTime = msg.gridStartTime;
     }
@@ -156,8 +127,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
-        return msgs;
+    public @Nullable Collection<TcpDiscoveryAbstractMessage> messages() {
+        return pendingMsgsMsg == null ? null : pendingMsgsMsg.messages();
     }
 
     /**
@@ -166,8 +137,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        this.msgs = msgs;
-        msgsBytes = null;
+        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
     }
 
     /**
@@ -186,7 +156,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
         this.top = top;
-        topBytes = null;
     }
 
     /**
@@ -210,7 +179,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @return Map with topology snapshots history.
      */
-    public Map<Long, Collection<ClusterNode>> topologyHistory() {
+    public Map<Long, Collection<TcpDiscoveryNode>> topologyHistory() {
         return topHist;
     }
 
@@ -219,9 +188,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @param topHist Map with topology snapshots history.
      */
-    public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
+    public void topologyHistory(@Nullable Map<Long, Collection<TcpDiscoveryNode>> topHist) {
         this.topHist = topHist;
-        topHistBytes = null;
     }
 
     /**
@@ -253,42 +221,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public long gridStartTime() {
         return gridStartTime;
     }
-
-    /** @param marsh marshaller. */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (node != null)
-            nodeBytes = U.marshal(marsh, node);
-
-        if (msgs != null)
-            msgsBytes = U.marshal(marsh, msgs);
-
-        if (top != null)
-            topBytes = U.marshal(marsh, top);
-
-        if (topHist != null)
-            topHistBytes = U.marshal(marsh, topHist);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (nodeBytes != null)
-            node = U.unmarshal(marsh, nodeBytes, clsLdr);
-
-        if (msgsBytes != null)
-            msgs = U.unmarshal(marsh, msgsBytes, clsLdr);
-
-        if (topBytes != null)
-            top = U.unmarshal(marsh, topBytes, clsLdr);
-
-        if (topHistBytes != null)
-            topHist = U.unmarshal(marsh, topHistBytes, clsLdr);
-
-        nodeBytes = null;
-        topBytes = null;
-        topHistBytes = null;
-        msgsBytes = null;
-    }
-
 
     /** {@inheritDoc} */
     @Override public short directType() {

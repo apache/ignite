@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -651,9 +652,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         private final List<DiscoveryCustomMessage> blocked = new CopyOnWriteArrayList<>();
 
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
             if (toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(U.unwrapCustomMessage(msg).getClass()))) {
-                blocked.add(msg);
+                blocked.add((DiscoveryCustomMessage)msg);
 
                 return;
             }

@@ -297,16 +297,16 @@ public interface MessageReader {
     public void decrementState();
 
     /**
-     * Callback called before inner message is read.
+     * Callback called before nested object is read.
      */
-    public void beforeInnerMessageRead();
+    public void beforeNestedRead();
 
     /**
-     * Callback called after inner message is read.
+     * Callback called after nested object is read.
      *
-     * @param finished Whether message was fully read.
+     * @param finished Whether object was fully read.
      */
-    public void afterInnerMessageRead(boolean finished);
+    public void afterNestedRead(boolean finished);
 
     /**
      * Resets this reader.

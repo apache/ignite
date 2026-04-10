@@ -20,10 +20,11 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,15 +36,18 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Map<UUID, IgniteCheckedException> errs;
+    @Order(0)
+    Map<UUID, ErrorMessage> errs;
 
     /** */
     @GridToStringExclude
-    private final Map<Integer, T2<Long, Long>> updateCntrs;
+    @Order(1)
+    Map<Integer, Long> updateCntrs;
 
     /** */
     @GridToStringExclude
-    private final Map<UUID, Map<Integer, T2<Long, Long>>> updateCntrsPerNode;
+    @Order(2)
+    Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
 
     /**
      * @param routineId Routine id.
@@ -52,15 +56,18 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
      * @param cntrsPerNode Partition counters per node.
      */
     public StartRoutineAckDiscoveryMessage(UUID routineId,
-        Map<UUID, IgniteCheckedException> errs,
-        Map<Integer, T2<Long, Long>> cntrs,
-        Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode) {
+        Map<UUID, ErrorMessage> errs,
+        Map<Integer, Long> cntrs,
+        Map<UUID, Map<Integer, Long>> cntrsPerNode) {
         super(routineId);
 
         this.errs = new HashMap<>(errs);
-        this.updateCntrs = cntrs;
-        this.updateCntrsPerNode = cntrsPerNode;
+        updateCntrs = cntrs;
+        updateCntrsPerNode = cntrsPerNode;
     }
+
+    /** */
+    public StartRoutineAckDiscoveryMessage() {}
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
@@ -70,22 +77,22 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /**
      * @return Update counters for partitions.
      */
-    public Map<Integer, T2<Long, Long>> updateCounters() {
+    public Map<Integer, Long> updateCounters() {
         return updateCntrs;
     }
 
     /**
      * @return Update counters for partitions per each node.
      */
-    public Map<UUID, Map<Integer, T2<Long, Long>>> updateCountersPerNode() {
+    public Map<UUID, Map<Integer, Long>> updateCountersPerNode() {
         return updateCntrsPerNode;
     }
 
     /**
      * @return Errs.
      */
-    public Map<UUID, IgniteCheckedException> errs() {
-        return errs;
+    public Map<UUID, Throwable> errors() {
+        return F.viewReadOnly(errs, m -> ErrorMessage.error(m));
     }
 
     /** {@inheritDoc} */

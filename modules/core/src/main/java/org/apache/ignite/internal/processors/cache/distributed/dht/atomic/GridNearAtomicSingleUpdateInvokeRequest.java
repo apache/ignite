@@ -198,10 +198,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         entryProc = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 126;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

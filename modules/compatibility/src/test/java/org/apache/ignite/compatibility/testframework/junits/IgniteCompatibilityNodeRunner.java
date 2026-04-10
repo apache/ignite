@@ -128,6 +128,10 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     /**
      * Checks that parent process is alive.
      *
+     * <p>This logic is intentionally duplicated here and in {@link IgniteNodeRunner}.
+     * Compatibility tests may run with an older {@code ignite-core-tests} on the classpath,
+     * so this runner cannot safely depend on newly added methods in {@code IgniteNodeRunner}.</p>
+     *
      * <p>We listen on {@code System.in} because this compatibility node is started by the parent JVM via
      * {@link ProcessBuilder}, where {@code System.in} is a pipe from the parent. When the parent process exits,
      * the write-end of the pipe is closed and {@code System.in.read()} returns EOF. We treat this as a signal

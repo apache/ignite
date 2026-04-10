@@ -40,11 +40,6 @@ public class IndexKeyTypeSettings implements Message {
     @Order(3)
     boolean binaryUnsigned = true;
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 19;
-    }
-
     /** */
     public boolean inlineObjectHash() {
         return inlineObjHash;

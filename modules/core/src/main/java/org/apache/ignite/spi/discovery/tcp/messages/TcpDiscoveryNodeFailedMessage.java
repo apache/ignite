@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
+public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -102,8 +101,4 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceable
         return S.toString(TcpDiscoveryNodeFailedMessage.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 17;
-    }
 }

@@ -935,7 +935,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
                 U.quiet(false, "Ignite node stopped OK [" + nodeName + "uptime=" +
                     ((IgniteKernal)ignite).upTimeFormatted() + ']');
             else
-                U.quiet(true, "Ignite node stopped wih ERRORS [" + nodeName + "uptime=" +
+                U.quiet(true, "Ignite node stopped with ERRORS [" + nodeName + "uptime=" +
                     ((IgniteKernal)ignite).upTimeFormatted() + ']');
         }
 

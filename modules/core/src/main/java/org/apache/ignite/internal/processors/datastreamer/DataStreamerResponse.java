@@ -113,8 +113,4 @@ public class DataStreamerResponse implements Message {
         return S.toString(DataStreamerResponse.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 63;
-    }
 }

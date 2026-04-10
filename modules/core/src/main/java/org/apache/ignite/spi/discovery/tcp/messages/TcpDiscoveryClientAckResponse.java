@@ -71,8 +71,4 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
         return S.toString(TcpDiscoveryClientAckResponse.class, this, "super", super.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 15;
-    }
 }

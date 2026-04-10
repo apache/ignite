@@ -84,10 +84,6 @@ public class GridJobSiblingsResponse implements Message {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 4;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

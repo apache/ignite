@@ -35,17 +35,14 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     /** */
-    public static final short TYPE_CODE = 501;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
-    @Order(value = 0, method = "historicalMap")
+    @Order(0)
     CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that require full rebalancing. */
-    @Order(value = 1, method = "fullSet")
+    @Order(1)
     @GridToStringInclude
     Set<Integer> full;
 
@@ -152,21 +149,11 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     }
 
     /** */
-    public void historicalMap(CachePartitionPartialCountersMap historical) {
-        this.historical = historical;
-    }
-
-    /** */
     public Set<Integer> fullSet() {
         if (full == null)
             return Collections.emptySet();
 
         return Collections.unmodifiableSet(full);
-    }
-
-    /** */
-    public void fullSet(Set<Integer> full) {
-        this.full = full;
     }
 
     /** */
@@ -196,8 +183,4 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
         return S.toString(IgniteDhtDemandedPartitionsMap.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

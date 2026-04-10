@@ -18,23 +18,26 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract traceable message for TCP discovery.
  */
-public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryAbstractMessage implements TraceableMessage {
+public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryAbstractMessage
+    implements TraceableMessage, MarshallableMessage {
     /** Container. */
     private SpanContainer spanContainer = new SpanContainer();
 
     /** Serialization holder of {@link #spanContainer}'s bytes. */
-    @SuppressWarnings("unused")
-    @Order(value = 0, method = "spanBytes")
-    @Nullable byte[] spanBytesHolder;
+    @Order(0)
+    @Nullable byte[] spanContainerBytes;
 
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.
@@ -74,21 +77,19 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
         return this;
     }
 
-    /** @return {@link #spanContainer}'s bytes. */
-    public @Nullable byte[] spanBytes() {
-        return spanContainer == null ? null : spanContainer.serializedSpanBytes();
-    }
-
-    /** @param spanBytes {@link #spanContainer}'s bytes. */
-    public void spanBytes(@Nullable byte[] spanBytes) {
-        if (spanBytes == null)
-            return;
-
-        spanContainer.serializedSpanBytes(spanBytes);
-    }
-
     /** {@inheritDoc} */
     @Override public SpanContainer spanContainer() {
         return spanContainer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        spanContainerBytes = spanContainer == null ? null : spanContainer.serializedSpanBytes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (spanContainerBytes != null)
+            spanContainer.serializedSpanBytes(spanContainerBytes);
     }
 }

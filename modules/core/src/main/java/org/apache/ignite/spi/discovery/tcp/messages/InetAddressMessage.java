@@ -56,10 +56,6 @@ public class InetAddressMessage implements Message {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -100;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

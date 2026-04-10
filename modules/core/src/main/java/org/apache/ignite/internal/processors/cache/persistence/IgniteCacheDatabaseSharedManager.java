@@ -60,13 +60,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
@@ -163,9 +163,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
-
-    /** First eviction was warned flag. */
-    private volatile boolean firstEvictWarn;
 
     /** Data storege metrics. */
     protected final DataStorageMetricsImpl dsMetrics;
@@ -967,9 +964,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Clean checkpoint directory
-     * {@link CheckpointMarkersStorage#cpDir}. The operation
+     * Clean checkpoint directory. The operation
      * is necessary when local node joined to baseline topology with different consistentId.
+     *
+     * @see NodeFileTree#checkpoint()
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         // No-op.
@@ -1246,9 +1244,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return;
 
         while (memPlc.evictionTracker().evictionRequired()) {
-            memPlc.metrics().onPageEvictionsStarted();
-
-            warnFirstEvict(memPlc.config());
+            if (memPlc.metrics().onPageEvictionsStarted()) {
+                U.warn(log, "Page-based evictions started." +
+                    " Consider increasing 'maxSize' on Data Region configuration: " + memPlc.config().getName());
+            }
 
             memPlc.evictionTracker().evictDataPage();
 
@@ -1584,26 +1583,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void lastCheckpointInapplicableForWalRebalance(int grpId) {
         // No-op.
-    }
-
-    /**
-     * Warns on first eviction.
-     * @param regCfg data region configuration.
-     */
-    private void warnFirstEvict(DataRegionConfiguration regCfg) {
-        if (firstEvictWarn)
-            return;
-
-        // Do not move warning output to synchronized block (it causes warning in IDE).
-        synchronized (this) {
-            if (firstEvictWarn)
-                return;
-
-            firstEvictWarn = true;
-        }
-
-        U.warn(log, "Page-based evictions started." +
-                " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
     }
 
     /**

@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public class CachePartitionFullCountersMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 506;
-
     /** */
     @Order(0)
     long[] initUpdCntrs;
@@ -126,8 +123,4 @@ public class CachePartitionFullCountersMap implements Message {
         return updCntrs;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

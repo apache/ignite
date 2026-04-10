@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,10 +25,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
@@ -40,13 +37,9 @@ public class IndexQueryResultMeta implements Message {
     @Order(0)
     IndexKeyTypeSettings keyTypeSettings;
 
-    /** Index names order holder. Should be serialized together with  the definitions. */
+    /** Index key definitions. */
     @Order(1)
-    @Nullable String[] idxNames;
-
-    /** Index definitions serialization holder. Should be serialized together with the names. */
-    @Order(2)
-    @Nullable IndexKeyDefinition[] idxDefs;
+    LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -57,24 +50,15 @@ public class IndexQueryResultMeta implements Message {
     public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
         keyTypeSettings = def.keyTypeSettings();
 
+        keyDefs = U.newLinkedHashMap(critSize);
+
         Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
 
-        if (critSize > 0) {
-            idxNames = new String[critSize];
-            idxDefs = new IndexKeyDefinition[critSize];
+        for (int i = 0; i < critSize; i++) {
+            Map.Entry<String, IndexKeyDefinition> key = keys.next();
 
-            for (int i = 0; i < critSize; i++) {
-                Map.Entry<String, IndexKeyDefinition> key = keys.next();
-
-                idxNames[i] = key.getKey();
-                idxDefs[i] = key.getValue();
-            }
+            keyDefs.put(key.getKey(), key.getValue());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 18;
     }
 
     /** */
@@ -82,20 +66,8 @@ public class IndexQueryResultMeta implements Message {
         return keyTypeSettings;
     }
 
-    /** @return Map of index definitions with proper order. */
+    /** @return Map of index key definitions. */
     public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
-        if (F.isEmpty(idxNames) && F.isEmpty(idxDefs))
-            return U.newLinkedHashMap(0);
-
-        assert idxNames.length == idxDefs.length : "Number of index names and index definitions must be equal " +
-            "[idxNames=" + Arrays.toString(idxNames) + ", idxDefs=" + Arrays.toString(idxDefs) + "]";
-
-        LinkedHashMap<String, IndexKeyDefinition> idxDefsMap = U.newLinkedHashMap(idxNames.length);
-
-        for (int i = 0; i < idxNames.length; i++)
-            idxDefsMap.put(idxNames[i], idxDefs[i]);
-
-        return idxDefsMap;
+        return keyDefs;
     }
-
 }

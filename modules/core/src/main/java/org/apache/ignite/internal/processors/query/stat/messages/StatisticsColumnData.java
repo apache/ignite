@@ -28,9 +28,6 @@ public class StatisticsColumnData implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final short TYPE_CODE = 186;
-
     /** Min value in column. */
     @Order(0)
     StatisticsDecimalMessage min;
@@ -170,11 +167,6 @@ public class StatisticsColumnData implements Message, Serializable {
      */
     public long createdAt() {
         return createdAt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
 }

@@ -77,51 +77,9 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
         return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * Sets mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
-     * @return Near thread ID.
-     */
-    public long threadId() {
-        return nearThreadId;
-    }
-
-    /**
-     * Sets near thread ID.
-     */
-    public void threadId(long nearThreadId) {
-        this.nearThreadId = nearThreadId;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * Sets error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 54;
     }
 
     /** {@inheritDoc} */

@@ -17,28 +17,40 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.lang.IgniteUuid;
+import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message to send across ring.
  *
- * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
- * TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27778
+ * @see DiscoverySpi#sendCustomEvent
  */
-@Deprecated(forRemoval = true)
-public abstract class DiscoverySpiCustomMessage implements DiscoveryCustomMessage {
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return null;
+public interface DiscoverySpiCustomMessage extends Serializable {
+    /**
+     * Called when custom message has been handled by all nodes.
+     *
+     * @return Ack message or {@code null} if ack is not required.
+     */
+    @Nullable DiscoverySpiCustomMessage ackMessage();
+
+    /**
+     * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
+     * @see DiscoverySpiMutableCustomMessageSupport
+     */
+    default boolean isMutable() {
+        return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        return null;
+    /**
+     * Called on discovery coordinator node after listener is notified. If returns {@code true}
+     * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
+     * message, it is sent to all nodes.
+     *
+     * Note: this method is used then and only then the zookeeper discovery is configured.
+     *
+     * @return {@code True} if message should not be sent to all nodes.
+     */
+    default boolean stopProcess() {
+        return false;
     }
 }
