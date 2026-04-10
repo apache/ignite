@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -51,7 +48,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setPluginProviders(new TestPluginProvider());
+        c.setPluginProviders(new MessagesPluginProvider(Map.of(
+            DIRECT_TYPE, GridCommunicationSendTestMessage.class,
+            DIRECT_TYPE_OVER_BYTE, GridCommunicationSendOverByteIdTestMessage.class
+        )));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -144,23 +144,4 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         info(">>>");
     }
 
-    /** Registers test messages with explicit direct types to cover both byte-range and over-byte ids. */
-    public static class TestPluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "TEST_PLUGIN";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(DIRECT_TYPE, GridCommunicationSendTestMessage::new,
-                        new GridCommunicationSendTestMessageSerializer());
-                    factory.register(DIRECT_TYPE_OVER_BYTE, GridCommunicationSendOverByteIdTestMessage::new,
-                        new GridCommunicationSendOverByteIdTestMessageSerializer());
-                }
-            });
-        }
-    }
 }

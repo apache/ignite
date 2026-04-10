@@ -370,7 +370,12 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             }
         });
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, CommunicationConnectionPoolMetricsTestMessage::new, null);
+        IgniteInternalFuture<?> loadFut = runLoad(
+            ldr,
+            runFlag,
+            () -> new CommunicationConnectionPoolMetricsTestMessage((int)maxConnIdleTimeout * 3),
+            null
+        );
 
         monFut.get(getTestTimeout());
 
