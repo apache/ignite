@@ -337,10 +337,10 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(TcpDiscoveryNode.class);
         withNoSchema(IgniteProductVersion.class);
         withNoSchema(DiscoveryDataPacket.class);
-        withSchema(GridByteArrayList.class);
+        withNoSchema(GridByteArrayList.class);
         withSchema(CacheVersionedValue.class);
         withNoSchema(GridCacheVersion.class);
-        withSchema(GridCacheVersionEx.class);
+        withNoSchema(GridCacheVersionEx.class);
 
         msgIdx = 5500;
         withNoSchema(TcpDiscoveryCollectionMessage.class);
@@ -387,10 +387,10 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(SnapshotMetadataResponse.class);
         withNoSchema(SnapshotCheckPartitionHashesResponse.class);
         withNoSchema(SnapshotCheckHandlersResponse.class);
-        withSchema(SnapshotFilesRequestMessage.class);
-        withSchema(SnapshotFilesFailureMessage.class);
+        withNoSchema(SnapshotFilesRequestMessage.class);
+        withNoSchema(SnapshotFilesFailureMessage.class);
         withNoSchema(IncrementalSnapshotVerifyResult.class);
-        withSchema(IncrementalSnapshotAwareMessage.class);
+        withNoSchema(IncrementalSnapshotAwareMessage.class);
 
         // [6300 - 6400]: Services messages. Most of them originally come from Discovery.
         msgIdx = 6300;
@@ -401,7 +401,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ServiceUndeploymentRequest.class);
         withNoSchema(ServiceClusterDeploymentResultBatch.class);
         withNoSchema(ServiceChangeBatchRequest.class);
-        withSchema(ServiceSingleNodeDeploymentResultBatch.class);
+        withNoSchema(ServiceSingleNodeDeploymentResultBatch.class);
 
         // [6500 - 6700]: DiscoveryCustomMessage
         msgIdx = 6500;
@@ -563,17 +563,17 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
-        withSchema(GridJobCancelRequest.class);
+        withNoSchema(GridJobCancelRequest.class);
         withSchema(GridJobExecuteRequest.class);
         withSchema(GridJobExecuteResponse.class);
-        withSchema(GridJobSiblingsRequest.class);
+        withNoSchema(GridJobSiblingsRequest.class);
         withSchema(GridJobSiblingsResponse.class);
-        withSchema(GridTaskCancelRequest.class);
+        withNoSchema(GridTaskCancelRequest.class);
         withSchema(GridTaskSessionRequest.class);
-        withSchema(GridTaskResultRequest.class);
+        withNoSchema(GridTaskResultRequest.class);
         withSchema(GridTaskResultResponse.class);
-        withSchema(JobStealingRequest.class);
-        withSchema(SingleNodeMessage.class);
+        withNoSchema(JobStealingRequest.class);
+        withNoSchema(SingleNodeMessage.class);
 
         // [11500 - 11600]:  IO, networking messages.
         msgIdx = NODE_ID_MSG_TYPE;
@@ -584,16 +584,16 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(IgniteIoTestMessage.class);
         withSchema(GridIoUserMessage.class);
         withSchema(GridIoSecurityAwareMessage.class);
-        withSchema(RecoveryLastReceivedMessage.class);
-        withSchema(TcpInverseConnectionResponseMessage.class);
-        withSchema(SessionChannelMessage.class);
+        withNoSchema(RecoveryLastReceivedMessage.class);
+        withNoSchema(TcpInverseConnectionResponseMessage.class);
+        withNoSchema(SessionChannelMessage.class);
 
         // [11700 - 11800]: Datastreamer messages.
         msgIdx = 11700;
         withNoSchema(DataStreamerUpdatesHandlerResult.class);
         withSchema(DataStreamerEntry.class);
-        withSchema(DataStreamerRequest.class);
-        withSchema(DataStreamerResponse.class);
+        withNoSchema(DataStreamerRequest.class);
+        withNoSchema(DataStreamerResponse.class);
 
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
