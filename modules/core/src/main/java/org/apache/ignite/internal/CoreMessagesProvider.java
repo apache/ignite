@@ -522,7 +522,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withSchema(GridDhtPartitionMap.class);
         withSchema(GridDhtPartitionFullMap.class);
         withNoSchema(GridDhtPartitionExchangeId.class);
-        withSchema(GridCheckpointRequest.class);
+        withNoSchema(GridCheckpointRequest.class);
         withSchema(GridDhtPartitionDemandMessage.class);
         withSchema(GridDhtPartitionSupplyMessage.class);
         withSchema(GridDhtPartitionsFullMessage.class);
@@ -552,13 +552,13 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withSchema(IndexKeyDefinition.class);
         withSchema(IndexKeyTypeSettings.class);
         withSchema(IndexQueryResultMeta.class);
-        withSchema(StatisticsKeyMessage.class);
-        withSchema(StatisticsDecimalMessage.class);
-        withSchema(StatisticsObjectData.class);
-        withSchema(StatisticsColumnData.class);
-        withSchema(StatisticsRequest.class);
-        withSchema(StatisticsResponse.class);
-        withSchema(CacheContinuousQueryBatchAck.class);
+        withNoSchema(StatisticsKeyMessage.class);
+        withNoSchema(StatisticsDecimalMessage.class);
+        withNoSchema(StatisticsObjectData.class);
+        withNoSchema(StatisticsColumnData.class);
+        withNoSchema(StatisticsRequest.class);
+        withNoSchema(StatisticsResponse.class);
+        withNoSchema(CacheContinuousQueryBatchAck.class);
         withSchema(CacheContinuousQueryEntry.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
@@ -636,7 +636,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [13000 - 13300]: Control, diagnostincs and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
-        withNoSchema(ChangeGlobalStateMessage.class);
+        withSchema(ChangeGlobalStateMessage.class);
         withSchema(GridChangeGlobalStateMessageResponse.class);
         withSchema(IgniteDiagnosticRequest.class);
         withSchema(IgniteDiagnosticResponse.class);
