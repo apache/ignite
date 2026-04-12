@@ -51,6 +51,11 @@ import static org.apache.ignite.cache.CachePeekMode.NEAR;
 import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for methods using {@link CachePeekMode}:
@@ -1152,9 +1157,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             assertNotNull(e.getValue());
             assertEquals(expVal + e.getKey(), e.getValue());
 
-            assertTrue("Unexpected entry: " + e, allExp.remove(e.getKey()));
+            assertTrue(allExp.remove(e.getKey()), "Unexpected entry: " + e);
         }
 
-        assertTrue("Expected entries not found: " + allExp, allExp.isEmpty());
+        assertTrue(allExp.isEmpty(), "Expected entries not found: " + allExp);
     }
 }

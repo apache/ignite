@@ -60,6 +60,11 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -262,7 +267,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++)
             fullCacheSize += jcache(i).localSize();
 
-        assertEquals("Invalid cache size", fullCacheSize, nearCache.size());
+        assertEquals(fullCacheSize, nearCache.size(), "Invalid cache size");
     }
 
     /** {@inheritDoc} */
@@ -363,8 +368,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertTrue("Invalid expire time [expire=" + entryTtl.get2() + ", start=" + startTime + ']',
-                    entryTtl.get2() > startTime);
+                assertTrue(entryTtl.get2() > startTime,
+                    "Invalid expire time [expire=" + entryTtl.get2() + ", start=" + startTime + ']');
                 expireTimes[i] = entryTtl.get2();
             }
         }
@@ -574,9 +579,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             boolean found = nearCache.localPeek(key, CachePeekMode.ONHEAP) != null;
 
             if (keysToRmv.contains(key))
-                assertFalse("Found removed key " + key, found);
+                assertFalse(found, "Found removed key " + key);
             else
-                assertTrue("Not found key " + key, found);
+                assertTrue(found, "Not found key " + key);
         }
     }
 
@@ -609,9 +614,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             jcache(nearIdx).clear();
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals("Unexpected size [node=" + ignite(i).name() + ", nearIdx=" + nearIdx + ']',
-                0,
-                jcache(i).localSize());
+            assertEquals(0, jcache(i).localSize(),
+                "Unexpected size [node=" + ignite(i).name() + ", nearIdx=" + nearIdx + ']');
         }
     }
 

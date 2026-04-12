@@ -68,6 +68,10 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -465,8 +469,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         for (int i = 0; i < 32; ++i)
             assertEquals(Integer.valueOf(i), txCache.get(i));
 
-        assertEquals("Expected major topology version is 3.",
-            3, grid(1).context().discovery().topologyVersionEx().topologyVersion());
+        assertEquals(3, grid(1).context().discovery().topologyVersionEx().topologyVersion(),
+            "Expected major topology version is 3.");
     }
 
     /**
@@ -525,9 +529,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         StringBuilder failures = new StringBuilder();
         errs.forEach((k, v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
 
-        assertTrue(
-            "Failure handler should not be triggered " + failures.toString(),
-            errs.isEmpty());
+        assertTrue(errs.isEmpty(), "Failure handler should not be triggered " + failures);
     }
 
     /**
@@ -578,9 +580,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         StringBuilder failures = new StringBuilder();
         errs.forEach((k, v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
 
-        assertTrue(
-            "Failure handler should not be triggered " + failures.toString(),
-            errs.isEmpty());
+        assertTrue(errs.isEmpty(), "Failure handler should not be triggered " + failures);
 
         // Make sure that the next call is successful.
         assertNotNull(client.cache("client-cache"));

@@ -75,6 +75,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests the recovery after a dynamic cache start failure.
@@ -653,9 +658,8 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(() -> client.destroyCache(DYNAMIC_CACHE_NAME));
 
         // Wait for the next minor topology version. It means DynamicCacheChangeBatch was processed by disco thread.
-        assertTrue(
-            "Failed to wait for DynamicCacheChangeBatch message (destroy)",
-            waitForCondition(() -> grid(0).context().discovery().topologyVersionEx().equals(expVer), getTestTimeout()));
+        assertTrue(waitForCondition(() -> grid(0).context().discovery().topologyVersionEx().equals(expVer), getTestTimeout()),
+            "Failed to wait for DynamicCacheChangeBatch message (destroy)");
 
         // Unblock the process of creating the cache.
         spi1.stopBlock();

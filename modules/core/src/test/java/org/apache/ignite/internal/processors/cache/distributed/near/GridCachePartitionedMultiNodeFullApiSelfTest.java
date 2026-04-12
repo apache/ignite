@@ -41,6 +41,12 @@ import static org.apache.ignite.cache.CachePeekMode.NEAR;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -203,7 +209,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                 // Initialize near reader.
                 assertEquals((Integer)1, c.get("key"));
 
-                assertEquals("Failed to validate near value for node: " + i, nearPeekVal, c.localPeek("key", NEAR));
+                assertEquals(nearPeekVal, c.localPeek("key", NEAR), "Failed to validate near value for node: " + i);
 
                 assertNull(c.localPeek("key", PRIMARY, BACKUP));
             }
@@ -427,8 +433,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             for (int k = 0; k < size; k++) {
                 if (affinity(cache).isPrimaryOrBackup(node, k))
-                    assertEquals("Check failed for node: " + node.id(), k,
-                        cache.localPeek(k, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+                    assertEquals(k, cache.localPeek(k, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP),
+                        "Check failed for node: " + node.id());
             }
         }
     }

@@ -61,6 +61,12 @@ import org.mockito.Mockito;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.testframework.GridTestUtils.assertEqualsArraysAware;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -424,7 +430,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                 else
                     assertTrue(entry.hasValue());
 
-                assertTrue("iterableKey " + key + " already inited", init);
+                assertTrue(init, "iterableKey " + key + " already inited");
 
                 if (node.equals(primary))
                     primVal = val;

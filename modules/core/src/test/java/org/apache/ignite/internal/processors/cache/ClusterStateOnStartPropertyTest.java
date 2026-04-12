@@ -37,6 +37,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_ACTIVE_ON_START;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_AUTO_ACTIVATION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks that {@link IgniteConfiguration#getClusterStateOnStart()} works correctly separately and together with
@@ -292,7 +294,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
         }
 
         for (String name : logListeners.keySet())
-            assertTrue(name, logListeners.get(name).check());
+            assertTrue(logListeners.get(name).check(), name);
     }
 
     /**
@@ -321,7 +323,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
         }
 
         for (String name : logListeners.keySet())
-            assertTrue(name, logListeners.get(name).check());
+            assertTrue(logListeners.get(name).check(), name);
 
         stopAllGrids();
 

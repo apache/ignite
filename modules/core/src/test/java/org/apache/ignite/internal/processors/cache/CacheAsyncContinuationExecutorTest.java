@@ -38,6 +38,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}.
  */
@@ -145,7 +148,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         barrier.await(10, TimeUnit.SECONDS);
 
-        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith("sys-stripe-"));
+        assertTrue(listenThreadName.get().startsWith("sys-stripe-"), listenThreadName.get());
     }
 
     /**
@@ -210,7 +213,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
         barrier.await(10, TimeUnit.SECONDS);
 
         assertEquals(allowCacheOperationsInContinuation() ? 2 : 1, cache.get(key).intValue());
-        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith(expectedThreadNamePrefix()));
+        assertTrue(listenThreadName.get().startsWith(expectedThreadNamePrefix()), listenThreadName.get());
     }
 
     /**

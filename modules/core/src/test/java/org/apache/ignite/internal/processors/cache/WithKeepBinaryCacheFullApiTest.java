@@ -42,6 +42,11 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.PLANE_OBJECT;
 import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -767,7 +772,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                 Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, NOOP_ENTRY_PROC);
 
                 for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
-                    assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+                    assertInstanceOf(BinaryObject.class, e.getKey(), "Key:" + e.getKey());
 
                     assertNull(e.getValue().get());
                 }
@@ -841,7 +846,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                     Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, NOOP_ENTRY_PROC);
 
                     for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
-                        assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+                        assertInstanceOf(BinaryObject.class, e.getKey(), "Key:" + e.getKey());
 
                         assertNull(e.getValue().get());
                     }
@@ -918,7 +923,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
         for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
             info("Key: " + e.getKey());
 
-            assertTrue("Wrong key type, binary object expected: " + e.getKey(), e.getKey() instanceof BinaryObject);
+            assertInstanceOf(BinaryObject.class, e.getKey(), "Wrong key type, binary object expected: " + e.getKey());
 
             Object res = e.getValue().get();
 
@@ -953,7 +958,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                     (Map<Object, EntryProcessorResult<Object>>)cache.invokeAllAsync(keys, NOOP_ENTRY_PROC).get();
 
                 for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
-                    assertTrue("Wrong key type, binary object expected: " + e.getKey(), e.getKey() instanceof BinaryObject);
+                    assertInstanceOf(BinaryObject.class, e.getKey(), "Wrong key type, binary object expected: " + e.getKey());
 
                     assertNull(e.getValue().get());
                 }
@@ -1036,7 +1041,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                 }
 
                 for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
-                    assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+                    assertInstanceOf(BinaryObject.class, e.getKey(), "Key:" + e.getKey());
 
                     assertNull(e.getValue().get());
                 }
@@ -1112,7 +1117,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
         for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
             info("Key: " + e.getKey());
 
-            assertTrue("Wrong key type, binary object expected: " + e.getKey(), e.getKey() instanceof BinaryObject);
+            assertInstanceOf(BinaryObject.class, e.getKey(), "Wrong key type, binary object expected: " + e.getKey());
 
             Object res = e.getValue().get();
 
@@ -1129,7 +1134,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @return User object.
      */
     private static Object deserializeBinary(Object val) {
-        assertTrue("Val: " + val, val instanceof BinaryObject);
+        assertInstanceOf(BinaryObject.class, val, "Val: " + val);
 
         return ((BinaryObject)val).deserialize();
     }

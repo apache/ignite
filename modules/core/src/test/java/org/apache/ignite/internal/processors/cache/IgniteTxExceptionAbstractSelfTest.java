@@ -50,6 +50,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
@@ -374,7 +378,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             fail("Transaction should fail.");
         }
         catch (Exception e) {
-            assertTrue("Unexptected exception " + X.getFullStackTrace(e), e instanceof TransactionHeuristicException);
+            assertInstanceOf(TransactionHeuristicException.class, e, "Unexptected exception " + X.getFullStackTrace(e));
 
             log.info("Expected exception: " + e);
         }
@@ -521,7 +525,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionHeuristicException);
+        assertInstanceOf(TransactionHeuristicException.class, e.getCause(), "Unexpected cause: " + e);
 
         checkUnlocked(key);
     }

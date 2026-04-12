@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  *

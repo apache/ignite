@@ -43,6 +43,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Failover tests for cache.
@@ -212,7 +214,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                             for (int k = half; k < ENTRY_CNT; k++) {
                                 String key = "key" + k;
 
-                                assertNotNull("Failed to get key: 'key" + k + "'", cache.getAsync(key).get(30_000));
+                                assertNotNull(cache.getAsync(key).get(30_000), "Failed to get key: 'key" + k + "'");
                             }
                         }
                         finally {
@@ -382,11 +384,11 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         int size = cache.size();
 
-        assertTrue("Key set size is lesser then the expected size [size=" + size + ", expSize=" + expSize + ']',
-            size >= expSize);
+        assertTrue(size >= expSize,
+            "Key set size is lesser then the expected size [size=" + size + ", expSize=" + expSize + ']');
 
         for (int i = 0; i < expSize; i++)
-            assertNotNull("Failed to get value for key: 'key" + i + "'", cache.get("key" + i));
+            assertNotNull(cache.get("key" + i), "Failed to get value for key: 'key" + i + "'");
     }
 
     /**

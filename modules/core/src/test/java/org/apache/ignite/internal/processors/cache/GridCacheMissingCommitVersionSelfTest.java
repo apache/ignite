@@ -35,6 +35,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_C
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -120,7 +122,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
             }
         }, 10, "put-thread");
 
-        assertTrue("Test failed to provoke 'missing commit version' error.", putFailed);
+        assertTrue(putFailed, "Test failed to provoke 'missing commit version' error.");
 
         for (Integer key : q) {
             log.info("Trying to update " + key);

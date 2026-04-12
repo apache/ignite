@@ -43,6 +43,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests situation when two nodes in cluster simultaneously propose different classes with the same typeId
@@ -173,7 +175,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         int cacheSize = ignite.cache(DEFAULT_CACHE_NAME).size(CachePeekMode.PRIMARY);
 
-        assertTrue("Expected cache size 1 but was " + cacheSize, cacheSize == 1);
+        assertEquals(1, cacheSize, "Expected cache size 1 but was " + cacheSize);
 
         if (rejectObserved)
             assertTrue(aaClsRejected || bbClsRejected);

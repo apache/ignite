@@ -55,6 +55,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Checks one-phase commit scenarios.
@@ -208,7 +209,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
 
         int iVal = val == null ? 0 : val.get();
 
-        assertEquals("Invalid message count for class: " + cls.getSimpleName(), cnt, iVal);
+        assertEquals(cnt, iVal, "Invalid message count for class: " + cls.getSimpleName());
     }
 
     /**

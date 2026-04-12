@@ -33,6 +33,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Multithreaded update test with off heap enabled.
@@ -109,7 +112,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         for (int i = 0; i < gridCount(); i++) {
             Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-            assertEquals("Unexpected value for grid " + i, (Integer)(ITERATIONS_PER_THREAD * THREADS), val);
+            assertEquals((Integer)(ITERATIONS_PER_THREAD * THREADS), val, "Unexpected value for grid " + i);
         }
 
         assertFalse(failed);
@@ -157,7 +160,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         for (int i = 0; i < gridCount(); i++) {
             Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-            assertNotNull("Unexpected value for grid " + i, val);
+            assertNotNull(val, "Unexpected value for grid " + i);
         }
 
         assertFalse(failed);
@@ -202,7 +205,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         for (int i = 0; i < gridCount(); i++) {
             Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-            assertEquals("Unexpected value for grid " + i, (Integer)0, val);
+            assertEquals((Integer)0, val, "Unexpected value for grid " + i);
         }
 
         assertFalse(failed);
@@ -276,7 +279,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         for (int i = 0; i < gridCount(); i++) {
             Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-            assertNotNull("Unexpected value for grid " + i, val);
+            assertNotNull(val, "Unexpected value for grid " + i);
         }
     }
 

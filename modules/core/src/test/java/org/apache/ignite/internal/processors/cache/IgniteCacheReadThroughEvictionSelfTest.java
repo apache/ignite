@@ -38,6 +38,9 @@ import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstrac
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -248,7 +251,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
             }
         }, getTestTimeout());
 
-        assertTrue("Failed to wait for the cache to be empty", success);
+        assertTrue(success, "Failed to wait for the cache to be empty");
     }
 
     /**

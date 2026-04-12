@@ -54,6 +54,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.LogListener.matches;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for testing fast node left during transaction for cache.

@@ -65,6 +65,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -669,7 +674,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         for (BlockingQueue<Cache.Entry<TestKey, TestValue>> evtsQueue : entries) {
             Cache.Entry<TestKey, TestValue> entry = evtsQueue.poll(5, SECONDS);
 
-            assertNotNull("Failed to wait for event [key=" + key + ", val=" + val + ", oldVal=" + oldVal + ']', entry);
+            assertNotNull(entry, "Failed to wait for event [key=" + key + ", val=" + val + ", oldVal=" + oldVal + ']');
             assertEquals(key, entry.getKey());
             assertEquals(rmv ? oldVal : val, entry.getValue());
 

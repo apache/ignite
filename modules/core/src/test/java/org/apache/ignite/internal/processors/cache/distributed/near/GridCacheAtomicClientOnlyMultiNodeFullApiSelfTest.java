@@ -41,6 +41,10 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -119,7 +123,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         for (int i = 0; i < gridCount(); i++)
             fullCacheSize += jcache(i).localSize();
 
-        assertEquals("Invalid cache size", fullCacheSize, cache.size());
+        assertEquals(fullCacheSize, cache.size(), "Invalid cache size");
     }
 
     /** {@inheritDoc} */
@@ -217,7 +221,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
             }
         }, ttl + 1000);
 
-        assertTrue("Failed to wait for entry expiration.", wait);
+        assertTrue(wait, "Failed to wait for entry expiration.");
 
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));

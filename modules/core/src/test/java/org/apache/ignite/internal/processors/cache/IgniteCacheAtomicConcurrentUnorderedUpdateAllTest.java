@@ -35,6 +35,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Test concurrent putAll/removeAll operations with unordered set of keys on atomic caches. */
 public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommonAbstractTest {

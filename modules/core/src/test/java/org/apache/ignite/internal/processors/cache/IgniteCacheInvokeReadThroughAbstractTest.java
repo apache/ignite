@@ -44,6 +44,10 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -285,9 +289,8 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
      */
     private void checkValue(String cacheName, Object key, Object val) {
         for (Ignite ignite : G.allGrids()) {
-            assertEquals("Unexpected value for node: " + ignite.name(),
-                val,
-                ignite.cache(cacheName).get(key));
+            assertEquals(val, ignite.cache(cacheName).get(key),
+                "Unexpected value for node: " + ignite.name());
         }
 
         assertFalse(failed);

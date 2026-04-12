@@ -28,6 +28,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests NEAR_ONLY cache.

@@ -61,6 +61,11 @@ import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Cache metrics test.
@@ -282,7 +287,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetMetricsSnapshot() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertNotSame("Method metrics() should return snapshot.", cache.localMetrics(), cache.localMetrics());
+        assertNotSame(cache.localMetrics(), cache.localMetrics(), "Method metrics() should return snapshot.");
     }
 
     /**
@@ -670,10 +675,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 int cacheWrites = (int)cache.localMetrics().getCachePuts();
 
-                assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
+                assertEquals(i + 1, cacheWrites, "Wrong cache metrics [i=" + i + ", grid=" + j + ']');
             }
 
-            assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
+            assertEquals(Integer.valueOf(i), cache0.get(i), "Wrong value for key: " + i); // +1 read
 
             expReads++;
         }
@@ -721,10 +726,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 long cacheWrites = cache.localMetrics().getCachePuts();
 
-                assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
+                assertEquals(i + 1, cacheWrites, "Wrong cache metrics [i=" + i + ", grid=" + j + ']');
             }
 
-            assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
+            assertEquals(Integer.valueOf(i), cache0.get(i), "Wrong value for key: " + i); // +1 read
         }
 
         // Check metrics for the whole cache.
@@ -749,7 +754,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // Get a few keys missed keys.
         for (int i = 0; i < keyCnt; i++) {
-            assertNull("Value is not null for key: " + i, cache.get(i));
+            assertNull(cache.get(i), "Value is not null for key: " + i);
 
             if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED ||
                 affinity(cache).isPrimary(grid(0).localNode(), i))
@@ -786,8 +791,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testMissesOnEmptyCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
-        assertEquals("Expected 0 miss", 0, cache.localMetrics().getCacheMisses());
+        assertEquals(0, cache.localMetrics().getCacheGets(), "Expected 0 read");
+        assertEquals(0, cache.localMetrics().getCacheMisses(), "Expected 0 miss");
 
         Integer key = null;
 
@@ -803,19 +808,19 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.get(key);
 
-        assertEquals("Expected 1 read", 1, cache.localMetrics().getCacheGets());
-        assertEquals("Expected 1 miss", 1, cache.localMetrics().getCacheMisses());
+        assertEquals(1, cache.localMetrics().getCacheGets(), "Expected 1 read");
+        assertEquals(1, cache.localMetrics().getCacheMisses(), "Expected 1 miss");
 
         cache.getAndPut(key, key); // +1 read, +1 miss.
 
-        assertEquals("Expected 2 reads", 2, cache.localMetrics().getCacheGets());
+        assertEquals(2, cache.localMetrics().getCacheGets(), "Expected 2 reads");
 
         cache.get(key);
 
-        assertEquals("Expected 1 write", 1, cache.localMetrics().getCachePuts());
-        assertEquals("Expected 3 reads", 3, cache.localMetrics().getCacheGets());
-        assertEquals("Expected 2 misses", 2, cache.localMetrics().getCacheMisses());
-        assertEquals("Expected 1 hit", 1, cache.localMetrics().getCacheHits());
+        assertEquals(1, cache.localMetrics().getCachePuts(), "Expected 1 write");
+        assertEquals(3, cache.localMetrics().getCacheGets(), "Expected 3 reads");
+        assertEquals(2, cache.localMetrics().getCacheMisses(), "Expected 2 misses");
+        assertEquals(1, cache.localMetrics().getCacheHits(), "Expected 1 hit");
     }
 
     /**

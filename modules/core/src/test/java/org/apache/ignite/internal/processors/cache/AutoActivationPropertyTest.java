@@ -31,6 +31,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks that {@link IgniteConfiguration#autoActivation} works correctly after deprecation and introduction {@link
@@ -123,6 +126,6 @@ public class AutoActivationPropertyTest extends GridCommonAbstractTest {
             assertEquals(autoActivation ? ACTIVE : INACTIVE, crd.cluster().state());
 
         for (String name : logListeners.keySet())
-            assertTrue(name, logListeners.get(name).check());
+            assertTrue(logListeners.get(name).check(), name);
     }
 }

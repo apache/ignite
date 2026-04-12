@@ -35,6 +35,13 @@ import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGen
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.junit.jupiter.api.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertEqualsArraysAware;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */

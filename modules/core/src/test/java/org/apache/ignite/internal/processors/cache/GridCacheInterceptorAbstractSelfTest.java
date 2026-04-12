@@ -49,6 +49,11 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests {@link CacheInterceptor}.
@@ -1386,11 +1391,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = true;
 
         if (storeEnabled())
-            assertEquals("Unexpected store value", expVal, storeStgy.getFromStore(key));
+            assertEquals(expVal, storeStgy.getFromStore(key), "Unexpected store value");
 
         try {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
+                assertEquals(expVal, grid(i).cache(DEFAULT_CACHE_NAME).get(key), "Unexpected value for grid " + i);
         }
         finally {
             interceptor.disabled = false;
@@ -1552,10 +1557,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             IgniteBiTuple t = beforePutMap.put(entry.getKey(), new IgniteBiTuple(entry.getValue(), newVal));
 
             if (t != null) {
-                assertEquals("Interceptor called with different old values for key " + entry.getKey(), t.get1(),
-                    entry.getValue());
-                assertEquals("Interceptor called with different new values for key " + entry.getKey(), t.get2(),
-                    newVal);
+                assertEquals(t.get1(), entry.getValue(), "Interceptor called with different old values for key " + entry.getKey());
+                assertEquals(t.get2(), newVal, "Interceptor called with different new values for key " + entry.getKey());
             }
 
             return ret;

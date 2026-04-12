@@ -44,6 +44,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -181,7 +186,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         assertTrue(!msgs.isEmpty());
 
         for (Object msg : msgs) {
-            assertTrue("Unexpected messages: " + msg, msg instanceof GridDhtPartitionsFullMessage);
+            assertInstanceOf(GridDhtPartitionsFullMessage.class, msg, "Unexpected messages: " + msg);
 
             checkFullMessage((GridDhtPartitionsFullMessage)msg);
         }
@@ -205,7 +210,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             assertTrue(!msgs.isEmpty());
 
             for (Object msg : msgs) {
-                assertTrue("Unexpected messages: " + msg, msg instanceof GridDhtPartitionsSingleMessage);
+                assertInstanceOf(GridDhtPartitionsSingleMessage.class, msg, "Unexpected messages: " + msg);
 
                 checkSingleMessage((GridDhtPartitionsSingleMessage)msg);
             }

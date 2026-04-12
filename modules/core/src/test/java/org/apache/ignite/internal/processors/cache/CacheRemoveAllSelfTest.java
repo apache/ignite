@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test remove all method.
  */
@@ -70,12 +72,14 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < igniteId.get(); ++i) {
             IgniteCache locCache = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            assertEquals("Local size: " + locCache.localSize() + "\n" +
+            assertEquals(
+                0, locCache.localSize(),
+                "Local size: " + locCache.localSize() + "\n" +
                 "On heap: " + locCache.localSize(CachePeekMode.ONHEAP) + "\n" +
                 "Off heap: " + locCache.localSize(CachePeekMode.OFFHEAP) + "\n" +
                 "Primary: " + locCache.localSize(CachePeekMode.PRIMARY) + "\n" +
-                "Backup: " + locCache.localSize(CachePeekMode.BACKUP),
-                0, locCache.localSize());
+                "Backup: " + locCache.localSize(CachePeekMode.BACKUP)
+                );
         }
     }
 }

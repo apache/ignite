@@ -42,6 +42,8 @@ import org.junit.jupiter.api.Test;
 import static com.google.common.base.Functions.identity;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks that join node to {@link ClusterState#INACTIVE} cluster doesn't trigger rebalance.
@@ -130,7 +132,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
 
         for (int g = 0; g < GRID_CNT + 2; g++) {
             for (int k = 0; k < ENTRY_CNT; k++)
-                assertEquals("Failed for [grid=" + g + ", key=" + k + ']', k, grid(g).cache(DEFAULT_CACHE_NAME).get(k));
+                assertEquals(k, grid(g).cache(DEFAULT_CACHE_NAME).get(k), "Failed for [grid=" + g + ", key=" + k + ']');
         }
 
         stopGrid(GRID_CNT + 1);
@@ -180,7 +182,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
     /** */
     void checkInactive(int cnt) {
         for (int g = 0; g < cnt; g++)
-            assertEquals(grid(g).name(), INACTIVE, grid(g).cluster().state());
+            assertEquals(INACTIVE, grid(g).cluster().state(), grid(g).name());
     }
 
     /**

@@ -73,6 +73,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -327,14 +331,14 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                         IgniteCache<?, ?> cache = ig.cache(cacheName);
 
                         try {
-                            assertEquals("CachePuts", 0L, cache.metrics().getCachePuts());
-                            assertEquals("CacheHits", 0L, cache.metrics().getCacheHits());
-                            assertEquals("CacheGets", 0L, cache.metrics().getCacheGets());
-                            assertEquals("CacheRemovals", 0L, cache.metrics().getCacheRemovals());
-                            assertEquals("CacheMisses", 0L, cache.metrics().getCacheMisses());
-                            assertEquals("AverageGetTime", 0f, cache.metrics().getAveragePutTime());
-                            assertEquals("AveragePutTime", 0f, cache.metrics().getAverageGetTime());
-                            assertEquals("AverageRemoveTime", 0f, cache.metrics().getAverageRemoveTime());
+                            assertEquals(0L, cache.metrics().getCachePuts(), "CachePuts");
+                            assertEquals(0L, cache.metrics().getCacheHits(), "CacheHits");
+                            assertEquals(0L, cache.metrics().getCacheGets(), "CacheGets");
+                            assertEquals(0L, cache.metrics().getCacheRemovals(), "CacheRemovals");
+                            assertEquals(0L, cache.metrics().getCacheMisses(), "CacheMisses");
+                            assertEquals(0f, cache.metrics().getAveragePutTime(), "AverageGetTime");
+                            assertEquals(0f, cache.metrics().getAverageGetTime(), "AveragePutTime");
+                            assertEquals(0f, cache.metrics().getAverageRemoveTime(), "AverageRemoveTime");
                         }
                         catch (AssertionError e) {
                             log.warning(e.toString());

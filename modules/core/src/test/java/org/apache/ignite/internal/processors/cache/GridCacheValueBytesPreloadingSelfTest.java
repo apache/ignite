@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  *
@@ -105,8 +106,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
             for (int i = 0; i < keyCnt; i++) {
                 byte[] o = (byte[])grid(g).cache(DEFAULT_CACHE_NAME).get(String.valueOf(i));
 
-                assertTrue("Got invalid value [val=" + Arrays.toString(val) + ", actual=" + Arrays.toString(o) + ']',
-                    Arrays.equals(val, o));
+                assertArrayEquals(val, o, "Got invalid value [val=" + Arrays.toString(val) + ", actual=" + Arrays.toString(o) + ']');
             }
         }
     }
