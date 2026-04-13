@@ -1039,7 +1039,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 if (log.isInfoEnabled()) {
                     log.info(
                         "Node is being started in maintenance mode. " +
-                        "Starting IsolatedDiscoverySpi instead of configured discovery SPI."
+                            "Starting IsolatedDiscoverySpi instead of configured discovery SPI."
                     );
                 }
 
@@ -1096,7 +1096,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
-                startProcessor(new DataStreamProcessor(ctx));
+                startProcessor(new DataStreamProcessor<>(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
@@ -1112,7 +1112,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startTimer.finishGlobalStage("Start processors");
 
                 // Start plugins.
-                for (PluginProvider provider : ctx.plugins().allProviders()) {
+                for (PluginProvider<?> provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
@@ -1253,7 +1253,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
 
             // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders())
+            for (PluginProvider<?> provider : ctx.plugins().allProviders())
                 provider.onIgniteStart();
 
             if (recon)

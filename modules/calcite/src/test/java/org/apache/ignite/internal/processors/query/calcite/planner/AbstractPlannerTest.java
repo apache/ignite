@@ -748,16 +748,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Override public boolean alive(UUID nodeId) {
             return true;
         }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareMarshal(Message msg) {
-            // No-op;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareUnmarshal(Message msg) {
-            // No-op;
-        }
     }
 
     /** */

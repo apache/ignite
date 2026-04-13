@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMarshalableMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class FragmentMapping implements CalciteMarshalableMessage {
+public class FragmentMapping implements CalciteMessage {
     /** */
     @Order(0)
     List<ColocationGroup> colocationGrps;
@@ -178,17 +179,5 @@ public class FragmentMapping implements CalciteMarshalableMessage {
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.FRAGMENT_MAPPING;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        for (ColocationGroup grp : colocationGrps)
-            grp.prepareMarshal(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        for (ColocationGroup grp : colocationGrps)
-            grp.prepareUnmarshal(ctx);
     }
 }

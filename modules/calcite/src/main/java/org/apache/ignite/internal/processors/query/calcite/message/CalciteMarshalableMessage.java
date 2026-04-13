@@ -17,24 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
-/**
- *
- */
-public interface CalciteMarshalableMessage extends CalciteMessage {
-    /**
-     * Prepares the message before sending.
-     *
-     * @param ctx Cache shared context.
-     */
-    void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
+/** */
+public interface CalciteMarshalableMessage extends CalciteMessage, MarshallableMessage {
 
-    /**
-     * Prepares the message before processing.
-     *
-     * @param ctx Cache shared context.
-     */
-    void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 }
