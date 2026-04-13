@@ -167,7 +167,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      *
      */
     BinaryObjectException rejectionError() {
-        return (BinaryObjectException)errMsg.error();
+        return (BinaryObjectException)ErrorMessage.error(errMsg);
     }
 
     /**
