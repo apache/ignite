@@ -331,7 +331,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         msgIdx = 5000;
         // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
         factory.register(msgIdx++, CompressedMessage::new);
-        withNoSchema(ErrorMessage.class);
+        withSchema(ErrorMessage.class);
         withNoSchema(InetSocketAddressMessage.class);
         withNoSchema(InetAddressMessage.class);
         withNoSchema(TcpDiscoveryNode.class);
