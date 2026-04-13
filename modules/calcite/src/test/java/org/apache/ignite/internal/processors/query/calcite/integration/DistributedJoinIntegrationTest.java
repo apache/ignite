@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -128,6 +129,16 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
         assertQuery("SELECT id, name FROM items WHERE id IN (SELECT * FROM selected_items_repl)")
             .returns(10, "item10").returns(20, "item20").returns(30, "item30")
             .check();
+    }
+
+    /** */
+    @Test
+    public void testAsofJoinUnsupported() {
+        assertThrows("SELECT *\n" +
+            " FROM (VALUES (NULL, 0), (1, NULL), (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 3), (3, 4)) AS t1(k, t)\n" +
+            " ASOF JOIN (VALUES (1, NULL), (1, 2), (1, 3), (2, 10), (2, 0)) AS t2(k, t)\n" +
+            " MATCH_CONDITION t2.t < t1.t\n" +
+            " ON t1.k = t2.k", IgniteSQLException.class, "Unsupported join type 'ASOF'");
     }
 
     /** Prepare tables orders and order_items with data. */
