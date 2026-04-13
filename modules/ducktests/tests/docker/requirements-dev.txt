@@ -14,5 +14,5 @@
 # limitations under the License.
 
 -r requirements.txt
-pytest==6.2.5
+pytest==9.0.3
 flake8==6.1.0

@@ -31,4 +31,4 @@ setup(name="ignitetest",
       packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
       include_package_data=True,
       install_requires=open('docker/requirements.txt').read(),
-      tests_require=["pytest==6.2.5"])
+      tests_require=["pytest==9.0.3"])
