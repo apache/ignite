@@ -54,6 +54,7 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
+import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.LocalIgniteCluster;
@@ -739,6 +740,31 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
 
                 // Resume tx in the worker with interrupted transaction.
                 assertFalse(client.cache(cacheName).containsKey(0));
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testTxResumeAfterTxTimeoutOnInitialize() {
+        IgniteConfiguration cfg = Config.getServerConfiguration().setClientConnectorConfiguration(
+            new ClientConnectorConfiguration().setThreadPoolSize(2));
+
+        try (Ignite ignite = Ignition.start(cfg); IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+            ClientTransactions txs = client.transactions();
+
+            for (int i = 0; i < 10_000; i++) {
+                try {
+                    try (ClientTransaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE, 1)) {
+                        tx.commit();
+                    }
+                }
+                catch (ClientException e) {
+                    assertTrue(
+                        "Wrong exception: " + e.getMessage(),
+                        e.getCause().getMessage().contains("timed out")
+                    );
+                }
             }
         }
     }
