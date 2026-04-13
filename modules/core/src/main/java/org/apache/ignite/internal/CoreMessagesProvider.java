@@ -516,7 +516,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(IgniteDhtDemandedPartitionsMap.class);
         withNoSchema(CachePartitionFullCountersMap.class);
         withNoSchema(GroupPartitionIdPair.class);
-        withNoSchema(IgniteDhtPartitionHistorySuppliersMap.class);
         withNoSchema(GridPartitionStateMap.class);
         withNoSchema(GridDhtPartitionMap.class);
         withNoSchema(GridDhtPartitionFullMap.class);
