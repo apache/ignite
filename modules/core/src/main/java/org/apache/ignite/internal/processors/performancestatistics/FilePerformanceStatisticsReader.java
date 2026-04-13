@@ -249,9 +249,10 @@ public class FilePerformanceStatisticsReader {
                 ignVer = verStr.str;
             }
 
-            if (ver != FILE_FORMAT_VERSION && ver != LEGACY_FILE_FORMAT_VERSION_1)
-                throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", fileIgniteVer=" + ignVer
-                    + ", currentFileVer=" + FILE_FORMAT_VERSION + ", currentIgniteVer=" + VER_STR + ']');
+            if (ver != FILE_FORMAT_VERSION && ver != LEGACY_FILE_FORMAT_VERSION_1) {
+                throw new IgniteException("Unsupported file format version [igniteVer=" + ignVer + ", fileVer=" + ver +
+                    "]. The reader version [readerIgniteVer=" + VER_STR + ", readerFileVer=" + FILE_FORMAT_VERSION + ']');
+            }
 
             return true;
         }
