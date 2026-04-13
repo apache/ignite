@@ -944,7 +944,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 10616:
+            case 10615:
             case 120: {
                 processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
             }
