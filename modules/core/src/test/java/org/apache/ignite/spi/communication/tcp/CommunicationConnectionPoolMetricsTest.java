@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -72,6 +73,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** Tests metrics of {@link ConnectionClientPool}. */
 @RunWith(Parameterized.class)
 public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTest {
+    /** */
+    private static final short TEST_MESSAGE_DIRECT_TYPE = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
+
     /** */
     private static final int MIN_LOAD_THREADS = 2;
 
@@ -536,7 +540,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(MessageFactory factory) {
                     factory.register(
-                        10_000,
+                        TEST_MESSAGE_DIRECT_TYPE,
                         CommunicationConnectionPoolMetricsTestMessage::new,
                         new TestMessageSerializer()
                     );

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,7 +38,7 @@ public class SnapshotHandlerResult<T extends Message> implements Message {
     @Order(1)
     ErrorMessage errMsg;
 
-    /** Default constructor for {@link GridIoMessageFactory}. */
+    /** Default constructor for {@link MessageFactory}. */
     public SnapshotHandlerResult() {
         // No-op.
     }

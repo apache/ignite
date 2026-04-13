@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /** Test message with already registered direct type. */
 public class MessageDirectTypeIdConflictTestMessage implements Message {
     /** */
-    public static final short DIRECT_TYPE = TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
+    public static final short DIRECT_TYPE = CoreMessagesProvider.HANDSHAKE_MSG_TYPE;
 
     /** */
     @Order(0)

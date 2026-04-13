@@ -20,11 +20,11 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,7 +40,7 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     @Nullable byte[] spanContainerBytes;
 
     /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
+     * Default constructor for {@link MessageFactory}.
      */
     protected TcpDiscoveryAbstractTraceableMessage() {
         // No-op.

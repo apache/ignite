@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for default implementation of {@link MessageFactory} interface.
+ * Tests for default implementation of {@link CoreMessagesProvider} interface.
  */
 public class IgniteMessageFactoryImplTest {
     /** Test message 1 type. */

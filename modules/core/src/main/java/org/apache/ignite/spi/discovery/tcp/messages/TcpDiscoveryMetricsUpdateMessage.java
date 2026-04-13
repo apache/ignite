@@ -25,12 +25,14 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,13 +62,13 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /** Servers full metrics: server id -> server metrics + metrics of server's caches. */
     @GridToStringExclude
     @Order(1)
-    @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
+    @Nullable Map<UUID, NodeFullMetricsMessage> serversFullMetricsMsgs;
 
     /** Client node IDs. */
     @Order(2)
     @Nullable Set<UUID> clientNodeIds;
 
-    /** Constructor for {@link DiscoveryMessageFactory}. */
+    /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryMetricsUpdateMessage() {
         // No-op.
     }
@@ -97,9 +99,9 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
         serversFullMetricsMsgs.compute(srvrId, (srvrId0, srvrFullMetrics) -> {
             if (srvrFullMetrics == null)
-                srvrFullMetrics = new TcpDiscoveryNodeFullMetricsMessage();
+                srvrFullMetrics = new NodeFullMetricsMessage();
 
-            srvrFullMetrics.nodeMetricsMessage(new TcpDiscoveryNodeMetricsMessage(newMetrics));
+            srvrFullMetrics.nodeMetricsMessage(new NodeMetricsMessage(newMetrics));
 
             return srvrFullMetrics;
         });
@@ -122,12 +124,12 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
         serversFullMetricsMsgs.compute(srvrId, (srvrId0, srvrFullMetrics) -> {
             if (srvrFullMetrics == null)
-                srvrFullMetrics = new TcpDiscoveryNodeFullMetricsMessage();
+                srvrFullMetrics = new NodeFullMetricsMessage();
 
             Map<Integer, CacheMetricsMessage> newCachesMsgsMap = U.newHashMap(newCachesMetrics.size());
 
             newCachesMetrics.forEach((cacheId, cacheMetrics) ->
-                newCachesMsgsMap.put(cacheId, new TcpDiscoveryCacheMetricsMessage(cacheMetrics)));
+                newCachesMsgsMap.put(cacheId, new CacheMetricsMessage(cacheMetrics)));
 
             srvrFullMetrics.cachesMetricsMessages(newCachesMsgsMap);
 
@@ -159,7 +161,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
                 clientsMetricsMsg.nodesMetricsMessages(new HashMap<>());
             }
 
-            clientsMetricsMsg.nodesMetricsMessages().put(clientNodeId, new TcpDiscoveryNodeMetricsMessage(clientMetrics));
+            clientsMetricsMsg.nodesMetricsMessages().put(clientNodeId, new NodeMetricsMessage(clientMetrics));
 
             return clientsMetricsMsg;
         });
@@ -178,7 +180,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /** @return Map of server full metrics messages. */
-    public Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMessages() {
+    public Map<UUID, NodeFullMetricsMessage> serversFullMetricsMessages() {
         return serversFullMetricsMsgs;
     }
 

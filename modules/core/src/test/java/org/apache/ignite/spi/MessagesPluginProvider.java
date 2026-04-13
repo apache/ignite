@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -103,7 +104,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
     private static Map<Short, Class<? extends Message>> registrations(Class<? extends Message>... msgs) {
         Map<Short, Class<? extends Message>> regs = new HashMap<>();
 
-        short directType = 10_000;
+        short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
 
         for (Class<? extends Message> msg : msgs)
             regs.put(directType++, msg);

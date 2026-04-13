@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.spi.MessagesPluginProvider;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -33,8 +33,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * for which message factory is already registered.
  */
 public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
-    /** Message direct type. Message with this direct type will be registered by {@link GridIoMessageFactory} first. */
-    private static final short MSG_DIRECT_TYPE = TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
+    /** Message direct type. Message with this direct type will be registered by {@link CoreMessagesProvider} first. */
+    private static final short MSG_DIRECT_TYPE = CoreMessagesProvider.HANDSHAKE_MSG_TYPE;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

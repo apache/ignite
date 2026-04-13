@@ -264,18 +264,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
-    /** Node ID message type. */
-    public static final short NODE_ID_MSG_TYPE = -1;
-
-    /** Recovery last received ID message type. */
-    public static final short RECOVERY_LAST_ID_MSG_TYPE = -2;
-
-    /** Handshake message type. */
-    public static final short HANDSHAKE_MSG_TYPE = -3;
-
-    /** Handshake wait message type. */
-    public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
-
     /** Communication metrics group name. */
     public static final String COMMUNICATION_METRICS_GROUP_NAME = MetricUtils.metricName("communication", "tcp");
 
