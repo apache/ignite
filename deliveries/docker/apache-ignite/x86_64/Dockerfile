@@ -16,7 +16,7 @@
 #
 
 # Start from Java 11 based on Alpine Linux image
-ARG JDK_VERSION=11
+ARG JDK_VERSION=17
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine
 
 # Settings
