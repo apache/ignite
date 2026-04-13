@@ -745,7 +745,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 // Reserve node for rollback.
                 if (!idx.compareAndSet(nodeId, 0, 1)) {
-                    yield();
+                    Thread.yield();
 
                     continue;
                 }

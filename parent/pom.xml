@@ -46,8 +46,8 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -629,6 +629,9 @@
                         <requireMavenVersion>
                             <version>[3.9.6]</version>
                         </requireMavenVersion>
+                        <requireJavaVersion>
+                            <version>[17,)</version>
+                        </requireJavaVersion>
                     </rules>
                 </configuration>
                 <executions>
@@ -919,99 +922,13 @@
         </profile>
 
         <profile>
-            <id>java-11+</id>
+            <id>java-17+</id>
             <activation>
-                <jdk>[11,15)</jdk>
+                <jdk>[17,)</jdk>
             </activation>
             <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>11</maven.compiler.target>
-            </properties>
-            <dependencies/>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.7.0</version>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
-                                <arg>--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.base/sun.net.util=ALL-UNNAMED</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>
-                                --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --illegal-access=permit
-                            </argLine>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <type>test-jar</type>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
-        </profile>
-
-        <profile>
-            <id>java-15+</id>
-            <activation>
-                <jdk>[15,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>15</maven.compiler.target>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
                 <scala.library.version>2.12.15</scala.library.version>
             </properties>
             <dependencies/>
@@ -1100,42 +1017,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>tools.jar-default</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../lib/tools.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>${java.version}</version>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>tools.jar-mac</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../Classes/classes.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>${java.version}</version>
-                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
-                </dependency>
-            </dependencies>
         </profile>
 
         <profile>

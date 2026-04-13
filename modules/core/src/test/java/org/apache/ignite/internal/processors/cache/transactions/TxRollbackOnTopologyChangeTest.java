@@ -173,7 +173,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
                     final int nodeId = r.nextInt(TOTAL_CNT);
 
                     if (!reservedIdx.compareAndSet(nodeId, 0, 1)) {
-                        yield();
+                        Thread.yield();
 
                         continue;
                     }
