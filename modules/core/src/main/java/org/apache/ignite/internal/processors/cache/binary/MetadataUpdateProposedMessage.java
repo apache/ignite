@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -103,11 +104,9 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     @Order(5)
     int acceptedVer;
 
-    /** Message acceptance status. */
-    private boolean rejected;
-
     /** */
-    private BinaryObjectException err;
+    @Order(6)
+    @Nullable ErrorMessage errMsg;
 
     /** Constructor. */
     public MetadataUpdateProposedMessage() {
@@ -140,7 +139,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      * {@inheritDoc}
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return !rejected ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
+        return !rejected() ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
     }
 
     /**
@@ -154,22 +153,21 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      * @param err Error caused this update to be rejected.
      */
     void markRejected(BinaryObjectException err) {
-        rejected = true;
-        this.err = err;
+        errMsg = new ErrorMessage(err);
     }
 
     /**
      *
      */
     boolean rejected() {
-        return rejected;
+        return errMsg != null;
     }
 
     /**
      *
      */
     BinaryObjectException rejectionError() {
-        return err;
+        return (BinaryObjectException)errMsg.error();
     }
 
     /**
