@@ -46,6 +46,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
@@ -96,7 +97,7 @@ public class FilePerformanceStatisticsWriter {
      * File format version. This version should be incremented each time when format of existing events are
      * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
      */
-    public static final short FILE_FORMAT_VERSION = 1;
+    public static final short FILE_FORMAT_VERSION = 2;
 
     /** File writer thread name. */
     static final String WRITER_THREAD_NAME = "performance-statistics-writer";
@@ -155,7 +156,10 @@ public class FilePerformanceStatisticsWriter {
 
         fileWriter = new FileWriter(ctx, log);
 
-        doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
+        doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> {
+            buf.putShort(FILE_FORMAT_VERSION);
+            writeString(buf, VER_STR, false);
+        });
     }
 
     /** Starts collecting performance statistics. */

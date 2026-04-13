@@ -87,7 +87,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -1348,7 +1348,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
-        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
         @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload
     ) {
         Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
@@ -1369,7 +1369,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
-        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        @Nullable Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
         @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload,
         Collection<CacheGroupContext> grps
     ) {

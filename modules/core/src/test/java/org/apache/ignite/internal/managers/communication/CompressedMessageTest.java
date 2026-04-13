@@ -30,7 +30,6 @@ import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -108,13 +107,13 @@ public class CompressedMessageTest {
 
     /** */
     private GridDhtPartitionsFullMessage fullMessage() {
-        IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
+        Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers = new HashMap<>();
         Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new HashMap<>();
 
         for (int i = 0; i < 500; i++) {
             UUID uuid = UUID.randomUUID();
 
-            partHistSuppliers.put(uuid, i, i + 1, i + 2);
+            partHistSuppliers.put(uuid, Map.of(new GroupPartitionIdPair(i, i + 1), i + 2L));
             partsToReload.put(uuid, Map.of(i, Set.of(i + 1)));
         }
 
@@ -123,8 +122,8 @@ public class CompressedMessageTest {
 
     /** */
     private void assertEqualsFullMsg(GridDhtPartitionsFullMessage expected, GridDhtPartitionsFullMessage actual) {
-        Map<UUID, Map<GroupPartitionIdPair, Long>> expHistSuppliers = U.field(expected.partitionHistorySuppliers(), "map");
-        Map<UUID, Map<GroupPartitionIdPair, Long>> actHistSuppliers = U.field(actual.partitionHistorySuppliers(), "map");
+        Map<UUID, Map<GroupPartitionIdPair, Long>> expHistSuppliers = expected.partitionHistorySuppliers();
+        Map<UUID, Map<GroupPartitionIdPair, Long>> actHistSuppliers = actual.partitionHistorySuppliers();
 
         assertEquals(expHistSuppliers.size(), actHistSuppliers.size());
 

@@ -324,7 +324,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     @GridToStringExclude
-    private final IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
+    private Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers = new HashMap<>();
 
     /** Set of nodes that cannot be used for wal rebalancing due to some reason. */
     private final Set<UUID> exclusionsFromHistoricalRebalance = ConcurrentHashMap.newKeySet();
@@ -587,7 +587,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return List of IDs of history supplier nodes or empty list if these doesn't exist.
      */
     public List<UUID> partitionHistorySupplier(int grpId, int partId, long cntrSince) {
-        List<UUID> histSuppliers = partHistSuppliers.getSupplier(grpId, partId, cntrSince);
+        List<UUID> histSuppliers;
+
+        synchronized (partHistSuppliers) {
+            if (partHistSuppliers.isEmpty())
+                return Collections.emptyList();
+
+            histSuppliers = new ArrayList<>();
+
+            for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> e : partHistSuppliers.entrySet()) {
+                Long historyCounter = e.getValue().get(new GroupPartitionIdPair(grpId, partId));
+
+                if (historyCounter != null && historyCounter <= cntrSince)
+                    histSuppliers.add(e.getKey());
+            }
+        }
 
         histSuppliers.removeIf(exclusionsFromHistoricalRebalance::contains);
 
@@ -2436,7 +2450,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(this, err);
 
-            Map<GroupPartitionIdPair, Long> locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            Map<GroupPartitionIdPair, Long> locReserved;
+
+            synchronized (partHistSuppliers) {
+                locReserved = partHistSuppliers.get(cctx.localNodeId());
+            }
 
             if (locReserved != null) {
                 boolean success = cctx.database().reserveHistoryForPreloading(locReserved);
@@ -3544,7 +3562,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 break;
 
             if (preferWalRebalance || maxOwnerCntr - ceilingMinReserved < ownerSize) {
-                partHistSuppliers.put(ownerId, grpId, p, ceilingMinReserved);
+                synchronized (partHistSuppliers) {
+                    Map<GroupPartitionIdPair, Long> nodeMap = partHistSuppliers.computeIfAbsent(ownerId, k -> new HashMap<>());
+
+                    nodeMap.put(new GroupPartitionIdPair(grpId, p), ceilingMinReserved);
+                }
 
                 haveHistory.add(p);
 
@@ -3653,7 +3675,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             assert crd.isLocal();
 
-            assert partHistSuppliers.isEmpty() : partHistSuppliers;
+            synchronized (partHistSuppliers) {
+                assert partHistSuppliers.isEmpty() : partHistSuppliers;
+            }
 
             if (!exchCtx.mergeExchanges() && !crd.equals(events().discoveryCache().serverNodes().get(0))) {
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
@@ -4633,10 +4657,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void updatePartitionFullMap(AffinityTopologyVersion resTopVer, GridDhtPartitionsFullMessage msg) {
         cctx.versions().onExchange(msg.lastVersion().order());
 
-        assert partHistSuppliers.isEmpty();
+        synchronized (partHistSuppliers) {
+            assert partHistSuppliers.isEmpty();
 
-        partHistSuppliers.putAll(msg.partitionHistorySuppliers() != null ? msg.partitionHistorySuppliers() :
-            IgniteDhtPartitionHistorySuppliersMap.empty());
+            if (msg.partitionHistorySuppliers() != null)
+                partHistSuppliers = msg.partitionHistorySuppliers();
+        }
 
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
