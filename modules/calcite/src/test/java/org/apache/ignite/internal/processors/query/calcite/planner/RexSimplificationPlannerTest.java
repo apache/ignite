@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -95,7 +96,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0 and c3 = 1) or " +
                 "(c1 = 0 and c2 = 0 and c3 = 2)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))".equals(s.condition().toString())));
+                .and(indexHasConditions(SqlKind.AND, "=($t0, 0)", "=($t1, 0)", "SEARCH($t2, Sarg[0, 1, 2])")));
 
         // Disjunction equality first operand removal.
         assertPlan("SELECT * FROM t1 WHERE " +

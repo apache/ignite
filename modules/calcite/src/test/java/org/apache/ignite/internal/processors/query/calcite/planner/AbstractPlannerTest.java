@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -39,10 +41,15 @@ import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.cluster.ClusterNode;
@@ -617,6 +624,49 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
      */
     protected <T extends RelNode> Predicate<RelNode> input(Predicate<T> predicate) {
         return input(0, predicate);
+    }
+
+    /** Low level conditions analyzer. */
+    private static boolean validateIdxConditions(IgniteIndexScan node, SqlKind opKind, String... strConditions) {
+        /** */
+        Set<String> conditions = new HashSet<>();
+
+        /** */
+        RexShuttle shuttle = new RexShuttle() {
+            boolean firstCall = true;
+
+            @Override public RexNode visitCall(RexCall call) {
+                if (firstCall) {
+                    firstCall = false;
+                    if (!call.isA(opKind))
+                        throw new ControlFlowException();
+                }
+                else
+                    conditions.add(call.toString());
+
+                return super.visitCall(call);
+            }
+        };
+
+        shuttle.apply(node.condition());
+
+        for (String cond : strConditions) {
+            if (!conditions.contains(cond))
+                return false;
+        }
+
+        return conditions.size() == strConditions.length;
+    }
+
+    /**
+     * Check that index contains expected conditions.
+     * <br>
+     * For example for condition like: AND(=($t0, 0), SEARCH($t2, Sarg[0, 1]))
+     * It need to be called with opKind = SqlKind.AND, conditions = ["=($t0, 0)", "SEARCH($t2, Sarg[0, 1])"]
+     */
+    protected <T extends RelNode> Predicate<IgniteIndexScan> indexHasConditions(SqlKind opKind, String... conditions) {
+        return isInstanceOf(IgniteIndexScan.class).and(
+            n -> validateIdxConditions(n, opKind, conditions));
     }
 
     /**
