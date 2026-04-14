@@ -40,7 +40,6 @@ public class GridH2Null extends GridH2ValueMessage {
         return ValueNull.INSTANCE;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "NULL";
