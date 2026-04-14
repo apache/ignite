@@ -316,7 +316,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         this.resolvedClsLdr = resolvedClsLdr;
     }
 
-    /** {@inheritDoc} */
+    /** The order is important. If wish to remove a message, put 'msgIdx++' on its place. */
     @Override public void registerAll(MessageFactory factory) {
         assert this.factory == null;
 
