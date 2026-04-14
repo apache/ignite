@@ -78,7 +78,8 @@ public class MessageProcessor extends AbstractProcessor {
     /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
     static final String[] EMPTY_MESSAGES = {
         "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
-        "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage"
+        "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
     };
 
     /** */
