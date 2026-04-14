@@ -376,7 +376,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
             // Explicit cipher not supported by server.
             GridTestUtils.assertThrows(log, () -> DriverManager.getConnection(
-                    "jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                "jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
                     "&sslCipherSuites=" + cipher2 +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                     "&sslClientCertificateKeyStorePassword=123456" +
