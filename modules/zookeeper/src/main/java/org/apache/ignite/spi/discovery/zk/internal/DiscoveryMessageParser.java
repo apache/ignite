@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -114,13 +113,14 @@ public class DiscoveryMessageParser {
         do {
             int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
-            if (read == -1)
-                throw new EOFException("Stream closed before message was fully read.");
-
-            msgBuf.limit(msgBuf.position() + read);
-            msgBuf.rewind();
+            if (read > 0) {
+                msgBuf.limit(msgBuf.position() + read);
+                msgBuf.rewind();
+            }
 
             finished = msgSer.readFrom(msg, msgReader);
+
+            assert read != -1 || finished : "Stream closed before message was fully read.";
 
             if (!finished)
                 msgBuf.compact();
