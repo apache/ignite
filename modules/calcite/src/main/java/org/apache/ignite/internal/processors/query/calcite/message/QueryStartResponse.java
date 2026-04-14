@@ -70,9 +70,4 @@ public class QueryStartResponse implements CalciteMessage {
     public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
     }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_START_RESPONSE;
-    }
 }

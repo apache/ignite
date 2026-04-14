@@ -17,8 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-/** */
-public interface ValueMessage extends CalciteMarshallableMessage {
-    /** @return Wrapped value. */
-    Object value();
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+/** A Calcite engine related message which requires marshalling with context. */
+public interface CalciteContextMarshallableMessage extends Message {
+    /**
+     * Prepares the message before sending.
+     *
+     * @param ctx Cache shared context.
+     */
+    void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
+
+    /**
+     * Prepares the message before processing.
+     *
+     * @param ctx Cache shared context.
+     * @param clsLdr Class loader.
+     */
+    void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException;
 }

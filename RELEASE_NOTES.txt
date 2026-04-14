@@ -245,7 +245,7 @@ Ignite:
 * Added performance statistics for putAllConflict, removeAllConflict operations
 * Use MessageSerializer for PartitionUpdateCountersMessage
 * Updated jetty-server dependency version from 9.4.56.v20240826 to 11.0.24
-* Use MessageSerializer for InboxCloseMessage
+* Use MessageSerializer for QueryInboxCloseMessage
 * Make BinaryLazyValue package private
 * GridInternalWrapper renamed and moved to ignite-commons
 * Use MessageSerializer for GridDhtPartitionExchangeId

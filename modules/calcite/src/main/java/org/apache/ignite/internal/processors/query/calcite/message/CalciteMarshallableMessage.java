@@ -20,6 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /** */
-public interface CalciteMarshalableMessage extends CalciteMessage, MarshallableMessage {
+public interface CalciteMarshallableMessage extends CalciteMessage, MarshallableMessage {
 
 }

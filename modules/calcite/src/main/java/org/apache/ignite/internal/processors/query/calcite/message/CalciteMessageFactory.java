@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
@@ -25,9 +29,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
  */
 public class CalciteMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override public void registerAll(MessageFactory factory) {
-//        for (MessageType type : MessageType.values())
-//            factory.register(type.directType(), null, null);
+        Marshaller marshaller = Marshallers.jdk();
+        ClassLoader clsLdr = U.gridClassLoader();
+
+        for (MessageType type : MessageType.values())
+            CoreMessagesProvider.register(factory, type.messageClass(), type.directType(), marshaller, clsLdr);
     }
 }

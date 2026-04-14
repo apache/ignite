@@ -44,9 +44,4 @@ public class QueryCloseMessage implements CalciteMessage {
     public UUID queryId() {
         return qryId;
     }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_CLOSE_MESSAGE;
-    }
 }

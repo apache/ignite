@@ -55,9 +55,4 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     public long fragmentId() {
         return fragmentId;
     }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_ERROR_MESSAGE;
-    }
 }

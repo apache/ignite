@@ -660,6 +660,11 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
     private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLrd) {
+        register(factory, cls, msgIdx++, marsh, clsLrd);
+    }
+
+    /** Registers message automatically generating message supplier and serializer. */
+    public static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id, Marshaller marsh, ClassLoader clsLrd) {
         Constructor<T> ctor;
         MessageSerializer<T> serializer;
 
@@ -679,7 +684,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         }
 
         factory.register(
-            msgIdx++,
+            id,
             () -> {
                 try {
                     return ctor.newInstance();

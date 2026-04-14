@@ -33,7 +33,7 @@ public final class GenericValueMessage implements ValueMessage {
 
     /** */
     public GenericValueMessage() {
-
+        // No-op.
     }
 
     /** */
@@ -56,10 +56,7 @@ public final class GenericValueMessage implements ValueMessage {
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (serialized != null && val == null)
             val = U.unmarshal(marsh, serialized, clsLdr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.GENERIC_VALUE_MESSAGE;
+        serialized = null;
     }
 }

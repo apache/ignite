@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 
 /** */
 public class FragmentDescription implements CalciteMessage {
@@ -44,6 +43,7 @@ public class FragmentDescription implements CalciteMessage {
 
     /** */
     public FragmentDescription() {
+        // No-op.
     }
 
     /** */
@@ -93,10 +93,5 @@ public class FragmentDescription implements CalciteMessage {
     /** */
     public void mapping(FragmentMapping mapping) {
         this.mapping = mapping;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.FRAGMENT_DESCRIPTION;
     }
 }

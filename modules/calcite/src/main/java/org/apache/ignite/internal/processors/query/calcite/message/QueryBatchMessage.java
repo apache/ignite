@@ -104,9 +104,4 @@ public class QueryBatchMessage implements ExecutionContextAware {
     public List<Object> rows() {
         return F.isEmpty(mRows) ? Collections.emptyList() : mRows.stream().map(ValueMessage::value).collect(Collectors.toList());
     }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_BATCH_MESSAGE;
-    }
 }

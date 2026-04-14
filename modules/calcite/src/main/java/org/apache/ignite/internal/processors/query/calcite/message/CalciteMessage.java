@@ -19,12 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
+/** Calcite engine related message. */
 public interface CalciteMessage extends Message {
-    /**
-     * @return Message type.
-     */
-    MessageType type();
+
 }

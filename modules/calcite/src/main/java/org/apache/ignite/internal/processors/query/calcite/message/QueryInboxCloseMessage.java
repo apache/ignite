@@ -23,7 +23,7 @@ import org.apache.ignite.internal.Order;
 /**
  *
  */
-public class InboxCloseMessage implements CalciteMessage {
+public class QueryInboxCloseMessage implements CalciteMessage {
     /** */
     @Order(0)
     UUID qryId;
@@ -37,12 +37,12 @@ public class InboxCloseMessage implements CalciteMessage {
     long exchangeId;
 
     /** */
-    public InboxCloseMessage() {
+    public QueryInboxCloseMessage() {
         // No-op.
     }
 
     /** */
-    public InboxCloseMessage(UUID qryId, long fragmentId, long exchangeId) {
+    public QueryInboxCloseMessage(UUID qryId, long fragmentId, long exchangeId) {
         this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
@@ -67,10 +67,5 @@ public class InboxCloseMessage implements CalciteMessage {
      */
     public long exchangeId() {
         return exchangeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_INBOX_CANCEL_MESSAGE;
     }
 }

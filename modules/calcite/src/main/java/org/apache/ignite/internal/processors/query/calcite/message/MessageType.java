@@ -17,58 +17,74 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
 /** */
 public enum MessageType {
     /** */
-    QUERY_START_REQUEST(300),
+    QUERY_START_REQUEST(300, QueryStartRequest.class),
 
     /** */
-    QUERY_START_RESPONSE(301),
+    QUERY_START_RESPONSE(301, QueryStartResponse.class),
 
     /** */
-    QUERY_ERROR_MESSAGE(302),
+    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage.class),
 
     /** */
-    QUERY_BATCH_MESSAGE(303),
+    QUERY_BATCH_MESSAGE(303, QueryBatchMessage.class),
 
     /** */
-    QUERY_ACKNOWLEDGE_MESSAGE(304),
+    QUERY_BATCH_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage.class),
 
     /** */
-    QUERY_INBOX_CANCEL_MESSAGE(305),
+    QUERY_INBOX_CANCEL_MESSAGE(305, QueryInboxCloseMessage.class),
 
     /** */
-    QUERY_CLOSE_MESSAGE(306),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage.class),
 
     /** */
-    GENERIC_VALUE_MESSAGE(307),
+    GENERIC_VALUE_MESSAGE(307, GenericValueMessage.class),
 
     /** */
-    FRAGMENT_MAPPING(350),
+    FRAGMENT_MAPPING(350, FragmentMapping.class),
 
     /** */
-    COLOCATION_GROUP(351),
+    COLOCATION_GROUP(351, ColocationGroup.class),
 
     /** */
-    FRAGMENT_DESCRIPTION(352),
+    FRAGMENT_DESCRIPTION(352, FragmentDescription.class),
 
     /** */
-    QUERY_TX_ENTRY(353);
+    QUERY_TX_ENTRY(353, QueryTxEntry.class);
 
     /** */
-    private final int directType;
+    private final short directType;
+
+    /** */
+    private final Class<? extends Message> msgCls;
 
     /**
      * @param directType Direct type.
      */
-    MessageType(int directType) {
-        this.directType = directType;
+    MessageType(int directType, Class<? extends Message> msgCls) {
+        this.directType = (short)directType;
+        this.msgCls = msgCls;
     }
 
     /**
      * @return Message direct type.
      */
     public short directType() {
-        return (short)directType;
+        return directType;
+    }
+
+    /**
+     * @return Message direct type.
+     */
+    public Class<? extends Message> messageClass() {
+        return msgCls;
     }
 }

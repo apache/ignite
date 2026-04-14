@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionContextAware {
+public class QueryStartRequest implements CalciteMarshallableMessage, CalciteContextMarshallableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;
@@ -116,7 +117,9 @@ public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionCo
     }
 
     /** */
-    QueryStartRequest() {}
+    public QueryStartRequest() {
+        // No-op.
+    }
 
     /**
      * @return Schema name.
@@ -217,6 +220,14 @@ public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionCo
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareMarshal(ctx);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (params == null && paramsBytes != null)
             params = U.unmarshal(marsh, paramsBytes, clsLdr);
@@ -225,7 +236,10 @@ public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionCo
     }
 
     /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_START_REQUEST;
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.finishUnmarshal(ctx, clsLdr);
+        }
     }
 }
