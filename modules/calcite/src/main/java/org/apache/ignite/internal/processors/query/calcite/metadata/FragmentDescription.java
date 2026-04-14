@@ -21,10 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class FragmentDescription implements CalciteMessage {
+public class FragmentDescription implements Message {
     /** */
     @Order(0)
     long fragmentId;

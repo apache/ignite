@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 
 /** */
-public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage {
+public class CalciteErrorMessage extends ErrorMessage {
     /** */
     @Order(0)
     UUID qryId;

@@ -74,6 +74,14 @@ public enum MessageType {
         this.msgCls = msgCls;
     }
 
+    /** */
+    static boolean isCalciteMessage(Message msg) {
+        MessageType[] values = values();
+        short msgType = msg.directType();
+
+        return msgType >= values[0].directType() && msgType <= values[values.length - 1].directType();
+    }
+
     /**
      * @return Message direct type.
      */

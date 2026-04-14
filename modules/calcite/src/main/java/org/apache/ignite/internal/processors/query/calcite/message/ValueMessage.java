@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+
 /** */
-public interface ValueMessage extends CalciteMarshallableMessage {
+public interface ValueMessage extends MarshallableMessage {
     /** @return Wrapped value. */
     Object value();
 }

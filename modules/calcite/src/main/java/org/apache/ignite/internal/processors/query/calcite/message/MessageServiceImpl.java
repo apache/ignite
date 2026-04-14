@@ -151,7 +151,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** {@inheritDoc} */
-    @Override public void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException {
+    @Override public void send(UUID nodeId, Message msg) throws IgniteCheckedException {
         if (localNodeId().equals(nodeId))
             onMessage(nodeId, msg);
         else {
@@ -208,7 +208,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    protected void onMessage(UUID nodeId, CalciteMessage msg) {
+    protected void onMessage(UUID nodeId, Message msg) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
             taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
@@ -223,12 +223,12 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof CalciteMessage)
-            onMessage(nodeId, (CalciteMessage)msg);
+        if (msg instanceof Message && MessageType.isCalciteMessage((Message)msg))
+            onMessage(nodeId, (Message)msg);
     }
 
     /** */
-    private void onMessageInternal(UUID nodeId, CalciteMessage msg) {
+    private void onMessageInternal(UUID nodeId, Message msg) {
         try {
             prepareUnmarshal(msg);
 
