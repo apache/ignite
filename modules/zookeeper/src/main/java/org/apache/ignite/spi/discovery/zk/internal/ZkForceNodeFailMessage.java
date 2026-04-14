@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage, Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @Order(0)
     long nodeInternalId;
 

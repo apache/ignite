@@ -30,6 +30,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ZkCommunicationErrorResolveStartMessage implements DiscoverySpiCustomMessage, ZkInternalMessage, Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @Order(0)
     UUID id;
 

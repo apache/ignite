@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage, Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
         return null;
