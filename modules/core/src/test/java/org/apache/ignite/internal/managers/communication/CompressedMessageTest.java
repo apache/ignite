@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -28,8 +30,6 @@ import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -46,7 +46,7 @@ public class CompressedMessageTest {
     @Test
     public void testWriteReadHugeMessage() {
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new GridIoMessageFactory(jdk(), U.gridClassLoader())});
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
@@ -107,14 +107,14 @@ public class CompressedMessageTest {
 
     /** */
     private GridDhtPartitionsFullMessage fullMessage() {
-        IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
-        IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
+        Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers = new HashMap<>();
+        Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new HashMap<>();
 
         for (int i = 0; i < 500; i++) {
             UUID uuid = UUID.randomUUID();
 
-            partHistSuppliers.put(uuid, i, i + 1, i + 2);
-            partsToReload.put(uuid, i, i + 1);
+            partHistSuppliers.put(uuid, Map.of(new GroupPartitionIdPair(i, i + 1), i + 2L));
+            partsToReload.put(uuid, Map.of(i, Set.of(i + 1)));
         }
 
         return new GridDhtPartitionsFullMessage(null, null, new AffinityTopologyVersion(0), partHistSuppliers, partsToReload);
@@ -122,16 +122,16 @@ public class CompressedMessageTest {
 
     /** */
     private void assertEqualsFullMsg(GridDhtPartitionsFullMessage expected, GridDhtPartitionsFullMessage actual) {
-        Map<UUID, Map<GroupPartitionIdPair, Long>> expHistSuppliers = U.field(expected.partitionHistorySuppliers(), "map");
-        Map<UUID, Map<GroupPartitionIdPair, Long>> actHistSuppliers = U.field(actual.partitionHistorySuppliers(), "map");
+        Map<UUID, Map<GroupPartitionIdPair, Long>> expHistSuppliers = expected.partitionHistorySuppliers();
+        Map<UUID, Map<GroupPartitionIdPair, Long>> actHistSuppliers = actual.partitionHistorySuppliers();
 
         assertEquals(expHistSuppliers.size(), actHistSuppliers.size());
 
         for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> entry : expHistSuppliers.entrySet())
             assertEquals(entry.getValue(), actHistSuppliers.get(entry.getKey()));
 
-        Map<UUID, Map<Integer, Set<Integer>>> expPartsToReload = U.field((Object)U.field(expected, "partsToReload"), "map");
-        Map<UUID, Map<Integer, Set<Integer>>> actPartsToReload = U.field((Object)U.field(actual, "partsToReload"), "map");
+        Map<UUID, Map<Integer, Set<Integer>>> expPartsToReload = U.field(expected, "partsToReload");
+        Map<UUID, Map<Integer, Set<Integer>>> actPartsToReload = U.field(actual, "partsToReload");
 
         assertEquals(expPartsToReload.size(), actPartsToReload.size());
 

@@ -1126,7 +1126,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (defrgMgr != null)
             defrgMgr.cancel();
 
-        checkpointManager.stop(cancel);
+        if (checkpointManager != null)
+            checkpointManager.stop(cancel);
 
         super.onKernalStop0(cancel);
 

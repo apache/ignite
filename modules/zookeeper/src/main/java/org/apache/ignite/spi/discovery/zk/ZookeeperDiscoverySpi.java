@@ -460,7 +460,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             lsnr,
             exchange,
             stats,
-            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller());
+            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller(),
+            ((IgniteEx)ignite).context().messageFactory()
+        );
 
         registerMBean(igniteInstanceName, new ZookeeperDiscoverySpiMBeanImpl(this), ZookeeperDiscoverySpiMBean.class);
 

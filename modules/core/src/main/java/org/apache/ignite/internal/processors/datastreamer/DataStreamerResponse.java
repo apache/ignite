@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,11 +32,8 @@ public class DataStreamerResponse implements Message {
     long reqId;
 
     /** */
-    private @Nullable Throwable err;
-
-    /** */
     @Order(1)
-    @Nullable byte[] errBytes;
+    @Nullable ErrorMessage errMsg;
 
     /**
      * @param reqId Request ID.
@@ -47,7 +41,9 @@ public class DataStreamerResponse implements Message {
      */
     public DataStreamerResponse(long reqId, @Nullable Throwable err) {
         this.reqId = reqId;
-        this.err = err;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -65,47 +61,10 @@ public class DataStreamerResponse implements Message {
     }
 
     /**
-     * @return Error bytes.
-     */
-    public @Nullable byte[] errorBytes() {
-        return errBytes;
-    }
-
-    /**
      * @return Error.
      */
-    public Throwable error() {
-        return err;
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param log Logger.
-     * @param marshErrBytes Marshalled error bytes.
-     */
-    public void prepareMarshal(Marshaller marsh, IgniteLogger log, byte[] marshErrBytes) {
-        if (err != null && errBytes == null) {
-            try {
-                errBytes = U.marshal(marsh, err);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);
-
-                errBytes = marshErrBytes;
-            }
-        }
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (errBytes != null && err == null) {
-            err = U.unmarshal(marsh, errBytes, ldr);
-
-            errBytes = null;
-        }
+    public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */

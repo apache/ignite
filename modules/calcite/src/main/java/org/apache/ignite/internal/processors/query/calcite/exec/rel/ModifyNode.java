@@ -31,9 +31,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
@@ -200,8 +201,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
-        GridCacheProxyImpl<Object, Object> cache = cctx.cache().keepBinary();
+        IgniteInternalCache<Object, Object> cache = cctx.cache();
         GridNearTxLocal tx = Commons.queryTransaction(context(), cctx.shared());
+
+        QueryProperties props = context().unwrap(QueryProperties.class);
+        boolean keepBinaryMode = props == null || props.keepBinary();
+
+        if (keepBinaryMode)
+            cache = cache.keepBinary();
 
         if (tx == null)
             invokeOutsideTransaction(tuples, cache);
@@ -217,7 +224,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      */
     private void invokeOutsideTransaction(
         List<ModifyTuple> tuples,
-        GridCacheProxyImpl<Object, Object> cache
+        IgniteInternalCache<Object, Object> cache
     ) throws IgniteCheckedException {
         SessionContextImpl sesCtx = context().unwrap(SessionContextImpl.class);
         Map<String, String> sesAttrs = sesCtx == null ? null : sesCtx.attributes();
@@ -251,7 +258,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      */
     private void invokeInsideTransaction(
         List<ModifyTuple> tuples,
-        GridCacheProxyImpl<Object, Object> cache,
+        IgniteInternalCache<Object, Object> cache,
         GridNearTxLocal userTx
     ) throws IgniteCheckedException {
         userTx.resume();

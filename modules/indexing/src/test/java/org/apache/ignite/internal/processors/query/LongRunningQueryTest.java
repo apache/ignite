@@ -39,7 +39,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -77,8 +76,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
 
-    /** Number of keys to be queries in lazy queries. */
-    private static final int LAZY_QRYS_KEY_CNT = 5;
+    /** Number of keys to be queries in queries. */
+    private static final int QRYS_KEY_CNT = 5;
 
     /** Long query warning timeout. */
     private static final int LONG_QUERY_WARNING_TIMEOUT = 1000;
@@ -124,9 +123,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** Local query mode. */
     private boolean local;
-
-    /** Lazy query mode. */
-    private boolean lazy;
 
     /** Merge table usage flag. */
     private boolean withMergeTable;
@@ -200,7 +196,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testLongDistributed() {
         local = false;
-        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
@@ -210,33 +205,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      *
      */
     @Test
-    public void testLongLocal() {
-        local = true;
-        lazy = false;
-
-        checkLongRunning();
-        checkFastQueries();
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testLongDistributedLazy() {
+    public void testLongDistributedWithMergeTable() {
         local = false;
-        lazy = true;
-
-        checkLongRunning();
-        checkFastQueries();
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testLongDistributedLazyWithMergeTable() {
-        local = false;
-        lazy = true;
 
         withMergeTable = true;
 
@@ -252,9 +222,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      *
      */
     @Test
-    public void testLongLocalLazy() {
+    public void testLongLocal() {
         local = true;
-        lazy = true;
 
         checkLongRunning();
         checkFastQueries();
@@ -361,11 +330,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * the execution of distributed queries.
      */
     @Test
-    public void testDistributedLazyWithExternalWait() {
+    public void testDistributedWithExternalWait() {
         local = false;
-        lazy = true;
 
-        checkLazyWithExternalWait();
+        checkWithExternalWait();
     }
 
     /**
@@ -373,11 +341,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * the execution of local queries.
      */
     @Test
-    public void testlocalLazyWithExternalWait() {
+    public void testLocalWithExternalWait() {
         local = true;
-        lazy = true;
 
-        checkLazyWithExternalWait();
+        checkWithExternalWait();
     }
 
     /**
@@ -406,7 +373,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testBigResultSetLocal() throws Exception {
         local = true;
-        lazy = true;
 
         checkBigResultSet();
     }
@@ -417,7 +383,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testBigResultDistributed() throws Exception {
         local = false;
-        lazy = true;
 
         checkBigResultSet();
     }
@@ -618,18 +583,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      */
     private void sqlCheckLongRunning(String sql, Object... args) {
-        GridTestUtils.assertThrowsAnyCause(log, () -> sql("test", sql, args).getAll(), QueryCancelledException.class, "");
-    }
-
-    /**
-     * @param sql SQL query.
-     * @param args Query parameters.
-     */
-    private void sqlCheckLongRunningLazy(String sql, Object... args) {
         pageSize = 1;
 
         try {
-            assertEquals(LAZY_QRYS_KEY_CNT, sql("test", sql, args).getAll().size());
+            assertEquals(QRYS_KEY_CNT, sql("test", sql, args).getAll().size());
         }
         finally {
             pageSize = DEFAULT_PAGE_SIZE;
@@ -640,7 +597,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param sql SQL query.
      * @param args Query parameters.
      */
-    private void sqlCheckLongRunningLazyWithMergeTable(String sql, Object... args) {
+    private void sqlCheckLongRunningWithMergeTable(String sql, Object... args) {
         distributedJoins = true;
 
         try {
@@ -667,18 +624,16 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * Execute long-running sql with a check for errors.
      */
     private void sqlCheckLongRunning() {
-        if (lazy && withMergeTable) {
+        if (withMergeTable) {
             String select = "select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
                 " where p.orgId = o._key and o._key=1 and o._key < sleep_func(?, ?)" +
                 " union select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
                 " where p.orgId = o._key and o._key=2";
 
-            sqlCheckLongRunningLazyWithMergeTable(select, 2000, LAZY_QRYS_KEY_CNT);
+            sqlCheckLongRunningWithMergeTable(select, 2000, QRYS_KEY_CNT);
         }
-        else if (lazy && !withMergeTable)
-            sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?, ?)", 2000, LAZY_QRYS_KEY_CNT);
         else
-            sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
+            sqlCheckLongRunning("SELECT * FROM test WHERE _key < sleep_func(?, ?)", 2000, QRYS_KEY_CNT);
     }
 
     /**
@@ -691,14 +646,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         return ignite.cache(cacheName).query(new SqlFieldsQuery(sql)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
-            .setLazy(lazy)
             .setPageSize(pageSize)
             .setDistributedJoins(distributedJoins)
             .setArgs(args));
     }
 
     /** */
-    public void checkLazyWithExternalWait() {
+    public void checkWithExternalWait() {
         pageSize = 1;
 
         LogListener lsnr = LogListener
@@ -736,8 +690,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param dml Dml command.
      */
     public void runDml(String dml) {
-        lazy = false;
-
         long start = U.currentTimeMillis();
 
         sql("test", dml);

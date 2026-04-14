@@ -3410,7 +3410,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          */
         private void processFailedMessage(UUID nodeId, GridCacheMessage msg, Throwable err) throws IgniteCheckedException {
             switch (msg.directType()) {
-                case -24: {
+                case 10003: {
                     TxLocksRequest req = (TxLocksRequest)msg;
 
                     TxLocksResponse res = new TxLocksResponse();
@@ -3432,7 +3432,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 break;
 
-                case -23: {
+                case 10004: {
                     TxLocksResponse res = (TxLocksResponse)msg;
 
                     TxDeadlockFuture fut = future(res.futureId());

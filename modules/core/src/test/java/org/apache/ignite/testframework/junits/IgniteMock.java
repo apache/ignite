@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -83,9 +85,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.NotNull;
@@ -125,6 +130,9 @@ public class IgniteMock implements IgniteEx {
     /** */
     private final GridKernalContext kernalCtx;
 
+    /** */
+    private final MessageFactory msgFactory;
+
     /**
      * Mock values
      *
@@ -135,8 +143,8 @@ public class IgniteMock implements IgniteEx {
      * @param jmx Jmx Bean Server.
      * @param home Ignite home.
      */
-    public IgniteMock(
-        String name, String locHost, UUID nodeId, Marshaller marshaller, MBeanServer jmx, String home, IgniteConfiguration staticCfg) {
+    public IgniteMock(String name, String locHost, UUID nodeId, Marshaller marshaller, MBeanServer jmx, String home,
+        @Nullable IgniteConfiguration staticCfg) {
         this.locHost = locHost;
         this.nodeId = nodeId;
         this.marshaller = marshaller;
@@ -144,6 +152,11 @@ public class IgniteMock implements IgniteEx {
         this.home = home;
         this.name = name;
         this.staticCfg = staticCfg;
+
+        ClassLoader lrd = staticCfg == null ? U.gridClassLoader() : U.resolveClassLoader(staticCfg);
+
+        msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
+            new CoreMessagesProvider(marshaller, Marshallers.jdk(), lrd)});
 
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
@@ -153,6 +166,10 @@ public class IgniteMock implements IgniteEx {
 
                 @Override public Map<String, Object> nodeAttributes() {
                     return Collections.emptyMap();
+                }
+
+                @Override public MessageFactory messageFactory() {
+                    return msgFactory;
                 }
             };
         }

@@ -4368,6 +4368,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (remainingTime() == -1L) {
                 onTimeout();
 
+                cctx.tm().clearThreadMap(this);
+
                 throw new TransactionTimeoutException(
                     "Failed to start transaction. Transaction is timed out during initialization.");
             }

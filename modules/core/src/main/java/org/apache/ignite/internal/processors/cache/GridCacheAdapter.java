@@ -504,6 +504,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
     }
 
+    /** @return New internal cache instance based on this one, but with application attributes. */
+    @Override public GridCacheProxyImpl<K, V> withApplicationAttributes(Map<String, String> attrs) {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        if (opCtx == null) {
+            opCtx = new CacheOperationContext(
+                false,
+                false,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                new HashMap<>(attrs));
+        }
+        else
+            opCtx = opCtx.withApplicationAttributes(attrs);
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
+    }
+
     /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
         CacheOperationContext opCtx = new CacheOperationContext(

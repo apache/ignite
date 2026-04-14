@@ -20,16 +20,23 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper.wrap;
 
 /**
@@ -44,6 +51,9 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** */
+    private MessageFactory msgFactory;
 
     /** {@inheritDoc} */
     @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -99,5 +109,33 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         assert !started();
 
         this.discoHook = discoHook;
+    }
+
+    /**
+     * Sets test discovery messages factory provider. Note that {@link MessageFactoryProvider} must be set before SPI start.
+     * Otherwise, this method call will take no effect.
+     *
+     * @param msgFactoryProvider Discovery messages factory provider.
+     */
+    public void messageFactory(MessageFactoryProvider msgFactoryProvider) {
+        assert !started();
+
+        this.msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
+            new CoreMessagesProvider(jdk(), jdk(), U.resolveClassLoader(ignite().configuration())),
+            msgFactoryProvider
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
+        if (msgFactory != null)
+            GridTestUtils.setFieldValue(this, TcpDiscoverySpi.class, "msgFactory", msgFactory);
+
+        super.initLocalNode(srvPort, addExtAddrAttr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageFactory messageFactory() {
+        return msgFactory != null ? msgFactory : super.messageFactory();
     }
 }
