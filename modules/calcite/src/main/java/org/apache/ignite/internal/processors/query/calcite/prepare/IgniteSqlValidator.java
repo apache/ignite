@@ -331,7 +331,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override protected void validateJoin(SqlJoin join, SqlValidatorScope scope) {
         if (join.getJoinType() == JoinType.ASOF || join.getJoinType() == JoinType.LEFT_ASOF)
-            throw newValidationError(join, IgniteResource.INSTANCE.unsupportedJoinType(join.getJoinType().name()));
+            throw newValidationError(join, IgniteResource.INSTANCE.unsupportedJoinType(join.getJoinType().name().replace('_', ' ')));
 
         super.validateJoin(join, scope);
     }

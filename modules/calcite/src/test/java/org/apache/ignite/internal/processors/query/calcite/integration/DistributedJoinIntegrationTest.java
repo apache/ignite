@@ -134,22 +134,22 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
     /** */
     @Test
     public void testAsofJoinUnsupported() {
-        checkNotSupported("ASOF", "ASOF");
+        checkNotSupported("ASOF");
     }
 
     /** */
     @Test
     public void testLeftAsofJoinUnsupported() {
-        checkNotSupported("LEFT ASOF", "LEFT_ASOF");
+        checkNotSupported("LEFT ASOF");
     }
 
     /** */
-    private void checkNotSupported(String joinType, String errMsg) {
+    private void checkNotSupported(String joinType) {
         assertThrows("SELECT *\n" +
             " FROM (VALUES (NULL, 0), (1, NULL), (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 3), (3, 4)) AS t1(k, t)\n" +
             " " + joinType + " JOIN (VALUES (1, NULL), (1, 2), (1, 3), (2, 10), (2, 0)) AS t2(k, t)\n" +
             " MATCH_CONDITION t2.t < t1.t\n" +
-            " ON t1.k = t2.k", IgniteSQLException.class, "Unsupported join type '" + errMsg + "'");
+            " ON t1.k = t2.k", IgniteSQLException.class, "Unsupported join type '" + joinType + "'");
     }
 
     /** Prepare tables orders and order_items with data. */
