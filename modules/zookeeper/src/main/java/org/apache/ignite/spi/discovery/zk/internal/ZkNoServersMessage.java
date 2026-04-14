@@ -18,17 +18,13 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
     /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
         return null;

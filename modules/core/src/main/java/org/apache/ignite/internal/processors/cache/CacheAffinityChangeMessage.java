@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,10 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * CacheAffinityChangeMessage represent a message that switches to a new affinity assignmentafter rebalance is finished.
  * This message should not be mutated  in any way outside the "disco-notifier-worker" thread.
  */
-public class CacheAffinityChangeMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id;

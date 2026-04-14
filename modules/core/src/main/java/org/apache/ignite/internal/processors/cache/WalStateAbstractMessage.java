@@ -26,13 +26,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * WAL state change abstract message.
  */
-public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage, Message {
+public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage {
     /** Message ID */
     @Order(0)
     IgniteUuid id;
@@ -51,7 +50,7 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage,
 
     /** Message that should be processed through exchange thread. */
     @GridToStringExclude
-    private transient WalStateProposeMessage exchangeMsg;
+    private WalStateProposeMessage exchangeMsg;
 
     /** Constructor. */
     protected WalStateAbstractMessage() {

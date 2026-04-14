@@ -23,15 +23,11 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id;
@@ -93,7 +89,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     @Override public boolean isMutable() {
         return true;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

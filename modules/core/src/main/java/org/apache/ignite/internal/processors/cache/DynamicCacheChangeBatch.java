@@ -40,9 +40,6 @@ import org.jetbrains.annotations.Nullable;
  * Cache change batch.
  */
 public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Discovery custom message ID. */
     @Order(0)
     IgniteUuid id;
@@ -186,7 +183,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Marshall
         if (requestsBytes != null)
             reqs = U.unmarshal(marsh, requestsBytes, clsLdr);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

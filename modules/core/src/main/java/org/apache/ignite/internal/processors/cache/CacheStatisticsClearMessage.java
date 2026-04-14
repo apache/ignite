@@ -23,16 +23,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics clear discovery message.
  */
-public class CacheStatisticsClearMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;
 

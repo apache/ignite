@@ -27,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
  * WAL state finish message.
  */
 public class WalStateFinishMessage extends WalStateAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Whether WAL state was changed as a result of this call. */
     @Order(0)
     boolean changed;
@@ -77,5 +74,4 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     @Override public String toString() {
         return S.toString(WalStateFinishMessage.class, this, "super", super.toString());
     }
-
 }

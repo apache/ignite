@@ -28,9 +28,6 @@ import org.jetbrains.annotations.Nullable;
  * Schema change propose discovery message.
  */
 public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache deployment ID. */
     @Order(0)
     IgniteUuid depId;
@@ -90,10 +87,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
         this.depId = depId;
     }
 
-    /**
-     *
-     * @return {@code True} if message is initialized.
-     */
+    /** @return {@code True} if message is initialized. */
     public boolean initialized() {
         return deploymentId() != null || hasError();
     }
@@ -109,5 +103,4 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     @Override public String toString() {
         return S.toString(SchemaProposeDiscoveryMessage.class, this, "parent", super.toString());
     }
-
 }
