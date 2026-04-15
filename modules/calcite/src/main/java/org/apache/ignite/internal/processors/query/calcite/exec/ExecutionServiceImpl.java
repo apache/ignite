@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
@@ -66,6 +67,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHa
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.GlobalMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -201,6 +204,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private InjectResourcesService injectSvc;
+
+    /** Limit for nested queries, initiated by UDF. */
+    private final AtomicInteger udfQryLimit = new AtomicInteger();
 
     /** */
     private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
@@ -465,6 +471,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         memoryTracker = cfg.getGlobalMemoryQuota() > 0 ? new GlobalMemoryTracker(cfg.getGlobalMemoryQuota()) :
             NoOpMemoryTracker.INSTANCE;
 
+        udfQryLimit.set(ctx.config().getQueryThreadPoolSize() - 1);
+
         init();
     }
 
@@ -574,6 +582,38 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
     }
 
+    /**
+     * Checks that query is initiated by UDF.
+     *
+     * @return {@code True} if query is initiated by UDF (in this case UDF query limit is affected).
+     * @throws IgniteSQLException If query execution can lead to deadlocks.
+     */
+    private boolean checkUdfQuery() {
+        if (Thread.currentThread().getName().startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)) {
+            if (taskExecutor instanceof QueryBlockingTaskExecutor) {
+                if (udfQryLimit.getAndDecrement() <= 0) {
+                    udfQryLimit.getAndIncrement();
+
+                    throw new IgniteSQLException("Detected thread pool starvation by queries initiated by " +
+                        "user-defined functions. Starting more queries from UDF will lead to deadlock. Ensure that " +
+                        "the pool size is properly configured (property IgniteConfiguration.QueryThreadPoolSize). " +
+                        "The pool size should be greater than the maximum number of concurrent queries initiated by UDFs.");
+                }
+
+                return true;
+            }
+            else {
+                throw new IgniteSQLException("Detected query initiated by user-defined function. " +
+                    "When a striped query task executor (the default configuration) is used, tasks for such queries " +
+                    "can be assigned to the same thread as that held by the initial query, which can lead to a " +
+                    "deadlock. To avoid deadlocks switch to a blocking tasks executor (set the parameter: " +
+                    "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true)");
+            }
+        }
+
+        return false;
+    }
+
     /** */
     private ListFieldsQueryCursor<?> mapAndExecutePlan(
         RootQuery<Row> qry,
@@ -594,207 +634,218 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 checkPermissions(fragment.root());
         }
 
-        // Local execution
-        Fragment fragment = F.first(fragments);
+        boolean udfQry = checkUdfQuery();
 
-        if (U.assertionsEnabled()) {
-            assert fragment != null;
+        try {
+            // Local execution
+            Fragment fragment = F.first(fragments);
 
-            FragmentMapping mapping = execPlan.mapping(fragment);
+            if (U.assertionsEnabled()) {
+                assert fragment != null;
 
-            assert mapping != null;
+                FragmentMapping mapping = execPlan.mapping(fragment);
 
-            List<UUID> nodes = mapping.nodeIds();
+                assert mapping != null;
 
-            assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
+                List<UUID> nodes = mapping.nodeIds();
+
+                assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
                     : "nodes=" + nodes + ", localNode=" + localNodeId();
-        }
+            }
 
-        long timeout = qry.remainingTime();
+            long timeout = qry.remainingTime();
 
-        if (timeout == 0) {
-            throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
-                new QueryCancelledException());
-        }
+            if (timeout == 0) {
+                throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
+                    new QueryCancelledException());
+            }
 
-        FragmentDescription fragmentDesc = new FragmentDescription(
-            fragment.fragmentId(),
-            execPlan.mapping(fragment),
-            execPlan.target(fragment),
-            execPlan.remotes(fragment));
-
-        MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
-
-        final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
-
-        ExecutionContext<Row> ectx = new ExecutionContext<>(
-            qry.context(),
-            taskExecutor(),
-            injectSvc,
-            qry.id(),
-            locNodeId,
-            locNodeId,
-            mapCtx.topologyVersion(),
-            fragmentDesc,
-            handler,
-            qryMemoryTracker,
-            createIoTracker(locNodeId, qry.localQueryId()),
-            timeout,
-            qryParams,
-            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
-
-        Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
-            exchangeService(), failureProcessor()).go(fragment.root());
-
-        qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
-
-        Map<UUID, Long> fragmentsPerNode = fragments.stream()
-            .skip(1)
-            .flatMap(f -> f.mapping().nodeIds().stream())
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        // Start remote execution.
-        for (int i = 1; i < fragments.size(); i++) {
-            fragment = fragments.get(i);
-            fragmentDesc = new FragmentDescription(
+            FragmentDescription fragmentDesc = new FragmentDescription(
                 fragment.fragmentId(),
                 execPlan.mapping(fragment),
                 execPlan.target(fragment),
                 execPlan.remotes(fragment));
 
-            Throwable ex = null;
-            byte[] parametersMarshalled = null;
+            MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
-            for (UUID nodeId : fragmentDesc.nodeIds()) {
-                if (ex != null)
-                    qry.onResponse(nodeId, fragment.fragmentId(), ex);
-                else {
-                    try {
-                        SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+            final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
 
-                        QueryProperties props = qry.context().unwrap(QueryProperties.class);
-                        boolean keepBinaryMode = props == null || props.keepBinary();
+            ExecutionContext<Row> ectx = new ExecutionContext<>(
+                qry.context(),
+                taskExecutor(),
+                injectSvc,
+                qry.id(),
+                locNodeId,
+                locNodeId,
+                mapCtx.topologyVersion(),
+                fragmentDesc,
+                handler,
+                qryMemoryTracker,
+                createIoTracker(locNodeId, qry.localQueryId()),
+                timeout,
+                qryParams,
+                userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
 
-                        QueryStartRequest req = new QueryStartRequest(
-                            qry.id(),
-                            qry.localQueryId(),
-                            qry.context().schemaName(),
-                            fragment.serialized(),
-                            ectx.topologyVersion(),
-                            fragmentDesc,
-                            fragmentsPerNode.get(nodeId).intValue(),
-                            qry.parameters(),
-                            parametersMarshalled,
-                            timeout,
-                            ectx.getQryTxEntries(),
-                            sesCtx == null ? null : sesCtx.attributes(),
-                            keepBinaryMode
-                        );
+            Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
+                exchangeService(), failureProcessor()).go(fragment.root());
 
-                        messageService().send(nodeId, req);
+            qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
 
-                        // Avoid marshaling of the same parameters for other nodes.
-                        if (parametersMarshalled == null)
-                            parametersMarshalled = req.parametersMarshalled();
-                    }
-                    catch (Throwable e) {
-                        qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
+            Map<UUID, Long> fragmentsPerNode = fragments.stream()
+                .skip(1)
+                .flatMap(f -> f.mapping().nodeIds().stream())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+            QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
+            boolean keepBinary = qryProps == null || qryProps.keepBinary();
+
+            // Start remote execution.
+            for (int i = 1; i < fragments.size(); i++) {
+                fragment = fragments.get(i);
+                fragmentDesc = new FragmentDescription(
+                    fragment.fragmentId(),
+                    execPlan.mapping(fragment),
+                    execPlan.target(fragment),
+                    execPlan.remotes(fragment));
+
+                Throwable ex = null;
+                byte[] parametersMarshalled = null;
+
+                for (UUID nodeId : fragmentDesc.nodeIds()) {
+                    if (ex != null)
+                        qry.onResponse(nodeId, fragment.fragmentId(), ex);
+                    else {
+                        try {
+                            SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+
+                            QueryStartRequest req = new QueryStartRequest(
+                                qry.id(),
+                                qry.localQueryId(),
+                                qry.context().schemaName(),
+                                fragment.serialized(),
+                                ectx.topologyVersion(),
+                                fragmentDesc,
+                                fragmentsPerNode.get(nodeId).intValue(),
+                                qry.parameters(),
+                                parametersMarshalled,
+                                timeout,
+                                ectx.getQryTxEntries(),
+                                sesCtx == null ? null : sesCtx.attributes(),
+                                keepBinary
+                            );
+
+                            messageService().send(nodeId, req);
+
+                            // Avoid marshaling of the same parameters for other nodes.
+                            if (parametersMarshalled == null)
+                                parametersMarshalled = req.parametersMarshalled();
+                        }
+                        catch (Throwable e) {
+                            qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
+                        }
                     }
                 }
             }
-        }
 
-        if (perfStatProc.enabled()) {
-            perfStatProc.queryProperty(
-                GridCacheQueryType.SQL_FIELDS,
-                qry.initiatorNodeId(),
-                qry.localQueryId(),
-                "Query plan",
-                plan.textPlan()
-            );
-        }
-
-        if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
-            ctx.query().runningQueryManager().planHistoryTracker().addPlan(
-                plan.textPlan(),
-                qry.sql(),
-                qry.context().schemaName(),
-                qry.context().isLocal(),
-                CalciteQueryEngineConfiguration.ENGINE_NAME
-            );
-        }
-
-        QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
-
-        Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
-            o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
-
-        HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
-            .heavyQueriesTracker().resultSetChecker(qry);
-
-        Function<List<Object>, List<Object>> rowConverter;
-
-        // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
-        if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-            ClusterNode locNode = ctx.discovery().localNode();
-            UUID subjId = SecurityUtils.securitySubjectId(ctx);
-
-            rowConverter = row -> {
-                evtMgr.record(new CacheQueryReadEvent<>(
-                    locNode,
-                    "SQL fields query result set row read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.SQL_FIELDS.name(),
-                    qryProps.cacheName(),
-                    null,
-                    qry.sql(),
-                    null,
-                    null,
-                    qry.parameters(),
-                    subjId,
-                    null,
-                    null,
-                    null,
-                    null,
-                    row));
-
-                resultSetChecker.checkOnFetchNext();
-
-                return row;
-            };
-        }
-        else {
-            rowConverter = row -> {
-                resultSetChecker.checkOnFetchNext();
-
-                return row;
-            };
-        }
-
-        Runnable onClose = () -> {
             if (perfStatProc.enabled()) {
-                perfStatProc.queryRowsProcessed(
+                perfStatProc.queryProperty(
                     GridCacheQueryType.SQL_FIELDS,
                     qry.initiatorNodeId(),
                     qry.localQueryId(),
-                    "Fetched",
-                    resultSetChecker.fetchedSize()
+                    "Query plan",
+                    plan.textPlan()
                 );
             }
 
-            resultSetChecker.checkOnClose();
-        };
+            if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
+                ctx.query().runningQueryManager().planHistoryTracker().addPlan(
+                    plan.textPlan(),
+                    qry.sql(),
+                    qry.context().schemaName(),
+                    qry.context().isLocal(),
+                    CalciteQueryEngineConfiguration.ENGINE_NAME
+                );
+            }
 
-        Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter, rowConverter, onClose);
+            Function<Object, Object> fieldConverter = keepBinary ? null :
+                o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
 
-        // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
-        // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
-        // It's required, since query memory tracker can be closed concurrently during getAll() and
-        // tracked data for cursor can be lost without additional tracker.
-        MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+            HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
+                .heavyQueriesTracker().resultSetChecker(qry);
 
-        return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+            Function<List<Object>, List<Object>> rowConverter;
+
+            // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
+            if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
+                ClusterNode locNode = ctx.discovery().localNode();
+                UUID subjId = SecurityUtils.securitySubjectId(ctx);
+
+                rowConverter = row -> {
+                    evtMgr.record(new CacheQueryReadEvent<>(
+                        locNode,
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL_FIELDS.name(),
+                        qryProps.cacheName(),
+                        null,
+                        qry.sql(),
+                        null,
+                        null,
+                        qry.parameters(),
+                        subjId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row));
+
+                    resultSetChecker.checkOnFetchNext();
+
+                    return row;
+                };
+            }
+            else {
+                rowConverter = row -> {
+                    resultSetChecker.checkOnFetchNext();
+
+                    return row;
+                };
+            }
+
+            Runnable onClose = () -> {
+                if (udfQry) // Restore UDF queries limit.
+                    udfQryLimit.getAndIncrement();
+
+                if (perfStatProc.enabled()) {
+                    perfStatProc.queryRowsProcessed(
+                        GridCacheQueryType.SQL_FIELDS,
+                        qry.initiatorNodeId(),
+                        qry.localQueryId(),
+                        "Fetched",
+                        resultSetChecker.fetchedSize()
+                    );
+                }
+
+                resultSetChecker.checkOnClose();
+            };
+
+            Iterator<List<?>> it = iteratorsHolder().iterator(new ConvertingClosableIterator<>(qry.iterator(), ectx,
+                fieldConverter, rowConverter, onClose));
+
+            // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
+            // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
+            // It's required, since query memory tracker can be closed concurrently during getAll() and
+            // tracked data for cursor can be lost without additional tracker.
+            MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+
+            return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+        }
+        catch (Exception e) {
+            if (udfQry) // Restore UDF queries limit.
+                udfQryLimit.getAndIncrement();
+
+            throw e;
+        }
     }
 
     /** */
