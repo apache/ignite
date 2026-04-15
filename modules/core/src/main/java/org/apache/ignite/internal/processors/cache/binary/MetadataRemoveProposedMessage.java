@@ -47,16 +47,12 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     @Order(2)
     int typeId;
 
-    /** Message acceptance status. */
-    @Order(3)
-    boolean rejected;
-
     /** Message received on coordinator. */
-    @Order(4)
+    @Order(3)
     boolean onCoordinator = true;
 
     /** */
-    @Order(5)
+    @Order(4)
     String errMsg;
 
     /** Constructor. */
@@ -83,7 +79,7 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return !rejected ? new MetadataRemoveAcceptedMessage(typeId) : null;
+        return !rejected() ? new MetadataRemoveAcceptedMessage(typeId) : null;
     }
 
     /** {@inheritDoc} */
@@ -95,13 +91,12 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
      * @param errMsg Error message caused this update to be rejected.
      */
     void markRejected(String errMsg) {
-        rejected = true;
         this.errMsg = errMsg;
     }
 
     /** */
     boolean rejected() {
-        return rejected;
+        return errMsg != null;
     }
 
     /** */
@@ -133,5 +128,4 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     @Override public String toString() {
         return S.toString(MetadataRemoveProposedMessage.class, this);
     }
-
 }
