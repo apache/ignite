@@ -36,7 +36,7 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     boolean enable;
 
     /** Whether message is being handled on cache affinity node. */
-    private transient boolean affNode;
+    private boolean affNode;
 
     /** Constructor. */
     public WalStateProposeMessage() {
