@@ -5087,9 +5087,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.encryptionKey(encKey);
 
-        assert encKeyId == null || encKeyId >= 0;
-
-        req.encryptionKeyId(encKeyId == null ? -1 : encKeyId);
+        req.encryptionKeyId(encKeyId);
 
         req.restartId(restartId);
 

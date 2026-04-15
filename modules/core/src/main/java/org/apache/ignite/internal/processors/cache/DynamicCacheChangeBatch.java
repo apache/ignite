@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -29,14 +30,16 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache change batch.
  */
-public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message {
+public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,8 +49,11 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message 
 
     /** Change requests. */
     @GridToStringInclude
-    @Order(1)
     Collection<DynamicCacheChangeRequest> reqs;
+
+    /** JDK Serialized version of reqs. */
+    @Order(1)
+    byte[] requestsBytes;
 
     /** Cache updates to be executed on exchange. */
     private ExchangeActions exchangeActions;
@@ -168,6 +174,19 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message 
     public void startCaches(boolean startCaches) {
         this.startCaches = startCaches;
     }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (reqs != null)
+            requestsBytes = U.marshal(marsh, reqs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (requestsBytes != null)
+            reqs = U.unmarshal(marsh, requestsBytes, clsLdr);
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {
