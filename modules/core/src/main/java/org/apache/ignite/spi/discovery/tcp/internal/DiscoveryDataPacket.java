@@ -82,23 +82,6 @@ public class DiscoveryDataPacket implements Serializable, Message {
     }
 
     /**
-     * Deep copy constructor.
-     *
-     * @param pkt Packet to copy.
-     */
-    public DiscoveryDataPacket(DiscoveryDataPacket pkt) {
-        joiningNodeId = pkt.joiningNodeId;
-        joiningNodeClient = pkt.joiningNodeClient;
-
-        joiningNodeData = copyByteMap(pkt.joiningNodeData);
-        commonData = copyByteMap(pkt.commonData);
-        nodeSpecificData = copyNodeSpecificData(pkt.nodeSpecificData);
-        unmarshalledJoiningNodeData = pkt.unmarshalledJoiningNodeData == null
-            ? null
-            : new HashMap<>(pkt.unmarshalledJoiningNodeData);
-    }
-
-    /**
      *
      */
     public UUID joiningNodeId() {
@@ -480,29 +463,4 @@ public class DiscoveryDataPacket implements Serializable, Message {
         unmarshalledJoiningNodeData = null;
     }
 
-    /**
-     * @param src Source map.
-     * @return Copy of map with cloned byte arrays.
-     */
-    private static Map<Integer, byte[]> copyByteMap(Map<Integer, byte[]> src) {
-        Map<Integer, byte[]> cp = new HashMap<>(src.size());
-
-        for (Map.Entry<Integer, byte[]> entry : src.entrySet())
-            cp.put(entry.getKey(), entry.getValue() == null ? null : Arrays.copyOf(entry.getValue(), entry.getValue().length));
-
-        return cp;
-    }
-
-    /**
-     * @param src Source node-specific data.
-     * @return Copy of node-specific data.
-     */
-    private static Map<UUID, Map<Integer, byte[]>> copyNodeSpecificData(Map<UUID, Map<Integer, byte[]>> src) {
-        Map<UUID, Map<Integer, byte[]>> cp = new HashMap<>(src.size());
-
-        for (Map.Entry<UUID, Map<Integer, byte[]>> entry : src.entrySet())
-            cp.put(entry.getKey(), copyByteMap(entry.getValue()));
-
-        return cp;
-    }
 }

@@ -3308,11 +3308,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                         if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
-                            msg0 = nodeAddedMsg.deepCopy();
+                            msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
 
-                            msgBytes0 = null;
+                            try {
+                                msgBytes0 = clientMsgSer.serializeMessage(msg0);
+                            }
+                            catch (IgniteCheckedException | IOException e) {
+                                U.error(log, "Failed to serialize message: " + msg0, e);
+
+                                return;
+                            }
                         }
                     }
 
