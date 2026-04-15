@@ -23,6 +23,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -163,6 +164,8 @@ import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHold
 import org.apache.ignite.internal.processors.cache.transactions.TxLock;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
@@ -389,6 +392,9 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(SnapshotCheckHandlersResponse.class);
         withNoSchema(SnapshotFilesRequestMessage.class);
         withNoSchema(SnapshotFilesFailureMessage.class);
+        withNoSchema(PartitionKey.class);
+        withNoSchema(PartitionHashRecord.class);
+        withNoSchema(TransactionsHashRecord.class);
         withNoSchema(IncrementalSnapshotVerifyResult.class);
         withNoSchema(IncrementalSnapshotAwareMessage.class);
 

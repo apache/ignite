@@ -16,24 +16,27 @@
 */
 package org.apache.ignite.internal.management.cache;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Partition key - pair of cache group ID and partition ID.
  */
-public class PartitionKey implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class PartitionKey implements Message {
     /** Group id. */
-    private final int grpId;
+    int grpId;
 
     /** Group name. Optional field, used only for output. */
-    private final String grpName;
+    String grpName;
 
     /** Partition id. */
-    private final int partId;
+    int partId;
+
+    /** Default constructor for {@link CoreMessagesProvider}. */
+    public PartitionKey() {
+        // No-op.
+    }
 
     /**
      * @param grpId Group id.
