@@ -859,6 +859,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (encKey == null || ctx.clientNode())
             return;
 
+        assert encKeyId == null || encKeyId >= 0;
+
         removeGroupKey(grpId);
 
         withMasterKeyChangeReadLock(() -> {
