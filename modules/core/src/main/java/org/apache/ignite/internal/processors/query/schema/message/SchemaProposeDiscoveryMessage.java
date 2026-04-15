@@ -28,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
  * Schema change propose discovery message.
  */
 public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache deployment ID. */
     @Order(0)
     IgniteUuid depId;
