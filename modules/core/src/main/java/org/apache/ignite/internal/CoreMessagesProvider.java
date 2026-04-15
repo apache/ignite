@@ -394,7 +394,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [6300 - 6400]: Services messages. Most of them originally come from Discovery.
         msgIdx = 6300;
         withNoSchema(ServiceDeploymentProcessId.class);
-        withNoSchema(ServiceSingleNodeDeploymentResult.class);
+        withSchema(ServiceSingleNodeDeploymentResult.class);
         withNoSchema(ServiceClusterDeploymentResult.class);
         withNoSchema(ServiceDeploymentRequest.class);
         withNoSchema(ServiceUndeploymentRequest.class);

@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -385,9 +384,9 @@ class ServiceDeploymentTask {
 
             for (IgniteUuid srvcId : depServicesIds) {
                 ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
-                    srvcProc.localInstancesCount(srvcId));
+                    srvcProc.localInstancesCount(srvcId), log);
 
-                attachDeploymentErrors(depRes, errors.get(srvcId));
+                depRes.errors(errors.get(srvcId));
 
                 results.put(srvcId, depRes);
             }
@@ -397,9 +396,9 @@ class ServiceDeploymentTask {
                     return;
 
                 ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
-                    srvcProc.localInstancesCount(srvcId));
+                    srvcProc.localInstancesCount(srvcId), log);
 
-                attachDeploymentErrors(depRes, err);
+                depRes.errors(err);
 
                 results.put(srvcId, depRes);
             });
@@ -464,7 +463,7 @@ class ServiceDeploymentTask {
                     assert depResults != null : "Services deployment actions should be attached.";
 
                     final Map<IgniteUuid, Map<UUID, Integer>> fullTops = depResults.deploymentTopologies();
-                    final Map<IgniteUuid, Collection<byte[]>> fullErrors = depResults.deploymentErrors();
+                    final Map<IgniteUuid, Collection<Throwable>> fullErrors = depResults.deploymentErrors();
 
                     depActions.deploymentTopologies(fullTops);
                     depActions.deploymentErrors(fullErrors);
@@ -520,7 +519,7 @@ class ServiceDeploymentTask {
                 return;
             }
 
-            Collection<byte[]> errors = depActions.deploymentErrors().get(srvcId);
+            Collection<Throwable> errors = depActions.deploymentErrors().get(srvcId);
 
             if (errors == null) {
                 srvcProc.completeInitiatingFuture(true, srvcId, null);
@@ -530,27 +529,11 @@ class ServiceDeploymentTask {
 
             Throwable depErr = null;
 
-            for (byte[] error : errors) {
-                try {
-                    Throwable t = U.unmarshal(ctx, error, null);
-
-                    if (depErr == null)
-                        depErr = t;
-                    else
-                        depErr.addSuppressed(t);
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to unmarshal deployment error.", e);
-
-                    Exception ex = new IgniteCheckedException(
-                        "Failed to unmarshal deployment error, see server logs for details."
-                    );
-
-                    if (depErr == null)
-                        depErr = ex;
-                    else
-                        depErr.addSuppressed(ex);
-                }
+            for (Throwable error : errors) {
+                if (depErr == null)
+                    depErr = error;
+                else
+                    depErr.addSuppressed(error);
             }
 
             srvcProc.completeInitiatingFuture(true, srvcId, depErr);
@@ -656,7 +639,7 @@ class ServiceDeploymentTask {
             if (cnt == 0 && res.errors().isEmpty())
                 return;
 
-            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt);
+            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt, log);
 
             if (!res.errors().isEmpty())
                 singleDepRes.errors(res.errors());
@@ -673,44 +656,6 @@ class ServiceDeploymentTask {
         });
 
         return fullResults;
-    }
-
-    /**
-     * @param depRes Service single deployments results.
-     * @param errors Deployment errors.
-     */
-    private void attachDeploymentErrors(@NotNull ServiceSingleNodeDeploymentResult depRes,
-        @Nullable Collection<Throwable> errors) {
-        if (F.isEmpty(errors))
-            return;
-
-        Collection<byte[]> errorsBytes = new ArrayList<>();
-
-        for (Throwable th : errors) {
-            try {
-                byte[] arr = U.marshal(ctx, th);
-
-                errorsBytes.add(arr);
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to marshal deployment error, err=" + th, e);
-
-                try {
-                    Exception ex = new IgniteCheckedException(
-                        "Failed to marshal deployment error, see server logs for details, err=" + th
-                    );
-
-                    byte[] arr = U.marshal(ctx, ex);
-
-                    errorsBytes.add(arr);
-                }
-                catch (IgniteCheckedException ex) {
-                    log.error("Failed to attach deployment error information to deployment result message", ex);
-                }
-            }
-        }
-
-        depRes.errors(errorsBytes);
     }
 
     /**
