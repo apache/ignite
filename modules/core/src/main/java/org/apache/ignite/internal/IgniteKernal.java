@@ -111,6 +111,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -1039,7 +1040,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 if (log.isInfoEnabled()) {
                     log.info(
                         "Node is being started in maintenance mode. " +
-                            "Starting IsolatedDiscoverySpi instead of configured discovery SPI."
+                        "Starting IsolatedDiscoverySpi instead of configured discovery SPI."
                     );
                 }
 
@@ -1320,14 +1321,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())));
+        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), U.resolveClassLoader(ctx.config())));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
-            if (f != null)
+            if (f != null) {
+                if (f instanceof AbstractMarshallableMessageFactoryProvider)
+                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshaller(), U.resolveClassLoader(ctx.config()));
+
                 compMsgs.add(f);
+
+            }
         }
 
         if (!compMsgs.isEmpty())

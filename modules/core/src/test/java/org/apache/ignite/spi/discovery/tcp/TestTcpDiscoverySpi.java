@@ -121,7 +121,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         assert !started();
 
         this.msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(jdk(), jdk(), U.resolveClassLoader(ignite().configuration())),
+            new CoreMessagesProvider(jdk(), U.resolveClassLoader(ignite().configuration())),
             msgFactoryProvider
         });
     }

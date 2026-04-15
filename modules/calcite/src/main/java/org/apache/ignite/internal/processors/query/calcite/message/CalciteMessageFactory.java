@@ -17,23 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
  * Message factory.
  */
-public class CalciteMessageFactory implements MessageFactoryProvider {
+public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        Marshaller marshaller = Marshallers.jdk();
-        ClassLoader clsLdr = U.gridClassLoader();
-
-        for (MessageType type : MessageType.values())
-            CoreMessagesProvider.register(factory, type.messageClass(), type.directType(), marshaller, clsLdr);
+        for (MessageType type : MessageType.values()) {
+            if (MarshallableMessage.class.isAssignableFrom(type.messageClass()))
+                register(factory, type.messageClass(), type.directType(), schemaAwareMarsh, resolvedClsLdr);
+            else
+                register(factory, type.messageClass(), type.directType(), dfltMarsh, dftlClsLdr);
+        }
     }
 }

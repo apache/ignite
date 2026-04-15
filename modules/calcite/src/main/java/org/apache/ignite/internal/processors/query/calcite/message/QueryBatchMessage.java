@@ -48,7 +48,7 @@ public class QueryBatchMessage implements ExecutionContextAware {
 
     /** */
     @Order(5)
-    List<ValueMessage> mRows;
+    List<GenericValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {
@@ -102,6 +102,6 @@ public class QueryBatchMessage implements ExecutionContextAware {
      * @return Rows.
      */
     public List<Object> rows() {
-        return F.isEmpty(mRows) ? Collections.emptyList() : mRows.stream().map(ValueMessage::value).collect(Collectors.toList());
+        return F.isEmpty(mRows) ? Collections.emptyList() : mRows.stream().map(GenericValueMessage::value).collect(Collectors.toList());
     }
 }
