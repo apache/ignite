@@ -27,6 +27,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * WAL state propose message.
  */
 public class WalStateProposeMessage extends WalStateAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache names which are expected to be in the group along with their deployment IDs. */
     @Order(0)
     Map<String, IgniteUuid> caches;
@@ -36,7 +39,7 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     boolean enable;
 
     /** Whether message is being handled on cache affinity node. */
-    private boolean affNode;
+    private transient boolean affNode;
 
     /** Constructor. */
     public WalStateProposeMessage() {
