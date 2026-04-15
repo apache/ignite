@@ -70,6 +70,9 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
  */
 public class GridServiceProxy<T> implements Serializable {
     /** */
+    public static final long DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT = 10_000L;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
@@ -111,8 +114,11 @@ public class GridServiceProxy<T> implements Serializable {
     /** Whether multi-node request should be done. */
     private final boolean sticky;
 
-    /** Service availability wait timeout. */
-    private final long waitTimeout;
+    /** Service invocation timeout. A timeout of zero is interpreted as an infinite timeout. */
+    private final long invokeTimeout;
+
+    /** Service topology await timeout. */
+    private final long topWaitTimeout;
 
     /** */
     private final boolean keepBinary;
@@ -144,7 +150,8 @@ public class GridServiceProxy<T> implements Serializable {
         this.sticky = sticky;
         this.keepBinary = keepBinary;
 
-        waitTimeout = timeout;
+        invokeTimeout = timeout;
+        topWaitTimeout = timeout == 0 ? DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT : timeout;
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
@@ -224,7 +231,7 @@ public class GridServiceProxy<T> implements Serializable {
                                 options(Collections.singleton(node))
                                     .withPool(SERVICE_POOL)
                                     .withFailoverDisabled()
-                                    .withTimeout(waitTimeout)
+                                    .withTimeout(invokeTimeout)
                             ).get());
                     }
                 }
@@ -275,8 +282,8 @@ public class GridServiceProxy<T> implements Serializable {
                     throw new IgniteException(e);
                 }
 
-                if (waitTimeout > 0 && U.currentTimeMillis() - startTime >= waitTimeout)
-                    throw new IgniteException("Service acquire timeout was reached, stopping. [timeout=" + waitTimeout + "]");
+                if (invokeTimeout > 0 && U.currentTimeMillis() - startTime >= invokeTimeout)
+                    throw new IgniteException("Service invocation timeout was reached, stopping [timeout=" + invokeTimeout + "]");
             }
         }
         finally {
@@ -388,7 +395,7 @@ public class GridServiceProxy<T> implements Serializable {
         if (hasLocNode && ctx.service().service(name) != null)
             return ctx.discovery().localNode();
 
-        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name, waitTimeout);
+        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name, topWaitTimeout);
 
         if (snapshot == null || snapshot.isEmpty())
             return null;
@@ -397,7 +404,9 @@ public class GridServiceProxy<T> implements Serializable {
         if (snapshot.size() == 1) {
             UUID nodeId = snapshot.keySet().iterator().next();
 
-            return prj.node(nodeId);
+            ClusterNode node = clusterNode(nodeId);
+
+            return prj.predicate().apply(node) ? node : null;
         }
 
         Collection<ClusterNode> nodes = prj.nodes();
@@ -419,7 +428,7 @@ public class GridServiceProxy<T> implements Serializable {
             for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
                 if (i++ >= idx) {
                     if (e.getValue() > 0)
-                        return ctx.discovery().node(e.getKey());
+                        return clusterNode(e.getKey());
                 }
             }
 
@@ -428,7 +437,7 @@ public class GridServiceProxy<T> implements Serializable {
             // Circle back.
             for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
                 if (e.getValue() > 0)
-                    return ctx.discovery().node(e.getKey());
+                    return clusterNode(e.getKey());
 
                 if (i++ == idx)
                     return null;
@@ -460,6 +469,16 @@ public class GridServiceProxy<T> implements Serializable {
      */
     T proxy() {
         return proxy;
+    }
+
+    /** */
+    public ClusterNode clusterNode(UUID nodeId) throws ClusterTopologyCheckedException {
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new ClusterTopologyCheckedException("The node holding the service left the cluster [nodeId=" + nodeId + ']');
+
+        return node;
     }
 
     /**

@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.processors.service.GridServiceProxy.DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT;
+
 /**
  * Request topology of certain service.
  */
@@ -52,7 +54,7 @@ public class ClientServiceTopologyRequest extends ClientRequest {
         Map<UUID, Integer> srvcTop;
 
         try {
-            srvcTop = ctx.kernalContext().service().serviceTopology(name, 0);
+            srvcTop = ctx.kernalContext().service().serviceTopology(name, DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteClientException(ClientStatus.FAILED, "Failed to get topology for service '" + name + "'.", e);

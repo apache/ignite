@@ -966,7 +966,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 if (timeout == 0 && desc == null)
                     return null;
 
-                if (desc != null && desc.topologyInitialized())
+                if (desc != null && !desc.serviceTopology().isTransitional())
                     return desc.topologySnapshot();
 
                 long wait = 0;
@@ -1566,7 +1566,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      *
      * @param fullTops Deployment topologies.
      */
-    void updateServicesTopologies(@NotNull final Map<IgniteUuid, Map<UUID, Integer>> fullTops) {
+    void updateServicesTopologies(@NotNull final Map<IgniteUuid, ServiceTopology> fullTops) {
         if (!enterBusy())
             return;
 
@@ -1936,7 +1936,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param msg Message.
      */
     private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
-        final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
+        final Map<IgniteUuid, ServiceTopology> fullTops = new HashMap<>();
         final Map<IgniteUuid, Collection<Throwable>> fullErrors = new HashMap<>();
 
         for (ServiceClusterDeploymentResult depRes : msg.results()) {
@@ -1959,7 +1959,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (!errors.isEmpty())
                 fullErrors.computeIfAbsent(srvcId, e -> new ArrayList<>()).addAll(errors);
 
-            fullTops.put(srvcId, top);
+            fullTops.put(srvcId, new ServiceTopology(top, depRes.isServiceTopologyTransitional()));
         }
 
         synchronized (servicesTopsUpdateMux) {
@@ -1990,14 +1990,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param services Services info to update.
      * @param tops Deployment topologies.
      */
-    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services,
-        Map<IgniteUuid, Map<UUID, Integer>> tops) {
-
+    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services, Map<IgniteUuid, ServiceTopology> tops) {
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);
 
             if (desc != null)
-                desc.topologySnapshot(top);
+                desc.updateServiceTopology(top);
         });
     }
 
