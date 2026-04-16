@@ -434,7 +434,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
-        withNoSchema(DynamicCacheChangeBatch.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
