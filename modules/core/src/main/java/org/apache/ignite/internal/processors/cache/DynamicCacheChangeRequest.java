@@ -165,8 +165,10 @@ public class DynamicCacheChangeRequest implements MarshallableMessage {
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         cfgBytes = U.marshal(marsh, startCfg);
+
         if (nearCacheCfg != null)
             nearCfgBytes = U.marshal(marsh, nearCfgBytes);
+
         if (schema != null)
             schemaBytes = U.marshal(marsh, schema);
     }
@@ -174,8 +176,10 @@ public class DynamicCacheChangeRequest implements MarshallableMessage {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         startCfg = U.unmarshal(marsh, cfgBytes, clsLdr);
+
         if (nearCfgBytes != null)
             nearCacheCfg = U.unmarshal(marsh, nearCfgBytes, clsLdr);
+
         if (schemaBytes != null)
             schema = U.unmarshal(marsh, schemaBytes, clsLdr);
 
