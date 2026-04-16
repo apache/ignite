@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Schema index drop operation.
  */
 public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Index name. */
     @Order(0)
     String idxName;
