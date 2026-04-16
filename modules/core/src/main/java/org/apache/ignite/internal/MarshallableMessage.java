@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.extensions.communication;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** A {@link Message} which still requires external custom pre-marshalling and post-unmarshalling. */
 public interface MarshallableMessage extends Message {
