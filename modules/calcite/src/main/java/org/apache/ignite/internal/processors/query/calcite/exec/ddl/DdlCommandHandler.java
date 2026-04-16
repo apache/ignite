@@ -64,6 +64,10 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_KEY;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_VALUE;
 
 /** */
 public class DdlCommandHandler {
@@ -136,6 +140,8 @@ public class DdlCommandHandler {
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, cmd.tableName());
         }
 
+        checkKVWrappedParam(cmd);
+
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
 
         QueryEntity e = toQueryEntity(cmd);
@@ -178,6 +184,37 @@ public class DdlCommandHandler {
     }
 
     /** */
+    private void checkKVWrappedParam(CreateTableCommand cmd) {
+        Boolean wrapKey = cmd.wrapKey();
+
+        if (wrapKey != null && !wrapKey) {
+            if (cmd.primaryKeyColumns().size() > 1) {
+                throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when composite primary key exists.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(cmd.keyTypeName())) {
+                throw new IgniteSQLException(WRAP_KEY + " cannot be \"false\" when " + KEY_TYPE + " is defined.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapVal = cmd.wrapValue();
+
+        if (!wrapVal) {
+            if (!cmd.primaryKeyColumns().isEmpty() && cmd.columns().size() - cmd.primaryKeyColumns().size() > 1) {
+                throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" with multiple columns.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(cmd.valueTypeName())) {
+                throw new IgniteSQLException(WRAP_VALUE + " cannot be \"false\" when " + VALUE_TYPE + " is defined.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+    }
+
+    /** */
     private void handle0(DropTableCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -214,7 +251,7 @@ public class DdlCommandHandler {
 
             if (QueryUtils.isSqlType(typeDesc.valueClass())) {
                 throw new SchemaOperationException("Cannot add column(s) because table was created " +
-                    "with WRAP_VALUE=false option.");
+                    "based on cache configured with built-in types or with " + WRAP_VALUE + "=false option.");
             }
 
             List<QueryField> cols = new ArrayList<>(cmd.columns().size());
@@ -384,6 +421,22 @@ public class DdlCommandHandler {
             keyTypeName = IgniteUuid.class.getName();
 
             res = new QueryEntityEx(res).implicitPk(true);
+        }
+
+        if (!cmd.wrapValue()) {
+            ColumnDefinition valCol = null;
+
+            for (ColumnDefinition col : cmd.columns()) {
+                if (!cmd.primaryKeyColumns().contains(col.name())) {
+                    valCol = col;
+                    break;
+                }
+            }
+
+            if (valCol != null) {
+                valTypeName = Commons.typeFactory().getResultClass(valCol.type()).getTypeName();
+                res.setValueFieldName(valCol.name());
+            }
         }
 
         res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());

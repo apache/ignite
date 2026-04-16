@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -74,19 +75,39 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlC
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.TEMPLATE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_KEY;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_VALUE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE;
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveSchemaName;
 
 /** */
 public class DdlSqlToCommandConverter {
+    /** */
+    private static final String SIMPLE_PREDICATE = "a simple identifier";
+
     /** Processor that validates a value is a Sql Identifier. */
     private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR = (opt, ctx) -> {
-        if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
-            throwOptionParsingException(opt, "a simple identifier", ctx.query());
+        SqlNode val = opt.value();
+        if (!(val instanceof SqlIdentifier) || !((SqlIdentifier)val).isSimple())
+            throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
 
-        return ((SqlIdentifier)opt.value()).getSimple();
+        return ((SqlIdentifier)val).getSimple();
     };
+
+    /** Processor that validates that value can be parsed as boolean. */
+    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, Boolean> VALUE_IS_BOOL_IDENTIFIER_VALIDATOR =
+        (opt, ctx) -> {
+            SqlNode val = opt.value();
+            if (!(val instanceof SqlIdentifier) || !((SqlIdentifier)val).isSimple())
+                throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
+
+            String simple = ((SqlIdentifier)val).getSimple().toLowerCase(Locale.ROOT);
+            if (!"true".equals(simple) && !"false".equals(simple))
+                throwOptionParsingException(opt, "Unexpected identifier: " + simple, ctx.query());
+
+            return Boolean.valueOf(((SqlIdentifier)val).getSimple());
+        };
 
     /** Processor that unconditionally throws an AssertionException. */
     private static final TableOptionProcessor<Void> UNSUPPORTED_OPTION_PROCESSOR = new TableOptionProcessor<>(
@@ -105,6 +126,8 @@ public class DdlSqlToCommandConverter {
         new TableOptionProcessor<>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
         new TableOptionProcessor<>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
         new TableOptionProcessor<>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
+        new TableOptionProcessor<>(WRAP_KEY, VALUE_IS_BOOL_IDENTIFIER_VALIDATOR, CreateTableCommand::wrapKey),
+        new TableOptionProcessor<>(WRAP_VALUE, VALUE_IS_BOOL_IDENTIFIER_VALIDATOR, CreateTableCommand::wrapValue),
         new TableOptionProcessor<>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
         new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
             CreateTableCommand::writeSynchronizationMode),
@@ -450,7 +473,7 @@ public class DdlSqlToCommandConverter {
      */
     private String paramIsSqlIdentifierValidator(IgniteSqlCreateTableOption opt, PlanningContext ctx) {
         if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
-            throwOptionParsingException(opt, "a simple identifier", ctx.query());
+            throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
 
         return ((SqlIdentifier)opt.value()).getSimple();
     }

@@ -52,4 +52,10 @@ public enum IgniteSqlCreateTableOptionEnum {
 
     /** This flag specified whether the encryption should be enabled for the underlying cache. */
     ENCRYPTED,
+
+    /** Flag controls whether a single column PRIMARY KEY should be wrapped in the BinaryObjects format. */
+    WRAP_KEY,
+
+    /** Flag controls whether a single column value of a primitive type should be wrapped in the BinaryObjects format. */
+    WRAP_VALUE,
 }
