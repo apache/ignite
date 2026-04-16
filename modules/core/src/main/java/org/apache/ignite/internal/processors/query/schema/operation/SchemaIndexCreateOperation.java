@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Schema index create operation.

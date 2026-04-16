@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.cache;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -32,7 +33,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * the list can be provided as following {@code (id, name asc, age desc)}.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class QueryIndex implements Message {
+public class QueryIndex implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
 
