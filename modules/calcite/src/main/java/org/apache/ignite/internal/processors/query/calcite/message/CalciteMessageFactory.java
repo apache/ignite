@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
