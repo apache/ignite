@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterSc
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.PruneTableModifyRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
@@ -152,10 +153,41 @@ public enum PlannerPhase {
     },
 
     /** */
+    HEP_EMPTY_NODES_ELIMINATION("Heuristic phase to eliminate empty nodes") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return ctx.rules(RuleSets.ofList(
+                PruneEmptyRules.PROJECT_INSTANCE,
+                PruneEmptyRules.FILTER_INSTANCE,
+                PruneEmptyRules.SORT_INSTANCE,
+                PruneEmptyRules.AGGREGATE_INSTANCE,
+                PruneEmptyRules.JOIN_LEFT_INSTANCE,
+                PruneEmptyRules.JOIN_RIGHT_INSTANCE
+            ));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    /** */
     HEP_OPTIMIZE_JOIN_ORDER("Heuristic phase to optimize joins order") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
-            return ctx.rules(RuleSets.ofList(IgniteMultiJoinOptimizeRule.INSTANCE));
+            return ctx.rules(RuleSets.ofList(
+                IgniteMultiJoinOptimizeRule.INSTANCE,
+
+                CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+
+                PruneEmptyRules.PROJECT_INSTANCE,
+                PruneEmptyRules.FILTER_INSTANCE,
+                PruneEmptyRules.SORT_INSTANCE,
+                PruneEmptyRules.AGGREGATE_INSTANCE,
+                PruneEmptyRules.JOIN_LEFT_INSTANCE,
+                PruneEmptyRules.JOIN_RIGHT_INSTANCE
+            ));
         }
 
         /** {@inheritDoc} */
@@ -253,6 +285,7 @@ public enum PlannerPhase {
 
                     PruneEmptyRules.CORRELATE_LEFT_INSTANCE,
                     PruneEmptyRules.CORRELATE_RIGHT_INSTANCE,
+                    PruneTableModifyRule.INSTANCE,
 
                     // Useful of this rule is not clear now.
                     // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,

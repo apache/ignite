@@ -27,6 +27,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
@@ -120,6 +121,21 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
         condition = RexUtils.replaceInputRefs(condition);
+
+        // Eliminate scan if always false condition found.
+        if (condition.isAlwaysFalse()) {
+            call.transformTo(LogicalValues.createEmpty(cluster, scan.getRowType()));
+            call.getPlanner().prune(filter);
+            call.getPlanner().prune(scan);
+            return;
+        }
+
+        // Eliminate always true condition.
+        if (condition.isAlwaysTrue()) {
+            call.transformTo(scan);
+            call.getPlanner().prune(filter);
+            return;
+        }
 
         // Set default traits, real traits will be calculated for physical node.
         RelTraitSet trait = cluster.traitSet();
