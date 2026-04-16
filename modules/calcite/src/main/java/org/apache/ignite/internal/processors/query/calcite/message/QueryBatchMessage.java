@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class QueryBatchMessage implements ExecutionContextAware {
@@ -63,8 +61,7 @@ public class QueryBatchMessage implements ExecutionContextAware {
         this.batchId = batchId;
         this.last = last;
 
-        if (!F.isEmpty(rows))
-            mRows = rows.stream().map(o -> o == null ? null : new GenericValueMessage(o)).collect(Collectors.toList());
+        mRows = rows.stream().map(o -> o == null ? null : new GenericValueMessage(o)).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -102,6 +99,6 @@ public class QueryBatchMessage implements ExecutionContextAware {
      * @return Rows.
      */
     public List<Object> rows() {
-        return F.isEmpty(mRows) ? Collections.emptyList() : mRows.stream().map(GenericValueMessage::value).collect(Collectors.toList());
+        return mRows.stream().map(GenericValueMessage::value).collect(Collectors.toList());
     }
 }

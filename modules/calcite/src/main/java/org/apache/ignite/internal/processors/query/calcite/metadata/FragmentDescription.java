@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
 
 /** */
-public class FragmentDescription implements Message {
+public class FragmentDescription implements MarshallableMessage {
     /** */
     @Order(0)
     long fragmentId;
@@ -93,5 +95,16 @@ public class FragmentDescription implements Message {
     /** */
     public void mapping(FragmentMapping mapping) {
         this.mapping = mapping;
+    }
+
+    /** */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (target != null)
+            target = target.explicitMapping();
+    }
+
+    /** */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        // No-op.
     }
 }

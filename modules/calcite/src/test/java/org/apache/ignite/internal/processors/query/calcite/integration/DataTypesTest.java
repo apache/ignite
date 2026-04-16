@@ -554,7 +554,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testIsNotDistinctFromTypeConversion() {
-        SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT};
+        SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.INTEGER,
+            SqlTypeName.BIGINT, SqlTypeName.DECIMAL, SqlTypeName.FLOAT, SqlTypeName.DOUBLE};
 
         for (SqlTypeName type : numerics) {
             String t = type.getName();
@@ -569,7 +570,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             sql("INSERT INTO t1 VALUES (1, 1, null, '1'), (2, 2, 2, '22'), (3, 33, 3, null), (4, null, 4, '4')");
             sql("INSERT INTO t2 VALUES (0, 0, 0, null, '0'), (11, null, 1, 1, '1'), (2, 2, 2, 2, '22'), (3, 3, null, 3, null)");
 
-            for (HintDefinition hint : F.asList(HintDefinition.CNL_JOIN)) {
+            for (HintDefinition hint : F.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
                 String h = "/*+ " + hint.name() + " */ ";
 
                 // Primary keys, indexed.
