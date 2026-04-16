@@ -27,9 +27,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * different node with same ID.
  */
 public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** ID of the node with duplicate ID. */
     @Order(0)
     UUID nodeId;
@@ -64,5 +61,4 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
     @Override public String toString() {
         return S.toString(TcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());
     }
-
 }

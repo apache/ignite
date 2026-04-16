@@ -29,9 +29,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     @Nullable UUID prevNodeId;
 
@@ -82,7 +79,6 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
     public void dcId(String dcId) {
         this.dcId = dcId;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -27,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
  * Ping request.
  */
 public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Pinged client node ID. */
     @Order(0)
     @Nullable UUID nodeToPing;
@@ -60,5 +57,4 @@ public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage i
     @Override public String toString() {
         return S.toString(TcpDiscoveryClientPingRequest.class, this, "super", super.toString());
     }
-
 }

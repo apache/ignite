@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     long order;
 
@@ -107,7 +104,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
             ? null
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

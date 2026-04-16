@@ -255,7 +255,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetri
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
@@ -340,9 +339,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(CacheVersionedValue.class);
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
-
-        msgIdx = 5500;
-        withNoSchema(TcpDiscoveryCollectionMessage.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;

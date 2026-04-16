@@ -26,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Message telling joining node that it failed coordinator's validation check.
  */
 public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Coordinator version. */
     @Order(0)
     String err;
@@ -55,7 +52,6 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
     public String error() {
         return err;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

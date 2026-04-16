@@ -37,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * to ensure that the failed node is actually failed.
  */
 public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Status OK. */
     public static final int STATUS_OK = 1;
 
@@ -124,7 +121,6 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     public void status(int status) {
         this.status = status;
     }
-
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {

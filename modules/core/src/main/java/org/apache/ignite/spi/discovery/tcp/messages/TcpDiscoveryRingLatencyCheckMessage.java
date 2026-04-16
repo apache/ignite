@@ -27,9 +27,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  *
  */
 public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Maximal hops number. */
     @Order(0)
     int maxHops;
@@ -75,7 +72,6 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
     public boolean maxHopsReached() {
         return curHops == maxHops;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

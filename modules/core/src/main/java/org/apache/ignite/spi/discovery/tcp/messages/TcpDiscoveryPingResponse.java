@@ -26,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Ping response.
  */
 public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Whether pinged client exists. */
     @Order(0)
     boolean clientExists;
@@ -63,5 +60,4 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage implem
     @Override public String toString() {
         return S.toString(TcpDiscoveryPingResponse.class, this, "super", super.toString());
     }
-
 }

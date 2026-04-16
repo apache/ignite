@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** New router nodeID. */
     @Order(0)
     UUID routerNodeId;
@@ -47,7 +44,7 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
     /** Pending messages holder. */
     @Order(2)
-    @Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    @Nullable Collection<TcpDiscoveryAbstractMessage> pendingMsgs;
 
     /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryClientReconnectMessage() {
@@ -66,44 +63,32 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         this.lastMsgId = lastMsgId;
     }
 
-    /**
-     * @return New router node ID.
-     */
+    /** @return New router node ID. */
     public UUID routerNodeId() {
         return routerNodeId;
     }
 
-    /**
-     * @return Last message ID.
-     */
+    /** @return Last message ID. */
     public IgniteUuid lastMessageId() {
         return lastMsgId;
     }
 
-    /**
-     * @param msgs Pending messages.
-     */
-    public void pendingMessages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
+    /** @param msgs Pending messages. */
+    public void pendingMessages(Collection<TcpDiscoveryAbstractMessage> msgs) {
+        pendingMsgs = F.isEmpty(msgs) ? null : msgs;
     }
 
-    /**
-     * @return Pending messages.
-     */
+    /** @return Pending messages. */
     public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
-        return pendingMsgsMsg == null ? Collections.emptyList() : pendingMsgsMsg.messages();
+        return pendingMsgs == null ? Collections.emptyList() : pendingMsgs;
     }
 
-    /**
-     * @param success Success flag.
-     */
+    /** @param success Success flag. */
     public void success(boolean success) {
         setFlag(CLIENT_RECON_SUCCESS_FLAG_POS, success);
     }
 
-    /**
-     * @return Success flag.
-     */
+    /** @return Success flag. */
     public boolean success() {
         return getFlag(CLIENT_RECON_SUCCESS_FLAG_POS);
     }
@@ -122,7 +107,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
             Objects.equals(routerNodeId, other.routerNodeId) &&
             Objects.equals(lastMsgId, other.lastMsgId);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

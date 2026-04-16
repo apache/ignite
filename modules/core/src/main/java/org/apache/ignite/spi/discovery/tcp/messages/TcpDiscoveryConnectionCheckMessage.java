@@ -28,9 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
  * which directly replies to the sender without message re-translation to the coordinator.
  */
 public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Default constructor for {@link MessageFactory}.
      */
@@ -51,7 +48,6 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
     @Override public boolean traceLogLevel() {
         return true;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

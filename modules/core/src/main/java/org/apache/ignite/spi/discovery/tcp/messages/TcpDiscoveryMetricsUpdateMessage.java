@@ -51,9 +51,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
     @Order(0)
@@ -214,7 +211,6 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     @Override public boolean traceLogLevel() {
         return true;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

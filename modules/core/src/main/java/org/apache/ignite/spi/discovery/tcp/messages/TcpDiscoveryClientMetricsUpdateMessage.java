@@ -32,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  */
 public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     NodeMetricsMessage metricsMsg;
 
@@ -63,7 +60,6 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     public NodeMetricsMessage metricsMessage() {
         return metricsMsg;
     }
-
 
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {

@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     IgniteUuid msgId;
 
@@ -70,5 +67,4 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage i
     @Override public String toString() {
         return S.toString(TcpDiscoveryClientAckResponse.class, this, "super", super.toString());
     }
-
 }

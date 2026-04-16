@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * Message telling joining node that its authentication failed.
  */
 public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Creator address. */
     @Order(0)
     InetAddressMessage creatorAddrMsg;
@@ -67,7 +64,6 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     public InetAddress creatorAddress() {
         return creatorAddrMsg.address();
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
