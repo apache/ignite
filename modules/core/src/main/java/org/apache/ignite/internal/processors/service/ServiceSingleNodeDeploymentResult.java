@@ -99,9 +99,7 @@ public class ServiceSingleNodeDeploymentResult implements MarshallableMessage, S
 
         for (Throwable th : errors) {
             try {
-                byte[] arr = U.marshal(marsh, th);
-
-                errorsBytes.add(arr);
+                errorsBytes.add(U.marshal(marsh, th));
             }
             catch (IgniteCheckedException e) {
                 log.error("Failed to marshal deployment error, err=" + th, e);
@@ -123,18 +121,19 @@ public class ServiceSingleNodeDeploymentResult implements MarshallableMessage, S
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        try {
-            if (errorsBytes != null && errors == null) {
-                errors = new ArrayList<>();
+        if (errorsBytes != null && errors == null) {
+            errors = new ArrayList<>();
 
-                for (byte[] arr : errorsBytes)
+            for (byte[] arr : errorsBytes) {
+                try {
                     errors.add(U.unmarshal(marsh, arr, clsLdr));
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(null, "Failed to unmarshal deployment result message", e);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(null, "Failed to unmarshal deployment error.", e);
 
-            errors.add(new IgniteCheckedException("Failed to unmarshal deployment error, see server logs for details."));
+                    errors.add(new IgniteCheckedException("Failed to unmarshal deployment error, see server logs for details."));
+                }
+            }
         }
     }
 
