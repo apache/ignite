@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * second pass).
  */
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
     @Order(0)

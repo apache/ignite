@@ -20,12 +20,11 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Ping response.
  */
-public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
     /** Whether pinged client exists. */
     @Order(0)
     boolean clientExists;

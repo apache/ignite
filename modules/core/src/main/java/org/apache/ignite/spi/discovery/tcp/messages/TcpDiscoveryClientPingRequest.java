@@ -20,13 +20,12 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Ping request.
  */
-public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage {
     /** Pinged client node ID. */
     @Order(0)
     @Nullable UUID nodeToPing;

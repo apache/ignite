@@ -20,13 +20,12 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message telling joining node that new topology already contain
  * different node with same ID.
  */
-public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage {
     /** ID of the node with duplicate ID. */
     @Order(0)
     UUID nodeId;

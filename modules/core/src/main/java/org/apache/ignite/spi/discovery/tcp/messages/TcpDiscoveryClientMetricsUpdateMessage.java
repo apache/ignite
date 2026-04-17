@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -30,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * <p>
  * Client sends his metrics in this message.
  */
-public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)
     NodeMetricsMessage metricsMsg;

@@ -21,12 +21,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)
     IgniteUuid msgId;

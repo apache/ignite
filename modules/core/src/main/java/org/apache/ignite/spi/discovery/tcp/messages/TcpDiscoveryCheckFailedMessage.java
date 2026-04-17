@@ -20,12 +20,11 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message telling joining node that it failed coordinator's validation check.
  */
-public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage {
     /** Coordinator version. */
     @Order(0)
     String err;

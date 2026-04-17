@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * If a failed node id is specified then the message is sent across the ring up to the sender node
  * to ensure that the failed node is actually failed.
  */
-public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage {
     /** Status OK. */
     public static final int STATUS_OK = 1;
 

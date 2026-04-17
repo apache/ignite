@@ -21,13 +21,12 @@ import java.net.InetAddress;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Message telling joining node that its authentication failed.
  */
-public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     /** Creator address. */
     @Order(0)
     InetAddressMessage creatorAddrMsg;
