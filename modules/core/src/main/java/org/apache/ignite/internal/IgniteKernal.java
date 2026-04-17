@@ -1330,7 +1330,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                     ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshaller(), U.resolveClassLoader(ctx.config()));
 
                 compMsgs.add(f);
-
             }
         }
 
