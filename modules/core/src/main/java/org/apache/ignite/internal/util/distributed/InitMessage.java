@@ -38,10 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see SingleNodeMessage
  */
-public class InitMessage<I extends Message> implements Message, DiscoveryCustomMessage {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class InitMessage<I extends Message> implements DiscoveryCustomMessage {
     /** Custom message ID. */
     @Order(0)
     public IgniteUuid id;
@@ -120,5 +117,4 @@ public class InitMessage<I extends Message> implements Message, DiscoveryCustomM
     @Override public String toString() {
         return S.toString(InitMessage.class, this);
     }
-
 }

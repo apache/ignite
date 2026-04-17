@@ -20,12 +20,11 @@ package org.apache.ignite.internal.processors.security;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class TestDiscoveryMessage implements DiscoveryCustomMessage, Message {
+public class TestDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id = IgniteUuid.randomUuid();

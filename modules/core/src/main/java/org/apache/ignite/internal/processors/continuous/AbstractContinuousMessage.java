@@ -21,15 +21,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public abstract class AbstractContinuousMessage implements Message, DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 2781778657738703012L;
-
+public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
     /** Routine ID. */
     @Order(0)
     UUID routineId;

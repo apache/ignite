@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
-import java.io.Serializable;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see DiscoverySpi#sendCustomEvent
  */
-public interface DiscoverySpiCustomMessage extends Serializable {
+public interface DiscoverySpiCustomMessage extends Message {
     /**
      * Called when custom message has been handled by all nodes.
      *

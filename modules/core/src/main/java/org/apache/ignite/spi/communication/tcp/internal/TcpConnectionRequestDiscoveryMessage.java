@@ -23,7 +23,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,10 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * node B receives request and opens communication connection to node A
  * thus allowing both nodes to communicate to each other.
  */
-public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage {
     /** Message id. */
     @Order(0)
     IgniteUuid id;
@@ -87,7 +83,6 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

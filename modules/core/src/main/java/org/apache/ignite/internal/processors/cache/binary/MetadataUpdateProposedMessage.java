@@ -75,9 +75,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage, MarshallableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     IgniteUuid id;
 
@@ -128,23 +125,17 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         typeId = metadata.typeId();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return !rejected() ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
     }
@@ -156,9 +147,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         errMsg = new ErrorMessage(err);
     }
 
-    /**
-     *
-     */
+    /** */
     boolean rejected() {
         return errMsg != null;
     }
@@ -170,58 +159,42 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         return (BinaryObjectException)ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Pending version.
-     */
+    /** @return Pending version. */
     int pendingVersion() {
         return pendingVer;
     }
 
-    /**
-     * @param pendingVer New pending version.
-     */
+    /** @param pendingVer New pending version. */
     void pendingVersion(int pendingVer) {
         this.pendingVer = pendingVer;
     }
 
-    /**
-     *
-     */
+    /** */
     int acceptedVersion() {
         return acceptedVer;
     }
 
-    /**
-     * @param acceptedVer Accepted version.
-     */
+    /** @param acceptedVer Accepted version. */
     void acceptedVersion(int acceptedVer) {
         this.acceptedVer = acceptedVer;
     }
 
-    /**
-     *
-     */
+    /** */
     UUID origNodeId() {
         return origNodeId;
     }
 
-    /**
-     *
-     */
+    /** */
     public BinaryMetadata metadata() {
         return metadata;
     }
 
-    /**
-     * @param metadata Metadata.
-     */
+    /** @param metadata Metadata. */
     public void metadata(BinaryMetadata metadata) {
         this.metadata = metadata;
     }
 
-    /**
-     *
-     */
+    /** */
     public int typeId() {
         return typeId;
     }
