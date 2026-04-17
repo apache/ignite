@@ -435,14 +435,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         assertThrowsSqlException(() ->
                 sql("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_key=false, key_type=custom\""),
-            "WRAP_KEY cannot be \"false\" when KEY_TYPE is defined.");
+            "WRAP_KEY parameter cannot be \"false\" when KEY_TYPE is defined.");
 
         assertThrowsSqlException(() -> sql("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_value=false\""),
             "WRAP_VALUE parameter cannot be \"false\" with multiple columns.");
 
         assertThrowsSqlException(() ->
                 sql("create table a (id int, x varchar, primary key(id)) with \"wrap_value=false, value_type=custom\""),
-            "WRAP_VALUE cannot be \"false\" when VALUE_TYPE is defined.");
+            "WRAP_VALUE parameter cannot be \"false\" when VALUE_TYPE is defined.");
     }
 
     /** */

@@ -194,7 +194,7 @@ public class DdlCommandHandler {
             }
 
             if (!F.isEmpty(cmd.keyTypeName())) {
-                throw new IgniteSQLException(WRAP_KEY + " cannot be \"false\" when " + KEY_TYPE + " is defined.",
+                throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when " + KEY_TYPE + " is defined.",
                     IgniteQueryErrorCode.PARSING);
             }
         }
@@ -208,7 +208,7 @@ public class DdlCommandHandler {
             }
 
             if (!F.isEmpty(cmd.valueTypeName())) {
-                throw new IgniteSQLException(WRAP_VALUE + " cannot be \"false\" when " + VALUE_TYPE + " is defined.",
+                throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" when " + VALUE_TYPE + " is defined.",
                     IgniteQueryErrorCode.PARSING);
             }
         }
