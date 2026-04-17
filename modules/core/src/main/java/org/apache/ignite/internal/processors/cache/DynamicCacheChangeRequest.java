@@ -171,7 +171,7 @@ public class DynamicCacheChangeRequest implements MarshallableMessage, Serializa
         cfgBytes = U.marshal(marsh, startCfg);
 
         if (nearCacheCfg != null)
-            nearCfgBytes = U.marshal(marsh, nearCfgBytes);
+            nearCfgBytes = U.marshal(marsh, nearCacheCfg);
 
         if (schema != null)
             schemaBytes = U.marshal(marsh, schema);
