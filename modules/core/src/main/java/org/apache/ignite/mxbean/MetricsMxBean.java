@@ -46,7 +46,7 @@ public interface MetricsMxBean {
      *
      * @param name Metric name.
      * @param rateTimeInterval New rate time interval.
-     * @throws IgniteException If some error occured.
+     * @throws IgniteException If some error occurred.
      */
     @MXBeanDescription("Configure hitrate metric.")
     public void configureHitRateMetric(
@@ -60,7 +60,7 @@ public interface MetricsMxBean {
      *
      * @param name Metric name.
      * @param bounds New bounds.
-     * @throws IgniteException If some error occured.
+     * @throws IgniteException If some error occurred.
      */
     @MXBeanDescription("Configure histogram metric.")
     public void configureHistogramMetric(

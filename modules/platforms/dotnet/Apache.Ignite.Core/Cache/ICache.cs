@@ -836,7 +836,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
         /// <returns>Result of the processing.</returns>
-        /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
+        /// <exception cref="CacheEntryProcessorException">If an exception has occurred during processing.</exception>
         TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -851,7 +851,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
         /// <returns>Result of the processing.</returns>
-        /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
+        /// <exception cref="CacheEntryProcessorException">If an exception has occurred during processing.</exception>
         Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -878,7 +878,7 @@ namespace Apache.Ignite.Core.Cache
         /// defined by the <see cref="ICacheEntryProcessor{K,V,A,R}"/> implementation.
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
-        /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
+        /// <exception cref="CacheEntryProcessorException">If an exception has occurred during processing.</exception>
         ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
@@ -906,7 +906,7 @@ namespace Apache.Ignite.Core.Cache
         /// defined by the <see cref="ICacheEntryProcessor{K,V,A,R}"/> implementation.
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
-        /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
+        /// <exception cref="CacheEntryProcessorException">If an exception has occurred during processing.</exception>
         Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 

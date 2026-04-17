@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * This exception is used to collect exceptions occured in {@link VerifyBackupPartitionsTask} execution.
+ * This exception is used to collect exceptions that occurred in {@link VerifyBackupPartitionsTask} execution.
  */
 public class IdleVerifyException extends IgniteException {
     /** */
