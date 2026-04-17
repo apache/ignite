@@ -677,12 +677,18 @@ public class SqlScriptRunner {
                 }
 
                 for (int j = 0; j < expectedRow.size(); ++j) {
-                    checkEquals("Not expected result at: " + posDesc +
-                        ". [row=" + i + ", col=" + j +
-                        ", expected=" + expectedRow.get(j) + ", actual=" + SqlScriptRunner.this.toString(row.get(j)) + ']',
-                        expectedRow.get(j),
-                        row.get(j)
-                    );
+                    try {
+                        checkEquals("Not expected result at: " + posDesc +
+                                ". [row=" + i + ", col=" + j +
+                                ", expected=" + expectedRow.get(j) + ", actual=" + SqlScriptRunner.this.toString(row.get(j)) + ']',
+                            expectedRow.get(j),
+                            row.get(j)
+                        );
+                    } catch (AssertionError ex) {
+                        AssertionError extended = new AssertionError("Invalid results: " + res);
+                        ex.addSuppressed(extended);
+                        throw ex;
+                    }
                 }
             }
         }
