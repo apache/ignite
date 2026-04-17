@@ -48,6 +48,8 @@ data: {
       "AFFINITY_KEY"
       "ATOMICITY"
       "WRITE_SYNCHRONIZATION_MODE"
+      "WRAP_KEY"
+      "WRAP_VALUE"
       "CACHE_GROUP"
       "CACHE_NAME"
       "DATA_REGION"

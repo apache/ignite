@@ -99,6 +99,9 @@ public class DdlSqlToCommandConverter {
     private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, Boolean> VALUE_IS_BOOL_IDENTIFIER_VALIDATOR =
         (opt, ctx) -> {
             SqlNode val = opt.value();
+            if (val instanceof SqlLiteral)
+                return ((SqlLiteral)val).booleanValue();
+
             if (!(val instanceof SqlIdentifier) || !((SqlIdentifier)val).isSimple())
                 throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
 
