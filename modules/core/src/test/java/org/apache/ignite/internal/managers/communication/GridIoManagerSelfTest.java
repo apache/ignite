@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -29,8 +28,6 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -93,7 +90,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     public void testSendIfOneOfNodesIsLocalAndTopicIsEnum() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                new GridIoManager(ctx).sendToGridTopic(F.asList(locNode, rmtNode), GridTopic.TOPIC_CACHE, new TestMessage(),
+                new GridIoManager(ctx).sendToGridTopic(F.asList(locNode, rmtNode), GridTopic.TOPIC_CACHE,
+                    new GridIoManagerSelfTestMessage(),
                     GridIoPolicy.P2P_POOL);
 
                 return null;
@@ -222,25 +220,6 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
          */
         @Override public boolean matches(Collection<? extends ClusterNode> colToCheck) {
             return CollectionUtils.isEqualCollection(expCol, colToCheck);
-        }
-    }
-
-    /** */
-    private static class TestMessage implements Message {
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return 0;
         }
     }
 }

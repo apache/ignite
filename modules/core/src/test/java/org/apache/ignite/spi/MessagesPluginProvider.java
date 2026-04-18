@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
@@ -39,22 +41,25 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
     /** */
     @SafeVarargs
     public MessagesPluginProvider(Class<? extends Message>... msgs) {
-        msgFactoryProvider = f -> {
-            short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
+        this(registrations(msgs));
+    }
 
-            for (Class<? extends Message> msg : msgs) {
+    /** */
+    public MessagesPluginProvider(Map<Short, Class<? extends Message>> msgs) {
+        msgFactoryProvider = f -> {
+            for (Map.Entry<Short, Class<? extends Message>> msg : msgs.entrySet()) {
+                Class<? extends Message> msgCls = msg.getValue();
+
                 Supplier<Message> msgSupp = () -> {
                     try {
-                        return U.newInstance(msg);
+                        return U.newInstance(msgCls);
                     }
                     catch (IgniteCheckedException e) {
                         throw new RuntimeException(e);
                     }
                 };
 
-                f.register(directType, msgSupp, loadSerializer(msg));
-
-                directType++;
+                f.register(msg.getKey(), msgSupp, loadSerializer(msgCls));
             }
         };
     }
@@ -89,5 +94,21 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         catch (Exception e) {
             throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
         }
+    }
+
+    /**
+     * @param msgs Message classes.
+     * @return Message registrations with generated direct types.
+     */
+    @SafeVarargs
+    private static Map<Short, Class<? extends Message>> registrations(Class<? extends Message>... msgs) {
+        Map<Short, Class<? extends Message>> regs = new HashMap<>();
+
+        short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
+
+        for (Class<? extends Message> msg : msgs)
+            regs.put(directType++, msg);
+
+        return regs;
     }
 }

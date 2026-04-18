@@ -17,17 +17,16 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -47,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -74,7 +74,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTest {
     /** */
+    private static final short TEST_MESSAGE_DIRECT_TYPE = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
+
+    /** */
     private static final int MIN_LOAD_THREADS = 2;
+
+    /** Artificial write delay reproducing the original pending queue scenario. */
+    static final int WRITE_DELAY_MS = 50;
 
     /** */
     private volatile long maxConnIdleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
@@ -154,7 +160,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         Ignite ldr = clientLdr ? cli : srvr;
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
-        TestMessage msg = new TestMessage();
+        CommunicationConnectionPoolMetricsTestMessage msg = new CommunicationConnectionPoolMetricsTestMessage();
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null);
 
@@ -206,7 +212,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         Ignite ldr = clientLdr ? cli : srvr;
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
-        Message msg = new TestMessage();
+        Message msg = new CommunicationConnectionPoolMetricsTestMessage();
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null, maxConnIdleTimeout, maxConnIdleTimeout * 4);
 
@@ -257,7 +263,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
-        TestMessage msg = new TestMessage();
+        CommunicationConnectionPoolMetricsTestMessage msg = new CommunicationConnectionPoolMetricsTestMessage();
 
         long loadMillis0 = System.currentTimeMillis();
 
@@ -368,7 +374,12 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             }
         });
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestMessage((int)maxConnIdleTimeout * 3), null);
+        IgniteInternalFuture<?> loadFut = runLoad(
+            ldr,
+            runFlag,
+            () -> new CommunicationConnectionPoolMetricsTestMessage((int)maxConnIdleTimeout * 3),
+            null
+        );
 
         monFut.get(getTestTimeout());
 
@@ -390,12 +401,12 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
 
-        AtomicInteger writeDelay = new AtomicInteger();
+        AtomicBoolean delayWrite = new AtomicBoolean();
 
         IgniteInternalFuture<?> loadFut = runLoad(
             ldr,
             runFlag,
-            () -> new TestMessage(writeDelay.get()),
+            () -> new CommunicationConnectionPoolMetricsTestMessage(delayWrite.get() ? WRITE_DELAY_MS : 0),
             loadCnt
         );
 
@@ -404,8 +415,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         // Ensure that preloaded without a failure.
         assertTrue(runFlag.get());
 
-        // Will delay message queue processing but not network i/o.
-        writeDelay.set(50);
+        // Delay actual socket writes for the test message to build up the outbound queue.
+        delayWrite.set(true);
 
         long checkPeriod = U.nanosToMillis(ConnectionClientPool.METRICS_UPDATE_THRESHOLD / 3);
 
@@ -422,7 +433,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             );
         }
 
-        writeDelay.set(0);
+        delayWrite.set(false);
 
         dumpMetrics(ldr);
 
@@ -528,7 +539,11 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(MessageFactory factory) {
-                    factory.register(TestMessage.DIRECT_TYPE, TestMessage::new);
+                    factory.register(
+                        TEST_MESSAGE_DIRECT_TYPE,
+                        CommunicationConnectionPoolMetricsTestMessage::new,
+                        new TestMessageSerializer()
+                    );
                 }
             });
         }
@@ -541,51 +556,32 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             .registry(metricName(SHARED_METRICS_REGISTRY_NAME, ((IgniteEx)to).context().localNodeId().toString()));
     }
 
-    /** */
-    private static class TestMessage implements Message {
-        /** */
-        public static final short DIRECT_TYPE = 200;
-
-        /** */
-        private final int writeDelay;
-
-        /** */
-        public TestMessage(int writeDelay) {
-            this.writeDelay = writeDelay;
-        }
-
-        /** */
-        public TestMessage() {
-            this(0);
-        }
-
+    /** Serializer preserving the original write delay semantics of the test message. */
+    private static class TestMessageSerializer implements MessageSerializer<CommunicationConnectionPoolMetricsTestMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            if (writeDelay > 0) {
+        @Override public boolean writeTo(CommunicationConnectionPoolMetricsTestMessage msg, MessageWriter writer) {
+            if (msg.writeDelay > 0) {
                 try {
-                    U.sleep(writeDelay);
+                    U.sleep(msg.writeDelay);
                 }
                 catch (IgniteInterruptedCheckedException ignored) {
                     // No-op.
                 }
             }
 
-            writer.setBuffer(buf);
+            if (!writer.isHeaderWritten()) {
+                if (!writer.writeHeader(msg.directType()))
+                    return false;
 
-            if (!writer.writeHeader(directType()))
-                return false;
+                writer.onHeaderWritten();
+            }
 
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(CommunicationConnectionPoolMetricsTestMessage msg, MessageReader reader) {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE;
         }
     }
 }
