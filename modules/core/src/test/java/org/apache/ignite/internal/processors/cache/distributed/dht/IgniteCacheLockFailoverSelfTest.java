@@ -31,6 +31,9 @@ import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -153,7 +156,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
 
         GridCacheEntryEx entry = cache.peekEx(key);
 
-        assertTrue("Remote MVCC is not empty: " + entry, entry == null || entry.remoteMvccSnapshot().isEmpty());
+        assertTrue(entry == null || entry.remoteMvccSnapshot().isEmpty(), "Remote MVCC is not empty: " + entry);
 
         startGrid(1);
     }

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  *
  */

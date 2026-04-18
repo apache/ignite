@@ -68,8 +68,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -449,13 +451,13 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             for (Ignite ignite : G.allGrids()) {
                 IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
+                assertNull(cache.localPeek(key), "Unexpected value for: " + ignite.name());
             }
 
             for (Ignite ignite : G.allGrids()) {
                 IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                assertNull("Unexpected value for: " + ignite.name(), cache.get(key));
+                assertNull(cache.get(key), "Unexpected value for: " + ignite.name());
             }
 
             boolean found = keyNodes.isEmpty();
@@ -478,7 +480,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
                 }
             }
 
-            assertTrue("Failed to find key node.", found);
+            assertTrue(found, "Failed to find key node.");
         }
         else if (!keyNodes.isEmpty()) {
             boolean found = false;
@@ -493,7 +495,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
                     ignite.cache(DEFAULT_CACHE_NAME);
 
-                    assertEquals("Unexpected value for: " + ignite.name(), key, key);
+                    // WTF !
+                    assertEquals(key, key, "Unexpected value for: " + ignite.name());
 
                     long nodeCntr = updateCoutner(ignite, key);
 
@@ -507,12 +510,12 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
                 }
             }
 
-            assertTrue("Failed to find key node.", found);
+            assertTrue(found, "Failed to find key node.");
 
             for (Ignite ignite : G.allGrids()) {
                 IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                assertEquals("Unexpected value for: " + ignite.name(), key, cache.get(key));
+                assertEquals(key, cache.get(key), "Unexpected value for: " + ignite.name());
             }
         }
     }
@@ -530,7 +533,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
                 for (IgniteInternalTx tx : tm.activeTransactions()) {
                     if (tx instanceof GridDhtTxLocal) {
-                        assertNull("Only one tx is expected.", locTx);
+                        assertNull(locTx, "Only one tx is expected.");
 
                         locTx = (GridDhtTxLocal)tx;
                     }
@@ -542,7 +545,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             }
         }, 5000);
 
-        assertTrue("Failed to wait for tx.", wait);
+        assertTrue(wait, "Failed to wait for tx.");
     }
 
     /** */

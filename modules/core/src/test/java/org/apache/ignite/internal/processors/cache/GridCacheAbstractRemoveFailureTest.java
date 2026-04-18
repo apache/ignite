@@ -61,6 +61,9 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests that removes are not lost when topology changes.
@@ -471,7 +474,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
             }
         }
 
-        assertTrue("Unexpected data for keys: " + failedKeys, failedKeys.isEmpty());
+        assertTrue(failedKeys.isEmpty(), "Unexpected data for keys: " + failedKeys);
     }
 
     /**

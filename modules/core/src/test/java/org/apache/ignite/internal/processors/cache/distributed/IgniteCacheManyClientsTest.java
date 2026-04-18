@@ -43,6 +43,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -188,13 +191,11 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
             if (topVer == -1L)
                 topVer = ignite.cluster().topologyVersion();
             else
-                assertEquals("Unexpected topology version for node: " + ignite.name(),
-                    topVer,
-                    ignite.cluster().topologyVersion());
+                assertEquals(topVer, ignite.cluster().topologyVersion(),
+                    "Unexpected topology version for node: " + ignite.name());
 
-            assertEquals("Unexpected number of nodes for node: " + ignite.name(),
-                expCnt,
-                ignite.cluster().nodes().size());
+            assertEquals(expCnt, ignite.cluster().nodes().size(),
+                "Unexpected number of nodes for node: " + ignite.name());
         }
     }
 

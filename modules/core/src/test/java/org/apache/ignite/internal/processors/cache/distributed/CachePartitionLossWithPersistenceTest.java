@@ -53,6 +53,10 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -274,7 +278,7 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
         // Read validation.
         for (int p = 0; p < PARTS_CNT; p++) {
             for (Ignite ignite : G.allGrids())
-                assertEquals("Partition " + p, 0, ignite.cache(DEFAULT_CACHE_NAME).get(p));
+                assertEquals(0, ignite.cache(DEFAULT_CACHE_NAME).get(p), "Partition " + p);
         }
     }
 

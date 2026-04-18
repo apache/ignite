@@ -38,6 +38,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests that system transactions do not interact with user transactions.
@@ -166,11 +168,11 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCommonAbstractTes
                 GridCacheEntryEx entry = cache.peekEx(key);
 
                 if (entry != null) {
-                    assertFalse("Entry is locked [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']',
-                        entry.lockedByAny());
+                    assertFalse(entry.lockedByAny(),
+                        "Entry is locked [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']');
 
-                    assertEquals("Invalid entry value [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']',
-                        val, entry.rawGet().value(cache.context().cacheObjectContext(), false));
+                    assertEquals(val, entry.rawGet().value(cache.context().cacheObjectContext(), false),
+                        "Invalid entry value [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']');
                 }
             }
         }

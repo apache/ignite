@@ -40,6 +40,7 @@ import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
@@ -189,10 +190,10 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
             locSize2 = cache.localSize(PRIMARY, BACKUP);
         }
 
-        assertEquals("Wrong cache size on node [node=" + node.configuration().getIgniteInstanceName() +
+        assertEquals(locSize, CACHE_SIZE,
+            "Wrong cache size on node [node=" + node.configuration().getIgniteInstanceName() +
             ", expected= " + CACHE_SIZE +
             ", actual=" + locSize +
-            ", actual2=" + locSize2 + "]",
-            locSize, CACHE_SIZE);
+            ", actual2=" + locSize2 + "]");
     }
 }

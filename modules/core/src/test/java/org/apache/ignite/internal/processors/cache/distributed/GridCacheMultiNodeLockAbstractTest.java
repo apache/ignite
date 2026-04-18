@@ -42,6 +42,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test cases for multi-threaded tests.
@@ -119,9 +122,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         for (int i = 1; i <= 3; i++) {
             jcache(i).clear();
 
-            assertTrue(
-                "Cache isn't empty [i=" + i + ", entries=" + ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME).entries() + "]",
-                jcache(i).localSize() == 0);
+            assertEquals(0, jcache(i).localSize(),
+                "Cache isn't empty [i=" + i + ", entries=" + ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME).entries() + "]");
         }
     }
 
@@ -185,7 +187,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                     return;
         }
 
-        assertFalse("Key locked [key=" + key + ", entries=" + entries(key) + "]", cache.isLocalLocked(key, false));
+        assertFalse(cache.isLocalLocked(key, false), "Key locked [key=" + key + ", entries=" + entries(key) + "]");
     }
 
     /**

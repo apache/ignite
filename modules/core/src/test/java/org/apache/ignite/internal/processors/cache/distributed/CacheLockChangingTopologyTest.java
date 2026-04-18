@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -150,6 +153,6 @@ public class CacheLockChangingTopologyTest extends GridCommonAbstractTest {
                 fail("Unexpected error: " + err);
         }
 
-        assertTrue("Failed to wait for node start", nodeStart.isDone());
+        assertTrue(nodeStart.isDone(), "Failed to wait for node start");
     }
 }

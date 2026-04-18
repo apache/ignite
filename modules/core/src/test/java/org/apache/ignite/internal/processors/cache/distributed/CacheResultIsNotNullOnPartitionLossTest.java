@@ -46,6 +46,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -195,7 +198,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
             stopReading.set(true);
         }
 
-        assertFalse("Null value was returned by cache.get instead of exception.", nullCacheValFoundFut.get());
+        assertFalse(nullCacheValFoundFut.get(), "Null value was returned by cache.get instead of exception.");
 
         Throwable throwable = unexpectedThrowable.get();
         if (throwable != null) {

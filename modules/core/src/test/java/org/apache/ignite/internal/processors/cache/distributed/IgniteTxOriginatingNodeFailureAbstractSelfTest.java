@@ -247,8 +247,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             for (Ignite g : G.allGrids()) {
                 UUID locNodeId = g.cluster().localNode().id();
 
-                assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
-                    g.cache(DEFAULT_CACHE_NAME).get(e.getKey()));
+                assertEquals(partial ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(e.getKey()),
+                    "Check failed for node: " + locNodeId);
             }
         }
     }

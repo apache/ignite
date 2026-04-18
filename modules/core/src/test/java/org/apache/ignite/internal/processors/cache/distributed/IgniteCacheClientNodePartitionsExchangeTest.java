@@ -56,6 +56,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -359,9 +365,8 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
                 }
             }, 10_000);
 
-            assertEquals("Unexpected affinity version for " + ignite.name(),
-                topVer,
-                kernal.context().cache().context().exchange().readyAffinityVersion());
+            assertEquals(topVer, kernal.context().cache().context().exchange().readyAffinityVersion(),
+                "Unexpected affinity version for " + ignite.name());
         }
 
         Iterator<Ignite> it = nodes.iterator();
@@ -389,9 +394,8 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
                 waitForReadyTopology(top, topVer);
 
-                assertEquals("Unexpected topology version [node=" + ignite.name() + ", cache=" + cache.name() + ']',
-                    topVer,
-                    top.readyTopologyVersion());
+                assertEquals(topVer, top.readyTopologyVersion(),
+                    "Unexpected topology version [node=" + ignite.name() + ", cache=" + cache.name() + ']');
             }
         }
 

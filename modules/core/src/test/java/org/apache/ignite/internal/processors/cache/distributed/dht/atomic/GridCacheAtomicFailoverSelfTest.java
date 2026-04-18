@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFailoverSelf
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *

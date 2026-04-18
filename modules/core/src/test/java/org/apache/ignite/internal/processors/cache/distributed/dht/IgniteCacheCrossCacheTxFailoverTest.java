@@ -56,6 +56,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  *
@@ -344,7 +346,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
 
             fut.get();
 
-            assertFalse("Test failed, see log for details.", failed);
+            assertFalse(failed, "Test failed, see log for details.");
         }
         finally {
             stop.set(true);

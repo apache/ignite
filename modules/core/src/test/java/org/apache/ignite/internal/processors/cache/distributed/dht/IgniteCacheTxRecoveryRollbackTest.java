@@ -61,6 +61,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -88,7 +91,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
             for (Ignite node : G.allGrids()) {
                 Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().activeTransactions();
 
-                assertTrue("Unfinished txs [node=" + node.name() + ", txs=" + txs + ']', txs.isEmpty());
+                assertTrue(txs.isEmpty(), "Unfinished txs [node=" + node.name() + ", txs=" + txs + ']');
             }
         }
         finally {
@@ -456,9 +459,8 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
             for (Map.Entry<Integer, Integer> e : expData.entrySet()) {
-                assertEquals("Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']',
-                    e.getValue(),
-                    cache.get(e.getKey()));
+                assertEquals(e.getValue(), cache.get(e.getKey()),
+                    "Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']');
             }
         }
     }

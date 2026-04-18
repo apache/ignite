@@ -25,6 +25,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Check a log message if {@link IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN} is used.
@@ -69,7 +71,7 @@ public class WaitForBackupsOnShutdownSystemPropertyTest extends GridCommonAbstra
 
         startGrid();
 
-        assertTrue("The message was not found", lnsr.check());
+        assertTrue(lnsr.check(), "The message was not found");
     }
 
     /**
@@ -87,6 +89,6 @@ public class WaitForBackupsOnShutdownSystemPropertyTest extends GridCommonAbstra
 
         startGrid();
 
-        assertFalse("The message was found", lnsr.check());
+        assertFalse(lnsr.check(), "The message was found");
     }
 }

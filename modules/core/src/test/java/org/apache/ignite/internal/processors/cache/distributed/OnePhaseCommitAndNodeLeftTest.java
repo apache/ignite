@@ -42,6 +42,9 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Node left a topology when a one phase transaction committing.
@@ -161,7 +164,7 @@ public class OnePhaseCommitAndNodeLeftTest extends GridCommonAbstractTest {
 
         ClusterNode node1 = ignite0.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key);
 
-        assertFalse("Found key is local: " + key + " on node " + node1, node1.isLocal());
+        assertFalse(node1.isLocal(), "Found key is local: " + key + " on node " + node1);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite0);
 

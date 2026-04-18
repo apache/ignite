@@ -48,6 +48,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for customer scenario.
@@ -173,20 +176,21 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             for (int j = 0; j < PARTITIONS_CNT; j++) {
                 ClusterNode refAffNode = refAff.mapPartitionToNode(j);
 
-                assertNotNull("Affinity node for " + j + " partition is null", refAffNode);
+                assertNotNull(refAffNode, "Affinity node for " + j + " partition is null");
 
                 for (int k = SRV_CNT; k < SRV_CNT + CLIENTS_CNT; k++) {
                     ClusterNode clAffNode = grid(k).affinity(cacheName).mapPartitionToNode(j);
 
-                    assertNotNull("Affinity node for " + k + " client and " + j + " partition is null", clAffNode);
+                    assertNotNull(clAffNode, "Affinity node for " + k + " client and " + j + " partition is null");
 
-                    assertEquals("Affinity node for "
+                    assertEquals(
+                        refAffNode.id(),
+                        clAffNode.id(),
+                        "Affinity node for "
                         + k
                         + " client and "
                         + j
-                        + " partition is different on client",
-                        refAffNode.id(),
-                        clAffNode.id());
+                        + " partition is different on client");
                 }
             }
         }

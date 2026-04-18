@@ -42,6 +42,7 @@ import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Multi-node cache test.
@@ -314,11 +315,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         assert v1.equals(v3) : "Mismatch [v1=" + v1 + ", v3=" + v3 + ']';
     }
 
-    /**
-     * @throws Exception If test failed.
-     */
+    /** */
     @Test
-    public void testGlobalClearAll() throws Exception {
+    public void testGlobalClearAll() {
         cache1.put(1, "val1");
         cache2.put(2, "val2");
         cache3.put(3, "val3");

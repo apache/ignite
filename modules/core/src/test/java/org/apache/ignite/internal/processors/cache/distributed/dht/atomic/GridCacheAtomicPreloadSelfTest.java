@@ -42,6 +42,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Simple test for preloading in ATOMIC cache.
@@ -165,8 +166,8 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             IgniteTxManager tm = ((IgniteKernal)grid(i)).context().cache().context().tm();
 
-            assertEquals("Uncommitted transactions found on node [idx=" + i + ", mapSize=" + tm.idMapSize() + ']',
-                0, tm.idMapSize());
+            assertEquals(0, tm.idMapSize(),
+                "Uncommitted transactions found on node [idx=" + i + ", mapSize=" + tm.idMapSize() + ']');
         }
     }
 
@@ -186,8 +187,9 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
             boolean backup = grid.affinity(DEFAULT_CACHE_NAME).isBackup(node, key);
 
             if (primary || backup)
-                assertEquals("Invalid cache value [nodeId=" + node.id() + ", primary=" + primary +
-                    ", backup=" + backup + ", key=" + key + ']', val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                assertEquals(val, cache.localPeek(key, CachePeekMode.ONHEAP),
+                    "Invalid cache value [nodeId=" + node.id() + ", primary=" + primary +
+                    ", backup=" + backup + ", key=" + key + ']');
         }
     }
 

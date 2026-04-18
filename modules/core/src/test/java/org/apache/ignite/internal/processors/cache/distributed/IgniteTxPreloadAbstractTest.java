@@ -42,6 +42,9 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests transaction during cache preloading.
@@ -141,7 +144,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
         for (int i = 0; i < GRID_CNT; i++) {
             for (String key : keys)
-                assertEquals("Unexpected value for cache " + i, (Integer)1, jcache(i).get(key));
+                assertEquals((Integer)1, jcache(i).get(key), "Unexpected value for cache " + i);
         }
     }
 
@@ -220,7 +223,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         }
 
         for (int i = 0; i < GRID_CNT; i++)
-            assertEquals("Unexpected value for cache " + i, (Integer)expVal, jcache(i).get(TX_KEY));
+            assertEquals((Integer)expVal, jcache(i).get(TX_KEY), "Unexpected value for cache " + i);
     }
 
     /** {@inheritDoc} */

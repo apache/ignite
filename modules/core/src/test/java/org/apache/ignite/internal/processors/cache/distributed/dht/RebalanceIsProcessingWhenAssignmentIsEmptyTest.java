@@ -32,6 +32,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Checks that a rebalance future completed when all partitions are rebalanced.
  */
@@ -85,7 +87,7 @@ public class RebalanceIsProcessingWhenAssignmentIsEmptyTest extends GridCommonAb
 
         IgniteInternalFuture fut = grid(1).context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)).preloader().rebalanceFuture();
 
-        assertTrue("Rebalance completed but this rebalance future is not complete, fut=" + fut, fut.isDone());
+        assertTrue(fut.isDone(), "Rebalance completed but this rebalance future is not complete, fut=" + fut);
     }
 
     /**

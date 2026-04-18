@@ -32,6 +32,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests specific combinations of cross-cache transactions.
@@ -146,9 +147,9 @@ public abstract class IgniteCrossCacheTxAbstractSelfTest extends GridCommonAbstr
 
                 boolean backup = grid.affinity(FIRST_CACHE).isBackup(locNode, entry.getKey());
 
-                assertEquals("Invalid value found first cache [primary=" + primary + ", backup=" + backup +
-                        ", node=" + locNode.id() + ", key=" + entry.getKey() + ']',
-                    entry.getValue(), firstCache.get(entry.getKey()));
+                assertEquals(entry.getValue(), firstCache.get(entry.getKey()),
+                    "Invalid value found first cache [primary=" + primary + ", backup=" + backup +
+                        ", node=" + locNode.id() + ", key=" + entry.getKey() + ']');
             }
 
             for (Map.Entry<Integer, String> entry : secondCheck.entrySet()) {
@@ -156,9 +157,9 @@ public abstract class IgniteCrossCacheTxAbstractSelfTest extends GridCommonAbstr
 
                 boolean backup = grid.affinity(SECOND_CACHE).isBackup(locNode, entry.getKey());
 
-                assertEquals("Invalid value found second cache [primary=" + primary + ", backup=" + backup +
-                        ", node=" + locNode.id() + ", key=" + entry.getKey() + ']',
-                    entry.getValue(), grid.cache(SECOND_CACHE).get(entry.getKey()));
+                assertEquals(entry.getValue(), grid.cache(SECOND_CACHE).get(entry.getKey()),
+                    "Invalid value found second cache [primary=" + primary + ", backup=" + backup +
+                        ", node=" + locNode.id() + ", key=" + entry.getKey() + ']');
             }
         }
     }

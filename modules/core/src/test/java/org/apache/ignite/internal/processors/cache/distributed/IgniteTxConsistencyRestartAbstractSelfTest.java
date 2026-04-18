@@ -42,6 +42,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -159,7 +161,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                     Map<Integer, Integer> map = cache.getAll(new LinkedHashSet<Integer>(keys));
 
                     for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
-                        assertNotNull("Null value received from cache [key=" + entry.getKey() + "]", entry.getValue());
+                        assertNotNull(entry.getValue(), "Null value received from cache [key=" + entry.getKey() + "]");
 
                         cache.put(entry.getKey(), entry.getValue() + 1);
                     }
@@ -188,12 +190,12 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                     if (val == null) {
                         val = cache.localPeek(k, CachePeekMode.ALL);
 
-                        assertNotNull("Failed to peek value for key: " + k, val);
+                        assertNotNull(val, "Failed to peek value for key: " + k);
                     }
                     else
-                        assertEquals("Failed to find value in cache [primary=" +
-                            grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), k) + ']',
-                            val, cache.localPeek(k, CachePeekMode.ALL));
+                        assertEquals(val, cache.localPeek(k, CachePeekMode.ALL),
+                            "Failed to find value in cache [primary=" +
+                            grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), k) + ']');
                 }
             }
         }

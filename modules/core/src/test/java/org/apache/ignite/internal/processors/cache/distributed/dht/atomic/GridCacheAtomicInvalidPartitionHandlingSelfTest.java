@@ -57,6 +57,10 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test GridDhtInvalidPartitionException handling in ATOMIC cache during restarts.
@@ -307,8 +311,8 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                                 boolean primary = c.affinity().isPrimary(locNode, k);
 
-                                assertNotNull("Failed to find entry on node for key [locNode=" + locNode.id() +
-                                    ", key=" + k + ']', entry);
+                                assertNotNull(entry, "Failed to find entry on node for key [locNode=" + locNode.id() +
+                                    ", key=" + k + ']');
 
                                 if (val == null) {
                                     assertNull(ver);
@@ -320,17 +324,17 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 else {
                                     assertNotNull(ver);
 
-                                    assertEquals("Failed to check value for key [key=" + k + ", node=" +
-                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        val, CU.value(entry.rawGet(), entry.context(), false));
+                                    assertEquals(val, CU.value(entry.rawGet(), entry.context(), false),
+                                        "Failed to check value for key [key=" + k + ", node=" +
+                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']');
 
-                                    assertEquals("Failed to check version for key [key=" + k + ", node=" +
-                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        ver, entry.version());
+                                    assertEquals(ver, entry.version(),
+                                        "Failed to check version for key [key=" + k + ", node=" +
+                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']');
                                 }
                             }
                             else
-                                assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
+                                assertTrue(entry == null || !entry.partitionValid(), "Invalid entry: " + entry);
                         }
                         catch (AssertionError e) {
                             if (r == 9) {
