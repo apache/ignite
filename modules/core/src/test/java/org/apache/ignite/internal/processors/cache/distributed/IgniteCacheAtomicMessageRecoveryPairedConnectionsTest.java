@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  *

@@ -26,6 +26,8 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests that {@link IgniteCache#invoke(Object, EntryProcessor, Object...)}, {@link IgniteCache#invokeAll(Map, Object...)}
  * overloaded and async methods works fine when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} mode.

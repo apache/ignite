@@ -25,6 +25,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for remove operation.
@@ -75,7 +77,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
             for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
                 long size = p.dataStore().fullSize();
 
-                assertTrue("Unexpected size: " + size, size <= 32);
+                assertTrue(size <= 32, "Unexpected size: " + size);
             }
         }
     }

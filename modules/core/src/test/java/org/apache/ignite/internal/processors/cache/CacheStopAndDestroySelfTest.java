@@ -47,6 +47,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Checks stop and destroy methods behavior.
@@ -768,7 +774,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         String cacheName = cache.getName();
 
         for (int i = 0; i < 3; i++)
-            assertNull("Unexpected cache for node: " + i, grid(i).cache(cacheName));
+            assertNull(grid(i).cache(cacheName), "Unexpected cache for node: " + i);
     }
 
     /**

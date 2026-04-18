@@ -87,6 +87,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -305,9 +309,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         cleanPersistenceDir();
 
         // Checking prerequisites.
-        assertTrue("Positive timeout is required for the test.", timeout() > 0);
+        assertTrue(timeout() > 0, "Positive timeout is required for the test.");
 
-        assertTrue("No baseline servers were requested.", baselineServersCount() > 0);
+        assertTrue(baselineServersCount() > 0, "No baseline servers were requested.");
 
         int idx = 0;
 
@@ -892,14 +896,14 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             }
 
             assertEquals(
-                readOperation.readOperationsFailed() + " read operations failed during warmup.",
                 0,
-                readOperation.readOperationsFailed()
+                readOperation.readOperationsFailed(),
+                readOperation.readOperationsFailed() + " read operations failed during warmup."
             );
 
             assertTrue(
-                "No read operations were finished during warmup.",
-                readOperation.readOperationsFinishedUnderBlock() > 0
+                readOperation.readOperationsFinishedUnderBlock() > 0,
+                "No read operations were finished during warmup."
             );
         }
 
@@ -914,14 +918,14 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         }
 
         assertEquals(
-            readOperation.readOperationsFailed() + " read operations failed during finish stage.",
             0,
-            readOperation.readOperationsFailed()
+            readOperation.readOperationsFailed(),
+            readOperation.readOperationsFailed() + " read operations failed during finish stage."
         );
 
         assertTrue(
-            "No read operations were finished during finish stage.",
-            readOperation.readOperationsFinishedUnderBlock() > 0
+            readOperation.readOperationsFinishedUnderBlock() > 0,
+            "No read operations were finished during finish stage."
         );
     }
 
@@ -947,7 +951,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             cntFinishedReadOperations.await(5 * timeout(), TimeUnit.MILLISECONDS);
 
             // Possible if test itself is wrong.
-            assertEquals("Messages weren't blocked in time", 0, cntFinishedReadOperations.getCount());
+            assertEquals(0, cntFinishedReadOperations.getCount(), "Messages weren't blocked in time");
 
             try (AutoCloseable read = readOperation.start()) {
                 Thread.sleep(timeout());
@@ -962,14 +966,14 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         // None of read operations should fail.
         assertEquals(
-            readOperation.readOperationsFailed() + " read operations failed.",
             0,
-            readOperation.readOperationsFailed()
+            readOperation.readOperationsFailed(),
+            readOperation.readOperationsFailed() + " read operations failed."
         );
 
         assertTrue(
-            "No read operations were finished during timeout.",
-            readOperation.readOperationsFinishedUnderBlock() > 0
+            readOperation.readOperationsFinishedUnderBlock() > 0,
+            "No read operations were finished during timeout."
         );
 
         // There were no operations as long as blocking timeout.
@@ -978,7 +982,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         // On average every read operation was much faster then blocking timeout.
         double avgDuration = (double)timeout() / readOperation.readOperationsFinishedUnderBlock();
 
-        assertTrue("Avarage duration was too long.", avgDuration < timeout() * 0.25);
+        assertTrue(avgDuration < timeout() * 0.25, "Avarage duration was too long.");
     }
 
     /**
@@ -1433,7 +1437,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     protected Params currentTestParams() {
         Params params = currentTestAnnotation(Params.class);
 
-        assertNotNull("Test " + getName() + " is not annotated with @Param annotation.", params);
+        assertNotNull(params, "Test " + getName() + " is not annotated with @Param annotation.");
 
         return params;
     }
@@ -1442,14 +1446,14 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      * Assert that two numbers are close to each other.
      */
     private static void assertAlmostEqual(long exp, long actual) {
-        assertTrue(String.format("Numbers differ too much [exp=%d, actual=%d]", exp, actual), almostEqual(exp, actual));
+        assertTrue(almostEqual(exp, actual), String.format("Numbers differ too much [exp=%d, actual=%d]", exp, actual));
     }
 
     /**
      * Assert that two numbers are not close to each other.
      */
     private static void assertNotAlmostEqual(long exp, long actual) {
-        assertFalse(String.format("Numbers are almost equal [exp=%d, actual=%d]", exp, actual), almostEqual(exp, actual));
+        assertFalse(almostEqual(exp, actual), String.format("Numbers are almost equal [exp=%d, actual=%d]", exp, actual));
     }
 
     /**

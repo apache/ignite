@@ -74,6 +74,10 @@ import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -329,8 +333,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                 Integer actual = cache.get(p);
 
                 if (safe) {
-                    assertTrue("Reading from a lost partition should have failed [part=" + p + ']',
-                        !cache.lostPartitions().contains(p));
+                    assertFalse(cache.lostPartitions().contains(p), "Reading from a lost partition should have failed [part=" + p + ']');
 
                     assertEquals(p, actual.intValue());
                 }
@@ -338,10 +341,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                     assertEquals(expLostParts.contains(p) ? null : p, actual);
             }
             catch (CacheException e) {
-                assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+                assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
 
-                assertTrue("Read exception should only be triggered for a lost partition " +
-                    "[ex=" + X.getFullStackTrace(e) + ", part=" + p + ']', cache.lostPartitions().contains(p));
+                assertTrue(cache.lostPartitions().contains(p), "Read exception should only be triggered for a lost partition " +
+                    "[ex=" + X.getFullStackTrace(e) + ", part=" + p + ']');
             }
         }
 
@@ -354,21 +357,21 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                     cache.remove(p);
 
                 if (readOnly) {
-                    assertTrue(!cache.lostPartitions().contains(p));
+                    assertFalse(cache.lostPartitions().contains(p));
 
                     fail("Writing to a cache containing lost partitions should have failed [part=" + p + ']');
                 }
 
                 if (safe) {
-                    assertTrue("Writing to a lost partition should have failed [part=" + p + ']',
-                        !cache.lostPartitions().contains(p));
+                    assertFalse(cache.lostPartitions().contains(p), "Writing to a lost partition should have failed [part=" + p + ']');
                 }
             }
             catch (CacheException e) {
-                assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+                assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
 
-                assertTrue("Write exception should only be triggered for a lost partition or in read-only mode " +
-                    "[ex=" + X.getFullStackTrace(e) + ", part=" + p + ']', readOnly || cache.lostPartitions().contains(p));
+                assertTrue(readOnly || cache.lostPartitions().contains(p),
+                    "Write exception should only be triggered for a lost partition or in read-only mode " +
+                    "[ex=" + X.getFullStackTrace(e) + ", part=" + p + ']');
             }
         }
 
@@ -377,10 +380,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         try {
             Map<Integer, Integer> res = cache.getAll(expLostParts);
 
-            assertFalse("Reads from lost partitions should have been allowed only in non-safe mode", safe);
+            assertFalse(safe, "Reads from lost partitions should have been allowed only in non-safe mode");
         }
         catch (CacheException e) {
-            assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+            assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
         }
 
         try {
@@ -393,22 +396,21 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         try {
             cache.putAll(expLostParts.stream().collect(Collectors.toMap(k -> k, v -> v)));
 
-            assertFalse("Writes to lost partitions should have been allowed only in non-safe mode", safe);
+            assertFalse(safe, "Writes to lost partitions should have been allowed only in non-safe mode");
 
             cache.removeAll(expLostParts);
         }
         catch (CacheException e) {
-            assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+            assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
         }
 
         try {
             cache.putAll(notLost.stream().collect(Collectors.toMap(k -> k, v -> v)));
 
-            assertTrue("Writes to non-lost partitions should have been allowed only in read-write or non-safe mode",
-                !safe || !readOnly);
+            assertTrue(!safe || !readOnly, "Writes to non-lost partitions should have been allowed only in read-write or non-safe mode");
         }
         catch (CacheException e) {
-            assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+            assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
         }
 
         // Check queries.
@@ -420,39 +422,40 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             try {
                 objects = runQuery(ig, cacheName, false, p);
 
-                assertTrue("Query over lost partition should have failed: safe=" + safe +
-                    ", expLost=" + expLostParts + ", p=" + p, !safe || !expLostParts.contains(p));
+                assertTrue(!safe || !expLostParts.contains(p), "Query over lost partition should have failed: safe=" + safe +
+                    ", expLost=" + expLostParts + ", p=" + p);
 
                 if (safe)
                     assertEquals(1, objects.size());
             }
             catch (Exception e) {
-                assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+                assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
             }
 
             try {
                 runQuery(ig, cacheName, false, -1);
 
-                assertFalse("Query should have failed in safe mode with lost partitions", safe);
+                assertFalse(safe, "Query should have failed in safe mode with lost partitions");
             }
             catch (Exception e) {
-                assertTrue("Query must always work in unsafe mode", safe);
+                assertTrue(safe, "Query must always work in unsafe mode");
 
-                assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+                assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
             }
 
             if (loc) {
                 try {
                     objects = runQuery(ig, cacheName, true, p);
 
-                    assertTrue("Query over lost partition should have failed: safe=" + safe +
-                        ", expLost=" + expLostParts + ", p=" + p, !safe || !expLostParts.contains(p));
+                    assertTrue(!safe || !expLostParts.contains(p),
+                        "Query over lost partition should have failed: safe=" + safe +
+                        ", expLost=" + expLostParts + ", p=" + p);
 
                     if (safe)
                         assertEquals(1, objects.size());
                 }
                 catch (Exception e) {
-                    assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
+                    assertTrue(X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
                 }
             }
         }
@@ -527,7 +530,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                 expLostParts.add(i);
         }
 
-        assertFalse("Expecting lost partitions for the test scneario", expLostParts.isEmpty());
+        assertFalse(expLostParts.isEmpty(), "Expecting lost partitions for the test scneario");
 
         for (Ignite ignite : G.allGrids()) {
             // Prevent rebalancing to bring partitions in owning state.

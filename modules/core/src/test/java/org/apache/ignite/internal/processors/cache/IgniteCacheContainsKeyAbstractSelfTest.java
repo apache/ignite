@@ -31,6 +31,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests various scenarios for {@code containsKey()} method.
@@ -84,9 +86,9 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
         jcache(0).put(key, 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            assertTrue("Invalid result on grid: " + i, jcache(i).containsKey(key));
+            assertTrue(jcache(i).containsKey(key), "Invalid result on grid: " + i);
 
-            assertFalse("Invalid result on grid: " + i, jcache(i).containsKey("2"));
+            assertFalse(jcache(i).containsKey("2"), "Invalid result on grid: " + i);
         }
     }
 
@@ -99,26 +101,26 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
             String key = "1";
 
             for (int i = 0; i < gridCount(); i++)
-                assertFalse("Invalid result on grid: " + i, jcache(i).containsKey(key));
+                assertFalse(jcache(i).containsKey(key), "Invalid result on grid: " + i);
 
             IgniteCache<String, Integer> cache = jcache(0);
 
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
                     try (Transaction tx = grid(0).transactions().txStart(conc, iso)) {
-                        assertFalse("Invalid result on grid inside tx", cache.containsKey(key));
+                        assertFalse(cache.containsKey(key), "Invalid result on grid inside tx");
 
-                        assertFalse("Key was enlisted to transaction: " + tx, txContainsKey(tx, key));
+                        assertFalse(txContainsKey(tx, key), "Key was enlisted to transaction: " + tx);
 
                         cache.put(key, 1);
 
-                        assertTrue("Invalid result on grid inside tx", cache.containsKey(key));
+                        assertTrue(cache.containsKey(key), "Invalid result on grid inside tx");
 
                         // Do not commit.
                     }
 
                     for (int i = 0; i < gridCount(); i++)
-                        assertFalse("Invalid result on grid: " + i, jcache(i).containsKey(key));
+                        assertFalse(jcache(i).containsKey(key), "Invalid result on grid: " + i);
                 }
             }
         }

@@ -34,6 +34,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test for query with BinaryMarshaller and different serialization modes and with reflective serializer.
  */
@@ -208,7 +210,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
 
-                assertEquals("Failed. Found missing get()", 0, missCnt);
+                assertEquals(0, missCnt, "Failed. Found missing get()");
             }
         }
         finally {
@@ -243,7 +245,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
                 // Try to load data from another transaction.
                 try (Transaction tx = grid(nodeIdx).transactions().txStart(txConcurrency, txIsolation)) {
                     for (Set<Integer> batch : batches)
-                        assertEquals("Failed. Found missing entries.", batch.size(), cache.getAll(batch).size());
+                        assertEquals(batch.size(), cache.getAll(batch).size(), "Failed. Found missing entries.");
 
                     tx.commit();
                 }

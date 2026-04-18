@@ -56,6 +56,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** */
 public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAbstractTest {

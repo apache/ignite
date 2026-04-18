@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 /**
  * Tests partition loss policies working for in-memory groups with multiple caches.
  */

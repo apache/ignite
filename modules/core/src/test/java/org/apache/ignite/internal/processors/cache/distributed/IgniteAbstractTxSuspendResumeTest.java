@@ -49,6 +49,11 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -164,7 +169,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                     assertEquals(SUSPENDED, tx.state());
 
-                    assertNull("Thread already have tx", ignite.transactions().tx());
+                    assertNull(ignite.transactions().tx(), "Thread already have tx");
 
                     assertNull(cache.get(-1));
                     assertNull(cache.get(cntr.get()));
@@ -286,7 +291,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                     tx.suspend();
 
-                    assertNull("There is no transaction for current thread", ignite.transactions().tx());
+                    assertNull(ignite.transactions().tx(), "There is no transaction for current thread");
 
                     assertEquals(SUSPENDED, tx.state());
 

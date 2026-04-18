@@ -29,6 +29,10 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -82,7 +86,7 @@ public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspen
                     assertNull(cache.get(10));
 
                     for (int j = 10; j < 20; j++)
-                        assertFalse("Locked key " + j, cache.lock(j).tryLock());
+                        assertFalse(cache.lock(j).tryLock(), "Locked key " + j);
 
                     for (int i = 0; i < 10; i++) {
                         final int key = i;
@@ -95,15 +99,15 @@ public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspen
 
                             tx.suspend();
 
-                            assertFalse("Locked key " + key, cache.lock(key).tryLock());
-                            assertFalse("Locked key " + (key + 10), cache.lock(key + 10).tryLock());
-                            assertFalse("Locked key " + (key + 20), cache.lock(key + 20).tryLock());
+                            assertFalse(cache.lock(key).tryLock(), "Locked key " + key);
+                            assertFalse(cache.lock(key + 10).tryLock(), "Locked key " + (key + 10));
+                            assertFalse(cache.lock(key + 20).tryLock(), "Locked key " + (key + 20));
 
                             cache.put(key + 30, key + 30);
 
                             Lock lock = cache.lock(key + 30);
 
-                            assertTrue("Can't lock key " + (key + 30), lock.tryLock());
+                            assertTrue(lock.tryLock(), "Can't lock key " + (key + 30));
 
                             cache.put(key + 30, key + 30);
 
@@ -114,7 +118,7 @@ public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspen
                     }
 
                     for (int j = 10; j < 30; j++)
-                        assertFalse("Locked key " + j, cache.lock(j).tryLock());
+                        assertFalse(cache.lock(j).tryLock(), "Locked key " + j);
 
                     tx.resume();
 
@@ -130,7 +134,7 @@ public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspen
                         for (int j = 0; j < 40; j++) {
                             Lock lock = cache.lock(j);
 
-                            assertTrue("Can't lock key " + j, lock.tryLock());
+                            assertTrue(lock.tryLock(), "Can't lock key " + j);
 
                             cache.put(j, j);
 

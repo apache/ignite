@@ -37,6 +37,11 @@ import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * A base class to check that user-defined parameters (marked as {@link org.apache.ignite.configuration.SerializeSeparately})
  * for cache configurations are not explicitly deserialized on non-affinity nodes.
@@ -150,22 +155,21 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
             IgniteInternalCache cache = cacheProc.cache(cacheDesc.cacheName());
 
             if (affNode) {
-                assertNotNull("Cache is not started " + cacheDesc.cacheName() + ", node " + node.name(), cache);
+                assertNotNull(cache, "Cache is not started " + cacheDesc.cacheName() + ", node " + node.name());
 
                 CacheConfiguration ccfg = cache.configuration();
 
-                assertNotNull("Cache store factory is null " + cacheDesc.cacheName() + ", node " + node.name(),
-                        ccfg.getCacheStoreFactory());
+                assertNotNull(ccfg.getCacheStoreFactory(), "Cache store factory is null " + cacheDesc.cacheName() + ", node " + node.name());
             }
             else {
-                assertTrue("Cache is started " + cacheDesc.cacheName() + ", node " + node.name(),
-                        cache == null || !cache.context().affinityNode());
+                assertTrue(cache == null || !cache.context().affinityNode(),
+                    "Cache is started " + cacheDesc.cacheName() + ", node " + node.name());
 
                 if (cache == null) {
-                    assertFalse("Cache configuration is enriched " + cacheDesc.cacheName() + ", node " + node.name(),
-                            cacheDesc.isConfigurationEnriched());
-                    assertNull("Cache store factory is not null " + cacheDesc.cacheName() + ", node " + node.name(),
-                            cacheDesc.cacheConfiguration().getCacheStoreFactory());
+                    assertFalse(cacheDesc.isConfigurationEnriched(),
+                        "Cache configuration is enriched " + cacheDesc.cacheName() + ", node " + node.name());
+                    assertNull(cacheDesc.cacheConfiguration().getCacheStoreFactory(),
+                        "Cache store factory is not null " + cacheDesc.cacheName() + ", node " + node.name());
                 }
             }
 
@@ -175,8 +179,8 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
 
                 byte[] data = enrichment.getFieldSerializedValue("storeFactory");
 
-                assertNotNull("storeFactory is null for cache: " + cacheDesc.cacheName(),
-                    node.context().marshallerContext().jdkMarshaller().unmarshal(data, getClass().getClassLoader()));
+                assertNotNull(node.context().marshallerContext().jdkMarshaller().unmarshal(data, getClass().getClassLoader()),
+                    "storeFactory is null for cache: " + cacheDesc.cacheName());
             }
         }
     }

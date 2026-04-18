@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {

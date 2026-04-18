@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Fail backup node on not entry modified operation.
  * It shold to lead mapping issue on FULL_SYNC cache only, bacause in this case cliwnt try to map operation to nodes locally.

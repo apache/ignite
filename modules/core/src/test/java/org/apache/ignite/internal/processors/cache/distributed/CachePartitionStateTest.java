@@ -44,6 +44,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -330,19 +334,20 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
 
                         GridDhtPartitionState state = partsMap.get(p);
 
-                        assertEquals("Unexpected state [checkNode=" + clusterNode.id() +
+                        assertEquals(expState, partsMap.get(p),
+                            "Unexpected state [checkNode=" + clusterNode.id() +
                             ", node=" + node.name() +
-                            ", state=" + state + ']',
-                            expState, partsMap.get(p));
+                            ", state=" + state + ']');
                     }
                     else {
                         if (partsMap != null) {
                             GridDhtPartitionState state = partsMap.get(p);
 
-                            assertTrue("Unexpected state [checkNode=" + clusterNode.id() +
+                            assertTrue(state == null || state == EVICTED,
+                                "Unexpected state [checkNode=" + clusterNode.id() +
                                     ", node=" + node.name() +
-                                    ", state=" + state + ']',
-                                state == null || state == EVICTED);
+                                    ", state=" + state + ']'
+                                );
                         }
                     }
                 }

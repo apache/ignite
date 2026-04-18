@@ -45,6 +45,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -233,7 +239,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             }
         }, 60_000);
 
-        assertTrue("Failed to wait for when values are collected", wait);
+        assertTrue(wait, "Failed to wait for when values are collected");
     }
 
     /**
@@ -259,21 +265,21 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 CacheObject obj = e.rawGet();
 
                 if (obj != null) {
-                    assertNull("Unexpected value, node: " + g, reflectiveValue(obj));
+                    assertNull(reflectiveValue(obj), "Unexpected value, node: " + g);
 
                     assertNotNull(obj.value(cache0.context().cacheObjectContext(), true));
 
-                    assertNull("Unexpected value after value() requested1: " + g, reflectiveValue(obj));
+                    assertNull(reflectiveValue(obj), "Unexpected value after value() requested1: " + g);
 
                     assertNotNull(obj.value(cache0.context().cacheObjectContext(), false));
 
-                    assertNull("Unexpected value after value() requested2: " + g, reflectiveValue(obj));
+                    assertNull(reflectiveValue(obj), "Unexpected value after value() requested2: " + g);
                 }
                 else
                     assertFalse(aff.isPrimaryOrBackup(ig.localNode(), key));
             }
             else
-                assertFalse("Entry not found, node: " + g, aff.isPrimaryOrBackup(ig.localNode(), key));
+                assertFalse(aff.isPrimaryOrBackup(ig.localNode(), key), "Entry not found, node: " + g);
         }
     }
 
@@ -380,17 +386,17 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 if (obj != null) {
                     Object val0 = obj.value(cache0.context().cacheObjectContext(), true);
 
-                    assertNotNull("Unexpected value after value() requested1: " + g, reflectiveValue(obj));
+                    assertNotNull(reflectiveValue(obj), "Unexpected value after value() requested1: " + g);
 
                     Object val1 = obj.value(cache0.context().cacheObjectContext(), true);
 
-                    assertNotNull("Unexpected value after value() requested2: " + g, reflectiveValue(obj));
+                    assertNotNull(reflectiveValue(obj), "Unexpected value after value() requested2: " + g);
 
                     assertSame(val0, val1);
 
                     Object val2 = obj.value(cache0.context().cacheObjectContext(), false);
 
-                    assertNotNull("Unexpected value after value() requested3: " + g, reflectiveValue(obj));
+                    assertNotNull(reflectiveValue(obj), "Unexpected value after value() requested3: " + g);
 
                     assertSame(val1, val2);
                 }
@@ -398,7 +404,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                     assertFalse(aff.isPrimaryOrBackup(ig.localNode(), key));
             }
             else
-                assertFalse("Entry not found, node: " + g, aff.isPrimaryOrBackup(ig.localNode(), key));
+                assertFalse(aff.isPrimaryOrBackup(ig.localNode(), key), "Entry not found, node: " + g);
         }
     }
 

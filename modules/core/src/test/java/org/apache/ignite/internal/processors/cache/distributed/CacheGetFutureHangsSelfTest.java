@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for reproducing problems during simultaneously Ignite instances stopping and cache requests executing.

@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test for rebalancing.
  */
@@ -94,7 +96,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
      * @return Internal future.
      */
     private static IgniteInternalFuture internalFuture(IgniteFuture fut) {
-        assertTrue(fut.toString(), fut instanceof IgniteFutureImpl);
+        assertTrue(fut instanceof IgniteFutureImpl, fut.toString());
 
         return ((IgniteFutureImpl)fut).internalFuture();
     }
@@ -161,8 +163,8 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
 
         int rslt = cache.localSize(CachePeekMode.ALL);
 
-        assertTrue(ignite.configuration().getIgniteInstanceName() + " cache local size = "
-            + rslt + " not " + (expTo == null ? "equal " + expFrom : "in " + expFrom + "-" + expTo), isOk);
+        assertTrue(isOk, ignite.configuration().getIgniteInstanceName() + " cache local size = "
+            + rslt + " not " + (expTo == null ? "equal " + expFrom : "in " + expFrom + "-" + expTo));
 
         return rslt;
     }

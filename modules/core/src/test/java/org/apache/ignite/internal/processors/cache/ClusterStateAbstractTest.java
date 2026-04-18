@@ -31,6 +31,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -148,7 +151,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
         long timeOnStart = crd.context().state().lastStateChangeTime();
 
         assertNotSame(0, timeOnStart);
-        assertTrue(String.valueOf(timeOnStart), timeOnStart > 0);
+        assertTrue(timeOnStart > 0, String.valueOf(timeOnStart));
 
         crd.cluster().state(initialState);
 
@@ -158,7 +161,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
             long activationTime = crd.context().state().lastStateChangeTime();
 
             assertNotSame(timeOnStart, activationTime);
-            assertTrue(activationTime + " " + timeOnStart, activationTime > timeOnStart);
+            assertTrue(activationTime > timeOnStart, activationTime + " " + timeOnStart);
         }
 
         checkClusterState(nodesCount(), initialState);
@@ -182,7 +185,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {
         for (int g = 0; g < nodesCnt; g++)
-            assertEquals(grid(g).name(), state, grid(g).cluster().state());
+            assertEquals(state, grid(g).cluster().state(), grid(g).name());
     }
 
     /** */

@@ -48,6 +48,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests cache in-place modification logic with iterative value increment.
@@ -356,8 +359,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                 info("Will put: " + (updVal + 1));
 
                 for (int i = 0; i < keys; i++)
-                    assertTrue("Failed [key=" + i + ", oldVal=" + updVal + ']',
-                        ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1));
+                    assertTrue(ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1),
+                        "Failed [key=" + i + ", oldVal=" + updVal + ']');
 
                 updVal++;
             }

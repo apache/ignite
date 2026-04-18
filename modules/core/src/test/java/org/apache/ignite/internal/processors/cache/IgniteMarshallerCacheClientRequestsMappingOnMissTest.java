@@ -44,6 +44,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for client requesting missing mappings from server nodes with and without server nodes failures.
@@ -114,7 +117,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         File[] files = new SharedFileTree(TMP_DIR).marshaller().listFiles();
 
-        assertNotNull(TMP_DIR + "/marshaller directory should contain at least one file", files);
+        assertNotNull(files, TMP_DIR + "/marshaller directory should contain at least one file");
 
         boolean orgClsMarshalled = false;
 
@@ -125,7 +128,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
             }
         }
 
-        assertTrue(clsName + " should be marshalled and stored to disk", orgClsMarshalled);
+        assertTrue(orgClsMarshalled, clsName + " should be marshalled and stored to disk");
     }
 
 
@@ -155,7 +158,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         int result = mappingReqsCounter.get();
 
-        assertEquals("Expected requests count is 1, actual is " + result, 1, result);
+        assertEquals(1, result, "Expected requests count is 1, actual is " + result);
     }
 
     /**
@@ -189,7 +192,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         int result = mappingReqsCounter.get();
 
-        assertEquals("Expected requests count is 2, actual is " + result, 2, result);
+        assertEquals(2, result, "Expected requests count is 2, actual is " + result);
     }
 
     /**
@@ -224,7 +227,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         int result = mappingReqsCounter.get();
 
-        assertEquals("Expected requests count is 3, actual is " + result, 3, result);
+        assertEquals(3, result, "Expected requests count is 3, actual is " + result);
     }
 
     /**
@@ -265,7 +268,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         int result = mappingReqsCounter.get();
 
-        assertEquals("Expected requests count is 3, actual is " + result, 3, result);
+        assertEquals(3, result, "Expected requests count is 3, actual is " + result);
     }
 
     /**

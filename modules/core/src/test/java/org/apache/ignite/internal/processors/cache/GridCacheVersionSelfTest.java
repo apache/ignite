@@ -25,6 +25,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  *
  */
@@ -48,16 +50,16 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
         assertEquals(0x7FFFFFF, ver.nodeOrder());
         assertEquals(15, ver.dataCenterId());
         assertEquals(
-            ver.toString(),
-            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=15]"
+            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=15]",
+            ver.toString()
         );
 
         ver = version(0x7FFFFFF, 31);
         assertEquals(0x7FFFFFF, ver.nodeOrder());
         assertEquals(31, ver.dataCenterId());
         assertEquals(
-            ver.toString(),
-            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=31]"
+            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=31]",
+            ver.toString()
         );
 
         // Check max dr ID with some topology versions.

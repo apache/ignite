@@ -52,6 +52,11 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test getEntry and getEntries methods.
@@ -473,7 +478,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
 
         mapEntry.unswap();
 
-        assertNotNull("No entry for key: " + e.getKey(), mapEntry);
+        assertNotNull(mapEntry, "No entry for key: " + e.getKey());
         assertEquals(mapEntry.version(), e.version());
     }
 
@@ -504,7 +509,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
                     }
                 }, IgniteException.class, null);
 
-                assertTrue("Unexpected error message: " + err.getMessage(), err.getMessage().startsWith(getVerErr));
+                assertTrue(err.getMessage().startsWith(getVerErr), "Unexpected error message: " + err.getMessage());
             }
 
             assertEquals(e.getValue().val, i);
@@ -539,7 +544,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
                         }
                     }, IgniteException.class, null);
 
-                    assertTrue("Unexpected error message: " + err.getMessage(), err.getMessage().startsWith(getVerErr));
+                    assertTrue(err.getMessage().startsWith(getVerErr), "Unexpected error message: " + err.getMessage());
                 }
 
                 assertEquals((Integer)e.getValue().val, e.getKey());
@@ -578,7 +583,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
                     }
                 }, IgniteException.class, null);
 
-                assertTrue("Unexpected error message: " + err.getMessage(), err.getMessage().startsWith(getVerErr));
+                assertTrue(err.getMessage().startsWith(getVerErr), "Unexpected error message: " + err.getMessage());
             }
 
             assertEquals(((TestValue)e.getValue().deserialize()).val, i);
@@ -613,7 +618,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
                         }
                     }, IgniteException.class, null);
 
-                    assertTrue("Unexpected error message: " + err.getMessage(), err.getMessage().startsWith(getVerErr));
+                    assertTrue(err.getMessage().startsWith(getVerErr), "Unexpected error message: " + err.getMessage());
                 }
 
                 TestValue tv = e.getValue().deserialize();

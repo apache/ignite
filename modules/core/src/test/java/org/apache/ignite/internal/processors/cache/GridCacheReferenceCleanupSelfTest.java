@@ -40,6 +40,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  *
@@ -240,7 +241,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                     System.gc();
 
                     for (WeakReference<?> ref : refs)
-                        assertNull("" + ref.get(), ref.get());
+                        assertNull(ref.get(), "" + ref.get());
                 }
             });
         }

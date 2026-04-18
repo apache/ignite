@@ -57,6 +57,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for cache data loading during simultaneous grids start.
@@ -409,7 +411,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             }
         }, 2 * 60_000);
 
-        assertTrue("Data lost. Actual cache size: " + cache.size(CachePeekMode.PRIMARY), consistentCache);
+        assertTrue(consistentCache, "Data lost. Actual cache size: " + cache.size(CachePeekMode.PRIMARY));
     }
 
     /**

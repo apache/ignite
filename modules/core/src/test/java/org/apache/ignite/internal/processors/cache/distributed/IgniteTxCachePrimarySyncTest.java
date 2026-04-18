@@ -67,6 +67,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -476,9 +481,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             if (nearCache
                 && node == client &&
                 !node.affinity(ccfg.getName()).isPrimaryOrBackup(node.cluster().localNode(), key))
-                assertEquals("Invalid value for node: " + i, key, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
+                assertEquals(key, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key), "Invalid value for node: " + i);
             else
-                assertNull("Invalid value for node: " + i, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
+                assertNull(ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key), "Invalid value for node: " + i);
         }
 
         commSpi0.stopBlock(true);
@@ -738,13 +743,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         List<Object> srvMsgs = commSpi0.recordedMessages(true);
 
-        assertEquals("Unexpected messages: " + srvMsgs, 1, srvMsgs.size());
-        assertTrue("Unexpected message: " + srvMsgs.get(0), srvMsgs.get(0) instanceof GridNearTxPrepareResponse);
+        assertEquals(1, srvMsgs.size(), "Unexpected messages: " + srvMsgs);
+        assertTrue(srvMsgs.get(0) instanceof GridNearTxPrepareResponse, "Unexpected message: " + srvMsgs.get(0));
 
         List<Object> clientMsgs = commSpiClient.recordedMessages(true);
 
-        assertEquals("Unexpected messages: " + clientMsgs, 1, clientMsgs.size());
-        assertTrue("Unexpected message: " + clientMsgs.get(0), clientMsgs.get(0) instanceof GridNearTxPrepareRequest);
+        assertEquals(1, clientMsgs.size(), "Unexpected messages: " + clientMsgs);
+        assertTrue(clientMsgs.get(0) instanceof GridNearTxPrepareRequest, "Unexpected message: " + clientMsgs.get(0));
 
         GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)clientMsgs.get(0);
 
@@ -754,11 +759,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             assertEquals(key, ignite0.cache(cache.getName()).get(key));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testTxSyncMode() throws Exception {
+    public void testTxSyncMode() {
         Ignite ignite = ignite(0);
 
         List<IgniteCache<Object, Object>> caches = new ArrayList<>();

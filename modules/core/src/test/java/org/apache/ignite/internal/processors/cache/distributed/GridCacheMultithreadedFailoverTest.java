@@ -66,6 +66,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Base test for all multithreaded cache scenarios w/ and w/o failover.
@@ -428,7 +429,7 @@ public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
 
         log.info("Test finished. Put errors: " + errCtr.get());
 
-        assertFalse("Test failed", failed);
+        assertFalse(failed, "Test failed");
     }
 
     /**
@@ -485,10 +486,9 @@ public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
      *
      * @param expVals Expected values.
      * @return {@code True} if check passed successfully.
-     * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
+    private boolean compareCaches(Map<Integer, Integer> expVals) {
         List<IgniteCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
