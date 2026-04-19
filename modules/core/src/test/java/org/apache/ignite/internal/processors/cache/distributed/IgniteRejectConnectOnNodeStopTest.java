@@ -36,6 +36,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Sanity test to check that node starts to reject connections when stop procedure started.
@@ -148,7 +150,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
         fut.get();
         fut2.get();
 
-        assertTrue("Failed to get excpected error", err);
+        assertTrue(err, "Failed to get excpected error");
     }
 
     /**

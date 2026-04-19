@@ -40,6 +40,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  */
@@ -109,7 +113,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
-        assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
+        assertFalse(g2Keys.isEmpty(), "There are no keys assigned to g2");
 
         Collection<Event> objEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
@@ -137,7 +141,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
-            assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
+            assertTrue(keys.contains(cacheEvt.key()), "Unexpected key: " + cacheEvt.key());
         }
     }
 
@@ -155,12 +159,12 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
             final int part = unloadEvt.partition();
 
-            assertNotNull("Unexpected partition: " + part, F.find(parts, null,
-                new IgnitePredicate<GridDhtLocalPartition>() {
+            assertNotNull(F.find(parts, null,
+                new IgnitePredicate<>() {
                     @Override public boolean apply(GridDhtLocalPartition e) {
                         return e.id() == part;
                     }
-                }));
+                }), "Unexpected partition: " + part);
 
             assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), unloadEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), unloadEvt.node().id());

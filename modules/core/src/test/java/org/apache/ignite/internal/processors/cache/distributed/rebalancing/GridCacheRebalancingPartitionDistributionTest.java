@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.assertions.Assertion;
 import org.apache.ignite.testframework.junits.common.GridRollingRestartAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test the behavior of the partition rebalancing during a rolling restart.
  */

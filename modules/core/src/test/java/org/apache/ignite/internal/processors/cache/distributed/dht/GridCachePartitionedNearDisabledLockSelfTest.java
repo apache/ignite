@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  *
  */

@@ -27,6 +27,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests value read inside transaction.
@@ -115,7 +116,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
         try {
             cache.put("key", 1);
 
-            assertEquals("Invalid value after put", 1, cache.get("key").intValue());
+            assertEquals(1, cache.get("key").intValue(), "Invalid value after put");
 
             tx.commit();
         }
@@ -123,12 +124,12 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
             tx.close();
         }
 
-        assertEquals("Invalid cache size after put", 1, cache.size());
+        assertEquals(1, cache.size(), "Invalid cache size after put");
 
         try {
             tx = grid(0).transactions().txStart(concurrency, isolation);
 
-            assertEquals("Invalid value inside transactional read", Integer.valueOf(1), cache.get("key"));
+            assertEquals(Integer.valueOf(1), cache.get("key"), "Invalid value inside transactional read");
 
             tx.commit();
         }

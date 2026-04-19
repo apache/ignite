@@ -29,6 +29,9 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxOriginati
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  * Tests transaction consistency when originating node fails.
  */

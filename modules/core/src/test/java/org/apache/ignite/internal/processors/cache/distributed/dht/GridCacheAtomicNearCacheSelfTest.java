@@ -52,6 +52,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests near cache with various atomic cache configuration.
@@ -680,25 +685,25 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         boolean expectDht = near.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), key);
 
         if (expectNear) {
-            assertNotNull("No near entry for: " + key + ", grid: " + ignite.name(), nearEntry);
+            assertNotNull(nearEntry, "No near entry for: " + key + ", grid: " + ignite.name());
 
-            assertEquals("Unexpected value for grid: " + ignite.name(),
-                val,
-                CU.value(nearEntry.info().value(), near.context(), false));
+            assertEquals(val,
+                CU.value(nearEntry.info().value(), near.context(), false),
+                "Unexpected value for grid: " + ignite.name());
 
-            assertEquals("Unexpected value for grid: " + ignite.name(),
-                val,
-                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
+            assertEquals(val,
+                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP),
+                "Unexpected value for grid: " + ignite.name());
         }
         else
-            assertNull("Unexpected near entry: " + nearEntry + ", grid: " + ignite.name(), nearEntry);
+            assertNull(nearEntry, "Unexpected near entry: " + nearEntry + ", grid: " + ignite.name());
 
         GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)near).dht();
 
         if (expectDht) {
             final GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.entryEx(key);
 
-            assertNotNull("No dht entry for: " + key + ", grid: " + ignite.name(), dhtEntry);
+            assertNotNull(dhtEntry, "No dht entry for: " + key + ", grid: " + ignite.name());
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -721,24 +726,22 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             if (dhtEntry.peekVisibleValue() == null)
                 dhtEntry.unswap();
 
-            assertEquals("Unexpected value for grid: " + ignite.name(),
-                val,
-                CU.value(dhtEntry.info().value(), dht.context(), false));
+            assertEquals(val,
+                CU.value(dhtEntry.info().value(), dht.context(), false),
+                "Unexpected value for grid: " + ignite.name());
 
-            assertEquals("Unexpected value for grid: " + ignite.name(),
-                val,
-                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
+            assertEquals(val,
+                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP),
+                "Unexpected value for grid: " + ignite.name());
         }
         else {
             GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
 
-            assertNull("Unexpected dht entry: " + dhtEntry + ", grid: " + ignite.name(), dhtEntry);
+            assertNull(dhtEntry, "Unexpected dht entry: " + dhtEntry + ", grid: " + ignite.name());
         }
 
-        if (!expectNear && !expectDht) {
-            assertNull("Unexpected peek value for grid: " + ignite.name(), ignite.cache(near.name()).localPeek(key,
-                CachePeekMode.ONHEAP));
-        }
+        if (!expectNear && !expectDht)
+            assertNull(ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP), "Unexpected peek value for grid: " + ignite.name());
     }
 
     /**

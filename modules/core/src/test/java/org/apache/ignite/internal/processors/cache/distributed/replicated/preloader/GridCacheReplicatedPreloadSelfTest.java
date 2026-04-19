@@ -64,7 +64,10 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for replicated cache preloader.
@@ -251,7 +254,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             }
 
             assertNotNull(evts);
-            assertEquals("Wrong events received: " + evts, 2, evts.size());
+            assertEquals(2, evts.size(), "Wrong events received: " + evts);
 
             Iterator<Event> iter = evts.iterator();
 
@@ -629,7 +632,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 }
             }, getTestTimeout());
 
-            assertTrue("Actual cache size: " + cache2.localSize(CachePeekMode.ALL), awaitSize);
+            assertTrue(awaitSize, "Actual cache size: " + cache2.localSize(CachePeekMode.ALL));
         }
         finally {
             stopAllGrids();

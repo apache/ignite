@@ -21,13 +21,17 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Cac
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  *
  */
 public class CachePartitionPartialCountersMapSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
-    public void testAddAndRemove() throws Exception {
+    public void testAddAndRemove() {
         CachePartitionPartialCountersMap map = new CachePartitionPartialCountersMap(10);
 
         for (int p = 0; p < 10; p++)

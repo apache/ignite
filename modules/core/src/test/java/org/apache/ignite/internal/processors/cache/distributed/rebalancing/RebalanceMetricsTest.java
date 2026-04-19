@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Class for testing rebalance metrics.
  */
@@ -91,21 +93,21 @@ public class RebalanceMetricsTest extends GridCommonAbstractTest {
             GridCacheContext<?, ?> cacheCtx0 = n0.context().cache().cache(cacheCfg.getName()).context();
             GridCacheContext<?, ?> cacheCtx1 = n1.context().cache().cache(cacheCfg.getName()).context();
 
-            assertEquals(cacheCfg.getName(), cacheCfg.isStatisticsEnabled(), cacheCtx0.statisticsEnabled());
-            assertEquals(cacheCfg.getName(), cacheCfg.isStatisticsEnabled(), cacheCtx1.statisticsEnabled());
+            assertEquals(cacheCfg.isStatisticsEnabled(), cacheCtx0.statisticsEnabled(), cacheCfg.getName());
+            assertEquals(cacheCfg.isStatisticsEnabled(), cacheCtx1.statisticsEnabled(), cacheCfg.getName());
 
             CacheMetricsImpl metrics0 = cacheCtx0.cache().metrics0();
             CacheMetricsImpl metrics1 = cacheCtx1.cache().metrics0();
 
-            assertEquals(cacheCfg.getName(), cacheCfg.isStatisticsEnabled(), metrics0.isStatisticsEnabled());
-            assertEquals(cacheCfg.getName(), cacheCfg.isStatisticsEnabled(), metrics1.isStatisticsEnabled());
+            assertEquals(cacheCfg.isStatisticsEnabled(), metrics0.isStatisticsEnabled(), cacheCfg.getName());
+            assertEquals(cacheCfg.isStatisticsEnabled(), metrics1.isStatisticsEnabled(), cacheCfg.getName());
 
-            assertEquals(cacheCfg.getName(), 0, metrics0.getRebalancedKeys());
+            assertEquals(0, metrics0.getRebalancedKeys(), cacheCfg.getName());
 
             assertEquals(
-                cacheCfg.getName(),
                 cacheCfg.isStatisticsEnabled() ? metrics1.getKeySize() : 0,
-                metrics1.getRebalancedKeys()
+                metrics1.getRebalancedKeys(),
+                cacheCfg.getName()
             );
         }
     }

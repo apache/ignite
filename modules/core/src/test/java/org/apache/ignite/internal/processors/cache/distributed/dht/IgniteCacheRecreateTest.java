@@ -59,6 +59,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests handling of ppending cache messages/operations when the required cache was re created.
@@ -394,7 +396,7 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
             fail("Exception was not thrown.");
         }
         catch (Exception e) {
-            assertTrue("Unexpected exception [err=" + e + ']', X.hasCause(e, CacheException.class));
+            assertTrue(X.hasCause(e, CacheException.class), "Unexpected exception [err=" + e + ']');
         }
         finally {
             crdSpi.stopBlock();

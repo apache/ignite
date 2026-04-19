@@ -57,6 +57,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * For testing of rebalance statistics.
@@ -182,8 +184,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                 };
 
                 assertTrue(
-                    "msgs=" + supplierMsgs.toString() + ", checVals=" + asList(checVals).toString(),
-                    supplierMsgs.stream().anyMatch(s -> Stream.of(checVals).allMatch(s::contains))
+                    supplierMsgs.stream().anyMatch(s -> Stream.of(checVals).allMatch(s::contains)),
+                    "msgs=" + supplierMsgs.toString() + ", checVals=" + asList(checVals).toString()
                 );
             }
         }
@@ -219,7 +221,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             "bytesRcvd=" + U.humanReadableByteCount(bytes),
         };
 
-        assertTrue(rebChainMsg, Stream.of(checVals).allMatch(rebChainMsg::contains));
+        assertTrue(Stream.of(checVals).allMatch(rebChainMsg::contains), rebChainMsg);
     }
 
     /**

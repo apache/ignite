@@ -35,6 +35,10 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
  */
@@ -99,7 +103,7 @@ public class ExchangeLatchManagerTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = G.allGrids().stream().filter(node -> node.cluster().localNode().order() == 2).findAny().get();
 
-        assertNotNull("Could not find node with second order.", ignite1);
+        assertNotNull(ignite1, "Could not find node with second order.");
 
         TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite1);
 

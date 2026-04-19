@@ -37,6 +37,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests explicit lock.
@@ -126,7 +129,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
             // Start grid 2.
             IgniteEx grid2 = testClient ? startClientGrid(2) : startGrid(2);
 
-            assertEquals((Object)testClient, grid2.configuration().isClientMode());
+            assertEquals(testClient, grid2.configuration().isClientMode());
 
             threads.add(runCacheOperations(grid2.cachex(CACHE_NAME), keys));
 
@@ -158,7 +161,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
             for (int i = 1; i <= 4; i++) {
                 IgniteTxManager tm = ((IgniteKernal)grid(i)).internalCache(CACHE_NAME).context().tm();
 
-                assertEquals("txMap is not empty:" + i, 0, tm.idMapSize());
+                assertEquals(0, tm.idMapSize(), "txMap is not empty:" + i);
             }
 
             assertNull(err);

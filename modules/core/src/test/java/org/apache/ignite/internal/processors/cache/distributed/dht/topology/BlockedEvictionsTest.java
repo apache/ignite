@@ -52,6 +52,10 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests various scenarios while partition eviction is blocked.
@@ -273,7 +277,7 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
         // Group eviction context should remain in map.
         Map evictionGrpsMap = U.field(mgr, "evictionGroupsMap");
 
-        assertEquals("Group context must be cleaned up", 0, evictionGrpsMap.size());
+        assertEquals(0, evictionGrpsMap.size(), "Group context must be cleaned up");
 
         grid(0).getOrCreateCache(cacheConfiguration());
 
@@ -401,8 +405,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
         fut.get();
 
         // Partition clearing future should be finished with NodeStoppingException.
-        assertTrue(finishFut.error().getMessage(),
-            finishFut.error() != null && X.hasCause(finishFut.error(), NodeStoppingException.class));
+        assertTrue(finishFut.error() != null && X.hasCause(finishFut.error(), NodeStoppingException.class),
+            finishFut.error().getMessage());
     }
 
     /**

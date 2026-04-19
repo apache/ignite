@@ -42,6 +42,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests if currently evicting partition is eventually moved to OWNING state after last supplier has left.
@@ -197,7 +201,7 @@ public class RentingPartitionIsOwnedDuringEvictionTest extends GridCommonAbstrac
             doSleep(500);
 
             if (reservation > 0)
-                assertTrue(evicting.toString(), evicting.state() == OWNING);
+                assertSame(evicting.state(), OWNING, evicting.toString());
             else {
                 boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {

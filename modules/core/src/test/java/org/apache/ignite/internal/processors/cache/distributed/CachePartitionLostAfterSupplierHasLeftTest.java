@@ -53,6 +53,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALAN
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithPersistenceTest.checkLostPartitionAcrossCluster;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test scenario: last supplier has left while a partition on demander is cleared before sending first demand request.
@@ -374,10 +378,10 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
         final GridDhtLocalPartition part = g1.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(partId);
 
-        assertTrue("Unexpected partition state [p=" + partId +
-                ", expected=" + GridDhtPartitionState.LOST +
-                ", actual=" + part.state() + ']',
-            GridTestUtils.waitForCondition(() -> part.state() == GridDhtPartitionState.LOST, 30_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> part.state() == GridDhtPartitionState.LOST, 30_000),
+            "Unexpected partition state [p=" + partId +
+                        ", expected=" + GridDhtPartitionState.LOST +
+                        ", actual=" + part.state() + ']');
 
         assertTrue(g1.cachex(DEFAULT_CACHE_NAME).lostPartitions().contains(partId));
 
@@ -420,7 +424,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
             GridTestUtils.waitForCondition(() -> g1.context().cache().context().evict().total() == 0, 30_000);
 
             for (Integer key : keys)
-                assertEquals("key=" + key.toString(), -1, g1.cache(DEFAULT_CACHE_NAME).get(key));
+                assertEquals(-1, g1.cache(DEFAULT_CACHE_NAME).get(key), "key=" + key.toString());
         }
     }
 

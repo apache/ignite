@@ -109,6 +109,13 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.blockSing
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -1247,10 +1254,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     }
                 }, 5000);
 
-                assertTrue(ignite.name(), fut.isDone());
+                assertTrue(fut.isDone(), ignite.name());
             }
             else
-                assertFalse(ignite.name(), fut.isDone());
+                assertFalse(fut.isDone(), ignite.name());
         }
 
         ord++;
@@ -2139,7 +2146,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         srvRestartFut.get();
         updateFut.get();
 
-        assertFalse("Unexpected messages.", fail.get());
+        assertFalse(fail.get(), "Unexpected messages.");
     }
 
     /**
@@ -2461,7 +2468,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     }
                 }
                 catch (Exception e) {
-                    assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyServerNotFoundException.class));
+                    assertTrue(X.hasCause(e, ClusterTopologyServerNotFoundException.class), "Unexpected error: " + e);
 
                     Affinity<Object> aff = node.affinity(cacheName);
 
@@ -2598,10 +2605,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     assertAffinity(aff1, aff2, node, cctx.name(), topVer);
 
                 if (expIdeal) {
-                    assertEquals(
-                        "Rebalance state not as expected [node=" + node.name() + ", top=" + topVer + "]",
-                        true,
-                        exchFut.rebalanced());
+                    assertTrue(exchFut.rebalanced(), "Rebalance state not as expected [node=" + node.name() + ", top=" + topVer + "]");
 
                     List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
 
@@ -2670,11 +2674,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 Collection<UUID> n1 = new ArrayList<>(nodeIds(aff1.get(i)));
                 Collection<UUID> n2 = new ArrayList<>(nodeIds(aff2.get(i)));
 
-                assertEquals("Wrong affinity [node=" + node.name() +
+                assertEquals(n1, n2,
+                    "Wrong affinity [node=" + node.name() +
                     ", topVer=" + topVer +
                     ", cache=" + cacheName +
-                    ", part=" + i + ']',
-                    n1, n2);
+                    ", part=" + i + ']');
             }
 
             fail();
@@ -2834,7 +2838,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 break;
         } while (System.currentTimeMillis() < stopTime);
 
-        assertNotNull("Failed to find exchange future:", evt);
+        assertNotNull(evt, "Failed to find exchange future:");
 
         Collection<ClusterNode> allNodes = ctx.discovery().serverNodes(topVer0);
 

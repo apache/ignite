@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests that preload start/preload stop events are fired only once for replicated cache.
@@ -83,7 +85,7 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
 
         startGrid(3);
 
-        assertTrue("Unexpected start count: " + preloadStartCnt.get(), preloadStartCnt.get() <= 1);
-        assertTrue("Unexpected stop count: " + preloadStopCnt.get(), preloadStopCnt.get() <= 1);
+        assertTrue(preloadStartCnt.get() <= 1, "Unexpected start count: " + preloadStartCnt.get());
+        assertTrue(preloadStopCnt.get() <= 1, "Unexpected stop count: " + preloadStopCnt.get());
     }
 }

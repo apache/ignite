@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -125,7 +128,7 @@ public abstract class IgniteNoClassOnServerAbstractTest extends GridCommonAbstra
 
                 int exitCode = clientNode.getProcess().waitFor();
 
-                assertEquals("Unexpected exit code", 0, exitCode);
+                assertEquals(0, exitCode, "Unexpected exit code");
             }
             finally {
                 if (clientNode != null)

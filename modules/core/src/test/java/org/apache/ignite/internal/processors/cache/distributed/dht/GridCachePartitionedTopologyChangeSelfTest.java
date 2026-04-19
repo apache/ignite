@@ -53,6 +53,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests that new transactions do not start until partition exchange is completed.
@@ -331,7 +332,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             Thread.sleep(100);
 
-            assertFalse("Node was able to join the grid while there exist pending transactions.", startFut.isDone());
+            assertFalse(startFut.isDone(), "Node was able to join the grid while there exist pending transactions.");
 
             // Now check that new transactions will wait for new topology version to become available.
             Collection<IgniteInternalFuture> txFuts = new ArrayList<>(nodes.length);
@@ -363,7 +364,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             Thread.sleep(500);
 
             for (IgniteInternalFuture txFut : txFuts)
-                assertFalse("New transaction was completed before new node joined topology", txFut.isDone());
+                assertFalse(txFut.isDone(), "New transaction was completed before new node joined topology");
 
             info(">>> Committing pending transactions.");
 
@@ -497,7 +498,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             Thread.sleep(500);
 
             for (IgniteInternalFuture txFut : txFuts)
-                assertFalse("New transaction was completed before old transactions were committed", txFut.isDone());
+                assertFalse(txFut.isDone(), "New transaction was completed before old transactions were committed");
 
             info(">>> Committing pending transactions.");
 

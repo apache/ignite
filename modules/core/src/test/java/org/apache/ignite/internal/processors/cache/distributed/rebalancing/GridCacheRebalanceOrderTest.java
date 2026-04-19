@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests that caches with rebalance mode equals to SYNC are rebalanced in the first place.
@@ -131,7 +132,7 @@ public class GridCacheRebalanceOrderTest extends GridCommonAbstractTest {
             grid(1).context().cache().internalCache(c.getName()).preloader().syncFuture().get(REBALANCE_TIMEOUT);
 
         // Check that all events were fired.
-        assertEquals("Expected rebalance events were not triggered.", order.size(), evtsList.size());
+        assertEquals(order.size(), evtsList.size(), "Expected rebalance events were not triggered.");
 
         // Check rebelance order.
         for (int i = 0; i < order.size(); ++i) {
@@ -145,14 +146,14 @@ public class GridCacheRebalanceOrderTest extends GridCommonAbstractTest {
                 .getConfiguration(CacheConfiguration.class);
 
             assertEquals(
-                "Unexpected rebalance order [cacheName=" + actualEvt.cacheName() + ']',
                 expOrder,
-                actualCfg.getRebalanceOrder());
+                actualCfg.getRebalanceOrder(),
+                "Unexpected rebalance order [cacheName=" + actualEvt.cacheName() + ']');
 
             assertEquals(
-                "Unexpected cache rebalance mode [cacheName=" + actualEvt.cacheName() + ']',
                 expMode,
-                actualCfg.getRebalanceMode());
+                actualCfg.getRebalanceMode(),
+                "Unexpected cache rebalance mode [cacheName=" + actualEvt.cacheName() + ']');
         }
     }
 

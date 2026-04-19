@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests cache access from within jobs.
@@ -70,8 +72,8 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             if (cache.context().isNear())
                 info("DHT entries: " + cache.context().near().dht().entries());
 
-            assertEquals("Cache is not empty, node [entries=" + c.localEntries() + ", igniteInstanceName=" +
-                    g.name() + ']', 0, c.localSize());
+            assertEquals(0, c.localSize(), "Cache is not empty, node [entries=" + c.localEntries() +
+                ", igniteInstanceName=" + g.name() + ']');
         }
     }
 

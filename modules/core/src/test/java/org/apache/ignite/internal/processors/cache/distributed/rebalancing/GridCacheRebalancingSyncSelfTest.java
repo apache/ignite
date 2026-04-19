@@ -62,6 +62,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -221,8 +224,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     log.info("<" + name + "> Checked " + cnt.get() * 100 / TEST_SIZE + "% entries. [count=" +
                         TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
 
-                assertEquals("Value does not match [key=" + entry.getKey() + ", cache=" + name + ']',
-                    entry.getKey() + name.hashCode() + iter, entry.getValue().intValue());
+                assertEquals(entry.getKey() + name.hashCode() + iter, entry.getValue().intValue(),
+                    "Value does not match [key=" + entry.getKey() + ", cache=" + name + ']');
             });
 
             assertEquals(TEST_SIZE, cnt.get());
@@ -233,8 +236,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" +
                         TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
 
-                assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
-                    cache.get(i).intValue(), i + name.hashCode() + iter);
+                assertEquals(cache.get(i).intValue(), i + name.hashCode() + iter,
+                    "Value does not match [key=" + i + ", cache=" + name + ']');
             }
         }
     }
@@ -382,9 +385,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 }, 15_000);
 
                 synchronized (map) {
-                    assertTrue("Map is not empty [cache=" + c.name() +
+                    assertTrue(map.isEmpty(), "Map is not empty [cache=" + c.name() +
                         ", node=" + g.name() +
-                        ", map=" + map + ']', map.isEmpty());
+                        ", map=" + map + ']');
                 }
             }
         }
@@ -415,9 +418,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                         if (!res)
                             printPartitionState(c);
 
-                        assertTrue("Wrong local partition state part=" +
+                        assertTrue(res, "Wrong local partition state part=" +
                             loc.id() + ", should be OWNING [state=" + actl +
-                            "], node=" + g0.name() + " cache=" + c.getName(), res);
+                            "], node=" + g0.name() + " cache=" + c.getName());
 
                         Collection<ClusterNode> affNodes =
                             g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(loc.id());
@@ -439,10 +442,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                         assertEquals(pMap.size(), locs.size());
 
                         for (Map.Entry entry : pMap.entrySet()) {
-                            assertTrue("Wrong remote partition state part=" + entry.getKey() +
-                                    ", should be OWNING [state=" + entry.getValue() + "], node="
-                                    + remote.name() + " cache=" + c.getName(),
-                                entry.getValue() == GridDhtPartitionState.OWNING);
+                            assertSame(entry.getValue(), GridDhtPartitionState.OWNING, "Wrong remote partition state part=" +
+                                entry.getKey() + ", should be OWNING [state=" + entry.getValue() + "], node="
+                                + remote.name() + " cache=" + c.getName());
                         }
 
                         for (GridDhtLocalPartition loc : locs)
@@ -468,8 +470,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         // Start waiting new messages from current point of time.
         lastPartMsgTime = U.currentTimeMillis();
 
-        assertTrue("Should not have partition Single or Full messages within bound " +
-                TOPOLOGY_STILLNESS_TIME + " ms.",
+        assertTrue(
             GridTestUtils.waitForCondition(
                 new GridAbsPredicateX() {
                     @Override public boolean applyx() {
@@ -477,7 +478,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     }
                 },
                 2 * TOPOLOGY_STILLNESS_TIME // 30 sec to gain stable topology and 30 sec of silence.
-            )
+            ), "Should not have partition Single or Full messages within bound " +
+                TOPOLOGY_STILLNESS_TIME + " ms."
         );
     }
 

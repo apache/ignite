@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Metrics test for partitioned cache with disabled near cache.
@@ -84,7 +86,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTr
 
         // Get a few keys missed keys.
         for (int i = 0; i < keyCnt; i++) {
-            assertNull("Value is not null for key: " + i, cache.get(i));
+            assertNull(cache.get(i), "Value is not null for key: " + i);
 
             expReads++;
         }
@@ -133,7 +135,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTr
 
         grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
 
-        assertNull("Value is not null for key: " + 0, cache.get(0));
+        assertNull(cache.get(0), "Value is not null for key: " + 0);
 
         // Check metrics for the whole cache.
         long removes = 0;

@@ -51,6 +51,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks basic multi-node transactional operations.
@@ -717,8 +721,8 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             for (int i = 0; i < GRID_CNT * RETRIES; i++)
                 for (int ii = 0; ii < GRID_CNT; ii++)
-                    assertEquals("Got invalid value from cache [gridIdx=" + ii + ", key=" + i + ']',
-                        null, grid(ii).cache(DEFAULT_CACHE_NAME).get(Integer.toString(i)));
+                    assertEquals(null, grid(ii).cache(DEFAULT_CACHE_NAME).get(Integer.toString(i)),
+                        "Got invalid value from cache [gridIdx=" + ii + ", key=" + i + ']');
 
             assertEquals(-GRID_CNT * RETRIES, grid(0).cache(DEFAULT_CACHE_NAME).get(RMVD_CNTR_KEY));
         }

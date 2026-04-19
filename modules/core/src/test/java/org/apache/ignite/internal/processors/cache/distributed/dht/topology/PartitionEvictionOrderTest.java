@@ -44,6 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests that {@link CacheRebalanceMode#SYNC} caches are evicted at first.

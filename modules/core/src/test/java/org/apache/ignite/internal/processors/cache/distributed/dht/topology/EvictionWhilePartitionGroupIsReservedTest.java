@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests a scenario when a partition is attempted for eviction while being reserved in group.
@@ -139,7 +141,7 @@ public class EvictionWhilePartitionGroupIsReservedTest extends GridCommonAbstrac
         for (Integer p : reserved) {
             GridDhtLocalPartition locPart = top.localPartition(p);
 
-            assertEquals(locPart.toString(), OWNING, locPart.state());
+            assertEquals(OWNING, locPart.state(), locPart.toString());
         }
 
         if (!clientAfter) {

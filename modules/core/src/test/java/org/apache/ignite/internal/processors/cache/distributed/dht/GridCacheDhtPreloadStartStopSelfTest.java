@@ -44,6 +44,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -216,7 +217,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
                     GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions())
-                        assertEquals("Invalid partition state for partition: " + p, OWNING, p.state());
+                        assertEquals(OWNING, p.state(), "Invalid partition state for partition: " + p);
                 }
             }
         }

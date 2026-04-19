@@ -30,6 +30,9 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test correct behaviour of class to validate partitions update counters and
  * cache sizes during exchange process
@@ -117,17 +120,17 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
         ignite.cache(CACHE_NAME).put(0, 0);
 
         if (inconsistentCnt && !inconsistentSize)
-            assertTrue("Counters inconsistent message found", lsnr.checkCnt());
+            assertTrue(lsnr.checkCnt(), "Counters inconsistent message found");
 
         if (!inconsistentCnt && inconsistentSize)
-            assertTrue("Size inconsistent message found", lsnr.checkSize());
+            assertTrue(lsnr.checkSize(), "Size inconsistent message found");
 
         if (inconsistentCnt && inconsistentSize)
-            assertTrue("Both counters and sizes message found", lsnr.check());
+            assertTrue(lsnr.check(), "Both counters and sizes message found");
 
         if (!inconsistentCnt && !inconsistentSize) {
-            assertFalse("Counters and Size inconsistent message found!",
-                lsnr.check() || lsnr.checkCnt() || lsnr.checkSize());
+            assertFalse(lsnr.check() || lsnr.checkCnt() || lsnr.checkSize(),
+                "Counters and Size inconsistent message found!");
         }
     }
 

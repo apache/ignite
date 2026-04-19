@@ -43,6 +43,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Contains several test scenarios related to partition state transitions during it's lifecycle.
@@ -144,8 +148,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             g0.cluster().setBaselineTopology(3);
 
             // Wait until all is evicted except first partition.
-            assertTrue("Failed to wait for partition eviction: reservedPart=" + part.id() + ", otherParts=" +
-                top.localPartitions().stream().map(p -> "[id=" + p.id() + ", state=" + p.state() + ']').collect(Collectors.toList()),
+            assertTrue(
                 waitForCondition(() -> {
                     for (int i = 0; i < parts.size(); i++) {
                         if (delayEvictPart == i)
@@ -162,7 +165,9 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
                     }
 
                     return true;
-                }, 5000));
+                }, 5000),
+                "Failed to wait for partition eviction: reservedPart=" + part.id() + ", otherParts=" +
+                top.localPartitions().stream().map(p -> "[id=" + p.id() + ", state=" + p.state() + ']').collect(Collectors.toList()));
 
             /**
              * Force renting state before node stop.
@@ -194,8 +199,8 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
                 }
             });
 
-            assertTrue("Failed to wait for partition eviction after restart",
-                evictLatch.await(5_000, TimeUnit.MILLISECONDS));
+            assertTrue(evictLatch.await(5_000, TimeUnit.MILLISECONDS),
+                "Failed to wait for partition eviction after restart");
 
             awaitPartitionMapExchange(true, true, null);
         }

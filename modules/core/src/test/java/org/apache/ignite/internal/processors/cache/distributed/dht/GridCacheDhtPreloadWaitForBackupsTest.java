@@ -47,6 +47,10 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for "wait for backups on shutdown" flag.
@@ -228,7 +232,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
             for (int i = 0; i < cacheSize(); i++) {
                 byte[] val = (byte[])grid(1).cache("cache" + (1 + (i >> 3) % 3)).get(i);
 
-                assertNotNull(Integer.toString(i), val);
+                assertNotNull(val, Integer.toString(i));
                 assertEquals(i, val.length);
             }
 
@@ -702,7 +706,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
         for (int i = 0; i < cacheSize(); i++) {
             byte[] val = (byte[])G.allGrids().get((i >> 2) % 4).cache("cache" + (1 + (i >> 3) % 3)).get(i);
 
-            assertNotNull(Integer.toString(i), val);
+            assertNotNull(val, Integer.toString(i));
             assertEquals(i, val.length);
         }
     }

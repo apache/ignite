@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Unit tests for dht entry.
@@ -90,8 +91,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             near(grid(i)).removeAll();
 
-            assertEquals("Near cache size is not zero for grid: " + i, 0, near(grid(i)).size());
-            assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
+            assertEquals(0, near(grid(i)).size(), "Near cache size is not zero for grid: " + i);
+            assertEquals(0, dht(grid(i)).size(), "DHT cache size is not zero for grid: " + i);
 
             assert near(grid(i)).localSize() == 0 : "Near cache is not empty for grid: " + i;
             assert dht(grid(i)).isEmpty() : "DHT cache is not empty for grid: " + i;

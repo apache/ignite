@@ -64,6 +64,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Abstract test for originating node failure.
@@ -277,8 +281,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                         assertNotNull(cache);
 
-                        assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            fullFailure ? initVal : val, cache.localPeek(key));
+                        assertEquals(fullFailure ? initVal : val, cache.localPeek(key),
+                            "Failed to check entry value on node: " + checkNodeId);
 
                         return null;
                     }

@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests for cache iterators.
  */

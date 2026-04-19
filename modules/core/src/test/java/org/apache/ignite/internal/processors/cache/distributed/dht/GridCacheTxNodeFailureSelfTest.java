@@ -57,6 +57,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests one-phase commit transactions when some of the nodes fail in the middle of the transaction.
@@ -427,21 +432,21 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
         if (commit) {
             assertNotNull(dhtEntry);
-            assertTrue("dhtEntry=" + dhtEntry, dhtEntry.remoteMvccSnapshot().isEmpty());
-            assertTrue("dhtEntry=" + dhtEntry, dhtEntry.localCandidates().isEmpty());
+            assertTrue(dhtEntry.remoteMvccSnapshot().isEmpty(), "dhtEntry=" + dhtEntry);
+            assertTrue(dhtEntry.localCandidates().isEmpty(), "dhtEntry=" + dhtEntry);
             assertEquals(key, backupCache.localPeek(key, null));
 
             if (nearEntry != null) {
-                assertTrue("near=" + nearEntry, nearEntry.remoteMvccSnapshot().isEmpty());
-                assertTrue("near=" + nearEntry, nearEntry.localCandidates().isEmpty());
+                assertTrue(nearEntry.remoteMvccSnapshot().isEmpty(), "near=" + nearEntry);
+                assertTrue(nearEntry.localCandidates().isEmpty(), "near=" + nearEntry);
 
                 // Near peek wil be null since primary node has changed.
-                assertNull("near=" + nearEntry, origCache.localPeek(key, null));
+                assertNull(origCache.localPeek(key, null), "near=" + nearEntry);
             }
         }
         else {
-            assertTrue("near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry), nearEntry == null);
-            assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
+            assertNull(nearEntry, "near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry));
+            assertNull(dhtEntry.rawGet(), "Invalid backup cache entry: " + dhtEntry);
         }
 
         dhtEntry.touch();
