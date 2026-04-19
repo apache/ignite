@@ -64,6 +64,11 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Multi node test for near cache.
@@ -157,8 +162,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             jcache(i).removeAll();
 
-            assertEquals("Near cache size is not zero for grid: " + i, 0, jcache(i).localSize());
-            assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
+            assertEquals(0, jcache(i).localSize(), "Near cache size is not zero for grid: " + i);
+            assertEquals(0, dht(grid(i)).size(), "DHT cache size is not zero for grid: " + i);
 
             assert jcache(i).localSize() == 0 : "Near cache is not empty for grid: " + i;
             assert dht(grid(i)).isEmpty() : "DHT cache is not empty for grid: " + i;
@@ -386,7 +391,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 GridDhtCacheEntry entry = (GridDhtCacheEntry)dht(primaryGrid(2)).peekEx(2);
 
                 if (entry != null)
-                    assertNull("Unexpected entry: " + entry, entry.rawGet());
+                    assertNull(entry.rawGet(), "Unexpected entry: " + entry);
 
                 assertNotNull(localPeek(dht(primaryGrid(3)), 3));
 
@@ -673,7 +678,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             info("Peeked entry after lock [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry1 + ']');
 
             assertNotNull(nearEntry1);
-            assertTrue("Invalid near entry: " + nearEntry1, nearEntry1.valid(topVer));
+            assertTrue(nearEntry1.valid(topVer), "Invalid near entry: " + nearEntry1);
 
             assertTrue(cache.isLocalLocked(key, false));
             assertTrue(cache.isLocalLocked(key, true));
@@ -687,7 +692,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assert nearEntry1 == nearEntry2;
 
             assertNotNull(nearEntry2);
-            assertTrue("Invalid near entry [hash=" + nearEntry2, nearEntry2.valid(topVer));
+            assertTrue(nearEntry2.valid(topVer), "Invalid near entry [hash=" + nearEntry2);
 
             assertEquals(val, cache.localPeek(key));
             assertEquals(val, dhtPeek(0, key));
@@ -700,7 +705,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assert nearEntry2 == nearEntry3;
 
             assertNotNull(nearEntry3);
-            assertTrue("Invalid near entry: " + nearEntry3, nearEntry3.valid(topVer));
+            assertTrue(nearEntry3.valid(topVer), "Invalid near entry: " + nearEntry3);
 
             assertNotNull(near(0).peekEx(key));
             assertNull(near(1).peekEx(key));

@@ -35,6 +35,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for replicated cache preloader.
@@ -151,8 +152,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 int size1 = c1.localSize(CachePeekMode.ALL);
                 int size2 = c2.localSize(CachePeekMode.ALL);
 
-                assertEquals(" Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']', keys.length, size1);
-                assertEquals(" Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']', keys.length / 2, size2);
+                assertEquals(keys.length, size1, " Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']');
+                assertEquals(keys.length / 2, size2, " Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']');
             }
         }
     }

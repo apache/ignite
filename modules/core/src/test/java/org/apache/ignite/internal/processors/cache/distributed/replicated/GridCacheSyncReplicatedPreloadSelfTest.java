@@ -31,6 +31,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Multithreaded tests for replicated cache preloader.

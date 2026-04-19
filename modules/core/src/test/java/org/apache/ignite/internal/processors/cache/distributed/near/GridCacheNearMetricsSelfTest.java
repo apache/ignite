@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Cache metrics test.
@@ -352,11 +353,9 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testBackupRead() throws Exception {
+    public void testBackupRead() {
         Ignite g0 = grid(0);
 
         IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);

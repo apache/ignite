@@ -778,7 +778,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 }
             }, 20_000);
 
-            assertTrue("Actual cache size: " + lastCache.localSize(CachePeekMode.ALL), awaitSize);
+            assertTrue(awaitSize, "Actual cache size: " + lastCache.localSize(CachePeekMode.ALL));
         }
         finally {
             stopAllGrids();

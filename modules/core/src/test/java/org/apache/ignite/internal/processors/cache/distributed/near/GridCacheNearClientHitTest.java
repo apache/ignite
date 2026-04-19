@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CachePeekMode.NEAR;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  *
@@ -96,13 +98,13 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
 
             Object val = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNull("The value should not be loaded from a remote node.", val);
+            assertNull(val, "The value should not be loaded from a remote node.");
 
             nearCache.get(remoteKey);
 
             val = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNotNull("The returned value should not be null.", val);
+            assertNotNull(val, "The returned value should not be null.");
 
             srvNode.close();
 
@@ -110,15 +112,15 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
 
             val = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNull("The value should not be loaded from a remote node.", val);
+            assertNull(val, "The value should not be loaded from a remote node.");
 
             val = nearCache.get(remoteKey);
 
-            assertNotNull("The value should be loaded from a remote node.", val);
+            assertNotNull(val, "The value should be loaded from a remote node.");
 
             val = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNotNull("The returned value should not be null.", val);
+            assertNotNull(val, "The returned value should not be null.");
         }
         finally {
             stopAllGrids();

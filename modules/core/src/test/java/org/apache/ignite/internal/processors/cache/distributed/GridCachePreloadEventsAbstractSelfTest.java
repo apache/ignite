@@ -37,6 +37,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -122,7 +125,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue(cacheEvt.hasNewValue());
             assertNotNull(cacheEvt.newValue());
-            assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
+            assertTrue(keys.contains(cacheEvt.key()), "Unexpected key: " + cacheEvt.key());
         }
     }
 }

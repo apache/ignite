@@ -59,6 +59,11 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Multiple put test.
@@ -320,7 +325,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                     // Initial lock.
                                     int curCntr = c.get(CNTR_KEY);
 
-                                    assertTrue("Lock violation: " + tx, locked.compareAndSet(false, true));
+                                    assertTrue(locked.compareAndSet(false, true), "Lock violation: " + tx);
 
                                     if (dhtNear == null)
                                         dhtNear = near(pri).peekEx(CNTR_KEY);
@@ -351,7 +356,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                     assert curCntr == prev : invalid("Counter mismatch", pri, true, curCntr, prev);
 
-                                    assertTrue("Lock violation: " + tx, locked.compareAndSet(true, false));
+                                    assertTrue(locked.compareAndSet(true, false), "Lock violation: " + tx);
 
                                     tx.commit();
 
@@ -450,7 +455,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                         assert curCntr == prev : invalid("Counter mismatch", near, false, curCntr,
                                             prev);
 
-                                        assertTrue("Lock violation: " + tx, locked.compareAndSet(true, false));
+                                        assertTrue(locked.compareAndSet(true, false), "Lock violation: " + tx);
 
                                         tx.commit();
 
@@ -502,10 +507,10 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         int exp = RETRIES * updateCnt;
 
         for (Map.Entry<String, Integer> e : cntrs.entrySet())
-            assertEquals("Counter check failed on grid [igniteInstanceName=" + e.getKey() +
+            assertEquals(exp, e.getValue().intValue(),
+                "Counter check failed on grid [igniteInstanceName=" + e.getKey() +
                 ", dhtEntry=" + dht(G.ignite(e.getKey())).peekEx(CNTR_KEY) +
-                ", nearEntry=" + near(G.ignite(e.getKey())).peekEx(CNTR_KEY) + ']',
-                exp, e.getValue().intValue());
+                ", nearEntry=" + near(G.ignite(e.getKey())).peekEx(CNTR_KEY) + ']');
 
         X.println("*** ");
     }

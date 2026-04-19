@@ -22,6 +22,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Tests events.
  */

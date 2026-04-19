@@ -53,6 +53,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks that readers are properly handled.
@@ -143,7 +149,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNotNull(n1);
         assertNotNull(n2);
         assertNotSame(n1, n2);
-        assertFalse("Nodes cannot be equal: " + n1, n1.equals(n2));
+        assertFalse(n1.equals(n2), "Nodes cannot be equal: " + n1);
 
         Ignite g1 = grid(n1.id());
         Ignite g2 = grid(n2.id());
@@ -237,7 +243,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNotNull(n1);
         assertNotNull(n2);
         assertNotSame(n1, n2);
-        assertFalse("Nodes cannot be equal: " + n1, n1.equals(n2));
+        assertFalse(n1.equals(n2), "Nodes cannot be equal: " + n1);
 
         Ignite g1 = grid(n1.id());
         Ignite g2 = grid(n2.id());
@@ -442,7 +448,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertNotSame(primary, backup);
 
-        assertFalse("Nodes cannot be equal: " + primary, primary.equals(backup));
+        assertFalse(primary.equals(backup), "Nodes cannot be equal: " + primary);
 
         IgniteCache<Integer, String> cache1 = grid(primary.id()).cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = grid(backup.id()).cache(DEFAULT_CACHE_NAME);
