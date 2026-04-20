@@ -1,0 +1,113 @@
+Limit
+    fetch: 100
+    est: (rows=100)
+  Project
+      fieldNames: [C_CUSTOMER_ID]
+      projection: [C_CUSTOMER_ID]
+      est: (rows=24032667)
+    HashJoin
+        predicate: =(CTR_CUSTOMER_SK, C_CUSTOMER_SK)
+        type: inner
+        est: (rows=24032667)
+      Exchange
+          distribution: single
+          est: (rows=100000)
+        Sort
+            collation: [C_CUSTOMER_ID ASC]
+            est: (rows=100000)
+          TableScan
+              table: PUBLIC.CUSTOMER
+              fieldNames: [C_CUSTOMER_SK, C_CUSTOMER_ID]
+              est: (rows=100000)
+      MergeJoin
+          predicate: =(S_STORE_SK, CTR_STORE_SK)
+          type: inner
+          est: (rows=24032667)
+        Exchange
+            distribution: single
+            est: (rows=4)
+          Sort
+              collation: [S_STORE_SK ASC]
+              est: (rows=4)
+            TableScan
+                table: PUBLIC.STORE
+                predicate: =(S_STATE, _UTF-8'NM')
+                fieldNames: [S_STORE_SK, S_STATE]
+                est: (rows=4)
+        HashJoin
+            predicate: AND(=(CTR_STORE_SK, CTR_STORE_SK$0), >(CAST(CTR_TOTAL_RETURN):DECIMAL(30, 17), *($f1, 1.2:DECIMAL(2, 1))))
+            fieldNames: [CTR_CUSTOMER_SK, CTR_STORE_SK, CTR_TOTAL_RETURN, CTR_STORE_SK$0, $f1]
+            type: inner
+            est: (rows=72170173)
+          Sort
+              collation: [CTR_STORE_SK ASC]
+              est: (rows=31020)
+            Filter
+                predicate: IS NOT NULL(CTR_STORE_SK)
+                est: (rows=31020)
+              ColocatedHashAggregate
+                  fieldNames: [CTR_CUSTOMER_SK, CTR_STORE_SK, CTR_TOTAL_RETURN]
+                  group: [CTR_CUSTOMER_SK, CTR_STORE_SK]
+                  aggregation: [SUM(SR_FEE)]
+                  est: (rows=34467)
+                Project
+                    fieldNames: [CTR_CUSTOMER_SK, CTR_STORE_SK, SR_FEE]
+                    projection: [SR_CUSTOMER_SK, SR_STORE_SK, SR_FEE]
+                    est: (rows=95742)
+                  HashJoin
+                      predicate: =(SR_RETURNED_DATE_SK, D_DATE_SK)
+                      type: inner
+                      est: (rows=95742)
+                    Exchange
+                        distribution: single
+                        est: (rows=287514)
+                      TableScan
+                          table: PUBLIC.STORE_RETURNS
+                          fieldNames: [SR_RETURNED_DATE_SK, SR_CUSTOMER_SK, SR_STORE_SK, SR_FEE]
+                          est: (rows=287514)
+                    Exchange
+                        distribution: single
+                        est: (rows=24325)
+                      TableScan
+                          table: PUBLIC.DATE_DIM
+                          predicate: =(D_YEAR, 2000)
+                          fieldNames: [D_DATE_SK, D_YEAR]
+                          est: (rows=24325)
+          ColocatedHashAggregate
+              fieldNames: [CTR_STORE_SK, $f1]
+              group: [CTR_STORE_SK]
+              aggregation: [AVG(CTR_TOTAL_RETURN)]
+              est: (rows=31020)
+            Project
+                fieldNames: [CTR_STORE_SK, CTR_TOTAL_RETURN]
+                projection: [CTR_STORE_SK, CTR_TOTAL_RETURN]
+                est: (rows=31020)
+              ColocatedHashAggregate
+                  fieldNames: [CTR_CUSTOMER_SK, CTR_STORE_SK, CTR_TOTAL_RETURN]
+                  group: [CTR_CUSTOMER_SK, CTR_STORE_SK]
+                  aggregation: [SUM(SR_FEE)]
+                  est: (rows=31020)
+                Project
+                    fieldNames: [CTR_CUSTOMER_SK, CTR_STORE_SK, SR_FEE]
+                    projection: [SR_CUSTOMER_SK, SR_STORE_SK, SR_FEE]
+                    est: (rows=86168)
+                  HashJoin
+                      predicate: =(SR_RETURNED_DATE_SK, D_DATE_SK)
+                      type: inner
+                      est: (rows=86168)
+                    Exchange
+                        distribution: single
+                        est: (rows=258763)
+                      TableScan
+                          table: PUBLIC.STORE_RETURNS
+                          predicate: IS NOT NULL(SR_STORE_SK)
+                          fieldNames: [SR_RETURNED_DATE_SK, SR_CUSTOMER_SK, SR_STORE_SK, SR_FEE]
+                          est: (rows=258763)
+                    Exchange
+                        distribution: single
+                        est: (rows=24325)
+                      TableScan
+                          table: PUBLIC.DATE_DIM
+                          predicate: =(D_YEAR, 2000)
+                          fieldNames: [D_DATE_SK, D_YEAR]
+                          est: (rows=24325)

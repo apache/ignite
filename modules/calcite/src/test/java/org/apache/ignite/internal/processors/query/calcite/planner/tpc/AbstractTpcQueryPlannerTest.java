@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import com.google.common.io.CharStreams;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
@@ -70,7 +71,7 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     }
 
     private void validateQueryPlan(String queryId) {
-        String[] actualPlans = queryPlan(queryString(queryId));
+        List<String> actualPlans = queryPlan(queryString(queryId));
 
         if (updatePlan) {
             updateQueryPlan(queryId, actualPlans);
@@ -79,7 +80,7 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         String[] expectedPlans = expectedQueryPlan(queryId).split("----(\\r\\n|\\n|\\r)");
 
-        assert expectedPlans.length == actualPlans.length : "Unexpected number of plans, got: " + actualPlans.length
+        assert expectedPlans.length == actualPlans.size() : "Unexpected number of plans, got: " + actualPlans.size()
             + ", expected: " + expectedPlans.length;
 
         int pos = 0;
@@ -119,7 +120,7 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         }
     }
 
-    static void updateQueryPlan(String queryId, Path targetDirectory, String... newPlans) {
+    static void updateQueryPlan(String queryId, Path targetDirectory, List<String> newPlans) {
         // A targetDirectory must be specified by hand when expected plans are generated.
         if (targetDirectory == null) {
             throw new RuntimeException("Please provide target directory to where save generated plans."
@@ -167,10 +168,10 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         }
 
         if (variant) {
-            var variantQueryFile = String.format("%s/plan/variant_q%d.plan", name(), numericId);
+            var variantQueryFile = String.format("%s/variant_q%d.plan", name(), numericId);
             return loadFromResource(variantQueryFile);
         } else {
-            var queryFile = String.format("%s/plan/q%s.plan", name(), numericId);
+            var queryFile = String.format("%s/q%s.plan", name(), numericId);
             return loadFromResource(queryFile);
         }
     }
@@ -181,22 +182,20 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         return name.substring(1).replace(".sql", "");
     }
 
-    private String[] queryPlan(String sqlScript) {
-        List<String> queries = scriptToQueries(sqlScript);
+    private List<String> queryPlan(String sqlScript) {
+        return scriptToQueries(sqlScript).stream().map(qry -> {
+            List<List<?>> explain = sql(srv, "EXPLAIN PLAN FOR " + qry);
 
-        assertEquals("Query file must contain single query", 1, queries.size());
+            StringBuilder plan = new StringBuilder();
 
-        List<List<?>> plan = sql(srv, "EXPLAIN PLAN FOR " + queries.get(0));
+            for (int i = 0; i < explain.size(); i++) {
+                assertEquals(1, explain.get(i).size());
 
-        String[] res = new String[plan.size()];
+                plan.append(explain.get(i).get(0));
+            }
 
-        for (int i = 0; i < plan.size(); i++) {
-            assertEquals(1, plan.get(i).size());
-
-            res[i] = plan.get(i).get(0).toString();
-        }
-
-        return res;
+            return plan.toString();
+        }).collect(Collectors.toList());
     }
 
     private static List<String> scriptToQueries(String sqlScript) {
@@ -212,7 +211,7 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             if (line.startsWith("--") || line.isEmpty())
                 continue;
 
-            current.append(line).append('');
+            current.append(line).append('\n');
 
             if (line.endsWith(";")) {
                 queries.add(current.toString());
@@ -229,7 +228,7 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     abstract String queryString(String queryId);
 
-    abstract void updateQueryPlan(String queryId, String... newPlans);
+    abstract void updateQueryPlan(String queryId, List<String> newPlans);
 
     /** Returns name of the SQL test. */
     abstract String name();
