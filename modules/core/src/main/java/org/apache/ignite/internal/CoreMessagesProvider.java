@@ -23,6 +23,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -525,6 +526,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(GridDhtPartitionsFullMessage.class);
         withNoSchema(GridDhtPartitionsSingleMessage.class);
         withNoSchema(GridDhtPartitionsSingleRequest.class);
+        withNoSchema(PartitionKey.class);
 
         // [10900-11100]: Query, schema and SQL related messages.
         msgIdx = 10900;
