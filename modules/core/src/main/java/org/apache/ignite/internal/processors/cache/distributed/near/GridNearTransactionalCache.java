@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -476,7 +477,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
-        removeLocks(ver, keys, false);
+        removeLocks(ver, keys, false, Collections.emptySet());
     }
 
     /**
@@ -487,7 +488,22 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     public void removeLocksForSavepoint(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
-        removeLocks(ver, keys, true);
+        removeLocks(ver, keys, true, Collections.emptySet());
+    }
+
+    /**
+     * Removes locks for savepoint rollback and marks keys whose remote tx entries can be removed.
+     *
+     * @param ver Lock version.
+     * @param keys Keys.
+     * @param clearTxEntryKeys Keys for which remote tx entry can be removed.
+     */
+    public void removeLocksForSavepoint(
+        GridCacheVersion ver,
+        Collection<KeyCacheObject> keys,
+        Set<KeyCacheObject> clearTxEntryKeys
+    ) {
+        removeLocks(ver, keys, true, clearTxEntryKeys);
     }
 
     /**
@@ -495,7 +511,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      * @param forSavepoint Savepoint rollback flag.
      */
-    private void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys, boolean forSavepoint) {
+    private void removeLocks(
+        GridCacheVersion ver,
+        Collection<KeyCacheObject> keys,
+        boolean forSavepoint,
+        Set<KeyCacheObject> clearTxEntryKeys
+    ) {
         if (keys.isEmpty())
             return;
 
@@ -550,14 +571,21 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 // Remove candidate from local node first.
                                 if (entry.removeLock(cand.version())) {
                                     if (primary.isLocal()) {
-                                        dht.removeLocks(primary.id(), ver, F.asList(key), true, forSavepoint);
+                                        dht.removeLocks(
+                                            primary.id(),
+                                            ver,
+                                            F.asList(key),
+                                            true,
+                                            forSavepoint,
+                                            forSavepoint && clearTxEntryKeys.contains(key) ? F.asSet(key) : Collections.emptySet()
+                                        );
 
                                         assert req == null;
 
                                         continue;
                                     }
 
-                                    req.addKey(entry.key());
+                                    req.addKey(entry.key(), forSavepoint && clearTxEntryKeys.contains(key));
                                 }
                             }
                         }

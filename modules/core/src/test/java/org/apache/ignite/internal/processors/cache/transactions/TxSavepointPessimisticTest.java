@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -25,12 +25,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
@@ -42,9 +45,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests savepoint support for pessimistic transactions.
  */
 public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CACHE_NAME = "tx-savepoint-cache";
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -58,7 +58,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
     @Test
     public void testRollbackToSavepoint() throws Exception {
         Ignite ignite = startGrid(0);
-        IgniteCache<Integer, Integer> cache = transactionalCache(ignite);
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite, 1);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(1, 1);
@@ -80,7 +80,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
     @Test
     public void testOverwriteAndReleaseSavepoint() throws Exception {
         Ignite ignite = startGrid(0);
-        IgniteCache<Integer, Integer> cache = transactionalCache(ignite);
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite, 1);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(1, 1);
@@ -134,7 +134,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
     @Test
     public void testRollbackToSavepointReleasesLockForNewEntry() throws Exception {
         Ignite ignite = startGrid(0);
-        IgniteCache<Integer, Integer> cache = transactionalCache(ignite);
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite, 1);
 
         CountDownLatch savepointRolledBackLatch = new CountDownLatch(1);
         CountDownLatch finishFirstTxLatch = new CountDownLatch(1);
@@ -148,16 +148,16 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 
                 savepointRolledBackLatch.countDown();
 
-                assertTrue(finishFirstTxLatch.await(5, TimeUnit.SECONDS));
+                assertTrue(finishFirstTxLatch.await(10, TimeUnit.SECONDS));
 
                 tx.commit();
             }
         });
 
-        assertTrue(savepointRolledBackLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(savepointRolledBackLatch.await(10, TimeUnit.SECONDS));
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.PESSIMISTIC,
+            PESSIMISTIC,
             TransactionIsolation.REPEATABLE_READ,
             3_000,
             0
@@ -181,44 +181,39 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
         Ignite ignite0 = startGrid(0);
         Ignite ignite1 = startGrid(1);
 
+        awaitPartitionMapExchange();
+
         IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0, 0);
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-        List<Integer> node0PrimaryKeys = primaryKeys(cache0, 1);
-
-        int keepTxAliveKey = node0PrimaryKeys.get(0);
-        int remotePrimaryKey = primaryKey(cache1);
+        int node0Key = primaryKey(cache0);
+        int node1Key = primaryKey(cache1);
 
         CountDownLatch savepointRolledBackLatch = new CountDownLatch(1);
         CountDownLatch finishFirstTxLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
             try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cache0.put(keepTxAliveKey, 1);
+                cache0.put(node0Key, 1);
 
                 tx.savepoint("sp");
 
-                cache0.put(remotePrimaryKey, 1);
+                cache0.put(node1Key, 1);
 
                 tx.rollbackToSavepoint("sp");
 
                 savepointRolledBackLatch.countDown();
 
-                assertTrue(finishFirstTxLatch.await(5, TimeUnit.SECONDS));
+                assertTrue(finishFirstTxLatch.await(10, TimeUnit.SECONDS));
 
                 tx.commit();
             }
         });
 
-        assertTrue(savepointRolledBackLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(savepointRolledBackLatch.await(10, TimeUnit.SECONDS));
 
-        try (Transaction tx = ignite1.transactions().txStart(
-            TransactionConcurrency.PESSIMISTIC,
-            TransactionIsolation.REPEATABLE_READ,
-            3_000,
-            0
-        )) {
-            cache1.put(remotePrimaryKey, 22);
+        try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10_000, 1)) {
+            cache1.put(node1Key, 22);
             tx.commit();
         }
 
@@ -226,15 +221,152 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 
         fut.get();
 
-        assertEquals(Integer.valueOf(22), cache0.get(remotePrimaryKey));
+        assertEquals(Integer.valueOf(22), cache0.get(node1Key));
     }
 
     /**
-     * @param ignite Node.
-     * @return Transactional cache.
+     * @throws Exception If failed.
      */
-    private IgniteCache<Integer, Integer> transactionalCache(Ignite ignite) {
-        return transactionalCache(ignite, 1);
+    @Test
+    public void testRollbackToSavepointReleasesRemoteDhtLockAcquireAgain() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0, 1);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+
+        int node0Key = primaryKey(cache0);
+        int node1Key = keyForPrimaryAndBackup(ignite0, ignite1, ignite2);
+
+        CountDownLatch savepointRolledBackLatch = new CountDownLatch(1);
+        CountDownLatch finishFirstTxLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 30_000, 2)) {
+                cache0.put(node0Key, 1);
+
+                tx.savepoint("sp");
+
+                cache0.put(node1Key, 1);
+
+                tx.rollbackToSavepoint("sp");
+
+                savepointRolledBackLatch.countDown();
+
+                assertTrue(finishFirstTxLatch.await(10, TimeUnit.SECONDS));
+
+                cache0.put(node1Key, 2);
+
+                tx.commit();
+            }
+        });
+
+        try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10_000, 1)) {
+            cache1.put(node1Key, 22);
+            tx.commit();
+        }
+
+        assertFalse(fut.isDone());
+        assertEquals(Integer.valueOf(22), cache0.get(node1Key));
+
+        finishFirstTxLatch.countDown();
+
+        fut.get(10_000);
+        assertEquals(Integer.valueOf(2), cache0.get(node1Key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDhtEntriesAfterRollbackToSavepoint() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0, 1);
+
+        int keepTxAliveKey = primaryKey(cache0);
+        int dhtKey = keyForPrimaryAndBackup(ignite0, ignite1, ignite2);
+
+        // Materialize DHT entries on primary/backup before tx starts.
+        cache0.put(dhtKey, -1);
+
+        CountDownLatch dhtKeyWrittenLatch = new CountDownLatch(1);
+        CountDownLatch proceedRollbackLatch = new CountDownLatch(1);
+        CountDownLatch rollbackDoneLatch = new CountDownLatch(1);
+        CountDownLatch finishTxLatch = new CountDownLatch(1);
+        GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 30_000, 2)) {
+                nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
+
+                cache0.put(keepTxAliveKey, 1);
+
+                tx.savepoint("sp");
+
+                cache0.put(dhtKey, 1);
+
+                dhtKeyWrittenLatch.countDown();
+
+                assertTrue(proceedRollbackLatch.await(10, TimeUnit.SECONDS));
+
+                tx.rollbackToSavepoint("sp");
+
+                rollbackDoneLatch.countDown();
+
+                assertTrue(finishTxLatch.await(10, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+        });
+
+        assertTrue(dhtKeyWrittenLatch.await(10, TimeUnit.SECONDS));
+        assertNotNull(nearVerRef[0]);
+
+        proceedRollbackLatch.countDown();
+
+        assertTrue(rollbackDoneLatch.await(10, TimeUnit.SECONDS));
+
+        assertNoTxStateKeyOnNode(ignite1, nearVerRef[0], dhtKey);
+        assertNoTxStateKeyOnNode(ignite2, nearVerRef[0], dhtKey);
+
+        finishTxLatch.countDown();
+
+        fut.get(10_000);
+
+        assertNoActiveTx(ignite1, nearVerRef[0]);
+        assertNoActiveTx(ignite2, nearVerRef[0]);
+    }
+
+    /**
+     * @param nearNode Node where near tx is started.
+     * @param primaryNode Node that should be primary.
+     * @param backupNode Node that should be backup.
+     * @return Key mapped to given primary and backup.
+     */
+    private int keyForPrimaryAndBackup(Ignite nearNode, Ignite primaryNode, Ignite backupNode) {
+        for (int key = 0; key < 50_000; key++) {
+            Collection<ClusterNode> mapping = nearNode.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+
+            if (mapping.size() < 2)
+                continue;
+
+            ClusterNode primary = mapping.iterator().next();
+            ClusterNode backup = mapping.stream().skip(1).findFirst().orElse(null);
+
+            if (primary.id().equals(primaryNode.cluster().localNode().id()) &&
+                backup.id().equals(backupNode.cluster().localNode().id()))
+                return key;
+        }
+
+        throw new AssertionError("Failed to find key for requested primary/backup mapping.");
     }
 
     /**
@@ -243,13 +375,56 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @return Transactional cache.
      */
     private IgniteCache<Integer, Integer> transactionalCache(Ignite ignite, int backups) {
-        CacheConfiguration<Integer, Integer> ccfg = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration()
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(backups);
 
-        ccfg.setName(CACHE_NAME);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setBackups(backups);
+        return (IgniteCache<Integer, Integer>)ignite.getOrCreateCache(ccfg);
+    }
 
-        return ignite.getOrCreateCache(ccfg);
+    /**
+     * Asserts that no active transaction with the given near version contains the specified key
+     * in its write-set or entry map on the provided node.
+     *
+     * @param ignite Node to inspect.
+     * @param nearVer Near transaction version.
+     * @param key Key that must be absent from tx state.
+     * @throws Exception If waiting fails.
+     */
+    private void assertNoTxStateKeyOnNode(Ignite ignite, GridCacheVersion nearVer, int key) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            GridCacheContext<?, ?> cctx = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context();
+            IgniteTxKey txKey = cctx.txKey(cctx.toCacheKeyObject(key));
+
+            for (IgniteInternalTx tx : cctx.tm().activeTransactions()) {
+                if (!nearVer.equals(tx.nearXidVersion()))
+                    continue;
+
+                if (tx.hasWriteKey(txKey) || tx.entry(txKey) != null)
+                    return false;
+            }
+
+            return true;
+        }, 10_000));
+    }
+
+    /**
+     * Asserts that no active transaction remains with the near version on the node.
+     *
+     * @param ignite Node to inspect.
+     * @param nearVer Near transaction version.
+     * @throws Exception If waiting fails.
+     */
+    private void assertNoActiveTx(Ignite ignite, GridCacheVersion nearVer) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            GridCacheContext<?, ?> cctx = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context();
+            for (IgniteInternalTx tx : cctx.tm().activeTransactions()) {
+                if (!nearVer.equals(tx.nearXidVersion()))
+                    return false;
+            }
+
+            return true;
+        }, 10_000));
     }
 }

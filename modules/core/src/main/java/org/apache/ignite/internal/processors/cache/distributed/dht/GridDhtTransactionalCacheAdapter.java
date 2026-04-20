@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -59,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -579,6 +582,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
         clearLocks(nodeId, req);
+
+        if (req.forSavepoint())
+            clearTxEntries(req.version(), collectClearTxEntryKeys(req));
 
         if (isNearEnabled(cacheCfg))
             near().clearLocks(nodeId, req);
@@ -1488,7 +1494,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert ctx.affinityNode();
         assert nodeId != null;
 
-        removeLocks(nodeId, req.version(), req.keys(), true, req.forSavepoint());
+        removeLocks(
+            nodeId,
+            req.version(),
+            req.keys(),
+            true,
+            req.forSavepoint(),
+            collectClearTxEntryKeys(req)
+        );
     }
 
     /**
@@ -1504,7 +1517,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridCacheEntryEx cached,
         Collection<UUID> readers,
         Map<ClusterNode, List<KeyCacheObject>> dhtMap,
-        Map<ClusterNode, List<KeyCacheObject>> nearMap
+        Map<ClusterNode, List<KeyCacheObject>> nearMap,
+        Map<ClusterNode, List<Boolean>> dhtClearTxEntryMap,
+        boolean clearTxEntry
     ) {
         List<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
@@ -1537,7 +1552,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 log.debug("Entry has no near readers: " + cached);
         }
 
-        map(cached, F.view(dhtNodes, remoteNodes(ctx.nodeId())), dhtMap); // Exclude local node.
+        map(cached, F.view(dhtNodes, remoteNodes(ctx.nodeId())), dhtMap, dhtClearTxEntryMap, clearTxEntry); // Exclude local node.
         map(cached, nearNodes, nearMap);
     }
 
@@ -1554,6 +1569,33 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 List<KeyCacheObject> keys = map.computeIfAbsent(n, k -> new LinkedList<>());
 
                 keys.add(entry.key());
+            }
+        }
+    }
+
+    /**
+     * @param entry Entry.
+     * @param nodes Nodes.
+     * @param map Map.
+     * @param clearTxEntryMap Per-node clear tx entry flags mapped in the same order as keys.
+     * @param clearTxEntry Clear tx entry flag for mapped key.
+     */
+    private void map(
+        GridCacheEntryEx entry,
+        @Nullable Iterable<? extends ClusterNode> nodes,
+        Map<ClusterNode, List<KeyCacheObject>> map,
+        Map<ClusterNode, List<Boolean>> clearTxEntryMap,
+        boolean clearTxEntry
+    ) {
+        if (nodes != null) {
+            for (ClusterNode n : nodes) {
+                List<KeyCacheObject> keys = map.computeIfAbsent(n, k -> new LinkedList<>());
+
+                keys.add(entry.key());
+
+                List<Boolean> flags = clearTxEntryMap.computeIfAbsent(n, k -> new LinkedList<>());
+
+                flags.add(clearTxEntry);
             }
         }
     }
@@ -1582,6 +1624,25 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean unmap,
         boolean forSavepoint
     ) {
+        removeLocks(nodeId, ver, keys, unmap, forSavepoint, Collections.emptySet());
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Version.
+     * @param keys Keys.
+     * @param unmap Flag for un-mapping version.
+     * @param forSavepoint Savepoint rollback flag.
+     * @param clearTxEntryKeys Keys for which remote tx entry can be removed.
+     */
+    public void removeLocks(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        boolean forSavepoint,
+        Set<KeyCacheObject> clearTxEntryKeys
+    ) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1595,6 +1656,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             ctx.mvcc().addRemoved(ctx, ver);
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
+        Map<ClusterNode, List<Boolean>> dhtClearTxEntryMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
 
         GridCacheVersion obsoleteVer = null;
@@ -1654,8 +1716,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     // as there is no point to reorder relative to the version
                     // we are about to remove.
                     if (entry.removeLock(dhtVer)) {
+                        boolean clearTxEntry = forSavepoint && clearTxEntryKeys.contains(key);
+
+                        if (clearTxEntry)
+                            clearTxEntry(dhtVer, key);
+
                         // Map to backups and near readers.
-                        map(nodeId, topVer, entry, readers, dhtMap, nearMap);
+                        map(nodeId, topVer, entry, readers, dhtMap, nearMap, dhtClearTxEntryMap, clearTxEntry);
 
                         if (log.isDebugEnabled())
                             log.debug("Removed lock [lockId=" + ver + ", key=" + key + ']');
@@ -1695,8 +1762,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.forSavepoint(forSavepoint);
 
             try {
-                for (KeyCacheObject key : keyBytes)
-                    req.addKey(key);
+                List<Boolean> clearFlags = dhtClearTxEntryMap.get(n);
+
+                for (int i = 0; i < keyBytes.size(); i++) {
+                    boolean clearTxEntry = clearFlags != null && i < clearFlags.size() && Boolean.TRUE.equals(clearFlags.get(i));
+
+                    req.addKey(keyBytes.get(i), clearTxEntry);
+                }
 
                 keyBytes = nearMap.get(n);
 
@@ -1746,6 +1818,53 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
             }
         }
+    }
+
+    /**
+     * @param req Unlock request.
+     * @return Keys for which tx entries can be removed.
+     */
+    private Set<KeyCacheObject> collectClearTxEntryKeys(GridNearUnlockRequest req) {
+        if (F.isEmpty(req.keys()))
+            return Collections.emptySet();
+
+        Set<KeyCacheObject> res = null;
+
+        for (int i = 0; i < req.keys().size(); i++) {
+            if (req.clearTxEntry(i)) {
+                if (res == null)
+                    res = new HashSet<>();
+
+                res.add(req.keys().get(i));
+            }
+        }
+
+        return res == null ? Collections.emptySet() : res;
+    }
+
+    /**
+     * @param ver Tx version.
+     * @param keys Keys to clear from remote tx.
+     */
+    private void clearTxEntries(GridCacheVersion ver, Set<KeyCacheObject> keys) {
+        if (F.isEmpty(keys))
+            return;
+
+        for (KeyCacheObject key : keys)
+            clearTxEntry(ver, key);
+    }
+
+    /**
+     * @param ver Tx version.
+     * @param key Key.
+     */
+    private void clearTxEntry(GridCacheVersion ver, KeyCacheObject key) {
+        IgniteInternalTx tx = ctx.tm().tx(ver);
+
+        if (tx instanceof GridDhtTxRemote)
+            ((GridDhtTxRemote)tx).clearEntry(ctx.txKey(key));
+        else if (tx instanceof GridDhtTxLocal)
+            ((GridDhtTxLocal)tx).clearEntry(ctx.txKey(key));
     }
 
     /**
