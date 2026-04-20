@@ -154,7 +154,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-                new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()), customMessageFactory()}));
+                new CoreMessagesProvider(jdk(), U.gridClassLoader()), customMessageFactory()}));
 
             ctx.setLocalNode(node);
 

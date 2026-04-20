@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.reflect.Constructor;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyReque
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMess
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -228,14 +230,10 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
@@ -276,7 +274,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CoreMessagesProvider implements MessageFactoryProvider {
+public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProvider {
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = 11500;
 
@@ -289,15 +287,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     /** */
     public static final short MAX_MESSAGE_ID = 15_000;
 
-    /** Binary marshaller. */
-    private final Marshaller schemaAwareMarhaller;
-
-    /** Binary marshaller. */
-    private final Marshaller schemaLessMarshaller;
-
-    /** Resolved classloader. */
-    private final ClassLoader resolvedClsLdr;
-
     /** */
     private short msgIdx;
 
@@ -305,14 +294,22 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     private @Nullable MessageFactory factory;
 
     /**
-     * @param schemaAwareMarhaller Schema-aware marshaller like {@link BinaryMarshaller}.
-     * @param schemaLessMarshaller Pure, schemaless marshaller like {@link JdkMarshaller}.
-     * @param resolvedClsLdr Resolved classloader.
+     * Default plugin-purposes constructor.
+     *
+     * @see #init(Marshaller, ClassLoader)
      */
-    public CoreMessagesProvider(Marshaller schemaAwareMarhaller, Marshaller schemaLessMarshaller, ClassLoader resolvedClsLdr) {
-        this.schemaAwareMarhaller = schemaAwareMarhaller;
-        this.schemaLessMarshaller = schemaLessMarshaller;
-        this.resolvedClsLdr = resolvedClsLdr;
+    public CoreMessagesProvider() {
+        // No-op.
+    }
+
+    /**
+     * Constructor allowing not to call {@link #init(Marshaller, ClassLoader)}.
+     *
+     * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
+     * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
+     */
+    public CoreMessagesProvider(Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+        init(schemaAwareMarsh, resolvedClsLdr);
     }
 
     /** The order is important. If wish to remove a message, put 'msgIdx++' on its place. */
@@ -628,7 +625,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ChangeCacheEncryptionRequest.class);
         withNoSchema(MasterKeyChangeRequest.class);
 
-        // [13000 - 13300]: Control, diagnostincs and other messages.
+        // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
@@ -636,56 +633,29 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withSchema(IgniteDiagnosticRequest.class);
         withNoSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
+        withNoSchema(CacheConfigurationEnrichment.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
 
-    /** Registers message using {@link #schemaAwareMarhaller} and {@link U#gridClassLoader()}. */
-    private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarhaller, U.gridClassLoader());
-    }
-
-    /** Registers message using {@link #schemaLessMarshaller} and {@link U#gridClassLoader()}. */
+    /** Registers message using {@link #dfltMarsh} and {@link #dftlClsLdr}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        register(cls, schemaLessMarshaller, U.gridClassLoader());
+        register(cls, dfltMarsh, dftlClsLdr);
     }
 
-    /** Registers message using {@link #schemaLessMarshaller} and {@link #resolvedClsLdr}. */
+    /** Registers message using {@link #schemaAwareMarsh} and {@link #dftlClsLdr}. */
+    private <T extends Message> void withSchema(Class<T> cls) {
+        register(cls, schemaAwareMarsh, dftlClsLdr);
+    }
+
+    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
-        register(cls, schemaLessMarshaller, resolvedClsLdr);
+        register(cls, dfltMarsh, resolvedClsLdr);
     }
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
     private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLrd) {
-        Constructor<T> ctor;
-        MessageSerializer<T> serializer;
-
-        try {
-            ctor = cls.getConstructor();
-
-            boolean marshallable = MarshallableMessage.class.isAssignableFrom(cls);
-
-            Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
-
-            serializer = marshallable
-                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLrd)
-                : (MessageSerializer<T>)serCls.getConstructor().newInstance();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
-        }
-
-        factory.register(
-            msgIdx++,
-            () -> {
-                try {
-                    return ctor.newInstance();
-                }
-                catch (Exception e) {
-                    throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
-                }
-            },
-            serializer
-        );
+        register(factory, cls, msgIdx++, marsh, clsLrd);
     }
 }

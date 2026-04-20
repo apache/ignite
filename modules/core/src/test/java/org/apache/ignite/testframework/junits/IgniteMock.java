@@ -85,7 +85,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -156,7 +155,7 @@ public class IgniteMock implements IgniteEx {
         ClassLoader lrd = staticCfg == null ? U.gridClassLoader() : U.resolveClassLoader(staticCfg);
 
         msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(marshaller, Marshallers.jdk(), lrd)});
+            new CoreMessagesProvider(marshaller, lrd)});
 
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {

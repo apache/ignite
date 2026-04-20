@@ -112,6 +112,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -1098,7 +1099,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
-                startProcessor(new DataStreamProcessor(ctx));
+                startProcessor(new DataStreamProcessor<>(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
@@ -1114,7 +1115,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startTimer.finishGlobalStage("Start processors");
 
                 // Start plugins.
-                for (PluginProvider provider : ctx.plugins().allProviders()) {
+                for (PluginProvider<?> provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
@@ -1255,7 +1256,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
 
             // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders())
+            for (PluginProvider<?> provider : ctx.plugins().allProviders())
                 provider.onIgniteStart();
 
             if (recon)
@@ -1319,14 +1320,17 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())));
+        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), U.resolveClassLoader(ctx.config())));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
-            if (f != null)
+            if (f != null) {
+                if (f instanceof AbstractMarshallableMessageFactoryProvider)
+                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshaller(), U.resolveClassLoader(ctx.config()));
+
                 compMsgs.add(f);
+            }
         }
 
         DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
