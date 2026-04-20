@@ -74,7 +74,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
         this.ctx = ctx.cache().context();
         clsLdr = U.resolveClassLoader(ctx.config());
-        this.ioManager = ctx.io();
+        ioManager = ctx.io();
         msgLsnr = this::onMessage;
     }
 

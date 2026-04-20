@@ -31,9 +31,4 @@ public interface MarshallableMessage extends Message {
      * @param clsLdr External class loader to post-unmarshall.
      */
     public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;
-
-    /** @return {@code True} if message can hold user-provided custom classes and data. */
-    default boolean hasCustomData() {
-        return false;
-    }
 }
