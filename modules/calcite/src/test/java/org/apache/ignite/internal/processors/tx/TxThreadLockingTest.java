@@ -131,7 +131,7 @@ public class TxThreadLockingTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testDiffrentBlockedBatchSize() throws Exception {
+    public void testDifferentBlockedBatchSize() throws Exception {
         assertTrue("Unexpected constants [MODIFY_BATCH_SIZE=" + MODIFY_BATCH_SIZE +
             ", IN_BUFFER_SIZE=" + IN_BUFFER_SIZE + ']', MODIFY_BATCH_SIZE < IN_BUFFER_SIZE);
 
