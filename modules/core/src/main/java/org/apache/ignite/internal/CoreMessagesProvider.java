@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMess
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -623,7 +625,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ChangeCacheEncryptionRequest.class);
         withNoSchema(MasterKeyChangeRequest.class);
 
-        // [13000 - 13300]: Control, diagnostincs and other messages.
+        // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
@@ -631,6 +633,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withSchema(IgniteDiagnosticRequest.class);
         withNoSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
+        withNoSchema(CacheConfigurationEnrichment.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
