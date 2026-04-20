@@ -36,6 +36,7 @@ import org.apache.calcite.util.Sarg;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -51,32 +52,46 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
         RexLocalRef lr0 = new RexLocalRef(0, cluster.getTypeFactory().createJavaType(long.class));
 
         RexLiteral l1 = builder.makeExactLiteral(new BigDecimal(0));
+        RexLiteral l2 = builder.makeExactLiteral(new BigDecimal(2));
         RexLocalRef lr1 = new RexLocalRef(1, cluster.getTypeFactory().createJavaType(long.class));
+        RexLocalRef lr1_1 = new RexLocalRef(1, cluster.getTypeFactory().createJavaType(long.class));
         RexLocalRef lr100 = new RexLocalRef(100, cluster.getTypeFactory().createJavaType(long.class));
 
-        final RangeSet<Integer> setNone = ImmutableRangeSet.of();
-        final RangeSet<Integer> setAll = setNone.complement();
+        RexLocalRef lr3 = new RexLocalRef(2, cluster.getTypeFactory().createJavaType(long.class));
+
+        final RangeSet<@NotNull Integer> setNone = ImmutableRangeSet.of();
+        final RangeSet<@NotNull Integer> setAll = setNone.complement();
         final Sarg<Integer> sarg =
             Sarg.of(RexUnknownAs.FALSE, setAll);
-        RexNode intLiteral =
-            builder.makeLiteral(1, cluster.getTypeFactory().createSqlType(SqlTypeName.INTEGER));
         RexNode rexNode =
-            builder.makeCall(SqlStdOperatorTable.SEARCH, intLiteral,
-                builder.makeSearchArgumentLiteral(sarg, intLiteral.getType()));
-        RexLocalRef lr2 = new RexLocalRef(2, cluster.getTypeFactory().createJavaType(long.class));
+            builder.makeCall(SqlStdOperatorTable.SEARCH, lr3,
+                builder.makeSearchArgumentLiteral(sarg, cluster.getTypeFactory().createSqlType(SqlTypeName.INTEGER)));
 
         RexNode r0 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr0, l0);
         RexNode r1 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr1, l1);
-        RexNode r3 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr2, rexNode);
+        RexNode r1_1 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr1_1, l2);
 
         {
-            RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, r1, r0, r3);
-            assertEquals("AND(=($t1, 0), =($t0, 0), =($t2, SEARCH(1, Sarg[IS NOT NULL])))", filter.toString());
+            RexNode filter = builder.makeCall(SqlStdOperatorTable.OR, r1, r1_1, r0);
+            assertEquals("OR(=($t1, 0), =($t1, 2), =($t0, 0))", filter.toString());
 
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);
 
             Predicate<ProjectableFilterableTableScan> cond =
-                satisfyCondition("AND(=($t0, 0), =($t1, 0), =($t2, SEARCH(1, Sarg[IS NOT NULL])))");
+                satisfyCondition("OR(=($t0, 0), =($t1, 0), =($t1, 2))");
+
+            boolean res = cond.test(scan);
+            assertTrue(lastErrorMsg, res);
+        }
+
+        {
+            RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, r1, r0, rexNode);
+            assertEquals("AND(=($t1, 0), =($t0, 0), SEARCH($t2, Sarg[IS NOT NULL]))", filter.toString());
+
+            ProjectableFilterableTableScan scan = buildNode(cluster, filter);
+
+            Predicate<ProjectableFilterableTableScan> cond =
+                satisfyCondition("AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[IS NOT NULL]))");
 
             boolean res = cond.test(scan);
             assertTrue(lastErrorMsg, res);
@@ -84,14 +99,14 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
 
         {
             RexNode r100 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr100, l1);
-            RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, r100, r0, r3);
+            RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, r100, r0, rexNode);
 
-            assertEquals("AND(=($t100, 0), =($t0, 0), =($t2, SEARCH(1, Sarg[IS NOT NULL])))", filter.toString());
+            assertEquals("AND(=($t100, 0), =($t0, 0), SEARCH($t2, Sarg[IS NOT NULL]))", filter.toString());
 
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);
 
             Predicate<ProjectableFilterableTableScan> cond =
-                satisfyCondition("AND(=($t0, 0), =($t2, SEARCH(1, Sarg[IS NOT NULL])), =($t100, 0))");
+                satisfyCondition("AND(=($t0, 0), SEARCH($t2, Sarg[IS NOT NULL]), =($t100, 0))");
 
             boolean res = cond.test(scan);
             assertTrue(lastErrorMsg, res);
@@ -99,9 +114,9 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
 
         {
             RexNode orOp = builder.makeCall(SqlStdOperatorTable.OR, r0, r1);
-            RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, orOp, r3);
+            RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, orOp, rexNode);
 
-            assertEquals("AND(OR(=($t0, 0), =($t1, 0)), =($t2, SEARCH(1, Sarg[IS NOT NULL])))", filter.toString());
+            assertEquals("AND(OR(=($t0, 0), =($t1, 0)), SEARCH($t2, Sarg[IS NOT NULL]))", filter.toString());
 
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);
 

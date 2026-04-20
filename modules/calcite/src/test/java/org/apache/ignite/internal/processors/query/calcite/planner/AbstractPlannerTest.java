@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,11 +43,13 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.cluster.ClusterNode;
@@ -625,58 +627,70 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         return input(0, predicate);
     }
 
-    /** */
+    /**
+     * Change localRef arrangement according lexographical ordering, i.e. <br>
+     * AND(=($t1, 0), =($t0, 0), SEARCH($t2, Sarg[IS NOT NULL])) <br>
+     * will become: <br>
+     * AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[IS NOT NULL]))
+     */
     protected <T extends RelNode> Predicate<ProjectableFilterableTableScan> satisfyCondition(String condition) {
         /** */
         return node -> {
-            if (!(node.condition() instanceof RexCall)) {
-                lastErrorMsg = "Unexpected condition expected: RexCall, found: " + node.condition().getClass();
+            /** Expressions. */
+            List<RexCall> exprs = new ArrayList<>();
+
+            /** */
+            RexShuttle shuttle = new RexShuttle() {
+                /** */
+                boolean top = true;
+
+                /** {@inheritDoc} */
+                @Override public RexNode visitCall(RexCall call) {
+                    if (call.isA(SqlKind.COMPARISON) || call.isA(SqlKind.SEARCH)) {
+                        if (call.operandCount() == 2 && call.getOperands().get(0) instanceof RexLocalRef) {
+                            exprs.add(call);
+                        }
+                        else
+                            throw new ControlFlowException();
+                    }
+                    else {
+                        if (!top)
+                            throw new ControlFlowException();
+                    }
+
+                    top = false;
+
+                    return super.visitCall(call);
+                }
+            };
+
+            try {
+                shuttle.apply(node.condition());
+            } catch (ControlFlowException ex) {
+                lastErrorMsg = "Unapplicable predicate expected: flat operands";
                 return false;
             }
 
-            RexCall call = (RexCall)node.condition();
+            exprs.sort(new Comparator<>() {
+                @Override public int compare(RexCall o1, RexCall o2) {
+                    RexLocalRef local1 = (RexLocalRef)o1.getOperands().get(0);
+                    RexLocalRef local2 = (RexLocalRef)o2.getOperands().get(0);
 
-            for (RexNode n : call.getOperands()) {
-                if (!(n instanceof RexCall) || (!n.isA(SqlKind.COMPARISON) && !n.isA(SqlKind.SEARCH))) {
-                    lastErrorMsg = "Unapplicable predicate expected: flat operands";
+                    return Integer.compare(local1.getIndex(), local2.getIndex());
+                }
+            });
+
+            try {
+                RexCall call = (RexCall)node.condition();
+                RexNode normCond = node.getCluster().getRexBuilder().makeCall(call.getOperator(), exprs);
+
+                if (!condition.equals(normCond.toString())) {
+                    lastErrorMsg = "Unexpected condition [expected=" + condition + ", actual=" + normCond + ']';
+
                     return false;
                 }
-
-                RexCall innerCall = (RexCall)n;
-
-                if (innerCall.operandCount() != 2 && !(innerCall.getOperands().get(0) instanceof RexLocalRef)) {
-                    lastErrorMsg = "Unapplicable predicate expected: RexLocalRef";
-                    return false;
-                }
-            }
-
-            int maxIdx = call.getOperands().stream()
-                .filter(RexCall.class::isInstance)
-                .map(op -> ((RexCall)op).getOperands().get(0))
-                .filter(RexLocalRef.class::isInstance)
-                .map(op -> ((RexLocalRef)op).getIndex())
-                .max(Integer::compare).orElse(-1);
-
-            assertTrue(maxIdx != -1);
-
-            RexNode[] conditions = new RexNode[maxIdx + 1];
-
-            for (RexNode op : call.getOperands()) {
-                if (op instanceof RexCall) {
-                    RexCall callOp = (RexCall)op;
-                    List<RexNode> callOperands = callOp.getOperands();
-
-                    RexLocalRef ref = (RexLocalRef)callOperands.get(0);
-                    conditions[ref.getIndex()] = op;
-                }
-            }
-
-            List<RexNode> nonNullCond = Arrays.stream(conditions).filter(Objects::nonNull).collect(Collectors.toList());
-
-            RexNode normCond = node.getCluster().getRexBuilder().makeCall(call.getOperator(), nonNullCond);
-
-            if (!condition.equals(normCond.toString())) {
-                lastErrorMsg = "Unexpected condition [expected=" + condition + ", actual=" + normCond + ']';
+            } catch (Throwable th) {
+                lastErrorMsg = th.getMessage();
 
                 return false;
             }
