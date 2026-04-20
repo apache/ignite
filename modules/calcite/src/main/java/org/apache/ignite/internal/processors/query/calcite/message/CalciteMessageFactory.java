@@ -17,28 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.function.Supplier;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
  * Message factory.
  */
-public class CalciteMessageFactory implements MessageFactoryProvider {
+public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override public void registerAll(MessageFactory factory) {
-        for (MessageType type : MessageType.values())
-            factory.register(type.directType(), (Supplier)type.factory(), type.serializer());
-    }
-
-    /**
-     * Produces a value message.
-     */
-    public static ValueMessage asMessage(Object val) {
-        if (val == null)
-            return null;
-
-        return new GenericValueMessage(val);
+        for (MessageType type : MessageType.values()) {
+            if (MarshallableMessage.class.isAssignableFrom(type.messageClass()))
+                register(factory, type.messageClass(), type.directType(), schemaAwareMarsh, resolvedClsLdr);
+            else
+                register(factory, type.messageClass(), type.directType(), dfltMarsh, dftlClsLdr);
+        }
     }
 }
