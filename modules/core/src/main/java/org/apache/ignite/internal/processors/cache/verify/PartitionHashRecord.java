@@ -17,7 +17,9 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.Objects;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -26,12 +28,15 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.Veri
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
-public class PartitionHashRecord extends IgniteDataTransferObject {
+public class PartitionHashRecord extends IgniteDataTransferObject implements MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,39 +53,49 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     boolean isPrimary;
 
     /** Consistent id. */
-    @Order(2)
+    @Order(value = 2, skipForMessage = true)
     @GridToStringInclude
     Object consistentId;
 
+    /** Bytes of {@link #consistentId}. */
+    @Order(value = 3, skipForDTO = true)
+    @GridToStringExclude
+    byte[] consistentIdBytes;
+
     /** Partition entries content hash. */
-    @Order(3)
+    @Order(4)
     @GridToStringExclude
     int partHash;
 
     /** Partition entries versions hash. */
-    @Order(4)
+    @Order(5)
     @GridToStringExclude
     int partVerHash;
 
     /** Update counter's state. */
-    @Order(5)
+    @Order(value = 6, skipForMessage = true)
     @GridToStringInclude
     Object updateCntr;
 
+    /** Bytes of {@link #updateCntr}. */
+    @Order(value = 7, skipForDTO = true)
+    @GridToStringExclude
+    byte[] updateCntrBytes;
+
     /** Size. */
-    @Order(6)
+    @Order(8)
     @GridToStringExclude
     long size;
 
     /** Partition state. */
-    @Order(7)
+    @Order(9)
     PartitionState partitionState;
 
     /**
      * Count of keys with compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
-    @Order(8)
+    @Order(10)
     @GridToStringExclude
     int cfKeys;
 
@@ -88,7 +103,7 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of keys without compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
-    @Order(9)
+    @Order(11)
     @GridToStringExclude
     int noCfKeys;
 
@@ -96,17 +111,17 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @see GridBinaryMarshaller#BINARY_OBJ
      */
-    @Order(10)
+    @Order(12)
     @GridToStringExclude
     int binKeys;
 
     /** Count of type supported by Ignite out of the box (numbers, strings, etc). */
-    @Order(11)
+    @Order(13)
     @GridToStringExclude
     int regKeys;
 
     /** If partition has entries to expire. */
-    @Order(12)
+    @Order(14)
     @GridToStringExclude
     boolean hasExpiringEntries;
 
@@ -143,9 +158,10 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     }
 
     /**
-     * Default constructor for Externalizable.
+     * Default constructor for Externalizable and a {@link MessageFactory}.
      */
     public PartitionHashRecord() {
+        // No-op.
     }
 
     /**
@@ -232,6 +248,27 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     /** */
     public void hasExpiringEntries(boolean hasExpiringEntries) {
         this.hasExpiringEntries = hasExpiringEntries;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (consistentId != null)
+            consistentIdBytes = U.marshal(marsh, consistentId);
+
+        if (updateCntr != null)
+            updateCntrBytes = U.marshal(marsh, updateCntr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (consistentIdBytes != null)
+            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
+
+        if (updateCntrBytes != null)
+            updateCntr = U.unmarshal(marsh, updateCntrBytes, clsLdr);
+
+        consistentId = null;
+        updateCntrBytes = null;
     }
 
     /** {@inheritDoc} */

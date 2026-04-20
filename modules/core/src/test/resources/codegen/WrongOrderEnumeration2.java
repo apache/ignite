@@ -17,17 +17,35 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.String;
 import java.nio.ByteBuffer;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-public class ChildMessage extends AbstractMessage {
+public class WrongOrderEnumeration2 implements Message {
     @Order(0)
-    String str;
+    public int id;
 
-    @Order(value = 1, skipForMessage = true)
-    boolean skipped;
+    @Order(value = 2, skipForMessage = true)
+    public String str;
 
-    @Order(2)
-    byte flags;
+    public int id() {
+        return id;
+    }
+
+    public void id(int id) {
+        this.id = id;
+    }
+
+    public int str() {
+        return str;
+    }
+
+    public void str(String str) {
+        this.str = str;
+    }
+
+    public short directType() {
+        return 0;
+    }
 }

@@ -718,6 +718,9 @@ public class IDTOSerializerGenerator {
                         "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + "]");
                 }
 
+                if (order.skipForDTO())
+                    continue;
+
                 VariableElement prev = flds.put(order.value(), (VariableElement)el);
 
                 if (prev != null) {

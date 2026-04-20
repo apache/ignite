@@ -38,4 +38,10 @@ import java.lang.annotation.Target;
 public @interface Order {
     /** @return Order of the field. */
     int value();
+
+    /** Do not interpret for a Message. */
+    boolean skipForMessage() default false;
+
+    /** Do not interpret for a IgniteDataTransferObject. */
+    boolean skipForDTO() default false;
 }

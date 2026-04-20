@@ -115,6 +115,10 @@ public class MessageProcessorTest {
         Compilation compilation = compile("WrongOrderEnumeration.java");
 
         assertThat(compilation).failed();
+
+        compilation = compile("WrongOrderEnumeration2.java");
+
+        assertThat(compilation).failed();
     }
 
     /** */

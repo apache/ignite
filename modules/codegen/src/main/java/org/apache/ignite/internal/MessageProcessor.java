@@ -147,7 +147,7 @@ public class MessageProcessor extends AbstractProcessor {
         for (List<VariableElement> elList : hierList) {
             elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
-            result.addAll(elList);
+            result.addAll(elList.stream().filter(e -> !e.getAnnotation(Order.class).skipForMessage()).collect(Collectors.toList()));
 
             for (int i = 0; i < elList.size(); i++) {
                 if (elList.get(i).getAnnotation(Order.class).value() != i) {
