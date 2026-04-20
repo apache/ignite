@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -56,13 +55,16 @@ class JavaVersionCommand {
     /**
      * Reads whole stream content and returns it as a string. UTF-8 is used to convert from bytes to string.
      *
-     * @param inputStream   Stream to read.
+     * @param inputStream Stream to read.
      * @return Stream content as a string.
      * @throws IOException If something goes wrong.
      */
     private String readStream(InputStream inputStream) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        IOUtils.copy(inputStream, baos);
+        byte[] buf = new byte[4096];
+        int len;
+        while ((len = inputStream.read(buf)) != -1)
+            baos.write(buf, 0, len);
         return new String(baos.toByteArray(), UTF_8);
     }
 }
