@@ -37,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Cache change batch.
  */
 public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Discovery custom message ID. */
     @Order(0)
     IgniteUuid id;

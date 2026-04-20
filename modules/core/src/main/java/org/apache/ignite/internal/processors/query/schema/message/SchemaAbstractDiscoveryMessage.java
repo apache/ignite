@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -24,13 +25,12 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstra
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract discovery message for schema operations.
  */
-public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, Message {
+public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -37,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Added node. */
     @Order(0)
     TcpDiscoveryNode node;
@@ -50,7 +47,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
 
     /** Pending messages containner. */
     @Order(2)
-    @Nullable TcpDiscoveryCollectionMessage pendingMsgsMsg;
+    @Nullable Collection<TcpDiscoveryAbstractMessage> pendingMsgs;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
@@ -105,7 +102,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         super(msg);
 
         node = msg.node;
-        pendingMsgsMsg = msg.pendingMsgsMsg;
+        pendingMsgs = msg.pendingMsgs;
         top = msg.top;
         clientTop = msg.clientTop;
         topHist = msg.topHist;
@@ -128,7 +125,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @return Pending messages from previous node.
      */
     public @Nullable Collection<TcpDiscoveryAbstractMessage> messages() {
-        return pendingMsgsMsg == null ? null : pendingMsgsMsg.messages();
+        return pendingMsgs == null ? null : pendingMsgs;
     }
 
     /**
@@ -137,7 +134,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param msgs Pending messages to send to new node.
      */
     public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
-        pendingMsgsMsg = F.isEmpty(msgs) ? null : new TcpDiscoveryCollectionMessage(msgs);
+        pendingMsgs = F.isEmpty(msgs) ? null : msgs;
     }
 
     /**
@@ -158,18 +155,14 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         this.top = top;
     }
 
-    /**
-     * @param top Topology at the moment when client joined.
-     */
+    /** @param top Topology at the moment when client joined. */
     public void clientTopology(Collection<TcpDiscoveryNode> top) {
         assert top != null && !top.isEmpty() : top;
 
         clientTop = top;
     }
 
-    /**
-     * @return Topology at the moment when client joined.
-     */
+    /** @return Topology at the moment when client joined. */
     public Collection<TcpDiscoveryNode> clientTopology() {
         return clientTop;
     }
@@ -192,16 +185,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         this.topHist = topHist;
     }
 
-    /**
-     * @return {@link DiscoveryDataPacket} carried by this message.
-     */
+    /** @return {@link DiscoveryDataPacket} carried by this message. */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
     }
 
-    /**
-     * Clears discovery data to minimize message size.
-     */
+    /** Clears discovery data to minimize message size. */
     public void clearDiscoveryData() {
         dataPacket = null;
     }
@@ -215,9 +204,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
             dataPacket.clearUnmarshalledJoiningNodeData();
     }
 
-    /**
-     * @return First grid node start time.
-     */
+    /** @return First grid node start time. */
     public long gridStartTime() {
         return gridStartTime;
     }

@@ -1207,8 +1207,14 @@ public class GridDhtPartitionDemander {
                                     return;
                                 }
 
-                                if (waitCnt.decrementAndGet() == 0)
+                                if (waitCnt.decrementAndGet() == 0) {
+                                    U.log(log, "Eviction completed successfully" +
+                                        " [grp=" + grp.cacheOrGroupName() + ", reason='preparation for rebalancing'" +
+                                        ", evictedPartsCount=" + parts.size() +
+                                        ", evictedParts=" + S.toStringSortedDistinct(d.partitions().fullSet()) + "]");
+
                                     ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
+                                }
                             }
                         });
                     }

@@ -103,6 +103,7 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
@@ -214,6 +215,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -1315,9 +1317,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     private void initMessageFactory() throws IgniteCheckedException {
         MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
-        if (msgs == null)
-            msgs = new MessageFactoryProvider[0];
-
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
         compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), ctx.marshallerContext().jdkMarshaller(),
@@ -1328,6 +1327,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             if (f != null)
                 compMsgs.add(f);
+        }
+
+        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
+
+        if (discoSpi instanceof IgniteDiscoverySpi) {
+            MessageFactoryProvider discoMsgs = ((IgniteDiscoverySpi)discoSpi).messageFactoryProvider();
+
+            if (discoMsgs != null)
+                compMsgs.add(discoMsgs);
         }
 
         if (!compMsgs.isEmpty())

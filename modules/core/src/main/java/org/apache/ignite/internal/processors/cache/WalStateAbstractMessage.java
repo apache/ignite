@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -26,13 +27,15 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * WAL state change abstract message.
  */
-public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage, Message {
+public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Message ID */
     @Order(0)
     IgniteUuid id;

@@ -257,7 +257,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetri
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
@@ -343,9 +342,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
 
-        msgIdx = 5500;
-        withNoSchema(TcpDiscoveryCollectionMessage.class);
-
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
         withNoSchema(TcpDiscoveryHandshakeRequest.class);
@@ -396,7 +392,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [6300 - 6400]: Services messages. Most of them originally come from Discovery.
         msgIdx = 6300;
         withNoSchema(ServiceDeploymentProcessId.class);
-        withNoSchema(ServiceSingleNodeDeploymentResult.class);
+        withSchema(ServiceSingleNodeDeploymentResult.class);
         withNoSchema(ServiceClusterDeploymentResult.class);
         withNoSchema(ServiceDeploymentRequest.class);
         withNoSchema(ServiceUndeploymentRequest.class);
