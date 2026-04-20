@@ -47,12 +47,14 @@
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
+            <scope>provided</scope>
         </dependency>
         
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-driver</artifactId>
             <version>${tinkerpop.version}</version>
+            <scope>provided</scope>
         </dependency>        
         
          <dependency>

@@ -30,6 +30,7 @@ import javax.net.ssl.SSLException;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.db.DBInfo;
 import org.apache.ignite.console.agent.db.DataSourceManager;
@@ -45,7 +46,6 @@ import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.util.typedef.F;
@@ -234,7 +234,7 @@ public class DatabaseHandler  implements ClusterHandler {
 
         List<String> schemas = args.getJsonArray("schemas").getList();
 
-        if (schemas.size()==0)
+        if (schemas.isEmpty())
             throw new IllegalArgumentException("Missing select schemas in arguments: " + args);
 
         boolean tblsOnly = args.getBoolean("tablesOnly", false);
@@ -304,7 +304,7 @@ public class DatabaseHandler  implements ClusterHandler {
             Collection<String> schemas = dbMetaReader.schemas(conn, true);
             Collection<GridClientCacheBean> caches = new ArrayList<>();
             schemas.forEach((name)->{    
-            	GridClientCacheBean cache = new GridClientCacheBean(name,GridClientCacheMode.REPLICATED,name);
+            	GridClientCacheBean cache = new GridClientCacheBean(name, CacheMode.REPLICATED,name);
             	caches.add(cache);
             });
             return caches;
@@ -320,7 +320,8 @@ public class DatabaseHandler  implements ClusterHandler {
 		return clusterId!=null && databaseListener.isDBCluster(clusterId);
 	}
 	
-	public RestResult restCommand(String clusterId, JsonObject params) throws Throwable  {		
+	@Override
+    public RestResult restCommand(String clusterId, JsonObject params) throws Throwable  {
 		 RestResult res = jdbcExecutor.sendRequest(clusterId, params);
          return res;
 	}
@@ -329,7 +330,8 @@ public class DatabaseHandler  implements ClusterHandler {
     /**
      * @return Topology snapshot for demo cluster.
      */
-    public List<TopologySnapshot> topologySnapshot() {        
+    @Override
+    public List<TopologySnapshot> topologySnapshot() {
         List<TopologySnapshot> tops = new LinkedList<>();        
        
         for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
@@ -384,6 +386,7 @@ public class DatabaseHandler  implements ClusterHandler {
         return tops;
     }
     
+    @Override
     public void close() {
     	for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
     		DBInfo info = ent.getValue();

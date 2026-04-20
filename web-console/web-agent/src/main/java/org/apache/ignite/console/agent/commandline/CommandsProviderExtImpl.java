@@ -29,13 +29,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
-import org.apache.ignite.internal.client.GridClient;
+
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -55,7 +55,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     }
 
     /** */
-    public static class NodeStartCommand implements LocalCommand<NodeStartCommandArg, Boolean> {
+    public static class NodeStartCommand implements NativeCommand<NodeStartCommandArg, Boolean> {
         /** {@inheritDoc} */
         @Override public String description() {
             return "在当前Ignite进程内新启动一个名称为输入参数的Instance";
@@ -107,14 +107,14 @@ public class CommandsProviderExtImpl implements CommandsProvider {
 
 
         /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, instanceName);
             U.writeString(out, clusterId);
             U.writeString(out, cfgPath);
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
         	instanceName = U.readString(in);
         	clusterId = U.readString(in);
         	cfgPath = U.readString(in);
@@ -152,7 +152,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     }
     
     /** */
-    public static class NodeStopCommand implements LocalCommand<NodeStopCommandArg, Boolean> {
+    public static class NodeStopCommand implements NativeCommand<NodeStopCommandArg, Boolean> {
         /** {@inheritDoc} */
         @Override public String description() {
             return "在当前Ignite进程内新关闭一个名称为输入参数的Instance";
@@ -186,13 +186,13 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         private String clusterId; // UUID
 
         /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, instanceName);
             U.writeString(out, clusterId);
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
         	instanceName = U.readString(in);
         	clusterId = U.readString(in);
         }

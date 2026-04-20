@@ -86,14 +86,14 @@ public class VisorQueryIndex extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeEnum(out, type);
         U.writeCollection(out, fields);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         type = QueryIndexType.fromOrdinal(in.readByte());
         fields = U.readList(in);

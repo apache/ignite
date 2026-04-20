@@ -2117,7 +2117,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets query entities configuration. add@byron
      *
-     * @param qryEntities Query entities.
+     * @param qryEntity Query entities.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntity(QueryEntity qryEntity) {

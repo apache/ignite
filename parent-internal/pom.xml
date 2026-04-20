@@ -65,7 +65,7 @@
                     <version>1.8</version>
                     <dependencies>
                         <dependency>
-                            <groupId>${project.groupId}</groupId>
+                            <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-tools</artifactId>
                             <version>${project.version}</version>
                         </dependency>
@@ -85,6 +85,10 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
+                <configuration>
+                    <embedBuildProfileDependencies>true</embedBuildProfileDependencies>
+                    <!-- 其他配置 -->
+                </configuration>
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>

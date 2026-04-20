@@ -489,7 +489,7 @@
                     <version>${surefire.version}</version>
                     <dependencies>
                         <dependency>
-                            <groupId>${project.groupId}</groupId>
+                            <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-tools</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
@@ -591,7 +591,10 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-
+                <configuration>
+                    <embedBuildProfileDependencies>true</embedBuildProfileDependencies>
+                    <!-- 其他配置 -->
+                </configuration>
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>
