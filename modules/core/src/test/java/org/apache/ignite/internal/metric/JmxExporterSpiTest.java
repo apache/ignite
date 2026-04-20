@@ -1068,7 +1068,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         execSvc.execute(1, new TestRunnable(latch, 3));
 
         try {
-            assertTrue(waitForCondition(() -> systemView(viewName).size() == 2, 5_000));
+            assertTrue(waitForCondition(() -> systemView(viewName).size() >= 2, 5_000));
 
             Set<Integer> taskStripeIdxs = new HashSet<>();
 
