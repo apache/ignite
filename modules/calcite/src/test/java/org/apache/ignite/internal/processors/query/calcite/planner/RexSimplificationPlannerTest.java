@@ -17,41 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.math.BigDecimal;
-import java.util.function.Predicate;
-import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.RangeSet;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexLocalRef;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUnknownAs;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.Sarg;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for Rex simplification.
@@ -69,7 +46,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 .addIndex("IDX2", 0)
         );
 
-/*        // Simple equality predicate.
+        // Simple equality predicate.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0 and c2 = 1) or " +
                 "(c1 = 0 and c3 = 2)", schema,
@@ -110,7 +87,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c3 = 2) or " +
                 "(c1 = 0 and c2 = c3)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), OR(=($t1, 1), =($t2, 2), =($t1, $t2)))".equals(s.condition().toString())));*/
+                .and(s -> "AND(=($t0, 0), OR(=($t1, 1), =($t2, 2), =($t1, $t2)))".equals(s.condition().toString())));
 
         // Two operands extraction.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -142,7 +119,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0 and c3 = 1) or " +
                 "(c1 = 0 and c2 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0))")));
 
         // Disjunction all operands removal.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -170,7 +147,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0) or " +
                 "(c2 = 0 and c1 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0))")));
 
         // Commutes and duplicates.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -178,7 +155,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(0 = c2 and c3 = 1 and c1 = 0 and c2 = 0) or " +
                 "(c2 = 0 and c3 = 2 and c1 = 0 and c2 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))")));
 
         // Simple join.
         assertPlan("SELECT * FROM t1 JOIN t2 ON (" +
@@ -261,52 +238,6 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
         // Deterministic function with non-deterministic function not reduced.
         assertPlan("SELECT * FROM t WHERE id = 0 AND echo(echo_nd(1)) = 1", publicSchema, isTableScan("T")
             .and(s -> "AND(=($t0, 0), =(ECHO(ECHO_ND(1)), 1))".equals(s.condition().toString())));
-    }
-
-    @Test
-    public void test() {
-        RelDataType type = Commons.typeFactory().createType(int.class);
-
-        RelOptCluster cluster = Commons.emptyCluster();
-        RexBuilder builder = cluster.getRexBuilder();
-        RexLiteral l0 = builder.makeExactLiteral(new BigDecimal(0));
-        RexLocalRef lr0 = new RexLocalRef(0, cluster.getTypeFactory().createJavaType(long.class));
-
-        RexLiteral l1 = builder.makeExactLiteral(new BigDecimal(0));
-        RexLocalRef lr1 = new RexLocalRef(1, cluster.getTypeFactory().createJavaType(long.class));
-
-        final RangeSet<Integer> setNone = ImmutableRangeSet.of();
-        final RangeSet<Integer> setAll = setNone.complement();
-        final Sarg<Integer> sarg =
-            Sarg.of(RexUnknownAs.FALSE, setAll);
-        RexNode intLiteral =
-            builder.makeLiteral(1, cluster.getTypeFactory().createSqlType(SqlTypeName.INTEGER));
-        RexNode rexNode =
-            builder.makeCall(SqlStdOperatorTable.SEARCH, intLiteral,
-                builder.makeSearchArgumentLiteral(sarg, intLiteral.getType()));
-        RexLocalRef lr2 = new RexLocalRef(2, cluster.getTypeFactory().createJavaType(long.class));
-
-        RexNode r0 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr0, l0);
-        RexNode r1 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr1, l1);
-        RexNode r3 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr2, rexNode);
-
-        RexNode filter = builder.makeCall(SqlStdOperatorTable.AND, r1, r0, r3);
-
-        IgniteIndexScan scan = new IgniteIndexScan(
-            cluster,
-            RelTraitSet.createEmpty(),
-            mock(RelOptTableImpl.class),
-            null,
-            type,
-            null,
-            filter,
-            null,
-            null,
-            null
-        );
-
-        Predicate<ProjectableFilterableTableScan> cond = satisfyCondition("AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))");
-        cond.test(scan);
     }
 
     /** */
