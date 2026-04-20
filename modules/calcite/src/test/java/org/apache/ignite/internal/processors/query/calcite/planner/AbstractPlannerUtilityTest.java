@@ -42,6 +42,7 @@ import static org.mockito.Mockito.mock;
 
 /** {@link AbstractPlannerTest} inner utility methods test. */
 public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
+    /** Tests correctness of {@link AbstractPlannerTest#satisfyCondition}. */
     @Test
     public void testFlatConditionNormalizer() {
         RelOptCluster cluster = Commons.emptyCluster();
@@ -112,6 +113,7 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
         }
     }
 
+    /** */
     private ProjectableFilterableTableScan buildNode(RelOptCluster cluster, RexNode cond) {
         RelDataType type = Commons.typeFactory().createType(int.class);
 
