@@ -170,27 +170,27 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
         // in some time before the connection recovery timeout and before corner node gets segmented; 2 - corner node
         // is able to traverse entire remote DC in the connection recovery timeout;
-        LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping "
-            + "of DC '" + DC_ID_1 + "'. Nodes number to ping: " + srvrsPerDc).times(1).build();
+        LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping of the remote DCs. " +
+            "Nodes number to ping: " + srvrsPerDc).times(2).build();
 
-        LogListener logLsnr10 = LogListener.matches("Few nodes or only half of the remote DC has responded. "
-            + "Considering DC '" + DC_ID_1 + "' is unavailable.").times(1).build();
+        LogListener logLsnr10 = LogListener.matches("Half or less of the following remote DCs responded. " +
+            "Considering DCs '" + DC_ID_1 + "' unavailable").times(1).build();
 
         LogListener logLsnr11;
         // The 'Responded nodes' log depends of successful pings.
         if (rmtDcNodesRespond) {
-            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
-                    + "' from current corner node has finished. Responded nodes: [").times(1).andMatches("Responded nodes: []")
+            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DCs '" + DC_ID_1
+                    + "' from current corner node has finished. Responded nodes: [").times(1).andMatches("Unavailable nodes: []")
                 .times(0).build();
         }
         else {
-            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DC '" + DC_ID_1
+            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DCs '" + DC_ID_1
                 + "' from current corner node has finished. Responded nodes: []").times(1).build();
         }
 
         // Corner node is able to traverse entire remote DC in the connection recovery timeout
-        LogListener logLsnr2 = LogListener.matches("During the connection recovery, entire remote DC '"
-            + DC_ID_1 + "' has been traversed. Failed to connect to any its node.").times(1).build();
+        LogListener logLsnr2 = LogListener.matches("During the connection recovery, all the remote DCs have been traversed. " +
+            "Failed to connect to any.").times(2).build();
 
         listeningLog.registerAllListeners(logLsnr0, logLsnr10, logLsnr11, logLsnr2);
 
