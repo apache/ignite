@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -477,7 +476,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
-        removeLocks(ver, keys, false, Collections.emptySet());
+        removeLocks(ver, keys, false);
     }
 
     /**
@@ -488,22 +487,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     public void removeLocksForSavepoint(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
-        removeLocks(ver, keys, true, Collections.emptySet());
-    }
-
-    /**
-     * Removes locks for savepoint rollback and marks keys whose remote tx entries can be removed.
-     *
-     * @param ver Lock version.
-     * @param keys Keys.
-     * @param clearTxEntryKeys Keys for which remote tx entry can be removed.
-     */
-    public void removeLocksForSavepoint(
-        GridCacheVersion ver,
-        Collection<KeyCacheObject> keys,
-        Set<KeyCacheObject> clearTxEntryKeys
-    ) {
-        removeLocks(ver, keys, true, clearTxEntryKeys);
+        removeLocks(ver, keys, true);
     }
 
     /**
@@ -514,8 +498,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     private void removeLocks(
         GridCacheVersion ver,
         Collection<KeyCacheObject> keys,
-        boolean forSavepoint,
-        Set<KeyCacheObject> clearTxEntryKeys
+        boolean forSavepoint
     ) {
         if (keys.isEmpty())
             return;
@@ -576,8 +559,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                             ver,
                                             F.asList(key),
                                             true,
-                                            forSavepoint,
-                                            forSavepoint && clearTxEntryKeys.contains(key) ? F.asSet(key) : Collections.emptySet()
+                                            forSavepoint
                                         );
 
                                         assert req == null;
@@ -585,7 +567,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         continue;
                                     }
 
-                                    req.addKey(entry.key(), forSavepoint && clearTxEntryKeys.contains(key));
+                                    req.addKey(entry.key());
                                 }
                             }
                         }

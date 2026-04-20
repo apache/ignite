@@ -3163,14 +3163,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         Collection<IgniteTxEntry> curEntries = new ArrayList<>(allEntries());
         Collection<IgniteTxEntry> entriesToUnlock = new ArrayList<>();
-        Set<IgniteTxKey> clearTxEntryKeys = new HashSet<>();
 
         for (IgniteTxEntry curEntry : curEntries) {
             if (!savepointState.containsKey(curEntry.txKey())) {
                 txState().removeEntry(curEntry.txKey());
                 removeEntryMappings(curEntry);
                 entriesToUnlock.add(curEntry);
-                clearTxEntryKeys.add(curEntry.txKey());
             }
         }
 
@@ -3183,6 +3181,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 txState().addEntry(curEntry);
             }
 
+            //TODO: PVD: There is not test for this condition.
             boolean unlockAfterRestore = curEntry.locked() && !state.snapshot.locked();
 
             curEntry.restoreFrom(state.snapshot);
@@ -3191,7 +3190,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 entriesToUnlock.add(curEntry);
         }
 
-        unlockTxEntries(entriesToUnlock, clearTxEntryKeys);
+        unlockTxEntries(entriesToUnlock);
     }
 
     /**
@@ -3247,14 +3246,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      *
      * @param entries Entries to unlock.
      */
-    private void unlockTxEntries(Collection<IgniteTxEntry> entries, Set<IgniteTxKey> clearTxEntryKeys) {
+    private void unlockTxEntries(Collection<IgniteTxEntry> entries) {
         if (F.isEmpty(entries))
             return;
 
         Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> nearKeys = new HashMap<>();
-        Map<GridCacheContext<?, ?>, Set<KeyCacheObject>> nearClearTxEntryKeys = new HashMap<>();
         Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> colocatedKeys = new HashMap<>();
-        Map<GridCacheContext<?, ?>, Set<KeyCacheObject>> colocatedClearTxEntryKeys = new HashMap<>();
 
         for (IgniteTxEntry entry : entries) {
             GridCacheContext<?, ?> cacheCtx = entry.context();
@@ -3266,35 +3263,22 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 nearKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
             else if (cacheCtx.cache().isColocated())
                 colocatedKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
-
-            if (clearTxEntryKeys.contains(entry.txKey())) {
-                if (cacheCtx.cache().isNear())
-                    nearClearTxEntryKeys.computeIfAbsent(cacheCtx, k -> new HashSet<>()).add(entry.key());
-                else if (cacheCtx.cache().isColocated())
-                    colocatedClearTxEntryKeys.computeIfAbsent(cacheCtx, k -> new HashSet<>()).add(entry.key());
-            }
         }
 
         for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : nearKeys.entrySet()) {
-            Set<KeyCacheObject> clearKeys = nearClearTxEntryKeys.get(e.getKey());
-
             e.getKey().nearTx().removeLocksForSavepoint(
                 xidVersion(),
-                e.getValue(),
-                clearKeys == null ? Collections.emptySet() : clearKeys
+                e.getValue()
             );
         }
 
         for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : colocatedKeys.entrySet()) {
-            Set<KeyCacheObject> clearKeys = colocatedClearTxEntryKeys.get(e.getKey());
-
             e.getKey().dhtTx().removeLocks(
                 cctx.localNodeId(),
                 xidVersion(),
                 e.getValue(),
                 true,
-                true,
-                clearKeys == null ? Collections.emptySet() : clearKeys
+                true
             );
         }
 

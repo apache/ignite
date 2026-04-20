@@ -40,10 +40,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     @Order(1)
     public boolean forSavepoint;
 
-    /** Per-key flag: clear remote tx entry for this key when processing savepoint unlock. */
-    @Order(2)
-    public List<Boolean> clearTxEntries;
-
     /**
      * Empty constructor.
      */
@@ -86,31 +82,10 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
      * @param key Key.
      */
     public void addKey(KeyCacheObject key) {
-        addKey(key, false);
-    }
-
-    /**
-     * @param key Key.
-     * @param clearTxEntry {@code True} if remote tx entry for this key can be removed during savepoint unlock.
-     */
-    public void addKey(KeyCacheObject key, boolean clearTxEntry) {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
         keys.add(key);
-
-        if (clearTxEntries == null)
-            clearTxEntries = new ArrayList<>(keysCount());
-
-        clearTxEntries.add(clearTxEntry);
-    }
-
-    /**
-     * @param idx Key index.
-     * @return {@code True} if remote tx entry for this key can be removed.
-     */
-    public boolean clearTxEntry(int idx) {
-        return clearTxEntries != null && idx >= 0 && idx < clearTxEntries.size() && Boolean.TRUE.equals(clearTxEntries.get(idx));
     }
 
     /** {@inheritDoc} */

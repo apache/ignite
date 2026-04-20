@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -25,12 +27,26 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -45,6 +61,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests savepoint support for pessimistic transactions.
  */
 public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
+    /** Enables {@link TestRecordingCommunicationSpi} for selected tests only. */
+    private volatile boolean useRecordingCommunicationSpi;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (useRecordingCommunicationSpi)
+            cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -346,6 +375,100 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO: PVD: Reve this test after debug.
+     * Same scenario as {@link #testDhtEntriesAfterRollbackToSavepoint()} but with detailed
+     * transaction communication logging captured via {@link TestRecordingCommunicationSpi}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDhtEntriesAfterRollbackToSavepointCommunicationLog() throws Exception {
+        useRecordingCommunicationSpi = true;
+
+        Ignite ignite0;
+        Ignite ignite1;
+        Ignite ignite2;
+
+        try {
+            ignite0 = startGrid(0);
+            ignite1 = startGrid(1);
+            ignite2 = startGrid(2);
+        }
+        finally {
+            useRecordingCommunicationSpi = false;
+        }
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0, 1);
+
+        int keepTxAliveKey = primaryKey(cache0);
+        int dhtKey = keyForPrimaryAndBackup(ignite0, ignite1, ignite2);
+
+        List<String> txCommLog = new CopyOnWriteArrayList<>();
+
+        // Materialize DHT entries on primary/backup before tx starts.
+        cache0.put(dhtKey, -1);
+
+        CountDownLatch dhtKeyWrittenLatch = new CountDownLatch(1);
+        CountDownLatch proceedRollbackLatch = new CountDownLatch(1);
+        CountDownLatch rollbackDoneLatch = new CountDownLatch(1);
+        CountDownLatch finishTxLatch = new CountDownLatch(1);
+        GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
+
+        installTxCommunicationLogger(ignite0, txCommLog);
+        installTxCommunicationLogger(ignite1, txCommLog);
+        installTxCommunicationLogger(ignite2, txCommLog);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 30_000, 2)) {
+                nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
+
+                cache0.put(keepTxAliveKey, 1);
+//                cache0.put(dhtKey, 2);
+
+                tx.savepoint("sp");
+
+                cache0.put(dhtKey, 1);
+
+                dhtKeyWrittenLatch.countDown();
+
+                assertTrue(proceedRollbackLatch.await(10, TimeUnit.SECONDS));
+
+                tx.rollbackToSavepoint("sp");
+
+                rollbackDoneLatch.countDown();
+
+                assertTrue(finishTxLatch.await(10, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+        });
+
+        assertTrue(dhtKeyWrittenLatch.await(10, TimeUnit.SECONDS));
+        assertNotNull(nearVerRef[0]);
+
+        proceedRollbackLatch.countDown();
+
+        assertTrue(rollbackDoneLatch.await(10, TimeUnit.SECONDS));
+
+//        assertNoTxStateKeyOnNode(ignite1, nearVerRef[0], dhtKey);
+//        assertNoTxStateKeyOnNode(ignite2, nearVerRef[0], dhtKey);
+
+        finishTxLatch.countDown();
+
+        fut.get(10_000);
+
+        txCommLog.forEach(line -> info("TX-COMM " + line));
+
+        assertFalse("Expected transaction communication to be captured", txCommLog.isEmpty());
+        assertTrue("Expected savepoint unlock communication in log: " + txCommLog,
+            txCommLog.stream().anyMatch(line ->
+                line.contains(GridNearUnlockRequest.class.getSimpleName()) ||
+                    line.contains(GridDhtUnlockRequest.class.getSimpleName())));
+    }
+
+    /**
      * @param nearNode Node where near tx is started.
      * @param primaryNode Node that should be primary.
      * @param backupNode Node that should be backup.
@@ -375,12 +498,71 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @return Transactional cache.
      */
     private IgniteCache<Integer, Integer> transactionalCache(Ignite ignite, int backups) {
-        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration()
+        CacheConfiguration<?, ?> ccfg =
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+//            defaultCacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups);
 
         return (IgniteCache<Integer, Integer>)ignite.getOrCreateCache(ccfg);
+    }
+
+    /**
+     * Enables transaction message logging for a node via {@link TestRecordingCommunicationSpi}.
+     *
+     * @param ignite Node.
+     * @param txCommLog Shared communication log.
+     */
+    private void installTxCommunicationLogger(Ignite ignite, List<String> txCommLog) {
+        String srcNode = ignite.name();
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite);
+
+        spi.closure((dstNode, msg) -> {
+            if (isTxCommunicationMessage(msg))
+                txCommLog.add("PVD::" + srcNode + " -> " + dstNode.consistentId() + " : " + txMessageDetails(msg));
+        });
+
+        spi.record((node, msg) -> isTxCommunicationMessage(msg));
+    }
+
+    /**
+     * @param msg Message.
+     * @return {@code True} if message is transaction-related for this scenario.
+     */
+    private boolean isTxCommunicationMessage(Message msg) {
+        return msg instanceof GridNearLockRequest ||
+            msg instanceof GridNearLockResponse ||
+            msg instanceof GridDhtLockRequest ||
+            msg instanceof GridDhtLockResponse ||
+            msg instanceof GridNearUnlockRequest ||
+            msg instanceof GridDhtUnlockRequest ||
+            msg instanceof GridNearTxPrepareRequest ||
+            msg instanceof GridNearTxPrepareResponse ||
+            msg instanceof GridNearTxFinishRequest ||
+            msg instanceof GridDhtTxFinishRequest;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Human-readable details for tx communication logs.
+     */
+    private String txMessageDetails(Message msg) {
+        if (msg instanceof GridDhtUnlockRequest) {
+            GridDhtUnlockRequest req = (GridDhtUnlockRequest)msg;
+
+            return msg.getClass().getSimpleName() + "[keys=" + (req.keys() == null ? 0 : req.keys().size()) +
+                ", forSavepoint=" + req.forSavepoint() + ']';
+        }
+
+        if (msg instanceof GridNearUnlockRequest) {
+            GridNearUnlockRequest req = (GridNearUnlockRequest)msg;
+
+            return msg.getClass().getSimpleName() + "[keys=" + (req.keys() == null ? 0 : req.keys().size()) +
+                ", forSavepoint=" + req.forSavepoint() + ']';
+        }
+
+        return msg.getClass().getSimpleName();
     }
 
     /**
