@@ -48,16 +48,17 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
     public void testFlatConditionNormalizer() {
         RelOptCluster cluster = Commons.emptyCluster();
         RexBuilder builder = cluster.getRexBuilder();
+
+        RelDataType type = cluster.getTypeFactory().createJavaType(long.class);
         RexLiteral l0 = builder.makeExactLiteral(new BigDecimal(0));
-        RexLocalRef lr0 = new RexLocalRef(0, cluster.getTypeFactory().createJavaType(long.class));
+        RexLocalRef lr0 = new RexLocalRef(0, type);
 
         RexLiteral l1 = builder.makeExactLiteral(new BigDecimal(0));
         RexLiteral l2 = builder.makeExactLiteral(new BigDecimal(2));
-        RexLocalRef lr1 = new RexLocalRef(1, cluster.getTypeFactory().createJavaType(long.class));
-        RexLocalRef lr1_1 = new RexLocalRef(1, cluster.getTypeFactory().createJavaType(long.class));
-        RexLocalRef lr100 = new RexLocalRef(100, cluster.getTypeFactory().createJavaType(long.class));
+        RexLocalRef lr1 = new RexLocalRef(1, type);
+        RexLocalRef lr100 = new RexLocalRef(100, type);
 
-        RexLocalRef lr3 = new RexLocalRef(2, cluster.getTypeFactory().createJavaType(long.class));
+        RexLocalRef lr3 = new RexLocalRef(2, type);
 
         final RangeSet<@NotNull Integer> setNone = ImmutableRangeSet.of();
         final RangeSet<@NotNull Integer> setAll = setNone.complement();
@@ -69,10 +70,10 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
 
         RexNode r0 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr0, l0);
         RexNode r1 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr1, l1);
-        RexNode r1_1 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr1_1, l2);
+        RexNode r2 = builder.makeCall(SqlStdOperatorTable.EQUALS, lr1, l2);
 
         {
-            RexNode filter = builder.makeCall(SqlStdOperatorTable.OR, r1, r1_1, r0);
+            RexNode filter = builder.makeCall(SqlStdOperatorTable.OR, r1, r2, r0);
             assertEquals("OR(=($t1, 0), =($t1, 2), =($t0, 0))", filter.toString());
 
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);

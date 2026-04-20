@@ -666,7 +666,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             try {
                 shuttle.apply(node.condition());
-            } catch (ControlFlowException ex) {
+            }
+            catch (ControlFlowException ex) {
                 lastErrorMsg = "Unapplicable predicate expected: flat operands";
                 return false;
             }
@@ -689,7 +690,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
                     return false;
                 }
-            } catch (Throwable th) {
+            }
+            catch (Throwable th) {
                 lastErrorMsg = th.getMessage();
 
                 return false;
