@@ -29,9 +29,6 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
 public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** New node that wants to join the topology. */
     @Order(0)
     TcpDiscoveryNode node;
@@ -86,7 +83,6 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         setFlag(RESPONDED_FLAG_POS, responded);
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         // NOTE!
@@ -104,5 +100,4 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     @Override public String toString() {
         return S.toString(TcpDiscoveryJoinRequestMessage.class, this, "super", super.toString());
     }
-
 }
