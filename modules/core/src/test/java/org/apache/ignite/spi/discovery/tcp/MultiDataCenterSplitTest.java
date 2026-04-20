@@ -355,7 +355,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, @Nullable TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
+            long timeout) throws IOException, IgniteCheckedException {
             tryToBlock(sock, msg, data, timeout);
 
             super.writeToSocket(sock, msg, data, timeout);

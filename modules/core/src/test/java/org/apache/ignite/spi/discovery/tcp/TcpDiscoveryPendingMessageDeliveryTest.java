@@ -26,8 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.MessagesPluginProvider;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -234,29 +232,6 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /** @param disco Discovery SPI. */
     private void sendDummyCustomMessage(TcpDiscoverySpi disco) {
         disco.sendCustomEvent(new DummyCustomDiscoveryMessage());
-    }
-
-    /** {@link TcpDiscoverySpi} which doesn't itsring to current DC. */
-    private class NoRingClosingTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            super.initializeImpl();
-
-            // In theory, might be a ClientImpl.
-            if (impl instanceof ServerImpl) {
-                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE) {
-                    @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
-                        return new ServerImpl.RingMessageWorker(impl.log) {
-                            @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(
-                                TcpDiscoveryNode n) {
-                                // Do not start remote DC ping.
-                                return new ServerImpl.CrossRingMessageSendState();
-                            }
-                        };
-                    }
-                };
-            }
-        }
     }
 
     /**
