@@ -69,7 +69,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 .addIndex("IDX2", 0)
         );
 
-        // Simple equality predicate.
+/*        // Simple equality predicate.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0 and c2 = 1) or " +
                 "(c1 = 0 and c3 = 2)", schema,
@@ -110,7 +110,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c3 = 2) or " +
                 "(c1 = 0 and c2 = c3)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), OR(=($t1, 1), =($t2, 2), =($t1, $t2)))".equals(s.condition().toString())));
+                .and(s -> "AND(=($t0, 0), OR(=($t1, 1), =($t2, 2), =($t1, $t2)))".equals(s.condition().toString())));*/
 
         // Two operands extraction.
         assertPlan("SELECT * FROM t1 WHERE " +

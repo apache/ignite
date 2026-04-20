@@ -50,7 +50,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
-import org.apache.commons.lang.math.IntRange;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -629,9 +628,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
     protected <T extends RelNode> Predicate<ProjectableFilterableTableScan> satisfyCondition(String condition) {
         /** */
-        List<RexNode> conditions = new ArrayList<>();
-        IntStream.range(0, condition.split(",").length).forEach(e -> conditions.add(null));
-
         return node -> {
             if (!(node.condition() instanceof RexCall)) {
                 lastErrorMsg = "Unexpected condition [expected=" + condition;
@@ -639,13 +635,28 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             }
 
             RexCall call = (RexCall)node.condition();
+
+            int maxIdx = call.getOperands().stream()
+                .filter(op -> op instanceof RexCall)
+                .map(op -> ((RexCall)op).getOperands().get(0))
+                .filter(op -> op instanceof RexLocalRef)
+                .map(op -> ((RexLocalRef)op).getIndex())
+                .max(Integer::compare).orElse(-1);
+
+            if (maxIdx == -1) {
+                lastErrorMsg = "Unexpected condition [expected=" + condition + ']';
+                return false;
+            }
+
+            List<RexNode> conditions = new ArrayList<>(maxIdx);
+
             for (RexNode op : call.getOperands()) {
-                if (op instanceof RexNode) {
+                if (op instanceof RexCall) {
                     RexCall callOp = (RexCall)op;
                     List<RexNode> callOperands = callOp.getOperands();
 
                     if (callOperands.size() != 2 || !(callOperands.get(0) instanceof RexLocalRef)) {
-                        lastErrorMsg = "Unexpected condition [expected=" + condition;
+                        lastErrorMsg = "Unexpected condition [expected=" + condition + ']';
                         return false;
                     }
 
@@ -654,9 +665,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                 }
             }
 
-            List<RexNode> conditionsFiltered = conditions.stream().filter(Objects::nonNull).collect(Collectors.toList());
+            List<RexNode> nonNullCond = conditions.stream().filter(Objects::nonNull).collect(Collectors.toList());
 
-            RexNode normCond = node.getCluster().getRexBuilder().makeCall(call.getOperator(), conditionsFiltered);
+            RexNode normCond = node.getCluster().getRexBuilder().makeCall(call.getOperator(), nonNullCond);
 
             if (!condition.equals(normCond.toString())) {
                 lastErrorMsg = "Unexpected condition [expected=" + condition + ", actual=" + normCond + ']';
