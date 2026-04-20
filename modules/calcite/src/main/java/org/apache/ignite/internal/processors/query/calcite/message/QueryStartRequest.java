@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class QueryStartRequest implements MarshalableMessage, ExecutionContextAware {
+public class QueryStartRequest implements CalciteMarshalableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;
@@ -80,6 +80,10 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     @Nullable Map<String, String> appAttrs;
 
     /** */
+    @Order(11)
+    boolean keepBinaryMode;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
@@ -93,7 +97,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         @Nullable byte[] paramsBytes,
         long timeout,
         @Nullable Collection<QueryTxEntry> qryTxEntries,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean keepBinaryMode
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -107,6 +112,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.timeout = timeout;
         this.qryTxEntries = qryTxEntries;
         this.appAttrs = appAttrs;
+        this.keepBinaryMode = keepBinaryMode;
     }
 
     /** */
@@ -197,6 +203,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     /** */
     public @Nullable Map<String, String> applicationAttributes() {
         return appAttrs;
+    }
+
+    /** */
+    public boolean keepBinaryMode() {
+        return keepBinaryMode;
     }
 
     /** {@inheritDoc} */

@@ -18,26 +18,33 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
+    /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
+    @Order(0)
+    byte[] expectedVal;
 
     /** */
-    private final byte[] expectedVal;
+    @Order(1)
+    boolean matches;
 
-    /** */
-    private boolean matches = true;
+    /** Empty constructor for {@link MessageFactory}. */
+    public DistributedMetaStorageCasMessage() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageCasMessage(UUID reqId, String key, byte[] expValBytes, byte[] valBytes) {
         super(reqId, key, valBytes);
 
         expectedVal = expValBytes;
+        matches = true;
     }
 
     /** */
@@ -57,7 +64,7 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), errorMessage(), matches);
+        return new DistributedMetaStorageCasAckMessage(requestId(), matches);
     }
 
     /** {@inheritDoc} */

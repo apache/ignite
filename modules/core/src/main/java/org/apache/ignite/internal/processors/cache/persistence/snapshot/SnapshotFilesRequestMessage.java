@@ -34,23 +34,20 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
-    /** Snapshot request message type (value is {@code 178}). */
-    public static final short TYPE_CODE = 178;
-
     /** Snapshot operation request ID. */
-    @Order(1)
+    @Order(0)
     UUID reqId;
 
     /** Snapshot name to request. */
-    @Order(2)
+    @Order(1)
     String snpName;
 
     /** Snapshot directory path. */
-    @Order(3)
+    @Order(2)
     String snpPath;
 
     /** Map of cache group ids and corresponding set of its partition ids. */
-    @Order(4)
+    @Order(3)
     Map<Integer, int[]> parts;
 
     /**
@@ -120,10 +117,6 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         return reqId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

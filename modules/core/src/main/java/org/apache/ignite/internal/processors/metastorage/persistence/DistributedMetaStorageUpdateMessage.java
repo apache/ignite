@@ -18,39 +18,43 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
+public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Request ID. */
     @GridToStringInclude
-    private final UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** */
     @GridToStringInclude
-    private final String key;
+    @Order(2)
+    String key;
 
-    /** */
-    private final byte[] valBytes;
+    /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
+    @Order(3)
+    byte[] valBytes;
 
-    /** */
-    private String errorMsg;
+    /** Empty constructor for {@link MessageFactory}. */
+    public DistributedMetaStorageUpdateMessage() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
+        id = IgniteUuid.randomUuid();
+
         this.reqId = reqId;
         this.key = key;
         this.valBytes = valBytes;
@@ -76,28 +80,14 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         return valBytes;
     }
 
-    /** */
-    protected String errorMessage() {
-        return errorMsg;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageUpdateAckMessage(reqId, errorMsg);
+        return new DistributedMetaStorageUpdateAckMessage(reqId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(
-        GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer,
-        DiscoCache discoCache
-    ) {
-        throw new UnsupportedOperationException("createDiscoCache");
     }
 
     /** {@inheritDoc} */

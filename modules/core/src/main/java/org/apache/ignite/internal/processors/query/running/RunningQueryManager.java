@@ -281,13 +281,12 @@ public class RunningQueryManager {
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param lazy Lazy flag.
      * @param distributedJoins Distributed joins flag.
      * @return Id of registered query. Id is a positive number.
      */
     public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
-        String qryInitiatorId, boolean enforceJoinOrder, boolean lazy, boolean distributedJoins) {
+        String qryInitiatorId, boolean enforceJoinOrder, boolean distributedJoins) {
         long qryId = qryIdGen.incrementAndGet();
 
         if (qryInitiatorId == null)
@@ -305,7 +304,6 @@ public class RunningQueryManager {
             loc,
             qryInitiatorId,
             enforceJoinOrder,
-            lazy,
             distributedJoins,
             securitySubjectId(ctx)
         );
@@ -327,7 +325,6 @@ public class RunningQueryManager {
                 run.cancelable(),
                 run.local(),
                 run.enforceJoinOrder(),
-                run.lazy(),
                 run.distributedJoins(),
                 run.queryInitiatorId()
             );
@@ -404,9 +401,6 @@ public class RunningQueryManager {
                 if (qry.local())
                     flags = "local";
 
-                if (!qry.lazy())
-                    flags = (flags == null ? "" : flags + ", ") + "notLazy";
-
                 if (qry.distributedJoins())
                     flags = (flags == null ? "" : flags + ", ") + "distributedJoins";
 
@@ -443,7 +437,6 @@ public class RunningQueryManager {
                     U.currentTimeMillis(),
                     qry.local(),
                     qry.enforceJoinOrder(),
-                    qry.lazy(),
                     qry.distributedJoins(),
                     failed,
                     failReason,

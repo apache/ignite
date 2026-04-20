@@ -504,6 +504,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
     }
 
+    /** @return New internal cache instance based on this one, but with application attributes. */
+    @Override public GridCacheProxyImpl<K, V> withApplicationAttributes(Map<String, String> attrs) {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        if (opCtx == null) {
+            opCtx = new CacheOperationContext(
+                false,
+                false,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                new HashMap<>(attrs));
+        }
+        else
+            opCtx = opCtx.withApplicationAttributes(attrs);
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
+    }
+
     /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
         CacheOperationContext opCtx = new CacheOperationContext(
@@ -890,15 +912,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false, null);
 
         return (V)val;
-    }
-
-    /**
-     * Undeploys and removes all entries for class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     */
-    public final void onUndeploy(ClassLoader ldr) {
-        ctx.deploy().onUndeploy(ldr, context());
     }
 
     /**
@@ -5908,8 +5921,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ttl,
                 0,
                 ver.conflictVersion());
-
-            e.prepareDirectMarshal(ctx.cacheObjectContext());
 
             col.add(e);
 

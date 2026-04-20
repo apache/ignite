@@ -32,9 +32,6 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * It can be updated dynamically from different nodes and threads on the same node.
  */
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 505;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -166,8 +163,4 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
             "]";
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

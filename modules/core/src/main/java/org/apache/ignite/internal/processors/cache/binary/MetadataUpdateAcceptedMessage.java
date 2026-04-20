@@ -16,10 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -32,25 +30,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(1)
+    int typeId;
 
     /** */
-    private final int typeId;
+    @Order(2)
+    int acceptedVer;
 
     /** */
-    private final int acceptedVer;
+    @Order(3)
+    boolean duplicated;
 
     /** */
-    private boolean duplicated;
+    public MetadataUpdateAcceptedMessage() {}
 
     /**
      * @param typeId Type id.
      * @param acceptedVer Accepted version.
      */
     MetadataUpdateAcceptedMessage(int typeId, int acceptedVer) {
+        id = IgniteUuid.randomUuid();
         this.typeId = typeId;
         this.acceptedVer = acceptedVer;
     }
@@ -68,12 +71,6 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /** */

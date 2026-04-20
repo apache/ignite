@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp;
 import java.io.InputStream;
 import java.net.Socket;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -29,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.NODE_ID_MSG_TYPE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
@@ -83,7 +83,7 @@ public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCo
                 short respMsgType = makeMessageType(b[0], b[1]);
 
                 // Client can't give HANDSHAKE_WAIT_MSG_TYPE.
-                Assert.assertEquals(NODE_ID_MSG_TYPE, respMsgType);
+                Assert.assertEquals(CoreMessagesProvider.NODE_ID_MSG_TYPE, respMsgType);
             }
         }
 

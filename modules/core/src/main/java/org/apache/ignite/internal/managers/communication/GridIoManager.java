@@ -80,7 +80,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -129,7 +128,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -253,9 +251,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** Received bytes count metric name. */
     public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
-
-    /** Empty array of message factories. */
-    public static final MessageFactoryProvider[] EMPTY = {};
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
@@ -433,7 +428,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(MessageFactory msgFactory) {
-                    return new DirectMessageWriter(msgFactory);
+                    return new DirectMessageWriter(msgFactory, ctx.config().getNetworkCompressionLevel());
                 }
 
                 @Override public MessageReader reader(MessageFactory msgFactory) {
@@ -442,26 +437,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             };
         }
 
-        MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
-
-        if (msgs == null)
-            msgs = EMPTY;
-
-        List<MessageFactoryProvider> compMsgs = new ArrayList<>();
-
-        compMsgs.add(new GridIoMessageFactory());
-
-        for (IgniteComponentType compType : IgniteComponentType.values()) {
-            MessageFactoryProvider f = compType.messageFactory();
-
-            if (f != null)
-                compMsgs.add(f);
-        }
-
-        if (!compMsgs.isEmpty())
-            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
-
-        msgFactory = new IgniteMessageFactoryImpl(msgs);
+        msgFactory = ctx.messageFactory();
 
         CommunicationSpi<Object> spi = getSpi();
 
@@ -1199,15 +1175,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 return;
             }
 
-            if (initMsg.topic() == null) {
-                int topicOrd = initMsg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    initMsg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    initMsg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
-            }
-
             byte plc = initMsg.policy();
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1246,15 +1213,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         nodeId + ", msg=" + msg + ']');
 
                 return;
-            }
-
-            if (msg.topic() == null) {
-                int topicOrd = msg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    msg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
 
             if (!started) {
@@ -1980,9 +1938,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         );
 
         try {
-            if (topicOrd < 0)
-                ioMsg.prepareMarshal(marsh);
-
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
         catch (IgniteSpiException e) {
@@ -2054,9 +2009,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                if (topicOrd < 0)
-                    ioMsg.prepareMarshal(marsh);
-
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                         getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);

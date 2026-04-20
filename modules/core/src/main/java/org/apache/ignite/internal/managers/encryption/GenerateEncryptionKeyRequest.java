@@ -60,10 +60,6 @@ public class GenerateEncryptionKeyRequest implements Message {
         return keyCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 162;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

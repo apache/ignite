@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -33,27 +31,36 @@ import org.jetbrains.annotations.Nullable;
  */
 public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Operation ID. */
+    @Order(1)
     @GridToStringInclude
-    private final IgniteUuid opId;
+    IgniteUuid opId;
 
-    /** Error. */
-    private final IgniteCheckedException error;
+    /** Error message. */
+    @Order(2)
+    ErrorMessage errMsg;
+
+    /** Constructor. */
+    public UserAcceptedMessage() {
+        // No-op.
+    }
 
     /**
-     * @param opId THe ID of operation.
+     * @param opId The ID of operation.
      * @param error Error.
      */
-    UserAcceptedMessage(IgniteUuid opId, IgniteCheckedException error) {
+    UserAcceptedMessage(IgniteUuid opId, Throwable error) {
         assert opId != null || error != null;
 
+        id = IgniteUuid.randomUuid();
+
         this.opId = opId;
-        this.error = error;
+
+        if (error != null)
+            errMsg = new ErrorMessage(error);
     }
 
     /** {@inheritDoc} */
@@ -66,17 +73,6 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * @return User operation ID.
      */
@@ -87,8 +83,8 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /**
      * @return Error.
      */
-    IgniteCheckedException error() {
-        return error;
+    Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */

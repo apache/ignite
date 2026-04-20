@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +48,7 @@ public class IgniteDiagnosticRequest implements Message {
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
 
     /**
-     * Default constructor required by {@link GridIoMessageFactory}.
+     * Default constructor required by {@link CoreMessagesProvider}.
      */
     public IgniteDiagnosticRequest() {
         // No-op.
@@ -136,10 +135,6 @@ public class IgniteDiagnosticRequest implements Message {
         return infos;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -61;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

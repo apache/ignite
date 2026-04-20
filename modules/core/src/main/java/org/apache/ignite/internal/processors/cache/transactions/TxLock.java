@@ -123,9 +123,4 @@ public class TxLock implements Message {
         return S.toString(TxLock.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -25;
-    }
-
 }

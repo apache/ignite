@@ -30,13 +30,14 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  *
@@ -148,17 +150,27 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         e0.markFiltered();
 
         IgniteMessageFactoryImpl msgFactory =
-            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
+            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
+        var serializer = msgFactory.serializer(e0.directType());
+        assertNotNull("Serializer not found for message type " + e0.directType(), serializer);
+
+        writer.setBuffer(buf);
+
         // Skip write class header.
         writer.onHeaderWritten();
-        e0.writeTo(buf, writer);
+        serializer.writeTo(e0, writer);
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
-        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory, null));
+
+        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+
+        reader.setBuffer(ByteBuffer.wrap(buf.array()));
+
+        serializer.readFrom(e1, reader);
 
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());

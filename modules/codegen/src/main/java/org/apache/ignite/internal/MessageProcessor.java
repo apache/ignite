@@ -18,11 +18,14 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -54,8 +57,6 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * <ul>
  *   <li>The target class must implement the {@code Message} interface.</li>
  *   <li>Each field to be serialized must be annotated with {@code @Order}.</li>
- *   <li>If {@link Order#method()} attribute was set, then each serializing field
- *   must have a getter named {@code method()} and a setter named {@code method(value)}.</li>
  * </ul>
  *
  * <p>
@@ -68,8 +69,18 @@ public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
 
-    /** This is the only message with zero fields. A serializer must be generated due to restrictions in our communication process. */
-    static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
+    /** Compressed message. */
+    static final String COMPRESSED_MESSAGE_INTERFACE = "org.apache.ignite.internal.managers.communication.CompressedMessage";
+
+    /** Externalizable message. */
+    static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
+
+    /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
+    static final String[] EMPTY_MESSAGES = {
+        "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
+        "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
+    };
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
@@ -79,7 +90,11 @@ public class MessageProcessor extends AbstractProcessor {
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
-        TypeMirror handshakeWaitMsgType = processingEnv.getElementUtils().getTypeElement(HANDSHAKE_WAIT_MESSAGE).asType();
+        List<TypeMirror> emptyMsgs = Arrays.stream(EMPTY_MESSAGES)
+            .map(cls -> processingEnv.getElementUtils().getTypeElement(cls))
+            .filter(Objects::nonNull)
+            .map(Element::asType)
+            .collect(Collectors.toList());
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -97,7 +112,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (!fields.isEmpty() || processingEnv.getTypeUtils().isAssignable(clazz.asType(), handshakeWaitMsgType))
+            if (!fields.isEmpty() || emptyMsgs.stream().anyMatch(t -> processingEnv.getTypeUtils().isAssignable(clazz.asType(), t)))
                 msgFields.put(clazz, fields);
         }
 
@@ -125,41 +140,54 @@ public class MessageProcessor extends AbstractProcessor {
      * @return a list of {@code VariableElement} objects representing all ordered fields, including those declared in superclasses.
      */
     private List<VariableElement> orderedFields(TypeElement type) {
+        List<List<VariableElement>> hierList = hierarchicalOrderedFields(type);
+
         List<VariableElement> result = new ArrayList<>();
 
-        while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
-                if (el.getAnnotation(Order.class) != null) {
-                    result.add((VariableElement)el);
+        for (List<VariableElement> elList : hierList) {
+            elList.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
-                    if (el.getModifiers().contains(Modifier.STATIC)) {
-                        processingEnv.getMessager().printMessage(
-                            Diagnostic.Kind.ERROR,
-                            "Annotation @Order must only be used for non-static fields.",
-                            el);
-                    }
+            result.addAll(elList);
 
-                    validateEnumFieldMapping(type, el);
+            for (int i = 0; i < elList.size(); i++) {
+                if (elList.get(i).getAnnotation(Order.class).value() != i) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Annotation @Order must be a sequence from 0 to " + (elList.size() - 1),
+                        elList.get(i));
                 }
-            }
-
-            Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
-
-            type = (TypeElement)superType;
-        }
-
-        result.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
-
-        for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).getAnnotation(Order.class).value() != i) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Annotation @Order must be a sequence from 0 to " + (result.size() - 1),
-                    result.get(i));
             }
         }
 
         return result;
+    }
+
+    /** */
+    private List<List<VariableElement>> hierarchicalOrderedFields(TypeElement type) {
+        Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
+
+        List<List<VariableElement>> hierList = superType == null ? new ArrayList<>() : hierarchicalOrderedFields((TypeElement)superType);
+
+        List<VariableElement> elList = new ArrayList<>();
+
+        for (Element el : type.getEnclosedElements()) {
+            if (el.getAnnotation(Order.class) != null) {
+                elList.add((VariableElement)el);
+
+                if (el.getModifiers().contains(Modifier.STATIC)) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Annotation @Order must only be used for non-static fields.",
+                        el);
+                }
+
+                validateEnumFieldMapping(type, el);
+            }
+        }
+
+        hierList.add(elList);
+
+        return hierList;
     }
 
     /**

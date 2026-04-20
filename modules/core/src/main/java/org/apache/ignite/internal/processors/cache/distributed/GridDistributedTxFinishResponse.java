@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -31,19 +31,19 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    @Order(3)
+    @Order(0)
     public GridCacheVersion txId;
 
     /** Future ID. */
-    @Order(4)
+    @Order(1)
     public IgniteUuid futId;
 
     /** Partition ID this message is targeted to. */
-    @Order(5)
+    @Order(2)
     public int part;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link CoreMessagesProvider}.
      */
     public GridDistributedTxFinishResponse() {
         /* No-op. */
@@ -93,10 +93,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return ctx.txFinishMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 24;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

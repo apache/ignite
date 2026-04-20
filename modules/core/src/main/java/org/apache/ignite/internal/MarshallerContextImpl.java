@@ -45,7 +45,6 @@ import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -146,7 +145,6 @@ public class MarshallerContextImpl implements MarshallerContext {
             });
 
             checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
-            checkHasClassName(GridDhtPartitionMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
         }
         catch (IOException e) {

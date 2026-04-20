@@ -260,10 +260,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
-    // TODO: IGNITE-26571, is always false.
-    /** Deployment enabled flag for this specific cache */
-    private boolean depEnabled;
-
     /** */
     private boolean deferredDel;
 
@@ -383,7 +379,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.locStartTopVer = locStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = false;
 
         /*
          * Managers in starting order!
@@ -1206,7 +1201,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         for (CacheEntryPredicate p0 : p) {
             if ((p0 instanceof CacheEntryPredicateAdapter) &&
-                ((CacheEntryPredicateAdapter)p0).type() == CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE)
+                ((CacheEntryPredicateAdapter)p0).type() == CacheEntryPredicateType.HAS_NO_VALUE)
                 return true;
         }
 
@@ -1217,14 +1212,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return No value filter.
      */
     public CacheEntryPredicate noVal() {
-        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE);
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateType.HAS_NO_VALUE);
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate hasVal() {
-        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_VALUE);
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateType.HAS_VALUE);
     }
 
     /**
@@ -1426,13 +1421,6 @@ public class GridCacheContext<K, V> implements Externalizable {
                 }
             }
         };
-    }
-
-    /**
-     * @return {@code True} if deployment is enabled.
-     */
-    public boolean deploymentEnabled() {
-        return depEnabled;
     }
 
     /**

@@ -63,8 +63,4 @@ public class GridTaskResultRequest implements Message {
         return topicId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 76;
-    }
 }

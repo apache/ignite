@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -142,13 +141,13 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
-        Map<Integer, T2<Long, Long>> cntrs) {
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+    @Override public Map<Integer, Long> updateCounters() {
         return Collections.emptyMap();
     }
 
@@ -232,19 +231,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                                                     if (node == null)
                                                         continue;
-
-                                                    if (ctx.config().isPeerClassLoadingEnabled() &&
-                                                        ctx.discovery().cacheNode(node, cacheName)) {
-                                                        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
-
-                                                        if (cache != null && cache.context().deploymentEnabled()) {
-                                                            wrapper.p2pMarshal(ctx.marshaller());
-
-                                                            wrapper.cacheName = cacheName;
-
-                                                            cache.context().deploy().prepare(wrapper);
-                                                        }
-                                                    }
                                                 }
 
                                                 ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,

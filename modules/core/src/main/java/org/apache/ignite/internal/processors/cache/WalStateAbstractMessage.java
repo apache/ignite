@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -30,22 +32,34 @@ import org.jetbrains.annotations.Nullable;
 /**
  * WAL state change abstract message.
  */
-public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage {
+public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Message ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Unique operation ID. */
-    private final UUID opId;
+    @Order(1)
+    UUID opId;
 
     /** Group ID. */
-    private int grpId;
+    @Order(2)
+    int grpId;
 
     /** Group deployment ID. */
-    private IgniteUuid grpDepId;
+    @Order(3)
+    IgniteUuid grpDepId;
 
     /** Message that should be processed through exchange thread. */
     @GridToStringExclude
     private transient WalStateProposeMessage exchangeMsg;
+
+    /** Constructor. */
+    protected WalStateAbstractMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -55,6 +69,7 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
      * @param grpDepId Group deployment ID.
      */
     protected WalStateAbstractMessage(UUID opId, int grpId, IgniteUuid grpDepId) {
+        id = IgniteUuid.randomUuid();
         this.opId = opId;
         this.grpId = grpId;
         this.grpDepId = grpDepId;
@@ -114,11 +129,6 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
     }
 
     /** {@inheritDoc} */

@@ -34,12 +34,9 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -68,44 +65,38 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     public static final int STORE_WRITE_THROUGH_FLAG_MASK = 0x20;
 
-    /** Collection to message converter. */
-    private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = UUIDCollectionMessage::new;
-
-    /** Message to collection converter. */
-    private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = UUIDCollectionMessage::uuids;
-
     /** Thread ID. */
-    @Order(7)
+    @Order(0)
     @GridToStringInclude
     public long threadId;
 
     /** Transaction concurrency. */
-    @Order(8)
+    @Order(1)
     @GridToStringInclude
     public TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
-    @Order(9)
+    @Order(2)
     @GridToStringInclude
     public TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
-    @Order(10)
+    @Order(3)
     @GridToStringInclude
     public GridCacheVersion writeVer;
 
     /** Transaction timeout. */
-    @Order(11)
+    @Order(4)
     @GridToStringInclude
     public long timeout;
 
     /** Transaction read set. */
-    @Order(12)
+    @Order(5)
     @GridToStringInclude
     public Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
-    @Order(13)
+    @Order(6)
     @GridToStringInclude
     public Collection<IgniteTxEntry> writes;
 
@@ -114,33 +105,30 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
-    @Order(14)
+    @Order(7)
     public Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @Order(15)
+    @Order(8)
     public Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
-    @Order(16)
+    @Order(9)
     public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    private Map<UUID, Collection<UUID>> txNodes;
-
-    /** Tx nodes direct marshallable message. */
-    @Order(17)
-    public Map<UUID, UUIDCollectionMessage> txNodesMsg;
+    @Order(10)
+    public Map<UUID, Collection<UUID>> txNodes;
 
     /** IO policy. */
-    @Order(18)
+    @Order(11)
     public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
 
     /** */
-    @Order(19)
+    @Order(12)
     @GridToStringExclude
     public byte flags;
 
@@ -164,7 +152,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param retVal Return value flag.
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -174,10 +161,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
-        boolean onePhaseCommit,
-        boolean addDepInfo
+        boolean onePhaseCommit
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(tx.xidVersion(), 0, false);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();
@@ -405,9 +391,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             dhtVerKeys = dhtVers.keySet();
             dhtVerVals = dhtVers.values();
         }
-
-        if (txNodesMsg == null)
-            txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
     }
 
     /** {@inheritDoc} */
@@ -437,9 +420,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 dhtVers.put(key, verIt.next());
             }
         }
-
-        if (txNodesMsg != null)
-            txNodes = F.viewReadOnly(txNodesMsg, MSG_TO_COL);
     }
 
     /** {@inheritDoc} */
@@ -472,10 +452,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return (flags & mask) != 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 25;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -32,7 +32,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
     private static final long serialVersionUID = 0L;
 
     /** DR version. */
-    @Order(3)
+    @Order(0)
     GridCacheVersion drVer;
 
     /**
@@ -86,10 +86,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return conflictVersion();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 104;
-    }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {

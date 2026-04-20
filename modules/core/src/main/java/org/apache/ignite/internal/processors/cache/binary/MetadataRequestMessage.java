@@ -49,11 +49,6 @@ public class MetadataRequestMessage implements Message {
         this.typeId = typeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 80;
-    }
-
     /**
      * @return Type ID.
      */

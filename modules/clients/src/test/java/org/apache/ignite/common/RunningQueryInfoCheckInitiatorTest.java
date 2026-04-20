@@ -19,6 +19,7 @@ package org.apache.ignite.common;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -227,10 +227,16 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
             final UUID grid0NodeId = grid(0).cluster().localNode().id();
 
             GridTestUtils.runAsync(() -> {
-                    try (Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=false:nodeId="
+                    try (Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "nodeId="
                         + grid0NodeId + "@modules/clients/src/test/config/jdbc-security-config.xml")) {
                         try (Statement stmt = conn.createStatement()) {
                             stmt.execute(sql);
+
+                            ResultSet rs = stmt.getResultSet();
+
+                            while (rs != null && rs.next()) {
+                                // No-op.
+                            }
                         }
                     }
                     catch (SQLException e) {

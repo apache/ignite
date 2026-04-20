@@ -418,8 +418,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
 
@@ -749,7 +748,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         assert msg != null;
 
         switch (msg.directType()) {
-            case 30: {
+            case 10022: {
                 GridDhtLockRequest req = (GridDhtLockRequest)msg;
 
                 GridDhtLockResponse res = new GridDhtLockResponse(
@@ -757,15 +756,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     req.futureId(),
                     req.miniId(),
-                    0,
-                    false);
+                    0);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
 
             break;
 
-            case 34: {
+            case 10016: {
                 GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
@@ -782,14 +780,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 38: {
+            case 10303: {
                 GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 res.onError(req.classError());
 
@@ -810,7 +807,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 40: {
+            case 10305: {
                 GridNearAtomicFullUpdateRequest req = (GridNearAtomicFullUpdateRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
@@ -818,7 +815,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -828,24 +824,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 42: {
+            case 10300: {
                 GridDhtForceKeysRequest req = (GridDhtForceKeysRequest)msg;
 
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     req.cacheId(),
                     req.futureId(),
                     req.miniId(),
-                    false
+                    req.classError()
                 );
-
-                res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
 
             break;
 
-            case 49: {
+            case 10313: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
                 GridNearGetResponse res = new GridNearGetResponse(
@@ -862,7 +856,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 50: {
+            case 10314: {
                 GridNearGetResponse res = (GridNearGetResponse)msg;
 
                 CacheGetFuture fut = (CacheGetFuture)cctx.mvcc().future(res.futureId());
@@ -881,7 +875,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 51: {
+            case 10025: {
                 GridNearLockRequest req = (GridNearLockRequest)msg;
 
                 GridNearLockResponse res = new GridNearLockResponse(
@@ -893,7 +887,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     0,
                     req.classError(),
                     null,
-                    false,
                     false);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -901,7 +894,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 55: {
+            case 10020: {
                 GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
                 GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
@@ -924,7 +917,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 58: {
+            case 10910: {
                 GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
 
                 GridCacheQueryResponse res = new GridCacheQueryResponse(
@@ -951,14 +944,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 114:
+            case 10615:
             case 120: {
                 processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
             }
 
                 break;
 
-            case 116: {
+            case 10315: {
                 GridNearSingleGetRequest req = (GridNearSingleGetRequest)msg;
 
                 GridNearSingleGetResponse res = new GridNearSingleGetResponse(
@@ -976,7 +969,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 117: {
+            case 10316: {
                 GridNearSingleGetResponse res = (GridNearSingleGetResponse)msg;
 
                 GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)cctx.mvcc()
@@ -996,7 +989,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 125: {
+            case 10308: {
                 GridNearAtomicSingleUpdateRequest req = (GridNearAtomicSingleUpdateRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
@@ -1004,7 +997,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -1014,7 +1006,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 126: {
+            case 10309: {
                 GridNearAtomicSingleUpdateInvokeRequest req = (GridNearAtomicSingleUpdateInvokeRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
@@ -1022,7 +1014,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -1032,7 +1023,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 127: {
+            case 10310: {
                 GridNearAtomicSingleUpdateFilterRequest req = (GridNearAtomicSingleUpdateFilterRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
@@ -1040,7 +1031,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nodeId,
                     req.futureId(),
                     req.partition(),
-                    false,
                     false);
 
                 res.error(req.classError());
@@ -1050,14 +1040,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case -36: {
+            case 10306: {
                 GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    false);
+                    req.futureId());
 
                 res.onError(req.classError());
 

@@ -21,33 +21,29 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
  */
-public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    @Order(5)
+    @Order(0)
     long order;
 
     /** */
-    @Order(6)
+    @Order(1)
     boolean prevNodeAliveFlag;
 
     /** Redirect addresses messages serialization holder. */
-    @Order(7)
+    @Order(2)
     @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
 
     /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
+     * Default constructor for {@link MessageFactory}.
      */
     public TcpDiscoveryHandshakeResponse() {
         // No-op.
@@ -106,11 +102,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         redirectAddrsMsgs = sockAddrs == null
             ? null
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 10;
     }
 
     /** {@inheritDoc} */

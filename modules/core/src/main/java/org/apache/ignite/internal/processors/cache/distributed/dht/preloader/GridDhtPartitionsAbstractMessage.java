@@ -29,21 +29,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /** */
-    private static final byte COMPRESSED_FLAG_MASK = 0x01;
-
-    /** */
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** Exchange ID. */
-    @Order(3)
+    @Order(0)
     GridDhtPartitionExchangeId exchId;
 
     /** Last used cache version. */
-    @Order(4)
+    @Order(1)
     GridCacheVersion lastVer;
 
     /** */
-    @Order(5)
+    @Order(2)
     protected byte flags;
 
     /**
@@ -105,20 +102,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      */
     @Nullable public GridCacheVersion lastVersion() {
         return lastVer;
-    }
-
-    /**
-     * @return {@code True} if message data is compressed.
-     */
-    public final boolean compressed() {
-        return (flags & COMPRESSED_FLAG_MASK) != 0;
-    }
-
-    /**
-     * @param compressed {@code True} if message data is compressed.
-     */
-    public final void compressed(boolean compressed) {
-        flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
     }
 
     /**

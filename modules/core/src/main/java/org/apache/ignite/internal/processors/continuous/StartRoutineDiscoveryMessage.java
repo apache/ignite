@@ -17,55 +17,47 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Discovery message used for Continuous Query registration.
  */
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    StartRequestData startReqData;
 
     /** */
-    private final StartRequestData startReqData;
+    @Order(1)
+    Map<UUID, ErrorMessage> errs = new HashMap<>();
 
     /** */
-    // Initilized here as well to preserve compatibility with previous versions
-    private Map<UUID, IgniteCheckedException> errs = new HashMap<>();
+    @Order(2)
+    Map<Integer, Long> updateCntrs;
 
     /** */
-    private Map<Integer, T2<Long, Long>> updateCntrs;
-
-    /** */
-    private Map<UUID, Map<Integer, T2<Long, Long>>> updateCntrsPerNode;
-
-    /** Keep binary flag. */
-    private boolean keepBinary;
-
-    /** */
-    private transient ClassNotFoundException deserEx;
+    @Order(3)
+    Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
 
     /**
      * @param routineId Routine id.
      * @param startReqData Start request data.
      */
-    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData, boolean keepBinary) {
+    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData) {
         super(routineId);
 
         this.startReqData = startReqData;
-        this.keepBinary = keepBinary;
     }
+
+    /** */
+    public StartRoutineDiscoveryMessage() {}
 
     /**
      * @return Start request data.
@@ -82,21 +74,21 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
         if (errs == null)
             errs = new HashMap<>();
 
-        errs.put(nodeId, e);
+        errs.put(nodeId, new ErrorMessage(e));
     }
 
     /**
      * @param cntrs Update counters.
      */
-    private void addUpdateCounters(Map<Integer, T2<Long, Long>> cntrs) {
+    private void addUpdateCounters(Map<Integer, Long> cntrs) {
         if (updateCntrs == null)
             updateCntrs = new HashMap<>();
 
-        for (Map.Entry<Integer, T2<Long, Long>> e : cntrs.entrySet()) {
-            T2<Long, Long> cntr0 = updateCntrs.get(e.getKey());
-            T2<Long, Long> cntr1 = e.getValue();
+        for (Map.Entry<Integer, Long> e : cntrs.entrySet()) {
+            Long cntr0 = updateCntrs.get(e.getKey());
+            Long cntr1 = e.getValue();
 
-            if (cntr0 == null || cntr1.get2() > cntr0.get2())
+            if (cntr0 == null || cntr1 > cntr0)
                 updateCntrs.put(e.getKey(), cntr1);
         }
     }
@@ -105,29 +97,15 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @param nodeId Local node ID.
      * @param cntrs Update counters.
      */
-    public void addUpdateCounters(UUID nodeId, Map<Integer, T2<Long, Long>> cntrs) {
+    public void addUpdateCounters(UUID nodeId, Map<Integer, Long> cntrs) {
         addUpdateCounters(cntrs);
 
         if (updateCntrsPerNode == null)
             updateCntrsPerNode = new HashMap<>();
 
-        Map<Integer, T2<Long, Long>> old = updateCntrsPerNode.put(nodeId, cntrs);
+        Map<Integer, Long> old = updateCntrsPerNode.put(nodeId, cntrs);
 
         assert old == null : old;
-    }
-
-    /**
-     * @return Errs.
-     */
-    public Map<UUID, IgniteCheckedException> errs() {
-        return errs != null ? errs : Collections.emptyMap();
-    }
-
-    /**
-     * @return {@code True} if keep binary flag was set on continuous handler.
-     */
-    public boolean keepBinary() {
-        return keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -137,28 +115,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs(), updateCntrs, updateCntrsPerNode);
-    }
-
-    /** */
-    private void readObject(ObjectInputStream in) throws IOException {
-        // Override default serialization in order to tolerate missing classes exceptions (e.g. remote filter class).
-        // We need this means because CQ registration process assumes that an "ack message" will be sent.
-        try {
-            in.defaultReadObject();
-        }
-        catch (ClassNotFoundException e) {
-            deserEx = e;
-
-            throw new IncompleteDeserializationException(this);
-        }
-    }
-
-    /**
-     * @return Exception occurred during deserialization.
-     */
-    @Nullable public ClassNotFoundException deserializationException() {
-        return deserEx;
+        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
     }
 
     /** {@inheritDoc} */

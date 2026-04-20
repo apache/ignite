@@ -28,23 +28,20 @@ import org.jetbrains.annotations.Nullable;
  * Message that holds a transaction message and incremental snapshot ID.
  */
 public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
-    /** */
-    public static final short TYPE_CODE = 400;
-
     /** Original transaction message. */
-    @Order(3)
+    @Order(0)
     GridCacheMessage payload;
 
     /** Incremental snapshot ID. */
-    @Order(4)
+    @Order(1)
     UUID id;
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    @Order(5)
+    @Order(2)
     @Nullable UUID txSnpId;
 
     /** Incremental snapshot topology version. */
-    @Order(6)
+    @Order(3)
     long topVer;
 
     /** */
@@ -94,10 +91,6 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         payload.finishUnmarshal(ctx, ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {

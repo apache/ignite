@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMessage {
     /** */
-    @Order(6)
+    @Order(0)
     GridDhtPartitionExchangeId restoreExchId;
 
     /**
@@ -65,10 +65,6 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         return restoreExchId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 48;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -144,10 +144,6 @@ public class GridContinuousMessage implements Message {
         return futId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 61;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -92,6 +92,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private final long offHeapUsedSize;
 
+    /** */
+    private final boolean evictionsStarted;
+
     /**
      * @param metrics Metrics instance to take a copy.
      */
@@ -119,6 +122,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         replacedPage = metrics.getPagesReplaced();
         offHeapSize = metrics.getOffHeapSize();
         offHeapUsedSize = metrics.getOffheapUsedSize();
+        evictionsStarted = metrics.isEvictionsStarted();
     }
 
     /** {@inheritDoc} */
@@ -234,5 +238,10 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getOffheapUsedSize() {
         return offHeapUsedSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEvictionsStarted() {
+        return evictionsStarted;
     }
 }

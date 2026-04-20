@@ -185,11 +185,9 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
             assertEquals(0, data[5]);
             assertEquals(0, data[6]);
 
-            byte majorClsVer = data[7];
-
             assertTrue(data[7] > 0);
 
-            data[7] = (byte)(majorClsVer + 1);
+            data[7] = (byte)0xFF;
         }
     }
 

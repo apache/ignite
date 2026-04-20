@@ -33,6 +33,9 @@ import org.jetbrains.annotations.Nullable;
  * Cache interceptor is configured via {@link CacheConfiguration#getInterceptor()}
  * configuration property.
  * <p>
+ * The type of incoming values depends on cache operation context, that is, the {@link IgniteCache#withKeepBinary()}
+ * is taken into account.
+ * <p>
  * Any grid resource from {@code org.apache.ignite.resources} package can be injected
  * into implementation of this interface.
  */

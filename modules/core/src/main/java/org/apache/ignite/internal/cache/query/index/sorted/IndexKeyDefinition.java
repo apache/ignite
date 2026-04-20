@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Defines a signle index key.
  */
 public class IndexKeyDefinition implements Message {
-    /** A message for {@link IndexKeyType}. */
+    /** Index key type. */
     @Order(0)
-    IndexKeyTypeMessage idxTypeMsg;
+    IndexKeyType idxType;
 
     /** Order. */
     @Order(1)
@@ -44,7 +43,7 @@ public class IndexKeyDefinition implements Message {
 
     /** */
     public IndexKeyDefinition(int idxTypeCode, long precision, boolean asc) {
-        idxTypeMsg = new IndexKeyTypeMessage(idxTypeCode);
+        idxType = IndexKeyType.forCode(idxTypeCode);
 
         this.asc = asc;
 
@@ -55,11 +54,6 @@ public class IndexKeyDefinition implements Message {
             this.precision = (int)precision;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 113;
-    }
-
     /** */
     public boolean ascending() {
         return asc;
@@ -67,7 +61,7 @@ public class IndexKeyDefinition implements Message {
 
     /** */
     public IndexKeyType indexKeyType() {
-        return idxTypeMsg.value();
+        return idxType;
     }
 
     /** */

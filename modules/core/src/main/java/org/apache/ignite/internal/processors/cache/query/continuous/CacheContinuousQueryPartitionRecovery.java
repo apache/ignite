@@ -227,7 +227,7 @@ class CacheContinuousQueryPartitionRecovery {
 
                     long filtered = pending.filteredCount();
 
-                    boolean fire = e.getKey() == lastFiredEvt + 1;;
+                    boolean fire = e.getKey() == lastFiredEvt + 1;
 
                     if (!fire && filtered > 0)
                         fire = e.getKey() - filtered <= lastFiredEvt + 1;

@@ -175,11 +175,6 @@ public class GridCacheEntryInfo implements Message {
         this.deleted = deleted;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 91;
-    }
-
     /**
      * @param ctx Context.
      * @param ldr Loader.
@@ -229,7 +224,7 @@ public class GridCacheEntryInfo implements Message {
         if (expireTime == 0)
             expireTime = -1;
         else {
-            expireTime = expireTime - U.currentTimeMillis();
+            expireTime -= U.currentTimeMillis();
 
             if (expireTime < 0)
                 expireTime = 0;

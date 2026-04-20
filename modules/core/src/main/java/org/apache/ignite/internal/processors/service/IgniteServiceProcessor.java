@@ -1579,16 +1579,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         try {
             updateServicesMap(deployedServices, fullTops);
-
-            for (Map.Entry<IgniteUuid, Map<UUID, Integer>> e : fullTops.entrySet()) {
-                // Checking if there are successful deployments.
-                // If none, service not deployed and must be removed from descriptors.
-                if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
-                    removeFromServicesMap(registeredServices, registeredServicesByName, e.getKey());
-
-                    removeFromServicesMap(deployedServices, deployedServicesByName, e.getKey());
-                }
-            }
         }
         finally {
             leaveBusy();
@@ -1954,14 +1944,14 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
         final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
-        final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
+        final Map<IgniteUuid, Collection<Throwable>> fullErrors = new HashMap<>();
 
         for (ServiceClusterDeploymentResult depRes : msg.results()) {
             final IgniteUuid srvcId = depRes.serviceId();
             final Map<UUID, ServiceSingleNodeDeploymentResult> deps = depRes.results();
 
             final Map<UUID, Integer> top = new HashMap<>();
-            final Collection<byte[]> errors = new ArrayList<>();
+            final Collection<Throwable> errors = new ArrayList<>();
 
             deps.forEach((nodeId, res) -> {
                 int cnt = res.count();

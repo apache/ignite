@@ -94,10 +94,6 @@ public class CacheVersionedValue implements Message {
             val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 102;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

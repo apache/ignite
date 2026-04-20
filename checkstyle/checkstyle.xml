@@ -32,6 +32,12 @@
     <!-- Misc Checks. See: http://checkstyle.sourceforge.net/config_misc.html -->
     <module name="NewlineAtEndOfFile"/>
 
+    <module name="RegexpSingleline">
+        <property name="format" value="org\.mockito\.internal\."/>
+        <property name="message"
+                  value="Usage of org.mockito.internal.* is forbidden. Use public Mockito API or standard Java utilities instead."/>
+    </module>
+
     <module name="TreeWalker">
         <!-- Coding Checks. See: https://checkstyle.sourceforge.io/config_coding.html -->
         <module name="SimplifyBooleanExpression"/>

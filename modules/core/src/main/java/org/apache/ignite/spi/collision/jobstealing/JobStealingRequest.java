@@ -50,10 +50,6 @@ public class JobStealingRequest implements Message {
         return delta;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 82;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

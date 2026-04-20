@@ -22,10 +22,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,27 +35,31 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** */
-    @GridToStringInclude
-    private Map<Integer, Boolean> startedCaches;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
     @GridToStringInclude
-    private Set<Integer> closedCaches;
+    @Order(1)
+    Map<Integer, Boolean> startedCaches;
+
+    /** */
+    @GridToStringInclude
+    @Order(2)
+    Set<Integer> closedCaches;
 
     /** Update timeout object, used to batch multiple starts/close into single discovery message. */
-    private transient ClientCacheUpdateTimeout updateTimeoutObj;
+    private ClientCacheUpdateTimeout updateTimeoutObj;
+
+    /** */
+    public ClientCacheChangeDiscoveryMessage() {}
 
     /**
      * @param startedCaches Started caches.
      * @param closedCaches Closed caches.
      */
     public ClientCacheChangeDiscoveryMessage(Map<Integer, Boolean> startedCaches, Set<Integer> closedCaches) {
+        id = IgniteUuid.randomUuid();
         this.startedCaches = startedCaches;
         this.closedCaches = closedCaches;
     }
@@ -165,17 +167,6 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

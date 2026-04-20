@@ -1761,8 +1761,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             nodeId,
             req.futureId(),
             req.partition(),
-            false,
-            ctx.deploymentEnabled());
+            false);
 
         res.addFailedKeys(req.keys(), e);
 
@@ -1785,8 +1784,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             node.id(),
             req.futureId(),
             req.partition(),
-            false,
-            ctx.deploymentEnabled());
+            false);
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
@@ -1807,7 +1805,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
-            List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());;
+            List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -3254,7 +3252,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             nodeId,
             checkReq.futureId(),
             checkReq.partition(),
-            false,
             false);
 
         GridCacheReturn ret = new GridCacheReturn(false, true);
@@ -3424,8 +3421,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (nearEvicted != null) {
                 dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    ctx.deploymentEnabled());
+                    req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
             }

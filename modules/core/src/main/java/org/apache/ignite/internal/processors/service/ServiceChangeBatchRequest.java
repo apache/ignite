@@ -19,34 +19,36 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Service change batch request discovery message.
  */
 public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Unique custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Change requests. */
     @GridToStringInclude
-    private final Collection<ServiceChangeAbstractRequest> reqs;
+    @Order(1)
+    Collection<ServiceChangeAbstractRequest> reqs;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
+    @Nullable private ServiceDeploymentActions serviceDeploymentActions;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceChangeBatchRequest() {
+    }
 
     /**
      * @param reqs Change requests.
@@ -54,6 +56,7 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
     public ServiceChangeBatchRequest(Collection<ServiceChangeAbstractRequest> reqs) {
         assert !F.isEmpty(reqs);
 
+        id = IgniteUuid.randomUuid();
         this.reqs = reqs;
     }
 
@@ -85,18 +88,6 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        // No-op.
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
         // No-op.
         return null;
     }

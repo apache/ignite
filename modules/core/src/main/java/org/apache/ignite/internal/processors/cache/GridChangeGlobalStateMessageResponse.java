@@ -28,11 +28,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     /** Request id. */
-    @Order(3)
+    @Order(0)
     UUID reqId;
 
     /** Activation error message. */
-    @Order(4)
+    @Order(1)
     ErrorMessage errMsg;
 
     /**
@@ -67,10 +67,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
         return ErrorMessage.error(errMsg);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -45;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {

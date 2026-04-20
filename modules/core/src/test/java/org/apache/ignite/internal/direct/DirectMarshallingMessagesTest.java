@@ -18,40 +18,68 @@
 package org.apache.ignite.internal.direct;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
-import java.util.function.Function;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import java.util.Arrays;
+import java.util.Map;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Messages marshalling test.
  */
 public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
+    /**
+     * Size of chunk for marshalling.
+     * <p>
+     * Should be small to ensure message is written/read in parts.
+     */
+    private static final int CHUNK_SIZE = 16;
+
     /** Message factory. */
     private final MessageFactory msgFactory =
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory()});
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()),
+            factory -> factory.register(
+                TestNestedContainersMessage.TYPE,
+                TestNestedContainersMessage::new,
+                new TestNestedContainersMessageSerializer()
+            )
+        });
 
     /** */
     @Test
-    public void testSingleNodeMessage() {
-        SingleNodeMessage<?> srcMsg =
-            new SingleNodeMessage<>(UUID.randomUUID(), TEST_PROCESS, "data", new Exception("error"));
+    public void testNestedContainers() {
+        TestNestedContainersMessage msg = new TestNestedContainersMessage();
 
-        SingleNodeMessage<?> resMsg = doMarshalUnmarshal(srcMsg);
+        msg.nestedMap = Map.of(
+            1, Map.of(1, 2L),
+            2, Map.of(1, 2L)
+        );
 
-        assertEquals(srcMsg.type(), resMsg.type());
-        assertEquals(srcMsg.processId(), resMsg.processId());
-        assertEquals(srcMsg.response(), resMsg.response());
-        assertEquals(srcMsg.error().getClass(), resMsg.error().getClass());
-        assertEquals(srcMsg.error().getMessage(), resMsg.error().getMessage());
+        msg.nestedCollection = Map.of(
+            1, Arrays.asList(1),
+            2, Arrays.asList(2)
+        );
+
+        msg.nestedArr = Map.of(
+            1, new String[]{"AAA", "AAA"},
+            2, new String[]{"BBB", "BBB"}
+        );
+
+        TestNestedContainersMessage resMsg = doMarshalUnmarshalChunked(msg);
+
+        assertEquals(msg.nestedMap, resMsg.nestedMap);
+        assertEquals(msg.nestedCollection, resMsg.nestedCollection);
+        assertArrayEquals(msg.nestedArr.get(1), resMsg.nestedArr.get(1));
+        assertArrayEquals(msg.nestedArr.get(2), resMsg.nestedArr.get(2));
     }
 
     /**
@@ -59,48 +87,52 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
      * @param <T> Message type.
      * @return Unmarshalled message.
      */
-    private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
-        ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
+    private <T extends Message> T doMarshalUnmarshalChunked(T srcMsg) {
+        ByteBuffer buf = ByteBuffer.allocate(256);
 
-        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(msgFactory)));
-        assertTrue("The message was not written completely.", fullyWritten);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+
+        boolean fullyWritten = false;
+
+        while (!fullyWritten) {
+            ByteBuffer chunk = ByteBuffer.allocate(CHUNK_SIZE);
+
+            writer.setBuffer(chunk);
+
+            fullyWritten = writer.writeMessage(srcMsg, false);
+
+            chunk.flip();
+
+            buf.put(chunk);
+        }
+
+        byte[] bytes = new byte[buf.position()];
 
         buf.flip();
+        buf.get(bytes);
 
-        byte b0 = buf.get();
-        byte b1 = buf.get();
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
 
-        short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
+        Message resMsg = null;
 
-        assertEquals(srcMsg.directType(), type);
+        int pos = 0;
 
-        T resMsg = (T)msgFactory.create(type);
+        while (resMsg == null) {
+            int len = Math.min(CHUNK_SIZE, bytes.length - pos);
 
-        boolean fullyRead = loopBuffer(buf, buf.position(),
-            buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory, null)));
-        assertTrue("The message was not read completely.", fullyRead);
+            ByteBuffer chunk = ByteBuffer.allocate(len);
 
-        return resMsg;
-    }
+            chunk.put(bytes, pos, len);
 
-    /**
-     * @param buf Byte buffer.
-     * @param start Start position.
-     * @param func Function that is sequentially executed on a different-sized part of the buffer.
-     * @return {@code True} if the function returns {@code True} at least once, {@code False} otherwise.
-     */
-    private boolean loopBuffer(ByteBuffer buf, int start, Function<ByteBuffer, Boolean> func) {
-        int pos = start;
+            chunk.flip();
 
-        do {
-            buf.position(start);
-            buf.limit(++pos);
+            reader.setBuffer(chunk);
 
-            if (func.apply(buf))
-                return true;
+            resMsg = reader.readMessage(false);
+
+            pos += chunk.position();
         }
-        while (pos < buf.capacity());
 
-        return false;
+        return (T)resMsg;
     }
 }

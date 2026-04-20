@@ -485,7 +485,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Cancel only if we force grid to stop
         if (cancel) {
             for (GridJobWorker job : activeJobs.values()) {
-                job.onStopping();
+                job.onNodeStopping();
 
                 cancelJob(job, false);
             }
@@ -655,17 +655,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 else {
                     // Sender and message type are fine.
                     res = (GridJobSiblingsResponse)msg;
-
-                    if (res.jobSiblings() == null) {
-                        try {
-                            res.unmarshalSiblings(marsh);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to unmarshal job siblings.", e);
-
-                            err = e.getMessage();
-                        }
-                    }
                 }
 
                 lock.lock();

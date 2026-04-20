@@ -82,7 +82,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         assert discoEvt != null;
 
         this.nodeId = nodeId;
-        this.evt = discoEvt.type();
+        evt = discoEvt.type();
         this.topVer = topVer;
         this.discoEvt = discoEvt;
 
@@ -200,10 +200,6 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         return evt == id.evt && topVer.equals(id.topVer) && nodeId.equals(id.nodeId);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 87;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

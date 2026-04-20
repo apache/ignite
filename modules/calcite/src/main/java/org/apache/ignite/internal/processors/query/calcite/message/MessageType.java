@@ -73,19 +73,10 @@ public enum MessageType {
     private final Supplier<CalciteMessage> factory;
 
     /** */
-    private MessageSerializer serializer;
+    private final MessageSerializer serializer;
 
     /**
-     * @param directType Message direct type.
-     * @param factory Message factory.
-     */
-    MessageType(int directType, Supplier<CalciteMessage> factory) {
-        this.directType = directType;
-        this.factory = factory;
-    }
-
-    /**
-     * @param directType Message direct type.
+     * @param directType Direct type.
      * @param factory Message factory.
      * @param serializer Message serializer.
      */
@@ -96,17 +87,17 @@ public enum MessageType {
     }
 
     /**
-     * @return Message direct type;
-     */
-    public short directType() {
-        return (short)directType;
-    }
-
-    /**
      * @return Message factory.
      */
     public Supplier<CalciteMessage> factory() {
         return factory;
+    }
+
+    /**
+     * @return Message direct type.
+     */
+    public short directType() {
+        return (short)directType;
     }
 
     /**

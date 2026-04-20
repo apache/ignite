@@ -76,9 +76,4 @@ public class LatchAckMessage implements Message {
         return isFinal;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 135;
-    }
-
 }

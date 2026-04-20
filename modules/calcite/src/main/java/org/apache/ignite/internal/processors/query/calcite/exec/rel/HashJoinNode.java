@@ -394,7 +394,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private void downstreamPush(Row left, Row right) throws Exception {
             requested--;
 
-            downstream().push(outRowFactory.apply(left, right));;
+            downstream().push(outRowFactory.apply(left, right));
         }
 
         /** {@inheritDoc} */

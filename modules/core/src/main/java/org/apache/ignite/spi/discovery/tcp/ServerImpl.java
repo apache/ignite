@@ -80,7 +80,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -124,6 +123,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -680,12 +680,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     processed.add(n);
 
-                    List<ClusterNode> top = U.arrayList(nodes, F.notIn(processed));
+                    Collection<ClusterNode> top = upcast(U.arrayList(nodes, F.notIn(processed)));
 
                     topVer++;
 
-                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
-                        Collections.unmodifiableList(top));
+                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
                     lsnr.onDiscovery(
                         new DiscoveryNotification(EVT_NODE_FAILED, topVer, n, top, hist, null, null)
@@ -1054,18 +1053,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoveryCustomMessage evt) {
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
             TcpDiscoveryCustomEventMessage msg;
 
-            DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(evt);
+            DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
             if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
             else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
 
             Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
@@ -1076,6 +1073,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             // This root span will be parent both from local and remote nodes.
             msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
+            msg.prepareMarshal(spi.marshaller());
 
             msgWorker.addMessage(msg);
 
@@ -1160,8 +1159,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         DiscoveryDataPacket discoveryData = spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId()));
 
         TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
-
-        joinReqMsg.prepareMarshal(spi.marshaller());
 
         joinReqMsg.spanContainer().span(
             tracing.create(TraceableMessagesTable.traceName(joinReqMsg.getClass()))
@@ -1918,18 +1915,27 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.topology(topToSnd);
 
-                Collection<TcpDiscoveryAbstractMessage> msgs0 = null;
-
                 if (msgs != null) {
-                    msgs0 = new ArrayList<>(msgs.size());
+                    Collection<TcpDiscoveryAbstractMessage> msgs0 = new ArrayList<>(msgs.size());
 
                     for (PendingMessage pendingMsg : msgs) {
-                        if (pendingMsg.msg != null)
+                        if (pendingMsg.msg == null)
+                            continue;
+
+                        if (pendingMsg.msg == nodeAddedMsg) {
+                            TcpDiscoveryNodeAddedMessage msg0 = (TcpDiscoveryNodeAddedMessage)pendingMsg.msg;
+                            msg0 = new TcpDiscoveryNodeAddedMessage(msg0);
+                            // Removes message self-inclusion and prevents infinite write/read message cycles and stack overflow.
+                            msg0.messages(null);
+
+                            msgs0.add(msg0);
+                        }
+                        else
                             msgs0.add(pendingMsg.msg);
                     }
-                }
 
-                nodeAddedMsg.messages(msgs0);
+                    nodeAddedMsg.messages(msgs0);
+                }
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -1937,7 +1943,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist = new TreeMap<>(topHist);
                 }
 
-                nodeAddedMsg.topologyHistory(hist);
+                nodeAddedMsg.topologyHistory(downcast(hist));
             }
         }
     }
@@ -2482,6 +2488,31 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Upcasts collection type.
+     *
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    private static <P, C extends P> Collection<P> upcast(Collection<C> c) {
+        return (Collection<P>)c;
+    }
+
+    /**
+     * Downcasts type of map's collection value.
+     *
+     * @param <K> Map key type.
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param m Initial collections map.
+     * @return Resulting map.
+     */
+    private static <K, P, C extends P> Map<K, Collection<C>> downcast(Map<K, Collection<P>> m) {
+        return (Map<K, Collection<C>>)(Map)m;
+    }
+
+    /**
      * Discovery messages history used for client reconnect.
      */
     private class EnsuredMessageHistory {
@@ -2529,8 +2560,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (addFinishMsg.clientDiscoData() != null) {
                     addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    addFinishMsg.prepareMarshal(spi.marshaller());
 
                     msg = addFinishMsg;
 
@@ -3297,21 +3326,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (clientMsgWorkers.isEmpty())
                     return;
 
-                byte[] msgBytes = null;
+                byte[] msgBytes;
 
-                if (!(msg instanceof TcpDiscoveryNodeAddedMessage)) {
-                    try {
-                        msgBytes = clientMsgSer.serializeMessage(msg);
-                    }
-                    catch (IgniteCheckedException | IOException e) {
-                        U.error(log, "Failed to serialize message: " + msg, e);
+                try {
+                    msgBytes = clientMsgSer.serializeMessage(msg);
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    U.error(log, "Failed to serialize message: " + msg, e);
 
-                        return;
-                    }
+                    return;
                 }
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     TcpDiscoveryAbstractMessage msg0 = msg;
+                    byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
@@ -3320,10 +3348,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+
+                            try {
+                                msgBytes0 = clientMsgSer.serializeMessage(msg0);
+                            }
+                            catch (IgniteCheckedException | IOException e) {
+                                U.error(log, "Failed to serialize message: " + msg0, e);
+
+                                return;
+                            }
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes);
+                    clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
         }
@@ -3344,9 +3381,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg instanceof TraceableMessage)
                 tracing.messages().beforeSend((TraceableMessage)msg);
-
-            if (msg instanceof TcpDiscoveryJoinRequestMessage)
-                ((TcpDiscoveryJoinRequestMessage)msg).prepareMarshal(spi.marshaller());
 
             sendMessageToClients(msg);
 
@@ -5002,8 +5036,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
-
-                        addFinishMsg.prepareMarshal(spi.marshaller());
                     }
 
                     addFinishMsg = tracing.messages().branch(addFinishMsg, msg);
@@ -5219,7 +5251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
-                            topHist.putAll(msg.topologyHistory());
+                            topHist.putAll(upcast(msg.topologyHistory()));
 
                             pendingMsgs.reset(msg.messages());
                         }
@@ -6208,29 +6240,33 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    msg.message(null, msg.messageBytes());
+                    msg.clearMessage();
                 }
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
-                    DiscoveryCustomMessage msgObj = null;
+                    DiscoverySpiCustomMessage msgObj = null;
 
                     try {
-                        msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                        msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                        msgObj = msg.message();
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
 
                     if (msgObj != null) {
-                        DiscoveryCustomMessage nextMsg = msgObj.ackMessage();
+                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
 
                         if (nextMsg != null) {
                             try {
                                 TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
-                                    getLocalNodeId(), nextMsg, U.marshal(spi.marshaller(), nextMsg));
+                                    getLocalNodeId(), nextMsg);
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
+
+                                ackMsg.prepareMarshal(spi.marshaller());
 
                                 processCustomMessage(ackMsg, waitForNotification);
                             }
@@ -6262,8 +6298,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     notifyDiscoveryListener(msg, waitForNotification);
                 }
 
-                // Clear msg field to prevent possible memory leak.
-                msg.message(null, msg.messageBytes());
+                msg.clearMessage();
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -6401,10 +6436,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (node == null)
                     return;
 
-                DiscoveryCustomMessage msgObj;
+                DiscoverySpiCustomMessage msgObj;
 
                 try {
-                    msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                    msgObj = msg.message();
                 }
                 catch (Throwable t) {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
@@ -6436,7 +6473,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (msgObj.isMutable()) {
                     try {
-                        msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
+                        msg.prepareMarshal(spi.marshaller());
                     }
                     catch (Throwable t) {
                         throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
@@ -7150,8 +7187,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
-                            req.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
                             // Current node holds connection with the node that is joining the cluster. Therefore, it can
                             // save certificates with which the connection was established to joining node attributes.
                             if (spi.nodeAuth != null && nodeId.equals(req.node().id()))
@@ -7655,10 +7690,13 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param clientMsgWrk Client message worker to start.
          * @return Whether connection was successful.
          * @throws IOException If IO failed.
+         * @throws IgniteCheckedException If node is not yet initialized or is stopping.
          */
         @SuppressWarnings({"IfMayBeConditional"})
-        private boolean processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg,
-            @Nullable ClientMessageWorker clientMsgWrk) throws IOException {
+        private boolean processJoinRequestMessage(
+            TcpDiscoveryJoinRequestMessage msg,
+            @Nullable ClientMessageWorker clientMsgWrk
+        ) throws IOException, IgniteCheckedException {
             assert msg != null;
             assert !msg.responded();
 

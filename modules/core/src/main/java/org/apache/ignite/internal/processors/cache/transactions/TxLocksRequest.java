@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class TxLocksRequest extends GridCacheMessage {
     /** Future ID. */
-    @Order(3)
+    @Order(0)
     long futId;
 
     /** Tx keys. */
@@ -43,7 +43,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
     /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(4)
+    @Order(1)
     IgniteTxKey[] txKeysArr;
 
     /**
@@ -118,8 +118,4 @@ public class TxLocksRequest extends GridCacheMessage {
         txKeysArr = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -24;
-    }
 }

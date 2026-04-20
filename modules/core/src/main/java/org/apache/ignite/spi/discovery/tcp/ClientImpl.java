@@ -65,7 +65,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
@@ -90,6 +89,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -491,7 +491,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoveryCustomMessage evt) {
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         State state = this.state;
 
         if (state == DISCONNECTED)
@@ -503,14 +503,12 @@ class ClientImpl extends TcpDiscoveryImpl {
         try {
             TcpDiscoveryCustomEventMessage msg;
 
-            DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(evt);
+            DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
             if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
             else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
 
             Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
@@ -521,6 +519,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             // This root span will be parent both from local and remote nodes.
             msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
+            msg.prepareMarshal(spi.marshaller());
 
             sockWriter.sendMessage(msg);
 
@@ -787,8 +787,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
-
-                    joinReqMsg.prepareMarshal(spi.marshaller());
 
                     TcpDiscoveryNode nodef = node;
 
@@ -2242,7 +2240,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         nodeAdded = true;
 
                         if (msg.topologyHistory() != null)
-                            topHist.putAll(msg.topologyHistory());
+                            topHist.putAll(upcast(msg.topologyHistory()));
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -2309,8 +2307,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         delayDiscoData.clear();
                     }
-
-                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
 
@@ -2600,8 +2596,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoveryCustomMessage msgObj = msg.message(spi.marshaller(),
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                            msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                            DiscoverySpiCustomMessage msgObj = msg.message();
 
                             notifyDiscovery(
                                 EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj, msg.spanContainer());
@@ -2696,7 +2693,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             long topVer,
             ClusterNode node,
             Collection<ClusterNode> top,
-            @Nullable DiscoveryCustomMessage customMsg,
+            @Nullable DiscoverySpiCustomMessage customMsg,
             SpanContainer spanContainer
         ) {
             DiscoverySpiListener lsnr = spi.lsnr;

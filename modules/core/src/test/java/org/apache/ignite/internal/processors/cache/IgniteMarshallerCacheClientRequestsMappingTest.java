@@ -161,13 +161,14 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoveryCustomMessage customMsg =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                            DiscoveryCustomMessage delegate = U.unwrapCustomMessage(customMsg);
+                            evtMsg.finishUnmarshal(marshaller(), U.gridClassLoader());
+
+                            DiscoveryCustomMessage delegate = U.unwrapCustomMessage(evtMsg.message());
 
                             if (delegate instanceof MappingAcceptedMessage) {
-                                MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
+                                MarshallerMappingItem item = ((MappingAcceptedMessage)delegate).getMappingItem();
 
                                 if (item.className().equals(PERSON_CLASS_NAME) ||
                                     item.className().equals(ORGANIZATION_CLASS_NAME) ||
@@ -236,10 +237,11 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoveryCustomMessage customMsg =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                            DiscoveryCustomMessage delegate = U.unwrapCustomMessage(customMsg);
+                            evtMsg.finishUnmarshal(marshaller(), U.gridClassLoader());
+
+                            DiscoveryCustomMessage delegate = U.unwrapCustomMessage(evtMsg.message());
 
                             if (delegate instanceof MappingProposedMessage) {
                                 MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "mappingItem");

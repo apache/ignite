@@ -26,6 +26,9 @@ public abstract class AbstractMessage implements Message {
     @Order(0)
     int id;
 
+    @Order(1)
+    byte flags;
+
     public short directType() {
         return 0;
     }

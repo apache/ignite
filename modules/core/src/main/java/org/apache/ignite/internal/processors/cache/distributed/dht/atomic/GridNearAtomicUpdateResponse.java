@@ -47,33 +47,33 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     private UUID nodeId;
 
     /** Future ID. */
-    @Order(4)
+    @Order(0)
     long futId;
 
     /** */
-    @Order(5)
+    @Order(1)
     UpdateErrors errs;
 
     /** Return value. */
     @GridToStringInclude
-    @Order(6)
+    @Order(2)
     GridCacheReturn ret;
 
     /** */
-    @Order(7)
+    @Order(3)
     AffinityTopologyVersion remapTopVer;
 
     /** Data for near cache update. */
-    @Order(8)
+    @Order(4)
     NearCacheUpdates nearUpdates;
 
     /** Partition ID. */
-    @Order(9)
+    @Order(5)
     int partId;
 
     /** */
     @GridToStringInclude
-    @Order(10)
+    @Order(6)
     List<UUID> mapping;
 
     /** */
@@ -92,20 +92,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * @param futId Future ID.
      * @param partId Partition.
      * @param nodeLeft {@code True} if primary node failed.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearAtomicUpdateResponse(int cacheId,
         UUID nodeId,
         long futId,
         int partId,
-        boolean nodeLeft,
-        boolean addDepInfo) {
+        boolean nodeLeft) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
         this.partId = partId;
         this.nodeLeft = nodeLeft;
-        this.addDepInfo = addDepInfo;
 
         assert partId >= 0;
     }
@@ -150,32 +147,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         this.nodeId = nodeId;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public long futureId() {
         return futId;
     }
 
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Errs.
-     */
+    /** @return Errs. */
     public UpdateErrors errors() {
         return errs;
-    }
-
-    /**
-     * @param errs New errs.
-     */
-    public void errors(UpdateErrors errs) {
-        this.errs = errs;
     }
 
     /**
@@ -427,10 +406,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 41;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

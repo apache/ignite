@@ -32,6 +32,7 @@ if %java_version% GEQ 11 if %java_version% LSS 14 (
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
+    --add-opens=java.base/java.nio=ALL-UNNAMED ^
     --illegal-access=permit ^
     %current_value%
 )
@@ -45,6 +46,7 @@ if %java_version% GEQ 14 if %java_version% LSS 15 (
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --add-opens=java.base/jdk.internal.access=ALL-UNNAMED ^
     --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
+    --add-opens=java.base/java.nio=ALL-UNNAMED ^
     --illegal-access=permit ^
     %current_value%
 )
@@ -73,6 +75,7 @@ if %java_version% GEQ 15 (
     --add-opens=java.base/java.lang.reflect=ALL-UNNAMED ^
     --add-opens=java.base/java.time=ALL-UNNAMED ^
     --add-opens=java.base/java.text=ALL-UNNAMED ^
+    --add-opens=java.logging/java.util.logging=ALL-UNNAMED ^
     --add-opens=java.management/sun.management=ALL-UNNAMED ^
     --add-opens java.desktop/java.awt.font=ALL-UNNAMED ^
     %current_value%
