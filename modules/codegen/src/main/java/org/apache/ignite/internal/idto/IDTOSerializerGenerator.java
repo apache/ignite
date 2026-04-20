@@ -718,9 +718,6 @@ public class IDTOSerializerGenerator {
                         "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + "]");
                 }
 
-                if (order.skipForDTO())
-                    continue;
-
                 VariableElement prev = flds.put(order.value(), (VariableElement)el);
 
                 if (prev != null) {
@@ -739,7 +736,7 @@ public class IDTOSerializerGenerator {
                 throw new IllegalStateException("@Order not found: " + i);
         }
 
-        return flds.values();
+        return flds.values().stream().filter(e -> !e.getAnnotation(Order.class).skipForDTO()).collect(Collectors.toList());
     }
 
     /** @return FQN of {@code comp}. */
