@@ -651,15 +651,15 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             }
 
             int maxIdx = call.getOperands().stream()
-                .filter(op -> op instanceof RexCall)
+                .filter(RexCall.class::isInstance)
                 .map(op -> ((RexCall)op).getOperands().get(0))
-                .filter(op -> op instanceof RexLocalRef)
+                .filter(RexLocalRef.class::isInstance)
                 .map(op -> ((RexLocalRef)op).getIndex())
                 .max(Integer::compare).orElse(-1);
 
             assertTrue(maxIdx != -1);
 
-            RexNode conditions[] = new RexNode[maxIdx + 1];
+            RexNode[] conditions = new RexNode[maxIdx + 1];
 
             for (RexNode op : call.getOperands()) {
                 if (op instanceof RexCall) {
