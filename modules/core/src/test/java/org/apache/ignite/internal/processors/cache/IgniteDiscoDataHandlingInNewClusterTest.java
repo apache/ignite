@@ -37,6 +37,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -218,10 +221,10 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
                 staticCachesGrpFound = true;
         }
 
-        assertTrue(String.format("Default group found: %b, static group found: %b",
-            dfltGrpFound,
-            staticCachesGrpFound),
-            dfltGrpFound && staticCachesGrpFound);
+        assertTrue(
+            dfltGrpFound && staticCachesGrpFound,
+            String.format("Default group found: %b, static group found: %b", dfltGrpFound,
+                staticCachesGrpFound));
     }
 
     /** */

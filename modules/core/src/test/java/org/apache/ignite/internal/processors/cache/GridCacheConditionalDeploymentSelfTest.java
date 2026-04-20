@@ -34,6 +34,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Cache + conditional deployment test.
@@ -100,11 +102,9 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         assertNull(msg.deployInfo());
     }
 
-    /**
-     * @throws Exception In case of error.
-     */
+    /** */
     @Test
-    public void testAddedDeploymentInfo() throws Exception {
+    public void testAddedDeploymentInfo() {
         GridCacheContext<?, ?> ctx = cacheContext();
 
         assertFalse(ctx.deploymentEnabled());

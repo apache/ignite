@@ -36,6 +36,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getCollectionConfigurations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Abstract class for test common methods of {@link IgniteQueue} and {@link IgniteSet} behaviour if cluster in a
@@ -131,7 +134,7 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
     public void testRemoveAllDenied() {
         performAction(c -> c.removeAll(Arrays.asList(ELEM, name(c))));
 
-        igniteCollections.forEach(c -> assertFalse(name(c), c.contains(UNKNOWN_ELEM)));
+        igniteCollections.forEach(c -> assertFalse(c.contains(UNKNOWN_ELEM), name(c)));
 
         performAction(c -> c.removeAll(Arrays.asList(UNKNOWN_ELEM, name(c))));
     }
@@ -139,7 +142,7 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
     /** */
     @Test
     public void testRetainAllDenied() {
-        igniteCollections.forEach(c -> assertFalse(name(c), c.contains(UNKNOWN_ELEM)));
+        igniteCollections.forEach(c -> assertFalse(c.contains(UNKNOWN_ELEM), name(c)));
 
         performAction(c -> c.retainAll(Arrays.asList(UNKNOWN_ELEM, name(c))));
 
@@ -150,13 +153,13 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
     /** */
     @Test
     public void testSizeAllowed() {
-        igniteCollections.forEach(c -> assertEquals(name(c), COLLECTION_SIZE, c.size()));
+        igniteCollections.forEach(c -> assertEquals(COLLECTION_SIZE, c.size(), name(c)));
     }
 
     /** */
     @Test
     public void testIsEmptyAllowed() {
-        igniteCollections.forEach(c -> assertFalse(name(c), c.isEmpty()));
+        igniteCollections.forEach(c -> assertFalse(c.isEmpty(), name(c)));
     }
 
     /** */
@@ -175,8 +178,8 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
     @Test
     public void testContainsAllowed() {
         for (Collection col : igniteCollections) {
-            assertTrue(name(col), col.contains(ELEM));
-            assertFalse(name(col), col.contains(UNKNOWN_ELEM));
+            assertTrue(col.contains(ELEM), name(col));
+            assertFalse(col.contains(UNKNOWN_ELEM), name(col));
         }
     }
 
@@ -184,15 +187,15 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
     @Test
     public void testContainsAllAllowed() {
         for (Collection col : igniteCollections) {
-            assertTrue(name(col), col.containsAll(Arrays.asList(ELEM, name(col))));
-            assertFalse(name(col), col.containsAll(Arrays.asList(UNKNOWN_ELEM, name(col))));
+            assertTrue(col.containsAll(Arrays.asList(ELEM, name(col))), name(col));
+            assertFalse(col.containsAll(Arrays.asList(UNKNOWN_ELEM, name(col))), name(col));
         }
     }
 
     /** */
     private void commonChecks() {
-        igniteCollections.forEach(c -> assertEquals(name(c), COLLECTION_SIZE, c.size()));
-        igniteCollections.forEach(c -> assertTrue(name(c), c.containsAll(Arrays.asList(ELEM, name(c)))));
+        igniteCollections.forEach(c -> assertEquals(COLLECTION_SIZE, c.size(), name(c)));
+        igniteCollections.forEach(c -> assertTrue(c.containsAll(Arrays.asList(ELEM, name(c))), name(c)));
 
         G.allGrids().forEach(n -> assertEquals(ClusterState.ACTIVE_READ_ONLY, n.cluster().state()));
     }
@@ -218,7 +221,7 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
             assertTrue(col.add(name(col)));
             assertTrue(col.add(ELEM));
 
-            assertEquals(name(col), COLLECTION_SIZE, col.size());
+            assertEquals(COLLECTION_SIZE, col.size(), name(col));
 
             collections.add(col);
         }

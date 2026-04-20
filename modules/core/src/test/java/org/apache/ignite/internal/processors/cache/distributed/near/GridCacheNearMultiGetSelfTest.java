@@ -42,6 +42,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test getting the same value twice within the same transaction.
@@ -93,8 +94,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
             c.removeAll();
 
-            assertEquals("Cache size mismatch for grid [igniteInstanceName=" + g.name() +
-                    ", entrySet=" + entrySet(c) + ']', 0, c.size());
+            assertEquals(0, c.size(), "Cache size mismatch for grid [igniteInstanceName=" + g.name() +
+                    ", entrySet=" + entrySet(c) + ']');
         }
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
@@ -223,10 +224,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param put If {@code true}, then value will be pre-stored in cache.
-     * @throws Exception If failed.
      */
-    private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
-        throws Exception {
+    private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put) {
         IgniteEx ignite = grid(0);
         IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheConfiguration());
 

@@ -60,6 +60,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for dynamic cache start.
@@ -1114,7 +1120,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                         .internalCache(DYNAMIC_CACHE_NAME).context();
 
                     assertFalse(ctx.affinityNode());
-                    assertTrue("Cache is not near for index: " + (nodeCount() + i), ctx.isNear());
+                    assertTrue(ctx.isNear(), "Cache is not near for index: " + (nodeCount() + i));
                 }
 
                 lightCheckDynamicCache();

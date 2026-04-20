@@ -45,6 +45,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.TIM
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.processedPartitionComparator;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.toStringTopProcessingPartitions;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.trimToSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for testing the restoration of the status of partitions.

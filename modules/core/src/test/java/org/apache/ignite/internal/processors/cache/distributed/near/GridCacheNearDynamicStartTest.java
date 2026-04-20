@@ -28,6 +28,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Tests that dynamically started caches with near configurations actually start with near caches on all nodes:
  * affinity, non-affinity and clients.

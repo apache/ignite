@@ -35,6 +35,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  *
  */
@@ -160,9 +162,9 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
                         int cnt = iterateOverKeys(cache);
 
-                        assertEquals("Failed [con=" + con + ", iso=" + iso + ']', i + 1, cnt);
+                        assertEquals(i + 1, cnt, "Failed [con=" + con + ", iso=" + iso + ']');
 
-                        assertEquals("Failed [con=" + con + ", iso=" + iso + ']', i + 1, cache.size());
+                        assertEquals(i + 1, cache.size(), "Failed [con=" + con + ", iso=" + iso + ']');
                     }
                 }
             }

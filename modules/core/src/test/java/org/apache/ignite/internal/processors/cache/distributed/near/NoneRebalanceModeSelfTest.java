@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test none rebalance mode.

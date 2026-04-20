@@ -36,6 +36,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  *
@@ -189,7 +191,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
                     String msg = "node=" + node.cluster().localNode() +
                         ", cache=" + cacheName + ", isolation=" + isolation + ", key=" + key;
 
-                    assertEquals(msg, SUSPENDED, tx.state());
+                    assertEquals(SUSPENDED, tx.state(), msg);
                 }
             }
 
@@ -214,13 +216,13 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
                     String msg = "node=" + node.cluster().localNode() +
                         ", cache=" + cache.getName() + ", isolation=" + tx.isolation() + ", key=" + key;
 
-                    assertEquals(msg, ACTIVE, tx.state());
+                    assertEquals(ACTIVE, tx.state(), msg);
 
-                    assertEquals(msg, key, cache.get(key));
+                    assertEquals(key, cache.get(key), msg);
 
                     tx.commit();
 
-                    assertEquals(msg, key, cache.get(key));
+                    assertEquals(key, cache.get(key), msg);
                 }
             }
         }
@@ -259,7 +261,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
 
                 List<Integer> keys0 = findKeys(cache, keysCnt, type * 100_000, type);
 
-                assertEquals(cacheName, keysCnt, keys0.size());
+                assertEquals(keysCnt, keys0.size(), cacheName);
 
                 keys.add(keys0);
             }

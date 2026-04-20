@@ -40,6 +40,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Single node test for near cache.
@@ -61,8 +66,8 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
         jcache().removeAll();
 
-        assertEquals("DHT entries: " + dht().entrySet(), 0, dht().size());
-        assertEquals("Near entries: " + near().entrySet(), 0, near().size());
+        assertEquals(0, dht().size(), "DHT entries: " + dht().entrySet());
+        assertEquals(0, near().size(), "Near entries: " + near().entrySet());
         assertEquals(0, jcache().size());
     }
 
@@ -100,27 +105,27 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     public void testRemove() throws Exception {
         IgniteCache<Object, Object> near = jcache();
 
-        assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
-        assertEquals("Near entries: " + near().entries(), 0, near().size());
+        assertEquals(0, dht().size(), "DHT entries: " + dht().entries());
+        assertEquals(0, near().size(), "Near entries: " + near().entries());
         assertEquals(0, near.size());
 
         for (int i = 0; i < 10; i++)
             near.put(i, Integer.toString(i));
 
-        assertEquals("DHT entries: " + dht().entries(), 10, dht().size());
-        assertEquals("Near entries: " + near().entries(), 10, near().size());
+        assertEquals(10, dht().size(), "DHT entries: " + dht().entries());
+        assertEquals(10, near().size(), "Near entries: " + near().entries());
         assertEquals(10, near.size());
 
         near.remove(0);
 
-        assertEquals("DHT entries: " + dht().entries(), 9, dht().size());
-        assertEquals("Near entries: " + near().entries(), 9, near().size());
+        assertEquals(9, dht().size(), "DHT entries: " + dht().entries());
+        assertEquals(9, near().size(), "Near entries: " + near().entries());
         assertEquals(9, near.size());
 
         near.removeAll();
 
-        assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
-        assertEquals("Near entries: " + near().entries(), 0, near().size());
+        assertEquals(0, dht().size(), "DHT entries: " + dht().entries());
+        assertEquals(0, near().size(), "Near entries: " + near().entries());
         assertEquals(0, near.size());
     }
 

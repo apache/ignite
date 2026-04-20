@@ -64,6 +64,9 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -201,13 +204,13 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             int locSize = ig.cache(CACHE_NAME).localSize(CachePeekMode.PRIMARY);
 
             if (i == emptyNodeIdx)
-                assertEquals("Cache local size on "
+                assertEquals(0, locSize, "Cache local size on "
                     + i
-                    + " node is expected to be zero", 0, locSize);
+                    + " node is expected to be zero");
             else
-                assertTrue("Cache local size on "
+                assertTrue(locSize > 0, "Cache local size on "
                     + i
-                    + " node is expected to be non zero", locSize > 0);
+                    + " node is expected to be non zero");
         }
     }
 
@@ -405,7 +408,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             assertTrue(grid(NODE_COUNT).context().state().publicApiActiveState(false));
         }
 
-        assertNull(String.valueOf(fut.error()), fut.error());
+        assertNull(fut.error(), String.valueOf(fut.error()));
 
         assertEquals(NODE_COUNT + 1, ig.cluster().currentBaselineTopology().size());
     }
@@ -806,7 +809,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         for (int g = 0; g < 5; g++) {
             for (int i = 0; i < 2048; i++)
-                assertEquals("For key: " + i, 0, grid(g).cache("unknown_cache").get(i));
+                assertEquals(0, grid(g).cache("unknown_cache").get(i), "For key: " + i);
         }
     }
 
@@ -983,11 +986,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         for (Map.Entry<Integer, String> e : keyToConsId.entrySet()) {
             int p = ig.affinity(cacheName).partition(e.getKey());
 
-            assertEquals("p=" + p, GridDhtPartitionState.OWNING, partMap.get(ig.affinity(cacheName).mapKeyToNode(e.getKey()).id()).get(p));
+            assertEquals(GridDhtPartitionState.OWNING, partMap.get(ig.affinity(cacheName).mapKeyToNode(e.getKey()).id()).get(p), "p=" + p);
         }
 
         for (int k = 0; k < 1000; k++)
-            assertEquals("k=" + k, Integer.valueOf(k), cache.get(k));
+            assertEquals(Integer.valueOf(k), cache.get(k), "k=" + k);
     }
 
     /**

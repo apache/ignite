@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.jupiter.api.Assertions;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
@@ -26,6 +27,17 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
  * Corresponding methods must be used in all ignite tests where necessary.
  */
 public class JUnitAssertAware {
+/*    protected static void assertTrue(String msg, boolean cond) {
+        Assertions.assertTrue(cond, msg);
+    }
+
+    protected static void assertTrue(boolean cond) {
+        Assertions.assertTrue(cond);
+    }
+
+    protected static void assertFalse(String msg, boolean cond) {
+        Assertions.assertFalse(cond, msg);
+    }*/
     /** See {@link Assert#assertTrue(String, boolean)} javadocs. */
 //    protected static void assertTrue(String msg, boolean cond) {
 //        assertTrue(msg, cond);

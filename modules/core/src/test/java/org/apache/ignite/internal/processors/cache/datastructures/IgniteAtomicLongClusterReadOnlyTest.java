@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getAtomicConfigurations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests methods of {@link IgniteAtomicLong} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -66,12 +68,12 @@ public class IgniteAtomicLongClusterReadOnlyTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicLongs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+        atomicLongs.forEach(l -> assertEquals(INITIAL_VAL, l.get(), l.name()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicLongs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+        atomicLongs.forEach(l -> assertEquals(INITIAL_VAL, l.get(), l.name()));
 
         super.afterTest();
     }
@@ -80,13 +82,13 @@ public class IgniteAtomicLongClusterReadOnlyTest extends GridCommonAbstractTest 
     @Test
     public void testGetInstanceWithoutCreateAllowed() {
         for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
-            assertNotNull(e.getKey(), grid(0).atomicLong(e.getKey(), e.getValue(), INITIAL_VAL, false));
+            assertNotNull(grid(0).atomicLong(e.getKey(), e.getValue(), INITIAL_VAL, false), e.getKey());
     }
 
     /** */
     @Test
     public void testGetAllowed() {
-        atomicLongs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+        atomicLongs.forEach(l -> assertEquals(INITIAL_VAL, l.get(), l.name()));
     }
 
     /** */

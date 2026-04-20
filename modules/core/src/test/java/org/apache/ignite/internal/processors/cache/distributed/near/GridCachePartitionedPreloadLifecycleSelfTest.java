@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests for replicated cache preloader.
@@ -148,7 +149,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
                     assertNotNull(c1.get(key));
 
                     if (k++ % 2 == 0)
-                        assertNotNull("Value is null for key: " + key, c2.get(key));
+                        assertNotNull(c2.get(key), "Value is null for key: " + key);
                 }
             }
         }

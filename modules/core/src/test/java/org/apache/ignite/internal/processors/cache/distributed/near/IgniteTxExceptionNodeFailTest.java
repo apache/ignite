@@ -50,6 +50,10 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture.ALL_PARTITION_OWNERS_LEFT_GRID_MSG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests check a result of commit when a node fail before send {@link GridNearTxFinishResponse} to transaction
@@ -128,10 +132,8 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
 
         Affinity<Object> aff = grid1.affinity(DEFAULT_CACHE_NAME);
 
-        assertFalse(
-            "Keys have the same mapping [key0=" + key0 + ", key1=" + key1 + ']',
-            aff.mapKeyToNode(key0).equals(aff.mapKeyToNode(key1))
-        );
+        assertNotEquals(aff.mapKeyToNode(key0), aff.mapKeyToNode(key1),
+            "Keys have the same mapping [key0=" + key0 + ", key1=" + key1 + ']');
 
         spi(grid0).blockMessages(GridNearTxFinishResponse.class, getTestIgniteInstanceName(1));
 
@@ -176,7 +178,7 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
 
             Matcher matcher = msgPtrn.matcher(msg);
 
-            assertTrue("Message does not match: [msg=" + msg + ']', matcher.find());
+            assertTrue(matcher.find(), "Message does not match: [msg=" + msg + ']');
         }
 
         stopNodeFut.get(10_000);

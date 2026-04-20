@@ -99,6 +99,12 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -1263,7 +1269,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         for (Integer key : keys) {
             Lock lock = cache0.lock(key);
 
-            assertTrue("Failed to lock: " + key, lock.tryLock());
+            assertTrue(lock.tryLock(), "Failed to lock: " + key);
 
             lock.unlock();
         }
@@ -1624,9 +1630,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                             if (affNode || node == nearCacheNode) {
                                 if (map != null)
-                                    assertEquals("Unexpected value for " + node.name(), map.get(key), val0);
+                                    assertEquals(map.get(key), val0, "Unexpected value for " + node.name());
                                 else
-                                    assertNotNull("Unexpected value for " + node.name(), val0);
+                                    assertNotNull(val0, "Unexpected value for " + node.name());
 
                                 GridCacheAdapter cache0 = ((IgniteKernal)node).internalCache(DEFAULT_CACHE_NAME);
 
@@ -1638,31 +1644,31 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                 try {
                                     entry.unswap(true);
 
-                                    assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
+                                    assertNotNull(entry, "No entry [node=" + node.name() + ", key=" + key + ']');
 
                                     GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
                                         ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
 
-                                    assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);
+                                    assertNotNull(ver0, "Null version [node=" + node.name() + ", key=" + key + ']');
 
                                     if (ver == null) {
                                         ver = ver0;
                                         val = val0;
                                     }
                                     else {
-                                        assertEquals("Version check failed [node=" + node.name() +
+                                        assertEquals(ver0,
+                                            ver,
+                                            "Version check failed [node=" + node.name() +
                                             ", key=" + key +
                                             ", affNode=" + affNode +
-                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
-                                            ver0,
-                                            ver);
+                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']');
 
-                                        assertEquals("Value check failed [node=" + node.name() +
+                                        assertEquals(val0,
+                                            val,
+                                            "Value check failed [node=" + node.name() +
                                             ", key=" + key +
                                             ", affNode=" + affNode +
-                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
-                                            val0,
-                                            val);
+                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']');
                                     }
                                 }
                                 finally {
@@ -1670,7 +1676,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                 }
                             }
                             else
-                                assertNull("Unexpected non-null value for " + node.name(), val0);
+                                assertNull(val0, "Unexpected non-null value for " + node.name());
                         }
                     }
                 }
@@ -1687,7 +1693,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         }, 10_000);
 
-        assertTrue("Data check failed.", wait);
+        assertTrue(wait, "Data check failed.");
     }
 
     /**

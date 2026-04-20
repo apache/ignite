@@ -38,6 +38,9 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Near-only cache node startup test.
@@ -98,7 +101,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < 100; i++)
-                assertFalse("For key: " + i, grid(3).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(3).localNode(), i));
+                assertFalse(grid(3).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(3).localNode(), i), "For key: " + i);
         }
         finally {
             stopAllGrids();
@@ -127,8 +130,8 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 100; i++) {
                 ClusterNode node = compute.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i);
 
-                assertFalse("For key: " + i, node.id().equals(compute.cluster().localNode().id()));
-                assertFalse("For key: " + i, node.id().equals(grid(3).localNode().id()));
+                assertNotEquals(node.id(), compute.cluster().localNode().id(), "For key: " + i);
+                assertNotEquals(node.id(), grid(3).localNode().id(), "For key: " + i);
             }
         }
         finally {

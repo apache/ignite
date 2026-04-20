@@ -50,6 +50,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -200,7 +204,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
                 assertNotNull(locPart);
 
-                assertEquals("Unexpected state", OWNING, locPart.state());
+                assertEquals(OWNING, locPart.state(), "Unexpected state");
             }
 
             startGridsMultiThreaded(GRIDS_CNT / 2, GRIDS_CNT / 2);
@@ -214,12 +218,12 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
                 switch ((String)ig.cluster().localNode().attribute(GRP_ATTR)) {
                     case EVEN_GRP:
-                        assertEquals("Unexpected state", EVICTED, locPart.state());
+                        assertEquals(EVICTED, locPart.state(), "Unexpected state");
 
                         break;
 
                     case ODD_GRP:
-                        assertEquals("Unexpected state", OWNING, locPart.state());
+                        assertEquals(OWNING, locPart.state(), "Unexpected state");
 
                         break;
 

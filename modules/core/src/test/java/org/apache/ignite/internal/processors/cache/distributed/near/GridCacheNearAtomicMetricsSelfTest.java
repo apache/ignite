@@ -24,6 +24,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Atomic cache metrics test.
  */
@@ -52,13 +56,13 @@ public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelf
 
                 GridCacheEntryEx nearEntry = near(cache0).peekEx(i);
 
-                assertTrue("Near cache doesn't contain the key", nearEntry.hasValue());
+                assertTrue(nearEntry.hasValue(), "Near cache doesn't contain the key");
 
                 cache0.remove(i);
 
                 nearEntry = near(cache0).peekEx(i);
 
-                assertFalse("Near cache contains key which was deleted", nearEntry.hasValue());
+                assertFalse(nearEntry.hasValue(), "Near cache contains key which was deleted");
 
                 cache0.get(i);
 

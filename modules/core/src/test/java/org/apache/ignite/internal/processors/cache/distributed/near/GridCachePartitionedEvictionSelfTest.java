@@ -45,6 +45,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for partitioned cache automatic eviction.
@@ -232,7 +234,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
                 break;
         }
 
-        assertTrue(Arrays.toString(seen), seen[0] && seen[1] && seen[2] && seen[3]);
+        assertTrue(seen[0] && seen[1] && seen[2] && seen[3], Arrays.toString(seen));
 
         assertEquals(0, near(jcache(0)).nearSize());
         assertEquals(0, near(jcache(1)).nearSize());

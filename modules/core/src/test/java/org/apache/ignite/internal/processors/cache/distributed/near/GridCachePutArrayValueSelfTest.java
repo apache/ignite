@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Specific test case for GG-3946

@@ -23,6 +23,10 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests specific methods of {@link IgniteQueue} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
@@ -67,15 +71,15 @@ public class IgniteQueueClusterReadOnlyTest extends IgniteCollectionsClusterRead
     @Override public void testRemoveDenied() {
         super.testRemoveDenied();
 
-        igniteCollections.forEach(c -> assertFalse(name(c), c.contains(UNKNOWN_ELEM)));
+        igniteCollections.forEach(c -> assertFalse(c.contains(UNKNOWN_ELEM), name(c)));
 
         // Unknown element doesn't exist in a collection. So exception won't be thrown.
-        igniteCollections.forEach(c -> assertFalse(name(c), c.remove(UNKNOWN_ELEM)));
+        igniteCollections.forEach(c -> assertFalse(c.remove(UNKNOWN_ELEM), name(c)));
     }
 
     /** {@inheritDoc} */
     @Override String name(Collection col) {
-        assertTrue(col + "", col instanceof IgniteQueue);
+        assertTrue(col instanceof IgniteQueue, col + "");
 
         return ((IgniteQueue)col).name();
     }
