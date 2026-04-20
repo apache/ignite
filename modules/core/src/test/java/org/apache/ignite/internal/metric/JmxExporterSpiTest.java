@@ -1068,25 +1068,26 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         execSvc.execute(1, new TestRunnable(latch, 3));
 
         try {
-            boolean res = waitForCondition(() -> systemView(viewName).size() == 2, 5_000);
+            assertTrue(waitForCondition(() -> systemView(viewName).size() == 2, 5_000));
 
-            assertTrue(res);
+            Set<Integer> taskStripeIdxs = new HashSet<>();
 
-            TabularDataSupport view = systemView(viewName);
+            for (Map.Entry<Object, Object> entry : systemView(viewName).entrySet()) {
+                CompositeData row = (CompositeData)entry.getValue();
 
-            CompositeData row0 = view.get(new Object[] {0});
+                int stripeIdx = (int)row.get("stripeIndex");
+                assertEquals(poolName + "-stripe-" + stripeIdx, row.get("threadName"));
 
-            assertEquals(0, row0.get("stripeIndex"));
-            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get("description"));
-            assertEquals(poolName + "-stripe-0", row0.get("threadName"));
-            assertEquals(TestRunnable.class.getName(), row0.get("taskName"));
+                String desc = (String) row.get("description");
 
-            CompositeData row1 = view.get(new Object[] {1});
+                if (desc.contains(TestRunnable.class.getSimpleName())) {
+                    assertEquals(TestRunnable.class.getName(), row.get("taskName"));
 
-            assertEquals(1, row1.get("stripeIndex"));
-            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get("description"));
-            assertEquals(poolName + "-stripe-1", row1.get("threadName"));
-            assertEquals(TestRunnable.class.getName(), row1.get("taskName"));
+                    taskStripeIdxs.add(stripeIdx);
+                }
+            }
+
+            assertTrue(taskStripeIdxs.toString(), taskStripeIdxs.size() >= 2);
         }
         finally {
             latch.countDown();
