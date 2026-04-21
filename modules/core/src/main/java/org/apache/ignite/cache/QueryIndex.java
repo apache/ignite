@@ -22,8 +22,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Contains list of fields to be indexed. It is possible to provide field name
@@ -31,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * the list can be provided as following {@code (id, name asc, age desc)}.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class QueryIndex implements Serializable {
+public class QueryIndex implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,17 +44,21 @@ public class QueryIndex implements Serializable {
     public static final int DFLT_INLINE_SIZE = -1;
 
     /** Index name. */
-    private String name;
+    @Order(0)
+    String name;
 
     /** */
     @GridToStringInclude
-    private LinkedHashMap<String, Boolean> fields;
+    @Order(1)
+    LinkedHashMap<String, Boolean> fields;
 
     /** */
-    private QueryIndexType type = DFLT_IDX_TYP;
+    @Order(2)
+    QueryIndexType type = DFLT_IDX_TYP;
 
     /** */
-    private int inlineSize = DFLT_INLINE_SIZE;
+    @Order(3)
+    int inlineSize = DFLT_INLINE_SIZE;
 
     /**
      * Creates an empty index. Should be populated via setters.

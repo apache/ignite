@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,7 +38,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** Index. */
     @GridToStringInclude
     @Order(1)
-    QueryIndexMessage idxMsg;
+    QueryIndex idx;
 
     /** Ignore operation if index exists. */
     @Order(2)
@@ -68,14 +67,14 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
-        this.idxMsg = new QueryIndexMessage(idx);
+        this.idx = idx;
         this.ifNotExists = ifNotExists;
         this.parallel = parallel;
     }
 
     /** {@inheritDoc} */
     @Override public String indexName() {
-        return QueryUtils.indexName(tblName, idxMsg.name, idxMsg.fields);
+        return QueryUtils.indexName(tblName, idx);
     }
 
     /**
@@ -89,7 +88,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      * @return Index params.
      */
     public QueryIndex index() {
-        return QueryIndexMessage.queryIndex(idxMsg);
+        return idx;
     }
 
     /**
