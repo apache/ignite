@@ -3289,21 +3289,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (clientMsgWorkers.isEmpty())
                     return;
 
-                byte[] msgBytes = null;
+                byte[] msgBytes;
 
-                if (!(msg instanceof TcpDiscoveryNodeAddedMessage)) {
-                    try {
-                        msgBytes = clientMsgSer.serializeMessage(msg);
-                    }
-                    catch (IgniteCheckedException | IOException e) {
-                        U.error(log, "Failed to serialize message: " + msg, e);
+                try {
+                    msgBytes = clientMsgSer.serializeMessage(msg);
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    U.error(log, "Failed to serialize message: " + msg, e);
 
-                        return;
-                    }
+                    return;
                 }
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     TcpDiscoveryAbstractMessage msg0 = msg;
+                    byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
@@ -3312,10 +3311,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+
+                            try {
+                                msgBytes0 = clientMsgSer.serializeMessage(msg0);
+                            }
+                            catch (IgniteCheckedException | IOException e) {
+                                U.error(log, "Failed to serialize message: " + msg0, e);
+
+                                return;
+                            }
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes);
+                    clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
         }

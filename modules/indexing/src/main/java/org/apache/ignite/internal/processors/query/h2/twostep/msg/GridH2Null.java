@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.Order;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -28,10 +27,6 @@ import org.h2.value.ValueNull;
 public class GridH2Null extends GridH2ValueMessage {
     /** */
     public static GridH2Null INSTANCE = new GridH2Null();
-
-    /** Dummy field to use codegen serializer. */
-    @Order(0)
-    byte dummy;
 
     /**
      * Disallow new instance creation.
@@ -44,7 +39,6 @@ public class GridH2Null extends GridH2ValueMessage {
     @Override public Value value(GridKernalContext ctx) {
         return ValueNull.INSTANCE;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

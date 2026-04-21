@@ -151,7 +151,7 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sends custom message across the ring.
      * @param msg Custom message.
-     * @throws IgniteException if failed to sent the event message.
+     * @throws IgniteException If failed to send the event message.
      */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 

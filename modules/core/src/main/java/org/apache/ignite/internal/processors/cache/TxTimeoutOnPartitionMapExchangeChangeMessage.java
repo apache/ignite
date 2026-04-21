@@ -22,16 +22,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Discovery message for changing transaction timeout on partition map exchange.
  */
-public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id;
@@ -119,5 +115,4 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
     @Override public String toString() {
         return S.toString(TxTimeoutOnPartitionMapExchangeChangeMessage.class, this);
     }
-
 }

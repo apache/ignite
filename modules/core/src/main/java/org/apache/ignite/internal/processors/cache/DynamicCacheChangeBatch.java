@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -33,16 +34,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache change batch.
  */
 public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Discovery custom message ID. */
     @Order(0)
     IgniteUuid id;
@@ -186,7 +183,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Marshall
         if (requestsBytes != null)
             reqs = U.unmarshal(marsh, requestsBytes, clsLdr);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
