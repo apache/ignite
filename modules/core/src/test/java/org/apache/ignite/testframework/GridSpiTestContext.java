@@ -554,7 +554,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk(),
+            factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), 
                 U.gridClassLoader())});
 
         return factory;

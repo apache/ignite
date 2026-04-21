@@ -22,7 +22,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * When it completes a pass around the cluster ring with no conflicts observed,
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
-public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
+public class MappingProposedMessage implements DiscoveryCustomMessage {
     /** */
     enum ProposalStatus {
         /** */
@@ -44,9 +43,6 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
         /** */
         DUPLICATED
     }
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     @Order(0)
@@ -141,7 +137,6 @@ public class MappingProposedMessage implements DiscoveryCustomMessage, Message {
     String conflictingClassName() {
         return conflictingClsName;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

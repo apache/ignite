@@ -26,9 +26,6 @@ import org.jetbrains.annotations.NotNull;
  */
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustomEventMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Default constructor.
      */
@@ -43,5 +40,4 @@ public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustom
     public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg) {
         super(creatorNodeId, msg);
     }
-
 }

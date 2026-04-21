@@ -27,9 +27,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 
 /** Snapshot operation start message. */
 public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperationRequest> implements SnapshotDiscoveryMessage {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
     /** */
     @Order(0)
     boolean needExchange;
@@ -58,7 +55,6 @@ public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperation
     @Override public boolean needAssignPartitions() {
         return false;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

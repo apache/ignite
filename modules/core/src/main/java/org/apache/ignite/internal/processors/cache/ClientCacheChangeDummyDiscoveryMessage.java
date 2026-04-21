@@ -38,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
 public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartitionExchangeWorkerTask
     implements DiscoveryCustomMessage, MarshallableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     UUID reqId;
 
@@ -130,7 +127,6 @@ public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartiti
         if (startRequestsBytes != null)
             startReqs = U.unmarshal(marsh, startRequestsBytes, clsLdr);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

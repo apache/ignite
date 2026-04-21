@@ -36,17 +36,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents discovery message that is used to provide information about dynamic cache start failure.
  */
-public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     /** Cache names. */
     @GridToStringInclude
     @Order(0)
@@ -66,7 +62,7 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
     Map<UUID, ErrorMessage> exchangeErrors;
 
     /** Actions to be done to rollback changes done before the exchange failure. */
-    private transient ExchangeActions exchangeRollbackActions;
+    private ExchangeActions exchangeRollbackActions;
 
     /** Default constructor for {@link MessageFactory}. */
     public ExchangeFailureMessage() {

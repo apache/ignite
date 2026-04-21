@@ -23,7 +23,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,10 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format
  * stored in Ignite caches.
  */
-public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id;

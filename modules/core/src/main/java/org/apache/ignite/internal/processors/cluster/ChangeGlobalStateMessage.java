@@ -41,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Message represent request for change cluster global state.
  */
 public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Custom message ID. */
     @Order(0)
     IgniteUuid id;
@@ -252,7 +249,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Marshal
         if (baselineTopologyBytes != null)
             baselineTopology = U.unmarshal(marsh, baselineTopologyBytes, clsLdr);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

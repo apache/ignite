@@ -23,17 +23,13 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
  */
-public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)
     long order;
@@ -107,7 +103,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
             ? null
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

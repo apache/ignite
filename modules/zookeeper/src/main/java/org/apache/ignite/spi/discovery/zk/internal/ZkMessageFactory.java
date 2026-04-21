@@ -15,25 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */
-public interface ValueMessage extends CalciteMarshalableMessage {
-    /**
-     * @return Wrapped value.
-     */
-    Object value();
-
+public class ZkMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override default void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override default void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        // No-op
+    @Override public void registerAll(MessageFactory factory) {
+        factory.register(400, ZkCommunicationErrorResolveFinishMessage::new, new ZkCommunicationErrorResolveFinishMessageSerializer());
+        factory.register(401, ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
+        factory.register(402, ZkForceNodeFailMessage::new, new ZkForceNodeFailMessageSerializer());
+        factory.register(403, ZkNoServersMessage::new, new ZkNoServersMessageSerializer());
     }
 }

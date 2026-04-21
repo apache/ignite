@@ -1944,14 +1944,14 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
         final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
-        final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
+        final Map<IgniteUuid, Collection<Throwable>> fullErrors = new HashMap<>();
 
         for (ServiceClusterDeploymentResult depRes : msg.results()) {
             final IgniteUuid srvcId = depRes.serviceId();
             final Map<UUID, ServiceSingleNodeDeploymentResult> deps = depRes.results();
 
             final Map<UUID, Integer> top = new HashMap<>();
-            final Collection<byte[]> errors = new ArrayList<>();
+            final Collection<Throwable> errors = new ArrayList<>();
 
             deps.forEach((nodeId, res) -> {
                 int cnt = res.count();
