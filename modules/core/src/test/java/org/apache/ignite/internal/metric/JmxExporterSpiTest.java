@@ -1078,7 +1078,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 int stripeIdx = (int)row.get("stripeIndex");
                 assertEquals(poolName + "-stripe-" + stripeIdx, row.get("threadName"));
 
-                String desc = (String) row.get("description");
+                String desc = (String)row.get("description");
 
                 if (desc.contains(TestRunnable.class.getSimpleName())) {
                     assertEquals(TestRunnable.class.getName(), row.get("taskName"));
