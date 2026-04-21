@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * the list can be provided as following {@code (id, name asc, age desc)}.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class QueryIndex extends QueryIndexMessage implements Serializable {
+public class QueryIndex implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,12 +41,26 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
     /** Default index inline size. */
     public static final int DFLT_INLINE_SIZE = -1;
 
+    /** Delegate */
+    private final QueryIndexMessage impl;
+
+    /**
+     * Creates an index based on the implementation {@code impl}.
+     *
+     * @param delegate Th delegate.
+     */
+    public QueryIndex(QueryIndexMessage delegate) {
+        impl = delegate;
+    }
+
     /**
      * Creates an empty index. Should be populated via setters.
      */
     public QueryIndex() {
-        type = DFLT_IDX_TYP;
-        inlineSize = DFLT_INLINE_SIZE;
+        impl = new QueryIndexMessage();
+
+        impl.type = DFLT_IDX_TYP;
+        impl.inlineSize = DFLT_INLINE_SIZE;
     }
 
     /**
@@ -78,7 +92,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
     public QueryIndex(String field, boolean asc, String name) {
         this(field, QueryIndexType.SORTED, asc);
 
-        this.name = name;
+        impl.name = name;
     }
 
     /**
@@ -102,10 +116,12 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @param asc Ascending flag.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc) {
-        inlineSize = DFLT_INLINE_SIZE;
-        this.type = type;
+        impl = new QueryIndexMessage();
 
-        addField(field, asc);
+        impl.inlineSize = DFLT_INLINE_SIZE;
+        impl.type = type;
+
+        impl.addField(field, asc);
     }
 
     /**
@@ -117,11 +133,13 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @param name Index name.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc, String name) {
-        inlineSize = DFLT_INLINE_SIZE;
-        this.type = type;
-        this.name = name;
+        impl = new QueryIndexMessage();
 
-        addField(field, asc);
+        impl.inlineSize = DFLT_INLINE_SIZE;
+        impl.type = type;
+        impl.name = name;
+
+        impl.addField(field, asc);
     }
 
     /**
@@ -132,11 +150,13 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @param type Index type.
      */
     public QueryIndex(Collection<String> fields, QueryIndexType type) {
-        inlineSize = DFLT_INLINE_SIZE;
-        this.type = type;
+        impl = new QueryIndexMessage();
+
+        impl.inlineSize = DFLT_INLINE_SIZE;
+        impl.type = type;
 
         for (String field : fields)
-            addField(field, true);
+            impl.addField(field, true);
     }
 
     /**
@@ -147,10 +167,12 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @param type Index type.
      */
     public QueryIndex(LinkedHashMap<String, Boolean> fields, QueryIndexType type) {
-        inlineSize = DFLT_INLINE_SIZE;
-        this.type = type;
+        impl = new QueryIndexMessage();
 
-        this.fields = fields;
+        impl.inlineSize = DFLT_INLINE_SIZE;
+        impl.type = type;
+
+        impl.fields = fields;
     }
 
     /**
@@ -159,7 +181,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return Index name.
      */
     public String getName() {
-        return name;
+        return impl.name;
     }
 
     /**
@@ -169,9 +191,18 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryIndex setName(String name) {
-        this.name = name;
+        impl.name = name;
 
         return this;
+    }
+
+    /**
+     * Gets the implementation.
+     *
+     * @return A delegate.
+     */
+    public QueryIndexMessage getDelegate() {
+        return impl;
     }
 
     /**
@@ -180,7 +211,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return Collection of index fields.
      */
     public LinkedHashMap<String, Boolean> getFields() {
-        return fields;
+        return impl.fields;
     }
 
     /**
@@ -190,7 +221,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryIndex setFields(LinkedHashMap<String, Boolean> fields) {
-        this.fields = fields;
+        impl.fields = fields;
 
         return this;
     }
@@ -199,7 +230,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return Gets a collection of field names.
      */
     public Collection<String> getFieldNames() {
-        return fields.keySet();
+        return impl.fields.keySet();
     }
 
     /**
@@ -211,10 +242,10 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryIndex setFieldNames(Collection<String> fields, boolean asc) {
-        this.fields = new LinkedHashMap<>();
+        impl.fields = new LinkedHashMap<>();
 
         for (String field : fields)
-            addField(field, asc);
+            impl.addField(field, asc);
 
         return this;
     }
@@ -225,7 +256,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return Index type.
      */
     public QueryIndexType getIndexType() {
-        return type;
+        return impl.type;
     }
 
     /**
@@ -235,7 +266,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryIndex setIndexType(QueryIndexType type) {
-        this.type = type;
+        impl.type = type;
 
         return this;
     }
@@ -257,7 +288,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return Index inline size in bytes.
      */
     public int getInlineSize() {
-        return inlineSize;
+        return impl.inlineSize;
     }
 
     /**
@@ -278,7 +309,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryIndex setInlineSize(int inlineSize) {
-        this.inlineSize = inlineSize;
+        impl.inlineSize = inlineSize;
 
         return this;
     }
@@ -293,15 +324,15 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
 
         QueryIndex idx = (QueryIndex)o;
 
-        return inlineSize == idx.inlineSize &&
-            Objects.equals(name, idx.name) &&
-            Objects.equals(fields, idx.fields) &&
-            type == idx.type;
+        return getInlineSize() == idx.getInlineSize() &&
+            Objects.equals(getName(), idx.getName()) &&
+            Objects.equals(getFields(), idx.getFields()) &&
+            getIndexType() == idx.getIndexType();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(name, fields, type, inlineSize);
+        return Objects.hash(getName(), getFields(), getIndexType(), getInlineSize());
     }
 
     /** {@inheritDoc} */

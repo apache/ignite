@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -25,7 +26,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Message for {@link QueryIndex}. */
-public class QueryIndexMessage implements Message {
+public class QueryIndexMessage implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Index name. */
     @Order(0)
     public String name;
@@ -44,7 +48,7 @@ public class QueryIndexMessage implements Message {
     public int inlineSize;
 
     /** */
-    protected void addField(String fld, boolean ack) {
+    public void addField(String fld, boolean ack) {
         if (fields == null)
             fields = new LinkedHashMap<>();
 
