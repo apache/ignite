@@ -154,9 +154,8 @@ public class TcpDiscoveryIoSession {
             catch (IgniteException e) {
                 detectSslAlert(b0, b1, in);
 
-                // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
-                // The connection error processing behavior depends on it.
-                throw new IOException("Received unexpected bytes while reading discovery message: " + msgType, e);
+                // 'Invalid message type' should not be lost.
+                throw e;
             }
 
             msgReader.reset();
