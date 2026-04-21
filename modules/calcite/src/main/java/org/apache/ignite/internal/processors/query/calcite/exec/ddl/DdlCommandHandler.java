@@ -425,7 +425,7 @@ public class DdlCommandHandler {
             res = new QueryEntityEx(res).implicitPk(true);
         }
 
-        if (!cmd.wrapValue()) {
+        if (cmd.wrapValue() != null && !cmd.wrapValue()) {
             ColumnDefinition valCol = null;
 
             for (ColumnDefinition col : cmd.columns()) {
