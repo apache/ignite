@@ -33,7 +33,7 @@ public class TpchQueryPlannerTest extends AbstractTpcQueryPlannerTest {
 
     /** {@inheritDoc} */
     @Override public void updateQueryPlan(String queryId, List<String> newPlans) {
-        Path targetDirectory = Path.of("./src/test/resources/tpch/plan");
+        Path targetDirectory = Path.of("./src/test/resources/tpch");
         updateQueryPlan(queryId, targetDirectory, newPlans);
     }
 

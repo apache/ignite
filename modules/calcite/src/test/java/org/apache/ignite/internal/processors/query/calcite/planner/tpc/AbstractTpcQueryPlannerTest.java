@@ -28,13 +28,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import com.google.common.io.CharStreams;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper.sql;
@@ -44,11 +53,20 @@ import static org.apache.logging.log4j.util.Cast.cast;
  * Abstract test class to ensure a planner generates optimal plan for TPC queries.
  */
 public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
-    private static final boolean updatePlan = false;
+    private static final boolean updatePlan = true;
 
     private static final Pattern COSTS_PATTERN = Pattern.compile("\\s+est: \\(rows=\\d+\\)");
 
     private static IgniteEx srv;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true));
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -184,17 +202,20 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     private List<String> queryPlan(String sqlScript) {
         return scriptToQueries(sqlScript).stream().map(qry -> {
-            List<List<?>> explain = sql(srv, "EXPLAIN PLAN FOR " + qry);
+            GridQueryProcessor qryProc = srv.context().query();
 
-            StringBuilder plan = new StringBuilder();
+            CalciteQueryProcessor engine = (CalciteQueryProcessor)qryProc.defaultQueryEngine();
 
-            for (int i = 0; i < explain.size(); i++) {
-                assertEquals(1, explain.get(i).size());
+            Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
 
-                plan.append(explain.get(i).get(0));
+            assertNotNull(schemas);
+
+            try {
+                return RelOptUtil.toString(physicalPlan(plannerCtx(sqlScript, schemas.values(), null)), SqlExplainLevel.ALL_ATTRIBUTES);
             }
-
-            return plan.toString();
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }).collect(Collectors.toList());
     }
 
