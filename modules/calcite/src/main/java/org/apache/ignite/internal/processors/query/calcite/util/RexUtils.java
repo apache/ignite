@@ -930,7 +930,7 @@ public class RexUtils {
                         grpOps.add(call.getOperands().get(i));
                     }
 
-                    groupedOps.add(rexBuilder.makeCall(call.getOperator(), grpOps));
+                    groupedOps.add(grpOps.size() == 1 ? grpOps.get(0) : rexBuilder.makeCall(call.getOperator(), grpOps));
 
                     return rexBuilder.makeCall(call.getOperator(), groupedOps);
                 }
