@@ -36,7 +36,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final QueryIndexType DFLT_IDX_TYPE = QueryIndexType.SORTED;
+    private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
 
     /** Default index inline size. */
     public static final int DFLT_INLINE_SIZE = -1;
@@ -45,7 +45,7 @@ public class QueryIndex extends QueryIndexMessage implements Serializable {
      * Creates an empty index. Should be populated via setters.
      */
     public QueryIndex() {
-        type = DFLT_IDX_TYPE;
+        type = DFLT_IDX_TYP;
         inlineSize = DFLT_INLINE_SIZE;
     }
 
