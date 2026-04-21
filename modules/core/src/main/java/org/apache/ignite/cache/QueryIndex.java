@@ -22,10 +22,8 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Contains list of fields to be indexed. It is possible to provide field name
@@ -33,38 +31,22 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * the list can be provided as following {@code (id, name asc, age desc)}.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class QueryIndex implements Message, Serializable {
+public class QueryIndex extends QueryIndexMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
+    private static final QueryIndexType DFLT_IDX_TYPE = QueryIndexType.SORTED;
 
     /** Default index inline size. */
     public static final int DFLT_INLINE_SIZE = -1;
-
-    /** Index name. */
-    @Order(0)
-    String name;
-
-    /** */
-    @GridToStringInclude
-    @Order(1)
-    LinkedHashMap<String, Boolean> fields;
-
-    /** */
-    @Order(2)
-    QueryIndexType type = DFLT_IDX_TYP;
-
-    /** */
-    @Order(3)
-    int inlineSize = DFLT_INLINE_SIZE;
 
     /**
      * Creates an empty index. Should be populated via setters.
      */
     public QueryIndex() {
-        // Empty constructor.
+        type = DFLT_IDX_TYPE;
+        inlineSize = DFLT_INLINE_SIZE;
     }
 
     /**
@@ -120,10 +102,10 @@ public class QueryIndex implements Message, Serializable {
      * @param asc Ascending flag.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc) {
-        fields = new LinkedHashMap<>();
-        fields.put(field, asc);
-
+        inlineSize = DFLT_INLINE_SIZE;
         this.type = type;
+
+        addField(field, asc);
     }
 
     /**
@@ -135,11 +117,11 @@ public class QueryIndex implements Message, Serializable {
      * @param name Index name.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc, String name) {
-        fields = new LinkedHashMap<>();
-        fields.put(field, asc);
-
+        inlineSize = DFLT_INLINE_SIZE;
         this.type = type;
         this.name = name;
+
+        addField(field, asc);
     }
 
     /**
@@ -150,12 +132,11 @@ public class QueryIndex implements Message, Serializable {
      * @param type Index type.
      */
     public QueryIndex(Collection<String> fields, QueryIndexType type) {
-        this.fields = new LinkedHashMap<>();
+        inlineSize = DFLT_INLINE_SIZE;
+        this.type = type;
 
         for (String field : fields)
-            this.fields.put(field, true);
-
-        this.type = type;
+            addField(field, true);
     }
 
     /**
@@ -166,8 +147,10 @@ public class QueryIndex implements Message, Serializable {
      * @param type Index type.
      */
     public QueryIndex(LinkedHashMap<String, Boolean> fields, QueryIndexType type) {
-        this.fields = fields;
+        inlineSize = DFLT_INLINE_SIZE;
         this.type = type;
+
+        this.fields = fields;
     }
 
     /**
@@ -231,7 +214,7 @@ public class QueryIndex implements Message, Serializable {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
-            this.fields.put(field, asc);
+            addField(field, asc);
 
         return this;
     }
