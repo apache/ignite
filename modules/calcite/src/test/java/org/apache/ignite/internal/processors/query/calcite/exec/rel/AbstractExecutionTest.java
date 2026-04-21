@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlocki
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
@@ -389,23 +388,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(UUID nodeId, CalciteMessage msg) {
+        @Override public void send(UUID nodeId, Message msg) {
             mgr.send(localNodeId(), nodeId, msg);
         }
 
         /** {@inheritDoc} */
         @Override public boolean alive(UUID nodeId) {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareMarshal(Message msg) {
-            // No-op;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareUnmarshal(Message msg) {
-            // No-op;
         }
     }
 

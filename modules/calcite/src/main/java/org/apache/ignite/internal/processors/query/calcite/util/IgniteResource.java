@@ -78,6 +78,10 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> unsupportedClause(String value);
 
     /** */
+    @Resources.BaseMessage("Unsupported join type ''{0}''")
+    Resources.ExInst<SqlValidatorException> unsupportedJoinType(String value);
+
+    /** */
     @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
 }

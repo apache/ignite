@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,10 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * <p/>
  * Contains collection of {@link ServiceClusterDeploymentResult}.
  */
-public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessage {
     /** Unique custom message ID. */
     @Order(0)
     IgniteUuid id;

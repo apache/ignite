@@ -84,6 +84,7 @@ if [ "${version}" -ge 11 ] ; then
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
         --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
+        --add-opens=java.logging/java.util.logging=ALL-UNNAMED \
         --illegal-access=permit \
         ${JVM_OPTS}"
 fi

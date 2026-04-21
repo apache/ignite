@@ -15,19 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.extensions.communication;
+package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** A {@link Message} which still requires external custom pre-marshalling and post-unmarshalling. */
-public interface MarshallableMessage extends Message {
-    /** @param marsh External custom marshaller. */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException;
+/** A Calcite engine related message which requires marshalling with context. */
+public interface CalciteContextMarshallableMessage extends Message {
+    /**
+     * Prepares the message before sending.
+     *
+     * @param ctx Cache shared context.
+     */
+    void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 
     /**
-     * @param marsh External custom marshaller.
-     * @param clsLdr External class loader to post-unmarshall.
+     * Prepares the message before processing.
+     *
+     * @param ctx Cache shared context.
+     * @param clsLdr Class loader.
      */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;
+    void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException;
 }

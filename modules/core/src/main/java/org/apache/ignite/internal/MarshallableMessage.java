@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Index row filter accepting current entry.
- */
-public interface SchemaIndexCacheFilter {
+/** A {@link Message} which still requires external custom pre-marshalling and post-unmarshalling. */
+public interface MarshallableMessage extends Message {
+    /** @param marsh External custom marshaller. */
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException;
+
     /**
-     * @param row Cache data row.
-     * @return {@code True} if row passes the filter.
-     * @throws IgniteCheckedException If failed.
+     * @param marsh External custom marshaller.
+     * @param clsLdr External class loader to post-unmarshall.
      */
-    boolean apply(CacheDataRow row) throws IgniteCheckedException;
+    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;
 }

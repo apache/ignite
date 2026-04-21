@@ -19,10 +19,10 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -30,9 +30,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** Custom message wrapper with ID of security subject that initiated the current message. */
 public class SecurityAwareCustomMessageWrapper implements DiscoverySpiCustomMessage, MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Security subject ID. */
     @Order(0)
     UUID secSubjId;
@@ -92,7 +89,6 @@ public class SecurityAwareCustomMessageWrapper implements DiscoverySpiCustomMess
 
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }
-
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {

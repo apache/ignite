@@ -26,17 +26,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Service change batch request discovery message.
  */
-public class ServiceChangeBatchRequest implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
     /** Unique custom message ID. */
     @Order(0)
     IgniteUuid id;
