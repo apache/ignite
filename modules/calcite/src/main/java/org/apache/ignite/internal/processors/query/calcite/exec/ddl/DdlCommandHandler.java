@@ -187,17 +187,21 @@ public class DdlCommandHandler {
     private void checkKVWrappedParam(CreateTableCommand cmd) {
         Boolean wrapKey = cmd.wrapKey();
 
-        if (wrapKey != null && !wrapKey) {
-            if (cmd.primaryKeyColumns().size() > 1) {
-                throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when composite primary key exists.",
-                    IgniteQueryErrorCode.PARSING);
-            }
+        if (wrapKey != null) {
+            if (!wrapKey) {
+                if (cmd.primaryKeyColumns().size() > 1) {
+                    throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when composite primary key exists.",
+                        IgniteQueryErrorCode.PARSING);
+                }
 
-            if (!F.isEmpty(cmd.keyTypeName())) {
-                throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when " + KEY_TYPE + " is defined.",
-                    IgniteQueryErrorCode.PARSING);
+                if (!F.isEmpty(cmd.keyTypeName())) {
+                    throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when " + KEY_TYPE + " is defined.",
+                        IgniteQueryErrorCode.PARSING);
+                }
             }
         }
+        else
+            cmd.wrapKey(!F.isEmpty(cmd.keyTypeName()) || cmd.primaryKeyColumns().size() > 1);
 
         Boolean wrapVal = cmd.wrapValue();
 
@@ -212,8 +216,7 @@ public class DdlCommandHandler {
                     IgniteQueryErrorCode.PARSING);
             }
         }
-        else
-            cmd.wrapValue(true); // By default, value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+        // By default, value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
     }
 
     /** */
@@ -348,7 +351,7 @@ public class DdlCommandHandler {
 
     /** */
     private QueryEntity toQueryEntity(CreateTableCommand cmd) {
-        QueryEntity res = new QueryEntity();
+        QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(cmd.tableName());
 
@@ -408,21 +411,30 @@ public class DdlCommandHandler {
             if (!F.isEmpty(cmd.primaryKeyColumns())) {
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
 
-                res = new QueryEntityEx(res).setPreserveKeysOrder(true);
+                res.setPreserveKeysOrder(true);
             }
         }
         else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
             String pkFieldName = cmd.primaryKeyColumns().get(0);
 
-            keyTypeName = res.getFields().get(pkFieldName);
+            if (cmd.wrapKey()) {
+                res.setKeyFields(Set.copyOf(cmd.primaryKeyColumns()));
 
-            res.setKeyFieldName(pkFieldName);
+                keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+                res.setPreserveKeysOrder(true);
+            }
+            else {
+                keyTypeName = res.getFields().get(pkFieldName);
+
+                res.setKeyFieldName(pkFieldName);
+            }
         }
         else {
             // if pk is not explicitly set, we create it ourselves
             keyTypeName = IgniteUuid.class.getName();
 
-            res = new QueryEntityEx(res).implicitPk(true);
+            res.implicitPk(true);
         }
 
         if (cmd.wrapValue() != null && !cmd.wrapValue()) {

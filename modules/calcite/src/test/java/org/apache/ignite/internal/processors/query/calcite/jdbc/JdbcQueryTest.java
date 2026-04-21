@@ -574,9 +574,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
             UUID guid = UUID.randomUUID();
 
-            if (wrapKey)
-                sql += ",key_type=" + (testUuid ? "tkey_guid" : "tkey");
-
             if (wrapVal)
                 sql += ",value_type=" + (testUuid ? "tval_guid" : "tval");
 

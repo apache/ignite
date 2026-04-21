@@ -358,18 +358,18 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         {
             sql("create table my_table (id int, val varchar)");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar)"),
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
                 "Table already exists: MY_TABLE");
 
             //  WRAP_KEY, by default, this flag is set to false
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_key=true\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
                 "Table already exists: MY_TABLE");
 
             // WRAP_VALUE, by default, this flag is set to true
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_value=false\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
                 "Table already exists: MY_TABLE");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
                 "Table already exists: MY_TABLE");
 
             sql("DROP TABLE my_table");
@@ -378,14 +378,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         {
             sql("create table my_table (id int, val varchar) WITH \"wrap_key=true\"");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar)"),
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
                 "Table already exists: MY_TABLE");
 
             // WRAP_VALUE, by default, this flag is set to true
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_value=false\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
                 "Table already exists: MY_TABLE");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
                 "Table already exists: MY_TABLE");
 
             sql("DROP TABLE my_table");
@@ -394,14 +394,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         {
             sql("create table my_table (id int, val varchar) WITH \"wrap_value=false\"");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar)"),
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
                 "Table already exists: MY_TABLE");
 
             // WRAP_VALUE, by default, this flag is set to true
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_key=true\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
                 "Table already exists: MY_TABLE");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
                 "Table already exists: MY_TABLE");
 
             sql("DROP TABLE my_table");
@@ -410,15 +410,15 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         {
             sql("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"");
 
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar)"),
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
                 "Table already exists: MY_TABLE");
 
             // WRAP_VALUE, by default, this flag is set to true
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_key=true\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
                 "Table already exists: MY_TABLE");
 
             // WRAP_VALUE, by default, this flag is set to true
-            assertThrowsSqlException(() -> sql("create table my_table (id int, val varchar) WITH \"wrap_value=false\""),
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
                 "Table already exists: MY_TABLE");
 
             sql("DROP TABLE my_table");
@@ -428,18 +428,18 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** Tests wrap=false is forbidden when key or value has more than one column. */
     @Test
     public void testWrappingAlwaysOnWithComplexKV() {
-        assertThrowsSqlException(() -> sql("create table a (id int, x varchar, c bigint, primary key(id, c)) with \"wrap_key=false\""),
+        assertThrowsSqlException("create table a (id int, x varchar, c bigint, primary key(id, c)) with \"wrap_key=false\"",
             "WRAP_KEY parameter cannot be \"false\" when composite primary key exists.");
 
-        assertThrowsSqlException(() ->
-                sql("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_key=false, key_type=custom\""),
+        assertThrowsSqlException(
+            "create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_key=false, key_type=custom\"",
             "WRAP_KEY parameter cannot be \"false\" when KEY_TYPE is defined.");
 
-        assertThrowsSqlException(() -> sql("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_value=false\""),
+        assertThrowsSqlException("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_value=false\"",
             "WRAP_VALUE parameter cannot be \"false\" with multiple columns.");
 
-        assertThrowsSqlException(() ->
-                sql("create table a (id int, x varchar, primary key(id)) with \"wrap_value=false, value_type=custom\""),
+        assertThrowsSqlException(
+            "create table a (id int, x varchar, primary key(id)) with \"wrap_value=false, value_type=custom\"",
             "WRAP_VALUE parameter cannot be \"false\" when VALUE_TYPE is defined.");
     }
 
@@ -489,57 +489,81 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
-     * Test single column PK without wrapping calculate correct inline size.
+     * Test single column PK with different wrapping params calculate correct inline size.
+     * PK index is always unwrapped if table was created via DDL.
      */
     @Test
-    public void testInlineSizeNoWrap() {
-        try {
-            sql("CREATE TABLE IF NOT EXISTS T ( " +
-                "  id varchar(15), " +
-                "  col varchar(100), " +
-                "  PRIMARY KEY(id) ) ");
-            assertEquals(18, sql(
-                "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+    public void testInlineSizeKeyWrapParam() {
+        String query = "CREATE TABLE IF NOT EXISTS T ( " +
+            "  id varchar(15), " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id) ) ";
+
+        {
+            try {
+                sql(query);
+                assertEquals(18, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS T");
+            }
         }
-        finally {
-            sql("DROP TABLE IF EXISTS T");
+
+        {
+            try {
+                sql(query + "WITH \"wrap_key=true\"");
+                assertEquals(18, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS T");
+            }
+        }
+
+        {
+            try {
+                sql(query + "WITH \"wrap_key=false\"");
+                assertEquals(18, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS T");
+            }
         }
     }
 
     /**
-     * Test single column PK with wrapping calculate correct inline size.
+     * Test two column PK with different wrapping params calculate correct inline size.
+     * PK index is always unwrapped if table was created via DDL.
      */
     @Test
-    public void testInlineSizeWrap() {
-        try {
-            sql("CREATE TABLE IF NOT EXISTS T ( " +
-                "  id varchar(15), " +
-                "  col varchar(100), " +
-                "  PRIMARY KEY(id) )  WITH \"wrap_key=true\"");
-            assertEquals(18, sql(
-                "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+    public void testInlineSizeMultiKeyWrapParam() {
+        String query = "CREATE TABLE IF NOT EXISTS T ( " +
+            "  id varchar(15), " +
+            "  id2 uuid, " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id, id2) )";
+        {
+            try {
+                sql(query);
+                assertEquals(35, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS T");
+            }
         }
-        finally {
-            sql("DROP TABLE IF EXISTS T");
-        }
-    }
 
-    /**
-     * Test two column PK with wrapping calculate correct inline size.
-     */
-    @Test
-    public void testInlineSizeWrapMultiPk() {
-        try {
-            sql("CREATE TABLE IF NOT EXISTS T ( " +
-                "  id varchar(15), " +
-                "  id2 uuid, " +
-                "  col varchar(100), " +
-                "  PRIMARY KEY(id, id2) )  WITH \"wrap_key=true\"");
-            assertEquals(35, sql(
-                "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
-        }
-        finally {
-            sql("DROP TABLE IF EXISTS T");
+        {
+            try {
+                sql(query + "WITH \"wrap_key=true\"");
+                assertEquals(35, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS T");
+            }
         }
     }
 

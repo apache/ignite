@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
@@ -202,12 +201,13 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /**
      * Assert that closure throws an {@link IgniteSQLException}.
      *
-     * @param call Closure.
+     * @param query Sql query.
+     * @param args Arguments for the SQL function call.
      * @param msg Optional message.
      */
     @SuppressWarnings("ThrowableNotThrown")
-    protected static void assertThrowsSqlException(Callable<?> call, @Nullable String msg) {
-        GridTestUtils.assertThrows(log, call, IgniteSQLException.class, msg);
+    protected void assertThrowsSqlException(String query, @Nullable String msg, Object... args) {
+        GridTestUtils.assertThrows(log, () -> sql(query, args), IgniteSQLException.class, msg);
     }
 
     /** */
