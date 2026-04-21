@@ -33,6 +33,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -622,10 +626,19 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
             assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a"), resData);
 
-            Object key = createKeyForWrapTest(testUuid ? guid : 1, wrapKey);
+            IgniteCache<Object, Object> cache = grid(0).cache(QueryUtils.createTableCacheName("PUBLIC", "T"));
+            cache = cache.withKeepBinary();
 
-            Object val = grid(0).cache(QueryUtils.createTableCacheName("PUBLIC", "T")).withKeepBinary().get(key);
+            Iterator<Cache.Entry<Object, Object>> it = cache.iterator();
+            assertTrue(it.hasNext());
 
+            Cache.Entry<Object, Object> cacheItem = it.next();
+
+            Object key = cacheItem.getKey();
+
+            assertEquals(wrapKey, key instanceof BinaryObject);
+
+            Object val = cache.get(key);
             assertNotNull(val);
 
             assertEquals(createValueForWrapTest(testUuid ? guid : "a", wrapVal), val);
@@ -633,18 +646,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         finally {
             stmt.execute("DROP TABLE IF EXISTS T");
         }
-    }
-
-    /**
-     * @param key Key to wrap.
-     * @param wrap Whether key should be wrapped.
-     * @return (optionally wrapped) key.
-     */
-    private Object createKeyForWrapTest(Object key, boolean wrap) {
-        if (!wrap)
-            return key;
-
-        return grid(0).binary().builder(key instanceof UUID ? "tkey_guid" : "tkey").setField("id", key).build();
     }
 
     /**

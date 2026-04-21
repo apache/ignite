@@ -50,7 +50,7 @@ public class CreateTableCommand implements DdlCommand {
     private Boolean wrapKey;
 
     /** Wrap value flag. */
-    private boolean wrapValue = true;
+    private Boolean wrapValue;
 
     /** Name of cache value type. */
     private String valTypeName;
@@ -133,7 +133,7 @@ public class CreateTableCommand implements DdlCommand {
     /**
      * @return wrap_value flag.
      */
-    public boolean wrapValue() {
+    @Nullable public Boolean wrapValue() {
         return wrapValue;
     }
 

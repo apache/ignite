@@ -27,7 +27,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
@@ -445,23 +443,18 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "WRAP_VALUE parameter cannot be \"false\" when VALUE_TYPE is defined.");
     }
 
-    /** */
-    @SuppressWarnings("ThrowableNotThrown")
-    private static void assertThrowsSqlException(Callable<?> call, @Nullable String msg) {
-        GridTestUtils.assertThrows(log, call, IgniteSQLException.class, msg);
-    }
-
     /**
      * Test that {@code ADD COLUMN} fails.
      */
     @Test
     public void testAlterTableFailOnSingleCacheValue() {
-        CacheConfiguration c =
-            new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
-                .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("ints");
+        ccfg
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA);
 
         try {
-            client.getOrCreateCache(c);
+            client.getOrCreateCache(ccfg);
 
             doTestAlterTableOnFlatValue("INTEGER");
         }

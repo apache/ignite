@@ -199,9 +199,9 @@ public class DdlCommandHandler {
             }
         }
 
-        boolean wrapVal = cmd.wrapValue();
+        Boolean wrapVal = cmd.wrapValue();
 
-        if (!wrapVal) {
+        if (wrapVal != null && !wrapVal) {
             if (!cmd.primaryKeyColumns().isEmpty() && cmd.columns().size() - cmd.primaryKeyColumns().size() > 1) {
                 throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" with multiple columns.",
                     IgniteQueryErrorCode.PARSING);
@@ -212,6 +212,8 @@ public class DdlCommandHandler {
                     IgniteQueryErrorCode.PARSING);
             }
         }
+        else
+            cmd.wrapValue(true); // By default, value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
     }
 
     /** */

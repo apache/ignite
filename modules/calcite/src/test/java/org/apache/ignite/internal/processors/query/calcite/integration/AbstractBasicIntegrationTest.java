@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
@@ -32,6 +33,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -48,6 +50,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -174,7 +177,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Asserts that executeSql throws an exception.
+     * Asserts that {@link AbstractBasicIntegrationTest#sql(String, Object...)} throws an exception.
      *
      * @param sql Query.
      * @param cls Exception class.
@@ -182,6 +185,17 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      */
     protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
         assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
+    }
+
+    /**
+     * Assert that closure throws an exception.
+     *
+     * @param call Closure.
+     * @param msg Optional message.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    protected static void assertThrowsSqlException(Callable<?> call, @Nullable String msg) {
+        GridTestUtils.assertThrows(log, call, IgniteSQLException.class, msg);
     }
 
     /** */

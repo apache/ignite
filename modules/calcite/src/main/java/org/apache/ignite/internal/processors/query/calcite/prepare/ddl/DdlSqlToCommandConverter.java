@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -87,13 +86,8 @@ public class DdlSqlToCommandConverter {
     private static final String SIMPLE_PREDICATE = "a simple identifier";
 
     /** Processor that validates a value is a Sql Identifier. */
-    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR = (opt, ctx) -> {
-        SqlNode val = opt.value();
-        if (!(val instanceof SqlIdentifier) || !((SqlIdentifier)val).isSimple())
-            throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
-
-        return ((SqlIdentifier)val).getSimple();
-    };
+    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR =
+        DdlSqlToCommandConverter::paramAsSimpleSqlIdentifier;
 
     /** Processor that validates that value can be parsed as boolean. */
     private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, Boolean> VALUE_IS_BOOL_IDENTIFIER_VALIDATOR =
@@ -102,15 +96,27 @@ public class DdlSqlToCommandConverter {
             if (val instanceof SqlLiteral)
                 return ((SqlLiteral)val).booleanValue();
 
-            if (!(val instanceof SqlIdentifier) || !((SqlIdentifier)val).isSimple())
-                throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
+            String simple = paramAsSimpleSqlIdentifier(opt, ctx);
 
-            String simple = ((SqlIdentifier)val).getSimple().toLowerCase(Locale.ROOT);
-            if (!"true".equals(simple) && !"false".equals(simple))
+            if (!"true".equalsIgnoreCase(simple) && !"false".equalsIgnoreCase(simple))
                 throwOptionParsingException(opt, "Unexpected identifier: " + simple, ctx.query());
 
             return Boolean.valueOf(((SqlIdentifier)val).getSimple());
         };
+
+    /**
+     * Shortcut for validating that option value is a simple identifier.
+     *
+     * @param opt An option to validate.
+     * @param ctx Planning context.
+     * @throws IgniteSQLException In case the param is not a simple identifier.
+     */
+    private static String paramAsSimpleSqlIdentifier(IgniteSqlCreateTableOption opt, PlanningContext ctx) {
+        if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
+            throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
+
+        return ((SqlIdentifier)opt.value()).getSimple();
+    }
 
     /** Processor that unconditionally throws an AssertionException. */
     private static final TableOptionProcessor<Void> UNSUPPORTED_OPTION_PROCESSOR = new TableOptionProcessor<>(
@@ -465,20 +471,6 @@ public class DdlSqlToCommandConverter {
         alterTblCmd.columns(cols);
 
         return alterTblCmd;
-    }
-
-    /**
-     * Short cut for validating that option value is a simple identifier.
-     *
-     * @param opt An option to validate.
-     * @param ctx Planning context.
-     * @throws IgniteSQLException In case the validation was failed.
-     */
-    private String paramIsSqlIdentifierValidator(IgniteSqlCreateTableOption opt, PlanningContext ctx) {
-        if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
-            throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
-
-        return ((SqlIdentifier)opt.value()).getSimple();
     }
 
     /**
