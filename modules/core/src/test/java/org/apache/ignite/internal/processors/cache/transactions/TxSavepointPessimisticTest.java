@@ -107,6 +107,51 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testRollbackToSavepointReleasesLockForPutRemoveEntry() throws Exception {
+        Ignite ignite = startGrid(0);
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite, 1);
+
+        int key = 42;
+
+        CountDownLatch savepointRolledBackLatch = new CountDownLatch(1);
+        CountDownLatch finishFirstTxLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 30_000, 1)) {
+                tx.savepoint("sp");
+
+                // Real client flow: key is created and then removed inside the same tx segment.
+                cache.put(key, 1);
+                cache.remove(key);
+
+                tx.rollbackToSavepoint("sp");
+
+                savepointRolledBackLatch.countDown();
+
+                assertTrue(finishFirstTxLatch.await(10, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+        });
+
+        assertTrue(savepointRolledBackLatch.await(10, TimeUnit.SECONDS));
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 3_000, 0)) {
+            cache.put(key, 22);
+            tx.commit();
+        }
+
+        finishFirstTxLatch.countDown();
+
+        fut.get(10_000);
+
+        assertEquals(Integer.valueOf(22), cache.get(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testOverwriteAndReleaseSavepoint() throws Exception {
         Ignite ignite = startGrid(0);
         IgniteCache<Integer, Integer> cache = transactionalCache(ignite, 1);
@@ -503,6 +548,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 //            defaultCacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
+//                .setCacheMode(CacheMode.REPLICATED)
             .setBackups(backups);
 
         return (IgniteCache<Integer, Integer>)ignite.getOrCreateCache(ccfg);
@@ -602,7 +648,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() -> {
             GridCacheContext<?, ?> cctx = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context();
             for (IgniteInternalTx tx : cctx.tm().activeTransactions()) {
-                if (!nearVer.equals(tx.nearXidVersion()))
+                if (nearVer.equals(tx.nearXidVersion()))
                     return false;
             }
 

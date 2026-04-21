@@ -62,12 +62,12 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
@@ -3251,7 +3251,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return;
 
         Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> nearKeys = new HashMap<>();
-        Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> colocatedKeys = new HashMap<>();
+        Map<GridCacheContext<?, ?>, Collection<KeyCacheObject>> colocatedLocKeys = new HashMap<>();
+        Map<GridCacheContext<?, ?>, Map<UUID, Collection<KeyCacheObject>>> colocatedRmtKeys = new HashMap<>();
 
         for (IgniteTxEntry entry : entries) {
             GridCacheContext<?, ?> cacheCtx = entry.context();
@@ -3261,8 +3262,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             if (cacheCtx.cache().isNear())
                 nearKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
-            else if (cacheCtx.cache().isColocated())
-                colocatedKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
+            else if (cacheCtx.cache().isColocated()) {
+                UUID nodeId = entry.nodeId();
+
+                if (nodeId == null || cctx.localNodeId().equals(nodeId))
+                    colocatedLocKeys.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(entry.key());
+                else {
+                    colocatedRmtKeys
+                        .computeIfAbsent(cacheCtx, k -> new HashMap<>())
+                        .computeIfAbsent(nodeId, k -> new ArrayList<>())
+                        .add(entry.key());
+                }
+            }
         }
 
         for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : nearKeys.entrySet()) {
@@ -3272,7 +3283,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             );
         }
 
-        for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : colocatedKeys.entrySet()) {
+        for (Map.Entry<GridCacheContext<?, ?>, Collection<KeyCacheObject>> e : colocatedLocKeys.entrySet()) {
             e.getKey().dhtTx().removeLocks(
                 cctx.localNodeId(),
                 xidVersion(),
@@ -3282,36 +3293,35 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             );
         }
 
-        for (IgniteTxEntry entry : entries)
-            unlockTxEntryLocally(entry);
-    }
+        for (Map.Entry<GridCacheContext<?, ?>, Map<UUID, Collection<KeyCacheObject>>> byCache : colocatedRmtKeys.entrySet()) {
+            GridCacheContext<?, ?> cacheCtx = byCache.getKey();
 
-    /**
-     * Unlocks entry locally.
-     *
-     * @param txEntry Entry.
-     */
-    private void unlockTxEntryLocally(IgniteTxEntry txEntry) {
-        while (true) {
-            try {
-                GridCacheEntryEx cacheEntry = txEntry.cached();
+            for (Map.Entry<UUID, Collection<KeyCacheObject>> byNode : byCache.getValue().entrySet()) {
+                UUID nodeId = byNode.getKey();
+                Collection<KeyCacheObject> keys = byNode.getValue();
 
-                if (cacheEntry == null || cacheEntry.detached())
-                    return;
+                if (F.isEmpty(keys))
+                    continue;
 
-                if (cacheEntry.candidate(xidVersion()) == null)
-                    return;
+                ClusterNode node = cctx.discovery().node(nodeId);
 
-                cacheEntry.txUnlock(this);
+                if (node == null)
+                    continue;
 
-                return;
-            }
-            catch (GridCacheEntryRemovedException ignored) {
+                GridNearUnlockRequest req = new GridNearUnlockRequest(cacheCtx.cacheId(), keys.size());
+
+                req.version(xidVersion());
+                req.forSavepoint(true);
+
+                for (KeyCacheObject key : keys)
+                    req.addKey(key);
+
                 try {
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
+                    // Best-effort asynchronous unlock.
+                    cacheCtx.io().send(node, req, cacheCtx.ioPolicy());
                 }
-                catch (GridDhtInvalidPartitionException e) {
-                    return;
+                catch (IgniteCheckedException ex) {
+                    U.error(log, "Failed to send savepoint unlock request [node=" + nodeId + ", keys=" + keys + ']', ex);
                 }
             }
         }
