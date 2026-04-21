@@ -53,12 +53,12 @@ public class PartitionHashRecord extends IgniteDataTransferObject implements Mar
     boolean isPrimary;
 
     /** Consistent id. */
-    @Order(value = 2, skipForMessage = true)
+    @Order(value = 2, message = false)
     @GridToStringInclude
     Object consistentId;
 
     /** Bytes of {@link #consistentId}. */
-    @Order(value = 3, skipForDTO = true)
+    @Order(value = 3, dto = false)
     @GridToStringExclude
     byte[] consistentIdBytes;
 
@@ -73,12 +73,12 @@ public class PartitionHashRecord extends IgniteDataTransferObject implements Mar
     int partVerHash;
 
     /** Update counter's state. */
-    @Order(value = 6, skipForMessage = true)
+    @Order(value = 6, message = false)
     @GridToStringInclude
     Object updateCntr;
 
     /** Bytes of {@link #updateCntr}. */
-    @Order(value = 7, skipForDTO = true)
+    @Order(value = 7, dto = false)
     @GridToStringExclude
     byte[] updateCntrBytes;
 

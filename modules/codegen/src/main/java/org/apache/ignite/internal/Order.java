@@ -39,9 +39,9 @@ public @interface Order {
     /** @return Order of the field. */
     int value();
 
-    /** Do not interpret for a Message. */
-    boolean skipForMessage() default false;
+    /** @return {@code True} if do interpret for Message. */
+    boolean message() default true;
 
-    /** Do not interpret for a IgniteDataTransferObject. */
-    boolean skipForDTO() default false;
+    /** @return {@code True} if do interpret for IgniteDataTransferObject. */
+    boolean dto() default true;
 }

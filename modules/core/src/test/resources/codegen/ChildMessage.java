@@ -18,14 +18,12 @@
 package org.apache.ignite.internal;
 
 import java.lang.String;
-import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class ChildMessage extends AbstractMessage {
     @Order(0)
     String str;
 
-    @Order(value = 1, skipForMessage = true)
+    @Order(value = 1, message = false)
     boolean skipped;
 
     @Order(2)

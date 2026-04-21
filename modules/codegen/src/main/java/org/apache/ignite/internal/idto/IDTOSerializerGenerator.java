@@ -736,7 +736,7 @@ public class IDTOSerializerGenerator {
                 throw new IllegalStateException("@Order not found: " + i);
         }
 
-        return flds.values().stream().filter(e -> !e.getAnnotation(Order.class).skipForDTO()).collect(Collectors.toList());
+        return flds.values().stream().filter(e -> e.getAnnotation(Order.class).dto()).collect(Collectors.toList());
     }
 
     /** @return FQN of {@code comp}. */

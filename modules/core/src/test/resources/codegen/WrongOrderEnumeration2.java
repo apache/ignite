@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public class WrongOrderEnumeration2 implements Message {
     @Order(0)
     public int id;
 
-    @Order(value = 2, skipForMessage = true)
+    @Order(value = 2, message = false)
     public String str;
 
     public int id() {
