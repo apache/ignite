@@ -118,7 +118,7 @@ class _DCServiceManager:
         self._closed = True
 
         for svc in self._svc_by_svc_name.values():
-            svc.stop(force_stop=True)
+            svc.stop(force_stop=False)
 
         self._restore_cluster_network()
 
@@ -133,7 +133,8 @@ class _DCServiceManager:
         return self.context.logger
 
     def start_ignite_service(self, context, ignite_cfg, num_nodes, svc_name, dc_idx):
-        svc = IgniteService(context, ignite_cfg, num_nodes=num_nodes, jvm_opts=[f"-DIGNITE_DATA_CENTER_ID=DC{dc_idx}"])
+        svc = IgniteService(context, ignite_cfg, num_nodes=num_nodes,
+                            jvm_opts=[f"-DIGNITE_DATA_CENTER_ID=DC{dc_idx}", "-DIGNITE_NO_SHUTDOWN_HOOK=true"])
 
         return self.start_service(svc_name=svc_name, dc_idx=dc_idx, svc=svc)
 

@@ -17,27 +17,24 @@
 
 package org.apache.ignite.internal.ducktest.tests.multi_dc;
 
-import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.BasicRateLimiter;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Application continuously writes to cache with fixed rps to update binary metadata and
  * trigger discovery messages within cluster.
  */
 public class BinaryMetadataUpdatesApplication extends IgniteAwareApplication {
+    /** */
+    private static final String TEST_CACHE_NAME = "replicated-cache";
+
     /** */
     private static final int RANDOM_INTEGER_BOUND = 1_000;
 
@@ -50,104 +47,57 @@ public class BinaryMetadataUpdatesApplication extends IgniteAwareApplication {
     /** */
     private static final String BINARY_TYPE_NAME = "TestBinaryType";
 
-    /** */
-    private final Queue<Object> binObjHolder = new ConcurrentLinkedQueue<>();
-
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
-        String cacheName = jsonNode.get("cacheName").asText();
-
-        int threadCnt = Optional.ofNullable(jsonNode.get("threadCnt"))
-            .map(JsonNode::asInt)
-            .orElse(1);
-
-        int rps = Optional.ofNullable(jsonNode.get("rps"))
-            .map(JsonNode::asInt)
-            .orElse(100);
-
-        int objCnt = Optional.ofNullable(jsonNode.get("objectCnt"))
-            .map(JsonNode::asInt)
-            .orElse(100);
-
-        log.info("Test props: cacheName={}, threadCnt={}, rps={}", cacheName, threadCnt, rps);
-
         markInitialized();
 
-        int putCnt = loadUntilTerminated(threadCnt, rps, objCnt, cacheName);
+        int putCnt = loadUntilTerminated();
 
-        checkData(cacheName, putCnt);
-
-        log.info("Data check is successful");
+        checkData(putCnt);
 
         markFinished();
     }
 
     /** */
-    private int loadUntilTerminated(int threadCnt, int rps, int objCnt, String cacheName) throws InterruptedException {
-        IgniteCache<Object, Object> cache = ignite.cache(cacheName).withKeepBinary();
+    private int loadUntilTerminated() {
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(getCacheConfiguration());
+        cache = cache.withKeepBinary();
 
-        ExecutorService pool = Executors.newFixedThreadPool(threadCnt);
-        BasicRateLimiter limiter = new BasicRateLimiter(rps);
-
-        AtomicInteger idx = new AtomicInteger(0);
-        CountDownLatch latch = new CountDownLatch(threadCnt);
+        int key = 0;
 
         long startNs = System.nanoTime();
 
-        for (int t = 0; t < threadCnt; t++) {
-            pool.submit(() -> {
-                while (!terminated()) {
-                    int key = idx.get();
+        while (!terminated()) {
+            Object val = getBinaryObject(key);
 
-                    if (key >= objCnt)
-                        break;
+            cache.put(key, val);
 
-                    if (idx.compareAndSet(key, key + 1)) {
-                        Object val = getBinaryObject(key);
-
-                        try {
-                            limiter.acquire(1);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                        cache.put(key, val);
-                    }
-                }
-
-                latch.countDown();
-            });
+            key++;
         }
-
-        latch.await();
 
         long endNs = System.nanoTime();
 
-        pool.shutdown();
-
         double durationSec = (endNs - startNs) / 1_000_000_000.0;
-        double actualRps = idx.get() / durationSec;
+        double rps = key / durationSec;
 
-        log.info("Data load is finished [putCnt={}, rps={}]", idx.get(), actualRps);
+        log.info("Data load is finished [putCnt={}, rps={}]", key, rps);
 
-        recordResult("putCnt", idx.get());
-        recordResult("rps", (long)actualRps);
+        recordResult("putCnt", key);
+        recordResult("rps", (long)rps);
 
-        while (!terminated())
-            Thread.sleep(100);
-
-        return idx.get();
+        return key;
     }
 
     /** */
-    private void checkData(String cacheName, int putCnt) {
-        IgniteCache<Object, Object> cache = ignite.cache(cacheName).withKeepBinary();
+    private void checkData(int putCnt) {
+        IgniteCache<Object, Object> cache = ignite.cache(TEST_CACHE_NAME).withKeepBinary();
 
         assert cache.size() == putCnt : "Unexpected cache size [putCnt=" + putCnt + ", size=" + cache.size() + "]";
 
         for (int i = 0; i < putCnt; i++)
             assert cache.get(i) != null : "Expected value is absent [key=" + i + "]";
+
+        log.info("Data check is successful");
     }
 
     /** */
@@ -198,5 +148,10 @@ public class BinaryMetadataUpdatesApplication extends IgniteAwareApplication {
         byte[] res = new byte[RANDOM_BYTE_ARRAY_SIZE];
         ThreadLocalRandom.current().nextBytes(res);
         return res;
+    }
+
+    /** */
+    private static CacheConfiguration<Object, Object> getCacheConfiguration() {
+        return new CacheConfiguration<>(TEST_CACHE_NAME).setCacheMode(REPLICATED);
     }
 }

@@ -17,7 +17,6 @@ from ducktape.mark import matrix
 
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_services
 from ignitetest.services.utils.multi_dc.dc_service_manager import CrossDCConfigStore, CrossDCNetworkEmulatorConfig, \
     DCService
@@ -25,15 +24,14 @@ from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
-TEST_CACHE_NAME = "replicated-cache"
 JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.multi_dc.BinaryMetadataUpdatesApplication"
 
 
 class MultiDCTest(IgniteTest):
     @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(delay_ms=[10], thread_cnt=[10], rps=[100], object_cnt=[1_000])
-    def test_binary_meta_update_on_crd_change(self, ignite_version, delay_ms, thread_cnt, rps, object_cnt):
+    @matrix(delay_ms=[5])
+    def test_binary_meta_update_on_crd_change(self, ignite_version, delay_ms):
         """
         Test binary meta update on coordinator change
         """
@@ -41,7 +39,7 @@ class MultiDCTest(IgniteTest):
         context = self.test_context
 
         with DCService.scope(context, cross_dc_cfg_store) as dc_mgr:
-            ign_cfg = self._get_ignite_cfg(ignite_version=ignite_version)
+            ign_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version), peer_class_loading_enabled=False)
 
             svc_1 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=1, svc_name="node_1", dc_idx=1)
             svc_2 = dc_mgr.start_ignite_service(context, ign_cfg, num_nodes=1, svc_name="node_2", dc_idx=2)
@@ -53,7 +51,8 @@ class MultiDCTest(IgniteTest):
                 discovery_spi=from_ignite_services([svc_1, svc_2, svc_3, svc_4])
             )
 
-            cli = self._get_cache_metadata_update_app(client_cfg, thread_cnt, rps, object_cnt)
+            cli = IgniteApplicationService(self.test_context, client_cfg, java_class_name=JAVA_CLIENT_CLASS_NAME,
+                                           num_nodes=1)
 
             cli.start()
 
@@ -61,7 +60,7 @@ class MultiDCTest(IgniteTest):
             dc_mgr.start_service(svc_name="node_3", dc_idx=1, svc=svc_3)
 
             dc_mgr.stop_service(svc_name="node_4")
-            dc_mgr.start_service(svc_name="node_4", dc_idx=1, svc=svc_3)
+            dc_mgr.start_service(svc_name="node_4", dc_idx=1, svc=svc_4)
 
             cur_crd_disco_info = svc_1.nodes[0].discovery_info()
 
@@ -80,46 +79,16 @@ class MultiDCTest(IgniteTest):
             cli.stop()
 
             put_cnt = int(cli.extract_result("putCnt"))
-            actual_rps = int(cli.extract_result("rps"))
+            rps = int(cli.extract_result("rps"))
+
+            self.logger.debug(f"Resulting load: {rps} RPS, {put_cnt} objects stored")
 
             assert put_cnt > 0
-            assert actual_rps > 0
-
-            if put_cnt == object_cnt:
-                self.logger.warn(f"Load completed exactly at expected object [count={object_cnt}]. Consider adjusting "
-                                 f"test parameters to extend load duration.")
-
-            if actual_rps < rps:
-                self.logger.warning(f"Actual RPS [{actual_rps}] is lower than expected [{rps}]. "
-                                    f"Consider adjusting test parameters or investigating performance issues.")
+            assert rps > 0
 
             dc_mgr.stop_service(svc_name="node_2")
             dc_mgr.stop_service(svc_name="node_3")
             dc_mgr.stop_service(svc_name="node_4")
-
-    def _get_cache_metadata_update_app(self, client_config, thread_cnt, rps, object_cnt):
-        app_params = {
-            "cacheName": TEST_CACHE_NAME,
-            "threadCnt": thread_cnt,
-            "rps": rps,
-            "objectCnt": object_cnt
-        }
-
-        return IgniteApplicationService(self.test_context, client_config, java_class_name=JAVA_CLIENT_CLASS_NAME,
-                                        num_nodes=1, params=app_params)
-
-    @staticmethod
-    def _get_ignite_cfg(ignite_version):
-        """
-        Ignite service configuration
-        """
-        cache_cfg = CacheConfiguration(name=TEST_CACHE_NAME, backups=2)
-
-        return IgniteConfiguration(
-                version=IgniteVersion(ignite_version),
-                peer_class_loading_enabled=False,
-                caches=[cache_cfg]
-            )
 
     @staticmethod
     def _get_cross_dc_cfg_store(delay_ms):
