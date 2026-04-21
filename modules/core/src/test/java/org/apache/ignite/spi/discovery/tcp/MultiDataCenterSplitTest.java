@@ -165,7 +165,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         // in some time before the connection recovery timeout and before corner node gets segmented; 2 - corner node
         // is able to traverse entire remote DC in the connection recovery timeout;
         LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping of the remote DCs. " +
-            "Nodes number to ping: " + srvrsPerDc).times(2).build();
+            "Nodes number to ping: " + srvrsPerDc * (dcCnt - 1)).times(2).build();
 
         LogListener logLsnr10 = LogListener.matches("Half or less of the following remote DCs responded. " +
             "Considering DCs '" + DC_ID_1 + "' unavailable").times(1).build();
@@ -195,11 +195,14 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         for (ClusterNode n : grid(0).cluster().nodes())
             discoSpi(G.ignite(n.id())).block = true;
 
-        checkDcSplited(DC_ID_0);
-        checkDcSplited(DC_ID_1);
+        checkDcSplited(DC_ID_1, null);
 
-        if (dcCnt == 3)
-            checkDcSplited(DC_ID_2);
+        if (dcCnt == 2)
+            checkDcSplited(DC_ID_0, null);
+        else {
+            checkDcSplited(DC_ID_0, DC_ID_2);
+            checkDcSplited(DC_ID_2, DC_ID_0);
+        }
 
         // The connection recovery should take <= failureDetectionTimeout * 2.
         long testTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
@@ -326,8 +329,10 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         return new HashSet<>(list);
     }
 
-    /** */
-    private void checkDcSplited(String dcId) throws IgniteInterruptedCheckedException {
+    /** Check whether datacenter {@code dcId} is separated. If {@code otherAliveDc} is not {@code null}, these DCs are expected joined. */
+    private void checkDcSplited(String dcId, @Nullable String otherAliveDc) throws IgniteInterruptedCheckedException {
+        assert !dcId.equals(otherAliveDc);
+
         if (log.isInfoEnabled())
             log.info("Awaiting for DC is splitted, DC id: " + dcId + '.');
 
@@ -336,23 +341,21 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
                 if (!grid.cluster().localNode().dataCenterId().equals(dcId))
                     continue;
 
-                int inDcCnt = 0;
-                int totalCnt = 0;
+                if (grid.cluster().nodes().size() != srvrsPerDc * (otherAliveDc == null ? 1 : 2))
+                    return false;
+
+                int curDcCnt = 0;
+                int otherAliveCnt = 0;
 
                 for (ClusterNode n : grid.cluster().nodes()) {
                     if (n.dataCenterId().equals(dcId))
-                        ++inDcCnt;
+                        ++curDcCnt;
 
-                    if (++totalCnt >= srvrsPerDc * (dcCnt - 1))
-                        return false;
+                    if (otherAliveDc != null && n.dataCenterId().equals(otherAliveDc))
+                        ++otherAliveCnt;
                 }
 
-                if (log.isInfoEnabled()) {
-                    log.info("Awaiting for DC is splitted, grid: " + grid.name() + ". DC's '" + dcId + "' node cnt: "
-                        + inDcCnt + ", total nodes cnt: " + totalCnt + '.');
-                }
-
-                if (inDcCnt != srvrsPerDc * (dcCnt  - 1) || totalCnt != srvrsPerDc * dcCnt )
+                if (curDcCnt != srvrsPerDc || (otherAliveDc != null && otherAliveCnt != srvrsPerDc))
                     return false;
             }
 

@@ -3500,7 +3500,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // If want a forced connection, we set the change-topology node flag to current node id.
                                 if (sndState != null) {
-                                    if (Boolean.TRUE.equals(sndState.unavailableDCs))
+                                    if (!F.isEmpty(sndState.unavailableDCs))
                                         hndMsg.previousNodeId(locNodeId);
                                     else if (!sndState.isStartingPoint())
                                         hndMsg.previousNodeId(ring.previousNodeOf(next).id());
@@ -3861,7 +3861,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryNode next0 = next;
 
-                        if (sndState.unavailableDCs == null && allRemoteDCsTraversed(sndState, failedNodes, next)) {
+                        if (allRemoteDCsTraversed(sndState, failedNodes, next)) {
                             if (log.isInfoEnabled()) {
                                 log.info("During the connection recovery, all the remote DCs have been traversed. " +
                                     "Failed to connect to any. Due to the remote DC unavailability policy, current node " +
@@ -4154,10 +4154,22 @@ class ServerImpl extends TcpDiscoveryImpl {
         ) {
             assert connRecoverState.unavailableDCs == null : "Forced DC skipping should not be requested yet.";
 
+            log.error("TEST | skipDcs on " + locNode.order() + ": " + String.join(", ", failedDCs));
+
             connRecoverState.stopRemoteDcPing();
 
             connRecoverState.unavailableDCs = failedDCs;
-            markOthersDcNodesFailed(failedNodes);
+
+            for (TcpDiscoveryNode n : ring.serverNodes()) {
+                if (!failedDCs.contains(n.dataCenterId()))
+                    continue;
+
+                assert !locNode.equals(n);
+
+                if (!failedNodes.contains(n))
+                    failedNodes.add(n);
+            }
+
             newNextNode(null);
 
             // Let's keep the recovery state consistent.
@@ -6575,7 +6587,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /** @return {@code True} if we should close the ring to current DC. */
+    /** @return {@code True} if we've tries all the other nodes and should close the ring to current DC. */
     private boolean allRemoteDCsTraversed(
         @Nullable CrossRingMessageSendState connRecoverState,
         Collection<TcpDiscoveryNode> failedNodes,
@@ -6593,21 +6605,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         String nextNextDcId = nextNext == null ? null : nextNext.dataCenterId();
 
         // We just met local DC again or even we met a third DC.
-        return nextNextDcId == null || locDcId.equals(nextNextDcId)
-            || (!locDcId.equals(nextNextDcId) && !nextTried.dataCenterId().equals(nextNextDcId));
-    }
-
-    /** */
-    private void markOthersDcNodesFailed(Collection<TcpDiscoveryNode> failedNodes) {
-        assert locNode != null;
-        assert locNode.dataCenterId() != null;
-
-        for (TcpDiscoveryNode n : ring.serverNodes()) {
-            if (locNode.dataCenterId().equals(n.dataCenterId()))
-                continue;
-
-            failedNodes.add(n);
-        }
+        return nextNextDcId == null || locDcId.equals(nextNextDcId);
     }
 
     /**
