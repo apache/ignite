@@ -425,7 +425,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
-        withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
+        withSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -634,7 +634,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
         withNoSchema(CacheConfigurationEnrichment.class);
-        withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
+        withSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
@@ -649,9 +649,14 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(cls, schemaAwareMarsh, dftlClsLdr);
     }
 
-    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
+    /** Registers message using {@link #dfltMarsh} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
         register(cls, dfltMarsh, resolvedClsLdr);
+    }
+
+    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
+    private <T extends Message> void withSchemaResolvedClassLoader(Class<T> cls) {
+        register(cls, schemaAwareMarsh, resolvedClsLdr);
     }
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
