@@ -348,9 +348,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
     /** */
-    private MessageFactory msgFactory;
-
-    /** */
     private MessageFormatter formatter;
 
     /** Stopping flag. */
@@ -394,9 +391,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @return Message factory.
      */
     public MessageFactory messageFactory() {
-        assert msgFactory != null;
+        assert ctx.messageFactory() != null;
 
-        return msgFactory;
+        return ctx.messageFactory();
     }
 
     /**
@@ -437,8 +434,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 }
             };
         }
-
-        msgFactory = ctx.messageFactory();
 
         CommunicationSpi<Object> spi = getSpi();
 

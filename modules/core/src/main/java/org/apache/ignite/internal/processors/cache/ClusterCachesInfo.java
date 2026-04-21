@@ -1139,7 +1139,7 @@ public class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
-            req.encryptionKeyId(),
+            req.encryptionKeyId() < 0 ? null : req.encryptionKeyId(),
             req.cacheConfigurationEnrichment()
         );
 
