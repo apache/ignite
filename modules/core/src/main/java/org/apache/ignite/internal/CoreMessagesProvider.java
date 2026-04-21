@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -537,7 +537,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(SchemaProposeDiscoveryMessage.class);
         withNoSchema(SchemaFinishDiscoveryMessage.class);
         withNoSchema(QueryField.class);
-        withNoSchema(QueryIndex.class);
+        withNoSchema(QueryIndexMessage.class);
         withNoSchema(GridCacheSqlQuery.class);
         withSchema(GridCacheQueryRequest.class);
         withSchema(GridCacheQueryResponse.class);

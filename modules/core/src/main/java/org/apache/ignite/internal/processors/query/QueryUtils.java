@@ -227,33 +227,43 @@ public class QueryUtils {
      * @return Index name.
      */
     public static String indexName(String tblName, QueryIndex idx) {
-        String res = idx.getName();
+        return indexName(tblName, idx.getName(), idx.getFields());
+    }
 
-        if (res == null) {
-            StringBuilder idxName = new StringBuilder(tblName + "_");
+    /**
+     * Get index name.
+     *
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param fields Fields.
+     * @return Index name.
+     */
+    public static String indexName(String tblName, @Nullable String idxName, Map<String, Boolean> fields) {
+        if (idxName == null) {
+            StringBuilder idxName0 = new StringBuilder(tblName + "_");
 
-            for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
-                idxName.append(field.getKey());
+            for (Map.Entry<String, Boolean> field : fields.entrySet()) {
+                idxName0.append(field.getKey());
 
-                idxName.append('_');
-                idxName.append(field.getValue() ? "asc_" : "desc_");
+                idxName0.append('_');
+                idxName0.append(field.getValue() ? "asc_" : "desc_");
             }
 
-            for (int i = 0; i < idxName.length(); i++) {
-                char ch = idxName.charAt(i);
+            for (int i = 0; i < idxName0.length(); i++) {
+                char ch = idxName0.charAt(i);
 
                 if (Character.isWhitespace(ch))
-                    idxName.setCharAt(i, '_');
+                    idxName0.setCharAt(i, '_');
                 else
-                    idxName.setCharAt(i, Character.toLowerCase(ch));
+                    idxName0.setCharAt(i, Character.toLowerCase(ch));
             }
 
-            idxName.append("idx");
+            idxName0.append("idx");
 
-            return idxName.toString();
+            return idxName0.toString();
         }
 
-        return res;
+        return idxName;
     }
 
     /**
