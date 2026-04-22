@@ -17,33 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.tpc;
 
-import java.nio.file.Path;
-import java.util.List;
+import org.junit.runner.RunWith;
 
 /**
  * Tests ensures a planner generates optimal plan for TPC-H queries.
  *
  * @code org.apache.ignite.internal.sql.engine.benchmarks.TpchParseBenchmark
  */
+@RunWith(PlanChecker.class)
+@PlanChecker.PlansTest(name = "tpch", tables = TpchTables.class)
 public class TpchQueryPlannerTest extends AbstractTpcQueryPlannerTest {
-    /** {@inheritDoc} */
-    @Override public String queryString(String queryId) {
-        return TpchHelper.getQuery(queryId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateQueryPlan(String queryId, List<String> newPlans) {
-        Path targetDirectory = Path.of("./src/test/resources/tpch");
-        updateQueryPlan(queryId, targetDirectory, newPlans);
-    }
-
-    /** {@inheritDoc} */
-    @Override String name() {
-        return "tpch";
-    }
-
-    /** {@inheritDoc} */
-    @Override Class<? extends Enum<? extends TpcTable>> tables() {
-        return TpchTables.class;
-    }
+    // No-op
 }

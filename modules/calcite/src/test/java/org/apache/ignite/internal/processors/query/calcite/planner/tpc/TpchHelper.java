@@ -22,7 +22,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
 import com.google.common.io.CharStreams;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
  * Provides utility methods to work with queries defined by the TPC-H benchmark.
@@ -41,38 +47,6 @@ public final class TpchHelper {
     }
 
     /**
-     * Loads a TPC-H query given a query identifier. Query identifier can be in the following forms:
-     * <ul>
-     *     <li>query id - a number, e.g. {@code 14}. Queries are stored in files named q{id}.sql.</li>
-     *     <li>query variant id, a number and 'v' suffix - {@code 12v}. Query variants are stored in files
-     *     named variant_q{numeric_id}.sql.</li>
-     * </ul>
-     *
-     * @param queryId The identifier of a query.
-     * @return  An SQL query.
-     */
-    public static String getQuery(String queryId) {
-        // variant query ends with "v"
-        boolean variant = queryId.endsWith("v");
-        int numericId;
-
-        if (variant) {
-            String idString = queryId.substring(0, queryId.length() - 1);
-            numericId = Integer.parseInt(idString);
-        } else {
-            numericId = Integer.parseInt(queryId);
-        }
-
-        if (variant) {
-            var variantQueryFile = String.format("tpch/variant_q%d.sql", numericId);
-            return loadFromResource(variantQueryFile);
-        } else {
-            var queryFile = String.format("tpch/q%s.sql", numericId);
-            return loadFromResource(queryFile);
-        }
-    }
-
-    /**
      * Loads resource with given name as string.
      *
      * @param resource Name of the resource to load.
@@ -88,6 +62,48 @@ public final class TpchHelper {
             }
         } catch (IOException e) {
             throw new UncheckedIOException("I/O operation failed: " + resource, e);
+        }
+    }
+
+    public static String queryId(Path p) {
+        return p.getFileName().toString().replace(".sql", "");
+    }
+
+    public static String name(Class<?> klass) {
+        PlanChecker.PlansTest desc = plansTest(klass);
+
+        if (desc.name().isEmpty())
+            throw new IllegalStateException("Please, set test name with the @PlanTest(name=\"XXX\")");
+
+        return desc.name();
+    }
+
+    public static Class<? extends Enum<? extends TpcTable>> tables(Class<?> klass) {
+        PlanChecker.PlansTest desc = plansTest(klass);
+
+        return desc.tables();
+    }
+
+    private static PlanChecker.PlansTest plansTest(Class<?> klass) {
+        PlanChecker.PlansTest desc = klass.getAnnotation(PlanChecker.PlansTest.class);
+
+        if (desc == null)
+            throw new IllegalStateException("Test class must be annotated with @" + PlanChecker.PlansTest.class.getSimpleName());
+        return desc;
+    }
+
+    /**
+     * Execute SQL query.
+     *
+     * @param ignite Ignite.
+     * @param sql SQL query.
+     * @param params Query parameters.
+     */
+    public static List<List<?>> sql(Ignite ignite, String sql, Object... params) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(params);
+
+        try (FieldsQueryCursor<List<?>> cur = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
+            return cur.getAll();
         }
     }
 }

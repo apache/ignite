@@ -38,65 +38,72 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.AfterPlansTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.BeforePlansTest;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper.sql;
+import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sql;
 import static org.apache.logging.log4j.util.Cast.cast;
 
 /**
  * Abstract test class to ensure a planner generates optimal plan for TPC queries.
  */
-public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
+public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     private static final boolean updatePlan = true;
 
     private static final Pattern COSTS_PATTERN = Pattern.compile("\\s+est: \\(rows=\\d+\\)");
 
     private static IgniteEx srv;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Parameterized.Parameter
+    public String queryId;
 
-        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true));
+    @BeforePlansTest
+    public static void startAll(Class<?> testClass) throws Exception {
+        AbstractTpcQueryPlannerTest mock = new AbstractTpcQueryPlannerTest();
 
-        return cfg;
-    }
+        mock.beforeFirstTest();
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+        IgniteConfiguration cfg = mock.getConfiguration("server");
 
-        srv = startGrid();
+        cfg.getSqlConfiguration()
+            .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true));
 
-        TpcTable[] tables = cast(tables().getEnumConstants());
+        srv = (IgniteEx)IgnitionEx.start(cfg);
+
+        TpcTable[] tables = cast(TpchHelper.tables(testClass).getEnumConstants());
 
         for (TpcTable table : tables)
             scriptToQueries(table.ddlScript()).forEach(q -> sql(srv, q));
     }
 
-    @Test
-    public void testQueries() throws Exception {
-        Files.list(Path.of("./src/test/resources", name()))
-            .filter(p -> p.toString().endsWith(".sql"))
-            .map(this::queryId)
-            .forEach(this::validateQueryPlan);
+    @AfterPlansTest
+    public static void stopAll(Class<?> testClass) {
+        if (srv != null) {
+            srv.close();
+
+            srv = null;
+        }
     }
 
-    private void validateQueryPlan(String queryId) {
-        List<String> actualPlans = queryPlan(queryString(queryId));
+    @Test
+    public void testQueries() {
+        List<String> actualPlans = queryPlan(loadFromResource(String.format(TpchHelper.name(getClass()) + "/%s.sql", queryId)));
 
         if (updatePlan) {
             updateQueryPlan(queryId, actualPlans);
             return;
         }
 
-        String[] expectedPlans = expectedQueryPlan(queryId).split("----(\\r\\n|\\n|\\r)");
+        String[] expectedPlans = loadFromResource(String.format("%s/%s.plan", TpchHelper.name(getClass()), queryId))
+            .split("----(\\r\\n|\\n|\\r)");
 
         assert expectedPlans.length == actualPlans.size() : "Unexpected number of plans, got: " + actualPlans.size()
             + ", expected: " + expectedPlans.length;
@@ -138,67 +145,25 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         }
     }
 
-    static void updateQueryPlan(String queryId, Path targetDirectory, List<String> newPlans) {
+    private void updateQueryPlan(String queryId, List<String> newPlans) {
+        Path targetDirectory = Path.of("./src/test/resources/" + TpchHelper.name(getClass()));
+
         // A targetDirectory must be specified by hand when expected plans are generated.
         if (targetDirectory == null) {
             throw new RuntimeException("Please provide target directory to where save generated plans."
                 + " Usually plans are kept in resource folder of tests within the same module.");
         }
 
-        // variant query ends with "v"
-        boolean variant = queryId.endsWith("v");
-        int numericId;
-
-        if (variant) {
-            String idString = queryId.substring(0, queryId.length() - 1);
-            numericId = Integer.parseInt(idString);
-        } else {
-            numericId = Integer.parseInt(queryId);
-        }
-
-        Path planLocation;
-        if (variant) {
-            planLocation = targetDirectory.resolve(String.format("variant_q%d.plan", numericId));
-        } else {
-            planLocation = targetDirectory.resolve(String.format("q%s.plan", numericId));
-        }
-
         try {
             Files.createDirectories(targetDirectory);
 
             String plans = String.join("----" + System.lineSeparator(), newPlans);
-            Files.writeString(planLocation, plans);
+            Files.writeString(targetDirectory.resolve(String.format("%s.plan", queryId)), plans);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    String expectedQueryPlan(String queryId) {
-        // variant query ends with "v"
-        boolean variant = queryId.endsWith("v");
-        int numericId;
-
-        if (variant) {
-            String idString = queryId.substring(0, queryId.length() - 1);
-            numericId = Integer.parseInt(idString);
-        } else {
-            numericId = Integer.parseInt(queryId);
-        }
-
-        if (variant) {
-            var variantQueryFile = String.format("%s/variant_q%d.plan", name(), numericId);
-            return loadFromResource(variantQueryFile);
-        } else {
-            var queryFile = String.format("%s/q%s.plan", name(), numericId);
-            return loadFromResource(queryFile);
-        }
-    }
-
-    private String queryId(Path p) {
-        String name = p.getFileName().toString();
-
-        return name.substring(1).replace(".sql", "");
-    }
 
     private List<String> queryPlan(String sqlScript) {
         return scriptToQueries(sqlScript).stream().map(qry -> {
@@ -247,12 +212,8 @@ public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         return queries;
     }
 
-    abstract String queryString(String queryId);
-
-    abstract void updateQueryPlan(String queryId, List<String> newPlans);
-
-    /** Returns name of the SQL test. */
-    abstract String name();
-
-    abstract Class<? extends Enum<? extends TpcTable>> tables();
+    /** {@inheritDoc} */
+    @Override protected boolean isSafeTopology() {
+        return false;
+    }
 }
