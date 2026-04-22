@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -41,7 +42,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.AfterPlansTest;
@@ -89,6 +89,11 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         for (TpcTable table : tables)
             scriptToQueries(table.ddlScript()).forEach(q -> sql(srv, q));
+
+        List<List<?>> idxs = sql(srv, "SELECT * FROM SYS.INDEXES");
+        for (List<?> idx : idxs) {
+            System.out.println(idx.stream().map(Objects::toString).collect(Collectors.joining(" ")));
+        }
     }
 
     @AfterPlansTest
@@ -163,15 +168,11 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
 
     private List<String> queryPlan(String sqlScript) {
+        CalciteQueryProcessor engine = (CalciteQueryProcessor)srv.context().query().defaultQueryEngine();
+
+        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
+
         return scriptToQueries(sqlScript).stream().map(qry -> {
-            GridQueryProcessor qryProc = srv.context().query();
-
-            CalciteQueryProcessor engine = (CalciteQueryProcessor)qryProc.defaultQueryEngine();
-
-            Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
-
-            assertNotNull(schemas);
-
             try {
                 return RelOptUtil.toString(physicalPlan(plannerCtx(sqlScript, schemas.values(), null)), SqlExplainLevel.ALL_ATTRIBUTES);
             }
