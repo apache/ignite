@@ -58,9 +58,9 @@ import static org.apache.logging.log4j.util.Cast.cast;
  * Abstract test class to ensure a planner generates optimal plan for TPC queries.
  */
 public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
-    private static final boolean updatePlan = true;
+    private static final boolean UPDATE_PLAN = false;
 
-    private static final Pattern COSTS_PATTERN = Pattern.compile("\\s+est: \\(rows=\\d+\\)");
+    private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
 
     private static IgniteEx srv;
 
@@ -103,7 +103,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     public void testQueries() {
         List<String> actualPlans = queryPlan(loadFromResource(String.format(TpchHelper.name(getClass()) + "/%s.sql", queryId)));
 
-        if (updatePlan) {
+        if (UPDATE_PLAN) {
             updateQueryPlan(queryId, actualPlans);
             return;
         }
@@ -116,18 +116,8 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         int pos = 0;
 
-        for (String actualPlan : actualPlans) {
-            String expectedPlan = expectedPlans[pos++];
-
-            // Internally, costs are represented by double values and conversion to exact numeric representation
-            // may differs from JVM to JVM.
-            // https://www.oracle.com/java/technologies/javase/19-relnote-issues.html
-            // Cut-off costs, which may differ between runs, before comparing plans.
-            expectedPlan = COSTS_PATTERN.matcher(expectedPlan).replaceAll("");
-            actualPlan = COSTS_PATTERN.matcher(actualPlan).replaceAll("");
-
-            assertEquals(expectedPlan, actualPlan);
-        }
+        for (String actualPlan : actualPlans)
+            assertEquals(preparePlan(expectedPlans[pos++]), actualPlan);
     }
 
     static String loadFromResource(String resource) {
@@ -187,7 +177,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }).collect(Collectors.toList());
+        }).map(AbstractTpcQueryPlannerTest::preparePlan).collect(Collectors.toList());
     }
 
     private static List<String> scriptToQueries(String sqlScript) {
@@ -216,6 +206,11 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             queries.add(current.toString());
 
         return queries;
+    }
+
+    private static String preparePlan(String expectedPlan) {
+        expectedPlan = ID_PATTERN.matcher(expectedPlan).replaceAll(", id = {id}");
+        return expectedPlan;
     }
 
     /** {@inheritDoc} */
