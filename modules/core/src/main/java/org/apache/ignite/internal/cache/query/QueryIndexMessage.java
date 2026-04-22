@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -27,7 +28,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Message for {@link QueryIndex}. */
-public class QueryIndexMessage implements Message {
+public class QueryIndexMessage implements Serializable, Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Index name. */
     @Order(0)
     public String name;

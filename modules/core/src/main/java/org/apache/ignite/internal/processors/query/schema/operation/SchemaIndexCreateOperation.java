@@ -50,7 +50,9 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     int parallel;
 
     /** */
-    public SchemaIndexCreateOperation() {}
+    public SchemaIndexCreateOperation() {
+        // No-op.
+    }
 
     /**
      * Constructor.

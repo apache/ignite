@@ -172,9 +172,9 @@ public class MessageProcessorTest {
         assertThat(compilation).failed();
     }
 
-    /** Tests the messages that copy a data/classes. */
+    /** Tests {@link QueryIndexMessage} that copies {@link QueryIndex}. */
     @Test
-    public void testCopies() {
+    public void testQueryIndex() {
         Field[] fields0 = QueryIndex.class.getDeclaredFields();
 
         Map<String, Field> fields = CommonUtils.newHashMap(fields0.length);
