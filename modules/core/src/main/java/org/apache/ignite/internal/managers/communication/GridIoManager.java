@@ -634,7 +634,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         final boolean procFromNioThread,
         final List<ClusterNode> nodes
     ) {
-        ExecutorService svc = newFixedThreadPool("io-latency-monitor", ctx.igniteInstanceName(), threads + 1);
+        ExecutorService svc = newFixedThreadPool("io-latency-inspector", ctx.igniteInstanceName(), threads + 1);
 
         final AtomicBoolean warmupFinished = new AtomicBoolean();
         final AtomicBoolean done = new AtomicBoolean();
