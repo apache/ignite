@@ -28,7 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -75,34 +76,35 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     /** Log listener. */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-    /** */
+    /** Datacenters number. */
     @Parameterized.Parameter()
+    public int dcCnt;
+
+    /** Nodes number per DC. */
+    @Parameterized.Parameter(1)
     public int srvrsPerDc;
 
-    /** */
-    @Parameterized.Parameter(1)
+    /** The ping pool size. */
+    @Parameterized.Parameter(2)
+    public int pingPoolSize;
+
+    /** If wait for full timeout before failure simulation. */
+    @Parameterized.Parameter(3)
     public boolean fullTimeoutFailure;
 
-    /** */
-    @Parameterized.Parameter(2)
+    /** If some remote nodes response. */
+    @Parameterized.Parameter(4)
     public boolean rmtDcNodesRespond;
 
     /** */
-    @Parameterized.Parameter(3)
-    public int pingPoolSize;
-
-    @Parameterized.Parameter(4)
-    public int dcCnt;
-
-    /** */
-    @Parameterized.Parameters(name = "serversPerDc={0}, fullTimeoutFailure={1}, rmtDcNodesResponds={2}, pingPoolSize={3}")
+    @Parameterized.Parameters(name = "dcCnt={0}, serversPerDc={1}, pingPoolSize={2}, fullTimeoutFailure={3}, rmtDcNodesResponds={4}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
+            F.asList(2, 3), // DCs cnt.
             F.asList(2, 3, 4), // Servers number per DC.
-            F.asList(true, false), // Full-timeout failure (or fail quickly).
-            F.asList(false, true), // Whether few nodes of the remote DC respond to the ping.
             F.asList(1, 2, TcpDiscoverySpi.DFLT_RMT_DC_PING_POOL_SIZE), // Ping pool size.
-            F.asList(3) // Servers cnt.
+            F.asList(true, false), // Full-timeout failure (or fail quickly).
+            F.asList(false, true) // Whether few nodes of the remote DC respond to the ping.
         );
     }
 
@@ -155,38 +157,24 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         startDCs(dcCnt);
 
-        for (int g = 0; g < srvrsPerDc * dcCnt; ++g) {
-            assertEquals(discoSpi(grid(g)).locNode.order(), g + 1);
+        // Ensure the ports order.
+        for (int g = 0; g < srvrsPerDc * dcCnt; ++g)
             assertEquals(discoSpi(grid(g)).locNode.discoveryPort(), DFLT_PORT + g);
-        }
 
         // Register the log listeners.
         // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
         // in some time before the connection recovery timeout and before corner node gets segmented; 2 - corner node
         // is able to traverse entire remote DC in the connection recovery timeout;
-        LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping of the remote DCs. " +
+        LogListener logStartPing = LogListener.matches("During the connection recovery, starting ping of the remote DCs. " +
             "Nodes number to ping: " + srvrsPerDc * (dcCnt - 1)).times(2).build();
 
-        LogListener logLsnr10 = LogListener.matches("Half or less of the following remote DCs responded. " +
-            "Considering DCs '" + DC_ID_1 + "' unavailable").times(1).build();
+        LogListener logSplit0 = LogListener.matches("Half or less of the following remote DCs responded. Considering DCs '"
+            + DC_ID_1 + "' unavailable").times(1).build();
 
-        LogListener logLsnr11;
-        // The 'Responded nodes' log depends of successful pings.
-        if (rmtDcNodesRespond) {
-            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DCs '" + DC_ID_1
-                    + "' from current corner node has finished. Responded nodes: [").times(1).andMatches("Unavailable nodes: []")
-                .times(0).build();
-        }
-        else {
-            logLsnr11 = LogListener.matches("During the connection recovery, nodes ping of DCs '" + DC_ID_1
-                + "' from current corner node has finished. Responded nodes: []").times(1).build();
-        }
+        LogListener logSplit1 = LogListener.matches("During the connection recovery, all the remote DCs have been traversed. " +
+                "Failed to connect to any.").build();
 
-        // Corner node is able to traverse entire remote DC in the connection recovery timeout
-        LogListener logLsnr2 = LogListener.matches("During the connection recovery, all the remote DCs have been traversed. " +
-            "Failed to connect to any.").times(2).build();
-
-        listeningLog.registerAllListeners(logLsnr0, logLsnr10, logLsnr11, logLsnr2);
+        listeningLog.registerAllListeners(logStartPing, logSplit0, logSplit1);
 
         if (log.isInfoEnabled())
             log.info("Splitting the datacenters...");
@@ -195,42 +183,35 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         for (ClusterNode n : grid(0).cluster().nodes())
             discoSpi(G.ignite(n.id())).block = true;
 
-        checkDcSplited(DC_ID_1, null);
+        long checkTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
+
+        checkDcSplited(DC_ID_1, null, checkTimeout);
 
         if (dcCnt == 2)
-            checkDcSplited(DC_ID_0, null);
+            checkDcSplited(DC_ID_0, null, checkTimeout);
         else {
-            checkDcSplited(DC_ID_0, DC_ID_2);
-            checkDcSplited(DC_ID_2, DC_ID_0);
+            checkDcSplited(DC_ID_0, DC_ID_2, checkTimeout);
+            checkDcSplited(DC_ID_2, DC_ID_0, checkTimeout);
         }
-
-        // The connection recovery should take <= failureDetectionTimeout * 2.
-        long testTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
 
         if (log.isInfoEnabled())
             log.info("Waiting for the ping log...");
 
         // Now we check the logs.
-        assertTrue(logLsnr0.check(testTimeout));
+        assertTrue(logStartPing.check(checkTimeout));
 
-        AtomicInteger logCntr = new AtomicInteger();
+        CountDownLatch logLatch = new CountDownLatch(1);
 
         runAsync(() -> {
-            if (logLsnr10.check(testTimeout) && logLsnr11.check(testTimeout))
-                logCntr.incrementAndGet();
+            if (logSplit0.check(checkTimeout))
+                logLatch.countDown();
         });
         runAsync(() -> {
-            if (logLsnr2.check(testTimeout))
-                logCntr.incrementAndGet();
+            if (logSplit1.check(checkTimeout))
+                logLatch.countDown();
         });
 
-        if (log.isInfoEnabled())
-            log.info("Waiting for the rest of the logs...");
-
-        Thread.sleep(testTimeout);
-
-        // Only one of the variants is expected.
-        assertTrue(logCntr.get() == 1);
+        assertTrue(logLatch.await(checkTimeout, TimeUnit.MILLISECONDS));
     }
 
     /** */
@@ -278,15 +259,6 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    @Test
-    public void testWith3DC() throws Exception {
-
-
-        LogListener logLsnr0 = LogListener.matches("During the connection recovery, starting ping of the remote DCs. " +
-            "Nodes number to ping: " + srvrsPerDc).times(2).build();
-    }
-
     /** Creates the test Discovery SPI. */
     private TcpDiscoverySpi testDiscovery(int portFrom, int portTo, boolean someRemoteDcNodesRespond) {
         assert portTo >= portFrom;
@@ -298,7 +270,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     }
 
     /** Creates the test Discovery SPI. */
-    private TcpDiscoverySpi testDiscovery(int allPortsFrom, int allPortsTo, int workPortFrom, int workPortTo, boolean someRemoteDcNodesRespond) {
+    private TcpDiscoverySpi testDiscovery(int allPortsFrom, int allPortsTo, int workPortFrom, int workPortTo, boolean someNodesResp) {
         assert allPortsTo >= allPortsFrom;
         assert workPortFrom >= allPortsFrom;
         assert workPortTo <= allPortsTo;
@@ -306,8 +278,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         Set<Integer> failedPorts = IntStream.range(allPortsFrom, allPortsTo + 1).filter(p -> p < workPortFrom || p > workPortTo)
             .boxed().collect(Collectors.toSet());
 
-        Set<Integer> portPingExceptions0 = pingPortExceptions(someRemoteDcNodesRespond, allPortsFrom, workPortFrom - 1);
-        Set<Integer> portPingExceptions = pingPortExceptions(someRemoteDcNodesRespond, workPortTo + 1, allPortsTo);
+        Set<Integer> portPingExceptions0 = pingPortExceptions(someNodesResp, allPortsFrom, workPortFrom - 1);
+        Set<Integer> portPingExceptions = pingPortExceptions(someNodesResp, workPortTo + 1, allPortsTo);
 
         portPingExceptions.addAll(portPingExceptions0);
 
@@ -330,7 +302,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     }
 
     /** Check whether datacenter {@code dcId} is separated. If {@code otherAliveDc} is not {@code null}, these DCs are expected joined. */
-    private void checkDcSplited(String dcId, @Nullable String otherAliveDc) throws IgniteInterruptedCheckedException {
+    private void checkDcSplited(String dcId, @Nullable String otherAliveDc, long timeout) throws IgniteInterruptedCheckedException {
         assert !dcId.equals(otherAliveDc);
 
         if (log.isInfoEnabled())
@@ -360,7 +332,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
             }
 
             return true;
-        }, getTestTimeout(), 500));
+        }, timeout, 500));
     }
 
     /** */

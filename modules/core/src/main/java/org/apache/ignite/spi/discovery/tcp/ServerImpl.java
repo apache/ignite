@@ -241,7 +241,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final int RMT_DC_PING_TRIES = 3;
 
     /** Part of remote DC ping timeout to wait before new attempt. */
-    private static final double RMT_DC_PING_ATTEMPT_DELAY_RATIO = 0.35;
+    private static final float RMT_DC_PING_ATTEMPT_DELAY_RATIO = 0.35f;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
@@ -867,12 +867,41 @@ class ServerImpl extends TcpDiscoveryImpl {
         long timeout,
         boolean logError
     ) throws IgniteCheckedException {
+        return pingNode(addr, nodeId, clientNodeId, timeout, spi.getReconnectCount(), 0, logError);
+    }
+
+    /**
+     * Pings the node by its address to see if it's alive.
+     *
+     * @param addr Address of the node.
+     * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
+     * @param clientNodeId Client node ID.
+     * @param timeout Timeout on operation in milliseconds. If 0, a value based on {@link TcpDiscoverySpi} is used.
+     * @param reconNum Reconnects number.
+     * @param reconDelayRatio Delay ration compared to {@code timeout} / {@code reconNum}.
+     * @param logError Boolean flag indicating whether information should be printed into the node log.
+     * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
+     *         left a topology during the ping process.
+     * @throws IgniteCheckedException If an error occurs.
+     */
+    @Nullable private IgniteBiTuple<UUID, Boolean> pingNode(
+        InetSocketAddress addr,
+        @Nullable UUID nodeId,
+        @Nullable UUID clientNodeId,
+        long timeout,
+        int reconNum,
+        float reconDelayRatio,
+        boolean logError
+    ) throws IgniteCheckedException {
+        long timeThreshold = timeout > 0 ? System.nanoTime() + U.millisToNanos(timeout) : 0;
+
+        assert reconNum > 0;
         assert addr != null;
         assert timeout >= 0;
+        assert reconDelayRatio >= 0.0f;
 
-        IgniteSpiOperationTimeoutHelper timeoutHelper = timeout == 0
-            ? new IgniteSpiOperationTimeoutHelper(spi, clientNodeId == null)
-            : new IgniteSpiOperationTimeoutHelper(timeout);
+        long attemptTimeout = (long)(timeout * (1.0f - reconDelayRatio)) / reconNum;
+        long attemptDelayTiemout = reconNum > 1 ? (long)(timeout * reconDelayRatio) / (reconNum - 1) : 0;
 
         UUID locNodeId = getLocalNodeId();
 
@@ -886,6 +915,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return F.t(getLocalNodeId(), false);
 
             boolean clientPingRes;
+
+            IgniteSpiOperationTimeoutHelper timeoutHelper = timeout == 0
+                ? new IgniteSpiOperationTimeoutHelper(spi, clientNodeId == null)
+                : new IgniteSpiOperationTimeoutHelper(timeout);
 
             try {
                 clientPingRes = clientWorker.ping(timeoutHelper);
@@ -915,9 +948,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 int reconCnt = 0;
 
-                boolean openedSock = false;
-
                 while (true) {
+                    IgniteSpiOperationTimeoutHelper timeoutHelper = timeout == 0
+                        ? new IgniteSpiOperationTimeoutHelper(spi, clientNodeId == null)
+                        : new IgniteSpiOperationTimeoutHelper(attemptTimeout);
+
                     try {
                         if (addr.isUnresolved())
                             addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
@@ -927,8 +962,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         fut.sock = sock;
 
                         sock = spi.openSocket(sock, addr, timeoutHelper);
-
-                        openedSock = true;
 
                         TcpDiscoveryIoSession ses = createSession(sock);
 
@@ -969,31 +1002,25 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         reconCnt++;
 
-                        if (!openedSock && reconCnt == 2) {
-                            logPingError(errMsgPrefix + "Was unable to open the socket at all. " +
-                                "Cause: " + e.getMessage(), logError);
+                        long curNano = System.nanoTime();
 
-                            break;
-                        }
-
-                        if (IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e)
-                            && (spi.failureDetectionTimeoutEnabled() || timeout != 0)) {
+                        if ((timeThreshold > 0 && curNano >= timeThreshold) || (timeout == 0 && spi.failureDetectionTimeoutEnabled()
+                            && IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e))) {
                             logPingError(errMsgPrefix + "Reached the timeout " +
                                 (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
                                 "ms. Cause: " + e.getMessage(), logError);
 
                             break;
                         }
-                        else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount()) {
-                            logPingError(errMsgPrefix + "Reached the reconnection count spi.getReconnectCount(). " +
-                                "Cause: " + e.getMessage(), logError);
+                        else if (reconCnt >= reconNum) {
+                            logPingError(errMsgPrefix + "Reached the reconnection count " + reconNum + ". Cause: "
+                                + e.getMessage(), logError);
 
                             break;
                         }
 
                         if (spi.isNodeStopping0()) {
-                            logPingError(errMsgPrefix + "Current node is stopping. " +
-                                "Cause: " + e.getMessage(), logError);
+                            logPingError(errMsgPrefix + "Current node is stopping. Cause: " + e.getMessage(), logError);
 
                             break;
                         }
@@ -1001,6 +1028,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         U.closeQuiet(sock);
                     }
+
+                    if (attemptDelayTiemout > 0)
+                        U.sleep(attemptDelayTiemout);
                 }
             }
             catch (Throwable t) {
@@ -3865,7 +3895,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isInfoEnabled()) {
                                 log.info("During the connection recovery, all the remote DCs have been traversed. " +
                                     "Failed to connect to any. Due to the remote DC unavailability policy, current node " +
-                                    "will try to skip those DCs.");
+                                    "will try to skip those DCs. Time to recover the ring connection left: "
+                                    + Math.max(0, U.nanosToMillis(sndState.failTimeNanos - System.nanoTime())) + "ms.");
                             }
 
                             skipDCs(sndState, ring.serverNodes().stream().map(ClusterNode::dataCenterId)
@@ -4153,8 +4184,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             Collection<TcpDiscoveryNode> failedNodes
         ) {
             assert connRecoverState.unavailableDCs == null : "Forced DC skipping should not be requested yet.";
-
-            log.error("TEST | skipDcs on " + locNode.order() + ": " + String.join(", ", failedDCs));
 
             connRecoverState.stopRemoteDcPing();
 
@@ -8409,7 +8438,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private @Nullable Collection<String> unavailableDCs;
 
-        /** Keeps number of attempt to ping node. Negative value means that node successfully responded. */
+        /** Nodes ping results. */
         @Nullable private Map<TcpDiscoveryNode, Integer> rmtDcPingRes;
 
         /**
@@ -8499,11 +8528,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         void pingRemoteDCs(List<TcpDiscoveryNode> nodesToPing) {
             assert !remoteDcPingStarted();
+            assert !F.isEmpty(nodesToPing);
 
             rmtDcPingMaxTimeNs = System.nanoTime() + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO);
-
-            assert !remoteDcPingStarted();
-            assert !F.isEmpty(nodesToPing);
 
             AtomicInteger thrdIdx = new AtomicInteger();
 
@@ -8521,8 +8548,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             rmtDcPingRes = new ConcurrentHashMap<>(nodesToPing.size(), 1.0f);
 
-            // Fill the map and mark every node to ping with 0 attempts.
-            nodesToPing.forEach(n -> rmtDcPingRes.put(n, 0));
+            // Mark every node ping started.
+            nodesToPing.forEach(n -> rmtDcPingRes.put(n, -1));
 
             // We should assume that the ping won't receive any response or exception and would spend its whole timeout.
             // If the nodes number exceeds the pool size we have to split the timeout and enqueue the ping jobs.
@@ -8557,28 +8584,14 @@ class ServerImpl extends TcpDiscoveryImpl {
             // Total allowed ping timeout per step.
             double stepTimeoutNs = ((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO) / steps;
 
-            long attemptDelayNs = (long)(stepTimeoutNs * RMT_DC_PING_ATTEMPT_DELAY_RATIO) / (RMT_DC_PING_TRIES - 1);
-
-            // Reduced timeout to have a delay before next attempt. The delays number is DC_PING_RETRIES - 1.
-            stepTimeoutNs -= attemptDelayNs;
-            // Timeout per try.
-            stepTimeoutNs /= RMT_DC_PING_TRIES;
-
             Collection<InetSocketAddress> nodeAddrs = spi.getEffectiveNodeAddresses(node);
 
-            // Final ping timeout per node address.
+            // Tmeout per node address.
             long addrsTimeoutMs = U.nanosToMillis((long)(stepTimeoutNs / nodeAddrs.size()));
 
-            int attempt = rmtDcPingRes.compute(node, (node0, attempt0) -> ++attempt0);
-
             try {
-                // Wait before new attempt.
-                if (attempt > 1)
-                    Thread.sleep(U.nanosToMillis(attemptDelayNs));
-
                 if (log.isDebugEnabled()) {
                     log.debug("During the connection recovery, pinging " + node + " of DC '" + node.dataCenterId()
-                        + "'. Attempt: " + attempt + ". Timeout per address (ms): " + addrsTimeoutMs
                         + ". Total time left (ms): " + remoteDcPingTimeLeft() + ". Nodes to ping left: " + nodesToPingLeft() + '.');
                 }
 
@@ -8590,13 +8603,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (remoteDcPingStopped() || addrsTimeoutMs < 1)
                         return;
 
-                    if (pingNode(addrs, node.id(), null, addrsTimeoutMs, false) != null) {
-                        // Negative value means than a node responds and there is no need to try anymore.
-                        rmtDcPingRes.put(node, -1);
+                    if (pingNode(addrs, node.id(), null, addrsTimeoutMs, RMT_DC_PING_TRIES,
+                        RMT_DC_PING_ATTEMPT_DELAY_RATIO, false) != null) {
+                        // Mark node has pesponded.
+                        rmtDcPingRes.put(node, 1);
 
                         if (log.isDebugEnabled()) {
                             log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
-                                + "' has responded to the ping at attempt " + attempt + '.');
+                                + "' has responded to the ping.");
                         }
 
                         // At least one node's address reached.
@@ -8608,18 +8622,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // No-op.
             }
             finally {
+                rmtDcPingRes.compute(node, (n, nodeRes) -> nodeRes == 1 ? nodeRes : 0);
+
                 if (nodesToPingLeft() == 0)
                     stopRemoteDcPing();
 
-                if (rmtDcPingRes.get(node) > 0) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
-                            + "' didn't respond to the ping at attempt " + attempt + " within the timeout " + addrsTimeoutMs
-                            + "ms.");
-                    }
-
-                    if (!remoteDcPingStopped() && attempt < RMT_DC_PING_TRIES)
-                        scheduleNodePingJob(node, steps);
+                if (log.isDebugEnabled() && 1 != rmtDcPingRes.get(node)) {
+                    log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
+                        + "' didn't respond to the ping within the timeout " + addrsTimeoutMs + "ms.");
                 }
             }
         }
@@ -8663,7 +8673,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private Collection<UUID> availableNodes() {
             assert remoteDcPingStarted();
 
-            return rmtDcPingRes.entrySet().stream().filter(e -> e.getValue() < 0)
+            return rmtDcPingRes.entrySet().stream().filter(e -> 1 == e.getValue())
                 .map(e -> e.getKey().id()).collect(toList());
         }
 
@@ -8671,7 +8681,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private Collection<UUID> unavailableNodes() {
             assert remoteDcPingStarted();
 
-            return rmtDcPingRes.entrySet().stream().filter(e -> e.getValue() >= 0)
+            return rmtDcPingRes.entrySet().stream().filter(e -> e.getValue() == null || 0 == e.getValue())
                 .map(e -> e.getKey().id()).collect(toList());
         }
 
@@ -8691,8 +8701,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private int nodesToPingLeft() {
             assert remoteDcPingStarted();
 
-            return (int)(rmtDcPingRes.size() - rmtDcPingRes.values().stream()
-                .filter(a -> a < 0 || a >= RMT_DC_PING_TRIES).count());
+            return (int)(rmtDcPingRes.size() - rmtDcPingRes.values().stream().filter(nodeRes -> -1 != nodeRes).count());
         }
     }
 

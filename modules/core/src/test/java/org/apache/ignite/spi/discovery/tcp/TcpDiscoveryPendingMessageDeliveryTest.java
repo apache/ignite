@@ -66,7 +66,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         else if (igniteInstanceName.startsWith("receiver"))
             disco = new DyingThreadDiscoverySpi();
         else
-            disco = new TestTcpDiscoverySpi();
+            disco = new NoRingClosingTcpDiscoverySpi();
 
         disco.setIpFinder(sharedStaticIpFinder);
         cfg.setDiscoverySpi(disco);
