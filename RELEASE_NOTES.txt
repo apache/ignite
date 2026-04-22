@@ -101,7 +101,6 @@ SQL:
 * Added information about query initiator id to log.
 * Fixed node crash after SQL query with WITH clause.
 * Fixed indexed field validation.
-* Set H2 default SQL plan history to zero.
 
 SQL Calcite:
 * Added support of user-defined table functions.
