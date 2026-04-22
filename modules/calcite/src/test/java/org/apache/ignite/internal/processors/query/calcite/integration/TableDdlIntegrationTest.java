@@ -494,14 +494,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void testInlineSizeKeyWrapParam() {
-        String query = "CREATE TABLE IF NOT EXISTS T ( " +
+        String qry = "CREATE TABLE IF NOT EXISTS T ( " +
             "  id varchar(15), " +
             "  col varchar(100), " +
             "  PRIMARY KEY(id) ) ";
 
         {
             try {
-                sql(query);
+                sql(qry);
                 assertEquals(18, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
             }
@@ -512,7 +512,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         {
             try {
-                sql(query + "WITH \"wrap_key=true\"");
+                sql(qry + "WITH \"wrap_key=true\"");
                 assertEquals(18, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
             }
@@ -523,7 +523,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         {
             try {
-                sql(query + "WITH \"wrap_key=false\"");
+                sql(qry + "WITH \"wrap_key=false\"");
                 assertEquals(18, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
             }
@@ -539,14 +539,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void testInlineSizeMultiKeyWrapParam() {
-        String query = "CREATE TABLE IF NOT EXISTS T ( " +
+        String qry = "CREATE TABLE IF NOT EXISTS T ( " +
             "  id varchar(15), " +
             "  id2 uuid, " +
             "  col varchar(100), " +
             "  PRIMARY KEY(id, id2) )";
         {
             try {
-                sql(query);
+                sql(qry);
                 assertEquals(35, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
             }
@@ -557,7 +557,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         {
             try {
-                sql(query + "WITH \"wrap_key=true\"");
+                sql(qry + "WITH \"wrap_key=true\"");
                 assertEquals(35, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
             }
