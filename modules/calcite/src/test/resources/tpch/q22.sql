@@ -26,7 +26,7 @@ FROM (
            AND NOT exists(
                  SELECT *
                  FROM
-                     orders
+                     orders /*+ NO_INDEX(O_CK_proxy) */
                  WHERE
                          o_custkey = c_custkey
              )

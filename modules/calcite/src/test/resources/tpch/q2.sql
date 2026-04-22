@@ -14,7 +14,7 @@ SELECT
 FROM
     part,
     supplier,
-    partsupp /*+ NO_INDEX(_key_PK) */ ps1,
+    partsupp /*+ NO_INDEX(_key_PK) */,
     nation,
     region
 WHERE
@@ -28,7 +28,7 @@ WHERE
   AND ps_supplycost = (
     SELECT min(ps_supplycost)
     FROM
-        partsupp /*+ NO_INDEX(_key_PK) */ ps2, supplier,
+        partsupp /*+ NO_INDEX(_key_PK) */, supplier,
         nation, region
     WHERE
             p_partkey = ps_partkey

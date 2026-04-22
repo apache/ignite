@@ -5,7 +5,7 @@ SELECT
     s_name,
     s_address
 FROM
-    supplier, nation
+    supplier /*+ NO_INDEX(S_NK_proxy) */, nation
 WHERE
         s_suppkey IN (
         SELECT ps_suppkey

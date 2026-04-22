@@ -13,7 +13,7 @@ FROM (
              extract(YEAR FROM l_shipdate)      AS l_year,
              l_extendedprice * (1 - l_discount) AS volume
          FROM
-             supplier,
+             supplier /*+ NO_INDEX(S_NK_proxy) */,
              lineitem,
              orders,
              customer,
