@@ -46,12 +46,9 @@ Ignite:
 * Added support for partition loss detection after cluster inactivity.
 * Added system views recording to perfStat report.
 * Added cache storage support for --persistence commands.
-* Added WAL state/enable/disable commands to the control utility.
-* Added checkpoint command to control utility.
 * Added cache names filter to dump reader.
 * Added metrics to improve node network unavailability detection.
 * Added authorization for Compute Job cancellation.
-* Added offline command support to the control utility.
 * Added metrics for bytes inserted/removed from/to cache groups.
 * Added capturing of cluster node certificates during join process.
 * Added tx deadlocks count metric.
@@ -64,6 +61,7 @@ Ignite:
 * Added data center ID to the ClusterNodeView.
 * Added cache storage path to ClientCacheConfiguration.
 * Added an affinity backup filter that assigns partition copies evenly between data centers.
+* Added filtering capabilities to "metastorage" and "distributedMetastorage" system views.
 * Fixed in-memory cluster hangs when an error is thrown on activation.
 * Fixed hangs in put operations with RANDOM_LRU and RANDOM_2_LRU eviction policies.
 * Fixed read-through skipping in DML operations.
@@ -81,22 +79,20 @@ Ignite:
 * Fixed inconsistent behavior on concurrent commit and timeout with 1PC.
 * Fixed suboptimal expire shift calculation.
 * Fixed the corrupted tree exception on expiration.
-* Fixed primitive column descriptor problem with alias on key or val field.
 * Fixed H2QueryInfo#planWithoutScanCount for UNION queries.
 * Fixed primitive column descriptor problem with alias on key or val field.
+* Fixed CdcMain to clear corrupted cdc state files.
 * Optimized discovery for multi-DC scenarios.
 * Optimized rebalancing in multi-DC mode.
 * Optimized the Cache API for multi-DC.
 * Optimized SQL Calcite-related operations for multi-DC.
 * Optimized the Java thin client for multi-DC scenarios.
-* Speed up warmup running in several threads.
-* Make "metastorage" and "distributedMetastorage" system views filtrable.
-* CdcMain clears corrupted cdc state files.
+* Optimized cache warmup by using multiple threads.
 * Updated jetty-server dependency version to 11.0.25.
 * Updated commons-lang3 dependency version to 3.18.0.
 
 SQL:
-* Added a system view and fixed a performance issue in SQL query plan history. The default H2 SQL plan history was set to zero.
+* Added a system view for SQL query plan history.
 * Added initiatorId to the SQL_QUERY_HISTORY system view.
 * Added information about query initiator id to log.
 * Fixed node crash after SQL query with WITH clause.
@@ -131,6 +127,9 @@ SQL Calcite:
 Control utility:
 * Added support for interactive input of sensitive command arguments.
 * Added rolling upgrade commands.
+* Added WAL state/enable/disable commands to the control utility.
+* Added checkpoint command to control utility.
+* Added offline command support to the control utility.
 * Fixed authorization for the --kill compute command and authorization error propagation.
 * Fixed cache list command if mapped to a client node.
 * Removed redundant permission check to cancel services.
