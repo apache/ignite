@@ -35,7 +35,9 @@ import java.util.stream.Collectors;
 import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
@@ -56,7 +58,7 @@ import static org.apache.logging.log4j.util.Cast.cast;
  * Abstract test class to ensure a planner generates optimal plan for TPC queries.
  */
 public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
-    private static final boolean updatePlan = false;
+    private static final boolean updatePlan = true;
 
     private static final Pattern COSTS_PATTERN = Pattern.compile("\\s+est: \\(rows=\\d+\\)");
 
@@ -77,6 +79,10 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true));
 
         srv = (IgniteEx)IgnitionEx.start(cfg);
+
+        srv.createCache(new CacheConfiguration<>("mock")
+            .setSqlFunctionClasses(AbstractTpcQueryPlannerTest.TpchUDF.class)
+            .setSqlSchema("PUBLIC"));
 
         TpcTable[] tables = cast(TpchHelper.tables(testClass).getEnumConstants());
 
@@ -215,5 +221,14 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     /** {@inheritDoc} */
     @Override protected boolean isSafeTopology() {
         return false;
+    }
+
+    /** */
+    public static class TpchUDF {
+        /** */
+        @QuerySqlFunction(alias = "SUBSTR")
+        public static String substr(String str, int from, int cnt) {
+            return str.substring(from, from + cnt);
+        }
     }
 }
