@@ -218,6 +218,12 @@
             <property name="className" value="java.util.concurrent.ScheduledThreadPoolExecutor"/>
             <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor"/>
         </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.CompletableFuture"/>
+            <property name="factoryMethods" value="allOf, anyOf, supplyAsync, runAsync, completedFuture"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture"/>
+        </module>
     </module>
 
     <!--

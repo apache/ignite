@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.FileTree
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -106,7 +106,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             snpSndr.init(partsToSend.size());
 
-            CompletableFuture.runAsync(() -> partsToSend.forEach((gp, sinfo) -> {
+            IgniteCompletableFuture.runAsync(() -> partsToSend.forEach((gp, sinfo) -> {
                 if (err.get() != null)
                     return;
 

@@ -15,33 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.reducer;
+package org.apache.ignite.internal.thread.context.function;
 
-import java.util.Comparator;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
-import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.lang.IgniteInClosure;
 
-/**
- * Reducer for {@code TextQuery} results.
- */
-public class TextQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
+/** */
+public class OperationContextAwareInClosure<E> extends OperationContextAwareWrapper<IgniteInClosure<E>> implements IgniteInClosure<E> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public TextQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
-        super(pageStreams);
+    public OperationContextAwareInClosure(IgniteInClosure<E> delegate, OperationContextSnapshot snapshot) {
+        super(delegate, snapshot);
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCompletableFuture<Comparator<NodePage<R>>> pageComparator() {
-        IgniteCompletableFuture<Comparator<NodePage<R>>> f = new IgniteCompletableFuture<>();
-
-        f.complete((o1, o2) -> -Float.compare(
-            ((ScoredCacheEntry<?, ?>)o1.head()).score(), ((ScoredCacheEntry<?, ?>)o2.head()).score()));
-
-        return f;
+    @Override public void apply(E e) {
+        try (Scope ignored = OperationContext.restoreSnapshot(snapshot)) {
+            delegate.apply(e);
+        }
     }
+
+    /** */
+    public static <E> IgniteInClosure<E> wrap(IgniteInClosure<E> delefate) {
+        return wrap(delefate, OperationContextAwareInClosure::new);
+    }
+
 }
