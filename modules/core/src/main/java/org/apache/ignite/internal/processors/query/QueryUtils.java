@@ -234,36 +234,36 @@ public class QueryUtils {
      * Get index name.
      *
      * @param tblName Table name.
-     * @param idxName Index name.
+     * @param name Index name.
      * @param fields Fields.
      * @return Index name.
      */
-    public static String indexName(String tblName, @Nullable String idxName, Map<String, Boolean> fields) {
-        if (idxName == null) {
-            StringBuilder idxName0 = new StringBuilder(tblName + "_");
+    public static String indexName(String tblName, @Nullable String name, Map<String, Boolean> fields) {
+        if (name == null) {
+            StringBuilder idxName = new StringBuilder(tblName + "_");
 
             for (Map.Entry<String, Boolean> field : fields.entrySet()) {
-                idxName0.append(field.getKey());
+                idxName.append(field.getKey());
 
-                idxName0.append('_');
-                idxName0.append(field.getValue() ? "asc_" : "desc_");
+                idxName.append('_');
+                idxName.append(field.getValue() ? "asc_" : "desc_");
             }
 
-            for (int i = 0; i < idxName0.length(); i++) {
-                char ch = idxName0.charAt(i);
+            for (int i = 0; i < idxName.length(); i++) {
+                char ch = idxName.charAt(i);
 
                 if (Character.isWhitespace(ch))
-                    idxName0.setCharAt(i, '_');
+                    idxName.setCharAt(i, '_');
                 else
-                    idxName0.setCharAt(i, Character.toLowerCase(ch));
+                    idxName.setCharAt(i, Character.toLowerCase(ch));
             }
 
-            idxName0.append("idx");
+            idxName.append("idx");
 
-            return idxName0.toString();
+            return idxName.toString();
         }
 
-        return idxName;
+        return name;
     }
 
     /**

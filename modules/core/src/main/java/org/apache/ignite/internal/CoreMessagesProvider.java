@@ -233,6 +233,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -297,20 +298,21 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, ClassLoader)
+     * @see #init(Marshaller, Marshaller, ClassLoader)
      */
     public CoreMessagesProvider() {
         // No-op.
     }
 
     /**
-     * Constructor allowing not to call {@link #init(Marshaller, ClassLoader)}.
+     * Constructor allowing not to call {@link #init(Marshaller, Marshaller, ClassLoader)}.
      *
+     * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
      * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
      * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
      */
-    public CoreMessagesProvider(Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
-        init(schemaAwareMarsh, resolvedClsLdr);
+    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+        init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
     }
 
     /**
@@ -655,7 +657,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(cls, schemaAwareMarsh, dftlClsLdr);
     }
 
-    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
+    /** Registers message using {@link #dfltMarsh} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
         register(cls, dfltMarsh, resolvedClsLdr);
     }
