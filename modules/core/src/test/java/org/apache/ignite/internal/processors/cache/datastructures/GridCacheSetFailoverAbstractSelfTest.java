@@ -39,6 +39,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Set failover tests.
@@ -143,11 +147,11 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
 
                     int val = rnd.nextInt(ITEMS);
 
-                    assertTrue("Not contains: " + val, set.contains(val));
+                    assertTrue(set.contains(val), "Not contains: " + val);
 
                     val = ITEMS + rnd.nextInt(ITEMS);
 
-                    assertFalse("Contains: " + val, set.contains(val));
+                    assertFalse(set.contains(val), "Contains: " + val);
                 }
 
                 log.info("Remove set.");
@@ -197,7 +201,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                 }
             }
 
-            assertEquals("Found unexpected cache entries", 0, cnt);
+            assertEquals(0, cnt, "Found unexpected cache entries");
         }
     }
 

@@ -41,6 +41,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Queue failover test.
@@ -317,7 +322,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         fut.get();
 
         if (collectionCacheAtomicityMode() == ATOMIC)
-            assertTrue("Too many errors for atomic cache: " + err, err <= stopCnt.get());
+            assertTrue(err <= stopCnt.get(), "Too many errors for atomic cache: " + err);
 
         assertNull(queue.poll());
         assertEquals(0, queue.size());

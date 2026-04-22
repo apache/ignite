@@ -59,6 +59,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Cache set tests.
@@ -136,7 +142,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
 
-                assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
+                assertEquals(0, map.size(), "Set not removed [grid=" + i + ", map=" + map + ']');
             }
         }
     }
@@ -154,7 +160,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
                 for (Object obj : map.values())
-                    assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
+                    assertEquals(0, ((Map)obj).size(), "Iterators not removed for grid " + i);
             }
         }
     }
@@ -843,7 +849,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
             if (separated) {
-                assertNull("Cache " + cctx.name() + " was not destroyed.", cache);
+                assertNull(cache, "Cache " + cctx.name() + " was not destroyed.");
 
                 continue;
             }
@@ -855,7 +861,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             }
         }
 
-        assertEquals("Found unexpected cache entries", 0, cnt);
+        assertEquals(0, cnt, "Found unexpected cache entries");
 
         for (final Set<Integer> set : sets) {
             GridTestUtils.assertThrows(log, new Callable<Void>() {

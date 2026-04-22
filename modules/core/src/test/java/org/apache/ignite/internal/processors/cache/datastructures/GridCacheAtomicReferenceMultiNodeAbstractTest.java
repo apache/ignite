@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.lang.IgniteCallable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * AtomicReference and AtomicStamped multi node tests.
  */

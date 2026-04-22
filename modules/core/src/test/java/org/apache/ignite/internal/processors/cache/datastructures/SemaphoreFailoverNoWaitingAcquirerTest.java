@@ -27,6 +27,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -101,7 +104,7 @@ public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTe
             awaitPartitionMapExchange();
             IgniteSemaphore sem2 = grid(1).semaphore("sem", 1, true, true);
 
-            assertTrue("Could not aquire after 'restart'", sem2.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
+            assertTrue(sem2.tryAcquire(1, 5000, TimeUnit.MILLISECONDS), "Could not aquire after 'restart'");
         }
         finally {
             stopAllGrids();

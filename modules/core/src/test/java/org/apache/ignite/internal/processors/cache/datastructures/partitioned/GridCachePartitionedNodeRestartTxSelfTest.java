@@ -35,6 +35,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test with variable number of nodes.
@@ -158,7 +160,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-                assertEquals("Simple check failed for node: " + i, (Integer)i, val);
+                assertEquals((Integer)i, val, "Simple check failed for node: " + i);
 
                 grid(i).cache(DEFAULT_CACHE_NAME).put(key, i + 1);
 
@@ -187,7 +189,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
                 assertNotNull(atomicVal);
 
-                assertEquals("Custom check failed for node: " + i, (long)i, atomicVal.get());
+                assertEquals((long)i, atomicVal.get(), "Custom check failed for node: " + i);
 
                 atomicVal.set(i + 1);
 
@@ -215,7 +217,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             long val = atomic.get();
 
-            assertEquals("Atomic check failed for node: " + i, (long)i, val);
+            assertEquals((long)i, val, "Atomic check failed for node: " + i);
 
             atomic.incrementAndGet();
 

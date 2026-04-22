@@ -46,7 +46,7 @@ public class IgniteQueueClusterReadOnlyTest extends IgniteCollectionsClusterRead
     /** */
     @Test
     public void testPeekAllowed() {
-        igniteCollections.forEach(c -> assertEquals(name(c), name(c), cast(c).peek()));
+        igniteCollections.forEach(c -> assertEquals(name(c), cast(c).peek(), name(c)));
     }
 
     /** */

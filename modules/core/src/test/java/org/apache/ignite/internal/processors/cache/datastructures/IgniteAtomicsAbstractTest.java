@@ -22,6 +22,8 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  *
  */

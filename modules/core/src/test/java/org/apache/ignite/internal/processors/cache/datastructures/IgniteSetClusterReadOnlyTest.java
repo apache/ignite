@@ -23,13 +23,16 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests specific methods of {@link IgniteSet} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
 public class IgniteSetClusterReadOnlyTest extends IgniteCollectionsClusterReadOnlyAbstractTest {
     /** {@inheritDoc} */
     @Override String name(Collection col) {
-        assertTrue(col + "", col instanceof IgniteSet);
+        assertTrue(col instanceof IgniteSet, col + "");
 
         return ((IgniteSet)col).name();
     }
@@ -50,9 +53,9 @@ public class IgniteSetClusterReadOnlyTest extends IgniteCollectionsClusterReadOn
     @Override public void testRemoveDenied() {
         super.testRemoveDenied();
 
-        igniteCollections.forEach(c -> assertFalse(name(c), c.contains(UNKNOWN_ELEM)));
+        igniteCollections.forEach(c -> assertFalse(c.contains(UNKNOWN_ELEM), name(c)));
 
-        performAction(c -> assertFalse(name(c), c.remove(UNKNOWN_ELEM)));
+        performAction(c -> assertFalse(c.remove(UNKNOWN_ELEM), name(c)));
     }
 
     /** */

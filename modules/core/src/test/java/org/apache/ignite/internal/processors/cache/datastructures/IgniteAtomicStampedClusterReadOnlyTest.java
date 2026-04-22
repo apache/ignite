@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getAtomicConfigurations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests methods of {@link IgniteAtomicStamped} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -69,14 +71,14 @@ public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get().get1()));
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.get().get2()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_VAL, l.get().get1(), l.name()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_STAMP, l.get().get2(), l.name()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get().get1()));
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.get().get2()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_VAL, l.get().get1(), l.name()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_STAMP, l.get().get2(), l.name()));
 
         super.afterTest();
     }
@@ -91,20 +93,20 @@ public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testGetAllowed() {
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get().get1()));
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.get().get2()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_VAL, l.get().get1(), l.name()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_STAMP, l.get().get2(), l.name()));
     }
 
     /** */
     @Test
     public void testGetStampAllowed() {
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.stamp()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_STAMP, l.stamp(), l.name()));
     }
 
     /** */
     @Test
     public void testGetValueAllowed() {
-        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.value()));
+        atomicStamps.forEach(l -> assertEquals(INITIAL_VAL, l.value(), l.name()));
     }
 
     /** */

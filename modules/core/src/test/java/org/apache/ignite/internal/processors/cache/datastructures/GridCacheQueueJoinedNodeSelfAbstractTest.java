@@ -36,6 +36,11 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Test that joining node is able to take items from queue.
  * See GG-2311 for more information.
@@ -91,7 +96,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
             itemsLeft -= cnt;
         }
 
-        assertEquals("Not all items will be polled", 0, itemsLeft);
+        assertEquals(0, itemsLeft, "Not all items will be polled");
 
         // Wait for half of items to be polled.
         for (TakeJob job : jobs)
@@ -108,7 +113,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
         Integer polled = forLocal(joined).call(joinedJob);
 
-        assertNotNull("Joined node should poll item", polled);
+        assertNotNull(polled, "Joined node should poll item");
 
         info(">>> Joined node polled " + polled);
 

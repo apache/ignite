@@ -71,6 +71,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Failover tests for cache data structures.
@@ -594,8 +599,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             }
         });
 
-        assertTrue("Failed to wait for semaphore creation",
-            createLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertTrue(createLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS),
+            "Failed to wait for semaphore creation");
 
         while (!sem1.hasQueuedThreads()) {
             try {
@@ -931,7 +936,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             for (Ignite g : G.allGrids()) {
                 IgniteLock l = g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
 
-                assertTrue(g.name(), !l.isHeldByCurrentThread() || lock.isBroken());
+                assertTrue(!l.isHeldByCurrentThread() || lock.isBroken(), g.name());
             }
         }
     }

@@ -29,6 +29,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Basic tests for atomic reference.
@@ -41,11 +47,9 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
 
     /**
      * JUnit.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testPrepareAtomicReference() throws Exception {
+    public void testPrepareAtomicReference() {
         /* Name of first atomic. */
         String atomicName1 = UUID.randomUUID().toString();
 
