@@ -62,7 +62,7 @@ public class CacheDestroyCommand
             Collection<String> notExisted = F.view(F.asList(arg.caches()), F.not(caches::contains));
 
             if (!notExisted.isEmpty())
-                throw new IllegalArgumentException("The following caches do not exist: " + String.join(", ", notExisted));
+                throw new IllegalArgumentException("Caches do not exist: " + String.join(", ", notExisted));
         }
 
         if (arg.destroyAllCaches())

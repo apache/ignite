@@ -1467,7 +1467,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         // Ensure we cannot delete a cache groups or not existed cache.
         injectTestSystemIn(CONFIRM_MSG);
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, CACHES, "shared1,shared2"));
-        assertContains(log, testOut.toString(), "The following caches do not exist: shared1, shared2");
+        assertContains(log, testOut.toString(), "Caches do not exist: shared1, shared2");
         assertTrue(crd.cacheNames().containsAll(cacheNames));
 
         // Destroy all user-created caches.
