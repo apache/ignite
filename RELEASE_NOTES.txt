@@ -59,7 +59,6 @@ Ignite:
 * Added CODEOWNERS for platforms.
 * Added a client router node metric.
 * Added data center ID to the ClusterNodeView.
-* Added cache storage path to ClientCacheConfiguration.
 * Added an affinity backup filter that assigns partition copies evenly between data centers.
 * Added filtering capabilities to "metastorage" and "distributedMetastorage" system views.
 * Fixed in-memory cluster hangs when an error is thrown on activation.
@@ -127,7 +126,7 @@ SQL Calcite:
 Control utility:
 * Added support for interactive input of sensitive command arguments.
 * Added rolling upgrade commands.
-* Added WAL state/enable/disable commands to the control utility.
+* Added WAL state/enable/disable commands.
 * Added checkpoint command to control utility.
 * Added offline command support to the control utility.
 * Fixed authorization for the --kill compute command and authorization error propagation.
