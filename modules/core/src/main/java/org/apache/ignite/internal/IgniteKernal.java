@@ -1320,14 +1320,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), U.resolveClassLoader(ctx.config())));
+        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
+
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null) {
-                if (f instanceof AbstractMarshallableMessageFactoryProvider)
-                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshaller(), U.resolveClassLoader(ctx.config()));
+                if (f instanceof AbstractMarshallableMessageFactoryProvider) {
+                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshallerContext().jdkMarshaller(),
+                        ctx.marshaller(), resolvedClsLdr);
+                }
 
                 compMsgs.add(f);
             }

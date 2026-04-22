@@ -232,6 +232,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -296,23 +297,28 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, ClassLoader)
+     * @see #init(Marshaller, Marshaller, ClassLoader)
      */
     public CoreMessagesProvider() {
         // No-op.
     }
 
     /**
-     * Constructor allowing not to call {@link #init(Marshaller, ClassLoader)}.
+     * Constructor allowing not to call {@link #init(Marshaller, Marshaller, ClassLoader)}.
      *
+     * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
      * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
      * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
      */
-    public CoreMessagesProvider(Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
-        init(schemaAwareMarsh, resolvedClsLdr);
+    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+        init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
     }
 
-    /** The order is important. If wish to remove a message, put 'msgIdx++' on its place. */
+    /**
+     * Registers all the messages into {@code factory}.
+     * The listing order is important here. If wish to remove a message, put 'msgIdx++' on its place. If wish to add,
+     * put it to end of a group.
+     */
     @Override public void registerAll(MessageFactory factory) {
         assert this.factory == null;
 
@@ -425,7 +431,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
-        withSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -634,7 +640,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
         withNoSchema(CacheConfigurationEnrichment.class);
-        withSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
@@ -652,11 +658,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     /** Registers message using {@link #dfltMarsh} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
         register(cls, dfltMarsh, resolvedClsLdr);
-    }
-
-    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
-    private <T extends Message> void withSchemaResolvedClassLoader(Class<T> cls) {
-        register(cls, schemaAwareMarsh, resolvedClsLdr);
     }
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
