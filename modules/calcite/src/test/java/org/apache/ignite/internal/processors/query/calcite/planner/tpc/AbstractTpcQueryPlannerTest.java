@@ -100,7 +100,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     }
 
     @Test
-    public void testQueries() {
+    public void testQuery() {
         List<String> actualPlans = queryPlan(loadFromResource(String.format(TpchHelper.name(getClass()) + "/%s.sql", queryId)));
 
         if (UPDATE_PLAN) {
