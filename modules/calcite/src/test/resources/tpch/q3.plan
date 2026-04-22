@@ -1,5 +1,5 @@
 IgniteLimit(fetch=[10]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=17.0, cpu=35.0, memory=37.875, io=3.0, network=35.0], id = {id}
-  IgniteSort(sort0=[$1], sort1=[$2], dir0=[DESC-nulls-last], dir1=[ASC-nulls-first], fetch=[10]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=16.0, cpu=34.0, memory=37.875, io=3.0, network=35.0], id = {id}
+  IgniteSort(sort0=[$1], sort1=[$2], dir0=[DESC-nulls-last], dir1=[ASC-nulls-first]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=16.0, cpu=34.0, memory=37.875, io=3.0, network=35.0], id = {id}
     IgniteProject(L_ORDERKEY=[$0], REVENUE=[$3], O_ORDERDATE=[$1], O_SHIPPRIORITY=[$2]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=15.0, cpu=30.0, memory=21.875, io=3.0, network=35.0], id = {id}
       IgniteColocatedHashAggregate(group=[{0, 1, 2}], REVENUE=[SUM($3)]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=14.0, cpu=29.0, memory=21.875, io=3.0, network=35.0], id = {id}
         IgniteProject(L_ORDERKEY=[$0], O_ORDERDATE=[$6], O_SHIPPRIORITY=[$7], $f3=[*($1, -(1, $2))]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=13.0, cpu=28.0, memory=7.0, io=3.0, network=35.0], id = {id}

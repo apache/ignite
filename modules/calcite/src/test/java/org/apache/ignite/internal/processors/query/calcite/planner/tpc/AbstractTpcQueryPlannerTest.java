@@ -61,6 +61,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     private static final boolean UPDATE_PLAN = false;
 
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
+    private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
     private static IgniteEx srv;
 
@@ -210,6 +211,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     private static String preparePlan(String expectedPlan) {
         expectedPlan = ID_PATTERN.matcher(expectedPlan).replaceAll(", id = {id}");
+        expectedPlan = HASH_PATTERN.matcher(expectedPlan).replaceAll(", hash={hash}");
         return expectedPlan;
     }
 
