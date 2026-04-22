@@ -6,6 +6,7 @@ Apache Ignite distributed database for high-performance computing 2.18.0
 (!) WARNINGS:
 * Removed deprecated GridClient.
 * Removed deprecated SpiQuery.
+* Removed setSharedMemoryPort from TcpCommunicationSpi.
 
 * SqlFieldsQuery#setLazy/isLazy marked as deprecated.
 * DeploymentSPI marked as deprecated.
@@ -37,131 +38,115 @@ No longer experimental parts and components:
     Reset all specific tracing configuration
     Set new tracing configuration
 
-
 Ignite:
 * Added SessionContext API.
 * Added store crash recovery data to checkpoint recovery files.
-* Added JMH benchmark and helper for TPC-H queries.
-* Added multiple storage paths per cache.
-* Added metrics of TCP communication connection pool.
-* Added support of partition loss detection after cluster inactivity.
-* Added recording of systemViews to perfStat report.
-* Added per cache custom storagePath configuration.
-* Added max value aggregated interval metric.
-* Added support of cache storage for --persistence commands.
-* Added DataStorageConfiguration#extraSnapshotPaths.
-* Fixed in-memory cluster hanging when error is thrown on activation.
-* Optimized discovery in multi-DC scenarios.
-* Fixed hang in put with RANDOM_LRU and RANDOM_2_LRU eviction policy.
-* Added WAL state/enable/disable commands.
-* Skip read-through in DML operations.
-* Added an affinity backup filter assigning partition copies evenly between data centers.
-* Added checkpoint command.
-* Fixed IndexQuery can't use an index until data population completes.
-* Removed setSharedMemoryPort.
+* Added support for multiple storage paths per cache.
+* Added TCP connection pool metrics.
+* Added support for partition loss detection after cluster inactivity.
+* Added system views recording to perfStat report.
+* Added cache storage support for --persistence commands.
+* Added WAL state/enable/disable commands to the control utility.
+* Added checkpoint command to control utility.
 * Added cache names filter to dump reader.
-* Fixed memory leak in HeavyQueriesTracker.
 * Added metrics to improve node network unavailability detection.
-* Added authorization of Compute Job cancellation.
-* Added offline commands support.
-* Added metrics for inserted/removed bytes to/from cache group.
-* Optimized rebalancing in multi-DC mode.
-* Fixed freelist corruption in JDK17 with ShenandoahGC and assertions turned off.
+* Added authorization for Compute Job cancellation.
+* Added offline command support to the control utility.
+* Added metrics for bytes inserted/removed from/to cache groups.
 * Added capturing of cluster node certificates during join process.
-* Fixed query entity configuration merge on node join.
-* Fixed NPE when getting cluster name on inactive cluster.
-* Fixed CdcCommandLineStartup interruption.
-* Use MessageSerializer for SchemaOperationStatusMessage.
-* CdcMain clears corrupted cdc state files.
-* Fixed transaction closing on explicit rollback or commit.
 * Added tx deadlocks count metric.
-* Removed redundant IgniteExperimental annotations.
-* Fixed snapshot restoration when indexPath equal to storagePath.
-* Cache API optimizations for MultiDC.
 * Added ability to create tables for already existing cache with defined schema.
-* Fixed reading empty unsupported system views in perfStat.
-* Fixed inconsistent behaviour on concurrent commit and timeout with 1PC.
-* Fixed suboptimal expire shift calculation.
-* Fixed corrupted tree exception on expiration.
-* Speed up warmup running in several threads.
 * Added performance statistics for putAllConflict, removeAllConflict operations.
-* Updated jetty-server dependency version.
-* Fixed primitive column descriptor problem with alias on key or val field.
-* Make "metastorage" and "distributedMetastorage" system views filtrable.
-* Added warn if index inline size is too big.
-* Fixed H2QueryInfo#planWithoutScanCount for UNION queries.
-* Documentation of distributed properties for blocking new connections.
+* Added a warning if the index inline size is too large.
 * Added LastArchivedSegment metric.
-* Fixed snapshot restore failure due to non-serializable cache group names collection.
-* Fixed binary compatibility issue with dcId property.
 * Added CODEOWNERS for platforms.
+* Added a client router node metric.
 * Added data center ID to the ClusterNodeView.
-* Updated dependency version commons-lang3.
 * Added cache storage path to ClientCacheConfiguration.
-* Added client router node metric.
+* Added an affinity backup filter that assigns partition copies evenly between data centers.
+* Fixed in-memory cluster hangs when an error is thrown on activation.
+* Fixed hangs in put operations with RANDOM_LRU and RANDOM_2_LRU eviction policies.
+* Fixed read-through skipping in DML operations.
+* Fixed an issue where IndexQuery couldn't use an index until data population completed.
+* Fixed a memory leak in HeavyQueriesTracker.
+* Fixed freelist corruption in JDK 17 with Shenandoah GC and assertions turned off.
+* Fixed query entity configuration merge on node join.
+* Fixed NullPointerException when getting the cluster name on an inactive cluster.
+* Fixed CdcCommandLineStartup interruption.
+* Fixed snapshot restore failures due to non-serializable cache group names collections.
+* Fixed a binary compatibility issue with the dcId property.
+* Fixed transaction closing on explicit rollback or commit.
+* Fixed snapshot restoration when indexPath was equal to storagePath.
+* Fixed reading of empty unsupported system views in perfStat.
+* Fixed inconsistent behavior on concurrent commit and timeout with 1PC.
+* Fixed suboptimal expire shift calculation.
+* Fixed the corrupted tree exception on expiration.
+* Fixed primitive column descriptor problem with alias on key or val field.
+* Fixed H2QueryInfo#planWithoutScanCount for UNION queries.
+* Fixed primitive column descriptor problem with alias on key or val field.
+* Optimized discovery for multi-DC scenarios.
+* Optimized rebalancing in multi-DC mode.
+* Optimized the Cache API for multi-DC.
+* Optimized SQL Calcite-related operations for multi-DC.
+* Optimized the Java thin client for multi-DC scenarios.
+* Speed up warmup running in several threads.
+* Make "metastorage" and "distributedMetastorage" system views filtrable.
+* CdcMain clears corrupted cdc state files.
+* Updated jetty-server dependency version to 11.0.25.
+* Updated commons-lang3 dependency version to 3.18.0.
 
 SQL:
-* Added system view for SQL query plans history.
-* Added docs for PostgreSQL cdc-extension.
-* Fixed performance drop introduced by SQL plan history system view.
-* Added thin client API to create SQL caches.
-* Fixed node crash after SQL query with WITH clause.
+* Added a system view and fixed a performance issue in SQL query plan history. The default H2 SQL plan history was set to zero.
 * Added initiatorId to the SQL_QUERY_HISTORY system view.
-* Fixed indexed field validation.
 * Added information about query initiator id to log.
+* Fixed node crash after SQL query with WITH clause.
+* Fixed indexed field validation.
 * Set H2 default SQL plan history to zero.
 
 SQL Calcite:
-* Updated Calcite version to 1.40.
-* Added UNNEST operator support.
-* Added HASH join type.
-* Added query blocking tasks executor (allows to execute SQL inside UDF).
-* Added non-equi condition support for LEFT/RIGHT/FULL/ANTI HASH JOIN.
-* Added heuristics to optimize join order.
-* Fixed MergeJoin/NestedLoopJoin buffers overflow.
 * Added support of user-defined table functions.
-* Optimize scans with filter.
+* Added UNNEST operator support.
+* Added HASH join type support.
+* Added a query blocking tasks executor (enables SQL execution inside UDFs).
+* Added non-equi condition support for LEFT/RIGHT/FULL/ANTI HASH JOIN.
+* Added heuristics to optimize join order, limit joins number to commute in planning.
 * Added dynamic configuration to disable a rule globally.
-* Fixed merge filter to scan after trimmed fields.
 * Added thread pool starvation warning, add UDF query warning.
-* Optimize memory consumption for hash-table based operators.
-* Optimize IN statement with literals.
-* Optimization for MultiDC.
 * Added number of passed query parameters validation.
+* Fixed MergeJoin/NestedLoopJoin buffers overflow.
+* Fixed merge filter to scan after trimmed fields.
 * Fixed incorrect processing of IS NOT DISTINCT condition in MergeJoin.
-* Limit joins number to commute in planning.
-* Fixed usage of checkState() in the join nodes.
 * Fixed cast of dynamic parameters.
 * Fixed wider type for fixed chars coercion.
 * Fixed NVL/COALESCE failure with correlated subquery as parameter.
 * Fixed excessive log output on planning error.
-* Reduced contention by QueryBlockingTaskExecutor.
 * Fixed assertion on planning for filter with double correlate.
-* Reuse Row for non-storing accumulators.
 * Fixed function with schema serialization.
 * Fixed "field names not distinct" assertion error.
-* Fixed flaky CancelTest.testNotOriginatorNodeStop.
+* Optimized memory consumption for hash-table based operators.
+* Optimized IN statement with literals.
+* Optimized Row reusing for non-storing accumulators.
+* Optimized scans with filter.
+* Updated Calcite version to 1.40.
 
 Control utility:
-* Added support for interactive input of sensitive command arguments in control utility.
-* Added rolling upgrade commands for control.sh.
-* Implement control.sh status command for rolling upgrade.
-* Fixed control.sh --kill compute command authorization and authorization error propagation.
-* Removed redundant permission check to cancel services from control utility.
+* Added support for interactive input of sensitive command arguments.
+* Added rolling upgrade commands.
+* Fixed authorization for the --kill compute command and authorization error propagation.
+* Fixed cache list command if mapped to a client node.
+* Removed redundant permission check to cancel services.
 
 Java thin client:
-* SqlFieldsQuery initiator ID support.
-* Fixed NPE on SQL fields query.
-* Fixed multi-key operations unordered map/set warnings in server logs.
-* Optimizations for MultiDC.
-* Fixed thin client duplicates channels.
+* Added thin client API to create SQL caches.
+* Added SqlFieldsQuery initiator ID support.
 * Added handshake timeout configuration for java thin client.
+* Fixed multi-key operations unordered map/set warnings in server logs.
+* Fixed duplicate channel handling in the thin client.
 * Fixed management client connection if the 'newThinConnectionsEnabled' property is set.
 * Fixed binary meta sending on reconnect.
-* Fixed cache list command if mapped to a client node.
 
 JDBC:
-* Added JDBC local query property.
+* Added JDBC local query flag.
 
 Apache Ignite In-Memory Distributed Database 2.17.0
 -----------------------------------------------------------
