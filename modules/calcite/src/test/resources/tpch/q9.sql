@@ -14,7 +14,7 @@ FROM (
              part,
              supplier,
              lineitem,
-             partsupp,
+             partsupp /*+ NO_INDEX(_key_PK) */,
              orders,
              nation
          WHERE

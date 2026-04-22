@@ -13,7 +13,7 @@ FROM (
              n2.n_name                          AS nation
          FROM
              part,
-             supplier,
+             supplier /*+ NO_INDEX(S_NK_proxy) */,
              lineitem,
              orders,
              customer,
