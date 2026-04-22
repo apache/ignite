@@ -296,7 +296,7 @@ public class MessageSerializerGenerator {
 
                 indent++;
 
-                code.add(identedLine("throw new IgniteException(\"Failed to marshal object\" + msg.getClass().getSimpleName(), e);"));
+                code.add(identedLine("throw new IgniteException(\"Failed to marshal object \" + msg.getClass().getSimpleName(), e);"));
 
                 indent--;
 
