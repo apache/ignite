@@ -9,6 +9,9 @@ import org.apache.ignite.console.services.AccountsService;
 import org.apache.ignite.console.services.ConfigurationsService;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.web.model.ConfigurationKey;
+import org.springaicommunity.mcp.annotation.McpArg;
+import org.springaicommunity.mcp.annotation.McpPrompt;
+import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -16,8 +19,6 @@ import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import com.logaritex.mcp.annotation.McpArg;
-import com.logaritex.mcp.annotation.McpPrompt;
 
 import java.sql.*;
 import java.util.*;

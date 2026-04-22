@@ -85,12 +85,6 @@
             <version>${spring-ai.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.logaritex.mcp</groupId>
-            <artifactId>spring-ai-mcp-annotations</artifactId>
-            <version>0.1.0</version>
-        </dependency>
-
         <!-- Use Log4j2 instead -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -181,6 +175,29 @@
 		    <groupId>org.hibernate.validator</groupId>
 		    <artifactId>hibernate-validator</artifactId>		    
 		</dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-jndi</artifactId>
+            <version>12.0.19</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-rewrite</artifactId>
+            <version>12.0.19</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>quercus-webapps</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         
 
         <!-- Test dependencies -->
@@ -197,7 +214,8 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        
+
+
     </dependencies>
 
     <build>

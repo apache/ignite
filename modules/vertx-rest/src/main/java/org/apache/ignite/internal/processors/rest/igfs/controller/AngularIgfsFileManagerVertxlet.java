@@ -49,8 +49,8 @@ import org.apache.ignite.igfs.IgfsPath;
 
 import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
 import org.apache.ignite.internal.processors.rest.igfs.service.Impl.IgfsDatasetPersistenceProvider;
-import org.apache.ignite.internal.processors.rest.igfs.util.DateUtil;
-import org.apache.ignite.internal.processors.rest.igfs.util.IgfsUtils;
+import org.apache.ignite.internal.rest.igfs.util.*;
+import org.apache.ignite.internal.rest.igfs.model.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

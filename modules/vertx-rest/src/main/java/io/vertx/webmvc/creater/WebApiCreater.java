@@ -19,7 +19,7 @@ import io.vertx.webmvc.creater.handler.InitSingleRouterHandler;
 import io.vertx.webmvc.utils.SpringUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.ignite.internal.processors.rest.igfs.util.FileUtil;
+import org.apache.ignite.internal.rest.igfs.util.FileUtil;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;

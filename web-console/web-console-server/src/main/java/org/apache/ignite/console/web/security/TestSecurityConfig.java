@@ -33,13 +33,11 @@ public class TestSecurityConfig extends SecurityConfig {
     }
 
     /** {@inheritDoc} */
+    @Override
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeRequests().requestMatchers(TEST_PATH).anonymous();
-
         super.securityFilterChain(http);
-
-        http = http.csrf().disable();
+        http.authorizeHttpRequests(r->r.requestMatchers(TEST_PATH).anonymous());
         
         return http.build();
     }

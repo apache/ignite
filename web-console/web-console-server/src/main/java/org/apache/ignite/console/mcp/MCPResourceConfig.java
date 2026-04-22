@@ -19,7 +19,7 @@ import java.util.List;
 
 import static io.modelcontextprotocol.spec.McpSchema.*;
 
-@Configuration
+//@Configuration
 public class MCPResourceConfig {
 
     @Value("${mcp-server.user-email}")
@@ -29,7 +29,13 @@ public class MCPResourceConfig {
     @Bean
     public List<McpServerFeatures.SyncResourceSpecification> mySyncResourceSpecification(ConfigurationsService repo, AccountsService accountsService) {
         List<McpServerFeatures.SyncResourceSpecification> list = new ArrayList<>();
-        Account account = accountsService.loadUserByUsername(mcp_user_email);
+        Account account = null;
+        try {
+            account = accountsService.loadUserByUsername(mcp_user_email);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
         if(account!=null){
             JsonArray clusters = repo.loadClusters(new ConfigurationKey(account.getId(),false));
             for(Object item: clusters){

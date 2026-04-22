@@ -108,7 +108,7 @@ public class SecurityConfig {
         FORGOT_PASSWORD_ROUTE, RESET_PASSWORD_ROUTE, ACTIVATION_RESEND
     };
 
-    final static Map<String, Session> sessions = new ConcurrentHashMap<>();
+    static final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
     /** */
     private final AccountsService accountsSrv;

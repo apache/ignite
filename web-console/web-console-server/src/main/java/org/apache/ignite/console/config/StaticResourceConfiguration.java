@@ -52,6 +52,8 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
 
         registry.addResourceHandler("/**").
             addResourceLocations("file:frontend/");
+
+        registry.setOrder(100);
         
     }
     
@@ -71,8 +73,7 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
         registry.addViewController("/{x:^(?!api$).*$}/**/{y:[\\w\\-]+}").setViewName("forward:/index.html");
         
         WebMvcConfigurer.super.addViewControllers(registry);
-        
-        //registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
+
     }
     
     @Override

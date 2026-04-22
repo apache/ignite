@@ -11,9 +11,8 @@ import io.vertx.webmvc.annotation.Blocking;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
-import org.apache.ignite.internal.processors.rest.igfs.model.S3Object;
-import org.apache.ignite.internal.processors.rest.igfs.model.S3ObjectInputStream;
-import org.apache.ignite.internal.processors.rest.igfs.model.StringInputStream;
+import org.apache.ignite.internal.rest.igfs.util.*;
+import org.apache.ignite.internal.rest.igfs.model.*;
 import org.apache.ignite.internal.processors.rest.igfs.service.S3Service;
 import org.apache.ignite.internal.processors.rest.igfs.service.Impl.S3IgfsServiceImpl;
 import org.apache.ignite.internal.processors.rest.igfs.service.Impl.S3LocalFileServiceImpl;
@@ -345,7 +344,7 @@ public class JsonObjectController extends VertxInstanceAware{
 				JsonObject.put("status", 0);
 			}
 
-			if (list.size() == 0) {
+			if (list.isEmpty()) {
 				JsonObject.put("status", 400);
 			}
 

@@ -1,14 +1,14 @@
 package org.apache.ignite.internal.processors.rest.igfs.config;
 
 
-import static java.util.Objects.requireNonNull;
+import org.apache.ignite.internal.rest.igfs.model.Range;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.util.StringUtils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.ignite.internal.processors.rest.igfs.model.Range;
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.util.StringUtils;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Converts http range header value to range object

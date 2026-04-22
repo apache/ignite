@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.rest.igfs.util;
 
-
+import org.apache.ignite.internal.rest.igfs.util.*;
+import org.apache.ignite.internal.rest.igfs.model.*;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;

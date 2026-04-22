@@ -1,20 +1,19 @@
 package org.apache.ignite.internal.processors.rest.igfs.service.Impl;
 
 import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
-import org.apache.ignite.internal.processors.rest.igfs.model.*;
 import org.apache.ignite.internal.processors.rest.igfs.service.DatasetPersistenceException;
 import org.apache.ignite.internal.processors.rest.igfs.service.S3Service;
-import org.apache.ignite.internal.processors.rest.igfs.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Service;
+import org.apache.ignite.internal.processors.rest.igfs.util.CommonUtil;
+import org.apache.ignite.internal.rest.igfs.model.*;
+import org.apache.ignite.internal.rest.igfs.util.DateUtil;
+import org.apache.ignite.internal.rest.igfs.util.EncryptUtil;
+import org.apache.ignite.internal.rest.igfs.util.FileUtil;
 import org.springframework.util.StringUtils;
 
-
-import java.io.*;
-import java.net.URLEncoder;
-import java.nio.file.Files;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.*;
 
 
@@ -210,7 +209,8 @@ public class S3IgfsServiceImpl implements S3Service {
         return multipartUploadResult;
     }
     
-    public void abortMultipartUpload(String bucketName, String objectKey,String uploadId) {
+    @Override
+    public void abortMultipartUpload(String bucketName, String objectKey, String uploadId) {
     	String tempPath = systemConfig.getTempPath() + "/" + uploadId + "/";
         File tempDir = new File(tempPath);
         if (tempDir.exists() && tempPath.length()>32) {

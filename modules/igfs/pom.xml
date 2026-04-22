@@ -45,6 +45,10 @@
             <artifactId>ignite-core</artifactId>      
         </dependency>
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-slf4j</artifactId>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
             <scope>provided</scope>

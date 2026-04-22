@@ -17,46 +17,31 @@
 package org.apache.ignite.internal.processors.rest.igfs.service.Impl;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
-import org.apache.ignite.internal.processors.rest.igfs.model.Bucket;
-import org.apache.ignite.internal.processors.rest.igfs.model.DatasetSnapshotContext;
-import org.apache.ignite.internal.processors.rest.igfs.model.ObjectMetadata;
-import org.apache.ignite.internal.processors.rest.igfs.model.S3Object;
 import org.apache.ignite.internal.processors.rest.igfs.service.DatasetPersistenceException;
-import org.apache.ignite.internal.processors.rest.igfs.util.DateUtil;
-import org.apache.ignite.internal.processors.rest.igfs.util.EncryptUtil;
-import org.apache.ignite.internal.processors.rest.igfs.util.FileUtil;
-import org.apache.ignite.internal.processors.rest.igfs.util.IgfsUtils;
+import org.apache.ignite.internal.rest.igfs.model.Bucket;
+import org.apache.ignite.internal.rest.igfs.model.DatasetSnapshotContext;
+import org.apache.ignite.internal.rest.igfs.model.ObjectMetadata;
+import org.apache.ignite.internal.rest.igfs.model.S3Object;
+import org.apache.ignite.internal.rest.igfs.util.DateUtil;
+import org.apache.ignite.internal.rest.igfs.util.EncryptUtil;
+import org.apache.ignite.internal.rest.igfs.util.FileUtil;
+import org.apache.ignite.internal.rest.igfs.util.IgfsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**

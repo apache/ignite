@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.ignite.internal.processors.rest.igfs.model.*;
+import org.apache.ignite.internal.rest.igfs.model.*;
 
 public interface S3Service {
     Bucket createBucket(String bucketName);

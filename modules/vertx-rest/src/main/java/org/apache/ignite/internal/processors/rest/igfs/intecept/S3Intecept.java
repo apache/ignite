@@ -1,7 +1,7 @@
 package org.apache.ignite.internal.processors.rest.igfs.intecept;
 
 import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
-import org.apache.ignite.internal.processors.rest.igfs.util.ConvertOp;
+import org.apache.ignite.internal.rest.igfs.util.ConvertOp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;

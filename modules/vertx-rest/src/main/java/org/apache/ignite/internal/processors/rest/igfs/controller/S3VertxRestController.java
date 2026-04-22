@@ -1,50 +1,46 @@
 package org.apache.ignite.internal.processors.rest.igfs.controller;
 
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.processors.rest.igfs.config.RangeConverter;
-import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
-import org.apache.ignite.internal.processors.rest.igfs.model.*;
-import org.apache.ignite.internal.processors.rest.igfs.service.S3Service;
-import org.apache.ignite.internal.processors.rest.igfs.service.Impl.S3IgfsServiceImpl;
-import org.apache.ignite.internal.processors.rest.igfs.service.Impl.S3LocalFileServiceImpl;
-import org.apache.ignite.internal.processors.rest.igfs.util.*;
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.io.OutputFormat;
-import org.dom4j.io.SAXReader;
-import org.dom4j.io.XMLWriter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.webmvc.VertxInstanceAware;
 import io.vertx.webmvc.annotation.Blocking;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.processors.rest.igfs.config.RangeConverter;
+import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
+import org.apache.ignite.internal.processors.rest.igfs.service.Impl.S3IgfsServiceImpl;
+import org.apache.ignite.internal.processors.rest.igfs.service.Impl.S3LocalFileServiceImpl;
+import org.apache.ignite.internal.processors.rest.igfs.service.S3Service;
+import org.apache.ignite.internal.processors.rest.igfs.util.CommonUtil;
+import org.apache.ignite.internal.rest.igfs.model.*;
+import org.apache.ignite.internal.rest.igfs.util.ConvertOp;
+import org.apache.ignite.internal.rest.igfs.util.DateUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.net.URI;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /*
@@ -69,12 +65,39 @@ public class S3VertxRestController extends VertxInstanceAware{
 	private static final String HEADER_X_AMZ_COPY_SOURCE = "x-amz-copy-source";
 	
 	private static final String contextPath = "/s3/";
+
+    // 创建 DocumentBuilderFactory 和 DocumentBuilder
+    private DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
+    private TransformerFactory transformerFactory = TransformerFactory.newInstance();
 	
 	private Map<String,S3Service> s3ServiceMap = new HashMap<>();   
     
     @Autowired
     @Qualifier("systemConfig")
-    private SystemConfig systemConfig;    
+    private SystemConfig systemConfig;
+
+    /**
+     * 将 DOM Document 转换为格式化的 XML 字符串
+     */
+    private String domToString(Document doc) throws Exception {
+        // 方式一：使用 Transformer（支持格式化）
+
+        Transformer transformer = transformerFactory.newTransformer();
+
+        // 设置输出属性
+        transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+
+
+        StringWriter writer = new StringWriter();
+        StreamResult result = new StreamResult(writer);
+        DOMSource source = new DOMSource(doc);
+
+        transformer.transform(source, result);
+
+        return writer.toString();
+    }
 
     
     private Map<String, String> getUserMetadata(final HttpServerRequest request) {
@@ -124,37 +147,61 @@ public class S3VertxRestController extends VertxInstanceAware{
     public ResponseEntity<String> listBuckets() throws Exception {
         String xml = "";
         ListBucketsResult result = new ListBucketsResult(s3Service().listBuckets());
-        Document doc = DocumentHelper.createDocument();
-        Element root = doc.addElement("ListAllMyBucketsResult");
-        Element owner = root.addElement("Owner");
-        Element ownerId = owner.addElement("ID");       
-        Element displayName = owner.addElement("DisplayName");
-        
-        Element buckets = root.addElement("Buckets");
+
+        // 创建 DocumentBuilder
+        DocumentBuilder builder = documentFactory.newDocumentBuilder();
+
+        // 创建 DOM 文档
+        Document doc = builder.newDocument();
+
+        // 创建根元素
+        Element root = doc.createElement("ListAllMyBucketsResult");
+        doc.appendChild(root);
+
+        // 创建 Owner 元素
+        Element owner = doc.createElement("Owner");
+        root.appendChild(owner);
+
+        Element ownerId = doc.createElement("ID");
+        owner.appendChild(ownerId);
+
+        Element displayName = doc.createElement("DisplayName");
+        owner.appendChild(displayName);
+
+        // 创建 Buckets 元素
+        Element buckets = doc.createElement("Buckets");
+        root.appendChild(buckets);
+
+        // 遍历 buckets
         for (Bucket item : result.getBuckets()) {
-            Element bucket = buckets.addElement("Bucket");
-            Element name = bucket.addElement("Name");
-            name.setText(item.getName());
-            ownerId.setText(item.getAuthor());
-            displayName.setText(item.getAuthor());
-            Element creationDate = bucket.addElement("CreationDate");
-            creationDate.setText(item.getCreationDate());
-            Element region = bucket.addElement("Region");
-            region.setText(item.getRegion());
+            Element bucket = doc.createElement("Bucket");
+            buckets.appendChild(bucket);
+
+            Element name = doc.createElement("Name");
+            name.setTextContent(item.getName());
+            bucket.appendChild(name);
+
+            ownerId.setTextContent(item.getAuthor());
+            displayName.setTextContent(item.getAuthor());
+
+            Element creationDate = doc.createElement("CreationDate");
+            creationDate.setTextContent(item.getCreationDate());
+            bucket.appendChild(creationDate);
+
+            Element region = doc.createElement("Region");
+            region.setTextContent(item.getRegion());
+            bucket.appendChild(region);
+
             String endpoint = systemConfig.getEndpointOverride();
-            if(endpoint!=null) {
-	            Element location = bucket.addElement("Location");
-	            location.setText(endpoint+"/"+item.getName()+"/");
+            if (endpoint != null) {
+                Element location = doc.createElement("Location");
+                location.setTextContent(endpoint + "/" + item.getName() + "/");
+                bucket.appendChild(location);
             }
         }
-        OutputFormat format = OutputFormat.createPrettyPrint();
-        format.setEncoding("utf-8");
-        StringWriter out = new StringWriter();
-        XMLWriter writer = new XMLWriter(out, format);
-        writer.write(doc);
-        writer.close();
-        xml = out.toString();
-        out.close();
+
+        // 将 DOM 转换为 XML 字符串（带格式化）
+        xml = domToString(doc);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
     }
 
@@ -188,78 +235,112 @@ public class S3VertxRestController extends VertxInstanceAware{
         bucketName = URLDecoder.decode(bucketName, "utf-8");        
         
         List<S3Object> s3ObjectList = s3Service().listObjects(bucketName, prefix);
-        Document doc = DocumentHelper.createDocument();
-        Element root = doc.addElement("ListBucketResult");
-        Element name = root.addElement("Name");
-        name.setText(bucketName);
-        Element prefixElement = root.addElement("Prefix");
-        prefixElement.setText(prefix);
-        if(delimiter) {
-        	Element delimiterElement = root.addElement("Delimiter");
-        	delimiterElement.setText("/");     	
+
+        DocumentBuilder builder = documentFactory.newDocumentBuilder();
+
+        // 创建 DOM 文档
+        Document doc = builder.newDocument();
+
+        // 创建根元素
+        Element root = doc.createElement("ListBucketResult");
+        doc.appendChild(root);
+
+        // Name 元素
+        Element name = doc.createElement("Name");
+        name.setTextContent(bucketName);
+        root.appendChild(name);
+
+        // Prefix 元素
+        Element prefixElement = doc.createElement("Prefix");
+        prefixElement.setTextContent(prefix != null ? prefix : "");
+        root.appendChild(prefixElement);
+
+        // Delimiter 元素（可选）
+        if (delimiter) {
+            Element delimiterElement = doc.createElement("Delimiter");
+            delimiterElement.setTextContent("/");
+            root.appendChild(delimiterElement);
         }
-        Element isTruncated = root.addElement("IsTruncated");
-        isTruncated.setText("false");
-        Element maxKeys = root.addElement("MaxKeys");
-        maxKeys.setText("5000");
-        Element countKeys = root.addElement("KeyCount");
-        countKeys.setText(""+s3ObjectList.size());
+
+        // IsTruncated 元素
+        Element isTruncated = doc.createElement("IsTruncated");
+        isTruncated.setTextContent("false");
+        root.appendChild(isTruncated);
+
+        // MaxKeys 元素
+        Element maxKeys = doc.createElement("MaxKeys");
+        maxKeys.setTextContent("10000");
+        root.appendChild(maxKeys);
+
+        // KeyCount 元素
+        Element countKeys = doc.createElement("KeyCount");
+        countKeys.setTextContent(String.valueOf(s3ObjectList.size()));
+        root.appendChild(countKeys);
+
         Set<String> prefixs = new TreeSet<>();
+
         for (S3Object s3Object : s3ObjectList) {
-        	if(delimiter) {
-        		if(prefix==null || prefix.isEmpty()) {
-        			if(s3Object.getKey().endsWith("/")) {
-        				prefixs.add(s3Object.getKey());
-        				continue;
-        			}
-        		}
-        		else if(s3Object.getKey().endsWith("/")) {        			
-        			prefixs.add(s3Object.getKey());
-        			continue;
-        		}
-        		else if(s3Object.getKey().startsWith(prefix)) {
-        			String[] filePathList = s3Object.getKey().split("/");
-        	        StringBuilder result = new StringBuilder();
-        	        for (int i = 0; i < filePathList.length - 1; i++) {
-        	            result.append(filePathList[i]).append("/");
-        	        }
-        			prefixs.add(result.toString());   			
-        		}
-        		
-        	}
-            Element contents = root.addElement("Contents");
-            Element key = contents.addElement("Key");
-            key.setText(s3Object.getKey());
-            if (!StringUtils.isEmpty(s3Object.getMetadata().getLastModified())) {
-                Element lastModified = contents.addElement("LastModified");
-                lastModified.setText(DateUtil.getDateIso8601Format(s3Object.getMetadata().getLastModified()));                
+            if (delimiter) {
+                if (prefix == null || prefix.isEmpty()) {
+                    if (s3Object.getKey().endsWith("/")) {
+                        prefixs.add(s3Object.getKey());
+                        continue;
+                    }
+                } else if (s3Object.getKey().endsWith("/")) {
+                    prefixs.add(s3Object.getKey());
+                    continue;
+                } else if (s3Object.getKey().startsWith(prefix)) {
+                    String[] filePathList = s3Object.getKey().split("/");
+                    StringBuilder result = new StringBuilder();
+                    for (int i = 0; i < filePathList.length - 1; i++) {
+                        result.append(filePathList[i]).append("/");
+                    }
+                    prefixs.add(result.toString());
+                }
             }
-            Element size = contents.addElement("Size");
-            size.setText(s3Object.getMetadata().getContentLength() + "");
-            
-            Element ETag = contents.addElement("ETag");
-            ETag.setText(s3Object.getMetadata().getETag());
-            
-            Element StorageClass = contents.addElement("StorageClass");
-            StorageClass.setText("STANDARD");
-            
+
+            // Contents 元素
+            Element contents = doc.createElement("Contents");
+            root.appendChild(contents);
+
+            Element key = doc.createElement("Key");
+            key.setTextContent(s3Object.getKey());
+            contents.appendChild(key);
+
+            if (!StringUtils.isEmpty(s3Object.getMetadata().getLastModified())) {
+                Element lastModified = doc.createElement("LastModified");
+                lastModified.setTextContent(DateUtil.getDateIso8601Format(s3Object.getMetadata().getLastModified()));
+                contents.appendChild(lastModified);
+            }
+
+            Element size = doc.createElement("Size");
+            size.setTextContent(s3Object.getMetadata().getContentLength() + "");
+            contents.appendChild(size);
+
+            Element ETag = doc.createElement("ETag");
+            ETag.setTextContent(s3Object.getMetadata().getETag());
+            contents.appendChild(ETag);
+
+            Element StorageClass = doc.createElement("StorageClass");
+            StorageClass.setTextContent("STANDARD");
+            contents.appendChild(StorageClass);
         }
-        if(delimiter) {
-        	Element prefixesElement = root.addElement("CommonPrefixes");
-        	for(String p : prefixs) {
-	        	Element Prefix = prefixesElement.addElement("Prefix");
-	        	Prefix.setText(p);
-        	}
+
+        if (delimiter && !prefixs.isEmpty()) {
+            Element prefixesElement = doc.createElement("CommonPrefixes");
+            root.appendChild(prefixesElement);
+            for (String p : prefixs) {
+                Element Prefix = doc.createElement("Prefix");
+                Prefix.setTextContent(p);
+                prefixesElement.appendChild(Prefix);
+            }
         }
-        response.putHeader("ContentType", MediaType.APPLICATION_XML.toString()+";charset=UTF-8");        
-        OutputFormat format = OutputFormat.createPrettyPrint();
-        format.setEncoding("utf-8");     
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        XMLWriter writer = new XMLWriter(out, format);
-        writer.write(doc);
-        writer.flush();
-        
-        response.end(Buffer.buffer(out.toByteArray()));
+
+        // 将 DOM 转换为字节数组并响应
+        String xmlBytes = domToString(doc);
+
+        response.putHeader("ContentType", MediaType.APPLICATION_XML.toString() + ";charset=UTF-8");
+        response.end(Buffer.buffer(xmlBytes));
     }
 
 
@@ -287,9 +368,7 @@ public class S3VertxRestController extends VertxInstanceAware{
             for (String key : headInfo.keySet()) {
                 response.putHeader(key, headInfo.get(key));
             }
-            
             response.end();
-
         }
     }
     
@@ -341,20 +420,22 @@ public class S3VertxRestController extends VertxInstanceAware{
             s3Service().copyObject(sourceBucketName, sourceObjectKey, bucketName, objectKey);
             ObjectMetadata metadata = s3Service().headObject(bucketName, objectKey);
             String xml = "";
-            Document doc = DocumentHelper.createDocument();
-            Element root = doc.addElement("CopyObjectResult");
-            Element lastModified = root.addElement("LastModified");
-            lastModified.setText(DateUtil.getDateIso8601Format(metadata.getLastModified()));
-            Element eTag = root.addElement("ETag");
-            eTag.setText(metadata.getETag());
-            OutputFormat format = OutputFormat.createPrettyPrint();
-            format.setEncoding("utf-8");
-            StringWriter out = new StringWriter();
-            XMLWriter writer = new XMLWriter(out, format);
-            writer.write(doc);
-            writer.close();
-            xml = out.toString();
-            out.close();
+            DocumentBuilder builder = documentFactory.newDocumentBuilder();
+
+            // 创建 DOM 文档
+            Document doc = builder.newDocument();
+            Element root = doc.createElement("CopyObjectResult");
+
+            Element lastModified = doc.createElement("LastModified");
+            lastModified.setTextContent(DateUtil.getDateIso8601Format(metadata.getLastModified()));
+
+            Element eTag = doc.createElement("ETag");
+            eTag.setTextContent(metadata.getETag());
+
+            root.appendChild(lastModified);
+            root.appendChild(eTag);
+
+            xml = domToString(doc);
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
         }
     }
@@ -484,22 +565,32 @@ public class S3VertxRestController extends VertxInstanceAware{
         InitiateMultipartUploadResult result = s3Service().initiateMultipartUpload(bucketName, objectKey, userMeta);
 
         String xml = "";
-        Document doc = DocumentHelper.createDocument();
-        Element root = doc.addElement("InitiateMultipartUploadResult");
-        Element bucket = root.addElement("Bucket");
-        bucket.setText(bucketName);
-        Element key = root.addElement("Key");
-        key.setText(objectKey);
-        Element uploadId = root.addElement("UploadId");
-        uploadId.setText(result.getUploadId());
-        OutputFormat format = OutputFormat.createPrettyPrint();
-        format.setEncoding("utf-8");
-        StringWriter out = new StringWriter();
-        XMLWriter writer = new XMLWriter(out, format);
-        writer.write(doc);
-        writer.close();
-        xml = out.toString();
-        out.close();
+
+        DocumentBuilder builder = documentFactory.newDocumentBuilder();
+
+        // 创建 DOM 文档
+        Document doc = builder.newDocument();
+
+        // 创建根元素
+        Element root = doc.createElement("InitiateMultipartUploadResult");
+        doc.appendChild(root);
+
+        // Bucket 元素
+        Element bucket = doc.createElement("Bucket");
+        bucket.setTextContent(bucketName);
+        root.appendChild(bucket);
+
+        // Key 元素
+        Element key = doc.createElement("Key");
+        key.setTextContent(objectKey);
+        root.appendChild(key);
+
+        // UploadId 元素
+        Element uploadId = doc.createElement("UploadId");
+        uploadId.setTextContent(result.getUploadId());
+        root.appendChild(uploadId);
+
+        xml = this.domToString(doc);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
     }
 
@@ -529,40 +620,54 @@ public class S3VertxRestController extends VertxInstanceAware{
         String uploadId = request.getParam("uploadId");
         List<PartETag> partETags = new ArrayList<>();
 
-        SAXReader reader = new SAXReader();
         byte[] bytes = rc.body().buffer().getBytes();
         InputStream inputStream = new ByteArrayInputStream(bytes);
-        Document bodyDoc = reader.read(inputStream);
-        Element bodyRoot = bodyDoc.getRootElement();
-        List<Element> elementList = bodyRoot.elements("Part");
-        for (Element element : elementList) {
-            int partNumber = ConvertOp.convert2Int(element.element("PartNumber").getText());
-            String eTag = element.element("ETag").getText();
-            PartETag partETag = new PartETag(partNumber, eTag);
-            partETags.add(partETag);
-        }        
+
+
+        DocumentBuilder builder = documentFactory.newDocumentBuilder();
+        Document bodyDoc = builder.parse(inputStream);
+
+        Element bodyRoot = bodyDoc.getDocumentElement();
+        NodeList partNodes = bodyRoot.getElementsByTagName("Part");
+
+        for (int i = 0; i < partNodes.getLength(); i++) {
+            Element partElement = (Element) partNodes.item(i);
+
+            NodeList partNumberNodes = partElement.getElementsByTagName("PartNumber");
+            int partNumber = ConvertOp.convert2Int(partNumberNodes.item(0).getTextContent());
+
+            NodeList etagNodes = partElement.getElementsByTagName("ETag");
+            String eTag = etagNodes.item(0).getTextContent();
+
+            partETags.add(new PartETag(partNumber, eTag));
+        }
+
         String ownerName = CommonUtil.getCurrentUser(rc);
         CompleteMultipartUploadResult result = s3Service().completeMultipartUpload(bucketName, objectKey, uploadId, ownerName, new CompleteMultipartUpload(partETags));
-        String xml = "";
-        Document doc = DocumentHelper.createDocument();
-        Element root = doc.addElement("CompleteMultipartUploadResult");
-        Element location = root.addElement("Location");
-        location.setText(CommonUtil.getApiPath(request) + "" + bucketName + "/" + objectKey);
-        Element bucket = root.addElement("Bucket");
-        bucket.setText(bucketName);
-        Element key = root.addElement("Key");
-        key.setText(objectKey);
-        Element etag = root.addElement("ETag");
-        etag.setText(result.geteTag());
 
-        OutputFormat format = OutputFormat.createPrettyPrint();
-        format.setEncoding("utf-8");
-        StringWriter out = new StringWriter();
-        XMLWriter writer = new XMLWriter(out, format);
-        writer.write(doc);
-        writer.close();
-        xml = out.toString();
-        out.close();
+        // 构建响应 XML
+        Document responseDoc = builder.newDocument();
+        Element root = responseDoc.createElement("CompleteMultipartUploadResult");
+        responseDoc.appendChild(root);
+
+        Element location = responseDoc.createElement("Location");
+        location.setTextContent(CommonUtil.getApiPath(request) + "" + bucketName + "/" + objectKey);
+        root.appendChild(location);
+
+        Element bucket = responseDoc.createElement("Bucket");
+        bucket.setTextContent(bucketName);
+        root.appendChild(bucket);
+
+        Element key = responseDoc.createElement("Key");
+        key.setTextContent(objectKey);
+        root.appendChild(key);
+
+        Element etag = responseDoc.createElement("ETag");
+        etag.setTextContent(result.geteTag());
+        root.appendChild(etag);
+
+        String xml = this.domToString(responseDoc);
+
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
     }
 }

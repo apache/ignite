@@ -2,8 +2,8 @@
 
 package org.apache.ignite.console.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.springframework.boot.diagnostics.FailureAnalysis;
 import org.springframework.boot.diagnostics.FailureAnalysisReporter;
 
@@ -12,7 +12,7 @@ import org.springframework.boot.diagnostics.FailureAnalysisReporter;
  */
 public class CustomFailureAnalysisReporter implements FailureAnalysisReporter {
     /** */
-    private static final Log logger = LogFactory.getLog(CustomFailureAnalysisReporter.class);
+    private static final Logger logger = LogManager.getLogger(CustomFailureAnalysisReporter.class);
 
     /** {@inheritDoc} */
     @Override public void report(FailureAnalysis failureAnalysis) {

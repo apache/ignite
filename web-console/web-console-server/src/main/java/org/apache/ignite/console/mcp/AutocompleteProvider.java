@@ -1,7 +1,8 @@
 package org.apache.ignite.console.mcp;
 
-import com.logaritex.mcp.annotation.McpComplete;
+
 import org.apache.ignite.console.services.AccountsService;
+import org.springaicommunity.mcp.annotation.McpComplete;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
