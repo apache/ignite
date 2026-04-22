@@ -40,35 +40,32 @@ No longer experimental parts and components:
 
 Ignite:
 * Added SessionContext API.
-* Store crash recovery data to checkpoint recovery files.
+* Added store crash recovery data to checkpoint recovery files.
 * Added JMH benchmark and helper for TPC-H queries.
-* Several storage paths per cache.
+* Added multiple storage paths per cache.
 * Added metrics of TCP communication connection pool.
 * Added support of partition loss detection after cluster inactivity.
-* Recording systemViews to perfStart report.
-* Per cache custom storagePath configuration.
+* Added recording of systemViews to perfStat report.
+* Added per cache custom storagePath configuration.
 * Added max value aggregated interval metric.
-* Support of cache storage for --persitence commands.
-* DataStorageConfiguration#extraSnapshotPaths added.
-* Ignite accepts joining node with rolling upgrade version.
+* Added support of cache storage for --persistence commands.
+* Added DataStorageConfiguration#extraSnapshotPaths.
 * Fixed in-memory cluster hanging when error is thrown on activation.
-* Discovery optimizations for MultiDC.
+* Optimized discovery in multi-DC scenarios.
 * Fixed hang in put with RANDOM_LRU and RANDOM_2_LRU eviction policy.
-* WAL state/enable/disable commands.
+* Added WAL state/enable/disable commands.
 * Skip read-through in DML operations.
-* Implement an affinity backup filter assigning partition copies evenly between data centers.
-* Сheckpoint command added.
-* IndexQuery can't use an index until data population completes.
+* Added an affinity backup filter assigning partition copies evenly between data centers.
+* Added checkpoint command.
+* Fixed IndexQuery can't use an index until data population completes.
 * Removed setSharedMemoryPort.
-* Introduce CacheIdleVerifyCancelCommand.
-* Compatibility test for Ignite snapshot.
-* Dump reader - cache names filter added.
+* Added cache names filter to dump reader.
 * Fixed memory leak in HeavyQueriesTracker.
 * Added metrics to improve node network unavailability detection.
 * Added authorization of Compute Job cancellation.
 * Added offline commands support.
 * Added metrics for inserted/removed bytes to/from cache group.
-* Rebalancing optimization for MultiDC.
+* Optimized rebalancing in multi-DC mode.
 * Fixed freelist corruption in JDK17 with ShenandoahGC and assertions turned off.
 * Added capturing of cluster node certificates during join process.
 * Fixed query entity configuration merge on node join.
@@ -81,16 +78,14 @@ Ignite:
 * Removed redundant IgniteExperimental annotations.
 * Fixed snapshot restoration when indexPath equal to storagePath.
 * Cache API optimizations for MultiDC.
-* Allow to create table for already existing cache with defined schema.
-* PerfStat: fix reading empty unsupported system views.
+* Added ability to create tables for already existing cache with defined schema.
+* Fixed reading empty unsupported system views in perfStat.
 * Fixed inconsistent behaviour on concurrent commit and timeout with 1PC.
-* Disable distributed processes during rolling upgrade.
 * Fixed suboptimal expire shift calculation.
 * Fixed corrupted tree exception on expiration.
 * Speed up warmup running in several threads.
 * Added performance statistics for putAllConflict, removeAllConflict operations.
 * Updated jetty-server dependency version.
-* Reduce memory requirements of largeUserAttributes* tests.
 * Fixed primitive column descriptor problem with alias on key or val field.
 * Make "metastorage" and "distributedMetastorage" system views filtrable.
 * Added warn if index inline size is too big.
@@ -102,25 +97,23 @@ Ignite:
 * Added CODEOWNERS for platforms.
 * Added data center ID to the ClusterNodeView.
 * Updated dependency version commons-lang3.
-* Thick client optimizations for MultiDC.
-* Cache storage path added to ClientCacheConfiguration.
+* Added cache storage path to ClientCacheConfiguration.
 * Added client router node metric.
 
 SQL:
 * Added system view for SQL query plans history.
 * Added docs for PostgreSQL cdc-extension.
 * Fixed performance drop introduced by SQL plan history system view.
-* Method to create SQL cache via thin client.
+* Added thin client API to create SQL caches.
 * Fixed node crash after SQL query with WITH clause.
 * Added initiatorId to the SQL_QUERY_HISTORY system view.
 * Fixed indexed field validation.
 * Added information about query initiator id to log.
 * Set H2 default SQL plan history to zero.
-* Documentation: Add SQL_PLANS_HISTORY view performance considerations.
 
 SQL Calcite:
-* Update Calcite version to 1.40.
-* Support UNNEST operator.
+* Updated Calcite version to 1.40.
+* Added UNNEST operator support.
 * Added HASH join type.
 * Added query blocking tasks executor (allows to execute SQL inside UDF).
 * Added non-equi condition support for LEFT/RIGHT/FULL/ANTI HASH JOIN.
@@ -142,7 +135,7 @@ SQL Calcite:
 * Fixed wider type for fixed chars coercion.
 * Fixed NVL/COALESCE failure with correlated subquery as parameter.
 * Fixed excessive log output on planning error.
-* Reduce contention by QueryBlockingTaskExecutor.
+* Reduced contention by QueryBlockingTaskExecutor.
 * Fixed assertion on planning for filter with double correlate.
 * Reuse Row for non-storing accumulators.
 * Fixed function with schema serialization.
