@@ -58,7 +58,7 @@ import static org.apache.logging.log4j.util.Cast.cast;
  * Abstract test class to ensure a planner generates optimal plan for TPC queries.
  */
 public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
-    private static final boolean UPDATE_PLAN = false;
+    private static final boolean UPDATE_PLAN = true;
 
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
     private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");

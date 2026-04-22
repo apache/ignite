@@ -4,7 +4,7 @@
 SELECT sum(l_extendedprice * (1 - l_discount)) AS revenue
 FROM
     lineitem,
-    part
+    part /*+ NO_INDEX(_key_PK_proxy) */
 WHERE
     (
                 p_partkey = l_partkey

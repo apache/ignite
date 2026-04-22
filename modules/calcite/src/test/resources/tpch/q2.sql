@@ -12,11 +12,11 @@ SELECT
     s_phone,
     s_comment
 FROM
-    part,
-    supplier,
+    part /*+ NO_INDEX(_key_PK_proxy) */,
+    supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
     partsupp /*+ NO_INDEX(_key_PK) */,
-    nation,
-    region
+    nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */,
+    region /*+ NO_INDEX(_key_PK_proxy) */
 WHERE
       p_partkey = ps_partkey
   AND s_suppkey = ps_suppkey
@@ -29,7 +29,7 @@ WHERE
     SELECT min(ps_supplycost)
     FROM
         partsupp /*+ NO_INDEX(_key_PK) */, supplier,
-        nation, region
+        nation, region /*+ NO_INDEX(_key_PK_proxy) */
     WHERE
             p_partkey = ps_partkey
       AND s_suppkey = ps_suppkey

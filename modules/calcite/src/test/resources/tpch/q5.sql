@@ -5,12 +5,12 @@ SELECT
     n_name,
     sum(l_extendedprice * (1 - l_discount)) AS revenue
 FROM
-    customer,
+    customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
     orders,
     lineitem,
-    supplier,
-    nation,
-    region
+    supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
+    nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */,
+    region /*+ NO_INDEX(_key_PK_proxy) */
 WHERE
         c_custkey = o_custkey
   AND l_orderkey = o_orderkey

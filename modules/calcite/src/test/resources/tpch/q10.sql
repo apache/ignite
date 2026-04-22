@@ -11,10 +11,10 @@ SELECT
     c_phone,
     c_comment
 FROM
-    customer,
-    orders,
+    customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
+    orders /*+ NO_INDEX(_key_PK_proxy) */,
     lineitem,
-    nation
+    nation /*+ NO_INDEX(_key_PK_proxy) */
 WHERE
         c_custkey = o_custkey
   AND l_orderkey = o_orderkey

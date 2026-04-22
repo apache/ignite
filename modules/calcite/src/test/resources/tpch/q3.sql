@@ -8,7 +8,7 @@ SELECT
     o_shippriority
 FROM
     customer,
-    orders,
+    orders /*+ NO_INDEX(_key_PK_proxy) */,
     lineitem
 WHERE
         c_mktsegment = 'BUILDING'

@@ -15,8 +15,8 @@ FROM (
              supplier,
              lineitem,
              partsupp /*+ NO_INDEX(_key_PK) */,
-             orders,
-             nation
+             orders /*+ NO_INDEX(_key_PK_proxy) */,
+             nation /*+ NO_INDEX(_key_PK_proxy) */
          WHERE
                  s_suppkey = l_suppkey
            AND ps_suppkey = l_suppkey

@@ -15,11 +15,11 @@ FROM (
              part,
              supplier /*+ NO_INDEX(S_NK_proxy) */,
              lineitem,
-             orders,
-             customer,
-             nation n1,
-             nation n2,
-             region
+             orders /*+ NO_INDEX(_key_PK_proxy) */,
+             customer /*+ NO_INDEX(_key_PK_proxy) */,
+             nation /*+ NO_INDEX(_key_PK_proxy) */ n1,
+             nation /*+ NO_INDEX(_key_PK_proxy) */ n2,
+             region /*+ NO_INDEX(_key_PK_proxy) */
          WHERE
                  p_partkey = l_partkey
            AND s_suppkey = l_suppkey
