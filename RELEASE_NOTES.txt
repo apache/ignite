@@ -78,15 +78,15 @@ Ignite:
 * Fixed inconsistent behavior on concurrent commit and timeout with 1PC.
 * Fixed suboptimal expire shift calculation.
 * Fixed the corrupted tree exception on expiration.
-* Fixed H2QueryInfo#planWithoutScanCount for UNION queries.
+* Fixed H2 UNION query diagnostic plans (normalization added).
 * Fixed primitive column descriptor problem with alias on key or val field.
 * Fixed CdcMain to clear corrupted cdc state files.
+* Optimized cache warmup by using multiple threads.
 * Optimized discovery for multi-DC scenarios.
 * Optimized rebalancing in multi-DC mode.
 * Optimized the Cache API for multi-DC.
 * Optimized SQL Calcite-related operations for multi-DC.
 * Optimized the Java thin client for multi-DC scenarios.
-* Optimized cache warmup by using multiple threads.
 * Updated jetty-server dependency version to 11.0.25.
 * Updated commons-lang3 dependency version to 3.18.0.
 
