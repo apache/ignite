@@ -558,10 +558,10 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             expEx
         );
 
-        String[] splitedAddr = Config.SERVER.split(":");
+        String[] addr = Config.SERVER.split(":");
 
         assertContains(log, expEx.getMessage(),
-            Pattern.compile(".*" + Pattern.quote(splitedAddr[0]) + "(?:/<unresolved>)?:" + splitedAddr[1] + ".*"));
+            Pattern.compile(".*" + Pattern.quote(addr[0]) + "(?:/<unresolved>)?:" + addr[1] + ".*"));
     }
 
 
