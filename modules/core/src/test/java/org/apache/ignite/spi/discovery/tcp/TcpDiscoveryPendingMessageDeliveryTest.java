@@ -239,11 +239,14 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     private class NoRingClosingTcpDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void initializeImpl() {
+            if (impl != null)
+                return;
+
             super.initializeImpl();
 
             // In theory, might be a ClientImpl.
             if (impl instanceof ServerImpl) {
-                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE) {
+                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, 0) {
                     @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
                         return new ServerImpl.RingMessageWorker(impl.log) {
                             @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(
