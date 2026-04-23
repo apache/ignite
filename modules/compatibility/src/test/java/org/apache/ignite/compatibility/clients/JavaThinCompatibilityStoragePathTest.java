@@ -32,10 +32,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.junit.Assume;
 
 import static org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest.ADDR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests java thin client compatibility. This test only checks that thin client can perform basic operations with
@@ -72,14 +72,19 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
 
     /** {@inheritDoc} */
     @Override public void testOldClientToCurrentServer() throws Exception {
-        Assume.assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+        assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
 
         super.testOldClientToCurrentServer();
     }
 
     /** {@inheritDoc} */
     @Override public void testCurrentClientToOldServer() throws Exception {
-        Assume.assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer >= 17)
+            assumeTrue("JDK 17 support is available starting with release 2.13.0", ver.compareTo(VER_2_13_0) >= 0);
+        else
+            assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
 
         super.testCurrentClientToOldServer();
     }
