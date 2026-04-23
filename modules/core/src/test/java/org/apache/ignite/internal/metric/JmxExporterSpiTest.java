@@ -1091,7 +1091,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 }
             }
 
-            assertFalse(taskStripeIdxs.toString(), taskStripeIdxs.isEmpty());
+            assertFalse(taskStripeIdxs.isEmpty());
         }
         finally {
             finishExecTaskLatch.countDown();
@@ -1299,11 +1299,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             startExecLatch.countDown();
 
             try {
-                log.warning(">>>>> Executing task: " + idx);
-
                 assertTrue(finishExecLatch.await(5, TimeUnit.SECONDS));
-
-                log.warning(">>>>> Executing task finish: " + idx);
             }
             catch (InterruptedException e) {
                 throw new IgniteException(e);
