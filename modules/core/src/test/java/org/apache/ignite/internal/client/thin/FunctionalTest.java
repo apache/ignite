@@ -557,7 +557,11 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             expEx
         );
 
-        assertContains(log, expEx.getMessage(), Config.SERVER);
+        String addr = U.majorJavaVersion(U.jdkVersion()) >= 17
+            ? Config.SERVER.replace(":", "/<unresolved>:")
+            : Config.SERVER;
+
+        assertContains(log, expEx.getMessage(), addr);
     }
 
 
