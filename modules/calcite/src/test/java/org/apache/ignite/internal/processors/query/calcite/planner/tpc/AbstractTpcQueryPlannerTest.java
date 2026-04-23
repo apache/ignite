@@ -153,19 +153,20 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     /** */
     private void updatePlan(String newPlan) {
-        Path targetDirectory = Path.of("./src/test/resources/" + sqlTestName(getClass()));
+        Path targetDir = Path.of("./src/test/resources/" + sqlTestName(getClass()));
 
         // A targetDirectory must be specified by hand when expected plans are generated.
-        if (targetDirectory == null) {
+        if (targetDir == null) {
             throw new RuntimeException("Please provide target directory to where save generated plans."
                 + " Usually plans are kept in resource folder of tests within the same module.");
         }
 
         try {
-            Files.createDirectories(targetDirectory);
+            Files.createDirectories(targetDir);
 
-            Files.writeString(targetDirectory.resolve(String.format("%s.plan", queryId)), newPlan);
-        } catch (Exception e) {
+            Files.writeString(targetDir.resolve(String.format("%s.plan", queryId)), newPlan);
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

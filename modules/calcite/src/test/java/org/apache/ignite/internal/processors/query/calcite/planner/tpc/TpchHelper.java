@@ -55,10 +55,12 @@ public final class TpchHelper {
     private TpchHelper() {
     }
 
+    /** */
     public static Stream<Path> testFiles(Class<?> klass) throws IOException {
         return testFiles(klass, "");
     }
 
+    /** */
     public static Stream<Path> testFiles(Class<?> klass, String exdDir) throws IOException {
         return Files.list(Path.of(RSRC_DIR, sqlTestName(klass), exdDir));
     }
@@ -74,13 +76,14 @@ public final class TpchHelper {
             resource = resource.substring(RSRC_DIR.length() + 1);
 
         try (InputStream is = TpchHelper.class.getClassLoader().getResourceAsStream(resource)) {
-            if (is == null) {
+            if (is == null)
                 throw new IllegalArgumentException("Resource does not exist: " + resource);
-            }
+
             try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 return CharStreams.toString(reader);
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new UncheckedIOException("I/O operation failed: " + resource, e);
         }
     }
@@ -193,7 +196,7 @@ public final class TpchHelper {
         boolean oneOfEnd = false;
 
         // Expanding first found oneof
-        while(sc.hasNextLine() && !oneOfEnd) {
+        while (sc.hasNextLine() && !oneOfEnd) {
             StringBuilder oneofCase = new StringBuilder();
 
             while (sc.hasNextLine()) {
@@ -237,7 +240,7 @@ public final class TpchHelper {
 
         Scanner sc = new Scanner(sqlScript);
 
-        StringBuilder current = new StringBuilder();
+        StringBuilder cur = new StringBuilder();
 
         while (sc.hasNextLine()) {
             String line = sc.nextLine().trim();
@@ -245,17 +248,17 @@ public final class TpchHelper {
             if (line.startsWith("--") || line.isEmpty())
                 continue;
 
-            current.append(line).append('\n');
+            cur.append(line).append('\n');
 
             if (line.endsWith(";")) {
-                queries.add(current.toString());
+                queries.add(cur.toString());
 
-                current = new StringBuilder();
+                cur = new StringBuilder();
             }
         }
 
-        if (current.length() > 0)
-            queries.add(current.toString());
+        if (cur.length() > 0)
+            queries.add(cur.toString());
 
         return queries;
     }

@@ -32,37 +32,31 @@ import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.TestClass;
 import org.junit.runners.parameterized.BlockJUnit4ClassRunnerWithParameters;
 import org.junit.runners.parameterized.TestWithParameters;
 
-/** */
+/**
+ * Suite to check queries plans.
+ * Makes pretty test names to simplify CI tracking.
+ */
 public class PlanChecker extends Suite {
-    /** */
-    private final List<Runner> runners;
-
     /**
      * Only called reflectively. Do not use programmatically.
      */
     public PlanChecker(Class<?> klass) throws Throwable {
-        super(klass, Collections.emptyList());
-
-        runners = createRunnersForParameters().collect(Collectors.toList());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<Runner> getChildren() {
-        return runners;
+        super(klass, createRunnersForParameters(new TestClass(klass)).collect(Collectors.toList()));
     }
 
     /** */
-    private Stream<Runner> createRunnersForParameters() throws IOException {
-        Stream<String> queries = TpchHelper.testFiles(getTestClass().getJavaClass())
+    private static Stream<Runner> createRunnersForParameters(TestClass testClass) throws IOException {
+        Stream<String> queries = TpchHelper.testFiles(testClass.getJavaClass())
             .filter(p -> p.toString().endsWith(".sql"))
             .sorted()
             .map(p -> p.getFileName().toString().replace(".sql", ""));
 
         return queries
-            .map(qryId -> new TestWithParameters("[queryId=" + qryId + "]", getTestClass(), Collections.singletonList(qryId)))
+            .map(qryId -> new TestWithParameters("[queryId=" + qryId + "]", testClass, Collections.singletonList(qryId)))
             .map(test -> {
                 try {
                     return new BlockJUnit4ClassRunnerWithParameters(test);
@@ -76,6 +70,7 @@ public class PlanChecker extends Suite {
     /** {@inheritDoc} */
     @Override public void run(RunNotifier notifier) {
         runAnnotated(BeforePlansTest.class);
+
         try {
             super.run(notifier);
         }
@@ -84,6 +79,7 @@ public class PlanChecker extends Suite {
         }
     }
 
+    /** Runs static void method of test class annotated with the specific annotation. */
     private void runAnnotated(Class<? extends Annotation> annotation) {
         getTestClass().getAnnotatedMethods(annotation).forEach(m -> {
             List<Throwable> errors = new ArrayList<>();
@@ -102,20 +98,25 @@ public class PlanChecker extends Suite {
         });
     }
 
+    /** */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     public @interface PlansTest {
+        /** @return Test name. */
         String name() default "";
     }
 
+    /** */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public @interface BeforePlansTest {
+        // No-op.
     }
 
+    /** */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public @interface AfterPlansTest {
-        String name() default "";
+        // No-op.
     }
 }
