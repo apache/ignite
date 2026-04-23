@@ -499,37 +499,18 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "  col varchar(100), " +
             "  PRIMARY KEY(id) ) ";
 
-        {
-            try {
-                sql(qry);
+        try {
+            for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"", qry + "WITH \"wrap_key=false\"")) {
+                sql(ddl);
+
                 assertEquals(18, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
-            }
-            finally {
+
                 sql("DROP TABLE IF EXISTS T");
             }
         }
-
-        {
-            try {
-                sql(qry + "WITH \"wrap_key=true\"");
-                assertEquals(18, sql(
-                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
-            }
-            finally {
-                sql("DROP TABLE IF EXISTS T");
-            }
-        }
-
-        {
-            try {
-                sql(qry + "WITH \"wrap_key=false\"");
-                assertEquals(18, sql(
-                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
-            }
-            finally {
-                sql("DROP TABLE IF EXISTS T");
-            }
+        finally {
+            sql("DROP TABLE IF EXISTS T");
         }
     }
 
@@ -544,26 +525,19 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "  id2 uuid, " +
             "  col varchar(100), " +
             "  PRIMARY KEY(id, id2) )";
-        {
-            try {
-                sql(qry);
+
+        try {
+            for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"")) {
+                sql(ddl);
+
                 assertEquals(35, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
-            }
-            finally {
+
                 sql("DROP TABLE IF EXISTS T");
             }
         }
-
-        {
-            try {
-                sql(qry + "WITH \"wrap_key=true\"");
-                assertEquals(35, sql(
-                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
-            }
-            finally {
-                sql("DROP TABLE IF EXISTS T");
-            }
+        finally {
+            sql("DROP TABLE IF EXISTS T");
         }
     }
 
