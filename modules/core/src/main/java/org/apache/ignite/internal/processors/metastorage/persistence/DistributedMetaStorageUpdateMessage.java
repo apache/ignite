@@ -78,11 +78,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     }
 
     /** */
-    public Serializable value() {
-        return val;
-    }
-
-    /** */
     public byte[] valueBytes() {
         return valBytes;
     }
@@ -97,20 +92,15 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
         return true;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
+    /** @param marsh Marshaller. */
     public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (val != null && valBytes == null)
             valBytes = U.marshal(marsh, val);
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
+    /** @param marsh Marshaller. */
     public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (valBytes != null && val == null)
-            val = U.unmarshal(marsh, valBytes, U.gridClassLoader());
+        // No-op.
     }
 
     /** {@inheritDoc} */
