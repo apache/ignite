@@ -124,7 +124,9 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
             boolean match = false;
 
-            for (String possiblePlan : preparePlan(expectedPlans[pos++])) {
+            List<String> possiblePlans = preparePlan(expectedPlans[pos++]);
+
+            for (String possiblePlan : possiblePlans) {
                 if (possiblePlan.equals(preparedPlans.get(0))) {
                     match = true;
 
@@ -135,7 +137,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             if (!match) {
                 // This assertion will print nice diff in IDE that will help to investigate.
                 // Test will fail anyway.
-                assertEquals(expectedPlans[pos-1], preparedPlans.get(0));
+                assertEquals(possiblePlans.get(0), preparedPlans.get(0));
 
                 assert false : "Should not happen";
             }
