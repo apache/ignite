@@ -12,10 +12,10 @@ FROM (
              l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity AS amount
          FROM
              part,
-             supplier,
+             supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
              lineitem,
-             partsupp /*+ NO_INDEX(_key_PK) */,
-             orders /*+ NO_INDEX(_key_PK_proxy) */,
+             partsupp,
+             orders /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(O_OD_proxy) */,
              nation /*+ NO_INDEX(_key_PK_proxy) */
          WHERE
                  s_suppkey = l_suppkey

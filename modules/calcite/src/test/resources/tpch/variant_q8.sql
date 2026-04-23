@@ -16,9 +16,9 @@ FROM (
              supplier /*+ NO_INDEX(S_NK_proxy) */,
              lineitem,
              orders /*+ NO_INDEX(_key_PK_proxy) */,
-             customer /*+ NO_INDEX(_key_PK_proxy) */,
-             nation /*+ NO_INDEX(_key_PK_proxy) */ n1,
-             nation /*+ NO_INDEX(_key_PK_proxy) */ n2,
+             customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
+             nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */ n1,
+             nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */ n2,
              region /*+ NO_INDEX(_key_PK_proxy) */
          WHERE
                  p_partkey = l_partkey

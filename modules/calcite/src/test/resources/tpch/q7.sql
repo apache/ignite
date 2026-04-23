@@ -15,8 +15,8 @@ FROM (
          FROM
              supplier /*+ NO_INDEX(S_NK_proxy) */,
              lineitem,
-             orders /*+ NO_INDEX(_key_PK_proxy) */,
-             customer /*+ NO_INDEX(_key_PK_proxy) */,
+             orders /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(O_CK_proxy) */,
+             customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
              nation /*+ NO_INDEX(_key_PK_proxy) */ n1,
              nation /*+ NO_INDEX(_key_PK_proxy) */ n2
          WHERE
