@@ -3288,7 +3288,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 cctx.localNodeId(),
                 xidVersion(),
                 e.getValue(),
-                true,
+                false,
                 true
             );
         }

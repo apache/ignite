@@ -1781,10 +1781,25 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     private void clearTxEntry(GridCacheVersion ver, KeyCacheObject key) {
         IgniteInternalTx tx = ctx.tm().tx(ver);
 
-        if (tx instanceof GridDhtTxRemote)
+        if (tx instanceof GridDhtTxRemote) {
+            // TODO: PVD: It is not covered by tests.
             ((GridDhtTxRemote)tx).clearEntry(ctx.txKey(key));
-        else if (tx instanceof GridDhtTxLocal)
+
+            if (tx.empty())
+                ((GridDhtTxRemote)tx).rollbackRemoteTx();
+        }
+        else if (tx instanceof GridDhtTxLocal) {
             ((GridDhtTxLocal)tx).clearEntry(ctx.txKey(key));
+
+            try {
+                if (tx.empty()) {
+                    ((GridDhtTxLocal)tx).rollbackDhtLocal();
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to remove transaction container during rollback to savepoint: " + tx, e);
+            }
+        }
     }
 
     /**
