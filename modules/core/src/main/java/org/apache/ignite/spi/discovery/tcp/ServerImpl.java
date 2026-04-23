@@ -237,9 +237,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private static final double RMT_DC_PING_TIMEOUT_RATIO = 0.5;
 
-    /** Number of retries to ping remote DC. Must not be less than 2. */
-    private static final int RMT_DC_PING_TRIES = 3;
-
     /** Part of remote DC ping timeout to wait before new attempt. */
     private static final float RMT_DC_PING_ATTEMPT_DELAY_RATIO = 0.35f;
 
@@ -8603,7 +8600,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (remoteDcPingStopped() || addrsTimeoutMs < 1)
                         return;
 
-                    if (pingNode(addrs, node.id(), null, addrsTimeoutMs, RMT_DC_PING_TRIES,
+                    if (pingNode(addrs, node.id(), null, addrsTimeoutMs, CONNECTION_RECOVERY_TICKS,
                         RMT_DC_PING_ATTEMPT_DELAY_RATIO, false) != null) {
                         // Mark node has pesponded.
                         rmtDcPingRes.put(node, 1);
