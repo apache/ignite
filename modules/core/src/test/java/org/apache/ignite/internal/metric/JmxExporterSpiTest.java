@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.management.DynamicMBean;
@@ -64,7 +65,6 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -1060,15 +1060,19 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
      * @param poolName Executor name.
      */
     private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String viewName, String poolName) throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+        assertTrue("At least 2 stripes are required.", execSvc.stripesCount() >= 2);
 
-        execSvc.execute(0, new TestRunnable(latch, 0));
-        execSvc.execute(0, new TestRunnable(latch, 1));
-        execSvc.execute(1, new TestRunnable(latch, 2));
-        execSvc.execute(1, new TestRunnable(latch, 3));
+        CountDownLatch startExecTaskLatch = new CountDownLatch(2);
+        CountDownLatch finishExecTaskLatch = new CountDownLatch(1);
+
+        for (int i = 0; i < 4; i++) {
+            // Tasks are launched on the same stripes on purpose.
+            execSvc.execute(i % 2, new TestRunnable(i, startExecTaskLatch, finishExecTaskLatch));
+        }
 
         try {
-            assertTrue(waitForCondition(() -> systemView(viewName).size() >= 2, 5_000));
+            assertTrue(startExecTaskLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(waitForCondition(() -> !systemView(viewName).isEmpty(), 5_000));
 
             Set<Integer> taskStripeIdxs = new HashSet<>();
 
@@ -1087,10 +1091,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 }
             }
 
-            assertTrue(taskStripeIdxs.toString(), taskStripeIdxs.size() >= 2);
+            assertFalse(taskStripeIdxs.toString(), taskStripeIdxs.isEmpty());
         }
         finally {
-            latch.countDown();
+            finishExecTaskLatch.countDown();
         }
     }
 
@@ -1271,5 +1275,44 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         startGrids(nodeCnt).cluster().state(ClusterState.ACTIVE);
         
         return grid(0);
+    }
+
+    /** */
+    private static class TestRunnable implements Runnable {
+        /** */
+        private final int idx;
+
+        /** */
+        private final CountDownLatch startExecLatch;
+
+        /** */
+        private final CountDownLatch finishExecLatch;
+
+        private TestRunnable(int idx, CountDownLatch startExecLatch, CountDownLatch finishExecLatch) {
+            this.idx = idx;
+            this.startExecLatch = startExecLatch;
+            this.finishExecLatch = finishExecLatch;
+        }
+
+        /** */
+        @Override public void run() {
+            startExecLatch.countDown();
+
+            try {
+                log.warning(">>>>> Executing task: " + idx);
+
+                assertTrue(finishExecLatch.await(5, TimeUnit.SECONDS));
+
+                log.warning(">>>>> Executing task finish: " + idx);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** */
+        @Override public String toString() {
+            return getClass().getSimpleName() + idx;
+        }
     }
 }
