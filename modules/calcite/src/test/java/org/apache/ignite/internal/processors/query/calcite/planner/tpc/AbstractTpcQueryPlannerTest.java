@@ -118,16 +118,12 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         int pos = 0;
 
         for (String actualPlan : actualPlans) {
-            List<String> preparedPlans = preparePlan(actualPlan);
-
-            assertEquals(1, preparedPlans.size());
-
             boolean match = false;
 
-            List<String> possiblePlans = preparePlan(expectedPlans[pos++]);
+            String expectedPlan = replaceIdAndHash(expectedPlans[pos++]);
 
-            for (String possiblePlan : possiblePlans) {
-                if (possiblePlan.equals(preparedPlans.get(0))) {
+            for (String possiblePlan : expandWithPossibleIndexes(expectedPlan)) {
+                if (possiblePlan.equals(actualPlan)) {
                     match = true;
 
                     break;
@@ -137,7 +133,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             if (!match) {
                 // This assertion will print nice diff in IDE that will help to investigate.
                 // Test will fail anyway.
-                assertEquals(possiblePlans.get(0), preparedPlans.get(0));
+                assertEquals(expectedPlan, actualPlan);
 
                 assert false : "Should not happen";
             }
@@ -197,7 +193,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }).collect(Collectors.toList());
+        }).map(AbstractTpcQueryPlannerTest::replaceIdAndHash).collect(Collectors.toList());
     }
 
     private static List<String> scriptToQueries(String sqlScript) {
@@ -228,10 +224,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         return queries;
     }
 
-    private static List<String> preparePlan(String plan) {
-        plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
-        plan = HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
-
+    private static List<String> expandWithPossibleIndexes(String plan) {
         List<String> res = new ArrayList<>();
 
         res.add(plan);
@@ -256,6 +249,11 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         }
 
         return res;
+    }
+
+    private static String replaceIdAndHash(String plan) {
+        plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
+        return HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
     }
 
     /** {@inheritDoc} */
