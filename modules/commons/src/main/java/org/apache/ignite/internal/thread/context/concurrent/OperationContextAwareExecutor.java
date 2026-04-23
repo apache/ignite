@@ -23,7 +23,15 @@ import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.jetbrains.annotations.NotNull;
 
-/** */
+/**
+ * Represents wrapper over an arbitrary {@link Executor} that automatically captures
+ * the {@link OperationContextSnapshot} of {@link OperationContext} bound to the thread from which the task is submitted
+ * for execution. It automatically restores captured {@link OperationContextSnapshot} when the task is executed.
+ *
+ * @see OperationContext
+ * @see OperationContextSnapshot
+ * @see OperationContextAwareRunnable
+ */
 public class OperationContextAwareExecutor implements Executor {
     /** */
     private final Executor delegate;
