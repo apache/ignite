@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
  * @code org.apache.ignite.internal.sql.engine.benchmarks.TpchParseBenchmark
  */
 @RunWith(PlanChecker.class)
-@PlanChecker.PlansTest(name = "tpch", tables = TpchTables.class)
+@PlanChecker.PlansTest(name = "tpch")
 public class TpchQueryPlannerTest extends AbstractTpcQueryPlannerTest {
     // No-op
 }

@@ -23,8 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +56,7 @@ public class PlanChecker extends Suite {
 
     /** */
     private Stream<Runner> createRunnersForParameters() throws IOException {
-        Stream<String> queries = Files.list(Path.of("./src/test/resources", TpchHelper.sqlTestName(getTestClass().getJavaClass())))
+        Stream<String> queries = TpchHelper.testFiles(getTestClass().getJavaClass())
             .filter(p -> p.toString().endsWith(".sql"))
             .sorted()
             .map(p -> p.getFileName().toString().replace(".sql", ""));
@@ -108,8 +106,6 @@ public class PlanChecker extends Suite {
     @Target(ElementType.TYPE)
     public @interface PlansTest {
         String name() default "";
-
-        Class<? extends Enum<? extends TpcTable>> tables();
     }
 
     @Retention(RetentionPolicy.RUNTIME)

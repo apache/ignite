@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,25 +43,24 @@ import org.apache.ignite.internal.IgniteEx;
  */
 public final class TpchHelper {
     /** */
-    public static final String INT32 = "INT32";
-
-    /** */
-    public static final String DECIMAL = "DECIMAL";
-
-    /** */
-    public static final String STRING = "VARCHAR";
-
-    /** */
-    public static final String DATE = "DATE";
-
-    /** */
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
 
     /** */
     private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
     /** */
+    private static final String RSRC_DIR = "./src/test/resources";
+
+    /** */
     private TpchHelper() {
+    }
+
+    public static Stream<Path> testFiles(Class<?> klass) throws IOException {
+        return testFiles(klass, "");
+    }
+
+    public static Stream<Path> testFiles(Class<?> klass, String exdDir) throws IOException {
+        return Files.list(Path.of(RSRC_DIR, sqlTestName(klass), exdDir));
     }
 
     /**
@@ -69,6 +70,9 @@ public final class TpchHelper {
      * @return Resource as string.
      */
     public static String loadFromResource(String resource) {
+        if (resource.startsWith(RSRC_DIR))
+            resource = resource.substring(RSRC_DIR.length() + 1);
+
         try (InputStream is = TpchHelper.class.getClassLoader().getResourceAsStream(resource)) {
             if (is == null) {
                 throw new IllegalArgumentException("Resource does not exist: " + resource);
@@ -89,13 +93,6 @@ public final class TpchHelper {
             throw new IllegalStateException("Please, set test name with the @PlanTest(name=\"XXX\")");
 
         return desc.name();
-    }
-
-    /** @return Tables for the test. */
-    public static Class<? extends Enum<? extends TpcTable>> tables(Class<?> klass) {
-        PlanChecker.PlansTest desc = plansTest(klass);
-
-        return desc.tables();
     }
 
     /** @return Test description annotation. */
@@ -182,7 +179,7 @@ public final class TpchHelper {
 
         Scanner sc = new Scanner(plan);
 
-        StringBuffer beforeOneof = new StringBuffer();
+        StringBuilder beforeOneof = new StringBuilder();
 
         while (sc.hasNextLine()) {
             String line = sc.nextLine();
@@ -197,7 +194,7 @@ public final class TpchHelper {
 
         // Expanding first found oneof
         while(sc.hasNextLine() && !oneOfEnd) {
-            StringBuffer oneofCase = new StringBuffer();
+            StringBuilder oneofCase = new StringBuilder();
 
             while (sc.hasNextLine()) {
                 String line = sc.nextLine();

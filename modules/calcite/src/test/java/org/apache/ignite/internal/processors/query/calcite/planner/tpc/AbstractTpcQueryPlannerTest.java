@@ -43,7 +43,6 @@ import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.Tp
 import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.scriptToQueries;
 import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sql;
 import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sqlTestName;
-import static org.apache.logging.log4j.util.Cast.cast;
 
 /**
  * Abstract test class to ensure a planner generates expected plan for TPC queries.
@@ -77,10 +76,10 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             .setSqlFunctionClasses(AbstractTpcQueryPlannerTest.TpchUDF.class)
             .setSqlSchema("PUBLIC"));
 
-        TpcTable[] tables = cast(TpchHelper.tables(testClass).getEnumConstants());
-
-        for (TpcTable table : tables)
-            scriptToQueries(table.ddlScript()).forEach(q -> sql(srv, q));
+        TpchHelper.testFiles(testClass, "ddl")
+            .filter(p -> p.toString().endsWith(".sql"))
+            .map(p -> loadFromResource(p.toString()))
+            .forEach(ddl -> scriptToQueries(ddl).forEach(q -> sql(srv, q)));
     }
 
     /** Run once, after all queries check. */
