@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.lang.IgniteClosure;
@@ -40,6 +41,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newSingleThreadExecutor;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -186,15 +188,15 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         ctx.add(new NoOpIgniteSecurityProcessor(ctx));
 
         ctx.add(new PoolProcessor(ctx) {
-            final ExecutorService execSvc = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "exec-svc"));
+            final IgniteThreadPoolExecutor execSvc = newSingleThreadExecutor("testscope", "exec-svc");
 
-            final ExecutorService sysExecSvc = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "system-exec"));
+            final IgniteThreadPoolExecutor sysExecSvc = newSingleThreadExecutor("testscope", "system-exec");
 
-            @Override public ExecutorService getSystemExecutorService() {
+            @Override public IgniteThreadPoolExecutor getSystemExecutorService() {
                 return sysExecSvc;
             }
 
-            @Override public ExecutorService getExecutorService() {
+            @Override public IgniteThreadPoolExecutor getExecutorService() {
                 return execSvc;
             }
         });

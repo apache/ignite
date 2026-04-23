@@ -15,16 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.tools.checkstyle;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-
-/**
- *
- */
-public interface CalciteMessage extends Message {
-    /**
-     * @return Message type.
-     */
-    MessageType type();
+/** */
+public class RestrictedExtendsFullName extends java.util.concurrent.ForkJoinPool {
+    // No-op.
 }

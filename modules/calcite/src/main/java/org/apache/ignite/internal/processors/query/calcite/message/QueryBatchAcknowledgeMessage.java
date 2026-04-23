@@ -76,9 +76,4 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     public int batchId() {
         return batchId;
     }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
-    }
 }
