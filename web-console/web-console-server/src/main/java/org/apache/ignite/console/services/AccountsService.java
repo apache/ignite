@@ -315,7 +315,7 @@ public class AccountsService implements UserDetailsService {
     }
     
     /**
-     * @param tokens Tokens to check.
+     * @param token Tokens to check.
      * @return Valid tokens.
      */
     public Account getAccountByToken(String token) {

@@ -36,7 +36,7 @@ export default class PageIgfsController {
 
         this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
             return `${isNew ? 'Create' : 'Edit'} Object Storage configuration 
-            ${isNew ? '' : `‘${get(cluster, 'clusterName','')}’`}`;
+            ${isNew ? '' : `‘${get(cluster, 'comment','')}’`}`;
         });
     }
 
@@ -50,7 +50,7 @@ export default class PageIgfsController {
         catch (ignored) {
             
         }
-        return {id: id, clusterName: "Ignite FileSystem", url: ""}
+        return {id: id, comment: "Ignite FileSystem", url: ""}
     }
 
     $onDestroy() {}

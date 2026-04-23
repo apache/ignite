@@ -5,10 +5,12 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.ignite.console.dto.Account;
+import org.apache.ignite.console.dto.Cluster;
 import org.apache.ignite.console.services.AccountsService;
 import org.apache.ignite.console.services.ConfigurationsService;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.web.model.ConfigurationKey;
+import org.apache.ignite.console.web.security.TokenAuthentication;
 import org.springaicommunity.mcp.annotation.McpArg;
 import org.springaicommunity.mcp.annotation.McpPrompt;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -18,36 +20,58 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;
 import java.util.*;
 
-@Service
+
+@Configuration
 public class IgniteThinConnectionService {
-
-    String jdbcUrl;
-
-    Optional<String> jdbcUser;
-
-
-    Optional<String> jdbcPassword;
-
-    private JsonObject cluster;
-
     private ConfigurationsService repo;
+
+    private AccountsService accountsService;
+
+    @Autowired
+    private Environment env;
 
     public IgniteThinConnectionService(ConfigurationsService repo, AccountsService accountsService) {
         this.repo = repo;
+        this.accountsService = accountsService;
     }
 
-    private Connection getConnection() throws SQLException {
+    private Connection getConnection(String catalog) throws SQLException {
+        String jdbcUrl = "jdbc:ignite:thin://127.0.0.1:10802/"+catalog;
+
+        Optional<String> jdbcUser = Optional.empty();
+        Optional<String> jdbcPassword = Optional.empty();
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if(auth!=null && auth instanceof TokenAuthentication) {
+            TokenAuthentication tokenAuth = (TokenAuthentication) auth;
+            Account account = tokenAuth.getPrincipal();
+            JsonObject theCluster = null;
+            JsonArray list = repo.loadClusters(new ConfigurationKey(account.getId(), isTestEnv()));
+            for (Object row : list) {
+                JsonObject cluster = (JsonObject) row;
+                String name = cluster.getString("name");
+                if (catalog.equals(name)) {
+                    theCluster = cluster;
+                    jdbcUrl = "jdbc:ignite:thin://127.0.0.1:10802/"+catalog;
+                }
+            }
+        }
         return DriverManager.getConnection(jdbcUrl, jdbcUser.orElse(null), jdbcPassword.orElse(null));
     }
 
-    @Tool(description = "Execute a SELECT query on the jdbc database")
-    String read_query(@ToolParam(description = "SELECT SQL query to execute") String query, ToolContext toolContext) {
-        try (Connection conn = getConnection();
+    @McpTool(description = "Execute a SELECT query on the jdbc database")
+    String read_query(@McpArg(description = "Catalog name", required = true) String catalog,
+                      @McpArg(description = "SELECT SQL query to execute") String query, ToolContext toolContext) {
+        try (Connection conn = getConnection(catalog);
                 Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(query)) {
 
@@ -73,13 +97,14 @@ public class IgniteThinConnectionService {
         }
     }
 
-    @Tool(description = "Execute a INSERT, UPDATE or DELETE query on the jdbc database")
-    String write_query(@ToolParam(description = "INSERT, UPDATE or DELETE SQL query to execute") String query) {
+    @McpTool(description = "Execute a INSERT, UPDATE or DELETE query on the jdbc database")
+    String write_query(@McpArg(description = "Catalog name", required = true) String catalog,
+                       @McpArg(description = "INSERT, UPDATE or DELETE SQL query to execute") String query) {
         if (query.strip().toUpperCase().startsWith("SELECT")) {
             throw new RuntimeException("SELECT queries are not allowed for write_query", null);
         }
 
-        try (Connection conn = getConnection();
+        try (Connection conn = getConnection(catalog);
                 Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(query);
             return "Query executed successfully";
@@ -88,9 +113,9 @@ public class IgniteThinConnectionService {
         }
     }
 
-    @Tool(description = "List all tables in the jdbc database")
-    String list_tables() {
-        try (Connection conn = getConnection()) {
+    @McpTool(description = "List all tables in the jdbc database")
+    String list_tables(@McpArg(description = "Catalog name", required = true) String catalog) {
+        try (Connection conn = getConnection(catalog)) {
             DatabaseMetaData metaData = conn.getMetaData();
             ResultSet rs = metaData.getTables(null, null, "%", new String[] { "TABLE" });
 
@@ -109,19 +134,20 @@ public class IgniteThinConnectionService {
         }
     }
 
-    @Tool(description = "Create new table in the jdbc database")
-    String create_table(@ToolParam(description = "CREATE TABLE SQL statement") String query) {
+    @McpTool(description = "Create new table in the jdbc database")
+    String create_table(@McpArg(description = "Catalog name", required = true) String catalog,
+                        @McpArg(description = "CREATE TABLE SQL statement") String query) {
         if (!query.strip().toUpperCase().startsWith("CREATE TABLE")) {
             throw new RuntimeException("Only CREATE TABLE statements are allowed", null);
         }
-        return write_query(query);
+        return write_query(catalog,query);
     }
 
-    @Tool(description = "Describe table")
-    String describe_table(@ToolParam(description = "Catalog name", required = false) String catalog,
-            @ToolParam(description = "Schema name", required = false) String schema,
-            @ToolParam(description = "Table name") String table) {
-        try (Connection conn = getConnection()) {
+    @McpTool(description = "Describe table")
+    String describe_table(@McpArg(description = "Catalog name", required = true) String catalog,
+            @McpArg(description = "Schema name", required = true) String schema,
+            @McpArg(description = "Table name") String table) {
+        try (Connection conn = getConnection(catalog)) {
             DatabaseMetaData metaData = conn.getMetaData();
             ResultSet rs = metaData.getColumns(catalog, schema, table, null);
 
@@ -142,9 +168,9 @@ public class IgniteThinConnectionService {
         }
     }
 
-    @Tool(description = "Get information about the database. Run this before anything else to know the SQL dialect, keywords etc.")
-    String database_info() {
-        try (Connection conn = getConnection()) {
+    @McpTool(description = "Get information about the database. Run this before anything else to know the SQL dialect, keywords etc.")
+    String database_info(@McpArg(description = "Catalog name", required = true) String catalog) {
+        try (Connection conn = getConnection(catalog)) {
             DatabaseMetaData metaData = conn.getMetaData();
             Map<String, String> info = new HashMap<>();
 
@@ -238,5 +264,12 @@ public class IgniteThinConnectionService {
                             Start your first message fully in character with something like "Oh, Hey there! I see you've chosen the topic {topic}. Let's get started! 🚀"
                         """
                         .replace("{topic}", topic))); //todo replace with qute :)
+    }
+    public boolean isTestEnv(){
+        Optional<String> profile = Arrays.stream(env.getActiveProfiles()).filter(p->p.equals("test")).findFirst();
+        if(profile.isPresent() && profile.get().equals("test")){
+            return true;
+        }
+        return false;
     }
 }

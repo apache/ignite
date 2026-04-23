@@ -35,7 +35,7 @@ class UnsplashImage {
 }
 
 /**
- * MongoDB PHP GUI login.
+ * MongoDB Admin GUI login.
  */
 class Login {
 

@@ -1,6 +1,6 @@
 
 /**
- * MongoDB PHP GUI namespace.
+ * MongoDB Admin GUI namespace.
  * 
  * @type {object}
  */

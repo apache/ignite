@@ -2,7 +2,7 @@
 
     <a class="navbar-brand" href="./">
         <img class="navbar-brand-icon" src="./assets/images/mpg-icon.svg" width="24" height="24" />
-        MongoDB PHP GUI
+        MongoDB Admin GUI
     </a>
 
     <div class="navbar-nav">

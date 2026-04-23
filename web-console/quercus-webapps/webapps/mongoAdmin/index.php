@@ -1,6 +1,6 @@
 <?php
 
-namespace MPG; // MongoDB PHP GUI
+namespace MPG; // MongoDB Admin GUI
 
 use Limber\Application;
 use Capsule\Factory\ServerRequestFactory;
@@ -18,7 +18,7 @@ const ABS_PATH = __DIR__;
 session_start();
 
 if ( !file_exists($autoload_file = ABS_PATH . '/vendor/autoload.php') ) {
-    die('Run `composer install` to complete MongoDB PHP GUI installation.');
+    die('Run `composer install` to complete MongoDB Admin GUI installation.');
 }
 
 $loader = require_once $autoload_file;

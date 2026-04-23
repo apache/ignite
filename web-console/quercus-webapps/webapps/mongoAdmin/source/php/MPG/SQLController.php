@@ -55,7 +55,7 @@ class SQLController extends Controller {
             if ( !preg_match_all('|^.*\.find\({(.*)}\)$|s', $commandResult, $mongoDBQuery) ) {
                 throw new \Exception(
                     'Impossible to convert (SELECT) SQL query to MongoDB query... ' . 
-                    'Try to install Java JDK on the computer hosting "MongoDB PHP GUI".'
+                    'Try to install Java JDK on the computer hosting "MongoDB Admin GUI".'
                 );
             }
         } catch (\Throwable $th) {

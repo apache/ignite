@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>MongoDB PHP GUI v<?php echo MPG\VERSION; ?></title>
+    <title>MongoDB Admin GUI v<?php echo MPG\VERSION; ?></title>
 
     <link rel="icon" href="./assets/images/mpg-icon.svg">
     <link rel="mask-icon" href="./assets/images/mpg-safari-icon.svg" color="#6eb825">

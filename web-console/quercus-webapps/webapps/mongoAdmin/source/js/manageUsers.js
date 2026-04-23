@@ -77,6 +77,8 @@ MPG.eventListeners.addDatabases = function() {
             document.querySelector('#mpg-open-create-user-modal-button').classList.remove('d-none');
 
             MPG.reloadUsers(databaseLink.dataset.databaseName);
+            // change default db
+            document.querySelector('#mpg-user-role-database').value = MPG.databaseName;
 
         });
 

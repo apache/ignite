@@ -7,9 +7,9 @@ Export documents to JSON. Import documents from JSON. Manage indexes. Manage use
 
 ## Screenshots
 
-![MongoDB PHP GUI - Visualize Database](https://raw.githubusercontent.com/SamuelTallet/MongoDB-PHP-GUI/master/docs/screenshots/visualize-database.png)
+![MongoDB Admin GUI - Visualize Database](https://raw.githubusercontent.com/SamuelTallet/MongoDB-PHP-GUI/master/docs/screenshots/visualize-database.png)
 
-![MongoDB PHP GUI - Query Documents](https://raw.githubusercontent.com/SamuelTallet/MongoDB-PHP-GUI/master/docs/screenshots/query-documents.png)
+![MongoDB Admin GUI - Query Documents](https://raw.githubusercontent.com/SamuelTallet/MongoDB-PHP-GUI/master/docs/screenshots/query-documents.png)
 
 ## Installation
 
@@ -33,7 +33,7 @@ Export documents to JSON. Import documents from JSON. Manage indexes. Manage use
 
 #### Relaxed JSON
 
-MongoDB PHP GUI supports a relaxed JSON syntax. In practice, this query:
+MongoDB Admin GUI supports a relaxed JSON syntax. In practice, this query:
 
 ```js
 city: New York

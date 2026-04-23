@@ -15,7 +15,7 @@ public class AutocompleteProvider {
     @Autowired
     AccountsService accountsService;
 
-    @McpComplete(uri = "user-status://{username}")
+    @McpComplete(uri = "user:{username}")
     public List<String> completeUsername(final String usernamePrefix) {
         // Implementation to provide username completions
         return accountsService.list().stream().filter(a->a.getUsername().startsWith(usernamePrefix)).map(a->a.getUsername()).collect(Collectors.toList());

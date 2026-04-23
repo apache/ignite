@@ -30,12 +30,12 @@ var JsonView = (function (exports) {
         value = params.value,
         type = params.type,
 
-        // XXX Modification made for MongoDB PHP GUI.
+        // XXX Modification made for MongoDB Admin GUI.
         documentFieldIsUpdatable = params.documentFieldIsUpdatable,
         documentId = params.documentId,
         documentFieldName = params.documentFieldName;
 
-    // XXX Modification made for MongoDB PHP GUI.
+    // XXX Modification made for MongoDB Admin GUI.
     var title = ( documentFieldIsUpdatable === 'true' ) ? 'Edit value' : '';
     return "\n    <div class=\"line\">\n      <div class=\"empty-icon\"></div>\n      <div class=\"json-key\">".concat(key, "</div>\n      <div class=\"json-separator\">:</div>\n      <div data-document-id=\"" + documentId + "\" data-document-field-is-updatable=\"" + documentFieldIsUpdatable + "\" data-document-field-name=\"" + documentFieldName + "\" data-document-field-type=\"" + type + "\" title=\"" + title + "\" class=\"json-value json-").concat(type, "\">").concat(value, "</div>\n    </div>\n  ");
   }
@@ -98,7 +98,7 @@ var JsonView = (function (exports) {
     return el;
   }
 
-  // XXX Modification made for MongoDB PHP GUI.
+  // XXX Modification made for MongoDB Admin GUI.
   function getDocFieldFromNode(node) {
 
     var docFieldArray = [];
@@ -190,7 +190,7 @@ var JsonView = (function (exports) {
       });
     } else {
 
-      // XXX Modification made for MongoDB PHP GUI.
+      // XXX Modification made for MongoDB Admin GUI.
       if ( node.key === '_id' && node.depth === 2 ) {
         MPG.documentId = node.value;
       }
@@ -208,7 +208,7 @@ var JsonView = (function (exports) {
         value: node.value,
         type: _typeof(node.value),
 
-        // XXX Modification made for MongoDB PHP GUI.
+        // XXX Modification made for MongoDB Admin GUI.
         documentFieldIsUpdatable: ( documentFieldIsUpdatable ) ? 'true' : 'false',
         documentId: MPG.documentId,
         documentFieldName: getDocFieldFromNode(node)

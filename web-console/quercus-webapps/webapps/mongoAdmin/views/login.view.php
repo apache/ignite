@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
 
-    <title>MongoDB PHP GUI</title>
+    <title>MongoDB Admin GUI</title>
 
     <link rel="icon" href="./assets/images/mpg-icon.svg">
     <link rel="mask-icon" href="./assets/images/mpg-safari-icon.svg" color="#6eb825">
@@ -49,7 +49,7 @@
 
                     <div class="card-header text-center text-nowrap">
                         <img src="./assets/images/mpg-icon.svg" width="32" height="32" />
-                        <h3 class="mpg-card-header-title d-inline align-middle">MongoDB PHP GUI</h3>
+                        <h3 class="mpg-card-header-title d-inline align-middle">MongoDB Admin GUI</h3>
                     </div>
                     
                     <div class="card-body">
@@ -76,7 +76,7 @@
 
                     <div class="card-header text-center text-nowrap">
                         <img src="./assets/images/mpg-icon.svg" width="32" height="32" />
-                        <h3 class="mpg-card-header-title d-inline align-middle">MongoDB PHP GUI</h3>
+                        <h3 class="mpg-card-header-title d-inline align-middle">MongoDB Admin GUI</h3>
                     </div>
 
                     <div class="card-body">

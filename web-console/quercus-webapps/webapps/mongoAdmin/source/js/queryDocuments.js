@@ -134,7 +134,7 @@ MPG.helpers.convertStringToAny = function(string, targetType) {
         case 'number':
             castedString = ( string.indexOf('.') !== -1 ) ? parseFloat(string) : parseInt(string);
             if ( isNaN(castedString) ) {
-                throw Error('[MongoDB PHP GUI] "' + string + '" is not a number');
+                throw Error('[MongoDB Admin GUI] "' + string + '" is not a number');
             }
             break;
 
@@ -144,7 +144,7 @@ MPG.helpers.convertStringToAny = function(string, targetType) {
             } else if ( string === 'false' ) {
                 castedString = false;
             } else {
-                throw Error('[MongoDB PHP GUI] "' + string + '" is not a boolean');
+                throw Error('[MongoDB Admin GUI] "' + string + '" is not a boolean');
             }
             break;
 

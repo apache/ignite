@@ -40,10 +40,8 @@ public class JettyCustomizer implements WebServerFactoryCustomizer<JettyServletW
 
                     if(appDir.getName().equals("mongoAdmin")){
 
-
                         RewriteHandler rewriteHandler = new RewriteHandler();
                         rewriteHandler.setOriginalPathAttribute("requestedPath");
-
 
                         // 添加重写规则
                         RewriteRegexRule rewriteRule = new RewriteRegexRule();

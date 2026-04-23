@@ -41,7 +41,15 @@ spring:
   mail:
     defaultTemplatePath: templates/mail/base.html
 
+  ai:
+    dashscope:
+      api-key: sk-c255b2d0e7954c479f78d7c146248305
+    mcp:
+      server:
+        enabled: true
+        name: ignite—admin-server
+        type: SYNC
+        protocol: STREAMABLE
+        request-timeout: 120s
 
-mcp-server:
-  user-email: junphine@126.com
-  default-instance: shanxi-std
+

@@ -110,7 +110,6 @@ export default class PageIgfsAdvancedController {
     }
 
     _saveMongoExpress(preset) {
-       
         let mongoExpress = localStorage.igfsStorages;
         if (!mongoExpress) {            
             mongoExpress = {}
