@@ -227,12 +227,22 @@ public class QueryUtils {
      * @return Index name.
      */
     public static String indexName(String tblName, QueryIndex idx) {
-        String res = idx.getName();
+        return indexName(tblName, idx.getName(), idx.getFields());
+    }
 
-        if (res == null) {
+    /**
+     * Get index name.
+     *
+     * @param tblName Table name.
+     * @param name Index name.
+     * @param fields Fields.
+     * @return Index name.
+     */
+    public static String indexName(String tblName, @Nullable String name, Map<String, Boolean> fields) {
+        if (name == null) {
             StringBuilder idxName = new StringBuilder(tblName + "_");
 
-            for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
+            for (Map.Entry<String, Boolean> field : fields.entrySet()) {
                 idxName.append(field.getKey());
 
                 idxName.append('_');
@@ -253,7 +263,7 @@ public class QueryUtils {
             return idxName.toString();
         }
 
-        return res;
+        return name;
     }
 
     /**

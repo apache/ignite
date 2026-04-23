@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
@@ -27,5 +28,5 @@ public interface MessageListener {
      * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    void onMessage(UUID nodeId, CalciteMessage msg);
+    void onMessage(UUID nodeId, Message msg);
 }

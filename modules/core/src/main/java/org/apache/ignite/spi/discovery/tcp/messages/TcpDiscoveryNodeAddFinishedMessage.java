@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Added node ID. */
     @Order(0)
     UUID nodeId;
@@ -143,5 +140,4 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     @Override public String toString() {
         return S.toString(TcpDiscoveryNodeAddFinishedMessage.class, this, "super", super.toString());
     }
-
 }
