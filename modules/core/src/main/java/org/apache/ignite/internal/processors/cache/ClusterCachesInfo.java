@@ -336,16 +336,11 @@ public class ClusterCachesInfo {
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
 
                 if (cacheData != null) {
-                    if (cacheData.sql() != locCacheInfo.sql()) {
-                        // Local configuration entities can be upgraded from the cluster (added by dynamic CREATE TABLE),
-                        // in this case SQL flag is changed too.
-                        if (!cacheData.sql() || F.isEmpty(cacheData.schema().entities())
-                            || !F.isEmpty(locCacheInfo.cacheData().queryEntities())) {
-                            throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
-                                "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "Ignite API" ) + ", while remote cache " +
-                                "was created via " + (cacheData.sql() ? "CREATE TABLE" : "Ignite API" ) + "): " +
-                                locCacheInfo.cacheData().config().getName());
-                        }
+                    if (!Objects.equals(cacheData.sql(), locCacheInfo.sql())) {
+                        throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
+                            "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "Ignite API") + ", while remote cache " +
+                            "was created via " + (cacheData.sql() ? "CREATE TABLE" : "Ignite API") + "): " +
+                            locCacheInfo.cacheData().config().getName());
                     }
 
                     if (checkConsistency) {
