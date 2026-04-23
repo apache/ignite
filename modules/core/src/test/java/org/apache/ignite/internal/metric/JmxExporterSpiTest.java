@@ -1065,33 +1065,23 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         CountDownLatch startExecTaskLatch = new CountDownLatch(2);
         CountDownLatch finishExecTaskLatch = new CountDownLatch(1);
 
-        for (int i = 0; i < 4; i++) {
-            // Tasks are launched on the same stripes on purpose.
-            execSvc.execute(i % 2, new TestRunnable(i, startExecTaskLatch, finishExecTaskLatch));
-        }
+        // Tasks are launched on the same stripes on purpose.
+        execSvc.execute(0, new TestRunnable(0, startExecTaskLatch, finishExecTaskLatch));
+        execSvc.execute(1, new TestRunnable(1, startExecTaskLatch, finishExecTaskLatch));
+        execSvc.execute(0, new TestRunnable(2, startExecTaskLatch, finishExecTaskLatch));
+        execSvc.execute(1, new TestRunnable(3, startExecTaskLatch, finishExecTaskLatch));
 
         try {
             assertTrue(startExecTaskLatch.await(5, TimeUnit.SECONDS));
-            assertTrue(waitForCondition(() -> !systemView(viewName).isEmpty(), 5_000));
+            assertTrue(waitForCondition(() -> systemView(viewName).size() >= 2, 5_000));
 
-            Set<Integer> taskStripeIdxs = new HashSet<>();
+            TabularDataSupport view = systemView(viewName);
 
-            for (Map.Entry<Object, Object> entry : systemView(viewName).entrySet()) {
-                CompositeData row = (CompositeData)entry.getValue();
+            CompositeData row0 = getStripeExecutorView(view, 0);
+            CompositeData row1 = getStripeExecutorView(view, 1);
 
-                int stripeIdx = (int)row.get("stripeIndex");
-                assertEquals(poolName + "-stripe-" + stripeIdx, row.get("threadName"));
-
-                String desc = (String)row.get("description");
-
-                if (desc.contains(TestRunnable.class.getSimpleName())) {
-                    assertEquals(TestRunnable.class.getName(), row.get("taskName"));
-
-                    taskStripeIdxs.add(stripeIdx);
-                }
-            }
-
-            assertFalse(taskStripeIdxs.isEmpty());
+            checkStripeExecutorView(row0, poolName, 0, 2);
+            checkStripeExecutorView(row1, poolName, 1, 3);
         }
         finally {
             finishExecTaskLatch.countDown();
@@ -1275,6 +1265,25 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         startGrids(nodeCnt).cluster().state(ClusterState.ACTIVE);
         
         return grid(0);
+    }
+
+    /** */
+    private static CompositeData getStripeExecutorView(TabularDataSupport view, int stripeIdx) {
+        return view.values().stream()
+            .filter(CompositeData.class::isInstance)
+            .map(CompositeData.class::cast)
+            .filter(v -> Objects.equals(stripeIdx, v.get("stripeIndex")))
+            .filter(v -> Objects.equals(TestRunnable.class.getName(), v.get("taskName")))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Failed to find stripe executor view for stripe index: " + stripeIdx));
+    }
+
+    /** */
+    private static void checkStripeExecutorView(CompositeData view, String poolName, int expStripeIdx, int expTaskId) {
+        assertEquals(expStripeIdx, view.get("stripeIndex"));
+        assertEquals(poolName + "-stripe-" + expStripeIdx, view.get("threadName"));
+        assertEquals(TestRunnable.class.getName(), view.get("taskName"));
+        assertEquals(TestRunnable.class.getSimpleName() + expTaskId, view.get("description"));
     }
 
     /** */
