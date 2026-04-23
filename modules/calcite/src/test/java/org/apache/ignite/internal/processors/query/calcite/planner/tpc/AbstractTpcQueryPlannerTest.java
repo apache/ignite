@@ -27,14 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -57,13 +53,11 @@ import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.Tp
 import static org.apache.logging.log4j.util.Cast.cast;
 
 /**
- * Abstract test class to ensure a planner generates optimal plan for TPC queries.
+ * Abstract test class to ensure a planner generates expected plan for TPC queries.
  */
 public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
+    /** Set to {@code true} to write plan files, instead of checking. */
     private static final boolean UPDATE_PLAN = false;
-
-    private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
-    private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
     private static IgniteEx srv;
 
@@ -122,9 +116,9 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         for (String actualPlan : actualPlans) {
             boolean match = false;
 
-            String expectedPlan = replaceIdAndHash(expectedPlans[pos++]);
+            String expectedPlan = TpchHelper.replaceIdAndHash(expectedPlans[pos++]);
 
-            for (String possiblePlan : expandTemplates(expectedPlan)) {
+            for (String possiblePlan : TpchHelper.expandTemplates(expectedPlan)) {
                 if (possiblePlan.equals(actualPlan)) {
                     match = true;
 
@@ -195,7 +189,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }).map(AbstractTpcQueryPlannerTest::replaceIdAndHash).collect(Collectors.toList());
+        }).map(TpchHelper::replaceIdAndHash).collect(Collectors.toList());
     }
 
     private static List<String> scriptToQueries(String sqlScript) {
@@ -224,100 +218,6 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             queries.add(current.toString());
 
         return queries;
-    }
-
-    private static List<String> expandTemplates(String plan) {
-        return expandOneof(plan).stream()
-            .flatMap(AbstractTpcQueryPlannerTest::expandIndexCase)
-            .collect(Collectors.toList());
-    }
-
-    private static Stream<String> expandIndexCase(String plan) {
-        List<String> res = new ArrayList<>();
-
-        res.add(plan);
-
-        while (true) {
-            String idxCaseStart = "{INDEX_CASE:";
-
-            if (res.get(0).contains(idxCaseStart)) {
-                res = res.stream().flatMap(p -> {
-                    int start = p.indexOf(idxCaseStart);
-                    int end = p.indexOf('}', start);
-
-                    assert start != -1 && end != -1;
-
-                    String[] idxs = p.substring(start + idxCaseStart.length(), end).split(",");
-
-                    return Arrays.stream(idxs).map(idx -> p.substring(0, start) + idx + p.substring(end + 1));
-                }).collect(Collectors.toList());
-            }
-            else
-                break;
-        }
-
-        return res.stream();
-    }
-
-    private static List<String> expandOneof(String plan) {
-        String oneOf = "{ONEOF}";
-
-        if (!plan.contains(oneOf))
-            return Collections.singletonList(plan);
-
-        List<StringBuffer> res = new ArrayList<>();
-
-        Scanner sc = new Scanner(plan);
-
-        StringBuffer beforeOneof = new StringBuffer();
-
-        while (sc.hasNextLine()) {
-            String line = sc.nextLine();
-
-            if (line.trim().startsWith(oneOf))
-                break;
-
-            beforeOneof.append(line).append('\n');
-        }
-
-        boolean oneOfEnd = false;
-
-        // Expanding first found oneof
-        while(sc.hasNextLine() && !oneOfEnd) {
-            StringBuffer oneofCase = new StringBuffer();
-
-            while (sc.hasNextLine()) {
-                String line = sc.nextLine();
-
-                oneOfEnd = line.trim().equals(oneOf);
-
-                if (line.trim().matches("^=+$") || oneOfEnd)
-                    break;
-
-                oneofCase.append(line).append('\n');
-            }
-
-            res.add(new StringBuffer(beforeOneof).append(oneofCase));
-        }
-
-        if (!oneOfEnd)
-            throw new IllegalStateException(oneOf + " not closed");
-
-        while (sc.hasNextLine()) {
-            String line = sc.nextLine();
-
-            for (StringBuffer expanded : res) {
-                expanded.append(line).append('\n');
-            }
-        }
-
-        // Recursively expanding next ONEOF.
-        return res.stream().flatMap(p -> expandOneof(p.toString()).stream()).collect(Collectors.toList());
-    }
-
-    private static String replaceIdAndHash(String plan) {
-        plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
-        return HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
     }
 
     /** {@inheritDoc} */

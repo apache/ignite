@@ -23,7 +23,14 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.io.CharStreams;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -41,6 +48,11 @@ public final class TpchHelper {
     public static final String STRING = "VARCHAR";
 
     public static final String DATE = "DATE";
+
+    /** */
+    private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
+
+    private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
 
     private TpchHelper() {
@@ -105,5 +117,99 @@ public final class TpchHelper {
         try (FieldsQueryCursor<List<?>> cur = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
             return cur.getAll();
         }
+    }
+
+    public static List<String> expandTemplates(String plan) {
+        return expandOneof(plan).stream()
+            .flatMap(TpchHelper::expandIndexCase)
+            .collect(Collectors.toList());
+    }
+
+    private static Stream<String> expandIndexCase(String plan) {
+        List<String> res = new ArrayList<>();
+
+        res.add(plan);
+
+        while (true) {
+            String idxCaseStart = "{INDEX_CASE:";
+
+            if (res.get(0).contains(idxCaseStart)) {
+                res = res.stream().flatMap(p -> {
+                    int start = p.indexOf(idxCaseStart);
+                    int end = p.indexOf('}', start);
+
+                    assert start != -1 && end != -1;
+
+                    String[] idxs = p.substring(start + idxCaseStart.length(), end).split(",");
+
+                    return Arrays.stream(idxs).map(idx -> p.substring(0, start) + idx + p.substring(end + 1));
+                }).collect(Collectors.toList());
+            }
+            else
+                break;
+        }
+
+        return res.stream();
+    }
+
+    private static List<String> expandOneof(String plan) {
+        String oneOf = "{ONEOF}";
+
+        if (!plan.contains(oneOf))
+            return Collections.singletonList(plan);
+
+        List<StringBuffer> res = new ArrayList<>();
+
+        Scanner sc = new Scanner(plan);
+
+        StringBuffer beforeOneof = new StringBuffer();
+
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine();
+
+            if (line.trim().startsWith(oneOf))
+                break;
+
+            beforeOneof.append(line).append('\n');
+        }
+
+        boolean oneOfEnd = false;
+
+        // Expanding first found oneof
+        while(sc.hasNextLine() && !oneOfEnd) {
+            StringBuffer oneofCase = new StringBuffer();
+
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+
+                oneOfEnd = line.trim().equals(oneOf);
+
+                if (line.trim().matches("^=+$") || oneOfEnd)
+                    break;
+
+                oneofCase.append(line).append('\n');
+            }
+
+            res.add(new StringBuffer(beforeOneof).append(oneofCase));
+        }
+
+        if (!oneOfEnd)
+            throw new IllegalStateException(oneOf + " not closed");
+
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine();
+
+            for (StringBuffer expanded : res) {
+                expanded.append(line).append('\n');
+            }
+        }
+
+        // Recursively expanding next ONEOF.
+        return res.stream().flatMap(p -> expandOneof(p.toString()).stream()).collect(Collectors.toList());
+    }
+
+    public static String replaceIdAndHash(String plan) {
+        plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
+        return HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
     }
 }
