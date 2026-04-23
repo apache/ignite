@@ -450,7 +450,7 @@ public class TpchHelper {
      * @param sql SQL query.
      * @param params Query parameters.
      */
-    public static List<List<?>> sql(Ignite ignite, String sql, Object... params) {
+    private static List<List<?>> sql(Ignite ignite, String sql, Object... params) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(params);
 
         try (FieldsQueryCursor<List<?>> cur = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {

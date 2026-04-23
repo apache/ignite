@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,6 +37,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -116,7 +116,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     ) {
         assert !F.isEmpty(indexes);
 
-        Set<String> tblIdxNames = indexes.stream().map(idxScan -> idxScan.indexName().toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        Set<String> tblIdxNames = indexes.stream().map(AbstractIndexScan::indexName).collect(Collectors.toSet());
         Set<String> idxToSkip = new HashSet<>();
         Set<String> idxToUse = new HashSet<>();
 
@@ -144,13 +144,9 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
             }
         }
 
-        List<IgniteLogicalIndexScan> idxs = indexes.stream().filter(idx -> {
-            String idxUpperName = idx.indexName().toUpperCase(Locale.ROOT);
-
-            return !idxToSkip.contains(idxUpperName) && (idxToUse.isEmpty() || idxToUse.contains(idxUpperName));
-        }).collect(Collectors.toList());
-
-        return new IgniteBiTuple<>(idxs, !idxToUse.isEmpty());
+        return new IgniteBiTuple<>(indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())
+            && (idxToUse.isEmpty() || idxToUse.contains(idx.indexName()))).collect(Collectors.toList()),
+            !idxToUse.isEmpty());
     }
 
     /** */
