@@ -8,7 +8,13 @@ IgniteSort(sort0=[$0], sort1=[$1], dir0=[ASC-nulls-first], dir1=[DESC-nulls-last
           IgniteCorrelatedNestedLoopJoin(condition=[AND(=($1, $7), =($0, $6))], joinType=[inner], variablesSet=[[$cor6]], variablesSet=[[6]], correlationVariables=[[$cor6]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=12.01501875, cpu=20.0212625, memory=47.03493125, io=3.00388125, network=47.03493125], id = 2115164
             IgniteTableSpool(readType=[LAZY], writeType=[EAGER]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=3.0, cpu=3.0, memory=13.0, io=1.0, network=13.0], id = 2115152
               IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=2.0, memory=1.0, io=1.0, network=13.0], id = 2115151
-                IgniteIndexScan(table=[[PUBLIC, PARTSUPP]], index=[{INDEX_CASE:PS_SK_PK,PS_PK}], requiredColumns=[{2, 3, 5}], inlineScan=[false], collation=[[3 ASC-nulls-first, 2 ASC-nulls-first, 0 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = 1942040
+{ONEOF}
+                IgniteIndexScan(table=[[PUBLIC, PARTSUPP]], index=[PS_SK_PK], requiredColumns=[{2, 3, 5}], inlineScan=[false], collation=[[3 ASC-nulls-first, 2 ASC-nulls-first, 0 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = 1942040
+=====
+                IgniteIndexScan(table=[[PUBLIC, PARTSUPP]], index=[PS_PK], requiredColumns=[{2, 3, 5}], inlineScan=[false], collation=[[2 ASC-nulls-first, 3 ASC-nulls-first, 0 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = {id}
+=====
+                IgniteIndexScan(table=[[PUBLIC, PARTSUPP]], index=[{INDEX_CASE:_key_PK,_key_PK_proxy}], requiredColumns=[{2, 3, 5}], inlineScan=[false], collation=[[2 ASC-nulls-first, 3 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = {id}
+{ONEOF}
             IgniteCorrelatedNestedLoopJoin(condition=[=($0, $2)], joinType=[inner], variablesSet=[[$cor9]], variablesSet=[[9]], correlationVariables=[[$cor9]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=8.01501875, cpu=13.021262499999999, memory=34.03493125, io=2.00388125, network=34.03493125], id = 2115163
               IgniteTableSpool(readType=[LAZY], writeType=[EAGER]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=3.0, cpu=3.0, memory=9.0, io=1.0, network=9.0], id = 2115154
                 IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=2.0, memory=1.0, io=1.0, network=9.0], id = 2115153

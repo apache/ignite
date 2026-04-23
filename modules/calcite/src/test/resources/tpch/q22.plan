@@ -13,4 +13,8 @@ IgniteColocatedSortAggregate(group=[{0}], NUMCUST=[COUNT()], TOTACCTBAL=[SUM($1)
             IgniteProject(i=[true]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=4.0, cpu=3.0, memory=5.0, io=1.0, network=5.0], id = 553100
               IgniteSortedIndexSpool(readType=[LAZY], writeType=[EAGER], condition=[=($0, $cor0.C_CUSTKEY)], collation=[[0 ASC-nulls-first]], searchBounds=[[ExactBounds [bound=$cor0.C_CUSTKEY]]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=3.0, cpu=2.0, memory=5.0, io=1.0, network=5.0], id = 553099
                 IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=2.0, memory=1.0, io=1.0, network=5.0], id = 553098
-                  IgniteIndexScan(table=[[PUBLIC, ORDERS]], index=[{INDEX_CASE:O_CK,O_CK_proxy}], requiredColumns=[{3}], inlineScan=[true], collation=[[3 ASC-nulls-first, 0 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = 552155
+{ONEOF}
+                  IgniteIndexScan(table=[[PUBLIC, ORDERS]], index=[O_CK], requiredColumns=[{3}], inlineScan=[true], collation=[[3 ASC-nulls-first, 0 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = 552155
+=====
+                  IgniteIndexScan(table=[[PUBLIC, ORDERS]], index=[O_CK_proxy], requiredColumns=[{3}], inlineScan=[true], collation=[[3 ASC-nulls-first, 2 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = {id}
+{ONEOF}
