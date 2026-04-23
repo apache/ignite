@@ -574,7 +574,7 @@ Structure:
 |Field|   Size in bytes|   Description
 |length|  4|   Signed integer number. Number of elements in the collection.
 |type|    1|   Type of the collection. See description for details.
-elements  |  Variable. Depends on sizes of the objects.  Elements sequence. Every element is a full value of any type or NULL.
+|elements  |  Variable. Depends on sizes of the objects.  |Elements sequence Every element is a full value of any type or NULL.
 
 |===
 
