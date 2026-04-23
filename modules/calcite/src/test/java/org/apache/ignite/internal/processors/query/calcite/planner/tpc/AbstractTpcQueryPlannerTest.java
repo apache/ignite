@@ -28,11 +28,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -122,7 +124,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
             String expectedPlan = replaceIdAndHash(expectedPlans[pos++]);
 
-            for (String possiblePlan : expandWithPossibleIndexes(expectedPlan)) {
+            for (String possiblePlan : expandTemplates(expectedPlan)) {
                 if (possiblePlan.equals(actualPlan)) {
                     match = true;
 
@@ -224,7 +226,13 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         return queries;
     }
 
-    private static List<String> expandWithPossibleIndexes(String plan) {
+    private static List<String> expandTemplates(String plan) {
+        return expandOneof(plan).stream()
+            .flatMap(AbstractTpcQueryPlannerTest::expandIndexCase)
+            .collect(Collectors.toList());
+    }
+
+    private static Stream<String> expandIndexCase(String plan) {
         List<String> res = new ArrayList<>();
 
         res.add(plan);
@@ -248,7 +256,63 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
                 break;
         }
 
-        return res;
+        return res.stream();
+    }
+
+    private static List<String> expandOneof(String plan) {
+        String oneOf = "{ONEOF}";
+
+        if (!plan.contains(oneOf))
+            return Collections.singletonList(plan);
+
+        List<StringBuffer> res = new ArrayList<>();
+
+        Scanner sc = new Scanner(plan);
+
+        StringBuffer beforeOneof = new StringBuffer();
+
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine();
+
+            if (line.trim().startsWith(oneOf))
+                break;
+
+            beforeOneof.append(line).append('\n');
+        }
+
+        boolean oneOfEnd = false;
+
+        // Expanding first found oneof
+        while(sc.hasNextLine() && !oneOfEnd) {
+            StringBuffer oneofCase = new StringBuffer();
+
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+
+                oneOfEnd = line.trim().equals(oneOf);
+
+                if (line.trim().matches("^=+$") || oneOfEnd)
+                    break;
+
+                oneofCase.append(line).append('\n');
+            }
+
+            res.add(new StringBuffer(beforeOneof).append(oneofCase));
+        }
+
+        if (!oneOfEnd)
+            throw new IllegalStateException(oneOf + " not closed");
+
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine();
+
+            for (StringBuffer expanded : res) {
+                expanded.append(line).append('\n');
+            }
+        }
+
+        // Recursively expanding next ONEOF.
+        return res.stream().flatMap(p -> expandOneof(p.toString()).stream()).collect(Collectors.toList());
     }
 
     private static String replaceIdAndHash(String plan) {
