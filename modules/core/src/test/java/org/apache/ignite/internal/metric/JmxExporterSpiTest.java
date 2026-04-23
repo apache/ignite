@@ -1288,6 +1288,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         /** */
         private final CountDownLatch finishExecLatch;
 
+        /** */
         private TestRunnable(int idx, CountDownLatch startExecLatch, CountDownLatch finishExecLatch) {
             this.idx = idx;
             this.startExecLatch = startExecLatch;
