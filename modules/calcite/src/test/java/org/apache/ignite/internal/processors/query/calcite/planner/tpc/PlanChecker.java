@@ -58,10 +58,10 @@ public class PlanChecker extends Suite {
 
     /** */
     private Stream<Runner> createRunnersForParameters() throws IOException {
-        Stream<String> queries = Files.list(Path.of("./src/test/resources", TpchHelper.name(getTestClass().getJavaClass())))
+        Stream<String> queries = Files.list(Path.of("./src/test/resources", TpchHelper.sqlTestName(getTestClass().getJavaClass())))
             .filter(p -> p.toString().endsWith(".sql"))
             .sorted()
-            .map(TpchHelper::queryId);
+            .map(p -> p.getFileName().toString().replace(".sql", ""));
 
         return queries
             .map(qryId -> new TestWithParameters("[queryId=" + qryId + "]", getTestClass(), Collections.singletonList(qryId)))

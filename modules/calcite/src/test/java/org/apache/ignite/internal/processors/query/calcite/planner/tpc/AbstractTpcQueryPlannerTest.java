@@ -17,21 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.tpc;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
-import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -49,7 +39,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.loadFromResource;
+import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.scriptToQueries;
 import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sql;
+import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sqlTestName;
 import static org.apache.logging.log4j.util.Cast.cast;
 
 /**
@@ -59,11 +52,14 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     /** Set to {@code true} to write plan files, instead of checking. */
     private static final boolean UPDATE_PLAN = false;
 
+    /** Server node to run queries on. */
     private static IgniteEx srv;
 
+    /** Query id. Set by {@link PlanChecker}. */
     @Parameterized.Parameter
     public String queryId;
 
+    /** Run once, before all queries check. */
     @BeforePlansTest
     public static void startAll(Class<?> testClass) throws Exception {
         AbstractTpcQueryPlannerTest mock = new AbstractTpcQueryPlannerTest();
@@ -87,6 +83,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             scriptToQueries(table.ddlScript()).forEach(q -> sql(srv, q));
     }
 
+    /** Run once, after all queries check. */
     @AfterPlansTest
     public static void stopAll(Class<?> testClass) {
         if (srv != null) {
@@ -96,69 +93,68 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         }
     }
 
+    /** Test single query. */
     @Test
     public void testQuery() {
-        List<String> actualPlans = queryPlan(loadFromResource(String.format(TpchHelper.name(getClass()) + "/%s.sql", queryId)));
+        String actualPlan = queryPlan();
 
         if (UPDATE_PLAN) {
-            updateQueryPlan(queryId, actualPlans);
+            updatePlan(actualPlan);
+
             return;
         }
 
-        String[] expectedPlans = loadFromResource(String.format("%s/%s.plan", TpchHelper.name(getClass()), queryId))
-            .split("----(\\r\\n|\\n|\\r)");
+        boolean match = false;
 
-        assert expectedPlans.length == actualPlans.size() : "Unexpected number of plans, got: " + actualPlans.size()
-            + ", expected: " + expectedPlans.length;
+        String expPlan = TpchHelper.replaceIdAndHash(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), queryId)));
 
-        int pos = 0;
+        for (String possiblePlan : TpchHelper.expandTemplates(expPlan)) {
+            if (possiblePlan.equals(actualPlan)) {
+                match = true;
 
-        for (String actualPlan : actualPlans) {
-            boolean match = false;
-
-            String expectedPlan = TpchHelper.replaceIdAndHash(expectedPlans[pos++]);
-
-            for (String possiblePlan : TpchHelper.expandTemplates(expectedPlan)) {
-                if (possiblePlan.equals(actualPlan)) {
-                    match = true;
-
-                    break;
-                }
+                break;
             }
+        }
 
-            if (!match) {
-                // This assertion will print nice diff in IDE that will help to investigate.
-                // Test will fail anyway.
-                assertEquals(expectedPlan, actualPlan);
+        if (!match) {
+            // This assertion will print nice diff in IDE that will help to investigate.
+            // Test will fail anyway.
+            assertEquals(expPlan, actualPlan);
 
-                assert false : "Should not happen";
-            }
+            assert false : "Should not happen";
         }
     }
 
-    static String loadFromResource(String resource) {
-        try (InputStream is = TpchHelper.class.getClassLoader().getResourceAsStream(resource)) {
-            if (is == null) {
-                throw new IllegalArgumentException("Resource does not exist: " + resource);
-            }
-            try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                return CharStreams.toString(reader);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("I/O operation failed: " + resource, e);
-        }
+    /** {@inheritDoc} */
+    @Override protected boolean isSafeTopology() {
+        return false;
     }
 
-    private static <T> T invoke(Method method, Object... arguments) {
-        try {
-            return (T) method.invoke(null, arguments);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+    /** */
+    private String queryPlan() {
+        CalciteQueryProcessor engine = (CalciteQueryProcessor)srv.context().query().defaultQueryEngine();
+
+        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
+
+        List<String> res = scriptToQueries(loadFromResource(sqlTestName(getClass()) + "/" + queryId + ".sql")).stream().map(qry -> {
+            try {
+                return RelOptUtil.toString(physicalPlan(plannerCtx(qry, schemas.values(), null)), SqlExplainLevel.ALL_ATTRIBUTES);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        })
+            .map(TpchHelper::replaceIdAndHash)
+            .collect(Collectors.toList());
+
+        assertEquals(1, res.size());
+
+        return res.get(0);
     }
 
-    private void updateQueryPlan(String queryId, List<String> newPlans) {
-        Path targetDirectory = Path.of("./src/test/resources/" + TpchHelper.name(getClass()));
+    /** */
+    private void updatePlan(String newPlan) {
+        Path targetDirectory = Path.of("./src/test/resources/" + sqlTestName(getClass()));
 
         // A targetDirectory must be specified by hand when expected plans are generated.
         if (targetDirectory == null) {
@@ -169,60 +165,10 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         try {
             Files.createDirectories(targetDirectory);
 
-            String plans = String.join("----" + System.lineSeparator(), newPlans);
-            Files.writeString(targetDirectory.resolve(String.format("%s.plan", queryId)), plans);
+            Files.writeString(targetDirectory.resolve(String.format("%s.plan", queryId)), newPlan);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-
-    private List<String> queryPlan(String sqlScript) {
-        CalciteQueryProcessor engine = (CalciteQueryProcessor)srv.context().query().defaultQueryEngine();
-
-        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
-
-        return scriptToQueries(sqlScript).stream().map(qry -> {
-            try {
-                return RelOptUtil.toString(physicalPlan(plannerCtx(sqlScript, schemas.values(), null)), SqlExplainLevel.ALL_ATTRIBUTES);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).map(TpchHelper::replaceIdAndHash).collect(Collectors.toList());
-    }
-
-    private static List<String> scriptToQueries(String sqlScript) {
-        List<String> queries = new ArrayList<>();
-
-        Scanner sc = new Scanner(sqlScript);
-
-        StringBuilder current = new StringBuilder();
-
-        while (sc.hasNextLine()) {
-            String line = sc.nextLine().trim();
-
-            if (line.startsWith("--") || line.isEmpty())
-                continue;
-
-            current.append(line).append('\n');
-
-            if (line.endsWith(";")) {
-                queries.add(current.toString());
-
-                current = new StringBuilder();
-            }
-        }
-
-        if (current.length() > 0)
-            queries.add(current.toString());
-
-        return queries;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isSafeTopology() {
-        return false;
     }
 
     /** */

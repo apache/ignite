@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,20 +40,25 @@ import org.apache.ignite.internal.IgniteEx;
  * Provides utility methods to work with queries defined by the TPC-H benchmark.
  */
 public final class TpchHelper {
+    /** */
     public static final String INT32 = "INT32";
 
+    /** */
     public static final String DECIMAL = "DECIMAL";
 
+    /** */
     public static final String STRING = "VARCHAR";
 
+    /** */
     public static final String DATE = "DATE";
 
     /** */
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
 
+    /** */
     private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
-
+    /** */
     private TpchHelper() {
     }
 
@@ -77,11 +81,8 @@ public final class TpchHelper {
         }
     }
 
-    public static String queryId(Path p) {
-        return p.getFileName().toString().replace(".sql", "");
-    }
-
-    public static String name(Class<?> klass) {
+    /** @return SQL test name. */
+    public static String sqlTestName(Class<?> klass) {
         PlanChecker.PlansTest desc = plansTest(klass);
 
         if (desc.name().isEmpty())
@@ -90,17 +91,20 @@ public final class TpchHelper {
         return desc.name();
     }
 
+    /** @return Tables for the test. */
     public static Class<? extends Enum<? extends TpcTable>> tables(Class<?> klass) {
         PlanChecker.PlansTest desc = plansTest(klass);
 
         return desc.tables();
     }
 
+    /** @return Test description annotation. */
     private static PlanChecker.PlansTest plansTest(Class<?> klass) {
         PlanChecker.PlansTest desc = klass.getAnnotation(PlanChecker.PlansTest.class);
 
         if (desc == null)
             throw new IllegalStateException("Test class must be annotated with @" + PlanChecker.PlansTest.class.getSimpleName());
+
         return desc;
     }
 
@@ -119,12 +123,27 @@ public final class TpchHelper {
         }
     }
 
+    /**
+     * Supported templates:
+     * <ul>
+     *     <li>{@code ", id = 123} replaced with the {@code ", id = {id}}</li>
+     *     <li>{@code ", hash=123} replaced with the {@code ", hash={hash}}</li>
+     *     <li>{@code "{INDEX_CASE:IDX1,IDX2}} expands to the plans where {INDEX_CASE....} replaced with each of the index from list.</li>
+     *     <li>{@code "{ONEOF}} start and finish with the {@code {ONEOF}} tag. Cases separated with the line "=====".
+     *     Creates as many plans as there are cases.
+     *     </li>
+     * </ul>
+     *
+     * @param plan Plan with templates
+     * @return Expanded (templates replaced with the possible values). One of the plan must be equal to the one created by Ignite node.
+     */
     public static List<String> expandTemplates(String plan) {
         return expandOneof(plan).stream()
             .flatMap(TpchHelper::expandIndexCase)
             .collect(Collectors.toList());
     }
 
+    /** Expands plans. Replace {INDEX_CASE} tag with the possible indexes. */
     private static Stream<String> expandIndexCase(String plan) {
         List<String> res = new ArrayList<>();
 
@@ -152,6 +171,7 @@ public final class TpchHelper {
         return res.stream();
     }
 
+    /** Expands plans. Replace {ONEOF} tag with the possible cases. */
     private static List<String> expandOneof(String plan) {
         String oneOf = "{ONEOF}";
 
@@ -208,8 +228,38 @@ public final class TpchHelper {
         return res.stream().flatMap(p -> expandOneof(p.toString()).stream()).collect(Collectors.toList());
     }
 
+    /** Replaces id and hash patterns. */
     public static String replaceIdAndHash(String plan) {
         plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
         return HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
+    }
+
+    /** @return List of SQL queries from the script file. Comments are skipped. */
+    public static List<String> scriptToQueries(String sqlScript) {
+        List<String> queries = new ArrayList<>();
+
+        Scanner sc = new Scanner(sqlScript);
+
+        StringBuilder current = new StringBuilder();
+
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine().trim();
+
+            if (line.startsWith("--") || line.isEmpty())
+                continue;
+
+            current.append(line).append('\n');
+
+            if (line.endsWith(";")) {
+                queries.add(current.toString());
+
+                current = new StringBuilder();
+            }
+        }
+
+        if (current.length() > 0)
+            queries.add(current.toString());
+
+        return queries;
     }
 }
