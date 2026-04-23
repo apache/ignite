@@ -5,10 +5,10 @@ SELECT
     s_name,
     count(*) AS numwait
 FROM
-    supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
+    supplier,
     lineitem l1,
-    orders /*+ NO_INDEX(_key_PK_proxy) */,
-    nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */
+    orders,
+    nation
 WHERE
         s_suppkey = l1.l_suppkey
   AND o_orderkey = l1.l_orderkey

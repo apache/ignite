@@ -27,9 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -58,7 +58,7 @@ import static org.apache.logging.log4j.util.Cast.cast;
  * Abstract test class to ensure a planner generates optimal plan for TPC queries.
  */
 public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
-    private static final boolean UPDATE_PLAN = true;
+    private static final boolean UPDATE_PLAN = false;
 
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
     private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
@@ -81,7 +81,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         srv = (IgniteEx)IgnitionEx.start(cfg);
 
-        srv.createCache(new CacheConfiguration<>("mock")
+        srv.getOrCreateCache(new CacheConfiguration<>("mock")
             .setSqlFunctionClasses(AbstractTpcQueryPlannerTest.TpchUDF.class)
             .setSqlSchema("PUBLIC"));
 
@@ -89,11 +89,6 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         for (TpcTable table : tables)
             scriptToQueries(table.ddlScript()).forEach(q -> sql(srv, q));
-
-        List<List<?>> idxs = sql(srv, "SELECT * FROM SYS.INDEXES");
-        for (List<?> idx : idxs) {
-            System.out.println(idx.stream().map(Objects::toString).collect(Collectors.joining(" ")));
-        }
     }
 
     @AfterPlansTest
@@ -122,8 +117,29 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         int pos = 0;
 
-        for (String actualPlan : actualPlans)
-            assertEquals(preparePlan(expectedPlans[pos++]), actualPlan);
+        for (String actualPlan : actualPlans) {
+            List<String> preparedPlans = preparePlan(actualPlan);
+
+            assertEquals(1, preparedPlans.size());
+
+            boolean match = false;
+
+            for (String possiblePlan : preparePlan(expectedPlans[pos++])) {
+                if (possiblePlan.equals(preparedPlans.get(0))) {
+                    match = true;
+
+                    break;
+                }
+            }
+
+            if (!match) {
+                // This assertion will print nice diff in IDE that will help to investigate.
+                // Test will fail anyway.
+                assertEquals(expectedPlans[pos-1], preparedPlans.get(0));
+
+                assert false : "Should not happen";
+            }
+        }
     }
 
     static String loadFromResource(String resource) {
@@ -179,7 +195,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }).map(AbstractTpcQueryPlannerTest::preparePlan).collect(Collectors.toList());
+        }).collect(Collectors.toList());
     }
 
     private static List<String> scriptToQueries(String sqlScript) {
@@ -210,10 +226,34 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         return queries;
     }
 
-    private static String preparePlan(String expectedPlan) {
-        expectedPlan = ID_PATTERN.matcher(expectedPlan).replaceAll(", id = {id}");
-        expectedPlan = HASH_PATTERN.matcher(expectedPlan).replaceAll(", hash={hash}");
-        return expectedPlan;
+    private static List<String> preparePlan(String plan) {
+        plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
+        plan = HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
+
+        List<String> res = new ArrayList<>();
+
+        res.add(plan);
+
+        while (true) {
+            String idxCaseStart = "{INDEX_CASE:";
+
+            if (res.get(0).contains(idxCaseStart)) {
+                res = res.stream().flatMap(p -> {
+                    int start = p.indexOf(idxCaseStart);
+                    int end = p.indexOf('}', start);
+
+                    assert start != -1 && end != -1;
+
+                    String[] idxs = p.substring(start + idxCaseStart.length(), end).split(",");
+
+                    return Arrays.stream(idxs).map(idx -> p.substring(0, start) + idx + p.substring(end + 1));
+                }).collect(Collectors.toList());
+            }
+            else
+                break;
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -16,7 +16,7 @@ SELECT
             ELSE 0
         END) AS low_line_count
 FROM
-    orders /*+ NO_INDEX(_key_PK_proxy) */,
+    orders,
     lineitem
 WHERE
         o_orderkey = l_orderkey

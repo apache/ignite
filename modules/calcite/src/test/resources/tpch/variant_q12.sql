@@ -10,7 +10,7 @@ SELECT
     sum(decode(o_orderpriority, '1-URGENT', 0, '2-HIGH', 0, 1)) as
         low_line_count
 FROM
-    orders /*+ NO_INDEX(_key_PK_proxy) */,
+    orders,
     lineitem
 WHERE
         o_orderkey = l_orderkey

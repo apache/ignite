@@ -20,7 +20,7 @@ SELECT
   s_phone,
   total_revenue
 FROM
-  supplier /*+ NO_INDEX(_key_PK_proxy) */,
+  supplier,
   revenue
 WHERE
   s_suppkey = supplier_no

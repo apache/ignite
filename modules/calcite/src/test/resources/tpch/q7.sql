@@ -13,12 +13,12 @@ FROM (
              extract(YEAR FROM l_shipdate)      AS l_year,
              l_extendedprice * (1 - l_discount) AS volume
          FROM
-             supplier /*+ NO_INDEX(S_NK_proxy) */,
+             supplier,
              lineitem,
-             orders /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(O_CK_proxy) */,
-             customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
-             nation /*+ NO_INDEX(_key_PK_proxy) */ n1,
-             nation /*+ NO_INDEX(_key_PK_proxy) */ n2
+             orders,
+             customer,
+             nation n1,
+             nation n2
          WHERE
                  s_suppkey = l_suppkey
            AND o_orderkey = l_orderkey

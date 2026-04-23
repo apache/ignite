@@ -9,8 +9,8 @@ SELECT
     o_totalprice,
     sum(l_quantity)
 FROM
-    customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
-    orders /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(O_CK_proxy) */,
+    customer,
+    orders,
     lineitem
 WHERE
         o_orderkey IN (

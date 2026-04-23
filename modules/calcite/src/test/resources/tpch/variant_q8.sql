@@ -13,13 +13,13 @@ FROM (
              n2.n_name                          AS nation
          FROM
              part,
-             supplier /*+ NO_INDEX(S_NK_proxy) */,
+             supplier,
              lineitem,
-             orders /*+ NO_INDEX(_key_PK_proxy) */,
-             customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */,
-             nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */ n1,
-             nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */ n2,
-             region /*+ NO_INDEX(_key_PK_proxy) */
+             orders,
+             customer,
+             nation n1,
+             nation n2,
+             region
          WHERE
                  p_partkey = l_partkey
            AND s_suppkey = l_suppkey

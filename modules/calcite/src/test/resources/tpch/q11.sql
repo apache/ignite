@@ -6,7 +6,7 @@ SELECT
     sum(ps_supplycost * ps_availqty) AS val
 FROM
     partsupp,
-    supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
+    supplier,
     nation
 WHERE
     ps_suppkey = s_suppkey
@@ -19,7 +19,7 @@ HAVING
     SELECT sum(ps_supplycost * ps_availqty) * 0.0001
     FROM
     partsupp,
-    supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
+    supplier,
     nation
     WHERE
     ps_suppkey = s_suppkey

@@ -8,7 +8,7 @@ SELECT
     count(DISTINCT ps_suppkey) AS supplier_cnt
 FROM
     partsupp,
-    part /*+ NO_INDEX(_key_PK_proxy) */
+    part
 WHERE
         p_partkey = ps_partkey
   AND p_brand <> 'Brand#45'
@@ -17,7 +17,7 @@ WHERE
   AND ps_suppkey NOT IN (
     SELECT s_suppkey
     FROM
-        supplier /*+ NO_INDEX(_key_PK_proxy) */
+        supplier
     WHERE
             s_comment LIKE '%Customer%Complaints%'
 )

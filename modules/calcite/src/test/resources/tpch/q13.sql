@@ -9,7 +9,7 @@ FROM (
              c_custkey,
              count(o_orderkey)
          FROM
-             customer /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(C_NK_proxy) */
+             customer
                  LEFT OUTER JOIN orders ON
                          c_custkey = o_custkey
                      AND o_comment NOT LIKE '%special%requests%'

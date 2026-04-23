@@ -1,6 +1,5 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
--- TODO: WHY NO_INDEX hint doesn't guarantee that index will not be used.
 
 SELECT
     s_acctbal,
@@ -12,11 +11,11 @@ SELECT
     s_phone,
     s_comment
 FROM
-    part /*+ NO_INDEX(_key_PK_proxy) */,
-    supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
+    part,
+    supplier,
     partsupp,
-    nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */,
-    region /*+ NO_INDEX(_key_PK_proxy) */
+    nation,
+    region
 WHERE
       p_partkey = ps_partkey
   AND s_suppkey = ps_suppkey
@@ -29,9 +28,9 @@ WHERE
     SELECT min(ps_supplycost)
     FROM
         partsupp,
-        supplier /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(S_NK_proxy) */,
-        nation /*+ NO_INDEX(_key_PK_proxy), NO_INDEX(N_RK_proxy) */,
-        region /*+ NO_INDEX(_key_PK_proxy) */
+        supplier,
+        nation,
+        region
     WHERE
             p_partkey = ps_partkey
       AND s_suppkey = ps_suppkey
