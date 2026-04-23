@@ -39,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -175,7 +174,6 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
-import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1320,14 +1318,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), U.resolveClassLoader(ctx.config())));
+        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
+
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null) {
-                if (f instanceof AbstractMarshallableMessageFactoryProvider)
-                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshaller(), U.resolveClassLoader(ctx.config()));
+                if (f instanceof AbstractMarshallableMessageFactoryProvider) {
+                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshallerContext().jdkMarshaller(),
+                        ctx.marshaller(), resolvedClsLdr);
+                }
 
                 compMsgs.add(f);
             }
@@ -1362,37 +1364,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
             : new NoOpIgniteSecurityProcessor(ctx);
-    }
-
-    /**
-     * Create description of an executor service for logging.
-     *
-     * @param execSvcName Name of the service.
-     * @param execSvc Service to create a description for.
-     */
-    private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
-        int poolSize = 0;
-        int poolActiveThreads = 0;
-        int poolQSize = 0;
-
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-            poolSize = exec.getPoolSize();
-            poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-            poolQSize = exec.getQueue().size();
-        }
-        else if (execSvc instanceof IgniteStripedExecutor) {
-            IgniteStripedExecutor exec = (IgniteStripedExecutor)execSvc;
-
-            poolSize = exec.stripesCount();
-            poolActiveThreads = exec.activeStripesCount();
-            poolQSize = exec.queueSize();
-        }
-
-        int poolIdleThreads = poolSize - poolActiveThreads;
-
-        return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
     }
 
     /**

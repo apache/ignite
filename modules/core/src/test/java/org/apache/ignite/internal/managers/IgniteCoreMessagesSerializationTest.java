@@ -34,7 +34,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class IgniteCoreMessagesSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CoreMessagesProvider(jdk(), U.gridClassLoader());
+        return new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader());
     }
 
     /** {@inheritDoc} */
