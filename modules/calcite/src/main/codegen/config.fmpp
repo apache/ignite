@@ -48,8 +48,6 @@ data: {
       "AFFINITY_KEY"
       "ATOMICITY"
       "WRITE_SYNCHRONIZATION_MODE"
-      "WRAP_KEY"
-      "WRAP_VALUE"
       "CACHE_GROUP"
       "CACHE_NAME"
       "DATA_REGION"
@@ -74,6 +72,8 @@ data: {
       "ANALYZE",
       "MAX_CHANGED_PARTITION_ROWS_PERCENT",
       "TOTAL"
+      "WRAP_KEY"
+      "WRAP_VALUE"
     ]
 
     # List of non-reserved keywords to add;
@@ -90,6 +90,8 @@ data: {
       "DATA_REGION"
 #     "KEY_TYPE" // already presented in Calcite
       "VALUE_TYPE"
+      "WRAP_KEY"
+      "WRAP_VALUE"
       "ENCRYPTED"
       "PARALLEL"
       "INLINE_SIZE"

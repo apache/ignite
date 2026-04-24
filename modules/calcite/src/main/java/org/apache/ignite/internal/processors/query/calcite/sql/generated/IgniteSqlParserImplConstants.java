@@ -729,31 +729,31 @@ public interface IgniteSqlParserImplConstants {
   int AFFINITY_KEY = 723;
   int ATOMICITY = 724;
   int WRITE_SYNCHRONIZATION_MODE = 725;
-  int WRAP_KEY = 726;
-  int WRAP_VALUE = 727;
-  int CACHE_GROUP = 728;
-  int CACHE_NAME = 729;
-  int DATA_REGION = 730;
-  int VALUE_TYPE = 731;
-  int ENCRYPTED = 732;
-  int INDEX = 733;
-  int PARALLEL = 734;
-  int INLINE_SIZE = 735;
-  int LOGGING = 736;
-  int NOLOGGING = 737;
-  int PASSWORD = 738;
-  int KILL = 739;
-  int SCAN = 740;
-  int CONTINUOUS = 741;
-  int SERVICE = 742;
-  int COMPUTE = 743;
-  int ASYNC = 744;
-  int QUERY = 745;
-  int STATISTICS = 746;
-  int REFRESH = 747;
-  int ANALYZE = 748;
-  int MAX_CHANGED_PARTITION_ROWS_PERCENT = 749;
-  int TOTAL = 750;
+  int CACHE_GROUP = 726;
+  int CACHE_NAME = 727;
+  int DATA_REGION = 728;
+  int VALUE_TYPE = 729;
+  int ENCRYPTED = 730;
+  int INDEX = 731;
+  int PARALLEL = 732;
+  int INLINE_SIZE = 733;
+  int LOGGING = 734;
+  int NOLOGGING = 735;
+  int PASSWORD = 736;
+  int KILL = 737;
+  int SCAN = 738;
+  int CONTINUOUS = 739;
+  int SERVICE = 740;
+  int COMPUTE = 741;
+  int ASYNC = 742;
+  int QUERY = 743;
+  int STATISTICS = 744;
+  int REFRESH = 745;
+  int ANALYZE = 746;
+  int MAX_CHANGED_PARTITION_ROWS_PERCENT = 747;
+  int TOTAL = 748;
+  int WRAP_KEY = 749;
+  int WRAP_VALUE = 750;
   int UNSIGNED_INTEGER_LITERAL = 751;
   int APPROX_NUMERIC_LITERAL = 752;
   int DECIMAL_NUMERIC_LITERAL = 753;
@@ -1558,8 +1558,6 @@ public interface IgniteSqlParserImplConstants {
     "\"AFFINITY_KEY\"",
     "\"ATOMICITY\"",
     "\"WRITE_SYNCHRONIZATION_MODE\"",
-    "\"WRAP_KEY\"",
-    "\"WRAP_VALUE\"",
     "\"CACHE_GROUP\"",
     "\"CACHE_NAME\"",
     "\"DATA_REGION\"",
@@ -1583,6 +1581,8 @@ public interface IgniteSqlParserImplConstants {
     "\"ANALYZE\"",
     "\"MAX_CHANGED_PARTITION_ROWS_PERCENT\"",
     "\"TOTAL\"",
+    "\"WRAP_KEY\"",
+    "\"WRAP_VALUE\"",
     "<UNSIGNED_INTEGER_LITERAL>",
     "<APPROX_NUMERIC_LITERAL>",
     "<DECIMAL_NUMERIC_LITERAL>",
