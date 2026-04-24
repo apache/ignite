@@ -6,34 +6,34 @@
 -- Functional Query Definition
 -- Approved February 1998
 
-WITH revenue (supplier_no, total_revenue) as (
-  SELECT
+with revenue (supplier_no, total_revenue) as (
+  select
     l_suppkey,
     sum(l_extendedprice * (1-l_discount))
-  FROM
+  from
     lineitem
-  WHERE
-    l_shipdate >= DATE '1996-01-01'
-    AND l_shipdate < DATE '1996-01-01' + INTERVAL '3' MONTH
-  GROUP BY
+  where
+    l_shipdate >= date '1996-01-01'
+    and l_shipdate < date '1996-01-01' + interval '3' month
+  group by
     l_suppkey
 )
-SELECT
-  s_suppkey,
-  s_name,
-  s_address,
-  s_phone,
-  total_revenue
-FROM
-  supplier,
-  revenue
-WHERE
-  s_suppkey = supplier_no
-  AND total_revenue = (
-    SELECT
-      max(total_revenue)
-    FROM
-      revenue
-)
-ORDER BY
-  s_suppkey
+select
+    s_suppkey,
+    s_name,
+    s_address,
+    s_phone,
+    total_revenue
+from
+    supplier,
+    revenue
+where
+    s_suppkey = supplier_no
+    and total_revenue = (
+        select
+            max(total_revenue)
+        from
+            revenue
+    )
+order by
+    s_suppkey;

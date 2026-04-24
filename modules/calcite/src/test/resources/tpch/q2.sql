@@ -6,6 +6,7 @@
 -- Functional Query Definition
 -- Approved February 1998
 
+
 select
     s_acctbal,
     s_name,

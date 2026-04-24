@@ -2,7 +2,7 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 -- using default substitutions
 -- $ID$
--- TPC-H/TPC-R Shipping Priority Query (Q4)
+-- TPC-H/TPC-R Order Priority Checking Query (Q4)
 -- Functional Query Definition
 -- Approved February 1998
 

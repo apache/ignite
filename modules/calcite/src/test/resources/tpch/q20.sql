@@ -28,19 +28,19 @@ where
                 where
                     p_name like 'forest%'
             )
-          and ps_availqty > (
-            select
-                0.5 * sum(l_quantity)
-            from
-                lineitem
-            where
-                l_partkey = ps_partkey
-              and l_suppkey = ps_suppkey
-              and l_shipdate >= date '1994-01-01'
-              and l_shipdate < date('1994-01-01') + interval '1' YEAR
-        )
+            and ps_availqty > (
+                select
+                    0.5 * sum(l_quantity)
+                from
+                    lineitem
+                where
+                    l_partkey = ps_partkey
+                    and l_suppkey = ps_suppkey
+                    and l_shipdate >= date '1994-01-01'
+                    and l_shipdate < date('1994-01-01') + interval '1' YEAR
+            )
     )
-  and s_nationkey = n_nationkey
-  and n_name = 'CANADA'
+    and s_nationkey = n_nationkey
+    and n_name = 'CANADA'
 order by
     s_name;
