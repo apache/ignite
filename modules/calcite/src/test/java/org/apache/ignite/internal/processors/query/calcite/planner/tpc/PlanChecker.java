@@ -23,6 +23,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +43,9 @@ import org.junit.runners.parameterized.TestWithParameters;
  * Makes pretty test names to simplify CI tracking.
  */
 public class PlanChecker extends Suite {
+    /** */
+    public static final String RSRC_DIR = "./src/test/resources";
+
     /**
      * Only called reflectively. Do not use programmatically.
      */
@@ -50,7 +55,7 @@ public class PlanChecker extends Suite {
 
     /** */
     private static Stream<Runner> createRunnersForParameters(TestClass testClass) throws IOException {
-        Stream<String> queries = TpchHelper.testFiles(testClass.getJavaClass())
+        Stream<String> queries = Files.list(Path.of(RSRC_DIR, sqlTestName(testClass.getJavaClass())))
             .filter(p -> !p.toString().endsWith("ddl.sql"))
             .filter(p -> p.toString().endsWith(".sql"))
             .sorted()
@@ -97,6 +102,19 @@ public class PlanChecker extends Suite {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    /** @return SQL test name. */
+    public static String sqlTestName(Class<?> klass) {
+        PlanChecker.PlansTest desc = klass.getAnnotation(PlanChecker.PlansTest.class);
+
+        if (desc == null)
+            throw new IllegalStateException("Test class must be annotated with @" + PlanChecker.PlansTest.class.getSimpleName());
+
+        if (desc.name().isEmpty())
+            throw new IllegalStateException("Please, set test name with the @PlanTest(name=\"XXX\")");
+
+        return desc.name();
     }
 
     /** */

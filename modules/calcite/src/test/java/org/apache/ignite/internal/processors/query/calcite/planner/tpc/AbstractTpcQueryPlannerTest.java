@@ -17,13 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.tpc;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,18 +39,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.AfterPlansTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.BeforePlansTest;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.loadFromResource;
-import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.scriptToQueries;
-import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sql;
-import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchHelper.sqlTestName;
+import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.RSRC_DIR;
+import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.sqlTestName;
 
 /**
  * Abstract test class to ensure a planner generates expected plan for TPC queries.
@@ -76,7 +84,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             .setSqlFunctionClasses(AbstractTpcQueryPlannerTest.TpchUDF.class)
             .setSqlSchema("PUBLIC"));
 
-        scriptToQueries(loadFromResource(TpchHelper.sqlTestName(testClass) + "/ddl.sql")).forEach(q -> sql(srv, q));
+        TpchHelper.createTables(srv);
     }
 
     /** Run once, after all queries check. */
@@ -91,7 +99,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     /** Test single query. */
     @Test
-    public void testQuery() {
+    public void testQuery() throws Exception {
         String actualPlan = queryPlan();
 
         if (UPDATE_PLAN) {
@@ -102,9 +110,9 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         boolean match = false;
 
-        String expPlan = TpchHelper.replaceIdAndHash(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), queryId)));
+        String expPlan = PlanTemplate.replaceIdAndHash(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), queryId)));
 
-        for (String possiblePlan : TpchHelper.expandTemplates(expPlan)) {
+        for (String possiblePlan : PlanTemplate.expandTemplates(expPlan)) {
             if (possiblePlan.equals(actualPlan)) {
                 match = true;
 
@@ -127,25 +135,14 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private String queryPlan() {
+    private String queryPlan() throws Exception {
         CalciteQueryProcessor engine = (CalciteQueryProcessor)srv.context().query().defaultQueryEngine();
 
         Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
 
-        List<String> res = scriptToQueries(loadFromResource(sqlTestName(getClass()) + "/" + queryId + ".sql")).stream().map(qry -> {
-            try {
-                return RelOptUtil.toString(physicalPlan(plannerCtx(qry, schemas.values(), null)), SqlExplainLevel.ALL_ATTRIBUTES);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        })
-            .map(TpchHelper::replaceIdAndHash)
-            .collect(Collectors.toList());
+        PlanningContext ctx = plannerCtx(loadFromResource(sqlTestName(getClass()) + "/" + queryId + ".sql"), schemas.values(), null);
 
-        assertEquals(1, res.size());
-
-        return res.get(0);
+        return PlanTemplate.replaceIdAndHash(RelOptUtil.toString(physicalPlan(ctx), SqlExplainLevel.ALL_ATTRIBUTES));
     }
 
     /** */
@@ -168,12 +165,50 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         }
     }
 
+    /**
+     * Execute SQL query.
+     *
+     * @param ignite Ignite.
+     * @param sql SQL query.
+     * @param params Query parameters.
+     */
+    public static List<List<?>> sql(Ignite ignite, String sql, Object... params) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(params);
+
+        try (FieldsQueryCursor<List<?>> cur = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
+            return cur.getAll();
+        }
+    }
+
     /** */
     public static class TpchUDF {
         /** */
         @QuerySqlFunction(alias = "SUBSTR")
         public static String substr(String str, int from, int cnt) {
             return str.substring(from, from + cnt);
+        }
+    }
+
+    /**
+     * Loads resource with given name as string.
+     *
+     * @param resource Name of the resource to load.
+     * @return Resource as string.
+     */
+    private static String loadFromResource(String resource) {
+        if (resource.startsWith(RSRC_DIR))
+            resource = resource.substring(RSRC_DIR.length() + 1);
+
+        try (InputStream is = AbstractTpcQueryPlannerTest.class.getClassLoader().getResourceAsStream(resource)) {
+            if (is == null)
+                throw new IllegalArgumentException("Resource does not exist: " + resource);
+
+            try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+                return CharStreams.toString(reader);
+            }
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException("I/O operation failed: " + resource, e);
         }
     }
 }
