@@ -41,15 +41,12 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.cluster.ClusterNode;
@@ -634,65 +631,25 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
      * AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[IS NOT NULL]))
      */
     protected <T extends RelNode> Predicate<ProjectableFilterableTableScan> satisfyCondition(String condition) {
-        /** */
         return node -> {
-            /** Expressions. */
-            List<RexCall> exprs = new ArrayList<>();
-
-            /** */
             RexShuttle shuttle = new RexShuttle() {
-                /** */
-                boolean top = true;
+                @Override public RexNode visitCall(RexCall c) {
+                    RexCall call = (RexCall)super.visitCall(c);
 
-                /** {@inheritDoc} */
-                @Override public RexNode visitCall(RexCall call) {
-                    if (call.isA(SqlKind.COMPARISON) || call.isA(SqlKind.SEARCH)) {
-                        if (call.operandCount() == 2 && call.getOperands().get(0) instanceof RexLocalRef) {
-                            exprs.add(call);
-                        }
-                        else
-                            throw new ControlFlowException();
-                    }
-                    else {
-                        if (!top)
-                            throw new ControlFlowException();
+                    if (call.getOperator().isSymmetrical()) {
+                        List<RexNode> exprs = new ArrayList<>(call.getOperands());
+                        exprs.sort(Comparator.comparing(RexNode::toString));
+                        return node.getCluster().getRexBuilder().makeCall(call.getOperator(), exprs);
                     }
 
-                    top = false;
-
-                    return super.visitCall(call);
+                    return call;
                 }
             };
 
-            try {
-                shuttle.apply(node.condition());
-            }
-            catch (ControlFlowException ex) {
-                lastErrorMsg = "Unapplicable predicate expected: flat operands";
-                return false;
-            }
+            RexNode normCond = shuttle.apply(node.condition());
 
-            exprs.sort(new Comparator<>() {
-                @Override public int compare(RexCall o1, RexCall o2) {
-                    RexLocalRef local1 = (RexLocalRef)o1.getOperands().get(0);
-                    RexLocalRef local2 = (RexLocalRef)o2.getOperands().get(0);
-
-                    return Integer.compare(local1.getIndex(), local2.getIndex());
-                }
-            });
-
-            try {
-                RexCall call = (RexCall)node.condition();
-                RexNode normCond = node.getCluster().getRexBuilder().makeCall(call.getOperator(), exprs);
-
-                if (!condition.equals(normCond.toString())) {
-                    lastErrorMsg = "Unexpected condition [expected=" + condition + ", actual=" + normCond + ']';
-
-                    return false;
-                }
-            }
-            catch (Throwable th) {
-                lastErrorMsg = th.getMessage();
+            if (!condition.equals(normCond.toString())) {
+                lastErrorMsg = "Unexpected condition [expected=" + condition + ", actual=" + normCond + ']';
 
                 return false;
             }
