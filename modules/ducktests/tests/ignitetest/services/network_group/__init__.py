@@ -14,5 +14,8 @@
 # limitations under the License.
 
 """
-This package contains MultiDC tests.
+Network Group Management Service
+
+This module provides tools for simulating complex network topologies by
+defining traffic impairments between logical groups.
 """
