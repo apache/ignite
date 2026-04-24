@@ -5,7 +5,6 @@
 -- TPC-H/TPC-R Pricing Summary Report Query (Q1)
 -- Functional Query Definition
 -- Approved February 1998
--- TODO: actual SQL query differs from Ignite3 version. Why?
 
 
 select
