@@ -56,7 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -8443,7 +8442,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * To utilize more threads we have to keep the core pool size large enough. But we don't need a wide discovery
          * thread pool for ordinary, typical tasks.
          */
-        @Nullable private volatile ThreadPoolExecutor rmtDcPingPool;
+        @Nullable private volatile IgniteThreadPoolExecutor rmtDcPingPool;
 
         /** Stop remote DC ping flag. */
         @Nullable private volatile boolean stopRmtDcPing;
@@ -8527,14 +8526,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             rmtDcPingMaxTimeNs = System.nanoTime() + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO);
 
-            AtomicInteger thrdIdx = new AtomicInteger();
-
-            rmtDcPingPool = new ThreadPoolExecutor(pingRmtDcPoolSz, pingRmtDcPoolSz, 0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(), r -> {
-                Thread t = new Thread(r, "disco-remote-dc-ping-worker-" + thrdIdx.getAndIncrement());
-                t.setDaemon(true);
-                return t;
-            });
+            rmtDcPingPool = new IgniteThreadPoolExecutor(
+                "disco-remote-dc-ping-worker",
+                spi.ignite().name(),
+                pingRmtDcPoolSz,
+                pingRmtDcPoolSz,
+                0,
+                new LinkedBlockingQueue<>()
+            );
 
             if (log.isInfoEnabled()) {
                 log.info("During the connection recovery, starting ping of the remote DCs. Nodes number to ping: "
