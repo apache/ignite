@@ -503,7 +503,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"", qry + "WITH \"wrap_key=false\"")) {
                 sql(ddl);
 
-                assertEquals(18, sql(
+                assertEquals("Unexpected result for query [ddl=" + ddl + ']', 18, sql(
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
 
                 sql("DROP TABLE IF EXISTS T");
@@ -530,7 +530,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"")) {
                 sql(ddl);
 
-                assertEquals(35, sql(
+                assertEquals(35, sql("Unexpected result for query [ddl=" + ddl + ']',
                     "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
 
                 sql("DROP TABLE IF EXISTS T");
