@@ -25,7 +25,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
 /**
@@ -401,6 +403,16 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      * @param expResCnt Expected result count.
      */
     private void checkUsingIndexes(IgniteEx node, String tblName, String idVal, int expResCnt) {
+        IgniteInternalFuture<?> rebuildFut = indexRebuildFuture(node, CU.cacheId(tblName));
+
+        try {
+            if (rebuildFut != null)
+                rebuildFut.get();
+        }
+        catch (Exception e) {
+            throw new AssertionError(e);
+        }
+
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
         List<List<?>> results = executeSql(node, explainSQL + "id=" + idVal);
