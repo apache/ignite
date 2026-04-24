@@ -114,6 +114,8 @@ public class SqlReservedWordsTest extends GridCommonAbstractTest {
         "WHEN",
         "WHERE",
         "WITH",
+        "WRAP_KEY",
+        "WRAP_VALUE",
 
         // Keywords added by Ignite.
         "IF",
