@@ -1,37 +1,46 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Global Sales Opportunity Query (Q22)
+-- Functional Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     cntrycode,
-    count(*)       AS numcust,
-    sum(c_acctbal) AS totacctbal
-FROM (
-         SELECT
-             substr(c_phone, 1, 2) AS cntrycode,
-             c_acctbal
-         FROM
-             customer
-         WHERE
-                 substr(c_phone, 1, 2) IN
-                 ('13', '31', '23', '29', '30', '18', '17')
-           AND c_acctbal > (
-             SELECT avg(c_acctbal)
-             FROM
-                 customer
-             WHERE
-                     c_acctbal > 0.00
-               AND substr(c_phone, 1, 2) IN
-                   ('13', '31', '23', '29', '30', '18', '17')
-         )
-           AND NOT exists(
-                 SELECT *
-                 FROM
-                     orders
-                 WHERE
-                         o_custkey = c_custkey
-             )
-     ) AS custsale
-GROUP BY
+    count(*) as numcust,
+    sum(c_acctbal) as totacctbal
+from
+    (
+        select
+            substr(c_phone, 1, 2) as cntrycode,
+            c_acctbal
+        from
+            customer
+        where
+            substr(c_phone, 1, 2) in
+            ('13', '31', '23', '29', '30', '18', '17')
+          and c_acctbal > (
+            select
+                avg(c_acctbal)
+            from
+                customer
+            where
+                c_acctbal > 0.00
+              and substr(c_phone, 1, 2) in
+                  ('13', '31', '23', '29', '30', '18', '17')
+        )
+          and not exists (
+            select
+                *
+            from
+                orders
+            where
+                o_custkey = c_custkey
+        )
+    ) as custsale
+group by
     cntrycode
-ORDER BY
-    cntrycode
+order by
+    cntrycode;

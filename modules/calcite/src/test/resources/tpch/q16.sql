@@ -1,32 +1,39 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Parts/Supplier Relationship Query (Q16)
+-- Functional Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     p_brand,
     p_type,
     p_size,
-    count(DISTINCT ps_suppkey) AS supplier_cnt
-FROM
+    count(distinct ps_suppkey) as supplier_cnt
+from
     partsupp,
     part
-WHERE
-        p_partkey = ps_partkey
-  AND p_brand <> 'Brand#45'
-  AND p_type NOT LIKE 'MEDIUM POLISHED%'
-  AND p_size IN (49, 14, 23, 45, 19, 3, 36, 9)
-  AND ps_suppkey NOT IN (
-    SELECT s_suppkey
-    FROM
+where
+    p_partkey = ps_partkey
+  and p_brand <> 'Brand#45'
+  and p_type not like 'MEDIUM POLISHED%'
+  and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
+  and ps_suppkey not in (
+    select
+        s_suppkey
+    from
         supplier
-    WHERE
-            s_comment LIKE '%Customer%Complaints%'
+    where
+        s_comment like '%Customer%Complaints%'
 )
-GROUP BY
+group by
     p_brand,
     p_type,
     p_size
-ORDER BY
-    supplier_cnt DESC,
+order by
+    supplier_cnt desc,
     p_brand,
     p_type,
-    p_size
+    p_size;

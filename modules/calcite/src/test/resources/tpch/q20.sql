@@ -1,35 +1,46 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Potential Part Promotion Query (Q20)
+-- Function Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     s_name,
     s_address
-FROM
-    supplier, nation
-WHERE
-        s_suppkey IN (
-        SELECT ps_suppkey
-        FROM
+from
+    supplier,
+    nation
+where
+    s_suppkey in (
+        select
+            ps_suppkey
+        from
             partsupp
-        WHERE
-                ps_partkey IN (
-                SELECT p_partkey
-                FROM
+        where
+            ps_partkey in (
+                select
+                    p_partkey
+                from
                     part
-                WHERE
-                        p_name LIKE 'forest%'
+                where
+                    p_name like 'forest%'
             )
-          AND ps_availqty > (
-            SELECT 0.5 * sum(l_quantity)
-            FROM
+          and ps_availqty > (
+            select
+                0.5 * sum(l_quantity)
+            from
                 lineitem
-            WHERE
-                    l_partkey = ps_partkey
-              AND l_suppkey = ps_suppkey
-              AND l_shipdate >= date('1994-01-01')
-  AND l_shipdate < date('1994-01-01') + interval '1' YEAR
+            where
+                l_partkey = ps_partkey
+              and l_suppkey = ps_suppkey
+              and l_shipdate >= date '1994-01-01'
+              and l_shipdate < date('1994-01-01') + interval '1' YEAR
+        )
     )
-    )
-  AND s_nationkey = n_nationkey
-  AND n_name = 'CANADA'
-ORDER BY s_name
+  and s_nationkey = n_nationkey
+  and n_name = 'CANADA'
+order by
+    s_name;

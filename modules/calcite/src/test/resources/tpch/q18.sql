@@ -1,36 +1,42 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Large Volume Customer Query (Q18)
+-- Function Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     c_name,
     c_custkey,
     o_orderkey,
     o_orderdate,
     o_totalprice,
     sum(l_quantity)
-FROM
+from
     customer,
     orders,
     lineitem
-WHERE
-        o_orderkey IN (
-        SELECT l_orderkey
-        FROM
-            lineitem
-        GROUP BY
+where
+    o_orderkey in (
+        select
             l_orderkey
-        HAVING
-                sum(l_quantity) > 300
+        from
+            lineitem
+        group by
+            l_orderkey having
+            sum(l_quantity) > 300
     )
-  AND c_custkey = o_custkey
-  AND o_orderkey = l_orderkey
-GROUP BY
+  and c_custkey = o_custkey
+  and o_orderkey = l_orderkey
+group by
     c_name,
     c_custkey,
     o_orderkey,
     o_orderdate,
     o_totalprice
-ORDER BY
-    o_totalprice DESC,
+order by
+    o_totalprice desc,
     o_orderdate
-    LIMIT 100
+    limit 100;
