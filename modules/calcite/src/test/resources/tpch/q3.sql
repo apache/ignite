@@ -1,26 +1,32 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Shipping Priority Query (Q3)
+-- Functional Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     l_orderkey,
-    sum(l_extendedprice * (1 - l_discount)) AS revenue,
+    sum(l_extendedprice * (1 - l_discount)) as revenue,
     o_orderdate,
     o_shippriority
-FROM
+from
     customer,
     orders,
     lineitem
-WHERE
-        c_mktsegment = 'BUILDING'
-  AND c_custkey = o_custkey
-  AND l_orderkey = o_orderkey
-  AND o_orderdate < DATE '1995-03-15'
-  AND l_shipdate > DATE '1995-03-15'
-GROUP BY
+where
+    c_mktsegment = 'BUILDING'
+    and c_custkey = o_custkey
+    and l_orderkey = o_orderkey
+    and o_orderdate < date '1995-03-15'
+    and l_shipdate > date '1995-03-15'
+group by
     l_orderkey,
     o_orderdate,
     o_shippriority
-ORDER BY
-    revenue DESC,
+order by
+    revenue desc,
     o_orderdate
-    LIMIT 10
+limit 10;

@@ -1,27 +1,33 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Local Supplier Volume Query (Q5)
+-- Functional Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     n_name,
-    sum(l_extendedprice * (1 - l_discount)) AS revenue
-FROM
+    sum(l_extendedprice * (1 - l_discount)) as revenue
+from
     customer,
     orders,
     lineitem,
     supplier,
     nation,
     region
-WHERE
-        c_custkey = o_custkey
-  AND l_orderkey = o_orderkey
-  AND l_suppkey = s_suppkey
-  AND c_nationkey = s_nationkey
-  AND s_nationkey = n_nationkey
-  AND n_regionkey = r_regionkey
-  AND r_name = 'ASIA'
-  AND o_orderdate >= DATE '1994-01-01'
-  AND o_orderdate < DATE '1994-01-01' + INTERVAL '1' YEAR
-GROUP BY
+where
+    c_custkey = o_custkey
+    and l_orderkey = o_orderkey
+    and l_suppkey = s_suppkey
+    and c_nationkey = s_nationkey
+    and s_nationkey = n_nationkey
+    and n_regionkey = r_regionkey
+    and r_name = 'ASIA'
+    and o_orderdate >= date '1994-01-01'
+    and o_orderdate < date '1994-01-01' + interval '1' year
+group by
     n_name
-ORDER BY
-    revenue DESC
+order by
+    revenue desc;

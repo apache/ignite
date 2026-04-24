@@ -1,21 +1,30 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Shipping Priority Query (Q4)
+-- Functional Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     o_orderpriority,
-    count(*) AS order_count
-FROM orders
-WHERE
-        o_orderdate >= DATE '1993-07-01'
-  AND o_orderdate < DATE '1993-07-01' + INTERVAL '3' MONTH
-  AND EXISTS (
-        SELECT *
-        FROM lineitem
-        WHERE
-                l_orderkey = o_orderkey
-          AND l_commitdate < l_receiptdate
+    count(*) as order_count
+from
+    orders
+where
+    o_orderdate >= date '1993-07-01'
+    and o_orderdate < date '1993-07-01' + interval '3' month
+    and exists (
+        select
+            *
+        from
+            lineitem
+        where
+            l_orderkey = o_orderkey
+            and l_commitdate < l_receiptdate
     )
-GROUP BY
+group by
     o_orderpriority
-ORDER BY
-    o_orderpriority
+order by
+    o_orderpriority;

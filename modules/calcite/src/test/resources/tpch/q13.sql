@@ -1,23 +1,29 @@
 -- noinspection SqlDialectInspectionForFile
 -- noinspection SqlNoDataSourceInspectionForFile
+-- using default substitutions
+-- $ID$
+-- TPC-H/TPC-R Customer Distribution Query (Q13)
+-- Functional Query Definition
+-- Approved February 1998
 
-SELECT
+
+select
     c_count,
-    count(*) AS custdist
-FROM (
-         SELECT
-             c_custkey,
-             count(o_orderkey)
-         FROM
-             customer
-                 LEFT OUTER JOIN orders ON
-                         c_custkey = o_custkey
-                     AND o_comment NOT LIKE '%special%requests%'
-         GROUP BY
-             c_custkey
-     ) AS c_orders (c_custkey, c_count)
-GROUP BY
+    count(*) as custdist
+from
+    (
+        select
+            c_custkey,
+            count(o_orderkey)
+        from
+            customer left outer join orders on
+                c_custkey = o_custkey
+                    and o_comment not like '%special%requests%'
+        group by
+            c_custkey
+    ) as c_orders (c_custkey, c_count)
+group by
     c_count
-ORDER BY
-    custdist DESC,
-    c_count DESC
+order by
+    custdist desc,
+    c_count desc;
