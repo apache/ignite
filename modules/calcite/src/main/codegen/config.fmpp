@@ -53,6 +53,8 @@ data: {
       "DATA_REGION"
 #     "KEY_TYPE" // already presented in Calcite
       "VALUE_TYPE"
+      "WRAP_KEY"
+      "WRAP_VALUE"
       "ENCRYPTED"
       "INDEX"
       "PARALLEL"
@@ -72,8 +74,6 @@ data: {
       "ANALYZE",
       "MAX_CHANGED_PARTITION_ROWS_PERCENT",
       "TOTAL"
-      "WRAP_KEY"
-      "WRAP_VALUE"
     ]
 
     # List of non-reserved keywords to add;
