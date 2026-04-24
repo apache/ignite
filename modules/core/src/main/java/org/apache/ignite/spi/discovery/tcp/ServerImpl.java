@@ -999,9 +999,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         reconCnt++;
 
-                        long curNano = System.nanoTime();
-
-                        if ((timeThreshold > 0 && curNano >= timeThreshold) || (timeout == 0 && spi.failureDetectionTimeoutEnabled()
+                        if ((timeThreshold > 0 && System.nanoTime() >= timeThreshold) || (spi.failureDetectionTimeoutEnabled()
                             && IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e))) {
                             logPingError(errMsgPrefix + "Reached the timeout " +
                                 (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
