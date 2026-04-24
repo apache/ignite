@@ -76,10 +76,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             .setSqlFunctionClasses(AbstractTpcQueryPlannerTest.TpchUDF.class)
             .setSqlSchema("PUBLIC"));
 
-        TpchHelper.testFiles(testClass, "ddl")
-            .filter(p -> p.toString().endsWith(".sql"))
-            .map(p -> loadFromResource(p.toString()))
-            .forEach(ddl -> scriptToQueries(ddl).forEach(q -> sql(srv, q)));
+        scriptToQueries(loadFromResource(TpchHelper.sqlTestName(testClass) + "/ddl.sql")).forEach(q -> sql(srv, q));
     }
 
     /** Run once, after all queries check. */

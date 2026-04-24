@@ -51,6 +51,7 @@ public class PlanChecker extends Suite {
     /** */
     private static Stream<Runner> createRunnersForParameters(TestClass testClass) throws IOException {
         Stream<String> queries = TpchHelper.testFiles(testClass.getJavaClass())
+            .filter(p -> !p.toString().endsWith("ddl.sql"))
             .filter(p -> p.toString().endsWith(".sql"))
             .sorted()
             .map(p -> p.getFileName().toString().replace(".sql", ""));
