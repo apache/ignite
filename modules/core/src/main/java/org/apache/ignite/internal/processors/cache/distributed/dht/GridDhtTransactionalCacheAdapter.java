@@ -581,7 +581,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     private void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
         clearLocks(nodeId, req);
 
-        //TODO: PVD: Does it really need for backup nodes.
         if (req.forSavepoint())
             clearTxEntries(req.version(), req.keys());
 
@@ -1497,6 +1496,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.keys(),
+            //TODO: PVD:: Need to investigate this parameter.
             true,
             req.forSavepoint()
         );
@@ -1781,14 +1781,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     private void clearTxEntry(GridCacheVersion ver, KeyCacheObject key) {
         IgniteInternalTx tx = ctx.tm().tx(ver);
 
-        if (tx instanceof GridDhtTxRemote) {
-            // TODO: PVD: It is not covered by tests.
-            ((GridDhtTxRemote)tx).clearEntry(ctx.txKey(key));
-
-            if (tx.empty())
-                ((GridDhtTxRemote)tx).rollbackRemoteTx();
-        }
-        else if (tx instanceof GridDhtTxLocal) {
+        if (tx instanceof GridDhtTxLocal) {
             ((GridDhtTxLocal)tx).clearEntry(ctx.txKey(key));
 
             try {
@@ -1798,6 +1791,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to remove transaction container during rollback to savepoint: " + tx, e);
+            }
+        }
+        else if (configuration().getNearConfiguration() != null) {
+            try {
+                invalidateNearEntry(key, ver);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to invalidate near entry during rollback to savepoint: " + key, e);
             }
         }
     }

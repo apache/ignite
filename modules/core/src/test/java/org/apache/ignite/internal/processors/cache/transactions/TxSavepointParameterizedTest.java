@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,6 +45,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 @RunWith(Parameterized.class)
@@ -63,49 +65,90 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
     @Parameter(4)
     public boolean replicated;
 
+    @Parameter(5)
+    public TransactionIsolation transactionIsolation;
+
     private static Ignite ignite0;
     private static Ignite ignite1;
     private static Ignite ignite2;
     private static Ignite ignite3;
 
-    @Parameters(name = "initKeies={0}, useNearCache={1}, backups={2}, spKeyOnTxInitiator={3}, replicated={4}")
+    @Parameters(name = "initKeies={0}, useNearCache={1}, backups={2}, spKeyOnTxInitiator={3}, replicated={4}, txIsolation={5}")
     public static Collection<Object[]> testData() {
         return List.of(new Object[][] {
+            // READ_COMMITTED
             // backups = 0
-            {true,  true,  0, true, false},
-            {true,  true,  0, false, false},
-            {true,  false, 0, true, false},
-            {true,  false, 0, false, false},
-            {false, true,  0, true, false},
-            {false, true,  0, false, false},
-            {false, false, 0, true, false},
-            {false, false, 0, false, false},
+            {true,  true,  0, true, false, READ_COMMITTED},
+            {true,  true,  0, false, false, READ_COMMITTED},
+            {true,  false, 0, true, false, READ_COMMITTED},
+            {true,  false, 0, false, false, READ_COMMITTED},
+            {false, true,  0, true, false, READ_COMMITTED},
+            {false, true,  0, false, false, READ_COMMITTED},
+            {false, false, 0, true, false, READ_COMMITTED},
+            {false, false, 0, false, false, READ_COMMITTED},
 
             // backups = 1
-            {true,  true,  1, true, false},
-            {true,  true,  1, false, false},
-            {true,  false, 1, true, false},
-            {true,  false, 1, false, false},
-            {false, true,  1, true, false},
-            {false, true,  1, false, false},
-            {false, false, 1, true, false},
-            {false, false, 1, false, false},
+            {true,  true,  1, true, false, READ_COMMITTED},
+            {true,  true,  1, false, false, READ_COMMITTED},
+            {true,  false, 1, true, false, READ_COMMITTED},
+            {true,  false, 1, false, false, READ_COMMITTED},
+            {false, true,  1, true, false, READ_COMMITTED},
+            {false, true,  1, false, false, READ_COMMITTED},
+            {false, false, 1, true, false, READ_COMMITTED},
+            {false, false, 1, false, false, READ_COMMITTED},
 
             // backups = 2
-            {true,  true,  2, true, false},
-            {true,  true,  2, false, false},
-            {true,  false, 2, true, false},
-            {true,  false, 2, false, false},
-            {false, true,  2, true, false},
-            {false, true,  2, false, false},
-            {false, false, 2, true, false},
-            {false, false, 2, false, false},
+            {true,  true,  2, true, false, READ_COMMITTED},
+            {true,  true,  2, false, false, READ_COMMITTED},
+            {true,  false, 2, true, false, READ_COMMITTED},
+            {true,  false, 2, false, false, READ_COMMITTED},
+            {false, true,  2, true, false, READ_COMMITTED},
+            {false, true,  2, false, false, READ_COMMITTED},
+            {false, false, 2, true, false, READ_COMMITTED},
+            {false, false, 2, false, false, READ_COMMITTED},
 
             // replicated cache.
-            {true,  true,  0, true, true},
-            {true,  false, 0, true, true},
-            {false, true,  0, true, true},
-            {false, false, 0, true, true},
+            {true,  true,  0, true, true, READ_COMMITTED},
+            {true,  false, 0, true, true, READ_COMMITTED},
+            {false, true,  0, true, true, READ_COMMITTED},
+            {false, false, 0, true, true, READ_COMMITTED},
+
+            // REPEATABLE_READ
+            // backups = 0
+            {true,  true,  0, true, false, REPEATABLE_READ},
+            {true,  true,  0, false, false, REPEATABLE_READ},
+            {true,  false, 0, true, false, REPEATABLE_READ},
+            {true,  false, 0, false, false, REPEATABLE_READ},
+            {false, true,  0, true, false, REPEATABLE_READ},
+            {false, true,  0, false, false, REPEATABLE_READ},
+            {false, false, 0, true, false, REPEATABLE_READ},
+            {false, false, 0, false, false, REPEATABLE_READ},
+
+            // backups = 1
+            {true,  true,  1, true, false, REPEATABLE_READ},
+            {true,  true,  1, false, false, REPEATABLE_READ},
+            {true,  false, 1, true, false, REPEATABLE_READ},
+            {true,  false, 1, false, false, REPEATABLE_READ},
+            {false, true,  1, true, false, REPEATABLE_READ},
+            {false, true,  1, false, false, REPEATABLE_READ},
+            {false, false, 1, true, false, REPEATABLE_READ},
+            {false, false, 1, false, false, REPEATABLE_READ},
+
+            // backups = 2
+            {true,  true,  2, true, false, REPEATABLE_READ},
+            {true,  true,  2, false, false, REPEATABLE_READ},
+            {true,  false, 2, true, false, REPEATABLE_READ},
+            {true,  false, 2, false, false, REPEATABLE_READ},
+            {false, true,  2, true, false, REPEATABLE_READ},
+            {false, true,  2, false, false, REPEATABLE_READ},
+            {false, false, 2, true, false, REPEATABLE_READ},
+            {false, false, 2, false, false, REPEATABLE_READ},
+
+            // replicated cache.
+            {true,  true,  0, true, true, REPEATABLE_READ},
+            {true,  false, 0, true, true, REPEATABLE_READ},
+            {false, true,  0, true, true, REPEATABLE_READ},
+            {false, false, 0, true, true, REPEATABLE_READ},
         });
     }
 
@@ -116,6 +159,8 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
+
+        awaitPartitionMapExchange();
     }
 
     @Override protected void afterTestsStopped() throws Exception {
@@ -131,9 +176,74 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void testDhtEntriesAfterRollbackToSavepoint() throws Exception {
-        awaitPartitionMapExchange();
+    public void testRollbackAllKey() throws Exception {
+        IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0);
 
+        int keyOnInitiator = primaryKey(cache0);
+        int keyOnOtherNode = keyForPrimaryAndBackup(ignite0, ignite1);
+
+        if (initKeies) {
+            cache0.put(keyOnInitiator, -1);
+            cache0.put(keyOnOtherNode, -1);
+        }
+
+        CountDownLatch rollbackDoneLatch = new CountDownLatch(1);
+        CountDownLatch finishTxLatch = new CountDownLatch(1);
+        GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 2)) {
+                nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
+
+                tx.savepoint("sp");
+
+                Integer val1 = cache0.get(keyOnInitiator);
+                Integer val2 = cache0.get(keyOnOtherNode);
+
+                if (initKeies) {
+                    assertEquals(-1, val1.intValue());
+                    assertEquals(-1, val2.intValue());
+                } else {
+                    assertNull(val1);
+                    assertNull(val2);
+                }
+
+                cache0.put(keyOnInitiator, 1);
+                cache0.put(keyOnOtherNode, 1);
+
+                tx.rollbackToSavepoint("sp");
+
+                rollbackDoneLatch.countDown();
+
+                assertTrue(finishTxLatch.await(10, TimeUnit.SECONDS));
+
+                val1 = cache0.get(keyOnInitiator);
+                val2 = cache0.get(keyOnOtherNode);
+
+                assertEquals(42, val1.intValue());
+                assertEquals(42, val2.intValue());
+
+                tx.commit();
+            }
+        });
+
+        assertTrue(rollbackDoneLatch.await(10, TimeUnit.SECONDS));
+
+        assertNoTxStateKeyOnNode(nearVerRef[0], keyOnInitiator);
+        assertNoTxStateKeyOnNode(nearVerRef[0], keyOnOtherNode);
+
+        ableToUpdate(keyOnInitiator);
+        ableToUpdate(keyOnOtherNode);
+
+        finishTxLatch.countDown();
+
+        fut.get(10_000);
+
+        assertNoActiveTx(nearVerRef[0]);
+    }
+
+    @Test
+    public void testDhtEntriesAfterRollbackToSavepoint() throws Exception {
         IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0);
 
         int keepTxAliveKey = primaryKey(cache0);
@@ -151,7 +261,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 30_000, 2)) {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 2)) {
                 nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
 
                 cache0.put(keepTxAliveKey, 1);
@@ -182,15 +292,24 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         assertTrue(rollbackDoneLatch.await(10, TimeUnit.SECONDS));
 
         assertNoTxStateKeyOnNode(nearVerRef[0], dhtKey);
-        assertNoTxStateKeyOnNode(nearVerRef[0], dhtKey);
-        assertNoTxStateKeyOnNode(nearVerRef[0], dhtKey);
-        assertNoTxStateKeyOnNode(nearVerRef[0], dhtKey);
 
         finishTxLatch.countDown();
 
         fut.get(10_000);
 
         assertNoActiveTx(nearVerRef[0]);
+    }
+
+    /**
+     * Checks that a key is able to be updated.
+     *
+     * @param key Key to update.
+     * @throws Exception If failed.
+     */
+    private void ableToUpdate(int key) {
+        Ignite updateNode = primaryNode(key, DEFAULT_CACHE_NAME);
+
+        updateNode.cache(DEFAULT_CACHE_NAME).put(key, 42);
     }
 
     /**

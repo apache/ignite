@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -55,6 +56,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -79,6 +81,83 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    @Test
+    public void testRollbackAllKey() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
+        Ignite ignite3 = startGrid(3);
+
+        IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0, 1);
+
+        int keyOnInitiator = primaryKey(cache0);
+        int keyOnOtherNode = keyForPrimaryAndBackup(ignite0, ignite1, ignite0);
+
+            cache0.put(keyOnInitiator, -1);
+            cache0.put(keyOnOtherNode, -1);
+
+        CountDownLatch rollbackDoneLatch = new CountDownLatch(1);
+        CountDownLatch finishTxLatch = new CountDownLatch(1);
+        GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 30_000, 2)) {
+                nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
+
+                tx.savepoint("sp");
+
+                Integer val1 = cache0.get(keyOnInitiator);
+                Integer val2 = cache0.get(keyOnOtherNode);
+
+                    assertEquals(-1, val1.intValue());
+                    assertEquals(-1, val2.intValue());
+
+                cache0.put(keyOnInitiator, 1);
+                cache0.put(keyOnOtherNode, 1);
+
+                info("Rollback all keys");
+                tx.rollbackToSavepoint("sp");
+                doSleep(100);
+                info("Rollback all keys done");
+
+                rollbackDoneLatch.countDown();
+
+                assertTrue(finishTxLatch.await(10, TimeUnit.SECONDS));
+
+                val1 = cache0.get(keyOnInitiator);
+                val2 = cache0.get(keyOnOtherNode);
+
+                assertEquals(42, val1.intValue());
+                assertEquals(42, val2.intValue());
+
+                tx.commit();
+            }
+        });
+
+        assertTrue(rollbackDoneLatch.await(10, TimeUnit.SECONDS));
+
+        ableToUpdate(keyOnInitiator);
+        ableToUpdate(keyOnOtherNode);
+
+        finishTxLatch.countDown();
+
+        fut.get(10_000);
+
+        assertNoActiveTx(ignite1, nearVerRef[0]);
+    }
+
+    /**
+     * Checks that a key is able to be updated.
+     *
+     * @param key Key to update.
+     * @throws Exception If failed.
+     */
+    private void ableToUpdate(int key) {
+        Ignite updateNode = primaryNode(key, DEFAULT_CACHE_NAME);
+
+        updateNode.cache(DEFAULT_CACHE_NAME).put(key, 42);
     }
 
     /**
@@ -545,6 +624,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer> transactionalCache(Ignite ignite, int backups) {
         CacheConfiguration<?, ?> ccfg =
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setNearConfiguration(new NearCacheConfiguration<>())
 //            defaultCacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
