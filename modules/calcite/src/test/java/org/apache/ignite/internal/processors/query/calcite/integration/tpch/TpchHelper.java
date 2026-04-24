@@ -65,7 +65,7 @@ public class TpchHelper {
      * @param ignite Ignite instance.
      */
     public static void createTables(Ignite ignite) {
-        try (InputStream inputStream = TpchHelper.class.getResourceAsStream("ddl.sql")) {
+        try (InputStream inputStream = TpchHelper.class.getResourceAsStream("/tpch/ddl.sql")) {
             if (inputStream == null)
                 throw new RuntimeException("Failed to create TPC-H tables: ddl.sql not found in resources");
 
@@ -148,7 +148,11 @@ public class TpchHelper {
      * @param queryId Query identifier.
      */
     public static String getQuery(int queryId) {
-        try (InputStream inputStream = TpchHelper.class.getResourceAsStream(String.format("q%d.sql", queryId))) {
+        String path = queryId == 15
+            ? String.format("q%d.sql", queryId)
+            : String.format("/tpch/q%d.sql", queryId);
+
+        try (InputStream inputStream = TpchHelper.class.getResourceAsStream(path)) {
             if (inputStream == null)
                 throw new RuntimeException(String.format("Query Q%d is not found in resources", queryId));
 
