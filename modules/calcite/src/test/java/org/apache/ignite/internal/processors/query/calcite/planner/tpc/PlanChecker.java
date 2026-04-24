@@ -44,7 +44,7 @@ import org.junit.runners.parameterized.TestWithParameters;
  */
 public class PlanChecker extends Suite {
     /** */
-    public static final String RSRC_DIR = "./src/test/resources";
+    public static final String RSRC_DIR = "./src/test/resources/";
 
     /**
      * Only called reflectively. Do not use programmatically.
@@ -55,17 +55,16 @@ public class PlanChecker extends Suite {
 
     /** */
     private static Stream<Runner> createRunnersForParameters(TestClass testClass) throws IOException {
-        Stream<String> queries = Files.list(Path.of(RSRC_DIR, sqlTestName(testClass.getJavaClass())))
-            .filter(p -> !p.toString().endsWith("ddl.sql"))
-            .filter(p -> p.toString().endsWith(".sql"))
+        return Files.list(Path.of(RSRC_DIR, sqlTestName(testClass.getJavaClass())))
+            .filter(p -> p.toString().endsWith(".sql") && !p.toString().endsWith("ddl.sql"))
             .sorted()
-            .map(p -> p.getFileName().toString().replace(".sql", ""));
+            .map(p -> {
+                String qryId = p.getFileName().toString().replace(".sql", "");
 
-        return queries
-            .map(qryId -> new TestWithParameters("[queryId=" + qryId + "]", testClass, Collections.singletonList(qryId)))
-            .map(test -> {
                 try {
-                    return new BlockJUnit4ClassRunnerWithParameters(test);
+                    return new BlockJUnit4ClassRunnerWithParameters(
+                        new TestWithParameters("[queryId=" + qryId + "]", testClass, Collections.singletonList(qryId))
+                    );
                 }
                 catch (InitializationError e) {
                     throw new RuntimeException(e);

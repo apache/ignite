@@ -85,6 +85,12 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             .setSqlSchema("PUBLIC"));
 
         TpchHelper.createTables(srv);
+
+/*
+        TpchHelper.fillTables(srv, 0.01);
+
+        TpchHelper.collectSqlStatistics(srv);
+*/
     }
 
     /** Run once, after all queries check. */
@@ -108,22 +114,12 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             return;
         }
 
-        boolean match = false;
+        PlanTemplate pt = new PlanTemplate(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), queryId)));
 
-        String expPlan = PlanTemplate.replaceIdAndHash(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), queryId)));
-
-        for (String possiblePlan : PlanTemplate.expandTemplates(expPlan)) {
-            if (possiblePlan.equals(actualPlan)) {
-                match = true;
-
-                break;
-            }
-        }
-
-        if (!match) {
+        if (!pt.match(actualPlan)) {
             // This assertion will print nice diff in IDE that will help to investigate.
             // Test will fail anyway.
-            assertEquals(expPlan, actualPlan);
+            assertEquals(pt.template, actualPlan);
 
             assert false : "Should not happen";
         }
@@ -136,18 +132,19 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     /** */
     private String queryPlan() throws Exception {
-        CalciteQueryProcessor engine = (CalciteQueryProcessor)srv.context().query().defaultQueryEngine();
-
-        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(engine.schemaHolder(), "igniteSchemas");
+        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(
+            ((CalciteQueryProcessor)srv.context().query().defaultQueryEngine()).schemaHolder(),
+            "igniteSchemas"
+        );
 
         PlanningContext ctx = plannerCtx(loadFromResource(sqlTestName(getClass()) + "/" + queryId + ".sql"), schemas.values(), null);
 
-        return PlanTemplate.replaceIdAndHash(RelOptUtil.toString(physicalPlan(ctx), SqlExplainLevel.ALL_ATTRIBUTES));
+        return new PlanTemplate(RelOptUtil.toString(physicalPlan(ctx), SqlExplainLevel.ALL_ATTRIBUTES)).template;
     }
 
     /** */
     private void updatePlan(String newPlan) {
-        Path targetDir = Path.of("./src/test/resources/" + sqlTestName(getClass()));
+        Path targetDir = Path.of(RSRC_DIR + sqlTestName(getClass()));
 
         // A targetDirectory must be specified by hand when expected plans are generated.
         if (targetDir == null) {

@@ -26,7 +26,18 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** Contains logic to process plans templates. */
+/**
+ * Contains logic to process plans templates.
+ * Supported templates:
+ * <ul>
+ *     <li>{@code ", id = 123} replaced with the {@code ", id = {id}}</li>
+ *     <li>{@code ", hash=123} replaced with the {@code ", hash={hash}}</li>
+ *     <li>{@code "{INDEX_CASE:IDX1,IDX2}} expands to the plans where {INDEX_CASE....} replaced with each of the index from list.</li>
+ *     <li>{@code "{ONEOF}} start and finish with the {@code {ONEOF}} tag. Cases separated with the line "=====".
+ *     Creates as many plans as there are cases.
+ *     </li>
+ * </ul>
+ */
 public class PlanTemplate {
     /** */
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
@@ -34,24 +45,24 @@ public class PlanTemplate {
     /** */
     private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
+    /** */
+    public final String template;
+
+    /** */
+    public PlanTemplate(String template) {
+        this.template = HASH_PATTERN.matcher(ID_PATTERN.matcher(template)
+            .replaceAll(", id = {id}"))
+            .replaceAll(", hash={hash}");
+    }
+
     /**
-     * Supported templates:
-     * <ul>
-     *     <li>{@code ", id = 123} replaced with the {@code ", id = {id}}</li>
-     *     <li>{@code ", hash=123} replaced with the {@code ", hash={hash}}</li>
-     *     <li>{@code "{INDEX_CASE:IDX1,IDX2}} expands to the plans where {INDEX_CASE....} replaced with each of the index from list.</li>
-     *     <li>{@code "{ONEOF}} start and finish with the {@code {ONEOF}} tag. Cases separated with the line "=====".
-     *     Creates as many plans as there are cases.
-     *     </li>
-     * </ul>
-     *
-     * @param plan Plan with templates
-     * @return Expanded (templates replaced with the possible values). One of the plan must be equal to the one created by Ignite node.
+     * @param actualPlan Plan to match.
+     * @return {@code True} if any expanded plan equals to the parameter.
      */
-    public static List<String> expandTemplates(String plan) {
-        return expandOneof(plan).stream()
+    public boolean match(String actualPlan) {
+        return  expandOneof(template).stream()
             .flatMap(PlanTemplate::expandIndexCase)
-            .collect(Collectors.toList());
+            .anyMatch(possiblePlan -> possiblePlan.equals(actualPlan));
     }
 
     /** Expands plans. Replace {INDEX_CASE} tag with the possible indexes. */
@@ -137,11 +148,5 @@ public class PlanTemplate {
 
         // Recursively expanding next ONEOF.
         return res.stream().flatMap(p -> expandOneof(p.toString()).stream()).collect(Collectors.toList());
-    }
-
-    /** Replaces id and hash patterns. */
-    public static String replaceIdAndHash(String plan) {
-        plan = ID_PATTERN.matcher(plan).replaceAll(", id = {id}");
-        return HASH_PATTERN.matcher(plan).replaceAll(", hash={hash}");
     }
 }
