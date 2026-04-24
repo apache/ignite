@@ -387,7 +387,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      * Check using PK indexes for few cases.
      *
      * @param tblName Name of table which should be checked to using PK indexes.
-     * @param expResCnt Expceted result count.
+     * @param expResCnt Expected result count.
      */
     private void checkUsingIndexes(String tblName, String idVal, int expResCnt) {
         checkUsingIndexes(node(), tblName, idVal, expResCnt);
@@ -398,7 +398,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      *
      * @param node Ignite node.
      * @param tblName Name of table which should be checked to using PK indexes.
-     * @param expResCnt Expceted result count.
+     * @param expResCnt Expected result count.
      */
     private void checkUsingIndexes(IgniteEx node, String tblName, String idVal, int expResCnt) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
@@ -443,14 +443,14 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      * Check that explain plan result shown using PK index and don't use scan.
      *
      * @param results Result of execut explain plan query.
-     * @param expResCnt Expceted result count.
+     * @param expResCnt Expected result count.
      */
     private void assertUsingPkIndex(List<List<?>> results, int expResCnt) {
         assertEquals(expResCnt, results.size());
 
         String explainPlan = (String)results.get(0).get(0);
 
-        assertTrue(explainPlan.contains("\"_key_PK"));
+        assertTrue("Current plan=[" + explainPlan + ']', explainPlan.contains("\"_key_PK"));
 
         assertFalse(explainPlan.contains("_SCAN_"));
     }

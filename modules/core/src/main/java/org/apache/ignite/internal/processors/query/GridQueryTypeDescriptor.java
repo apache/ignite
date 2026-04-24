@@ -242,7 +242,7 @@ public interface GridQueryTypeDescriptor {
      * NOTE: There is a difference between query type descriptor sql flag and cache descriptor sql flag. The same flag
      * on cache descriptor specifies whether entire cache was created by sql, but query type descriptor sql flag can
      * be set to true even when cache sql flag is false (for example, when cache was created by cache API,
-     * but qyery type was added by SQL).
+     * but query type was added by SQL).
      */
     public boolean sql();
 
