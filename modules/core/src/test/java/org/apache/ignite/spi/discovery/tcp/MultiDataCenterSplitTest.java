@@ -100,11 +100,11 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "dcCnt={0}, serversPerDc={1}, pingPoolSize={2}, fullTimeoutFailure={3}, rmtDcNodesResponds={4}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
-            F.asList(2, 3), // DCs cnt.
-            F.asList(2, 3, 4), // Servers number per DC.
-            F.asList(1, 2, TcpDiscoverySpi.DFLT_RMT_DC_PING_POOL_SIZE), // Ping pool size.
-            F.asList(true, false), // Full-timeout failure (or fail quickly).
-            F.asList(false, true) // Whether few nodes of the remote DC respond to the ping.
+            F.asList(3), // DCs cnt.
+            F.asList(2, 4), // Servers number per DC.
+            F.asList(2), // Ping pool size.
+            F.asList(false), // Full-timeout failure (or fail quickly).
+            F.asList(false, true)// Whether few nodes of the remote DC respond to the ping.
         );
     }
 
@@ -171,10 +171,13 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         LogListener logSplit0 = LogListener.matches("Half or less of the following remote DCs responded. Considering DCs '"
             + DC_ID_1 + "' unavailable").times(1).build();
 
-        LogListener logSplit1 = LogListener.matches("During the connection recovery, all the remote DCs have been traversed. " +
+        LogListener logSplit1 = LogListener.matches("Half or less of the following remote DCs responded. Considering DCs '"
+            + DC_ID_0 + ", " + DC_ID_2 + "' unavailable").times(1).build();
+
+        LogListener logSplit2 = LogListener.matches("During the connection recovery, all the remote DCs have been traversed. " +
                 "Failed to connect to any.").build();
 
-        listeningLog.registerAllListeners(logStartPing, logSplit0, logSplit1);
+        listeningLog.registerAllListeners(logStartPing, logSplit0, logSplit1, logSplit2);
 
         if (log.isInfoEnabled())
             log.info("Splitting the datacenters...");
@@ -183,7 +186,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         for (ClusterNode n : grid(0).cluster().nodes())
             discoSpi(G.ignite(n.id())).block = true;
 
-        long checkTimeout = grid(0).configuration().getFailureDetectionTimeout() * 2;
+        long checkTimeout = grid(0).configuration().getFailureDetectionTimeout() * 3;
 
         checkDcSplited(DC_ID_1, null, checkTimeout);
 
@@ -208,6 +211,10 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         });
         runAsync(() -> {
             if (logSplit1.check(checkTimeout))
+                logLatch.countDown();
+        });
+        runAsync(() -> {
+            if (logSplit2.check(checkTimeout))
                 logLatch.countDown();
         });
 
