@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -37,6 +38,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,80 +47,102 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
-public class SnapshotMetadata implements Serializable {
+public class SnapshotMetadata implements Message, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Unique snapshot request id. */
-    private final UUID rqId;
+    @Order(0)
+    UUID rqId;
 
     /** Snapshot name. */
     @GridToStringInclude
-    private final String snpName;
+    @Order(1)
+    String snpName;
 
     /** Consistent id of a node to which this metadata relates. */
     @GridToStringInclude
-    private final String consId;
+    @Order(2)
+    String consId;
 
     /**
      * Directory related to the current consistent node id on which partition files are stored.
      * For some of the cases, consId doesn't equal the directory name.
      */
-    private final String folderName;
+    @Order(3)
+    String folderName;
 
     /**
      * If {@code true} then compress partition files.
      * This shouldn't be confused with {@link SnapshotMetadata#comprGrpIds} which represents how Ignite keeps data in memory pages
      * while {@link SnapshotMetadata#comprParts} represents how dump files are stored on disk.
      */
-    private final boolean comprParts;
+    @Order(4)
+    boolean comprParts;
 
     /** Page size of stored snapshot data. */
-    private final int pageSize;
+    @Order(5)
+    int pageSize;
 
     /** The list of cache groups ids which were included into snapshot. */
     @GridToStringInclude
-    private final List<Integer> grpIds;
+    @Order(6)
+    List<Integer> grpIds;
 
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
-    private final Set<String> bltNodes;
+    @Order(7)
+    Set<String> bltNodes;
 
     /** WAL pointer to {@link ClusterSnapshotRecord} if exists. */
-    private final @Nullable WALPointer snpRecPtr;
+    @Order(8)
+    @Nullable WALPointer snpRecPtr;
 
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
      * since for instance, due to the node filter there is no cache data on node.
      */
     @GridToStringInclude
-    private transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
+    @Order(9)
+    transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
     /** Master key digest for encrypted caches. */
     @GridToStringInclude
-    @Nullable private final byte[] masterKeyDigest;
+    @Order(10)
+    @Nullable byte[] masterKeyDigest;
 
     /** Warnings occurred at snapshot creation. */
     @GridToStringInclude
-    @Nullable private List<String> warnings;
+    @Order(11)
+    @Nullable List<String> warnings;
 
     /** Creation timestamp in milliseconds since Unix epoch. */
-    private long snapshotTime;
+    @Order(12)
+    long snapshotTime;
 
     /** */
-    private transient Set<Integer> comprGrpIds;
+    @Order(13)
+    @Nullable transient Set<Integer> comprGrpIds;
 
     /** */
     private boolean hasComprGrps;
 
     /** If {@code true} snapshot only primary copies of partitions. */
-    private boolean onlyPrimary;
+    @Order(14)
+    boolean onlyPrimary;
 
     /** If {@code true} cache group dump stored. */
-    private boolean dump;
+    @Order(15)
+    boolean dump;
 
     /** Encryption key. */
-    private @Nullable byte[] encKey;
+    @Order(16)
+    @Nullable byte[] encKey;
+
+    /** Empty constructor for a {@link MessageFactory}. */
+    public SnapshotMetadata() {
+        // No-op.
+    }
 
     /**
      * @param rqId Unique request id.
