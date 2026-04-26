@@ -323,7 +323,7 @@ public class LuceneIndexAccess {
     /**
      * Get the path of the Lucene index for this database.
      *
-     * @param conn the database connection
+     * @param cacheName the cacheName of index store in
      * @return the path
      */
     protected static String getIndexPath(GridKernalContext ctx, String cacheName){    	
@@ -343,7 +343,7 @@ public class LuceneIndexAccess {
     /**
      * Get the index writer/searcher wrapper for the given connection.
      *
-     * @param conn the connection
+     * @param cacheName the cacheName of index store in
      * @return the index access wrapper
      */
     public static LuceneIndexAccess getIndexAccess(GridKernalContext ctx, String cacheName)

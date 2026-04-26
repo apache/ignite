@@ -90,6 +90,8 @@ public class MCPResourceProvider implements SmartInitializingSingleton {
         return new McpSchema.ReadResourceResult(contents,gMeta);
     }
 
+
+
     @Bean
     public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
         var prompt = new Prompt("er_diagram", "The assistants goal is to use the MCP server to create a visual ER diagram of the database.",

@@ -981,7 +981,7 @@ public class FullTextLucene {
             for (int i = 0; rs.next(); i++) {
                 columnTypes[i] = rs.getInt("DATA_TYPE");
             }
-            if (keyList.size() == 0) {
+            if (keyList.isEmpty()) {
                 rs = meta.getPrimaryKeys(null,StringUtils.escapeMetaDataPattern(schemaName),tableName);
                 while (rs.next()) {
                 	String keyCol = rs.getString("COLUMN_NAME");
@@ -989,7 +989,7 @@ public class FullTextLucene {
                 		keyList.add(keyCol);
                 }
             }
-            if (keyList.size() == 0) {
+            if (keyList.isEmpty()) {
                 throw throwException("No primary key for table " + tableName);
             }
           
@@ -1180,7 +1180,7 @@ public class FullTextLucene {
      * 
      * @param doc
      * @param idxdFields 
-     * @param idxTypes  字段类型
+     * @param idxdTypes  字段类型
      * @param indexColumns 如果不为空，则是字段编号的索引
      * @param row
      * @return
@@ -1256,14 +1256,18 @@ public class FullTextLucene {
 				else if (obj instanceof Float) {    					
 					row = new FloatPoint(idxdField, obj.floatValue());
 					doc.add(row);
-					row = new FloatDocValuesField(idxdField,obj.floatValue());
-					doc.add(row);
+                    if(idxdType.docValuesType()==DocValuesType.NUMERIC) {
+                        row = new FloatDocValuesField(idxdField, obj.floatValue());
+                        doc.add(row);
+                    }
 				}
 				else {    									
 					row = new DoublePoint(idxdField, obj.doubleValue());
 					doc.add(row);
-					row = new DoubleDocValuesField(idxdField,  obj.doubleValue());
-					doc.add(row);
+                    if(idxdType.docValuesType()==DocValuesType.NUMERIC) {
+                        row = new DoubleDocValuesField(idxdField, obj.doubleValue());
+                        doc.add(row);
+                    }
 				}    				
     		   			
             }
@@ -1285,22 +1289,13 @@ public class FullTextLucene {
         				buildDocumentField(doc,idxdField,idxdType,terms[j]);  
         		}
         	}
-    		else if(fieldVal instanceof byte[]){  //convert to BytesRef
+    		else if(fieldVal instanceof byte[]){  //not convert to BytesRef
     			byte[] bytes = (byte[])fieldVal;
-    			BytesRef keyByteRef = new BytesRef(bytes);
-    			doc.add(new Field(idxdField, keyByteRef, idxdType));    
+    			doc.add(new Field(idxdField, bytes, idxdType));
         	}
     		else if(fieldVal instanceof char[]){  //convert to text field
-    			char[] bytes = (char[])fieldVal;
-    			String keyByteRef = new String(bytes);
-    			doc.add(new Field(idxdField, keyByteRef, idxdType));    
-        	}
-        	else if(fieldVal instanceof Object[]){
-        		Object[] terms = (Object[])fieldVal;
-        		for(int j=0;j<terms.length;j++){
-        			if(terms[j]!=null)
-        				buildDocumentField(doc,idxdField,idxdType,terms[j]);
-        		}
+    			String keyByteRef = new String((char[])fieldVal);
+    			doc.add(new Field(idxdField, keyByteRef, idxdType));
         	}
         	else if (obj instanceof long[]) {
 				row = new LongPoint(idxdField, (long[])obj);
@@ -1310,22 +1305,40 @@ public class FullTextLucene {
 				row = new IntPoint(idxdField, (int[])obj);
 				doc.add(row);
 			}
-			else if (obj instanceof short[]) {				
-				short[] sArr = (short[])obj;
-				int[] intArr = new int[sArr.length];
-				for(int i=0;i<sArr.length;i++)
-					intArr[i] = sArr[i];
-				row = new IntPoint(idxdField, intArr);
+			else if (obj instanceof short[]) {
+				row = new IntPoint(idxdField, shortToInt((short[])obj));
 				doc.add(row);
 			} 
-			else if (obj instanceof float[]) {    					
-				row = new KnnFloatVectorField(idxdField, (float[])obj, VectorSimilarityFunction.COSINE);
-				doc.add(row);				
+			else if (obj instanceof float[]) {
+                if(idxdType.vectorDimension()>0) {
+                    row = new KnnFloatVectorField(idxdField, (float[]) obj, VectorSimilarityFunction.COSINE);
+                    doc.add(row);
+                }
+                else{
+                    row = new FloatPoint(idxdField, (float[]) obj);
+                    doc.add(row);
+                }
 			}
-			else if (obj instanceof double[]) { 									
-				row = new KnnFloatVectorField(idxdField, doubleToFloat((double[])obj),VectorSimilarityFunction.COSINE);
-				doc.add(row);				
-			}    		
+			else if (obj instanceof double[]) {
+                if(idxdType.vectorDimension()>0) {
+                    row = new KnnFloatVectorField(idxdField, doubleToFloat((double[]) obj), VectorSimilarityFunction.COSINE);
+                    doc.add(row);
+                }
+                else{
+                    row = new DoublePoint(idxdField, (double[]) obj);
+                    doc.add(row);
+                }
+			}
+            else if(fieldVal instanceof Object[]){
+                Object[] terms = (Object[])fieldVal;
+                for(int j=0;j<terms.length;j++){
+                    if(terms[j]!=null)
+                        buildDocumentField(doc,idxdField,idxdType,terms[j]);
+                }
+            }
+            else {
+                return false;
+            }
         } catch (Exception e) {			
         	//throw convertException(e);
         	ctx.log("Faid to index field "+ idxdField + ", Cause by "+e.getMessage());
@@ -1343,6 +1356,13 @@ public class FullTextLucene {
             floatVector[i] = (float) doubleVector[i];
         }
         return floatVector;
+    }
+
+    public static int[] shortToInt(short[] sArr) {
+        int[] intArr = new int[sArr.length];
+        for(int i=0;i<sArr.length;i++)
+            intArr[i] = sArr[i];
+        return intArr;
     }
 }
 
