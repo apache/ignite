@@ -15,26 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.pool;
+package org.apache.ignite.tools.checkstyle;
 
-import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
+import static java.util.concurrent.ForkJoinPool.commonPool;
 
 /** */
-public class OperationContextAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
+public class RestrictedFactoryMethodStaticImport {
     /** */
-    public OperationContextAwareStripedThreadPoolExecutor(
-        int concurrentLvl,
-        String igniteInstanceName,
-        String threadNamePrefix,
-        Thread.UncaughtExceptionHandler eHnd,
-        boolean allowCoreThreadTimeOut,
-        long keepAliveTime
-    ) {
-        super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void execute(Runnable task, int idx) {
-        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(task), idx);
+    void method() {
+        Object pool = commonPool();
     }
 }

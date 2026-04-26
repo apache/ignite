@@ -241,6 +241,7 @@
                         <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
                         <configLocation>checkstyle/checkstyle.xml</configLocation>
                         <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                        <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>

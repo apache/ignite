@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
@@ -54,6 +55,9 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
 
     /** */
     private MessageFactory msgFactory;
+
+    /** */
+    private MessageFactoryProvider provider;
 
     /** {@inheritDoc} */
     @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -116,14 +120,21 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
      * Otherwise, this method call will take no effect.
      *
      * @param msgFactoryProvider Discovery messages factory provider.
+     * @param cfg Ignite configuration.
      */
-    public void messageFactory(MessageFactoryProvider msgFactoryProvider) {
+    public void messageFactory(MessageFactoryProvider msgFactoryProvider, IgniteConfiguration cfg) {
+        provider = msgFactoryProvider;
         assert !started();
 
-        this.msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(jdk(), U.resolveClassLoader(ignite().configuration())),
+        msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
+            new CoreMessagesProvider(jdk(), jdk(), U.resolveClassLoader(cfg)),
             msgFactoryProvider
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageFactoryProvider messageFactoryProvider() {
+        return provider;
     }
 
     /** {@inheritDoc} */

@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
+import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +46,10 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     @Order(2)
     String key;
 
-    /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
+    /** */
+    private @Nullable Serializable val;
+
+    /** */
     @Order(3)
     byte[] valBytes;
 
@@ -52,12 +59,12 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     }
 
     /** */
-    public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
+    public DistributedMetaStorageUpdateMessage(UUID reqId, String key, @Nullable Serializable val) {
         id = IgniteUuid.randomUuid();
 
         this.reqId = reqId;
         this.key = key;
-        this.valBytes = valBytes;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
@@ -66,17 +73,12 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     }
 
     /** */
-    public UUID requestId() {
-        return reqId;
-    }
-
-    /** */
     public String key() {
         return key;
     }
 
     /** */
-    public byte[] value() {
+    public byte[] valueBytes() {
         return valBytes;
     }
 
@@ -88,6 +90,17 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
+    }
+
+    /** @param marsh Marshaller. */
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (val != null && valBytes == null)
+            valBytes = U.marshal(marsh, val);
+    }
+
+    /** @param marsh Marshaller. */
+    public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

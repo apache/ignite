@@ -252,7 +252,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         node.setId(rsrcs.getNodeId());
 
         ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new CoreMessagesProvider(jdk(), U.gridClassLoader()), GRID_TEST_MESSAGE_FACTORY}));
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()), GRID_TEST_MESSAGE_FACTORY}));
 
         ctx.setLocalNode(node);
 
