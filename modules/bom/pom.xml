@@ -58,7 +58,7 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-compatibility</artifactId>
+                <artifactId>ignite-igfs</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -123,7 +123,7 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-rest-http</artifactId>
+                <artifactId>ignite-vertx-rest</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
