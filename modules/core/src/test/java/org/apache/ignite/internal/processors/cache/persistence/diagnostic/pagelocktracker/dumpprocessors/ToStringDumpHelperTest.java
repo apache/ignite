@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors;
 
+import java.time.Instant;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerDump;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.ThreadPageLockState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -28,6 +32,9 @@ import org.junit.Test;
  * Unit tests for {@link ToStringDumpHelper}.
  */
 public class ToStringDumpHelperTest extends GridCommonAbstractTest {
+    /** */
+    private static final long TIME = 1596173397167L;
+
     /** */
     @Test
     public void toStringSharedPageLockTrackerTest() throws Exception {
@@ -47,28 +54,26 @@ public class ToStringDumpHelperTest extends GridCommonAbstractTest {
 
         SharedPageLockTrackerDump pageLockDump = pageLockTracker.dump();
 
+        // Hack to have same timestamp in test.
+        for (ThreadPageLockState state : pageLockDump.threadPageLockStates)
+            GridTestUtils.setFieldValue(state.pageLockDump, PageLockDump.class, "time", TIME);
+
         assertNotNull(pageLockDump);
 
         String dumpStr = ToStringDumpHelper.toStringDump(pageLockDump);
 
-        String expectedLogPrefix = "Page locks dump:" + U.nl() +
+        String expectedLog = "Page locks dump:" + U.nl() +
             U.nl() +
             "Thread=[name=async-lock-unlock, id=" + threadIdInLog + "], state=TERMINATED" + U.nl() +
             "Locked pages = [32[0000000000000020](r=1|w=0)]" + U.nl() +
-            "Locked pages log: name=async-lock-unlock time=(";
-
-        String expectedLogSuffix = ")" + U.nl() +
+            "Locked pages log: name=async-lock-unlock time=(1596173397167, " +
+            ToStringDumpHelper.DATE_FMT.format(Instant.ofEpochMilli(TIME)) + ")" + U.nl() +
             "L=1 -> Read lock pageId=32, structureId=dummy [pageIdHex=0000000000000020, partId=0, pageIdx=32, flags=00000000]" +
             U.nl() +
             U.nl() +
             U.nl() +
             U.nl();
 
-        assertTrue(dumpStr.startsWith(expectedLogPrefix));
-        assertTrue(dumpStr.endsWith(expectedLogSuffix));
-
-        String timestamp = dumpStr.substring(expectedLogPrefix.length(), dumpStr.indexOf(')', expectedLogPrefix.length()));
-
-        assertTrue(timestamp.matches("\\d+, \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}"));
+        assertEquals(expectedLog, dumpStr);
     }
 }
