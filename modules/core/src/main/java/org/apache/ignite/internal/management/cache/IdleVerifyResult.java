@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.management.cache;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,13 +32,17 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -45,7 +50,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.nl;
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTask}.
  */
-public class IdleVerifyResult extends IgniteDataTransferObject {
+public class IdleVerifyResult implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -77,17 +82,18 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
     /** Partial committed transactions. */
     @Order(5)
     @GridToStringInclude
-    @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+    @Nullable Map<TcpDiscoveryNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
     @Order(6)
     @GridToStringInclude
-    Map<ClusterNode, Exception> exceptions;
+    Map<TcpDiscoveryNode, ErrorMessage> exceptionsMsgs;
 
     /**
-     * Default constructor for Externalizable.
+     * Default constructor for a {@link MessageFactory}.
      */
     public IdleVerifyResult() {
+        // No-op.
     }
 
     /**
@@ -107,9 +113,13 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
         this.movingPartitions = movingPartitions;
         this.lostPartitions = lostPartitions;
         this.txHashConflicts = txHashConflicts;
-        this.partiallyCommittedTxs = partiallyCommittedTxs;
+        this.partiallyCommittedTxs = TcpDiscoveryNode.downcast(partiallyCommittedTxs);
 
-        this.exceptions = exceptions;
+        if (exceptions != null) {
+            exceptionsMsgs = U.newHashMap(exceptions.size());
+
+            exceptions.forEach((n, e) -> exceptionsMsgs.put((TcpDiscoveryNode)n, new ErrorMessage(e)));
+        }
     }
 
     /**
@@ -152,7 +162,17 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
      * @return Exceptions on nodes.
      */
     public Map<ClusterNode, Exception> exceptions() {
-        return exceptions;
+        if (exceptionsMsgs == null)
+            return null;
+
+        if (exceptionsMsgs.isEmpty())
+            return Collections.emptyMap();
+
+        Map<ClusterNode, Exception> res = TcpDiscoveryNode.upcast(U.newHashMap(exceptionsMsgs.size()));
+
+        exceptionsMsgs.forEach((n, errMsg) -> res.put(n, (Exception)ErrorMessage.error(errMsg)));
+
+        return res;
     }
 
     /**
@@ -162,7 +182,7 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
      * @param printExceptionMessages {@code true} if exceptions must be included too.
      */
     public void print(Consumer<String> printer, boolean printExceptionMessages) {
-        if (F.isEmpty(exceptions)) {
+        if (F.isEmpty(exceptionsMsgs)) {
             if (!hasConflicts())
                 printer.accept("The check procedure has finished, no conflicts have been found.\n");
             else
@@ -179,11 +199,11 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
             return;
         }
 
-        int size = exceptions.size();
+        int size = exceptionsMsgs.size();
 
         printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
-        if (!F.isEmpty(F.view(exceptions.values(), e -> e instanceof NoMatchingCachesException)))
+        if (!F.isEmpty(F.view(exceptionsMsgs.values(), errMsg -> ErrorMessage.error(errMsg) instanceof NoMatchingCachesException)))
             printer.accept("\nThere are no caches matching given filter options.\n");
 
         printer.accept("\nThe check procedure failed on nodes:\n");
@@ -276,7 +296,7 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
         if (!F.isEmpty(partiallyCommittedTxs)) {
             printer.accept("Partially committed transactions:" + nl());
 
-            for (Map.Entry<ClusterNode, Collection<GridCacheVersion>> entry : partiallyCommittedTxs.entrySet()) {
+            for (Map.Entry<TcpDiscoveryNode, Collection<GridCacheVersion>> entry : partiallyCommittedTxs.entrySet()) {
                 printer.accept("Node: " + entry.getKey() + nl());
 
                 printer.accept("Transactions: " + entry.getValue() + nl());
@@ -318,7 +338,7 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
 
         return Objects.equals(cntrConflicts, v.cntrConflicts) && Objects.equals(hashConflicts, v.hashConflicts) &&
             Objects.equals(movingPartitions, v.movingPartitions) && Objects.equals(lostPartitions, v.lostPartitions) &&
-            Objects.equals(exceptions, v.exceptions) && Objects.equals(txHashConflicts, v.txHashConflicts) &&
+            Objects.equals(exceptions(), v.exceptions()) && Objects.equals(txHashConflicts, v.txHashConflicts) &&
             Objects.equals(partiallyCommittedTxs, v.partiallyCommittedTxs);
     }
 
@@ -329,7 +349,7 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
             hashConflicts,
             movingPartitions,
             lostPartitions,
-            exceptions,
+            exceptions(),
             txHashConflicts,
             partiallyCommittedTxs);
     }

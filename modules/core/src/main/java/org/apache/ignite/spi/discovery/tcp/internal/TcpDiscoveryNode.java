@@ -686,6 +686,32 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /**
+     * Downcasts type of map's key value.
+     *
+     * @param <PK> Map parent key type.
+     * @param <CK> Child key type.
+     * @param <V> Map value type.
+     * @param m Initial collections map.
+     * @return Resulting map.
+     */
+    public static <PK, CK extends PK, V> Map<CK, V> downcast(Map<PK, V> m) {
+        return (Map<CK, V>)m;
+    }
+
+    /**
+     * Upcasts type of map's key value.
+     *
+     * @param <PK> Map parent key type.
+     * @param <CK> Child key type.
+     * @param <V> Map value type.
+     * @param m Initial collections map.
+     * @return Resulting map.
+     */
+    public static <PK, CK extends PK, V> Map<PK, V> upcast(Map<CK, V> m) {
+        return (Map<PK, V>)m;
+    }
+
+    /**
      * IMPORTANT!
      * Only purpose of this constructor is creating node which contains necessary data to store on disc only
      * @param node to copy data from

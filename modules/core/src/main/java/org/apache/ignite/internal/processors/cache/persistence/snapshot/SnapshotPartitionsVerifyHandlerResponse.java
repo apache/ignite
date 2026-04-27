@@ -18,23 +18,17 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class SnapshotPartitionsVerifyHandlerResponse implements MarshallableMessage {
-    /** */
-    private Map<PartitionKey, PartitionHashRecord> res;
-
+public class SnapshotPartitionsVerifyHandlerResponse implements Message {
     /** */
     @Order(0)
-    byte[] resBytes;
+    Map<PartitionKey, PartitionHashRecord> res;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotPartitionsVerifyHandlerResponse() {
@@ -50,16 +44,4 @@ public class SnapshotPartitionsVerifyHandlerResponse implements MarshallableMess
     public Map<PartitionKey, PartitionHashRecord> response() {
         return res;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        resBytes = U.marshal(marsh, res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (resBytes != null)
-            res = U.unmarshal(marsh, resBytes, clsLdr);
-    }
-
 }
