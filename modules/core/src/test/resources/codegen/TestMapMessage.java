@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -98,6 +99,9 @@ public class TestMapMessage implements Message {
 
     @Order(23)
     Map<GridLongList, Integer> gridLongListIntegerMap;
+
+    @Order(24)
+    Map<GridLongList, Map<UUID, List<Double>>> gridlistDoubleMapUuidMap;
 
     public short directType() {
         return 0;

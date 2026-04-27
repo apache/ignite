@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -37,28 +38,32 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(1)
+    AffinityTopologyVersion topVer;
 
     /** */
-    private AffinityTopologyVersion topVer;
+    @Order(2)
+    GridDhtPartitionExchangeId exchId;
 
     /** */
-    private GridDhtPartitionExchangeId exchId;
+    @Order(3)
+    Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
 
     /** */
-    private Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
+    @Order(4)
+    Map<Integer, IgniteUuid> cacheDeploymentIds;
 
     /** */
-    private Map<Integer, IgniteUuid> cacheDeploymentIds;
-
-    /** */
-    private GridDhtPartitionsFullMessage partsMsg;
+    @Order(5)
+    GridDhtPartitionsFullMessage partsMsg;
 
     /** If this flag is {@code true} then this message should lead to partition map exchnage. */
-    private boolean exchangeNeeded;
+    @Order(6)
+    boolean exchangeNeeded;
 
     /**
      * This flag indicates that this message should not be passed to other nodes except the coordinator.
@@ -68,7 +73,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * This flag is used when discovery SPI does not support mutable custom messages.
      * See {@link DiscoverySpiMutableCustomMessageSupport}.
      */
-    private transient boolean stopProc;
+    private boolean stopProc;
+
+    /** */
+    public CacheAffinityChangeMessage() {}
 
     /**
      * Constructor used when message is created after cache rebalance finished.
@@ -77,6 +85,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * @param cacheDeploymentIds Cache deployment ID.
      */
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer, Map<Integer, IgniteUuid> cacheDeploymentIds) {
+        id = IgniteUuid.randomUuid();
         this.topVer = topVer;
         this.cacheDeploymentIds = cacheDeploymentIds;
     }
@@ -92,6 +101,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsFullMessage partsMsg,
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
+        id = IgniteUuid.randomUuid();
         this.exchId = exchId;
         this.partsMsg = partsMsg;
         this.assignmentChange = assignmentChange;
@@ -193,6 +203,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     ) {
         return discoCache.copy(topVer, null);
     }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

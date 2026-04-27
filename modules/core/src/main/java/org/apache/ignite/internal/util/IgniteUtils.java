@@ -106,7 +106,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -195,7 +194,6 @@ import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKey
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
-import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -230,6 +228,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -263,6 +262,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
@@ -703,6 +703,15 @@ public abstract class IgniteUtils extends CommonUtils {
         String name = GRID_EVT_NAMES.get(type);
 
         return name != null ? name : Integer.toString(type);
+    }
+
+    /**
+     * Gets known grid events with names.
+     *
+     * @return Map of event types to names.
+     */
+    public static Map<Integer, String> gridEventNames() {
+        return Collections.unmodifiableMap(GRID_EVT_NAMES);
     }
 
     /**
@@ -1353,8 +1362,7 @@ public abstract class IgniteUtils extends CommonUtils {
 
         Collection<Future<?>> futs = new ArrayList<>(addrs.size());
 
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()),
-            new IgniteThreadFactory("utils", "reachable"));
+        ExecutorService executor = newFixedThreadPool("reachable", "utils", Math.min(10, addrs.size()));
 
         try {
             for (final InetAddress addr : addrs) {
@@ -8296,8 +8304,8 @@ public abstract class IgniteUtils extends CommonUtils {
      *
      * @param msg Message.
      */
-    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoveryCustomMessage msg) {
+    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
         return msg instanceof SecurityAwareCustomMessageWrapper ?
-            ((SecurityAwareCustomMessageWrapper)msg).delegate() : msg;
+            ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
     }
 }

@@ -138,11 +138,6 @@ public class GridCacheSqlQuery implements Message {
         return S.toString(GridCacheSqlQuery.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 112;
-    }
-
     /**
      * @return Copy.
      */

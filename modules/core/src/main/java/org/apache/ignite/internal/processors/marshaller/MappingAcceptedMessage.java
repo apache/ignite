@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -29,18 +30,23 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MappingAcceptedMessage implements DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(1)
+    MarshallerMappingItem item;
 
     /** */
-    private final MarshallerMappingItem item;
+    public MappingAcceptedMessage() {
+        // No-op.
+    }
 
     /**
      * @param item Item.
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
+        id = IgniteUuid.randomUuid();
         this.item = item;
     }
 
@@ -55,7 +61,7 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    MarshallerMappingItem getMappingItem() {
+    public MarshallerMappingItem getMappingItem() {
         return item;
     }
 

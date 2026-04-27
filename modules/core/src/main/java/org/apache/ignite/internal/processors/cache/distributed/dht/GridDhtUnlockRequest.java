@@ -89,8 +89,4 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
         return S.toString(GridDhtUnlockRequest.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 36;
-    }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.plugin.Extension;
 
 /**
@@ -25,13 +26,13 @@ import org.apache.ignite.plugin.Extension;
  * Implementation of this interface is responsible for registration of all message factories in
  * {@link #registerAll} method.
  * <p>
- * {@link #registerAll} method's call is responsibility of {@link MessageFactory} implementation.
+ * {@link #registerAll} method's call is responsibility of {@link CoreMessagesProvider} implementation.
  */
 public interface MessageFactoryProvider extends Extension {
     /**
      * Registers all messages factories. See {@link MessageFactory#register}.
      *
-     * @param factory {@link MessageFactory} implementation.
+     * @param factory {@link CoreMessagesProvider} implementation.
      */
     public void registerAll(MessageFactory factory);
 }

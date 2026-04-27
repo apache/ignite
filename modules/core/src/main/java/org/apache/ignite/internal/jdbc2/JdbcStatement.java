@@ -112,18 +112,18 @@ public class JdbcStatement implements Statement {
         if (conn.isMultipleStatementsTaskV3Supported()) {
             qryTask = new JdbcQueryMultipleStatementsTaskV3(loc ? ignite : null, conn.schemaName(),
                 sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(),
-                conn.isCollocatedQuery(), conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(),
+                conn.isCollocatedQuery(), conn.isDistributedJoins(), conn.isEnforceJoinOrder(),
                 conn.isMultipleStatementsAllowed(), conn.clientDescriptor());
         }
         else if (!conn.isMultipleStatementsAllowed() && conn.isMultipleStatementsTaskV2Supported()) {
             qryTask = new JdbcQueryMultipleStatementsNotAllowTask(loc ? ignite : null, conn.schemaName(),
                 sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
-                conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+                conn.isDistributedJoins(), conn.isEnforceJoinOrder());
         }
         else {
             qryTask = new JdbcQueryMultipleStatementsTask(loc ? ignite : null, conn.schemaName(),
                 sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
-                conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+                conn.isDistributedJoins(), conn.isEnforceJoinOrder());
         }
 
         try {
@@ -173,7 +173,7 @@ public class JdbcStatement implements Statement {
 
         JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
             sql, isQuery, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), false, conn.skipReducerOnUpdate());
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), false, conn.skipReducerOnUpdate());
 
         try {
             JdbcQueryTaskResult qryRes = loc
@@ -211,7 +211,6 @@ public class JdbcStatement implements Statement {
         qry.setCollocated(conn.isCollocatedQuery());
         qry.setDistributedJoins(conn.isDistributedJoins());
         qry.setEnforceJoinOrder(conn.isEnforceJoinOrder());
-        qry.setLazy(conn.isLazy());
         qry.setSchema(conn.schemaName());
     }
 

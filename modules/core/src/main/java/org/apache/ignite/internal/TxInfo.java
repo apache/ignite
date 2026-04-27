@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.Objects;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +33,7 @@ public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     GridCacheVersion nearVer;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link CoreMessagesProvider}.
      */
     public TxInfo() {
         // No-op.
@@ -49,10 +48,6 @@ public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
         this.nearVer = nearVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -65;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

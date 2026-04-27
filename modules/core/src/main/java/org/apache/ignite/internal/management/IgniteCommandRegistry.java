@@ -30,6 +30,7 @@ import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
+import org.apache.ignite.internal.management.event.EventCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
@@ -79,6 +80,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new PerformanceStatisticsCommand(),
             new CdcCommand(),
             new ConsistencyCommand(),
+            new EventCommand(),
             new ClassPathCommand()
         );
 

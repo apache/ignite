@@ -43,7 +43,6 @@ namespace ignite
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
             const bool Configuration::DefaultValue::replicatedOnly = false;
             const bool Configuration::DefaultValue::collocated = false;
-            const bool Configuration::DefaultValue::lazy = false;
             const bool Configuration::DefaultValue::skipReducerOnUpdate = false;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
@@ -69,7 +68,6 @@ namespace ignite
                 enforceJoinOrder(DefaultValue::enforceJoinOrder),
                 replicatedOnly(DefaultValue::replicatedOnly),
                 collocated(DefaultValue::collocated),
-                lazy(DefaultValue::lazy),
                 skipReducerOnUpdate(DefaultValue::skipReducerOnUpdate),
                 protocolVersion(DefaultValue::protocolVersion),
                 endPoints(std::vector<EndPoint>()),
@@ -322,21 +320,6 @@ namespace ignite
                 return collocated.IsSet();
             }
 
-            bool Configuration::IsLazy() const
-            {
-                return lazy.GetValue();
-            }
-
-            void Configuration::SetLazy(bool val)
-            {
-                this->lazy.SetValue(val);
-            }
-
-            bool Configuration::IsLazySet() const
-            {
-                return lazy.IsSet();
-            }
-
             bool Configuration::IsSkipReducerOnUpdate() const
             {
                 return skipReducerOnUpdate.GetValue();
@@ -438,7 +421,6 @@ namespace ignite
                 AddToMap(res, ConnectionStringParser::Key::pageSize, pageSize);
                 AddToMap(res, ConnectionStringParser::Key::replicatedOnly, replicatedOnly);
                 AddToMap(res, ConnectionStringParser::Key::collocated, collocated);
-                AddToMap(res, ConnectionStringParser::Key::lazy, lazy);
                 AddToMap(res, ConnectionStringParser::Key::skipReducerOnUpdate, skipReducerOnUpdate);
                 AddToMap(res, ConnectionStringParser::Key::sslMode, sslMode);
                 AddToMap(res, ConnectionStringParser::Key::sslKeyFile, sslKeyFile);

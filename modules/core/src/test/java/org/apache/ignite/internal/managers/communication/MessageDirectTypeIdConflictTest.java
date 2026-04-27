@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -29,7 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,8 +40,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * for which message factory is already registered.
  */
 public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
-    /** Message direct type. Message with this direct type will be registered by {@link GridIoMessageFactory} first. */
-    private static final short MSG_DIRECT_TYPE = TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
+    /** Message direct type. Message with this direct type will be registered by {@link CoreMessagesProvider} first. */
+    private static final short MSG_DIRECT_TYPE = CoreMessagesProvider.HANDSHAKE_MSG_TYPE;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

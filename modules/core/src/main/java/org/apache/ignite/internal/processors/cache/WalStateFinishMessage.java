@@ -77,9 +77,4 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     @Override public String toString() {
         return S.toString(WalStateFinishMessage.class, this, "super", super.toString());
     }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 506;
-    }
 }

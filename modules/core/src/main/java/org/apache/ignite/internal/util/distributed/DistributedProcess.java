@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -71,7 +71,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
  * @see InitMessage
  * @see FullMessage
  */
-public class DistributedProcess<I extends Serializable, R extends Serializable> {
+public class DistributedProcess<I extends Message, R extends Message> {
     /** Process type. */
     private final DistributedProcessType type;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
@@ -57,4 +58,9 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
      * @param err Connection error.
      */
     public void resolveCommunicationFailure(ClusterNode node, Exception err);
+
+    /** @return Message factory provider. */
+    public default MessageFactoryProvider messageFactoryProvider() {
+        return null;
+    }
 }

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,10 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format
  * stored in Ignite caches.
  */
-public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id;
@@ -47,16 +43,12 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     @Order(2)
     int typeId;
 
-    /** Message acceptance status. */
-    @Order(3)
-    boolean rejected;
-
     /** Message received on coordinator. */
-    @Order(4)
+    @Order(3)
     boolean onCoordinator = true;
 
     /** */
-    @Order(5)
+    @Order(4)
     String errMsg;
 
     /** Constructor. */
@@ -83,7 +75,7 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return !rejected ? new MetadataRemoveAcceptedMessage(typeId) : null;
+        return !rejected() ? new MetadataRemoveAcceptedMessage(typeId) : null;
     }
 
     /** {@inheritDoc} */
@@ -95,13 +87,12 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
      * @param errMsg Error message caused this update to be rejected.
      */
     void markRejected(String errMsg) {
-        rejected = true;
         this.errMsg = errMsg;
     }
 
     /** */
     boolean rejected() {
-        return rejected;
+        return errMsg != null;
     }
 
     /** */
@@ -132,10 +123,5 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MetadataRemoveProposedMessage.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 503;
     }
 }

@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -31,16 +33,19 @@ import org.jetbrains.annotations.NotNull;
  * <p/>
  * Contains coint of deployed service and deployment errors across the cluster mapped to nodes ids.
  */
-public class ServiceClusterDeploymentResult implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ServiceClusterDeploymentResult implements Message {
     /** Service id. */
-    private final IgniteUuid srvcId;
+    @Order(0)
+    IgniteUuid srvcId;
 
     /** Per node deployments results. */
+    @Order(1)
     @GridToStringInclude
-    private final Map<UUID, ServiceSingleNodeDeploymentResult> results;
+    Map<UUID, ServiceSingleNodeDeploymentResult> results;
+
+     /** Default constructor for {@link MessageFactory}. */
+    public ServiceClusterDeploymentResult() {
+    }
 
     /**
      * @param srvcId Service id.

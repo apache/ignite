@@ -26,9 +26,6 @@ import org.apache.ignite.lang.IgniteUuid;
  *
  */
 public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 2781778657738703012L;
-
     /** Routine ID. */
     @Order(0)
     UUID routineId;

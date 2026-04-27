@@ -18,11 +18,14 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -54,8 +57,6 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * <ul>
  *   <li>The target class must implement the {@code Message} interface.</li>
  *   <li>Each field to be serialized must be annotated with {@code @Order}.</li>
- *   <li>If {@link Order#method()} attribute was set, then each serializing field
- *   must have a getter named {@code method()} and a setter named {@code method(value)}.</li>
  * </ul>
  *
  * <p>
@@ -72,10 +73,14 @@ public class MessageProcessor extends AbstractProcessor {
     static final String COMPRESSED_MESSAGE_INTERFACE = "org.apache.ignite.internal.managers.communication.CompressedMessage";
 
     /** Externalizable message. */
-    static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.MarshallableMessage";
+    static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
-    /** This is the only message with zero fields. A serializer must be generated due to restrictions in our communication process. */
-    static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
+    /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
+    static final String[] EMPTY_MESSAGES = {
+        "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
+        "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
+    };
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
@@ -85,7 +90,11 @@ public class MessageProcessor extends AbstractProcessor {
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
-        TypeMirror handshakeWaitMsgType = processingEnv.getElementUtils().getTypeElement(HANDSHAKE_WAIT_MESSAGE).asType();
+        List<TypeMirror> emptyMsgs = Arrays.stream(EMPTY_MESSAGES)
+            .map(cls -> processingEnv.getElementUtils().getTypeElement(cls))
+            .filter(Objects::nonNull)
+            .map(Element::asType)
+            .collect(Collectors.toList());
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -103,7 +112,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (!fields.isEmpty() || processingEnv.getTypeUtils().isAssignable(clazz.asType(), handshakeWaitMsgType))
+            if (!fields.isEmpty() || emptyMsgs.stream().anyMatch(t -> processingEnv.getTypeUtils().isAssignable(clazz.asType(), t)))
                 msgFields.put(clazz, fields);
         }
 

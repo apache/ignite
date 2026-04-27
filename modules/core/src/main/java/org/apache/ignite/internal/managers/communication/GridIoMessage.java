@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ExecutorAwareMessage;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport {
+public class GridIoMessage implements MarshallableMessage, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -177,10 +179,6 @@ public class GridIoMessage implements Message, SpanTransport {
         throw new AssertionError();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 8;
-    }
 
     /** {@inheritDoc} */
     @Override public void span(byte[] span) {
@@ -216,24 +214,21 @@ public class GridIoMessage implements Message, SpanTransport {
         return null;
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (topic != null && topicBytes == null)
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (topicOrd < 0 && topic != null)
             topicBytes = U.marshal(marsh, topic);
     }
 
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (topicBytes != null && topic == null) {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (topicOrd < 0 && topicBytes != null) {
             topic = U.unmarshal(marsh, topicBytes, ldr);
 
             topicBytes = null;
         }
+        else if (topicOrd >= 0)
+            topic = GridTopic.fromOrdinal(topicOrd);
     }
 
     /** {@inheritDoc} */

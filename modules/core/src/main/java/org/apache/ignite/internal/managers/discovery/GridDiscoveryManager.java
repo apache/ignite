@@ -133,6 +133,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -362,7 +363,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
-            new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode, grpDesc.persistenceEnabled()));
+            new CacheGroupAffinity(filter, cacheMode, grpDesc.persistenceEnabled()));
 
         assert old == null : old;
     }
@@ -932,7 +933,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    DiscoveryCustomMessage customMsg = notification.customMessage();
+                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
 
                     if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
                         UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
@@ -3061,7 +3062,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     evt.message("Client node reconnected");
 
                 else
-                    assert false : "Unexpected discovery message type: " + type;;
+                    assert false : "Unexpected discovery message type: " + type;
 
                 ctx.event().record(evt, discoCache);
             }
@@ -3388,9 +3389,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      */
     private static class CacheGroupAffinity {
-        /** */
-        private final String name;
-
         /** Nodes filter. */
         private final IgnitePredicate<ClusterNode> cacheFilter;
 
@@ -3401,17 +3399,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final boolean persistentCacheGrp;
 
         /**
-         * @param name Name.
          * @param cacheFilter Node filter.
          * @param cacheMode Cache mode.
          * @param persistentCacheGrp Persistence is configured for cache or not.
          */
-        CacheGroupAffinity(
-                String name,
-                IgnitePredicate<ClusterNode> cacheFilter,
-                CacheMode cacheMode,
-                boolean persistentCacheGrp) {
-            this.name = name;
+        CacheGroupAffinity(IgnitePredicate<ClusterNode> cacheFilter, CacheMode cacheMode, boolean persistentCacheGrp) {
             this.cacheFilter = cacheFilter;
             this.cacheMode = cacheMode;
             this.persistentCacheGrp = persistentCacheGrp;

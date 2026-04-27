@@ -442,10 +442,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 1;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

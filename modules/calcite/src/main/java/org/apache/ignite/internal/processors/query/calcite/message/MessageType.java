@@ -17,102 +17,82 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroupSerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescriptionSerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
+/** */
 public enum MessageType {
     /** */
-    QUERY_START_REQUEST(300, QueryStartRequest::new, new QueryStartRequestSerializer()),
+    QUERY_START_REQUEST(300, QueryStartRequest.class),
 
     /** */
-    QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
+    QUERY_START_RESPONSE(301, QueryStartResponse.class),
 
     /** */
-    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
+    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage.class),
 
     /** */
-    QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new, new QueryBatchMessageSerializer()),
+    QUERY_BATCH_MESSAGE(303, QueryBatchMessage.class),
 
     /** */
-    QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new, new QueryBatchAcknowledgeMessageSerializer()),
+    QUERY_BATCH_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage.class),
 
     /** */
-    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new, new InboxCloseMessageSerializer()),
+    QUERY_INBOX_CANCEL_MESSAGE(305, QueryInboxCloseMessage.class),
 
     /** */
-    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new, new QueryCloseMessageSerializer()),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage.class),
 
     /** */
-    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new, new GenericValueMessageSerializer()),
+    GENERIC_VALUE_MESSAGE(307, GenericValueMessage.class),
 
     /** */
-    FRAGMENT_MAPPING(350, FragmentMapping::new, new FragmentMappingSerializer()),
+    FRAGMENT_MAPPING(350, FragmentMapping.class),
 
     /** */
-    COLOCATION_GROUP(351, ColocationGroup::new, new ColocationGroupSerializer()),
+    COLOCATION_GROUP(351, ColocationGroup.class),
 
     /** */
-    FRAGMENT_DESCRIPTION(352, FragmentDescription::new, new FragmentDescriptionSerializer()),
+    FRAGMENT_DESCRIPTION(352, FragmentDescription.class),
 
     /** */
-    QUERY_TX_ENTRY(353, QueryTxEntry::new, new QueryTxEntrySerializer());
+    QUERY_TX_ENTRY(353, QueryTxEntry.class);
 
     /** */
-    private final int directType;
+    private final short directType;
 
     /** */
-    private final Supplier<CalciteMessage> factory;
-
-    /** */
-    private MessageSerializer serializer;
+    private final Class<? extends Message> msgCls;
 
     /**
-     * @param directType Message direct type.
-     * @param factory Message factory.
+     * @param directType Direct type.
      */
-    MessageType(int directType, Supplier<CalciteMessage> factory) {
-        this.directType = directType;
-        this.factory = factory;
+    MessageType(int directType, Class<? extends Message> msgCls) {
+        this.directType = (short)directType;
+        this.msgCls = msgCls;
+    }
+
+    /** */
+    static boolean isCalciteMessage(Message msg) {
+        MessageType[] values = values();
+        short msgType = msg.directType();
+
+        return msgType >= values[0].directType() && msgType <= values[values.length - 1].directType();
     }
 
     /**
-     * @param directType Message direct type.
-     * @param factory Message factory.
-     * @param serializer Message serializer.
-     */
-    MessageType(int directType, Supplier<CalciteMessage> factory, MessageSerializer serializer) {
-        this.directType = directType;
-        this.factory = factory;
-        this.serializer = serializer;
-    }
-
-    /**
-     * @return Message direct type;
+     * @return Message direct type.
      */
     public short directType() {
-        return (short)directType;
+        return directType;
     }
 
     /**
-     * @return Message factory.
+     * @return Message direct type.
      */
-    public Supplier<CalciteMessage> factory() {
-        return factory;
-    }
-
-    /**
-     * @return Message serializer.
-     */
-    public MessageSerializer serializer() {
-        return serializer;
+    public Class<? extends Message> messageClass() {
+        return msgCls;
     }
 }

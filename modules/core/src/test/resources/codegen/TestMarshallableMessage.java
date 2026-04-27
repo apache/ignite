@@ -17,18 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.util.BitSet;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 public class TestMarshallableMessage implements MarshallableMessage {
     @Order(0)
@@ -43,29 +34,13 @@ public class TestMarshallableMessage implements MarshallableMessage {
     byte[] cstDataBytes;
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) {
-        if (cstData != null && cstDataBytes == null) {
-            try {
-                cstDataBytes = U.marshal(marsh, cstData);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal custom data.", e);
-            }
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        cstDataBytes = U.marshal(marsh, cstData);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (cstDataBytes != null && cstData == null) {
-            try {
-                cstData = U.unmarshal(marsh, cstDataBytes, clsLdr);
-
-                cstDataBytes = null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal custom data.", e);
-            }
-        }
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        cstData = U.unmarshal(marsh, cstDataBytes, clsLdr);
     }
 
     public short directType() {

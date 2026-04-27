@@ -49,6 +49,12 @@ public final class ClientConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Default connection/handshake timeout in milliseconds. */
+    private static final int DFLT_HANDSHAKE_TIMEOUT = 10_000;
+
+    /** Default operation request timeout in milliseconds. */
+    private static final int DFLT_REQUEST_TIMEOUT = 60_000;
+
     /** @serial Server addresses. */
     private String[] addrs;
 
@@ -58,11 +64,11 @@ public final class ClientConfiguration implements Serializable {
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
 
-    /** @serial Handshake timeout in milliseconds. 0 means infinite. */
-    private int handshakeTimeout;
+    /** @serial Handshake timeout in milliseconds. A timeout of zero is interpreted as an infinite timeout. */
+    private int handshakeTimeout = DFLT_HANDSHAKE_TIMEOUT;
 
-    /** @serial Request timeout in milliseconds. 0 means infinite. */
-    private int reqTimeout;
+    /** @serial Request timeout in milliseconds. A timeout of zero is interpreted as an infinite timeout. */
+    private int reqTimeout = DFLT_REQUEST_TIMEOUT;
 
     /** @serial Send buffer size. 0 means system default. */
     private int sndBufSize = 32 * 1024;
@@ -261,14 +267,16 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Handshake timeout in milliseconds. 0 means infinite.
+     * @return Handshake timeout in milliseconds. A timeout of zero is interpreted as an infinite timeout.
+     *         By default, the timeout value is set to {@link #DFLT_HANDSHAKE_TIMEOUT}.
      */
     public int getHandshakeTimeout() {
         return handshakeTimeout;
     }
 
     /**
-     * @param handshakeTimeout Handshake timeout in milliseconds. 0 means infinite.
+     * @param handshakeTimeout Handshake timeout in milliseconds. A timeout of zero is interpreted as an infinite timeout.
+     *                         By default, the timeout value is set to {@link #DFLT_HANDSHAKE_TIMEOUT}.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setHandshakeTimeout(int handshakeTimeout) {
@@ -278,14 +286,16 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Request timeout in milliseconds. 0 means infinite.
+     * @return Request timeout in milliseconds. A timeout of zero is interpreted as an infinite timeout.
+     *         By default, the timeout value is set to {@link #DFLT_REQUEST_TIMEOUT}.
      */
     public int getRequestTimeout() {
         return reqTimeout;
     }
 
     /**
-     * @param reqTimeout Request timeout in milliseconds. 0 means infinite.
+     * @param reqTimeout Request timeout in milliseconds. A timeout of zero is interpreted as an infinite timeout.
+     *                   By default, the timeout value is set to {@link #DFLT_REQUEST_TIMEOUT}.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setRequestTimeout(int reqTimeout) {

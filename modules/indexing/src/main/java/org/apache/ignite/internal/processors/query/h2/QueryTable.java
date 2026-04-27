@@ -66,10 +66,6 @@ public class QueryTable implements Message {
         return tbl;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -54;
-    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {

@@ -147,32 +147,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         this.nodeId = nodeId;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public long futureId() {
         return futId;
     }
 
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Errs.
-     */
+    /** @return Errs. */
     public UpdateErrors errors() {
         return errs;
-    }
-
-    /**
-     * @param errs New errs.
-     */
-    public void errors(UpdateErrors errs) {
-        this.errs = errs;
     }
 
     /**
@@ -424,10 +406,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 41;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -30,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public class CachePartitionPartialCountersMap implements Serializable, Message {
-    /** */
-    public static final short TYPE_CODE = 500;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -206,15 +202,14 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
      * @param cntrsMap Partial local counters map.
      * @return Partition ID to partition counters map.
      */
-    public static Map<Integer, T2<Long, Long>> toCountersMap(CachePartitionPartialCountersMap cntrsMap) {
+    public static Map<Integer, Long> toCountersMap(CachePartitionPartialCountersMap cntrsMap) {
         if (cntrsMap.size() == 0)
             return Collections.emptyMap();
 
-        Map<Integer, T2<Long, Long>> res = U.newHashMap(cntrsMap.size());
+        Map<Integer, Long> res = U.newHashMap(cntrsMap.size());
 
         for (int idx = 0; idx < cntrsMap.size(); idx++)
-            res.put(cntrsMap.partitionAt(idx),
-                new T2<>(cntrsMap.initialUpdateCounterAt(idx), cntrsMap.updateCounterAt(idx)));
+            res.put(cntrsMap.partitionAt(idx), cntrsMap.updateCounterAt(idx));
 
         return res;
     }
@@ -236,8 +231,4 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
         return sb.toString();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

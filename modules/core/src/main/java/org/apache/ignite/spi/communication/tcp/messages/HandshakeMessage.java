@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Handshake message.
@@ -107,10 +106,6 @@ public class HandshakeMessage implements Message {
         return MESSAGE_FULL_SIZE;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

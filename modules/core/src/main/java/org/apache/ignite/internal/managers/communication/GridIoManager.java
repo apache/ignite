@@ -56,7 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +79,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -104,7 +102,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -129,7 +126,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -168,6 +164,8 @@ import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newCachedThreadPool;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
@@ -253,9 +251,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** Received bytes count metric name. */
     public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
-
-    /** Empty array of message factories. */
-    public static final MessageFactoryProvider[] EMPTY = {};
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
@@ -352,9 +347,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
     /** */
-    private MessageFactory msgFactory;
-
-    /** */
     private MessageFormatter formatter;
 
     /** Stopping flag. */
@@ -398,9 +390,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @return Message factory.
      */
     public MessageFactory messageFactory() {
-        assert msgFactory != null;
+        assert ctx.messageFactory() != null;
 
-        return msgFactory;
+        return ctx.messageFactory();
     }
 
     /**
@@ -441,27 +433,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 }
             };
         }
-
-        MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
-
-        if (msgs == null)
-            msgs = EMPTY;
-
-        List<MessageFactoryProvider> compMsgs = new ArrayList<>();
-
-        compMsgs.add(new GridIoMessageFactory());
-
-        for (IgniteComponentType compType : IgniteComponentType.values()) {
-            MessageFactoryProvider f = compType.messageFactory();
-
-            if (f != null)
-                compMsgs.add(f);
-        }
-
-        if (!compMsgs.isEmpty())
-            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
-
-        msgFactory = new IgniteMessageFactoryImpl(msgs);
 
         CommunicationSpi<Object> spi = getSpi();
 
@@ -663,7 +634,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         final boolean procFromNioThread,
         final List<ClusterNode> nodes
     ) {
-        ExecutorService svc = Executors.newFixedThreadPool(threads + 1);
+        ExecutorService svc = newFixedThreadPool("io-latency-inspector", ctx.igniteInstanceName(), threads + 1);
 
         final AtomicBoolean warmupFinished = new AtomicBoolean();
         final AtomicBoolean done = new AtomicBoolean();
@@ -1199,15 +1170,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 return;
             }
 
-            if (initMsg.topic() == null) {
-                int topicOrd = initMsg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    initMsg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    initMsg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
-            }
-
             byte plc = initMsg.policy();
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1246,15 +1208,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         nodeId + ", msg=" + msg + ']');
 
                 return;
-            }
-
-            if (msg.topic() == null) {
-                int topicOrd = msg.topicOrdinal();
-
-                if (topicOrd >= 0)
-                    msg.topic(GridTopic.fromOrdinal(topicOrd));
-                else
-                    msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
             }
 
             if (!started) {
@@ -1980,9 +1933,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         );
 
         try {
-            if (topicOrd < 0)
-                ioMsg.prepareMarshal(marsh);
-
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
         catch (IgniteSpiException e) {
@@ -2054,9 +2004,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                if (topicOrd < 0)
-                    ioMsg.prepareMarshal(marsh);
-
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                         getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
@@ -4345,8 +4292,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         /**
          * Executor service to send special communication message.
          */
-        private ExecutorService responseSendService = Executors
-            .newCachedThreadPool(new IgniteThreadFactory(ctx.igniteInstanceName(), "io-send-service"));
+        private final ExecutorService responseSendService = newCachedThreadPool("io-send-service", ctx.igniteInstanceName());
 
         /**
          * Discovery event listener (works only on client nodes for now) notified when

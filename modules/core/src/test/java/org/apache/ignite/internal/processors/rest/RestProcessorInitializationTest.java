@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -50,9 +50,7 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
         stopAllGrids(true);
     }
 
-    /**
-     * @throws Exception if failed.
-     */
+    /** */
     @Test
     public void testDefaultRestProcessorInitialization() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -60,9 +58,7 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
         assertEquals(ignite.context().rest().getClass(), GridRestProcessor.class);
     }
 
-    /**
-     * @throws Exception if failed.
-     */
+    /** */
     @Test
     public void testCustomRestProcessorInitialization() throws Exception {
         IgniteEx ignite = startGrid(configuration(0));
@@ -81,10 +77,10 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
         assertEquals(STATUS_SUCCESS, res.getSuccessStatus());
         assertEquals(req.clientId(), res.getSecuritySubjectId());
 
-        IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> entry = rest.getTuple();
+        T2<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lastHandledReq = rest.lastHandledRequest();
 
-        assertEquals(req, entry.get1());
-        assertEquals(res, entry.get2().get());
+        assertEquals(req, lastHandledReq.get1());
+        assertEquals(res, lastHandledReq.get2().get());
     }
 
     /**
@@ -97,9 +93,9 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+        @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
             if (cls.equals(IgniteRestProcessor.class))
-                return new TestGridRestProcessorImpl(((IgniteEx)ctx.grid()).context());
+                return (T)new TestGridRestProcessorImpl(((IgniteEx)ctx.grid()).context());
 
             return null;
         }
@@ -110,11 +106,9 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
      */
     private static class TestGridRestProcessorImpl extends GridRestProcessor {
         /** */
-        private final IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> tuple = new IgniteBiTuple<>();
+        private volatile T2<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lastHandledReq;
 
-        /**
-         * @param ctx Kernal context.
-         */
+        /** @param ctx Kernal context. */
         protected TestGridRestProcessorImpl(GridKernalContext ctx) {
             super(ctx);
         }
@@ -123,14 +117,14 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
         @Override protected IgniteInternalFuture<GridRestResponse> handleAsync0(GridRestRequest req) {
             IgniteInternalFuture<GridRestResponse> fut = super.handleAsync0(req);
 
-            fut.listen(() -> tuple.set(req, fut));
+            lastHandledReq = new T2<>(req, fut);
 
             return fut;
         }
 
         /** */
-        public IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> getTuple() {
-            return tuple;
+        public T2<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lastHandledRequest() {
+            return lastHandledReq;
         }
     }
 

@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -32,6 +30,7 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestClassLoader;
@@ -41,6 +40,7 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 
 /**
  * Test marshaller context.
@@ -69,9 +69,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         };
 
         ctx.add(new PoolProcessor(ctx) {
-            final ExecutorService sysExecSvc = Executors.newFixedThreadPool(THREADS);
+            final IgniteThreadPoolExecutor sysExecSvc = newFixedThreadPool("test-scope", "sys", THREADS);
 
-            @Override public ExecutorService getSystemExecutorService() {
+            @Override public IgniteThreadPoolExecutor getSystemExecutorService() {
                 return sysExecSvc;
             }
         });

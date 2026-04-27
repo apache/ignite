@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -38,7 +37,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
     Collection<KeyCacheObject> keys;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link CoreMessagesProvider}.
      */
     public TxEntriesInfo() {
         // No-op.
@@ -53,10 +52,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.keys = new HashSet<>(keys);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -64;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

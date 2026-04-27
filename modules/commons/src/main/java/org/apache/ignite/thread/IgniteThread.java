@@ -237,7 +237,7 @@ public class IgniteThread extends Thread {
      * @param igniteInstanceName Ignite instance name.
      * @return New thread name.
      */
-    protected static String createName(long num, String threadName, String igniteInstanceName) {
+    public static String createName(long num, String threadName, String igniteInstanceName) {
         return threadName + "-#" + num + (igniteInstanceName != null ? '%' + igniteInstanceName + '%' : "");
     }
 

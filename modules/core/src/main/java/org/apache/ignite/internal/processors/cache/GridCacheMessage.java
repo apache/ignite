@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,8 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,7 +66,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     @GridToStringInclude
-    @Order(value = 2, method = "lastAffinityChangedTopologyVersion")
+    @Order(2)
     @Nullable public AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
@@ -196,9 +193,9 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     *  Deployment enabled flag indicates whether deployment info has to be added to this message.
+     * Deployment enabled flag indicates whether deployment info has to be added to this message.
      *
-     * @return {@code true} or if deployment info must be added to the the message, {@code false} otherwise.
+     * @return {@code true} or if deployment info must be added to the message, {@code false} otherwise.
      */
     public abstract boolean addDeploymentInfo();
 
@@ -639,77 +636,6 @@ public abstract class GridCacheMessage implements Message {
      */
     public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.messageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(depInfo))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeAffinityTopologyVersion(lastAffChangedTopVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(msgId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                depInfo = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                lastAffChangedTopVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                msgId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /**

@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -30,8 +29,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
@@ -42,6 +41,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -82,7 +82,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
     private DiscoverySpiListener lsnr;
 
     /** */
-    private ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private ExecutorService exec;
 
     /** */
     private DiscoverySpiNodeAuthenticator nodeAuth;
@@ -159,7 +159,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
         exec.execute(() -> {
             IgniteFuture<?> fut = lsnr.onDiscovery(new DiscoveryNotification(
                 EVT_DISCOVERY_CUSTOM_EVT,
@@ -172,7 +172,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
             // Acknowledge message must be send after initial message processed.
             fut.listen((f) -> {
-                DiscoveryCustomMessage ack = msg.ackMessage();
+                DiscoverySpiCustomMessage ack = msg.ackMessage();
 
                 if (ack != null) {
                     exec.execute(() -> lsnr.onDiscovery(new DiscoveryNotification(
@@ -201,6 +201,12 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        exec = IgniteThreadPoolExecutor.newFixedThreadPool(
+            "isolated-discovery-worker",
+            igniteInstanceName,
+            Runtime.getRuntime().availableProcessors()
+        );
+
         if (nodeAuth != null) {
             try {
                 SecurityCredentials locSecCred = (SecurityCredentials)locNode.attributes().get(ATTR_SECURITY_CREDENTIALS);
@@ -231,7 +237,8 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        exec.shutdownNow();
+        if (exec != null)
+            exec.shutdownNow();
     }
 
     /** {@inheritDoc} */

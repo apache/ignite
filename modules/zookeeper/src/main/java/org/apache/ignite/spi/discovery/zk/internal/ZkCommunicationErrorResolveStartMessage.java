@@ -18,20 +18,24 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Zk Communication Error Resolve Start Message.
  */
-public class ZkCommunicationErrorResolveStartMessage extends DiscoverySpiCustomMessage implements ZkInternalMessage {
+public class ZkCommunicationErrorResolveStartMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    UUID id;
 
-    /** */
-    final UUID id;
+    /** Constructor for {@link MessageFactory}. */
+    public ZkCommunicationErrorResolveStartMessage() {
+        // No-op.
+    }
 
     /**
      * @param id Unique ID.
@@ -41,13 +45,8 @@ public class ZkCommunicationErrorResolveStartMessage extends DiscoverySpiCustomM
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
     }
 
     /** {@inheritDoc} */

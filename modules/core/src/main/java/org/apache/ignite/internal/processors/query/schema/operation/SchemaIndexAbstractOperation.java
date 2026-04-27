@@ -23,6 +23,9 @@ import java.util.UUID;
  * Schema index abstract operation.
  */
 public abstract class SchemaIndexAbstractOperation extends SchemaAbstractOperation {
+    /** */
+    protected SchemaIndexAbstractOperation() {}
+
     /**
      * Constructor.
      *
@@ -30,7 +33,7 @@ public abstract class SchemaIndexAbstractOperation extends SchemaAbstractOperati
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      */
-    public SchemaIndexAbstractOperation(UUID opId, String cacheName, String schemaName) {
+    protected SchemaIndexAbstractOperation(UUID opId, String cacheName, String schemaName) {
         super(opId, cacheName, schemaName);
     }
 

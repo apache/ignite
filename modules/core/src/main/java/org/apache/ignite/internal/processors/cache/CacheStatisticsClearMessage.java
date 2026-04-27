@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -28,23 +29,31 @@ import org.jetbrains.annotations.Nullable;
  * Cache statistics clear discovery message.
  */
 public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Request id. */
-    private final UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** Cache names. */
-    private final Collection<String> caches;
+    @Order(2)
+    Collection<String> caches;
 
     /** Flags. */
-    private final byte flags;
+    @Order(3)
+    byte flags;
+
+    /**
+     * Default constructor.
+     */
+    public CacheStatisticsClearMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor for request.
@@ -54,7 +63,9 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
     public CacheStatisticsClearMessage(UUID reqId, Collection<String> caches) {
         this.reqId = reqId;
         this.caches = caches;
-        this.flags = INITIAL_MSG_MASK;
+
+        id = IgniteUuid.randomUuid();
+        flags = INITIAL_MSG_MASK;
     }
 
     /**
@@ -63,14 +74,15 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
      * @param msg Request message.
      */
     private CacheStatisticsClearMessage(CacheStatisticsClearMessage msg) {
-        this.reqId = msg.reqId;
-        this.caches = null;
-        this.flags = 0;
+        id = IgniteUuid.randomUuid();
+        reqId = msg.reqId;
+        caches = null;
+        flags = 0;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
-        return this.id;
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -82,7 +94,7 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
      * @return Cache names.
      */
     public Collection<String> caches() {
-        return this.caches;
+        return caches;
     }
 
     /**
@@ -96,7 +108,7 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
      * @return Request id.
      */
     public UUID requestId() {
-        return this.reqId;
+        return reqId;
     }
 
     /** {@inheritDoc} */

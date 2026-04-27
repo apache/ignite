@@ -90,10 +90,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
         this.depId = depId;
     }
 
-    /**
-     *
-     * @return {@code True} if message is initialized.
-     */
+    /** @return {@code True} if message is initialized. */
     public boolean initialized() {
         return deploymentId() != null || hasError();
     }
@@ -108,10 +105,5 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaProposeDiscoveryMessage.class, this, "parent", super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 504;
     }
 }

@@ -28,18 +28,19 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
@@ -69,23 +70,23 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(2)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionCountersMap partCntrs;
+    Map<Integer, CachePartitionFullCountersMap> partCntrs;
 
     /** Partitions history suppliers. */
     @Order(3)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
+    Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
     @Order(4)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionsToReloadMap partsToReload;
+    Map<UUID, Map<Integer, Set<Integer>>> partsToReload;
 
     /** Partition sizes. */
     @Order(5)
-    Map<Integer, IntLongMap> partsSizes;
+    Map<Integer, Map<Integer, Long>> partsSizes;
 
     /** Topology version. */
     @Order(6)
@@ -99,10 +100,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * Used as a stub for serialization of {@link #errs}.
      * All logic resides within getter and setter.
      */
-    @Order(value = 7, method = "errorMessages")
+    @Order(7)
     @Compress
     @SuppressWarnings("unused")
-    private Map<UUID, ErrorMessage> errMsgs;
+    Map<UUID, ErrorMessage> errMsgs;
 
     /** */
     @Order(8)
@@ -142,8 +143,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
-        @Nullable IgniteDhtPartitionsToReloadMap partsToReload) {
+        @Nullable Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
+        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload) {
         super(id, lastVer);
 
         assert id == null || topVer.equals(id.topologyVersion());
@@ -151,6 +152,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
         this.partHistSuppliers = partHistSuppliers;
         this.partsToReload = partsToReload;
+        partCntrs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -276,10 +278,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param cntrMap Partition update counters.
      */
     public void addPartitionUpdateCounters(int grpId, CachePartitionFullCountersMap cntrMap) {
-        if (partCntrs == null)
-            partCntrs = new IgniteDhtPartitionCountersMap();
-
-        partCntrs.putIfAbsent(grpId, cntrMap);
+        synchronized (partCntrs) {
+            partCntrs.putIfAbsent(grpId, cntrMap);
+        }
     }
 
     /**
@@ -317,13 +318,15 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition update counters.
      */
     public CachePartitionFullCountersMap partitionUpdateCounters(int grpId) {
-        return partCntrs == null ? null : partCntrs.get(grpId);
+        synchronized (partCntrs) {
+            return partCntrs.get(grpId);
+        }
     }
 
     /**
      * @return Partitions history suppliers.
      */
-    public IgniteDhtPartitionHistorySuppliersMap partitionHistorySuppliers() {
+    public Map<UUID, Map<GroupPartitionIdPair, Long>> partitionHistorySuppliers() {
         return partHistSuppliers;
     }
 
@@ -334,7 +337,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partsToReload == null)
             return Collections.emptySet();
 
-        return partsToReload.get(nodeId, grpId);
+        synchronized (partsToReload) {
+            Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
+
+            return nodeMap == null ? Collections.emptySet() : (Set<Integer>)F.emptyIfNull(nodeMap.get(grpId));
+        }
     }
 
     /**
@@ -342,14 +349,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      *
      * @param partsSizes Partitions sizes map.
      */
-    public void partitionSizes(Map<Integer, IntLongMap> partsSizes) {
+    public void partitionSizes(Map<Integer, Map<Integer, Long>> partsSizes) {
         this.partsSizes = partsSizes;
     }
 
     /**
      * @return Partition sizes map (grpId, (partId, partSize)).
      */
-    public Map<Integer, IntLongMap> partitionSizes() {
+    public Map<Integer, Map<Integer, Long>> partitionSizes() {
         return partsSizes;
     }
 
@@ -368,20 +375,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Error messages map.
-     */
-    public Map<UUID, ErrorMessage> errorMessages() {
-        return errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
-    }
-
-    /**
-     * @param errMsgs Error messages map.
-     */
-    public void errorMessages(Map<UUID, ErrorMessage> errMsgs) {
-        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
-    }
-
-    /**
      * Rebalance finished.
      */
     public boolean rebalanced() {
@@ -396,11 +389,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
+
+        errMsgs = errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
     }
 
     /**
@@ -418,9 +411,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
@@ -453,23 +444,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (parts == null)
             parts = new HashMap<>();
 
-        if (partCntrs == null)
-            partCntrs = new IgniteDhtPartitionCountersMap();
-
-        if (partHistSuppliers == null)
-            partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
-
-        if (partsToReload == null)
-            partsToReload = new IgniteDhtPartitionsToReloadMap();
-
-        if (errs == null)
-            errs = new HashMap<>();
+        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 46;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

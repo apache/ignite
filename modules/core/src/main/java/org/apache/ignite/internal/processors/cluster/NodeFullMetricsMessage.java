@@ -21,16 +21,13 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Node compound metrics message. */
 public class NodeFullMetricsMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 138;
-
     /** Node metrics wrapper message. */
     @Order(0)
     public NodeMetricsMessage nodeMetricsMsg;
@@ -39,7 +36,7 @@ public class NodeFullMetricsMessage implements Message {
     @Order(1)
     public Map<Integer, CacheMetricsMessage> cachesMetricsMsgs;
 
-    /** Empty constructor for {@link GridIoMessageFactory}. */
+    /** Empty constructor for {@link MessageFactory}. */
     public NodeFullMetricsMessage() {
         // No-op.
     }
@@ -73,10 +70,6 @@ public class NodeFullMetricsMessage implements Message {
         this.nodeMetricsMsg = nodeMetricsMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

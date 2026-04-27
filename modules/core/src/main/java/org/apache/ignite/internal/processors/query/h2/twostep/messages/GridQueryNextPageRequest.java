@@ -105,8 +105,4 @@ public class GridQueryNextPageRequest implements Message {
         return S.toString(GridQueryNextPageRequest.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 108;
-    }
 }

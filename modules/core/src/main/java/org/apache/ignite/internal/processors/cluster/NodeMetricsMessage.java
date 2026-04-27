@@ -34,9 +34,6 @@ import static java.lang.Math.min;
 /** */
 public class NodeMetricsMessage implements Message {
     /** */
-    public static final short TYPE_CODE = 137;
-
-    /** */
     @Order(0)
     public long lastUpdateTime = -1;
 
@@ -1338,11 +1335,6 @@ public class NodeMetricsMessage implements Message {
         }
 
         return curGcCpuLoad;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /** */

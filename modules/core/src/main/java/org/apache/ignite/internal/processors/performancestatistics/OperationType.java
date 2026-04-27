@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+
 /**
  * Performance statistics operation type.
  */
@@ -105,13 +107,35 @@ public enum OperationType {
     /** System view row. */
     SYSTEM_VIEW_ROW(25),
 
+    /** Cache load from cache store. */
+    CACHE_LOAD(26),
+
+    /** Cache load all from cache store. */
+    CACHE_LOAD_ALL(27),
+
+    /** Cache preload from cache store. */
+    CACHE_LOAD_CACHE(28),
+
+    /** Cache write to cache store. */
+    CACHE_WRITE(29),
+
+    /** Cache write all to cache store. */
+    CACHE_WRITE_ALL(30),
+
+    /** Cache delete from cache store. */
+    CACHE_DELETE(31),
+
+    /** Cache delete all from cache store. */
+    CACHE_DELETE_ALL(32),
+
     /** Version. */
     VERSION(255);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
         CACHE_GET_AND_PUT, CACHE_GET_AND_REMOVE, CACHE_INVOKE, CACHE_LOCK, CACHE_GET_ALL, CACHE_PUT_ALL,
-        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL, CACHE_PUT_ALL_CONFLICT, CACHE_REMOVE_ALL_CONFLICT);
+        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL, CACHE_PUT_ALL_CONFLICT, CACHE_REMOVE_ALL_CONFLICT, CACHE_LOAD,
+        CACHE_LOAD_ALL, CACHE_LOAD_CACHE, CACHE_WRITE, CACHE_WRITE_ALL, CACHE_DELETE, CACHE_DELETE_ALL);
 
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
@@ -273,7 +297,7 @@ public enum OperationType {
 
     /** @return Version record size. */
     public static int versionRecordSize() {
-        return Short.BYTES;
+        return Short.BYTES + 1 + Integer.BYTES + VER_STR.length();
     }
 
     /** @return Pages write throttle record size. */

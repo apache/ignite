@@ -19,17 +19,13 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  *
  */
-public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMessage {
     /** Maximal hops number. */
     @Order(0)
     int maxHops;
@@ -38,7 +34,7 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
     @Order(1)
     int curHops;
 
-    /** Empty constructor for {@link DiscoveryMessageFactory}. */
+    /** Empty constructor for {@link MessageFactory}. */
     public TcpDiscoveryRingLatencyCheckMessage() {
         // No-op.
     }
@@ -74,11 +70,6 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
      */
     public boolean maxHopsReached() {
         return curHops == maxHops;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 7;
     }
 
     /** {@inheritDoc} */

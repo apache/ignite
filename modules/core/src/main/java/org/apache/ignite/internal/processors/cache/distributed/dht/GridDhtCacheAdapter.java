@@ -214,7 +214,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                 ctx.cacheId(),
                 msg.futureId(),
-                msg.miniId());
+                msg.miniId(),
+                null);
 
             GridDhtPartitionTopology top = ctx.topology();
 

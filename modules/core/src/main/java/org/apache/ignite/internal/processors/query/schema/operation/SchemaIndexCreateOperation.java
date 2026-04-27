@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,17 +33,26 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     private static final long serialVersionUID = 0L;
 
     /** Table name. */
-    private final String tblName;
+    @Order(0)
+    String tblName;
 
     /** Index. */
     @GridToStringInclude
-    private final QueryIndex idx;
+    @Order(1)
+    QueryIndexMessage idxMsg;
 
     /** Ignore operation if index exists. */
-    private final boolean ifNotExists;
+    @Order(2)
+    boolean ifNotExists;
 
     /** Index creation parallelism level */
-    private final int parallel;
+    @Order(3)
+    int parallel;
+
+    /** */
+    public SchemaIndexCreateOperation() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -59,14 +70,14 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
-        this.idx = idx;
+        this.idxMsg = new QueryIndexMessage(idx);
         this.ifNotExists = ifNotExists;
         this.parallel = parallel;
     }
 
     /** {@inheritDoc} */
     @Override public String indexName() {
-        return QueryUtils.indexName(tblName, idx);
+        return QueryUtils.indexName(tblName, idxMsg.name, idxMsg.fields);
     }
 
     /**
@@ -80,7 +91,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      * @return Index params.
      */
     public QueryIndex index() {
-        return idx;
+        return QueryIndexMessage.queryIndex(idxMsg);
     }
 
     /**
@@ -103,4 +114,5 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     @Override public String toString() {
         return S.toString(SchemaIndexCreateOperation.class, this, "parent", super.toString());
     }
+
 }

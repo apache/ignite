@@ -22,19 +22,15 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;
 
@@ -58,7 +54,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
     byte flags;
 
     /**
-     * Constructor for {@link DiscoveryMessageFactory}.
+     * Constructor for {@link MessageFactory}.
      */
     public CacheStatisticsModeChangeMessage() {
         // No-op.
@@ -139,10 +135,5 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage,
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheStatisticsModeChangeMessage.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 500;
     }
 }

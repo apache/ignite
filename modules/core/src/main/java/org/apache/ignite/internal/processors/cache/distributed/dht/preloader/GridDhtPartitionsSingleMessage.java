@@ -59,13 +59,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @Order(3)
     @Compress
     @GridToStringInclude
-    Map<Integer, IntLongMap> partsSizes;
+    Map<Integer, Map<Integer, Long>> partsSizes;
 
     /** Partitions history reservation counters. */
     @Order(4)
     @Compress
     @GridToStringInclude
-    Map<Integer, IntLongMap> partHistCntrs;
+    Map<Integer, Map<Integer, Long>> partHistCntrs;
 
     /** Error message. */
     @Order(5)
@@ -208,7 +208,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsSizes == null)
             partsSizes = new HashMap<>();
 
-        partsSizes.put(grpId, new IntLongMap(partSizesMap));
+        partsSizes.put(grpId, partSizesMap);
     }
 
     /**
@@ -221,9 +221,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsSizes == null)
             return Collections.emptyMap();
 
-        IntLongMap sizesMap = partsSizes.get(grpId);
-
-        return sizesMap != null ? F.emptyIfNull(sizesMap.map()) : Collections.emptyMap();
+        return F.emptyIfNull(partsSizes.get(grpId));
     }
 
     /**
@@ -239,7 +237,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partHistCntrs == null)
                 partHistCntrs = new HashMap<>();
 
-            partHistCntrs.put(e.getKey(), new IntLongMap(historyCntrs));
+            partHistCntrs.put(e.getKey(), historyCntrs);
         }
     }
 
@@ -248,11 +246,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Partition history counters.
      */
     Map<Integer, Long> partitionHistoryCounters(int grpId) {
-        if (partHistCntrs != null) {
-            IntLongMap res = partHistCntrs.get(grpId);
-
-            return res != null ? F.emptyIfNull(res.map()) : Collections.emptyMap();
-        }
+        if (partHistCntrs != null)
+            return F.emptyIfNull(partHistCntrs.get(grpId));
 
         return Collections.emptyMap();
     }
@@ -320,10 +315,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 47;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

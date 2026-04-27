@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,22 +34,26 @@ import org.jetbrains.annotations.Nullable;
  * Contains collection of {@link ServiceClusterDeploymentResult}.
  */
 public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Unique custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** Deployment process id. */
-    private final ServiceDeploymentProcessId depId;
+    @Order(1)
+    ServiceDeploymentProcessId depId;
 
     /** Services deployments results. */
+    @Order(2)
     @GridToStringInclude
-    private Collection<ServiceClusterDeploymentResult> results;
+    Collection<ServiceClusterDeploymentResult> results;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
+    @Nullable private ServiceDeploymentActions serviceDeploymentActions;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceClusterDeploymentResultBatch() {
+    }
 
     /**
      * @param depId Deployment process id.
@@ -55,6 +61,7 @@ public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessa
      */
     public ServiceClusterDeploymentResultBatch(@NotNull ServiceDeploymentProcessId depId,
         @NotNull Collection<ServiceClusterDeploymentResult> results) {
+        this.id = IgniteUuid.randomUuid();
         this.depId = depId;
         this.results = results;
     }

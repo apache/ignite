@@ -21,10 +21,8 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 
-/**
- *
- */
-public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage {
+/** */
+public class CalciteErrorMessage extends ErrorMessage {
     /** */
     @Order(0)
     UUID qryId;
@@ -48,27 +46,13 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
         this.fragmentId = fragmentId;
     }
 
-    /**
-     * @return Query ID.
-     */
+    /** @return Query ID. */
     public UUID queryId() {
         return qryId;
     }
 
-    /**
-     * @return Fragment ID.
-     */
+    /** @return Fragment ID. */
     public long fragmentId() {
         return fragmentId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_ERROR_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return MessageType.QUERY_ERROR_MESSAGE.directType();
     }
 }
