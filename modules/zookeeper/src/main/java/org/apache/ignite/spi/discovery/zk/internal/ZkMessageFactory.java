@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.pool;
+package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */
-public class OperationContextAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
-    /** */
-    public OperationContextAwareStripedThreadPoolExecutor(
-        int concurrentLvl,
-        String igniteInstanceName,
-        String threadNamePrefix,
-        Thread.UncaughtExceptionHandler eHnd,
-        boolean allowCoreThreadTimeOut,
-        long keepAliveTime
-    ) {
-        super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
-    }
-
+public class ZkMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void execute(Runnable task, int idx) {
-        super.execute(OperationContextAwareRunnable.wrapIfContextNotEmpty(task), idx);
+    @Override public void registerAll(MessageFactory factory) {
+        factory.register(400, ZkCommunicationErrorResolveFinishMessage::new, new ZkCommunicationErrorResolveFinishMessageSerializer());
+        factory.register(401, ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
+        factory.register(402, ZkForceNodeFailMessage::new, new ZkForceNodeFailMessageSerializer());
+        factory.register(403, ZkNoServersMessage::new, new ZkNoServersMessageSerializer());
     }
 }

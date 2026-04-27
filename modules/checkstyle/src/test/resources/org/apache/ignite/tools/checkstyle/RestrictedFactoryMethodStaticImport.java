@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.extensions.communication;
+package org.apache.ignite.tools.checkstyle;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.Marshaller;
+import static java.util.concurrent.ForkJoinPool.commonPool;
 
-/** A {@link Message} which still requires external custom pre-marshalling and post-unmarshalling. */
-public interface MarshallableMessage extends Message {
-    /** @param marsh External custom marshaller. */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException;
-
-    /**
-     * @param marsh External custom marshaller.
-     * @param clsLdr External class loader to post-unmarshall.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;
+/** */
+public class RestrictedFactoryMethodStaticImport {
+    /** */
+    void method() {
+        Object pool = commonPool();
+    }
 }

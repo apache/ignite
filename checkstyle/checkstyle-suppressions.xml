@@ -23,7 +23,49 @@
 <suppressions>
     <suppress checks="RightCurly|LeftCurly|EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
               files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
-    <suppress checks="NoWhitespaceBefore" files="ConcurrentLinkedHashMap\.java"/>
+
+    <suppress checks="NoWhitespaceBefore"
+              files="ConcurrentLinkedHashMap\.java"/>
+
     <suppress checks="LineLength"
               files="ClusterTagGenerator\.java|PagesWriteSpeedBasedThrottle\.java|GridExecutorService\.java|CatboostClassificationModel\.java|classnames\.properties"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]internal[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]test[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]tests[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]ml[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]yardstick[\\/]"/>
+
+    <suppress checks="Javadoc"
+              files="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="[\\/]yardstick[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="[\\/]internal[\\/]thread[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="[\\/]internal[\\/]jdbc[\\/]thin[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="[\\/]internal[\\/]client[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="[\\/]io[\\/]opencensus[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="[\\/]test[\\/]|[\\/]tests[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files="DumpReader\.java|CacheLoadOnlyStoreAdapter\.java"/>
 </suppressions>

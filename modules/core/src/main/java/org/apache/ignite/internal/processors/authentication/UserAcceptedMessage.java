@@ -23,17 +23,13 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Is sent as an acknowledgement for end (with success or error) of user management operation on the cluster
  * (see {@link UserProposedMessage} and {@link UserManagementOperation}).
  */
-public class UserAcceptedMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /** */
     @Order(0)
     IgniteUuid id;
@@ -95,5 +91,4 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage, Message {
     @Override public String toString() {
         return S.toString(UserAcceptedMessage.class, this);
     }
-
 }

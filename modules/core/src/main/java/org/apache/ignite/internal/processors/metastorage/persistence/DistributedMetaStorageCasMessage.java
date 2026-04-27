@@ -26,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
     @Order(0)
     byte[] expectedVal;
@@ -69,7 +66,6 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return new DistributedMetaStorageCasAckMessage(requestId(), matches);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

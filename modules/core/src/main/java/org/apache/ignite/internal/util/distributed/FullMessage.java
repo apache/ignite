@@ -39,10 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * @see InitMessage
  * @see SingleNodeMessage
  */
-public class FullMessage<R extends Message> implements DiscoveryCustomMessage, Message {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class FullMessage<R extends Message> implements DiscoveryCustomMessage {
     /** Custom message ID. */
     @Order(0)
     IgniteUuid id;
@@ -118,7 +115,6 @@ public class FullMessage<R extends Message> implements DiscoveryCustomMessage, M
     public Map<UUID, Throwable> error() {
         return err == null ? null : F.viewReadOnly(err, e -> e.error());
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartitionExchangeWorkerTask
     implements DiscoveryCustomMessage, MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     @Order(0)
     UUID reqId;
@@ -130,7 +127,6 @@ public class ClientCacheChangeDummyDiscoveryMessage extends AbstractCachePartiti
         if (startRequestsBytes != null)
             startReqs = U.unmarshal(marsh, startRequestsBytes, clsLdr);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

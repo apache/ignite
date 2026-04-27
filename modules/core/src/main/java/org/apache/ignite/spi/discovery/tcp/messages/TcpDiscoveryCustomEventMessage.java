@@ -36,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private volatile DiscoverySpiCustomMessage msg;
 
     /** Serialized message bytes. */
@@ -143,5 +140,4 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     @Override public String toString() {
         return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
     }
-
 }
