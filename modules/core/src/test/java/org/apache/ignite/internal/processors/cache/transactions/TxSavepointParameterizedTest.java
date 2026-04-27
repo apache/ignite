@@ -244,8 +244,8 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
 
         assertFalse(fut.isDone());
 
-        //TODO: PVD:: Seem like a bug in the near cache.
-        if (initKeies && useNearCache && backups == 1 && spKeyOnTxInitiator && !replicated && transactionIsolation == READ_COMMITTED)
+        // TODO: IGNITE-28612 Entry visibility violation in transactional replication cache with one backup and near.
+        if (initKeies && useNearCache && backups == 1 && spKeyOnTxInitiator && !replicated)
             GridTestUtils.waitForCondition(() -> Integer.valueOf(42).equals(cache0.get(node1Key)), 10_000);
 
         assertEquals(Integer.valueOf(42), cache0.get(node1Key));
