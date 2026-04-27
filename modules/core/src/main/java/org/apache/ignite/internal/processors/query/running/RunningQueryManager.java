@@ -423,7 +423,7 @@ public class RunningQueryManager {
                     qry.id(),
                     qry.startTime(),
                     System.nanoTime() - qry.startTimeNanos(),
-                    !failed);
+                    !failed || QueryUtils.wasCancelled(failReason));
             }
 
             if (!qryFinishedListeners.isEmpty()) {
