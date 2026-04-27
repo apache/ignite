@@ -498,35 +498,28 @@ class ClientImpl extends TcpDiscoveryImpl {
         if (state == STOPPED || state == SEGMENTED || state == STARTING)
             throw new IgniteException("Failed to send custom message: client is " + state.name().toLowerCase() + ".");
 
-        try {
-            TcpDiscoveryCustomEventMessage msg;
+        TcpDiscoveryCustomEventMessage msg;
 
-            DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
+        DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
-            if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
-            else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
+        if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
+            msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
+        else
+            msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
 
-            Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
-                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
-                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                    () -> locNode.consistentId().toString())
-                .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
-                .addLog(() -> "Created");
+        Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
+            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
+            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                () -> locNode.consistentId().toString())
+            .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
+            .addLog(() -> "Created");
 
-            // This root span will be parent both from local and remote nodes.
-            msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+        // This root span will be parent both from local and remote nodes.
+        msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
 
-            msg.prepareMarshal(spi.marshaller());
+        sockWriter.sendMessage(msg);
 
-            sockWriter.sendMessage(msg);
-
-            rootSpan.addLog(() -> "Sent").end();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
-        }
+        rootSpan.addLog(() -> "Sent").end();
     }
 
     /** {@inheritDoc} */
@@ -2593,17 +2586,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
                     if (node != null && node.visible()) {
-                        try {
-                            msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                            DiscoverySpiCustomMessage msgObj = msg.message();
-
-                            notifyDiscovery(
-                                EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj, msg.spanContainer());
-                        }
-                        catch (Throwable e) {
-                            U.error(log, "Failed to unmarshal discovery custom message.", e);
-                        }
+                        notifyDiscovery(
+                            EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msg.message(), msg.spanContainer());
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Received metrics from unknown node: " + nodeId);
