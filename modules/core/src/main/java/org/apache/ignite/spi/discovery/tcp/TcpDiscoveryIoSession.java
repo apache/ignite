@@ -62,18 +62,8 @@ public class TcpDiscoveryIoSession {
     /** Size for an intermediate buffer for serializing discovery messages. */
     private static final int MSG_BUFFER_SIZE = 100;
 
-    /** Leading byte for messages use {@link JdkMarshaller} for serialization. */
-    // TODO: remove these flags after refactoring all discovery messages.
-    static final byte JAVA_SERIALIZATION = (byte)1;
-
-    /** Leading byte for messages use {@link MessageSerializer} for serialization. */
-    static final byte MESSAGE_SERIALIZATION = (byte)2;
-
     /** */
     final TcpDiscoverySpi spi;
-
-    /** Loads discovery messages classes during java deserialization. */
-    private final ClassLoader clsLdr;
 
     /** */
     private final Socket sock;
@@ -104,8 +94,6 @@ public class TcpDiscoveryIoSession {
         this.sock = sock;
         this.spi = spi;
 
-        clsLdr = U.resolveClassLoader(spi.ignite().configuration());
-
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgWriter = new DirectMessageWriter(spi.messageFactory());
@@ -130,17 +118,7 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If serialization fails.
      */
     void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message)) {
-            out.write(JAVA_SERIALIZATION);
-
-            U.marshal(spi.marshaller(), msg, out);
-
-            return;
-        }
-
         try {
-            out.write(MESSAGE_SERIALIZATION);
-
             serializeMessage((Message)msg, out);
 
             out.flush();
@@ -162,21 +140,23 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If deserialization fails.
      */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        byte serMode = (byte)in.read();
-
-        if (JAVA_SERIALIZATION == serMode)
-            return U.unmarshal(spi.marshaller(), in, clsLdr);
-
         try {
-            if (MESSAGE_SERIALIZATION != serMode) {
-                detectSslAlert(serMode, in);
+            byte b0 = (byte)in.read();
+            byte b1 = (byte)in.read();
 
-                // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
-                // The connection error processing behavior depends on it.
-                throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
+            short msgType = makeMessageType(b0, b1);
+
+            Message msg;
+
+            try {
+                msg = spi.messageFactory().create(msgType);
             }
+            catch (IgniteException e) {
+                detectSslAlert(b0, b1, in);
 
-            Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+                // 'Invalid message type' should not be lost.
+                throw e;
+            }
 
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
@@ -273,12 +253,13 @@ public class TcpDiscoveryIoSession {
      * See handling {@code StreamCorruptedException} in {@link #readMessage()}.
      * Keeps logic similar to {@link java.io.ObjectInputStream#readStreamHeader}.
      */
-    private void detectSslAlert(byte firstByte, InputStream in) throws IOException {
+    private void detectSslAlert(byte b0, byte b1, InputStream in) throws IOException {
         byte[] hdr = new byte[4];
-        hdr[0] = firstByte;
-        int read = in.readNBytes(hdr, 1, 3);
+        hdr[0] = b0;
+        hdr[1] = b1;
+        int read = in.readNBytes(hdr, 2, 2);
 
-        if (read < 3)
+        if (read < 2)
             throw new EOFException();
 
         String hex = String.format("%02x%02x%02x%02x", hdr[0], hdr[1], hdr[2], hdr[3]);
