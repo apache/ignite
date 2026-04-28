@@ -612,8 +612,8 @@ public class H2Utils {
      * @return Unwrapped object.
      */
     public static Object unwrap(Value val) {
-        // Gets time preserving nanoseconds. Method getObject() returns Time object without nanoseconds.
         if (val instanceof ValueTime) {
+            // Gets time preserving nanoseconds. Method ValueTime#getObject() returns Time object without nanoseconds.
             ValueTime val0 = (ValueTime)val;
 
             if (val0.getNanos() % TimeUnit.MILLISECONDS.toNanos(1L) != 0)
