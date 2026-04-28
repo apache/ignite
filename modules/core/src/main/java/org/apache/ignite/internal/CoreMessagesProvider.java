@@ -656,7 +656,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(WalStateAckMessage.class);
         withNoSchema(CacheConfigurationEnrichment.class);
         withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
-        withNoSchema(VisorTaskResult.class);
+        withNoSchemaResolvedClassLoader(VisorTaskResult.class);
         withNoSchema(TransactionsHashRecord.class);
         withNoSchema(IdleVerifyResult.class);
         withNoSchema(IdleVerifyDumpResult.class);
