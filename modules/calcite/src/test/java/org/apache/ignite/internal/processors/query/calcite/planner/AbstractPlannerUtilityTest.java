@@ -107,7 +107,7 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);
 
             Predicate<ProjectableFilterableTableScan> cond =
-                satisfyCondition("AND(=($t0, 0), SEARCH($t2, Sarg[IS NOT NULL]), =($t100, 0))");
+                satisfyCondition("AND(=($t0, 0), =($t100, 0), SEARCH($t2, Sarg[IS NOT NULL]))");
 
             boolean res = cond.test(scan);
             assertTrue(lastErrorMsg, res);
@@ -121,11 +121,10 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
 
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);
 
-            Predicate<ProjectableFilterableTableScan> cond = satisfyCondition("AND(=($t0, 0), =($t100, 0), SEARCH($t2, Sarg[0, 1, 2]))");
+            Predicate<ProjectableFilterableTableScan> cond = satisfyCondition("AND(OR(=($t0, 0), =($t1, 0)), SEARCH($t2, Sarg[IS NOT NULL]))");
             boolean res = cond.test(scan);
 
-            assertFalse(res);
-            assertEquals("Unapplicable predicate expected: flat operands", lastErrorMsg);
+            assertTrue(lastErrorMsg, res);
         }
     }
 
