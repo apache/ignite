@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
@@ -49,10 +48,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
+
 /**
  * Basic warm-up closure which warm-ups cache operations.
  */
 public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> {
+    /** */
+    private static final String WARM_UP_THREAD_PREFIX = "warm-up-worker";
+
     /** */
     private static final long serialVersionUID = 9175346848249957458L;
 
@@ -255,7 +259,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
     private void doWarmup(Iterable<Ignite> grids) throws Exception {
         Ignite first = F.first(grids);
 
-        ExecutorService svc = Executors.newFixedThreadPool(threadCnt);
+        ExecutorService svc = newFixedThreadPool(WARM_UP_THREAD_PREFIX, first.name(), threadCnt);
 
         try {
             for (IgniteCacheProxy cache : ((IgniteKernal)first).caches()) {
