@@ -17,24 +17,28 @@
 
 package org.apache.ignite.internal.visor;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Management task result.
  */
-public class VisorTaskResult<R> extends IgniteDataTransferObject {
-    /** Serial version UID. */
-    private static final long serialVersionUID = 0L;
-
+public class VisorTaskResult<R> implements MarshallableMessage {
     /** Task result. */
-    @Order(0)
     @Nullable R res;
+
+    /** Bytes of {@link #res}. */
+    @Order(0)
+    @Nullable byte[] resBytes;
 
     /** Error. */
     @Order(1)
-    @Nullable Exception err;
+    @Nullable ErrorMessage errMsg;
 
     /** */
     public VisorTaskResult() {
@@ -47,7 +51,9 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
      */
     public VisorTaskResult(@Nullable R res, @Nullable Exception err) {
         this.res = res;
-        this.err = err;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -55,9 +61,23 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
      * @throws Exception if the task was completed with an error.
      */
     public @Nullable R result() throws Exception {
-        if (err != null)
-            throw err;
+        if (errMsg != null)
+            throw (Exception)ErrorMessage.error(errMsg);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (res != null)
+            resBytes = U.marshal(marsh, res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (resBytes != null)
+            res = U.unmarshal(marsh, resBytes, clsLdr);
+
+        resBytes = null;
     }
 }

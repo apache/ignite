@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
@@ -31,10 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Message used to transfer {@link Throwable} objects.
  */
 @SuppressWarnings({"NullableProblems", "unused"})
-public class ErrorMessage implements MarshallableMessage, Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ErrorMessage implements MarshallableMessage {
     /** Error bytes. */
     @Order(0)
     @GridToStringExclude
