@@ -407,7 +407,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
 
         try {
             if (rebuildFut != null)
-                rebuildFut.get();
+                rebuildFut.get(5_000L);
         }
         catch (Exception e) {
             throw new AssertionError(e);
