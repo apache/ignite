@@ -28,7 +28,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -205,8 +204,6 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        checkException();
-
         if (!outBuff.isEmpty())
             return true;
 
@@ -324,9 +321,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (e == null)
             return;
 
-        if (e instanceof IgniteSQLException)
-            throw (IgniteSQLException)e;
-        else
-            throw new IgniteSQLException("An error occurred while query executing - " + e.getMessage(), IgniteQueryErrorCode.UNKNOWN, e);
+        throw new IgniteSQLException("An error occurred while query executing - " + e.getMessage(),
+            e instanceof IgniteSQLException ? ((IgniteSQLException)e).statusCode() : IgniteQueryErrorCode.UNKNOWN, e);
     }
 }
