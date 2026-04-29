@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -301,6 +302,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws TransactionException If savepoint with the same name already exists.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
+    @IgniteExperimental
     public void savepoint(String name);
 
     /**
@@ -316,6 +318,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      *      {@code false}.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
+    @IgniteExperimental
     public void savepoint(String name, boolean overwrite);
 
     /**
@@ -328,6 +331,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws TransactionException If savepoint with the given name does not exist.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
+    @IgniteExperimental
     public void rollbackToSavepoint(String name);
 
     /**
@@ -339,6 +343,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @param name Savepoint name.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
+    @IgniteExperimental
     public void releaseSavepoint(String name);
 
     /**
