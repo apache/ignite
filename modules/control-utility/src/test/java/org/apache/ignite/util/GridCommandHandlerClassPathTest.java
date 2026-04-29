@@ -62,16 +62,17 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
-        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", "mysuperapp", "--files", jars));
+        try {
+            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", "mysuperapp", "--files", jars));
+        }
+        finally {
+            String outStr = testOut.toString();
 
-        String outStr = testOut.toString();
+            stopAllGrids();
 
-        stopAllGrids();
-
-        System.out.println(outStr);
+            System.out.println(outStr);
+        }
     }
-
-
     // TODO check empty file creation.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
 }
