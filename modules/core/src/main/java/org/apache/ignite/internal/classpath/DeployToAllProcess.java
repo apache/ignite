@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CLASSPATH_DEPLOY_TO_ALL;
 
+/** */
 public class DeployToAllProcess {
     /** */
     private final IgniteLogger log;
@@ -43,6 +44,7 @@ public class DeployToAllProcess {
     /** */
     private final Map<UUID, GridFutureAdapter<String>> deployToAllFuts = new ConcurrentHashMap<>();
 
+    /** */
     public DeployToAllProcess(GridKernalContext ctx) {
         log = ctx.log(DeployToAllProcess.class);
 

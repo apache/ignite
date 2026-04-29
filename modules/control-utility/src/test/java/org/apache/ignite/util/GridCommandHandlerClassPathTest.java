@@ -40,6 +40,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     /** Tests --create command. */
     @Test
     public void testCreate() throws Exception {
+        //grid(0).cluster().state(ClusterState.ACTIVE);
+
         String jars = Files.list(Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"))
             .map(Path::toAbsolutePath)
             .map(Path::toString)
