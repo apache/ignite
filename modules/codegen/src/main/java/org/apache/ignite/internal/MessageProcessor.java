@@ -80,6 +80,9 @@ public class MessageProcessor extends AbstractProcessor {
         "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
         "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
         "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
+        "org.apache.ignite.internal.processors.odbc.ClientMessage",
+        "org.apache.ignite.internal.managers.communication.CompressedMessage",
+        "org.apache.ignite.loadtests.communication.GridTestMessage"
     };
 
     /** */
@@ -112,8 +115,16 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (!fields.isEmpty() || emptyMsgs.stream().anyMatch(t -> processingEnv.getTypeUtils().isAssignable(clazz.asType(), t)))
-                msgFields.put(clazz, fields);
+            if (fields.isEmpty() && emptyMsgs.stream().noneMatch(t -> processingEnv.getTypeUtils().isAssignable(clazz.asType(), t))) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Message class doesn't have any ordered fields." +
+                        "Annotate fields with @Order or add to known empty classes (MessageProcessor#EMPTY_MESSAGES)",
+                    clazz);
+
+            }
+
+            msgFields.put(clazz, fields);
         }
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
