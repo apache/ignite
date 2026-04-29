@@ -524,14 +524,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "  id varchar(15), " +
             "  id2 uuid, " +
             "  col varchar(100), " +
-            "  PRIMARY KEY(id, id2) )";
+            "  PRIMARY KEY(id, id2) ) ";
 
         try {
             for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"")) {
                 sql(ddl);
 
-                assertEquals(35, sql("Unexpected result for query [ddl=" + ddl + ']',
-                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+                assertEquals("Unexpected result for query [ddl=" + ddl + ']', 35,
+                    sql("select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
 
                 sql("DROP TABLE IF EXISTS T");
             }
