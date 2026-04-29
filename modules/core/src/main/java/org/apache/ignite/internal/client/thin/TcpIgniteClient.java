@@ -27,11 +27,13 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -674,6 +676,14 @@ public class TcpIgniteClient implements IgniteClient {
             if (offset[0] != Files.size(file))
                 throw new IOException("Can't read all data from file");
         }
+    }
+
+    /** @return Node IDs client connected to. */
+    public List<UUID> connectedToNodes() {
+        return ch.getChannelHolders().stream()
+            .map(hldr -> hldr.serverNodeId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 
     /**

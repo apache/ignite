@@ -28,9 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,9 +121,6 @@ final class ReliableChannelImpl implements ReliableChannelEx {
     /** Open channels counter. */
     private final AtomicInteger channelsCnt = new AtomicInteger();
 
-    /** Future for channel init task. */
-    private volatile Future<?> initAllChannelFut;
-
     /**
      * Constructor.
      */
@@ -211,16 +206,6 @@ final class ReliableChannelImpl implements ReliableChannelEx {
             channel -> channel.service(op, payloadWriter, payloadReader),
             op
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T serviceForNode(
-        ClientOperation op,
-        Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader,
-        UUID targetNode
-    ) throws ClientException, ClientError {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -589,8 +574,8 @@ final class ReliableChannelImpl implements ReliableChannelEx {
     /**
      * Asynchronously try to establish a connection to all configured servers.
      */
-    private Future<?> initAllChannelsAsync() {
-        return ForkJoinPool.commonPool().submit(
+    private void initAllChannelsAsync() {
+        ForkJoinPool.commonPool().submit(
             () -> {
                 List<ClientChannelHolder> holders = channels;
 
@@ -796,7 +781,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         }
 
         if (partitionAwarenessEnabled)
-            initAllChannelFut = initAllChannelsAsync();
+            initAllChannelsAsync();
     }
 
     /**
@@ -1048,7 +1033,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         private volatile ClientChannel ch;
 
         /** ID of the last server node that {@link #ch} is or was connected to. */
-        private volatile UUID serverNodeId;
+        volatile UUID serverNodeId;
 
         /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder. */
         private volatile boolean close;
@@ -1194,13 +1179,6 @@ final class ReliableChannelImpl implements ReliableChannelEx {
      * @return Client channel for node.
      */
     public ClientChannel nodeClientChannel(UUID id) {
-        try {
-            initAllChannelFut.get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            throw new ClientException(e);
-        }
-
         ClientChannelHolder cliCh = nodeChannels.get(id);
 
         if (cliCh == null)

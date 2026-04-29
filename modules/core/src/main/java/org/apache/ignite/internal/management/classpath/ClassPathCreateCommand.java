@@ -20,13 +20,11 @@ package org.apache.ignite.internal.management.classpath;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -88,7 +86,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         // Server nodes require files names, only.
         arg.files = fileNames(files);
 
-        ClusterNode uploadNode = uploadNode(client);
+        ClusterNode uploadNode = uploadNode(cli);
 
         printer.accept("Upload node: " + uploadNode.id());
 
@@ -108,18 +106,13 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
     }
 
     /** */
-    private static ClusterNode uploadNode(IgniteClient client) {
-        Collection<ClusterNode> nodes = CommandUtils.nodes(client, null);
+    private static ClusterNode uploadNode(TcpIgniteClient client) {
+        List<UUID> nodes = client.connectedToNodes();
 
         if (F.isEmpty(nodes))
-            throw new IgniteException("Cluster empty");
+            throw new IllegalStateException("Not connected to node");
 
-        Collection<ClusterNode> servers = CommandUtils.servers(nodes);
-
-        if (F.isEmpty(servers))
-            throw new IgniteException("No server nodes");
-
-        return F.first(servers);
+        return client.cluster().node(F.first(nodes));
     }
 
     /** */
