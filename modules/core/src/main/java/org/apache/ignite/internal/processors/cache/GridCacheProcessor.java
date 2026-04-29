@@ -447,11 +447,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             processStatisticsModeChange(task0.message());
         }
-        else if (task instanceof TxTimeoutOnPartitionMapExchangeChangeTask) {
-            TxTimeoutOnPartitionMapExchangeChangeTask task0 = (TxTimeoutOnPartitionMapExchangeChangeTask)task;
-
-            sharedCtx.tm().processTxTimeoutOnPartitionMapExchangeChange(task0.message());
-        }
         else if (task instanceof StopCachesOnClientReconnectExchangeTask) {
             StopCachesOnClientReconnectExchangeTask task0 = (StopCachesOnClientReconnectExchangeTask)task;
 
