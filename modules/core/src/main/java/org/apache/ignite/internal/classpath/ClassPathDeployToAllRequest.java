@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.classpath;
 
-import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Class path deploy to all request for {@link DistributedProcess} initiate message.
  */
-public class ClassPathDeployToAllRequest implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class ClassPathDeployToAllRequest implements Message {
     /** Ignite class path id. */
     final UUID icpId;
 

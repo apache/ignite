@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
@@ -637,7 +636,7 @@ public class TcpIgniteClient implements IgniteClient {
      * @param file File to upload.
      */
     public void uploadClasspathFile(ClusterNode node, UUID icpID, Path file) throws IOException {
-        List<UUID> uploadNode = Collections.singletonList(node.id());
+        ClientChannel cliCh = ch.nodeClientChannel(node.id());
 
         String name = file.getFileName().toString();
         byte[] batch = new byte[(int)(U.MB)];
@@ -647,10 +646,11 @@ public class TcpIgniteClient implements IgniteClient {
             int[] bytesCnt = new int[1];
 
             // We want to create empty file on the server side.
+            // So, even 0 bytes read, one request need to be sent.
             bytesCnt[0] = fis.read(batch);
 
             do {
-                ch.service(
+                cliCh.service(
                     ClientOperation.FILE_UPLOAD,
                     ch -> {
                         try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), ch.out(), null)) {
@@ -662,8 +662,7 @@ public class TcpIgniteClient implements IgniteClient {
                             w.writeByteArray(batch);
                         }
                     },
-                    in -> null,
-                    uploadNode // Request can still be sent to a random (default) node.
+                    in -> null
                 );
 
                 offset[0] += bytesCnt[0];

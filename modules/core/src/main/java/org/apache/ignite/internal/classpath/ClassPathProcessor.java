@@ -20,25 +20,18 @@ package org.apache.ignite.internal.classpath;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.CREATING;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CLASSPATH_DEPLOY_TO_ALL;
 
 /**
  * TODO:
@@ -52,11 +45,8 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     /** Prefix for metastorage keys. */
     public static final String METASTORE_PREFIX = "classpath.";
 
-    /** Distribute process that distributes new Ignite class path across all server nodes. */
-    private final DistributedProcess<ClassPathDeployToAllRequest, ClassPathDeployToAllResponse> deployToAllProc;
-
     /** */
-    private final Map<UUID, GridFutureAdapter<String>> deployToAllFuts = new ConcurrentHashMap<>();
+    public final DeployToAllProcess deployToAllProcess;
 
     /**
      * @param ctx Kernal context.
@@ -64,12 +54,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     public ClassPathProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        deployToAllProc = new DistributedProcess<>(
-            ctx,
-            CLASSPATH_DEPLOY_TO_ALL,
-            this::startDeployToAllProcess,
-            this::processDeployToAllResult
-        );
+        deployToAllProcess = new DeployToAllProcess(ctx);
     }
 
     /**
@@ -88,7 +73,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
         IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths);
 
-        toMetastorage(icp, null);
+        casToMetastorage(icp, null);
 
         try {
             NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
@@ -128,7 +113,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         byte[] batch
     ) throws IOException {
         try {
-            IgniteClassPath icp = fromMetastorage(icpID);
+            IgniteClassPath icp = fromMetastorage(icpID, ctx);
 
             if (F.indexOf(icp.files(), name) == -1)
                 throw new IllegalArgumentException("Unknown lib [icp=" + icp.name() + ", unknown_lib=" + name + ']');
@@ -159,79 +144,22 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * @param icpId ClassPath ID.
-     * @return
-     */
-    public IgniteInternalFuture<?> distributeToAllNodes(UUID icpId) {
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
-
-        synchronized (this) {
-            IgniteClassPath icp = fromMetastorage(icpId);
-
-            ClassPathDeployToAllRequest req = new ClassPathDeployToAllRequest(icpId, ctx.localNodeId());
-
-            if (deployToAllFuts.put(icpId, fut) != null)
-                return new GridFinishedFuture<>(new IllegalStateException("Distribute to all process started, already: " + icp));
-
-            deployToAllProc.start(icpId, req);
+    /** */
+    private void casToMetastorage(IgniteClassPath icp, @Nullable IgniteClassPath prev) {
+        try {
+            if (!ctx.distributedMetastorage().compareAndSet(metastorageKey(icp), prev, icp))
+                throw new IgniteException("Classpath alreay exists: " + icp.name());
         }
-
-        return fut;
-    }
-
-    /**
-     * @param req Request on snapshot creation.
-     * @return Future which will be completed when a snapshot has been started.
-     */
-    private IgniteInternalFuture<ClassPathDeployToAllResponse> startDeployToAllProcess(ClassPathDeployToAllRequest req) {
-        IgniteClassPath icp = fromMetastorage(req.icpId);
-
-        if (deployToAllFuts.containsKey(req.icpId)) {
-            log.info("Upload node skip download [icp=" + icp + ']');
-
-            return new GridFinishedFuture<>(new ClassPathDeployToAllResponse());
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
-
-        log.info("Starting download new classpath [icp=" + icp + ']');
-
-        return new DownloadClassPathTask(ctx, icp).call();
-    }
-
-    /**
-     * @param id Request id.
-     * @param res Results.
-     * @param err Errors.
-     */
-    private void processDeployToAllResult(UUID id, Map<UUID, ClassPathDeployToAllResponse> res, Map<UUID, Throwable> err) {
-        GridFutureAdapter<String> fut = deployToAllFuts.remove(id);
-
-        // Only upload node manage the process.
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Unknown distribute process [id=" + id + ']');
-
-            return;
-        }
-
-        IgniteClassPath icp = fromMetastorage(id);
-
-        // TODO: check this exception not failed all node.
-        if (!fut.onDone("OK")) {
-            throw new IllegalStateException("Distribute process in wrong state " +
-                "[canceled=" + fut.isCancelled() + ", failed=" + fut.isFailed() + ", done=" + fut.isDone() + ']');
-        }
-
-        icp.state(IgniteClassPathState.READY);
-
-        log.info("Deploy to all DONE!");
     }
 
     /**
      * @param icpID ClassPath ID.
      * @return Class path.
      */
-    private IgniteClassPath fromMetastorage(UUID icpID) {
+    static IgniteClassPath fromMetastorage(UUID icpID, GridKernalContext ctx) {
         try {
             IgniteClassPath[] icp = new IgniteClassPath[1];
 
@@ -247,17 +175,6 @@ public class ClassPathProcessor extends GridProcessorAdapter {
                 throw new IgniteException("ClassPath in wrong state [expected=" + CREATING + ", status=" + icp[0].state() + ']');
 
             return icp[0];
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    private void toMetastorage(IgniteClassPath icp, @Nullable IgniteClassPath prev) {
-        try {
-            if (!ctx.distributedMetastorage().compareAndSet(metastorageKey(icp), prev, icp))
-                throw new IgniteException("Classpath alreay exists: " + icp.name());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

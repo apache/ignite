@@ -1817,6 +1817,21 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         }
 
         /** {@inheritDoc} */
+        @Override public <T> T serviceForNode(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader,
+            UUID targetNode
+        ) throws ClientException, ClientError {
+            try {
+                return delegate.serviceForNode(op, payloadWriter, payloadReader, targetNode);
+            }
+            catch (Exception e) {
+                throw convertException(e, cacheName);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public <T> IgniteClientFuture<T> serviceAsync(
             ClientOperation op,
             Consumer<PayloadOutputChannel> payloadWriter,

@@ -70,4 +70,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         System.out.println(outStr);
     }
+
+
+    // TODO check empty file creation.
+    // TODO add in production code checks of files integriy. Perform file integrity check on startup.
 }

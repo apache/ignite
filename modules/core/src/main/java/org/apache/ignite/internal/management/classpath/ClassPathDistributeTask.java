@@ -47,7 +47,7 @@ public class ClassPathDistributeTask extends VisorOneNodeTask<UUID, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable UUID arg) throws IgniteException {
-            IgniteInternalFuture<?> fut = ignite.context().classPath().distributeToAllNodes(arg);
+            IgniteInternalFuture<?> fut = ignite.context().classPath().deployToAllProcess.start(arg);
 
             try {
                 fut.get();

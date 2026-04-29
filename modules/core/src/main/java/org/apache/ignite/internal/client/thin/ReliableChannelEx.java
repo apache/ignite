@@ -62,6 +62,22 @@ interface ReliableChannelEx extends AutoCloseable {
     ) throws ClientException, ClientError;
 
     /**
+     * Send request to the passed node and handle response.
+     *
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthenticationException When user name or password is invalid.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     * @throws ClientProtocolError When failed to handshake with server.
+     * @throws ClientServerError When failed to process request on server.
+     */
+    public <T> T serviceForNode(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader,
+        UUID targetNode
+    ) throws ClientException, ClientError;
+
+    /**
      * Send request and handle response asynchronously.
      */
     public <T> IgniteClientFuture<T> serviceAsync(

@@ -28,7 +28,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -121,6 +123,9 @@ final class ReliableChannelImpl implements ReliableChannelEx {
     /** Open channels counter. */
     private final AtomicInteger channelsCnt = new AtomicInteger();
 
+    /** Future for channel init task. */
+    private volatile Future<?> initAllChannelFut;
+
     /**
      * Constructor.
      */
@@ -206,6 +211,16 @@ final class ReliableChannelImpl implements ReliableChannelEx {
             channel -> channel.service(op, payloadWriter, payloadReader),
             op
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceForNode(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader,
+        UUID targetNode
+    ) throws ClientException, ClientError {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -574,8 +589,8 @@ final class ReliableChannelImpl implements ReliableChannelEx {
     /**
      * Asynchronously try to establish a connection to all configured servers.
      */
-    private void initAllChannelsAsync() {
-        ForkJoinPool.commonPool().submit(
+    private Future<?> initAllChannelsAsync() {
+        return ForkJoinPool.commonPool().submit(
             () -> {
                 List<ClientChannelHolder> holders = channels;
 
@@ -781,7 +796,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         }
 
         if (partitionAwarenessEnabled)
-            initAllChannelsAsync();
+            initAllChannelFut = initAllChannelsAsync();
     }
 
     /**
@@ -942,7 +957,6 @@ final class ReliableChannelImpl implements ReliableChannelEx {
 
                     return function.apply(channel);
                 }
-
                 catch (ClientConnectionException err) {
                     failures = new ArrayList<>();
 
@@ -1075,7 +1089,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         /**
          * Get or create channel.
          */
-        private ClientChannel getOrCreateChannel()
+        public ClientChannel getOrCreateChannel()
             throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             return getOrCreateChannel(false);
         }
@@ -1173,6 +1187,26 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         void setConfiguration(ClientChannelConfiguration chCfg) {
             this.chCfg = chCfg;
         }
+    }
+
+    /**
+     * @param id Node id.
+     * @return Client channel for node.
+     */
+    public ClientChannel nodeClientChannel(UUID id) {
+        try {
+            initAllChannelFut.get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new ClientException(e);
+        }
+
+        ClientChannelHolder cliCh = nodeChannels.get(id);
+
+        if (cliCh == null)
+            throw new ClientConnectionException("Node can't be found [id=" + id + ']');
+
+        return cliCh.getOrCreateChannel();
     }
 
     /**

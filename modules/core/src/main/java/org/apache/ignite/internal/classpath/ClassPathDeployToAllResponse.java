@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.classpath;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Class path deploy to all response for {@link DistributedProcess} initiate message.
  */
-public class ClassPathDeployToAllResponse implements Serializable {
+public class ClassPathDeployToAllResponse implements Message {
 }

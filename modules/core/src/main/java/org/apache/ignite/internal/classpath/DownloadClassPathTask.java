@@ -54,7 +54,6 @@ public class DownloadClassPathTask implements Callable<IgniteInternalFuture<Clas
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<ClassPathDeployToAllResponse> call() {
-        // TODO: rewrite to async code (listen for each future completion.
         Stream.of(icp.files())
             .map(DownloadClassPathFileTask::new)
             .map(ctx.pools().getPeerClassLoadingExecutorService()::submit)
@@ -73,6 +72,8 @@ public class DownloadClassPathTask implements Callable<IgniteInternalFuture<Clas
                     }
                 }
             });
+
+        res.onDone(new ClassPathDeployToAllResponse());
 
         return res;
     }
