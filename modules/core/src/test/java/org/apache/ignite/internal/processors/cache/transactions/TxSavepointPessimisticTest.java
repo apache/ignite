@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionException;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -126,7 +127,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 
                     return null;
                 },
-                IllegalArgumentException.class,
+                TransactionException.class,
                 "already exists"
             );
 
@@ -164,8 +165,8 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 
                     return null;
                 },
-                IllegalArgumentException.class,
-                "No such savepoint");
+                TransactionException.class,
+                "Savepoint does not exist");
 
             GridTestUtils.assertThrowsAnyCause(log,
                 () -> {
@@ -173,8 +174,8 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 
                     return null;
                 },
-                IllegalArgumentException.class,
-                "No such savepoint");
+                TransactionException.class,
+                "Savepoint does not exist");
 
             tx.rollbackToSavepoint("sp1");
 

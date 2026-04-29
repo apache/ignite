@@ -298,7 +298,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * later be used by {@link #rollbackToSavepoint(String)} to discard changes made after it was created.
      *
      * @param name Savepoint name.
-     * @throws IllegalArgumentException If savepoint with the same name already exists.
+     * @throws TransactionException If savepoint with the same name already exists.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
     public void savepoint(String name);
@@ -312,7 +312,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      *
      * @param name Savepoint name.
      * @param overwrite Whether to overwrite an existing savepoint with the same name.
-     * @throws IllegalArgumentException If savepoint with the same name already exists and {@code overwrite} is
+     * @throws TransactionException If savepoint with the same name already exists and {@code overwrite} is
      *      {@code false}.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
@@ -325,7 +325,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * released. The transaction remains active and can be committed or rolled back after this method returns.
      *
      * @param name Savepoint name.
-     * @throws IllegalArgumentException If savepoint with the given name does not exist.
+     * @throws TransactionException If savepoint with the given name does not exist.
      * @throws IgniteException If savepoints are not supported for this transaction.
      */
     public void rollbackToSavepoint(String name);

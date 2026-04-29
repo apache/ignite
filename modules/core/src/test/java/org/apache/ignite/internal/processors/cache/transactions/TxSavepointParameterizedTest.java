@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -299,8 +300,8 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
 
                     return null;
                 },
-                IllegalArgumentException.class,
-                "No such savepoint");
+                TransactionException.class,
+                "Savepoint does not exist");
         }
     }
 

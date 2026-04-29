@@ -99,7 +99,7 @@ Ignite supports savepoints only for explicit `PESSIMISTIC` transactions.
 Savepoints are local to the transaction that created them and are removed when the transaction is committed or rolled back.
 
 Use `Transaction.savepoint(name)` to create a savepoint.
-If a savepoint with the same name already exists, Ignite throws an `IllegalArgumentException`.
+If a savepoint with the same name already exists, Ignite throws a `TransactionException`.
 Use `Transaction.savepoint(name, true)` to replace an existing savepoint.
 
 Use `Transaction.rollbackToSavepoint(name)` to roll back transaction changes made after the savepoint was created.

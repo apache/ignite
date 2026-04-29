@@ -107,6 +107,7 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -3053,7 +3054,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (overwrite)
                     spIter.remove();
                 else {
-                    throw new IllegalArgumentException("Savepoint \"" + name + "\" already exists. " +
+                    throw new TransactionException("Savepoint \"" + name + "\" already exists. " +
                         "Use savepoint(name, true) to overwrite it.");
                 }
             }
@@ -3086,7 +3087,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             ListIterator<TxSavepoint> spIter = findSavepoint(name);
 
             if (spIter == null)
-                throw new IllegalArgumentException("No such savepoint [name=" + name + ']');
+                throw new TransactionException("Savepoint does not exist [name=" + name + ']');
 
             TxSavepoint savepoint = spIter.next();
 
