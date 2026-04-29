@@ -196,7 +196,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
                 assertNotNull(msg);
 
-                if (msg instanceof SnapshotDiscoveryMessage)
+                if (msg instanceof SnapshotStartDiscoveryMessage)
                     loadLatch.countDown();
             }
         });

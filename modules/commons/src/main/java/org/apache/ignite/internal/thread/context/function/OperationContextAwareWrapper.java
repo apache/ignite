@@ -23,7 +23,7 @@ import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 
 /** */
-abstract class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
+public abstract class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
     /** */
     protected final T delegate;
 

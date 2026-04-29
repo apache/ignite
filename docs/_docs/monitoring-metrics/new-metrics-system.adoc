@@ -481,4 +481,3 @@ The queue of discovery messages.
 | MessageWorkerQueueSize | int | The size of the queue of discovery messages that are waiting to be sent to other nodes. | Node
 |AvgMessageProcessingTime|long| Average message processing time. | Node
 |===
---

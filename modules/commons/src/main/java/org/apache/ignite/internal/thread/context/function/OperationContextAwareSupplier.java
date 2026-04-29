@@ -15,31 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.thread.context.function;
 
-import java.util.List;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import java.util.function.Supplier;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
 
 /** */
-public class SnapshotMetadataResponse implements Message {
+public class OperationContextAwareSupplier<T> extends OperationContextAwareWrapper<Supplier<T>> implements Supplier<T> {
     /** */
-    @Order(0)
-    List<SnapshotMetadata> metadata;
+    public OperationContextAwareSupplier(Supplier<T> delegate, OperationContextSnapshot snapshot) {
+        super(delegate, snapshot);
+    }
 
-    /** Default constructor for {@link MessageFactory}. */
-    public SnapshotMetadataResponse() {
-        // No-op.
+    /** {@inheritDoc} */
+    @Override public T get() {
+        try (Scope ignored = OperationContext.restoreSnapshot(snapshot)) {
+            return delegate.get();
+        }
     }
 
     /** */
-    public SnapshotMetadataResponse(List<SnapshotMetadata> metadata) {
-        this.metadata = metadata;
-    }
-
-    /** */
-    public List<SnapshotMetadata> metadata() {
-        return metadata;
+    public static <T> Supplier<T> wrap(Supplier<T> delegate) {
+        return wrap(delegate, OperationContextAwareSupplier::new);
     }
 }

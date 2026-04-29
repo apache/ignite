@@ -32,13 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * {@link UserAcceptedMessage} is sent as an acknowledgement that operation is finished on the all nodes of the cluster.
  */
-public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage {
+public class UserProposedMessage extends DiscoveryServerOnlyCustomMessage {
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     @GridToStringInclude
     UserManagementOperation op;
 
@@ -51,20 +47,14 @@ public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage {
      * @param op User action.
      */
     UserProposedMessage(UserManagementOperation op) {
+        super(IgniteUuid.randomUuid());
+
         assert op != null;
 
         this.op = op;
-        id = IgniteUuid.randomUuid();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }

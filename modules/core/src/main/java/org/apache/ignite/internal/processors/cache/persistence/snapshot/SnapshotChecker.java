@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -63,19 +63,19 @@ public class SnapshotChecker {
     }
 
     /** Launches local metas checking. */
-    public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(
+    public IgniteCompletableFuture<List<SnapshotMetadata>> checkLocalMetas(
         SnapshotFileTree sft,
         int incIdx,
         @Nullable Collection<Integer> grpIds
     ) {
-        return CompletableFuture.supplyAsync(
+        return IgniteCompletableFuture.supplyAsync(
             new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, incIdx, grpIds),
             executor
         );
     }
 
     /** */
-    public CompletableFuture<IncrementalSnapshotVerifyResult> checkIncrementalSnapshot(
+    public IgniteCompletableFuture<IncrementalSnapshotVerifyResult> checkIncrementalSnapshot(
         SnapshotFileTree sft,
         int incIdx,
         @Nullable Consumer<Integer> totalCnsmr,
@@ -83,7 +83,7 @@ public class SnapshotChecker {
     ) {
         assert incIdx > 0;
 
-        return CompletableFuture.supplyAsync(
+        return IgniteCompletableFuture.supplyAsync(
             new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx, totalCnsmr, checkedCnsmr),
             executor
         );
@@ -169,7 +169,7 @@ public class SnapshotChecker {
      *
      * @see IgniteSnapshotManager#handlers()
      */
-    public CompletableFuture<Map<String, SnapshotHandlerResult<Message>>> invokeCustomHandlers(
+    public IgniteCompletableFuture<Map<String, SnapshotHandlerResult<Message>>> invokeCustomHandlers(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
@@ -179,7 +179,7 @@ public class SnapshotChecker {
     ) {
         // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
-        return CompletableFuture.supplyAsync(() -> {
+        return IgniteCompletableFuture.supplyAsync(() -> {
                 try {
                     SnapshotHandlerContext hndCnt = new SnapshotHandlerContext(
                         meta,
@@ -202,7 +202,7 @@ public class SnapshotChecker {
     }
 
     /** Launches local partitions checking. */
-    public CompletableFuture<SnapshotPartitionsVerifyHandlerResponse> checkPartitions(
+    public IgniteCompletableFuture<SnapshotPartitionsVerifyHandlerResponse> checkPartitions(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
@@ -211,7 +211,7 @@ public class SnapshotChecker {
         @Nullable Consumer<Integer> totalCnsmr,
         @Nullable Consumer<Integer> checkedPartCnsmr
     ) {
-        return CompletableFuture.supplyAsync(() -> {
+        return IgniteCompletableFuture.supplyAsync(() -> {
             SnapshotHandlerContext hctx = new SnapshotHandlerContext(
                 meta,
                 grps,

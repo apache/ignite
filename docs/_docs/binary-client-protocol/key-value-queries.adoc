@@ -1311,7 +1311,7 @@ Removes entries with given keys, notifying listeners and cache writers. See the 
 
 [cols="1,2",opts="header"]
 |===
-|Response Type   Description
+|Response Type|   Description
 |Header|  Response header.
 |===
 

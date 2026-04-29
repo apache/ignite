@@ -336,18 +336,23 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         srvcCfg.setMaxPerNodeCount(1);
         srvcCfg.setService(new DummyService());
 
-        ignite0.services().deploy(srvcCfg);
+        try {
+            ignite0.services().deploy(srvcCfg);
 
-        List<List<String>> srvsView = systemView(ignite0, SVCS_VIEW);
+            List<List<String>> srvsView = systemView(ignite0, SVCS_VIEW);
 
-        assertEquals(1, srvsView.size());
+            assertEquals(1, srvsView.size());
 
-        List<String> sysView = srvsView.get(0);
+            List<String> sysView = srvsView.get(0);
 
-        assertEquals(srvcCfg.getName(), sysView.get(1)); // name
-        assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
-        assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
-        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
+            assertEquals(srvcCfg.getName(), sysView.get(1)); // name
+            assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
+            assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
+            assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
+        }
+        finally {
+            ignite0.services().cancel("service");
+        }
     }
 
     /** */

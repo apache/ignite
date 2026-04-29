@@ -27,13 +27,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Node sends this message when it wants to propose new marshaller mapping and to ensure that there are no conflicts
  * with this mapping on other nodes in cluster.
- *
+ * <p>
  * After sending this message to the cluster sending node gets blocked until mapping is either accepted or rejected.
- *
+ * <p>
  * When it completes a pass around the cluster ring with no conflicts observed,
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
-public class MappingProposedMessage implements DiscoveryCustomMessage {
+public class MappingProposedMessage extends DiscoveryCustomMessage {
     /** */
     enum ProposalStatus {
         /** */
@@ -46,22 +46,18 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
 
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     UUID origNodeId;
 
     /** */
-    @Order(2)
+    @Order(1)
     MarshallerMappingItem mappingItem;
 
     /** */
-    @Order(3)
+    @Order(2)
     ProposalStatus status;
 
     /** */
-    @Order(4)
+    @Order(3)
     String conflictingClsName;
 
     /** */
@@ -74,27 +70,20 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
      * @param origNodeId Orig node id.
      */
     MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+        super(IgniteUuid.randomUuid());
+
         assert origNodeId != null;
 
-        id = IgniteUuid.randomUuid();
         this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
         status = ProposalStatus.SUCCESSFUL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /**
      * {@inheritDoc}
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        if (status == ProposalStatus.SUCCESSFUL)
-            return new MappingAcceptedMessage(mappingItem());
-        else
-            return null;
+        return status == ProposalStatus.SUCCESSFUL ? new MappingAcceptedMessage(mappingItem()) : null;
     }
 
     /** {@inheritDoc} */

@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 
 /**
  * Reducer of cache query results that sort result through all nodes. Note that it's assumed that every node
@@ -48,7 +48,7 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** @return Comparator for pages from nodes. */
-    protected abstract CompletableFuture<Comparator<NodePage<R>>> pageComparator();
+    protected abstract IgniteCompletableFuture<Comparator<NodePage<R>>> pageComparator();
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
