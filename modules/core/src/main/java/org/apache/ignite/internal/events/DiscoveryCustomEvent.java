@@ -112,11 +112,8 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
         if (msg instanceof ChangeGlobalStateMessage && ((ChangeGlobalStateMessage)msg).activate())
             return true;
 
-        if (msg instanceof SnapshotStartDiscoveryMessage) {
-            SnapshotStartDiscoveryMessage snapMsg = (SnapshotStartDiscoveryMessage)msg;
-
-            return snapMsg.needExchange() && snapMsg.needAssignPartitions();
-        }
+        if (msg instanceof SnapshotStartDiscoveryMessage)
+            return false;
 
         if (msg instanceof DynamicCacheChangeBatch) {
             DynamicCacheChangeBatch cacheMsg = (DynamicCacheChangeBatch)msg;
