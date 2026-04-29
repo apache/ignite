@@ -6687,14 +6687,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
-                            log.debug("Unknown connection detected (possible incompatible Ignite node, " +
+                            log.debug("Unknown connection detected (possible reasons: an incompatible Ignite node or " +
                                 "other software connecting to this Ignite port" +
                                 (!spi.isSslEnabled() ? ", or missing SSL configuration on remote node" : "") +
                                 ") [rmtAddr=" + rmtAddr +
                                 ", locAddr=" + sock.getLocalSocketAddress() +
                                 ", rcvdHdr=" + U.byteArray2HexString(buf) + ']');
 
-                        LT.warn(log, "Unknown connection detected (possible incompatible Ignite node, " +
+                        LT.warn(log, "Unknown connection detected (possible reasons: an incompatible Ignite node or " +
                             "other software connecting to this Ignite port" +
                             (!spi.isSslEnabled() ? ", or missing SSL configuration on remote node" : "") +
                             ") [rmtAddr=" + sock.getInetAddress() + ", rcvdHdr=" + U.byteArray2HexString(buf) + ']', true);
