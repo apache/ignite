@@ -291,6 +291,39 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     public void suspend() throws IgniteException;
 
     /**
+     * Creates a savepoint in the current transaction.
+     *
+     * @param name Savepoint name.
+     * @throws IllegalArgumentException If savepoint with the same name already exists.
+     */
+    public void savepoint(String name);
+
+    /**
+     * Creates a savepoint in the current transaction.
+     *
+     * @param name Savepoint name.
+     * @param overwrite Whether to overwrite an existing savepoint with the same name.
+     * @throws IllegalArgumentException If savepoint with the same name already exists and {@code overwrite} is
+     *      {@code false}.
+     */
+    public void savepoint(String name, boolean overwrite);
+
+    /**
+     * Rollback transaction changes to the specified savepoint.
+     *
+     * @param name Savepoint name.
+     * @throws IllegalArgumentException If savepoint with the given name does not exist.
+     */
+    public void rollbackToSavepoint(String name);
+
+    /**
+     * Releases a savepoint. If savepoint does not exist this operation does nothing.
+     *
+     * @param name Savepoint name.
+     */
+    public void releaseSavepoint(String name);
+
+    /**
      * Returns transaction's label.
      * <p>
      * Use {@link IgniteTransactions#withLabel(java.lang.String)} to assign a label to a newly created transaction.

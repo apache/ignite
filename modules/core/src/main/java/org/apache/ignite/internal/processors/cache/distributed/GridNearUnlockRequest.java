@@ -36,6 +36,10 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     @Order(0)
     public List<KeyCacheObject> keys;
 
+    /** Savepoint rollback flag. */
+    @Order(1)
+    public boolean forSavepoint;
+
     /**
      * Empty constructor.
      */
@@ -58,6 +62,20 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
      */
     public List<KeyCacheObject> keys() {
         return keys;
+    }
+
+    /**
+     * @return {@code True} if unlock request is sent during rollback to savepoint.
+     */
+    public boolean forSavepoint() {
+        return forSavepoint;
+    }
+
+    /**
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    public void forSavepoint(boolean forSavepoint) {
+        this.forSavepoint = forSavepoint;
     }
 
     /**
