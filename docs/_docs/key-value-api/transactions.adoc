@@ -106,6 +106,7 @@ Use `Transaction.rollbackToSavepoint(name)` to roll back transaction changes mad
 Savepoints created after the target savepoint are released as part of this operation.
 
 Use `Transaction.releaseSavepoint(name)` to release a savepoint without rolling back transaction changes.
+When a savepoint is released, all savepoints created after it are released as well.
 Releasing a missing savepoint is a no-op.
 
 [tabs]

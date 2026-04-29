@@ -133,4 +133,54 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
             tx.savepoint("sp", true);
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReleaseSavepointReleasesNestedSavepoints() throws Exception {
+        Ignite ignite = startGrid(0);
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        int key = 1;
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            cache.put(key, 1);
+            tx.savepoint("sp1");
+
+            cache.put(key, 2);
+            tx.savepoint("sp2");
+
+            cache.put(key, 3);
+            tx.savepoint("sp3");
+
+            cache.put(key, 4);
+
+            tx.releaseSavepoint("sp2");
+
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> {
+                    tx.rollbackToSavepoint("sp3");
+
+                    return null;
+                },
+                IllegalArgumentException.class,
+                "No such savepoint");
+
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> {
+                    tx.rollbackToSavepoint("sp2");
+
+                    return null;
+                },
+                IllegalArgumentException.class,
+                "No such savepoint");
+
+            tx.rollbackToSavepoint("sp1");
+
+            tx.commit();
+        }
+
+        assertEquals(Integer.valueOf(1), cache.get(key));
+    }
 }

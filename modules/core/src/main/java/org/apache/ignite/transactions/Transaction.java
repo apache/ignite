@@ -333,8 +333,8 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Releases a savepoint. If savepoint does not exist this operation does nothing.
      * <p>
-     * Releasing a savepoint does not roll back transaction changes. It only removes the marker so it can no longer be
-     * used by {@link #rollbackToSavepoint(String)}.
+     * Releasing a savepoint does not roll back transaction changes. It removes the specified savepoint and all
+     * savepoints created after it, so none of them can be used by {@link #rollbackToSavepoint(String)} anymore.
      *
      * @param name Savepoint name.
      * @throws IgniteException If savepoints are not supported for this transaction.

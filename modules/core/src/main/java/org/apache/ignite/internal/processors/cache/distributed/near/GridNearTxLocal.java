@@ -3116,8 +3116,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             ListIterator<TxSavepoint> spIter = findSavepoint(name);
 
-            if (spIter != null)
+            if (spIter != null) {
                 spIter.remove();
+
+                while (spIter.hasNext()) {
+                    spIter.next();
+                    spIter.remove();
+                }
+            }
         }
     }
 
