@@ -40,6 +40,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Currently, savepoint API is supported only for pessimistic transactions.
  */
 public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
+    /** */
+    private static Ignite ignite;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
@@ -52,8 +55,22 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        ignite = startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        ignite.cache(DEFAULT_CACHE_NAME).clear();
 
         super.afterTest();
     }
@@ -63,8 +80,6 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSavepointRejectedForOptimisticTx() throws Exception {
-        Ignite ignite = startGrid(0);
-
         try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             GridTestUtils.assertThrowsAnyCause(log,
                 () -> {
@@ -81,8 +96,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSeveralSavepoints() throws Exception {
-        Ignite ignite = startGrid(0);
+    public void testRollabackSeveralSavepoints() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int key = 1;
@@ -115,8 +129,6 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDuplicateSavepointWithoutOverwriteThrows() throws Exception {
-        Ignite ignite = startGrid(0);
-
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             tx.savepoint("sp");
 
@@ -140,7 +152,6 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReleaseSavepointReleasesNestedSavepoints() throws Exception {
-        Ignite ignite = startGrid(0);
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int key = 1;

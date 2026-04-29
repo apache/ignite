@@ -465,7 +465,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param holder Holder to copy.
      * @return Copy.
      */
-    private static TxEntryValueHolder copyHolder(@Nullable TxEntryValueHolder holder) {
+    private static @Nullable TxEntryValueHolder copyHolder(@Nullable TxEntryValueHolder holder) {
         if (holder == null)
             return null;
 

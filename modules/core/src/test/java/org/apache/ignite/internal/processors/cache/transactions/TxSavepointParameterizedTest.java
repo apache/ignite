@@ -222,7 +222,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         CountDownLatch finishFirstTxLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 2)) {
+            try (Transaction tx = startTransaction(ignite0, 2)) {
                 cache0.put(node0Key, 1);
 
                 tx.savepoint("sp");
@@ -241,13 +241,15 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
             }
         });
 
-        ableToUpdate(node1Key);
+        updateKeyFormPrimary(node1Key);
 
         assertFalse(fut.isDone());
 
         // TODO: IGNITE-28612 Entry visibility violation in transactional replication cache with one backup and near.
-        if (initKeies && useNearCache && backups == 1 && spKeyOnTxInitiator && !replicated)
-            GridTestUtils.waitForCondition(() -> Integer.valueOf(42).equals(cache0.get(node1Key)), 10_000);
+        if (initKeies && useNearCache && backups == 1 && spKeyOnTxInitiator && !replicated) {
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                Integer.valueOf(42).equals(cache0.get(node1Key)), 10_000));
+        }
 
         assertEquals(Integer.valueOf(42), cache0.get(node1Key));
 
@@ -256,6 +258,16 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         fut.get(10_000);
 
         assertEquals(Integer.valueOf(2), cache0.get(node1Key));
+    }
+
+    /**
+     * Starts a transaction with the given size.
+     * @param ignite Transaction initiator.
+     * @param txSize Transaction size.
+     * @return Transaction.
+     */
+    private Transaction startTransaction(Ignite ignite, int txSize) {
+        return ignite.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, txSize);
     }
 
     /**
@@ -271,7 +283,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
             cache0.put(key, -1);
         }
 
-        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 1)) {
+        try (Transaction tx = startTransaction(ignite0, 1)) {
             cache0.put(key, 1);
 
             tx.savepoint("sp");
@@ -289,7 +301,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
 
         assertEquals(Integer.valueOf(2), cache0.get(key));
 
-        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 1)) {
+        try (Transaction tx = startTransaction(ignite0, 1)) {
             tx.savepoint("sp");
 
             tx.releaseSavepoint("sp");
@@ -322,7 +334,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         CountDownLatch finishFirstTxLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 1)) {
+            try (Transaction tx = startTransaction(ignite0, 1)) {
                 tx.savepoint("sp");
 
                 cache0.put(key, 1);
@@ -340,7 +352,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
 
         assertTrue(savepointRolledBackLatch.await(10, TimeUnit.SECONDS));
 
-        ableToUpdate(key);
+        updateKeyFormPrimary(key);
 
         finishFirstTxLatch.countDown();
 
@@ -366,7 +378,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
             cache0.put(key3, -1);
         }
 
-        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 3)) {
+        try (Transaction tx = startTransaction(ignite0, 3)) {
             cache0.put(key1, 1);
 
             tx.savepoint("sp");
@@ -412,7 +424,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 2)) {
+            try (Transaction tx = startTransaction(client, 2)) {
                 nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
 
                 Integer val1 = cache.get(key1);
@@ -478,7 +490,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 2)) {
+            try (Transaction tx = startTransaction(ignite0, 2)) {
                 nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
 
                 tx.savepoint("sp");
@@ -519,8 +531,8 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         assertNoTxStateKeyOnNode(nearVerRef[0], keyOnInitiator);
         assertNoTxStateKeyOnNode(nearVerRef[0], keyOnOtherNode);
 
-        ableToUpdate(keyOnInitiator);
-        ableToUpdate(keyOnOtherNode);
+        updateKeyFormPrimary(keyOnInitiator);
+        updateKeyFormPrimary(keyOnOtherNode);
 
         finishTxLatch.countDown();
 
@@ -551,7 +563,7 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
         GridCacheVersion[] nearVerRef = new GridCacheVersion[1];
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, transactionIsolation, 30_000, 2)) {
+            try (Transaction tx = startTransaction(ignite0, 2)) {
                 nearVerRef[0] = ((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion();
 
                 cache0.put(keepTxAliveKey, 1);
@@ -591,12 +603,11 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that a key is able to be updated.
+     * Updates a key from its primary node.
      *
      * @param key Key to update.
-     * @throws Exception If failed.
      */
-    private void ableToUpdate(int key) {
+    private void updateKeyFormPrimary(int key) {
         Ignite updateNode = primaryNode(key, DEFAULT_CACHE_NAME);
 
         updateNode.cache(DEFAULT_CACHE_NAME).put(key, 42);
@@ -674,7 +685,8 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Gets key mapped to a given primary.
+     * Gets key mapped to given primary and backups.
+     * Primary is determined by primaryNode parameter, backup nodes are determined by spKeyOnTxInitiator parameter.
      *
      * @param txInitiator Transaction initiator.
      * @param primaryNode Node that should be primary.

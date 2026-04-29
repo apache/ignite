@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
@@ -224,8 +224,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Tx label. */
     @Nullable private final String lb;
 
-    /** Savepoints created for this transaction. */
-    private LinkedList<TxSavepoint> savepoints;
+    /** Savepoints created for this transaction. Guarded by {@code this}. */
+    private List<TxSavepoint> savepoints;
 
     /**
      * @param ctx Cache registry.
@@ -3060,7 +3060,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             }
 
             if (savepoints == null)
-                savepoints = new LinkedList<>();
+                savepoints = new ArrayList<>();
 
             savepoints.add(new TxSavepoint(name, savepointState()));
         }
