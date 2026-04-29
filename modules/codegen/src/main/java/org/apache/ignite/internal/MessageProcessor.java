@@ -119,7 +119,7 @@ public class MessageProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "Message class doesn't have any ordered fields." +
-                        "Annotate fields with @Order or add to known empty classes (MessageProcessor#EMPTY_MESSAGES)",
+                        "Annotate fields with @Order or add to known empty classes MessageProcessor#EMPTY_MESSAGES",
                     clazz);
 
             }
