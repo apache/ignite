@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -31,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -76,7 +76,7 @@ public class DmsDataWriterWorker extends GridWorker {
      * This task is used to pause processing of the {@code updateQueue}. If this task completed it means that all the updates
      * prior to it already flushed to the local metastorage.
      */
-    private volatile Future<?> suspendFut = CompletableFuture.completedFuture(AWAIT);
+    private volatile Future<?> suspendFut = IgniteCompletableFuture.completedFuture(AWAIT);
 
     /** */
     public DmsDataWriterWorker(
@@ -117,7 +117,7 @@ public class DmsDataWriterWorker extends GridWorker {
      */
     public void suspend(IgniteInternalFuture<?> compFut) {
         if (isCancelled())
-            suspendFut = CompletableFuture.completedFuture(AWAIT);
+            suspendFut = IgniteCompletableFuture.completedFuture(AWAIT);
         else {
             latch = new CountDownLatch(1);
 

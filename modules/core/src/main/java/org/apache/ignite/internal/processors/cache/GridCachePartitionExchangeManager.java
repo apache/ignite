@@ -95,7 +95,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.lat
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -617,8 +617,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (exchangeTopVer >= locNodeJoinTopVer)
                     exchangeFuture(msg.exchangeId(), null, null, null, null).onExchangeFailureMessage(evt.eventNode(), msg);
             }
-            else if (customMsg instanceof SnapshotDiscoveryMessage
-                && ((SnapshotDiscoveryMessage)customMsg).needExchange()) {
+            else if (customMsg instanceof SnapshotStartDiscoveryMessage
+                && ((SnapshotStartDiscoveryMessage)customMsg).needExchange()) {
                 exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);

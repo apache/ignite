@@ -99,7 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -988,7 +988,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage)
+                else if (msg instanceof SnapshotStartDiscoveryMessage)
                     exchange = onCustomMessageNoAffinityChange();
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange();
@@ -3824,8 +3824,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             finalizePartitionCounters();
                     }
                 }
-                else if (discoveryCustomMsg instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMsg).needAssignPartitions()) {
+                else if (discoveryCustomMsg instanceof SnapshotStartDiscoveryMessage
+                    && ((SnapshotStartDiscoveryMessage)discoveryCustomMsg).needAssignPartitions()) {
                     markAffinityReassign();
 
                     assignPartitionsStates(null);
@@ -4636,8 +4636,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage discoveryCustomMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
-                if (discoveryCustomMsg instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMsg).needAssignPartitions())
+                if (discoveryCustomMsg instanceof SnapshotStartDiscoveryMessage
+                    && ((SnapshotStartDiscoveryMessage)discoveryCustomMsg).needAssignPartitions())
                     markAffinityReassign();
             }
 

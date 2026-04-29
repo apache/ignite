@@ -121,7 +121,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
@@ -398,7 +398,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (msg instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage msg0 = (ClientCacheChangeDummyDiscoveryMessage)msg;
 
-            return msg0;
+            return new ClientCacheChangeDummyDiscoveryTask(remoteSecurityContext(ctx), msg0);
         }
         else if (msg instanceof CacheStatisticsModeChangeMessage) {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
@@ -432,10 +432,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.query().onNodeLeave(task0.node());
         }
-        else if (task instanceof ClientCacheChangeDummyDiscoveryMessage) {
-            ClientCacheChangeDummyDiscoveryMessage task0 = (ClientCacheChangeDummyDiscoveryMessage)task;
+        else if (task instanceof ClientCacheChangeDummyDiscoveryTask) {
+            ClientCacheChangeDummyDiscoveryTask task0 = (ClientCacheChangeDummyDiscoveryTask)task;
 
-            sharedCtx.affinity().processClientCachesRequests(task0);
+            sharedCtx.affinity().processClientCachesRequests(task0.message());
         }
         else if (task instanceof ClientCacheUpdateTimeout) {
             ClientCacheUpdateTimeout task0 = (ClientCacheUpdateTimeout)task;
@@ -446,11 +446,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheStatisticsModeChangeTask task0 = (CacheStatisticsModeChangeTask)task;
 
             processStatisticsModeChange(task0.message());
-        }
-        else if (task instanceof TxTimeoutOnPartitionMapExchangeChangeTask) {
-            TxTimeoutOnPartitionMapExchangeChangeTask task0 = (TxTimeoutOnPartitionMapExchangeChangeTask)task;
-
-            sharedCtx.tm().processTxTimeoutOnPartitionMapExchangeChange(task0.message());
         }
         else if (task instanceof StopCachesOnClientReconnectExchangeTask) {
             StopCachesOnClientReconnectExchangeTask task0 = (StopCachesOnClientReconnectExchangeTask)task;
@@ -4237,8 +4232,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        if (msg instanceof SnapshotDiscoveryMessage &&
-            ((SnapshotDiscoveryMessage)msg).needExchange())
+        if (msg instanceof SnapshotStartDiscoveryMessage &&
+            ((SnapshotStartDiscoveryMessage)msg).needExchange())
             return true;
 
         if (msg instanceof WalStateAbstractMessage) {

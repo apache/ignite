@@ -28,24 +28,20 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Message is part of communication via discovery protocol.
- *
+ * <p>
  * It is used when a node (say node A) cannot establish a communication connection to other node (node B) in topology
  * due to firewall or network configuration and sends this message requesting inverse connection:
  * node B receives request and opens communication connection to node A
  * thus allowing both nodes to communicate to each other.
  */
-public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMessage {
-    /** Message id. */
-    @Order(0)
-    IgniteUuid id;
-
+public class TcpConnectionRequestDiscoveryMessage extends DiscoveryCustomMessage {
     /** Receiver node id. */
-    @Order(1)
+    @Order(0)
     @GridToStringInclude
     UUID receiverNodeId;
 
     /** Connection index. */
-    @Order(2)
+    @Order(1)
     @GridToStringInclude
     int connIdx;
 
@@ -54,7 +50,8 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
      * @param connIdx Connection index.
      */
     public TcpConnectionRequestDiscoveryMessage(UUID receiverNodeId, int connIdx) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         this.receiverNodeId = receiverNodeId;
         this.connIdx = connIdx;
     }
@@ -62,11 +59,6 @@ public class TcpConnectionRequestDiscoveryMessage implements DiscoveryCustomMess
     /** Constructor for {@link MessageFactory}. */
     public TcpConnectionRequestDiscoveryMessage() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** */

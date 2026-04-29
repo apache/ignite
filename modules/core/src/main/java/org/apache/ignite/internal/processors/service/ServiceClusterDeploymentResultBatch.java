@@ -33,17 +33,13 @@ import org.jetbrains.annotations.Nullable;
  * <p/>
  * Contains collection of {@link ServiceClusterDeploymentResult}.
  */
-public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessage {
-    /** Unique custom message ID. */
-    @Order(0)
-    IgniteUuid id;
-
+public class ServiceClusterDeploymentResultBatch extends DiscoveryCustomMessage {
     /** Deployment process id. */
-    @Order(1)
+    @Order(0)
     ServiceDeploymentProcessId depId;
 
     /** Services deployments results. */
-    @Order(2)
+    @Order(1)
     @GridToStringInclude
     Collection<ServiceClusterDeploymentResult> results;
 
@@ -59,9 +55,12 @@ public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessa
      * @param depId Deployment process id.
      * @param results Services deployments results.
      */
-    public ServiceClusterDeploymentResultBatch(@NotNull ServiceDeploymentProcessId depId,
-        @NotNull Collection<ServiceClusterDeploymentResult> results) {
-        this.id = IgniteUuid.randomUuid();
+    public ServiceClusterDeploymentResultBatch(
+        @NotNull ServiceDeploymentProcessId depId,
+        @NotNull Collection<ServiceClusterDeploymentResult> results
+    ) {
+        super(IgniteUuid.randomUuid());
+
         this.depId = depId;
         this.results = results;
     }
@@ -95,13 +94,7 @@ public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessa
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        // No-op.
         return null;
     }
 
