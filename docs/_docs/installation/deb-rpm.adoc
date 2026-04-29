@@ -58,7 +58,6 @@ This will install the following files into your system:
 |/var/lib/apache-ignite|  /usr/share/apache-ignite/work|   Ignite work directory
 |/usr/share/doc/apache-ignite     ||   Documentation
 |/usr/share/license/apache-ignite-{version} ||     Licenses
-|/etc/systemd/system |    systemd service configuration
 
 |===
 

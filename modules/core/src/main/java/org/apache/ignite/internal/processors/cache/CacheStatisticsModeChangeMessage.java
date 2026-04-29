@@ -30,27 +30,23 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsModeChangeMessage extends DiscoveryCustomMessage {
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;
 
     /** Statistics enabled flag mask. */
     private static final byte ENABLED_MASK = 0x02;
 
-    /** Custom message ID. */
-    @Order(0)
-    IgniteUuid id;
-
     /** Request id. */
-    @Order(1)
+    @Order(0)
     UUID reqId;
 
     /** Cache names. */
-    @Order(2)
+    @Order(1)
     Collection<String> caches;
 
     /** Flags. */
-    @Order(3)
+    @Order(2)
     byte flags;
 
     /**
@@ -66,14 +62,12 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param req Request message.
      */
     private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         reqId = req.reqId;
         caches = null;
 
-        if (req.enabled())
-            flags = ENABLED_MASK;
-        else
-            flags = 0;
+        flags = req.enabled() ? ENABLED_MASK : 0;
     }
 
     /**
@@ -82,7 +76,8 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param caches Collection of cache names.
      */
     public CacheStatisticsModeChangeMessage(Collection<String> caches, boolean enabled) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         reqId = UUID.randomUUID();
         this.caches = Collections.unmodifiableCollection(caches);
 
@@ -92,11 +87,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
             flags |= ENABLED_MASK;
 
         this.flags = flags;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Set;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -30,32 +29,19 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache change batch.
  */
-public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message {
-    /** Discovery custom message ID. */
-    @Order(0)
-    IgniteUuid id;
-
+public class DynamicCacheChangeBatch extends DiscoveryCustomMessage {
     /** Change requests. */
     @GridToStringInclude
-    @Order(1)
+    @Order(0)
     Collection<DynamicCacheChangeRequest> reqs;
 
     /** Cache updates to be executed on exchange. */
     private ExchangeActions exchangeActions;
-
-    /** */
-    @Order(2)
-    boolean startCaches;
-
-    /** Restarting caches. */
-    @Order(3)
-    Set<String> restartingCaches;
 
     /** Affinity (cache related) services updates to be processed on services deployment process. */
     @GridToStringExclude
@@ -70,15 +56,11 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message 
      * @param reqs Requests.
      */
     public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs) {
+        super(IgniteUuid.randomUuid());
+
         assert !F.isEmpty(reqs) : reqs;
 
-        id = IgniteUuid.randomUuid();
         this.reqs = reqs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */
@@ -97,13 +79,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message 
      */
     public Collection<DynamicCacheChangeRequest> requests() {
         return reqs;
-    }
-
-    /**
-     * @return {@code True} if request should trigger partition exchange.
-     */
-    public boolean exchangeNeeded() {
-        return exchangeActions != null;
     }
 
     /**
@@ -134,36 +109,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage, Message 
      */
     public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
         this.serviceDeploymentActions = serviceDeploymentActions;
-    }
-
-    /**
-     * @return {@code True} if required to start all caches on client node.
-     */
-    public boolean startCaches() {
-        return startCaches;
-    }
-
-    /**
-     * @param restartingCaches Restarting caches.
-     */
-    public DynamicCacheChangeBatch restartingCaches(Set<String> restartingCaches) {
-        this.restartingCaches = restartingCaches;
-
-        return this;
-    }
-
-    /**
-     * @return Set of restarting caches.
-     */
-    public Set<String> restartingCaches() {
-        return restartingCaches;
-    }
-
-    /**
-     * @param startCaches {@code True} if required to start all caches on client node.
-     */
-    public void startCaches(boolean startCaches) {
-        this.startCaches = startCaches;
     }
 
     /** {@inheritDoc} */

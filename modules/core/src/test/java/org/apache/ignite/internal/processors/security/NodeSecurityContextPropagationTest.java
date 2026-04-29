@@ -53,7 +53,6 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -185,7 +184,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                DiscoverySpiCustomMessage customMsg = getFieldValue(msg, "serMsg");
+                DiscoverySpiCustomMessage customMsg = ((TcpDiscoveryCustomEventMessage)msg).message();
 
                 assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 

@@ -20,42 +20,35 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * The task for changing transaction timeout on partition map exchange.
- */
-public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
+/** Client cache change dummy task for exchange worker. */
+public class ClientCacheChangeDummyDiscoveryTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Discovery message. */
-    private final TxTimeoutOnPartitionMapExchangeChangeMessage msg;
+    private final ClientCacheChangeDummyDiscoveryMessage msg;
 
     /**
-     * Constructor.
-     *
      * @param secCtx Security context in which current task must be executed.
-     * @param msg Discovery message.
+     * @param msg Message.
      */
-    public TxTimeoutOnPartitionMapExchangeChangeTask(SecurityContext secCtx, TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+    public ClientCacheChangeDummyDiscoveryTask(SecurityContext secCtx, ClientCacheChangeDummyDiscoveryMessage msg) {
         super(secCtx);
 
         assert msg != null;
-        this.msg = msg;
-    }
 
-    /**
-     * Gets discovery message.
-     *
-     * @return Discovery message.
-     */
-    public TxTimeoutOnPartitionMapExchangeChangeMessage message() {
-        return msg;
+        this.msg = msg;
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
-        return false;
+        return true;
+    }
+
+    /** @return Message. */
+    public ClientCacheChangeDummyDiscoveryMessage message() {
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxTimeoutOnPartitionMapExchangeChangeTask.class, this);
+        return S.toString(ClientCacheChangeDummyDiscoveryTask.class, this);
     }
 }
