@@ -421,6 +421,10 @@
                         <artifactId>build-helper-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <!--
+                                    Even if automatically generated source files are excluded from Javadoc generation,
+                                    Javadoc Builder still requires them to be present in the source path for import checking.
+                                 -->
                                 <id>add-generated-sources</id>
                                 <phase>validate</phase>
                             </execution>
