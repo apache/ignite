@@ -126,6 +126,8 @@ public class PerformingTransactions {
                 tx.commit();
             }
             // end::savepoints[]
+            System.out.println(cache.get("order:1"));
+            System.out.println(cache.get("shipping:1"));
         }
     }
 
