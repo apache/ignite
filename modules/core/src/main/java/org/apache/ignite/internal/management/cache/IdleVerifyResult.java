@@ -115,10 +115,16 @@ public class IdleVerifyResult implements Message, Serializable {
         this.txHashConflicts = txHashConflicts;
         this.partiallyCommittedTxs = TcpDiscoveryNode.downcast(partiallyCommittedTxs);
 
-        if (exceptions != null) {
+        if (!F.isEmpty(partiallyCommittedTxs)) {
+            this.partiallyCommittedTxs = U.newHashMap(partiallyCommittedTxs.size());
+
+            exceptions.forEach((n, e) -> exceptionsMsgs.put(TcpDiscoveryNode.of(n), new ErrorMessage(e)));
+        }
+
+        if (!F.isEmpty(exceptions)) {
             exceptionsMsgs = U.newHashMap(exceptions.size());
 
-            exceptions.forEach((n, e) -> exceptionsMsgs.put((TcpDiscoveryNode)n, new ErrorMessage(e)));
+            exceptions.forEach((n, e) -> exceptionsMsgs.put(TcpDiscoveryNode.of(n), new ErrorMessage(e)));
         }
     }
 
@@ -162,10 +168,7 @@ public class IdleVerifyResult implements Message, Serializable {
      * @return Exceptions on nodes.
      */
     public Map<ClusterNode, Exception> exceptions() {
-        if (exceptionsMsgs == null)
-            return null;
-
-        if (exceptionsMsgs.isEmpty())
+        if (F.isEmpty(exceptionsMsgs))
             return Collections.emptyMap();
 
         Map<ClusterNode, Exception> res = TcpDiscoveryNode.upcast(U.newHashMap(exceptionsMsgs.size()));
