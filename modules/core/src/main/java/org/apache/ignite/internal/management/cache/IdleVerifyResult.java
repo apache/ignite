@@ -118,7 +118,7 @@ public class IdleVerifyResult implements Message, Serializable {
         if (!F.isEmpty(partiallyCommittedTxs)) {
             this.partiallyCommittedTxs = U.newHashMap(partiallyCommittedTxs.size());
 
-            exceptions.forEach((n, e) -> exceptionsMsgs.put(TcpDiscoveryNode.of(n), new ErrorMessage(e)));
+            partiallyCommittedTxs.forEach((n, cl) -> partiallyCommittedTxs.put(TcpDiscoveryNode.of(n), cl));
         }
 
         if (!F.isEmpty(exceptions)) {
@@ -257,8 +257,8 @@ public class IdleVerifyResult implements Message, Serializable {
 
         printer.accept("The check procedure has failed, conflict partitions has been found: [" +
             "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
-            + (txHashConflicts == null ? "" : ", txHashConflicts=" + txHashConflicts.size())
-            + (partiallyCommittedTxs == null ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
+            + (F.isEmpty(txHashConflicts) ? "" : ", txHashConflicts=" + txHashConflicts.size())
+            + (F.isEmpty(partiallyCommittedTxs) ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
             + "]" + nl());
 
         Set<PartitionKey> allConflicts = new HashSet<>();

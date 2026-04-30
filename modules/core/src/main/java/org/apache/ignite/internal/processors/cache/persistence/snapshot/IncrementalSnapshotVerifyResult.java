@@ -104,6 +104,9 @@ public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
 
         if (partHashResBytes != null)
             partHashRes = U.unmarshal(marsh, partHashResBytes, clsLdr);
+
+        txHashResBytes = null;
+        partHashResBytes = null;
     }
 
 }
