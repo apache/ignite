@@ -171,8 +171,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** */
     private ContinuousRoutinesInfo routinesInfo;
 
-    /** */
-    private int discoProtoVer;
+    /** Whether Discovery SPI uses immutable custom messages. */
+    private boolean immutableDiscoCustomMsg;
 
     /**
      * @param ctx Kernal context.
@@ -188,9 +188,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             new ReadOnlyCollectionView2X<>(rmtInfos.entrySet(), locInfos.entrySet()),
             e -> new ContinuousQueryView(e.getKey(), e.getValue()));
 
-        discoProtoVer = ctx.discovery().mutableCustomMessages() ? 1 : 2;
+        immutableDiscoCustomMsg = !ctx.discovery().mutableCustomMessages();
 
-        if (discoProtoVer == 2)
+        if (immutableDiscoCustomMsg)
             routinesInfo = new ContinuousRoutinesInfo();
 
         retryDelay = ctx.config().getNetworkSendRetryDelay();
@@ -211,12 +211,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessage msg) {
-                    assert discoProtoVer == 1 : discoProtoVer;
+                    assert !immutableDiscoCustomMsg;
 
                     if (ctx.isStopping())
                         return;
 
-                    processStartRequest(snd, msg);
+                    processStartRequestMutable(snd, msg);
                 }
             });
 
@@ -225,12 +225,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessageV2 msg) {
-                    assert discoProtoVer == 2 : discoProtoVer;
+                    assert immutableDiscoCustomMsg;
 
                     if (ctx.isStopping())
                         return;
 
-                    processStartRequestV2(topVer, snd, msg);
+                    processStartRequestImmutable(topVer, snd, msg);
                 }
             });
 
@@ -251,7 +251,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineDiscoveryMessage msg) {
-                    if (discoProtoVer == 2)
+                    if (immutableDiscoCustomMsg)
                         routinesInfo.removeRoutine(msg.routineId);
 
                     if (ctx.isStopping())
@@ -408,7 +408,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (discoProtoVer == 2) {
+        if (immutableDiscoCustomMsg) {
             routinesInfo.collectJoiningNodeData(dataBag);
 
             return;
@@ -422,7 +422,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (discoProtoVer == 2) {
+        if (immutableDiscoCustomMsg) {
             routinesInfo.collectGridNodeData(dataBag);
 
             return;
@@ -519,7 +519,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 ']');
         }
 
-        if (discoProtoVer == 2) {
+        if (immutableDiscoCustomMsg) {
             if (data.hasJoiningNodeData()) {
                 ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
                     data.joiningNodeData();
@@ -527,19 +527,19 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 for (ContinuousRoutineInfo routineInfo : nodeData.startedRoutines) {
                     routinesInfo.addRoutineInfo(routineInfo);
 
-                    onDiscoveryDataReceivedV2(routineInfo);
+                    onDiscoveryDataReceivedImmutable(routineInfo);
                 }
             }
         }
         else {
             if (data.hasJoiningNodeData())
-                onDiscoveryDataReceivedV1((DiscoveryData)data.joiningNodeData());
+                onDiscoveryDataReceivedMutable((DiscoveryData)data.joiningNodeData());
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        if (discoProtoVer == 2) {
+        if (immutableDiscoCustomMsg) {
             if (data.commonData() != null) {
                 ContinuousRoutinesCommonDiscoveryData commonData =
                     (ContinuousRoutinesCommonDiscoveryData)data.commonData();
@@ -550,7 +550,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     routinesInfo.addRoutineInfo(routineInfo);
 
-                    onDiscoveryDataReceivedV2(routineInfo);
+                    onDiscoveryDataReceivedImmutable(routineInfo);
                 }
             }
         }
@@ -559,18 +559,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (nodeSpecData != null) {
                 for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                    onDiscoveryDataReceivedV1((DiscoveryData)e.getValue());
+                    onDiscoveryDataReceivedMutable((DiscoveryData)e.getValue());
             }
         }
     }
 
     /**
      * Processes data received in a discovery message.
-     * Used with protocol version 1.
+     * Used when Discovery SPI supports mutable custom messages.
      *
      * @param data received discovery data.
      */
-    private void onDiscoveryDataReceivedV1(DiscoveryData data) {
+    private void onDiscoveryDataReceivedMutable(DiscoveryData data) {
         if (data != null) {
             for (DiscoveryDataItem item : data.items) {
                 if (!locInfos.containsKey(item.routineId)) {
@@ -610,11 +610,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /**
      * Processes data received in a discovery message.
-     * Used with protocol version 2.
+     * Used when Discovery SPI doesn't support mutable custom messages.
      *
      * @param routineInfo Routine info.
      */
-    private void onDiscoveryDataReceivedV2(ContinuousRoutineInfo routineInfo) {
+    private void onDiscoveryDataReceivedImmutable(ContinuousRoutineInfo routineInfo) {
         IgnitePredicate<ClusterNode> nodeFilter;
 
         try {
@@ -792,7 +792,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         LocalRoutineInfo routineInfo = new LocalRoutineInfo(ctx.localNodeId(), prjPred, hnd, 1, 0, true);
 
-        if (discoProtoVer == 2) {
+        if (immutableDiscoCustomMsg) {
             routinesInfo.addRoutineInfo(createRoutineInfo(
                 ctx.localNodeId(),
                 routineId,
@@ -991,7 +991,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         reqData.prepareMarshal(ctx);
 
-        if (discoProtoVer == 1) {
+        if (!immutableDiscoCustomMsg) {
             StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(
                     routineId,
                     reqData);
@@ -1001,13 +1001,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             return msg;
         }
-        else {
-            assert discoProtoVer == 2 : discoProtoVer;
-
-            return new StartRoutineDiscoveryMessageV2(
-                routineId,
-                reqData);
-        }
+        else
+            return new StartRoutineDiscoveryMessageV2(routineId, reqData);
     }
 
     /**
@@ -1077,7 +1072,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     unregisterHandler(routineId, routine.hnd, true);
                 }
 
-                if (!stop && discoProtoVer == 2)
+                if (!stop && immutableDiscoCustomMsg)
                     stop = routinesInfo.routineExists(routineId);
 
                 // Finish if routine is not found (wrong ID is provided).
@@ -1265,7 +1260,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         clientInfos.clear();
 
-        if (discoProtoVer == 2)
+        if (immutableDiscoCustomMsg)
             routinesInfo.onClientDisconnected(locInfos.keySet());
 
         if (log.isDebugEnabled()) {
@@ -1352,7 +1347,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param node Sender.
      * @param req Start request.
      */
-    private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
+    private void processStartRequestMutable(ClusterNode node, StartRoutineDiscoveryMessage req) {
         if (node.id().equals(ctx.localNodeId()))
             return;
 
@@ -1471,7 +1466,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param snd Sender.
      * @param msg Start request.
      */
-    private void processStartRequestV2(final AffinityTopologyVersion topVer,
+    private void processStartRequestImmutable(final AffinityTopologyVersion topVer,
         final ClusterNode snd,
         final StartRoutineDiscoveryMessageV2 msg) {
         StartRequestData reqData = msg.startRequestData();
@@ -1913,7 +1908,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-            if (discoProtoVer == 2) {
+            if (immutableDiscoCustomMsg) {
                 routinesInfo.onNodeFail(nodeId);
 
                 for (StartFuture fut : startFuts.values())
