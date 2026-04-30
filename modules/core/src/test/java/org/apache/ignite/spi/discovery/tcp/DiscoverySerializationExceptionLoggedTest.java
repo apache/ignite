@@ -26,9 +26,12 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.NonNull;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 
 /** */
 public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstractTest {
@@ -55,7 +58,7 @@ public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstrac
 
                     failureHandlerLatch.countDown();
 
-                    return true;
+                    return false;
                 }
             });
     }
@@ -76,6 +79,7 @@ public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstrac
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "fasle")
     public void testSerdesExceptionLogged() throws Exception {
         LogListener serdesErrLsnr = errMessageListener();
 
@@ -93,12 +97,10 @@ public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstrac
     public void testSerdesExceptionLoggedOnClient() throws Exception {
         LogListener serdesErrLsnr = errMessageListener();
 
-        failureHandlerLatch = new CountDownLatch(1);
-
         startClientGrid(3).context().discovery().sendCustomEvent(new NotRegisteredMessage(""));
 
-        assertTrue(failureHandlerLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-        assertTrue(errMsgInFailureHandlerFound);
+        // Client node doesn't call failure handler to prevent JVM stop on error.
+        // Assume, user will write client fail handler manually.
         assertTrue(serdesErrLsnr.check(getTestTimeout() / 2));
     }
 
