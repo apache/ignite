@@ -17,26 +17,57 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jspecify.annotations.NonNull;
 import org.junit.Test;
 
 /** */
 public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstractTest {
     /** */
+    private static final String EXP_ERR_MSG = "No registration for class " + NotRegisteredMessage.class.getSimpleName();
+
+    /** */
     private ListeningTestLogger lsnrLog;
+
+    /** */
+    private volatile boolean errMsgInFailureHandlerFound;
+
+    /** */
+    private volatile CountDownLatch failureHandlerLatch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setGridLogger(lsnrLog);
+            .setGridLogger(lsnrLog)
+            .setFailureHandler(new NoOpFailureHandler() {
+                /** {@inheritDoc} */
+                @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                    errMsgInFailureHandlerFound = Objects.equals(EXP_ERR_MSG, failureCtx.error().getMessage());
+
+                    failureHandlerLatch.countDown();
+
+                    return true;
+                }
+            });
     }
+
+    // TODO: check case when message registered on sender and NOT registered on receiver.
+    // Both: server and client.
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
+
+        errMsgInFailureHandlerFound = false;
 
         lsnrLog = new ListeningTestLogger(log);
 
@@ -46,30 +77,39 @@ public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstrac
     /** */
     @Test
     public void testSerdesExceptionLogged() throws Exception {
-        // ??? Why MessageWrapper?
-        LogListener serdesErrLsnr = LogListener
-            .matches("No registration for class " + TestMessage.class.getSimpleName())
-            .build();
+        LogListener serdesErrLsnr = errMessageListener();
 
-        lsnrLog.registerListener(serdesErrLsnr);
+        failureHandlerLatch = new CountDownLatch(1);
 
-        grid(1).context().discovery().sendCustomEvent(new TestMessage(""));
+        grid(1).context().discovery().sendCustomEvent(new NotRegisteredMessage(""));
 
+        assertTrue(failureHandlerLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertTrue(errMsgInFailureHandlerFound);
         assertTrue(serdesErrLsnr.check(getTestTimeout() / 2));
     }
 
     /** */
     @Test
     public void testSerdesExceptionLoggedOnClient() throws Exception {
+        LogListener serdesErrLsnr = errMessageListener();
+
+        failureHandlerLatch = new CountDownLatch(1);
+
+        startClientGrid(3).context().discovery().sendCustomEvent(new NotRegisteredMessage(""));
+
+        assertTrue(failureHandlerLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertTrue(errMsgInFailureHandlerFound);
+        assertTrue(serdesErrLsnr.check(getTestTimeout() / 2));
+    }
+
+    /** */
+    private @NonNull LogListener errMessageListener() {
         LogListener serdesErrLsnr = LogListener
-            .matches("No registration for class " + TestMessage.class.getSimpleName())
+            .matches(EXP_ERR_MSG)
             .build();
 
         lsnrLog.registerListener(serdesErrLsnr);
 
-        startClientGrid(3).context().discovery().sendCustomEvent(new TestMessage(""));
-
-        assertTrue(serdesErrLsnr.check(getTestTimeout() / 2));
+        return serdesErrLsnr;
     }
-
 }

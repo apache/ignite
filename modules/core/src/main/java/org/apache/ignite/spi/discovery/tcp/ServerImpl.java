@@ -77,7 +77,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
@@ -3778,13 +3777,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     if (!checkAckTimeout(ackTimeout0))
                                         break;
                                 }
-                            }
-
-                            if (X.hasCause(e, UnregisteredClassException.class)) {
-                                U.error(log, "Failed to send message: " + msg, e);
-
-                                // Trying to serialize unregistered class. Nothing to do here.
-                                return;
                             }
                         }
                         finally {

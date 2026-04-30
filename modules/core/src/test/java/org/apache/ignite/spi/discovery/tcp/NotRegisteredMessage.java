@@ -23,13 +23,13 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /** */
-public class TestMessage extends DiscoveryCustomMessage {
+public class NotRegisteredMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)
     String str;
 
     /** */
-    public TestMessage(String str) {
+    public NotRegisteredMessage(String str) {
         super(IgniteUuid.randomUuid());
 
         this.str = str;

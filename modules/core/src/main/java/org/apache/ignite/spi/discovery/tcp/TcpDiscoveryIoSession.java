@@ -32,8 +32,10 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -124,6 +126,10 @@ public class TcpDiscoveryIoSession {
             out.flush();
         }
         catch (Exception e) {
+            // See Message#directType()
+            if (X.hasCause(e, UnregisteredClassException.class))
+                throw e;
+
             // Keep logic similar to `U.marshal(...)`.
             if (e instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e;
