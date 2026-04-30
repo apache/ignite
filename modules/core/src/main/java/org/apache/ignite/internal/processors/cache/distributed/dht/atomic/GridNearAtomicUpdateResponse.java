@@ -344,14 +344,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (errs != null)
-            errs.prepareMarshal(this, cctx);
-
         if (nearUpdates != null)
             prepareMarshalCacheObjects(nearUpdates.nearValues(), cctx);
-
-        if (ret != null)
-            ret.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */

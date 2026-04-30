@@ -467,16 +467,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(keys, cctx);
-
-        prepareMarshalCacheObjects(vals, cctx);
-
-        prepareMarshalCacheObjects(nearKeys, cctx);
-
-        prepareMarshalCacheObjects(nearVals, cctx);
-
-        prepareMarshalCacheObjects(prevVals, cctx);
-
         if (forceTransformBackups) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())

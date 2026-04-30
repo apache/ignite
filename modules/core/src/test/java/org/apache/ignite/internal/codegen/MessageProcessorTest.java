@@ -340,6 +340,36 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining(errMsg);
     }
 
+    /** Collection-of-entries encoding of a {@code Map<KeyCacheObject, ?>}: generator recurses into each entry's KCO. */
+    @Test
+    public void testKeyCacheObjectInCollectionOfEntries() {
+        Compilation compilation = compile("KeyCacheObjectEntryMsg.java", "TestKeyCacheObjectCollectionMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.KeyCacheObjectEntryMsgSerializer")
+            .hasSourceEquivalentTo(javaFile("KeyCacheObjectEntryMsgSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestKeyCacheObjectCollectionMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestKeyCacheObjectCollectionMessageSerializer.java"));
+    }
+
+/** {@code @Order Map<KeyCacheObject, GridCacheVersion>}: generator walks keys/values via {@code keySet()/values()}. */
+    @Test
+    public void testMapWithKeyCacheObjectAndMessageValue() {
+        Compilation compilation = compile("TestMapKeyCacheObjectMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMapKeyCacheObjectMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMapKeyCacheObjectMessageSerializer.java"));
+    }
+
     /**
      * Negative test that verifies the compilation failed if the Compress annotation is used for unsupported types.
      */

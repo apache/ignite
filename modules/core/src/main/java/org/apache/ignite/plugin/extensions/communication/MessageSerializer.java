@@ -17,9 +17,11 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/**
- * Interface for message serialization logic.
- */
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+
+/** Message serialization logic. */
 public interface MessageSerializer<M extends Message> {
     /**
      * Writes this message to provided byte buffer.
@@ -38,4 +40,20 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     public boolean readFrom(M msg, MessageReader reader);
+
+    /**
+     * Runs {@code CacheObject.prepareMarshal} for {@code @Order} cache-object fields on the user thread, so the NIO
+     * worker never does it. Default is a no-op. The caller is responsible for guaranteeing that {@code ctx} is
+     * non-null when invoking this method; resolution-with-null-skip happens at call sites.
+     *
+     * @param msg Message instance.
+     * @param ctx Cache object value context for {@code msg}'s direct {@code CacheObject} fields and non-cacheId-aware
+     *     nested messages. Always non-null.
+     * @param sharedCtx Shared cache context for resolving per-cache contexts of nested cacheId-aware messages.
+     * @throws IgniteCheckedException If marshalling fails.
+     */
+    public default void prepareMarshalCacheObjects(M msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx)
+        throws IgniteCheckedException {
+        // No-op by default.
+    }
 }

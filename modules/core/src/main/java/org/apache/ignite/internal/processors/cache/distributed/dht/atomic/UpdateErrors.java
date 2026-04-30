@@ -116,11 +116,6 @@ public class UpdateErrors implements Message {
     }
 
     /** */
-    void prepareMarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-        msg.prepareMarshalCacheObjects(failedKeys, cctx);
-    }
-
-    /** */
     void finishUnmarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx, ClassLoader ldr) throws IgniteCheckedException {
         msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
     }

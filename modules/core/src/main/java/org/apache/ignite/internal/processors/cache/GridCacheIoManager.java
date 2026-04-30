@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1150,11 +1151,30 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
             msg.prepareMarshal(cctx);
 
+            prepareMarshalGeneratedCacheObjects(msg);
+
             if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
 
         return true;
+    }
+
+    /** */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void prepareMarshalGeneratedCacheObjects(GridCacheMessage msg) throws IgniteCheckedException {
+        if (!(msg instanceof GridCacheIdMessage))
+            return;
+
+        CacheObjectContext cacheObjCtx = cctx.cacheObjectContext(((GridCacheIdMessage)msg).cacheId());
+
+        if (cacheObjCtx == null)
+            return;
+
+        MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
+
+        if (ser != null)
+            ser.prepareMarshalCacheObjects(msg, cacheObjCtx, cctx);
     }
 
     /**

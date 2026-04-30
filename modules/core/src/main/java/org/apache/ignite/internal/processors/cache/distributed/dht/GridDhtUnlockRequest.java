@@ -71,13 +71,6 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 

@@ -38,6 +38,7 @@ import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -74,7 +75,7 @@ public class MessageSerializerGenerator {
     public static final String NL = System.lineSeparator();
 
     /** */
-    private static final String CLS_JAVADOC = "/** " + NL +
+    private static final String CLS_JAVADOC = "/**" + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +
         " * @see org.apache.ignite.internal.MessageProcessor" + NL +
@@ -113,6 +114,12 @@ public class MessageSerializerGenerator {
 
     /** The marshallable message type. */
     private final TypeMirror marshallableMsgType;
+
+    /** */
+    private final List<String> prepareCacheObjects = new ArrayList<>();
+
+    /** Map of {@code <nested-serializer-static-var-name, serializer-FQN>} for recursion into nested messages. */
+    private final LinkedHashMap<String, String> nestedSerializerFields = new LinkedHashMap<>();
 
     /** */
     private int indent;
@@ -189,9 +196,14 @@ public class MessageSerializerGenerator {
 
             writer.write(TAB + "}" + NL);
 
-            writer.write("}");
+            if (!prepareCacheObjects.isEmpty()) {
+                writer.write(NL);
 
-            writer.write(NL);
+                for (String p: prepareCacheObjects)
+                    writer.write(p + NL);
+            }
+
+            writer.write("}");
 
             return writer.toString();
         }
@@ -242,6 +254,515 @@ public class MessageSerializerGenerator {
 
         finish(write, false, false);
         finish(read, true, marshallableMessage());
+
+        generateCacheObjectMethods(fields);
+    }
+
+    /** */
+    private void generateCacheObjectMethods(List<VariableElement> orderedFields) throws Exception {
+        List<VariableElement> traversable = new ArrayList<>();
+
+        for (VariableElement field: orderedFields) {
+            if (classify(field.asType()) != FieldKind.SKIP)
+                traversable.add(field);
+        }
+
+        if (traversable.isEmpty())
+            return;
+
+        imports.add("org.apache.ignite.IgniteCheckedException");
+        imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
+        imports.add("org.apache.ignite.internal.processors.cache.GridCacheSharedContext");
+
+        startCacheObjectMethod(prepareCacheObjects);
+
+        indent++;
+
+        boolean first = true;
+
+        for (VariableElement field: traversable) {
+            if (!first)
+                prepareCacheObjects.add(EMPTY);
+
+            emitCacheObjectCall(prepareCacheObjects, field);
+
+            first = false;
+        }
+
+        indent--;
+
+        prepareCacheObjects.add(identedLine("}"));
+
+        for (Map.Entry<String, String> e : nestedSerializerFields.entrySet()) {
+            imports.add(e.getValue());
+
+            String serSimple = e.getValue().substring(e.getValue().lastIndexOf('.') + 1);
+
+            fields.add("private final static " + serSimple + " " + e.getKey() + " = new " + serSimple + "();");
+        }
+    }
+
+    /** Traversal kinds for {@link #generateCacheObjectMethods}. */
+    private enum FieldKind {
+        /** {@code CacheObject} / {@code KeyCacheObject} scalar. */
+        CO,
+        /** {@code Collection<CacheObject>} / {@code Collection<KeyCacheObject>}. */
+        CO_COLL,
+        /** {@code CacheObject[]} / {@code KeyCacheObject[]}. */
+        CO_ARR,
+        /** Nested concrete {@code Message}. */
+        MSG,
+        /** {@code Collection<? extends Message>} with concrete element type. */
+        MSG_COLL,
+        /** {@code Message[]} with concrete component type. */
+        MSG_ARR,
+        /** {@code Map<K, V>} with at least one CO/Message side. */
+        MAP,
+        /** Skipped — abstract Message, cross-cache nested Message, Map with no traversable side, unsupported. */
+        SKIP
+    }
+
+    /** */
+    private FieldKind classify(TypeMirror t) {
+        if (t.getKind() == TypeKind.ARRAY) {
+            TypeMirror comp = ((ArrayType)t).getComponentType();
+
+            if (comp.getKind() != TypeKind.DECLARED)
+                return FieldKind.SKIP;
+
+            if (isCacheObjectType(comp))
+                return FieldKind.CO_ARR;
+
+            return isRecursableMessage(comp) ? FieldKind.MSG_ARR : FieldKind.SKIP;
+        }
+
+        if (t.getKind() != TypeKind.DECLARED)
+            return FieldKind.SKIP;
+
+        if (isCacheObjectType(t))
+            return FieldKind.CO;
+
+        if (assignableFrom(erasedType(t), type(Map.class.getName()))) {
+            List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+
+            if (args.size() != 2)
+                return FieldKind.SKIP;
+
+            FieldKind kSide = classifyMapSide(args.get(0));
+            FieldKind vSide = classifyMapSide(args.get(1));
+
+            if (kSide == FieldKind.SKIP && vSide == FieldKind.SKIP)
+                return FieldKind.SKIP;
+
+            return FieldKind.MAP;
+        }
+
+        if (assignableFrom(erasedType(t), type(Collection.class.getName()))) {
+            List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+
+            if (args.size() != 1)
+                return FieldKind.SKIP;
+
+            TypeMirror arg = args.get(0);
+
+            if (arg.getKind() != TypeKind.DECLARED)
+                return FieldKind.SKIP;
+
+            if (isCacheObjectType(arg))
+                return FieldKind.CO_COLL;
+
+            return isRecursableMessage(arg) ? FieldKind.MSG_COLL : FieldKind.SKIP;
+        }
+
+        return isRecursableMessage(t) ? FieldKind.MSG : FieldKind.SKIP;
+    }
+
+    /** Classifies one side (key or value) of a {@code Map} field: {@link FieldKind#CO}, {@link FieldKind#MSG}, or
+     *  {@link FieldKind#SKIP}. */
+    private FieldKind classifyMapSide(TypeMirror t) {
+        if (t.getKind() != TypeKind.DECLARED)
+            return FieldKind.SKIP;
+
+        if (isCacheObjectType(t))
+            return FieldKind.CO;
+
+        return isRecursableMessage(t) ? FieldKind.MSG : FieldKind.SKIP;
+    }
+
+    /** */
+    private boolean isCacheObjectType(TypeMirror type) {
+        return assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject"));
+    }
+
+    /** True if {@code t} is a concrete non-abstract {@code Message} safe to recurse into (no self-ref). */
+    private boolean isRecursableMessage(TypeMirror t) {
+        TypeMirror msgIface = type(MESSAGE_INTERFACE);
+
+        if (msgIface == null || !assignableFrom(t, msgIface))
+            return false;
+
+        if (assignableFrom(t, marshallableMsgType))
+            return false;
+
+        Element el = env.getTypeUtils().asElement(t);
+
+        if (!(el instanceof TypeElement))
+            return false;
+
+        TypeElement te = (TypeElement)el;
+
+        if (te.getKind() != ElementKind.CLASS)
+            return false;
+
+        if (te.getModifiers().contains(Modifier.ABSTRACT))
+            return false;
+
+        return !te.equals(type);
+    }
+
+    /** True if {@code te} extends {@code GridCacheIdMessage} and therefore carries its own per-cache {@code cacheId()}. */
+    private boolean isCacheIdMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.internal.processors.cache.GridCacheIdMessage"));
+    }
+
+    /** */
+    private void startCacheObjectMethod(List<String> code) {
+        indent = 1;
+
+        code.add(identedLine(METHOD_JAVADOC));
+
+        code.add(identedLine(
+            "@Override public void prepareMarshalCacheObjects(" + type.getSimpleName() +
+                " msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx) throws IgniteCheckedException {"));
+    }
+
+    /** */
+    private void emitCacheObjectCall(List<String> code, VariableElement field) {
+        String accessor = fieldAccessor(field);
+        TypeMirror t = field.asType();
+        FieldKind kind = classify(t);
+
+        switch (kind) {
+            case CO:
+                emitCoDirect(code, accessor);
+                break;
+
+            case CO_COLL:
+            case CO_ARR:
+                emitCoIterable(code, accessor, t, kind == FieldKind.CO_ARR);
+                break;
+
+            case MSG:
+                emitMsgDirect(code, accessor, (DeclaredType)t);
+                break;
+
+            case MSG_COLL:
+                emitMsgIterable(code, accessor, (DeclaredType)((DeclaredType)t).getTypeArguments().get(0));
+                break;
+
+            case MSG_ARR:
+                emitMsgIterable(code, accessor, (DeclaredType)((ArrayType)t).getComponentType());
+                break;
+
+            case MAP:
+                emitMapTraversal(code, accessor, (DeclaredType)t);
+                break;
+
+            default:
+                throw new IllegalStateException("Unexpected kind: " + kind);
+        }
+    }
+
+    /** */
+    private void emitMapTraversal(List<String> code, String accessor, DeclaredType mapType) {
+        List<? extends TypeMirror> args = mapType.getTypeArguments();
+
+        TypeMirror keyT = args.get(0);
+        TypeMirror valT = args.get(1);
+
+        FieldKind kSide = classifyMapSide(keyT);
+        FieldKind vSide = classifyMapSide(valT);
+
+        code.add(identedLine("if (%s != null) {", accessor));
+
+        indent++;
+
+        if (kSide != FieldKind.SKIP)
+            emitMapSideIteration(code, accessor, keyT, kSide, true);
+
+        if (kSide != FieldKind.SKIP && vSide != FieldKind.SKIP)
+            code.add(EMPTY);
+
+        if (vSide != FieldKind.SKIP)
+            emitMapSideIteration(code, accessor, valT, vSide, false);
+
+        indent--;
+
+        code.add(identedLine("}"));
+    }
+
+    /** */
+    private void emitMapSideIteration(
+        List<String> code,
+        String accessor,
+        TypeMirror sideType,
+        FieldKind sideKind,
+        boolean isKey
+    ) {
+        String side = accessor + (isKey ? ".keySet()" : ".values()");
+
+        String var = isKey ? "k" : "v";
+
+        if (sideKind == FieldKind.CO) {
+            String elementType = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
+
+            if (!assignableFrom(sideType, type(elementType)))
+                elementType = "org.apache.ignite.internal.processors.cache.CacheObject";
+
+            imports.add(elementType);
+
+            String simple = elementType.substring(elementType.lastIndexOf('.') + 1);
+
+            code.add(identedLine("for (%s %s : %s) {", simple, var, side));
+
+            indent++;
+
+            code.add(identedLine("if (%s != null)", var));
+
+            indent++;
+
+            code.add(identedLine("%s.prepareMarshal(ctx);", var));
+
+            indent -= 2;
+
+            code.add(identedLine("}"));
+        }
+        else {
+            assert sideKind == FieldKind.MSG : sideKind;
+
+            DeclaredType msgType = (DeclaredType)sideType;
+            String serRef = nestedSerializerRef(msgType);
+            boolean cacheIdAware = isCacheIdMessage((TypeElement)msgType.asElement());
+            String elemSimple = msgType.asElement().getSimpleName().toString();
+
+            imports.add(((TypeElement)msgType.asElement()).getQualifiedName().toString());
+
+            code.add(identedLine("for (%s %s : %s) {", elemSimple, var, side));
+
+            indent++;
+
+            if (cacheIdAware) {
+                // Resolve per-element cacheId-aware ctx via sharedCtx. Skip if cache is not registered.
+                code.add(identedLine("if (%s != null) {", var));
+
+                indent++;
+
+                code.add(identedLine("var nestedCtx = sharedCtx.cacheObjectContext(%s.cacheId());", var));
+
+                code.add(identedLine("if (nestedCtx != null)"));
+
+                indent++;
+
+                code.add(identedLine("%s.prepareMarshalCacheObjects(%s, nestedCtx, sharedCtx);", serRef, var));
+
+                indent -= 2;
+
+                code.add(identedLine("}"));
+            }
+            else {
+                code.add(identedLine("if (%s != null)", var));
+
+                indent++;
+
+                code.add(identedLine("%s.prepareMarshalCacheObjects(%s, ctx, sharedCtx);", serRef, var));
+
+                indent--;
+            }
+
+            indent--;
+
+            code.add(identedLine("}"));
+        }
+    }
+
+    /** */
+    private void emitCoDirect(List<String> code, String accessor) {
+        code.add(identedLine("if (%s != null)", accessor));
+
+        indent++;
+
+        code.add(identedLine("%s.prepareMarshal(ctx);", accessor));
+
+        indent--;
+    }
+
+    /** */
+    private void emitCoIterable(List<String> code, String accessor, TypeMirror t, boolean isArr) {
+        String elementType = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
+
+        TypeMirror elem = isArr ? ((ArrayType)t).getComponentType() : ((DeclaredType)t).getTypeArguments().get(0);
+
+        if (!assignableFrom(elem, type(elementType)))
+            elementType = "org.apache.ignite.internal.processors.cache.CacheObject";
+
+        imports.add(elementType);
+
+        String simple = elementType.substring(elementType.lastIndexOf('.') + 1);
+
+        code.add(identedLine("if (%s != null) {", accessor));
+
+        indent++;
+
+        code.add(identedLine("for (%s obj : %s) {", simple, accessor));
+
+        indent++;
+
+        code.add(identedLine("if (obj != null)"));
+
+        indent++;
+
+        code.add(identedLine("obj.prepareMarshal(ctx);"));
+
+        indent -= 2;
+
+        code.add(identedLine("}"));
+
+        indent--;
+
+        code.add(identedLine("}"));
+    }
+
+    /** */
+    private void emitMsgDirect(List<String> code, String accessor, DeclaredType msgType) {
+        String serRef = nestedSerializerRef(msgType);
+        boolean cacheIdAware = isCacheIdMessage((TypeElement)msgType.asElement());
+
+        if (cacheIdAware) {
+            // Resolve nested cacheId-aware ctx via sharedCtx. Skip if cache is not registered for the cacheId.
+            code.add(identedLine("if (%s != null) {", accessor));
+
+            indent++;
+
+            code.add(identedLine("var nestedCtx = sharedCtx.cacheObjectContext(%s.cacheId());", accessor));
+
+            code.add(identedLine("if (nestedCtx != null)"));
+
+            indent++;
+
+            code.add(identedLine("%s.prepareMarshalCacheObjects(%s, nestedCtx, sharedCtx);", serRef, accessor));
+
+            indent -= 2;
+
+            code.add(identedLine("}"));
+        }
+        else {
+            code.add(identedLine("if (%s != null)", accessor));
+
+            indent++;
+
+            code.add(identedLine("%s.prepareMarshalCacheObjects(%s, ctx, sharedCtx);", serRef, accessor));
+
+            indent--;
+        }
+    }
+
+    /** */
+    private void emitMsgIterable(List<String> code, String accessor, DeclaredType elemType) {
+        String serRef = nestedSerializerRef(elemType);
+        boolean cacheIdAware = isCacheIdMessage((TypeElement)elemType.asElement());
+
+        String elemSimple = elemType.asElement().getSimpleName().toString();
+
+        imports.add(((TypeElement)elemType.asElement()).getQualifiedName().toString());
+
+        code.add(identedLine("if (%s != null) {", accessor));
+
+        indent++;
+
+        code.add(identedLine("for (%s e : %s) {", elemSimple, accessor));
+
+        indent++;
+
+        if (cacheIdAware) {
+            // Resolve per-element cacheId-aware ctx via sharedCtx. Skip if cache is not registered.
+            code.add(identedLine("if (e != null) {"));
+
+            indent++;
+
+            code.add(identedLine("var nestedCtx = sharedCtx.cacheObjectContext(e.cacheId());"));
+
+            code.add(identedLine("if (nestedCtx != null)"));
+
+            indent++;
+
+            code.add(identedLine("%s.prepareMarshalCacheObjects(e, nestedCtx, sharedCtx);", serRef));
+
+            indent -= 2;
+
+            code.add(identedLine("}"));
+        }
+        else {
+            code.add(identedLine("if (e != null)"));
+
+            indent++;
+
+            code.add(identedLine("%s.prepareMarshalCacheObjects(e, ctx, sharedCtx);", serRef));
+
+            indent--;
+        }
+
+        indent--;
+
+        code.add(identedLine("}"));
+
+        indent--;
+
+        code.add(identedLine("}"));
+    }
+
+    /**
+     * Returns the expression for a static instance of the nested message's generated serializer (e.g.
+     * {@code CacheInvokeDirectResultSerializer.INSTANCE}), registering the class to be emitted as a {@code private
+     * static final} field on the enclosing serializer.
+     */
+    private String nestedSerializerRef(DeclaredType msgType) {
+        TypeElement el = (TypeElement)msgType.asElement();
+
+        String pkg = env.getElementUtils().getPackageOf(el).getQualifiedName().toString();
+        String serSimple = el.getSimpleName() + "Serializer";
+        String serFqn = pkg + "." + serSimple;
+
+        String varName = camelToConstant(el.getSimpleName().toString()) + "_SER";
+
+        nestedSerializerFields.put(varName, serFqn);
+
+        return varName;
+    }
+
+    /** Converts {@code CacheInvokeDirectResult} to {@code CACHE_INVOKE_DIRECT_RESULT}. */
+    private static String camelToConstant(String simple) {
+        StringBuilder sb = new StringBuilder(simple.length() + 8);
+
+        for (int i = 0; i < simple.length(); i++) {
+            char c = simple.charAt(i);
+
+            if (i > 0 && Character.isUpperCase(c) && !Character.isUpperCase(simple.charAt(i - 1)))
+                sb.append('_');
+
+            sb.append(Character.toUpperCase(c));
+        }
+
+        return sb.toString();
+    }
+
+    /** */
+    private String fieldAccessor(VariableElement field) {
+        String name = field.getSimpleName().toString();
+
+        if (type.equals(field.getEnclosingElement()))
+            return "msg." + name;
+
+        return "((" + field.getEnclosingElement().getSimpleName() + ")msg)." + name;
     }
 
     /**

@@ -336,8 +336,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
-        prepareMarshalCacheObjects(keys, cctx);
-
         if (filter != null) {
             boolean hasFilter = false;
 
