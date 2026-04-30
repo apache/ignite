@@ -17,13 +17,59 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
+/** */
 public class DiscoverySerializationExceptionLoggedTest extends GridCommonAbstractTest {
-    /** Test class that intentionally doesn't have  */
-    public static class UnknownSerializerMessage implements Message {
+    /** */
+    private ListeningTestLogger lsnrLog;
 
-
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setGridLogger(lsnrLog);
     }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
+        lsnrLog = new ListeningTestLogger(log);
+
+        startGrids(2);
+    }
+
+    /** */
+    @Test
+    public void testSerdesExceptionLogged() throws Exception {
+        // ??? Why MessageWrapper?
+        LogListener serdesErrLsnr = LogListener
+            .matches("No registration for class " + TestMessage.class.getSimpleName())
+            .build();
+
+        lsnrLog.registerListener(serdesErrLsnr);
+
+        grid(1).context().discovery().sendCustomEvent(new TestMessage(""));
+
+        assertTrue(serdesErrLsnr.check(getTestTimeout() / 2));
+    }
+
+    /** */
+    @Test
+    public void testSerdesExceptionLoggedOnClient() throws Exception {
+        LogListener serdesErrLsnr = LogListener
+            .matches("No registration for class " + TestMessage.class.getSimpleName())
+            .build();
+
+        lsnrLog.registerListener(serdesErrLsnr);
+
+        startClientGrid(3).context().discovery().sendCustomEvent(new TestMessage(""));
+
+        assertTrue(serdesErrLsnr.check(getTestTimeout() / 2));
+    }
+
 }
