@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
@@ -28,7 +29,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Management task result.
  */
-public class VisorTaskResult<R> implements MarshallableMessage {
+public class VisorTaskResult<R> implements MarshallableMessage, Serializable {
+    /** Serial version UID. */
+    private static final long serialVersionUID = 0L;
+
     /** Task result. */
     @Nullable R res;
 
