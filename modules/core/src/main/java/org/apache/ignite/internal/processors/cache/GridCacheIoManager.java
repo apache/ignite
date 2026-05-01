@@ -747,6 +747,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         throws IgniteCheckedException {
         assert msg != null;
 
+        // TODO: Do not use raw numbers, https://issues.apache.org/jira/browse/IGNITE-28636
         switch (msg.directType()) {
             case 10022: {
                 GridDhtLockRequest req = (GridDhtLockRequest)msg;
