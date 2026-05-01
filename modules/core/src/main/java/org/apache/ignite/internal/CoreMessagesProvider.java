@@ -656,9 +656,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheConfigurationEnrichment.class);
         withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
         withNoSchema(TransactionsHashRecord.class);
+        withNoSchema(SnapshotPartitionsVerifyResult.class);
         withNoSchema(IdleVerifyResult.class);
         withNoSchema(IdleVerifyDumpResult.class);
-        withNoSchema(SnapshotPartitionsVerifyResult.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
