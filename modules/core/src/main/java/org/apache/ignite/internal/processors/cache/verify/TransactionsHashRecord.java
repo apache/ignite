@@ -51,8 +51,8 @@ public class TransactionsHashRecord implements MarshallableMessage, Serializable
     byte[] rmtConsistentIdBytes;
 
     /** Committed transactions IDs hash. */
-    @Order(2)
     @GridToStringInclude
+    @Order(2)
     int txHash;
 
     /** */
@@ -98,7 +98,7 @@ public class TransactionsHashRecord implements MarshallableMessage, Serializable
         locConsistentId = U.unmarshal(marsh, locConsistentIdBytes, clsLdr);
         rmtConsistentId = U.unmarshal(marsh, rmtConsistentIdBytes, clsLdr);
 
-        locConsistentId = null;
+        locConsistentIdBytes = null;
         rmtConsistentIdBytes = null;
     }
 }

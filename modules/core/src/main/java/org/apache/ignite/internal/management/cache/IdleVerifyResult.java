@@ -87,7 +87,7 @@ public class IdleVerifyResult implements Message, Serializable {
     /** Exceptions. */
     @Order(6)
     @GridToStringInclude
-    Map<TcpDiscoveryNode, ErrorMessage> exceptionsMsgs;
+    Map<TcpDiscoveryNode, ErrorMessage> exceptions;
 
     /**
      * Default constructor for a {@link MessageFactory}.
@@ -113,12 +113,21 @@ public class IdleVerifyResult implements Message, Serializable {
         this.movingPartitions = movingPartitions;
         this.lostPartitions = lostPartitions;
         this.txHashConflicts = txHashConflicts;
-        this.partiallyCommittedTxs = TcpDiscoveryNode.downcast(partiallyCommittedTxs);
 
-        if (exceptions != null) {
-            exceptionsMsgs = U.newHashMap(exceptions.size());
+        if (!F.isEmpty(partiallyCommittedTxs)) {
+            // May consist of ZookeeperClusterNode
+            if (F.first(partiallyCommittedTxs.keySet()) instanceof TcpDiscoveryNode)
+                this.partiallyCommittedTxs = TcpDiscoveryNode.downcast(partiallyCommittedTxs);
+            else {
+                this.partiallyCommittedTxs = U.newHashMap(partiallyCommittedTxs.size());
+                partiallyCommittedTxs.forEach((n, cl) -> this.partiallyCommittedTxs.put(TcpDiscoveryNode.of(n), cl));
+            }
+        }
 
-            exceptions.forEach((n, e) -> exceptionsMsgs.put((TcpDiscoveryNode)n, new ErrorMessage(e)));
+        if (!F.isEmpty(exceptions)) {
+            this.exceptions = U.newHashMap(exceptions.size());
+            // May consist of ZookeeperClusterNode
+            exceptions.forEach((n, e) -> this.exceptions.put(TcpDiscoveryNode.of(n), new ErrorMessage(e)));
         }
     }
 
@@ -162,15 +171,12 @@ public class IdleVerifyResult implements Message, Serializable {
      * @return Exceptions on nodes.
      */
     public Map<ClusterNode, Exception> exceptions() {
-        if (exceptionsMsgs == null)
-            return null;
-
-        if (exceptionsMsgs.isEmpty())
+        if (F.isEmpty(exceptions))
             return Collections.emptyMap();
 
-        Map<ClusterNode, Exception> res = TcpDiscoveryNode.upcast(U.newHashMap(exceptionsMsgs.size()));
+        Map<ClusterNode, Exception> res = TcpDiscoveryNode.upcast(U.newHashMap(exceptions.size()));
 
-        exceptionsMsgs.forEach((n, errMsg) -> res.put(n, (Exception)ErrorMessage.error(errMsg)));
+        exceptions.forEach((n, errMsg) -> res.put(n, (Exception)ErrorMessage.error(errMsg)));
 
         return res;
     }
@@ -182,7 +188,7 @@ public class IdleVerifyResult implements Message, Serializable {
      * @param printExceptionMessages {@code true} if exceptions must be included too.
      */
     public void print(Consumer<String> printer, boolean printExceptionMessages) {
-        if (F.isEmpty(exceptionsMsgs)) {
+        if (F.isEmpty(exceptions)) {
             if (!hasConflicts())
                 printer.accept("The check procedure has finished, no conflicts have been found.\n");
             else
@@ -199,11 +205,11 @@ public class IdleVerifyResult implements Message, Serializable {
             return;
         }
 
-        int size = exceptionsMsgs.size();
+        int size = exceptions.size();
 
         printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
-        if (!F.isEmpty(F.view(exceptionsMsgs.values(), errMsg -> ErrorMessage.error(errMsg) instanceof NoMatchingCachesException)))
+        if (!F.isEmpty(F.view(exceptions.values(), errMsg -> ErrorMessage.error(errMsg) instanceof NoMatchingCachesException)))
             printer.accept("\nThere are no caches matching given filter options.\n");
 
         printer.accept("\nThe check procedure failed on nodes:\n");
@@ -254,8 +260,8 @@ public class IdleVerifyResult implements Message, Serializable {
 
         printer.accept("The check procedure has failed, conflict partitions has been found: [" +
             "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
-            + (txHashConflicts == null ? "" : ", txHashConflicts=" + txHashConflicts.size())
-            + (partiallyCommittedTxs == null ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
+            + (F.isEmpty(txHashConflicts) ? "" : ", txHashConflicts=" + txHashConflicts.size())
+            + (F.isEmpty(partiallyCommittedTxs) ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
             + "]" + nl());
 
         Set<PartitionKey> allConflicts = new HashSet<>();

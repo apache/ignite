@@ -656,11 +656,11 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(WalStateAckMessage.class);
         withNoSchema(CacheConfigurationEnrichment.class);
         withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
-        withNoSchemaResolvedClassLoader(VisorTaskResult.class);
         withNoSchema(TransactionsHashRecord.class);
+        withNoSchema(SnapshotPartitionsVerifyResult.class);
         withNoSchema(IdleVerifyResult.class);
         withNoSchema(IdleVerifyDumpResult.class);
-        withNoSchema(SnapshotPartitionsVerifyResult.class);
+        withNoSchema(VisorTaskResult.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
