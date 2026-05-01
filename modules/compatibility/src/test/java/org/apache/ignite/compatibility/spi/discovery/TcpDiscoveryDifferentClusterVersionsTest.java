@@ -35,7 +35,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilityAbstractTest {
     /** */
-    private static final String INCOMPATIBLE_NODE_MSG = "is this an incompatible Ignite node?";
+    private static final String INCOMPATIBLE_NODE_MSG = "possible reasons: an incompatible Ignite node";
 
     /** */
     private static final IgniteReleasedVersion OLD_VERSION = IgniteReleasedVersion.VER_2_17_0;

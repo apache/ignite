@@ -351,7 +351,7 @@ public abstract class IgniteUtils extends CommonUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x0049474E);
+    public static final byte[] IGNITE_HEADER = intToBytes(0x0149474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
