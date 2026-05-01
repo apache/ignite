@@ -3395,6 +3395,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param msg Message.
          */
         private void processFailedMessage(UUID nodeId, GridCacheMessage msg, Throwable err) throws IgniteCheckedException {
+            // TODO: Do not use raw numbers, https://issues.apache.org/jira/browse/IGNITE-28636
             switch (msg.directType()) {
                 case 10003: {
                     TxLocksRequest req = (TxLocksRequest)msg;

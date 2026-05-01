@@ -442,6 +442,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
+        // TODO: revise using resolved class loader, https://issues.apache.org/jira/browse/IGNITE-28637
         withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
