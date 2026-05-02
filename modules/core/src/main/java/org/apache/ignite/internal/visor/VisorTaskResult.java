@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.visor;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Management task result.
  */
-public class VisorTaskResult<R> implements MarshallableMessage, Serializable {
+public class VisorTaskResult<R> implements Serializable {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -69,19 +65,5 @@ public class VisorTaskResult<R> implements MarshallableMessage, Serializable {
             throw (Exception)ErrorMessage.error(errMsg);
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (res != null)
-            resBytes = U.marshal(marsh, res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (resBytes != null)
-            res = U.unmarshal(marsh, resBytes, clsLdr);
-
-        resBytes = null;
     }
 }
