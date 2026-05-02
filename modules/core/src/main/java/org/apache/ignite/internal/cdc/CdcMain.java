@@ -26,13 +26,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -341,16 +339,27 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                List<String> cacheNames = GridLocalConfigManager
+                Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                     .readCachesData(
                         ft,
                         kctx.marshallerContext().jdkMarshaller(),
                         igniteCfg)
-                    .values().stream()
-                    .map(data -> data.configuration().getName())
-                    .collect(Collectors.toList());
+                    .entrySet().stream()
+                    .map(data -> {
+                        int cacheId = data.getValue().cacheId();
+                        long lastModified = data.getKey().lastModified();
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheNames);
+                        Long lastModified0 = cachesState.get(cacheId);
+
+                        if (lastModified0 != null && lastModified0 == lastModified)
+                            return (CdcCacheEvent)data.getValue();
+
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .iterator();
+
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheEvts);
 
                 started = true;
 
