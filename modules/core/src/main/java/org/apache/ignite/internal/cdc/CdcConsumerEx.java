@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.cdc;
 
-import java.util.List;
+import java.util.Iterator;
 
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.metric.MetricRegistry;
 
 /**
- * Extended CdcConsumer interface which provides overloaded {@link CdcConsumerEx#start(MetricRegistry, List)} method
+ * Extended CdcConsumer interface which provides overloaded {@link CdcConsumerEx#start(MetricRegistry, Iterator)} method
  * required for CDC regex filters.
  */
 public interface CdcConsumerEx extends CdcConsumer {
     /**
      * Starts the consumer.
      * @param mreg Metric registry for consumer specific metrics.
-     * @param cacheNames List of cache names.
+     * @param cacheEvents The iterator contains previously handled {@link CdcCacheEvent}s that represent the actual
+     * caches at the time the consumer started. Note that changes which occurred while the application was down (creates,
+     * destroys, edits) are not included. Such changes will be delivered via the regular notifications after this method
+     * returns.
      */
-    void start(MetricRegistry mreg, List<String> cacheNames);
+    void start(MetricRegistry mreg, Iterator<CdcCacheEvent> cacheEvents);
 }
