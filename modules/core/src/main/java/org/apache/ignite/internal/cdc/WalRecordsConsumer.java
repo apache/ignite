@@ -19,7 +19,6 @@ package org.apache.ignite.internal.cdc;
 
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -187,13 +186,13 @@ public class WalRecordsConsumer<K, V> {
      *
      * @param cdcReg CDC metric registry.
      * @param cdcConsumerReg CDC consumer metric registry.
-     * @param cacheNames List of cache names.
+     * @param cacheEvents The iterator containing previously handled {@link CdcCacheEvent}s.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, List<String> cacheNames)
+    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, Iterator<CdcCacheEvent> cacheEvents)
             throws IgniteCheckedException {
         if (consumer instanceof CdcConsumerEx)
-            ((CdcConsumerEx)consumer).start(cdcConsumerReg, cacheNames);
+            ((CdcConsumerEx)consumer).start(cdcConsumerReg, cacheEvents);
         else
             consumer.start(cdcConsumerReg);
 
@@ -206,7 +205,7 @@ public class WalRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl, List)}.
+     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl, Iterator)}.
      */
     public void stop() {
         consumer.stop();
