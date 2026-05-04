@@ -1489,7 +1489,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Handshake.
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                TcpDiscoveryHandshakeResponse res = readHandshakeResponse(spi, ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -3463,7 +3463,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         timeoutHelper.nextTimeoutChunk(ackTimeout0));
                                 }
 
-                                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                TcpDiscoveryHandshakeResponse res = readHandshakeResponse(spi, ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
@@ -8315,6 +8315,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return 0;
             else
                 return 1;
+        }
+    }
+
+    /** */
+    static TcpDiscoveryHandshakeResponse readHandshakeResponse(
+        TcpDiscoverySpi spi,
+        TcpDiscoveryIoSession ses,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
+        try {
+            return spi.readMessage(ses, timeout);
+        }
+        catch (UnknownMessageException e) {
+            throw new IgniteCheckedException(e);
         }
     }
 }
