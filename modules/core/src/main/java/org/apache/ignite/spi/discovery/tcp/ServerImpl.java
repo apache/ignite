@@ -78,6 +78,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -7185,8 +7186,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
 
                         // Always report marshalling errors.
-                        boolean err = e.hasCause(ObjectStreamException.class) ||
-                            (nodeAlive(nodeId) && spiStateCopy() == CONNECTED && !X.hasCause(e, IOException.class));
+                        boolean err = e.hasCause(ObjectStreamException.class)
+                            || e.hasCause(UnknownMessageException.class)
+                            || (nodeAlive(nodeId) && spiStateCopy() == CONNECTED && !X.hasCause(e, IOException.class));
 
                         if (err)
                             LT.error(log, e, "Failed to read message [sock=" + sock + ", locNodeId=" + locNodeId +
@@ -7203,8 +7205,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
 
                         // Always report marshalling errors (although it is strange here).
-                        boolean err = X.hasCause(e, ObjectStreamException.class) ||
-                            (nodeAlive(nodeId) && spiStateCopy() == CONNECTED);
+                        boolean err = X.hasCause(e, ObjectStreamException.class)
+                            || X.hasCause(e, UnknownMessageException.class)
+                            || (nodeAlive(nodeId) && spiStateCopy() == CONNECTED);
 
                         if (err)
                             LT.error(log, e, "Failed to send receipt on message [sock=" + sock +
@@ -7218,6 +7221,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         SecurityUtils.restoreDefaultSerializeVersion();
                     }
+                }
+            }
+            catch (UnknownMessageException e) {
+                if (spi.ignite() instanceof IgniteEx) {
+                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
                 }
             }
             finally {

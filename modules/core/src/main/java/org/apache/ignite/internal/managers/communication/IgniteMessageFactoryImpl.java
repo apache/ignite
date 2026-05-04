@@ -147,7 +147,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         Supplier<Message> supplier = msgSuppliers[directTypeToIndex(directType)];
 
         if (supplier == null)
-            throw new IgniteException("Invalid message type: " + directType);
+            throw new UnknownMessageException(directType);
 
         return supplier.get();
     }
