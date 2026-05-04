@@ -1161,7 +1161,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void prepareMarshalGeneratedCacheObjects(GridCacheMessage msg) throws IgniteCheckedException {
         if (!(msg instanceof GridCacheIdMessage))
             return;
