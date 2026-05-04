@@ -24,6 +24,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Exception to be thrown when unregistered class serialized or unknown message deserialized.
  */
 public class UnknownMessageException extends IgniteException {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** */
     public static final String NO_REG_MSG = "No registration for class: %s";
 
