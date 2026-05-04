@@ -115,7 +115,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.6.1</version>
+                        <version>${build.helper.maven.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>timestamp-property</id>
@@ -420,7 +420,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <version>3.8.0</version>
+                        <version>${maven.assembly.plugin.version}</version>
                         <inherited>false</inherited>
                         <executions>
                             <execution>
