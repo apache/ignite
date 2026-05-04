@@ -457,6 +457,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean deferred = false;
         GridCacheVersion ver0 = null;
 
+        assert !checkExpire || cctx.shared().database().checkpointLockIsHeldByThread();
+
         lockEntry();
 
         try {
