@@ -7187,6 +7187,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
 
                         // Always report marshalling errors.
+                        // Can receive unknown message on handshake. It's ok - must continue to try find proper port.
                         boolean err = e.hasCause(ObjectStreamException.class)
                             || e.hasCause(UnknownMessageException.class)
                             || (nodeAlive(nodeId) && spiStateCopy() == CONNECTED && !X.hasCause(e, IOException.class));
@@ -7206,9 +7207,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
 
                         // Always report marshalling errors (although it is strange here).
-                        boolean err = X.hasCause(e, ObjectStreamException.class)
-                            || X.hasCause(e, UnknownMessageException.class)
-                            || (nodeAlive(nodeId) && spiStateCopy() == CONNECTED);
+                        boolean err = X.hasCause(e, ObjectStreamException.class) ||
+                            (nodeAlive(nodeId) && spiStateCopy() == CONNECTED);
 
                         if (err)
                             LT.error(log, e, "Failed to send receipt on message [sock=" + sock +
