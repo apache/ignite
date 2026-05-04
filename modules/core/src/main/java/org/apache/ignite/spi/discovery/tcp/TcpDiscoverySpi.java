@@ -2438,7 +2438,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return marsh;
     }
 
-    /** */
+    /**
+     * On handshake it's OK to receive unknown message.
+     * Wrapping in {@link IgniteCheckedException} allows caller to handle case properly.
+     */
     TcpDiscoveryHandshakeResponse readHandshakeResponse(
         TcpDiscoveryIoSession ses,
         long timeout
