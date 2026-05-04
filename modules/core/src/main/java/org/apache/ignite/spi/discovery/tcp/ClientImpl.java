@@ -731,7 +731,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                TcpDiscoveryHandshakeResponse res = ServerImpl.readHandshakeResponse(spi, ses, ackTimeout0);
+                TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, ackTimeout0);
 
                 // Convert the addresses once.
                 Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();

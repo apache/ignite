@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -108,6 +109,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -2434,6 +2436,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         marsh.nodeName(igniteInstanceName);
 
         return marsh;
+    }
+
+    /** */
+    TcpDiscoveryHandshakeResponse readHandshakeResponse(
+        TcpDiscoveryIoSession ses,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
+        try {
+            return readMessage(ses, timeout);
+        }
+        catch (UnknownMessageException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /** {@inheritDoc} */
