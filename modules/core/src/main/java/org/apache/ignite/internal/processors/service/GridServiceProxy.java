@@ -70,9 +70,6 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
  */
 public class GridServiceProxy<T> implements Serializable {
     /** */
-    public static final long DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT = 10_000L;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
@@ -117,9 +114,6 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service invocation timeout. A timeout of zero is interpreted as an infinite timeout. */
     private final long invokeTimeout;
 
-    /** Service topology await timeout. */
-    private final long topWaitTimeout;
-
     /** */
     private final boolean keepBinary;
 
@@ -151,7 +145,6 @@ public class GridServiceProxy<T> implements Serializable {
         this.keepBinary = keepBinary;
 
         invokeTimeout = timeout;
-        topWaitTimeout = timeout == 0 ? DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT : timeout;
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
@@ -395,7 +388,9 @@ public class GridServiceProxy<T> implements Serializable {
         if (hasLocNode && ctx.service().service(name) != null)
             return ctx.discovery().localNode();
 
-        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name, topWaitTimeout);
+        Map<UUID, Integer> snapshot = invokeTimeout > 0
+            ? ctx.service().serviceTopology(name, invokeTimeout)
+            : ctx.service().serviceTopology(name);
 
         if (snapshot == null || snapshot.isEmpty())
             return null;

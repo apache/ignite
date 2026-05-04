@@ -124,6 +124,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLO
  */
 public class IgniteServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
+    private static final long DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT = 10_000L;
+
+    /** */
     public static final String SVCS_VIEW = "services";
 
     /** */
@@ -944,6 +947,18 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         finally {
             opsLock.readLock().unlock();
         }
+    }
+
+    /**
+     * @param name Service name.
+     * @return Service topology.
+     * @throws IgniteCheckedException On error.
+     */
+    @Nullable public Map<UUID, Integer> serviceTopology(String name) throws IgniteCheckedException {
+        // Even if a timeout isn't explicitly specified, we still wait {@link #DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT}
+        // for the service topology to become available. This helps avoid errors like "Unable to find deployed service",
+        // if service topology redeployment is in progress.
+        return serviceTopology(name, DEFAULT_SERVICE_TOPOLOGY_AWAIT_TIMEOUT);
     }
 
     /**
