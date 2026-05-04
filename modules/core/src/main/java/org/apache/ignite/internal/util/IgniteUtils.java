@@ -6690,22 +6690,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @param threadId Thread ID.
-     * @return Thread name if found.
-     */
-    public static String threadName(long threadId) {
-        Thread[] threads = new Thread[Thread.activeCount()];
-
-        int cnt = Thread.enumerate(threads);
-
-        for (int i = 0; i < cnt; i++)
-            if (threads[i].getId() == threadId)
-                return threads[i].getName();
-
-        return "<failed to find active thread " + threadId + '>';
-    }
-
-    /**
      * @param t0 Comparable object.
      * @param t1 Comparable object.
      * @param <T> Comparable type.

@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -103,23 +104,21 @@ class GridUpdateNotifier {
         this.updatesChecker = updatesChecker;
         this.reportOnlyNew = reportOnlyNew;
 
-        workerThread = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Runnable cmd0 = cmd.getAndSet(null);
+        workerThread = new IgniteThread(igniteInstanceName, "upd-ver-checker", () -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    Runnable cmd0 = cmd.getAndSet(null);
 
-                        if (cmd0 != null)
-                            cmd0.run();
-                        else
-                            Thread.sleep(WORKER_THREAD_SLEEP_TIME);
-                    }
-                }
-                catch (InterruptedException ignore) {
-                    // No-op.
+                    if (cmd0 != null)
+                        cmd0.run();
+                    else
+                        Thread.sleep(WORKER_THREAD_SLEEP_TIME);
                 }
             }
-        }, "upd-ver-checker");
+            catch (InterruptedException ignore) {
+                // No-op.
+            }
+        });
 
         workerThread.setDaemon(true);
 
