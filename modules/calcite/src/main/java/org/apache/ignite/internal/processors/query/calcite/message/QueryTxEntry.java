@@ -97,12 +97,6 @@ public class QueryTxEntry implements CalciteContextMarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        CacheObjectContext coctx = ctx.cacheContext(cacheId).cacheObjectContext();
-
-        key.prepareMarshal(coctx);
-
-        if (val != null)
-            val.prepareMarshal(coctx);
     }
 
     /** {@inheritDoc}  */

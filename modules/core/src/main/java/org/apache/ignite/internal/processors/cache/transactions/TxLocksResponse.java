@@ -151,8 +151,6 @@ public class TxLocksResponse extends GridCacheMessage {
             for (Map.Entry<IgniteTxKey, List<TxLock>> entry : nearTxKeyLocks.entrySet()) {
                 IgniteTxKey key = entry.getKey();
 
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
                 nearTxKeysArr[i] = key;
                 locksArr[i] = entry.getValue();
 
@@ -165,11 +163,8 @@ public class TxLocksResponse extends GridCacheMessage {
 
             int i = 0;
 
-            for (IgniteTxKey key : txKeys) {
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
+            for (IgniteTxKey key : txKeys)
                 txKeysArr[i++] = key;
-            }
         }
     }
 

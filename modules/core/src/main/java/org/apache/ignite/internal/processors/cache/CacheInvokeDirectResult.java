@@ -112,19 +112,6 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
-
-        assert unprepareRes == null : "marshalResult() was not called for the result: " + this;
-
-        if (res != null)
-            res.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
      * Converts the entry processor unprepared result to a cache object instance.
      *
      * @param ctx Cache context.

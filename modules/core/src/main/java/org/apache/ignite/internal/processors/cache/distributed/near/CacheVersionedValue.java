@@ -70,18 +70,6 @@ public class CacheVersionedValue implements Message {
     }
 
     /**
-     * This method is called before the whole message is sent
-     * and is responsible for pre-marshalling state.
-     *
-     * @param ctx Cache object context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        if (val != null)
-            val.prepareMarshal(ctx);
-    }
-
-    /**
      * This method is called after the whole message is received
      * and is responsible for unmarshalling state.
      *

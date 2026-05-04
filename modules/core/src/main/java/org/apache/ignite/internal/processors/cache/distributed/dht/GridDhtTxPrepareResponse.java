@@ -173,16 +173,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
-                if (cctx != null)
-                    key.prepareMarshal(cctx);
-            }
-        }
-
         if (preloadEntries != null) {
             for (GridCacheEntryInfo info : preloadEntries) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(info.cacheId());

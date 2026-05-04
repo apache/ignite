@@ -527,26 +527,6 @@ public abstract class GridCacheMessage implements Message {
 
     /**
      * @param col Collection.
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final void prepareMarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
-        GridCacheContext ctx) throws IgniteCheckedException {
-        if (col == null)
-            return;
-
-        for (CacheObject obj : col) {
-            if (obj != null) {
-                obj.prepareMarshal(ctx.cacheObjectContext());
-
-                if (addDepInfo)
-                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
-            }
-        }
-    }
-
-    /**
-     * @param col Collection.
      * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.

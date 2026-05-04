@@ -42,12 +42,9 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
     /**
      * @param v Value.
-     * @throws IgniteCheckedException If failed.
      */
-    public GridH2CacheObject(GridH2ValueCacheObject v) throws IgniteCheckedException {
+    public GridH2CacheObject(GridH2ValueCacheObject v)  {
         obj = v.getCacheObject();
-
-        obj.prepareMarshal(v.valueContext());
     }
 
     /** {@inheritDoc} */

@@ -330,22 +330,6 @@ public class GridCacheReturn implements Message {
 
     /**
      * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        assert !loc;
-
-        if (cacheObj != null)
-            cacheObj.prepareMarshal(ctx.cacheObjectContext());
-
-        if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.prepareMarshal(ctx);
-        }
-    }
-
-    /**
-     * @param ctx Cache context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */

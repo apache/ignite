@@ -96,11 +96,8 @@ public class TxLocksRequest extends GridCacheMessage {
 
         int i = 0;
 
-        for (IgniteTxKey key : txKeys) {
-            key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
+        for (IgniteTxKey key : txKeys) 
             txKeysArr[i++] = key;
-        }
     }
 
     /** {@inheritDoc} */

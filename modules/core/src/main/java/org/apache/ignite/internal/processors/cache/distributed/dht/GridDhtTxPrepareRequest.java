@@ -331,8 +331,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             for (IgniteTxKey key: ownedKeys) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
-                key.prepareMarshal(cctx);
-
                 if (addDepInfo)
                     prepareObject(key, cctx);
             }

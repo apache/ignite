@@ -297,21 +297,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
 
     /**
      * @param cctx Cache context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
-        if (key != null)
-            key.prepareMarshal(cctx.cacheObjectContext());
-
-        if (newVal != null)
-            newVal.prepareMarshal(cctx.cacheObjectContext());
-
-        if (oldVal != null)
-            oldVal.prepareMarshal(cctx.cacheObjectContext());
-    }
-
-    /**
-     * @param cctx Cache context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */

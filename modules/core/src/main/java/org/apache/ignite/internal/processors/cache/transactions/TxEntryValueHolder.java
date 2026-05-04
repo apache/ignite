@@ -121,15 +121,6 @@ public class TxEntryValueHolder implements Message {
 
     /**
      * @param ctx Cache context.
-     * @throws IgniteCheckedException If marshaling failed.
-     */
-    public void marshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
-        if (hasWriteVal && val != null)
-            val.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
-     * @param ctx Cache context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If unmarshalling failed.
      */

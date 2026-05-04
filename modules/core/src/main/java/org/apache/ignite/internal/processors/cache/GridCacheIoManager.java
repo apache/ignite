@@ -1149,9 +1149,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             msg.messageId(idGen.incrementAndGet());
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
+            prepareMarshalCacheObjects(msg);
+            
             msg.prepareMarshal(cctx);
-
-            prepareMarshalGeneratedCacheObjects(msg);
 
             if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
@@ -1161,7 +1161,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    private void prepareMarshalGeneratedCacheObjects(GridCacheMessage msg) throws IgniteCheckedException {
+    private void prepareMarshalCacheObjects(GridCacheMessage msg) throws IgniteCheckedException {
         if (!(msg instanceof GridCacheIdMessage))
             return;
 

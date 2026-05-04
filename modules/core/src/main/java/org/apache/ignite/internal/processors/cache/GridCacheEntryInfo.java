@@ -214,13 +214,6 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        assert key != null;
-
-        key.prepareMarshal(ctx);
-
-        if (val != null)
-            val.prepareMarshal(ctx);
-
         if (expireTime == 0)
             expireTime = -1;
         else {

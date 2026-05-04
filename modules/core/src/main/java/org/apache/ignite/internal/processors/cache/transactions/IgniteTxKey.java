@@ -71,14 +71,6 @@ public class IgniteTxKey implements Message {
 
     /**
      * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
-     * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */

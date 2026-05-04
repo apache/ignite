@@ -1041,19 +1041,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
-        key.prepareMarshal(context().cacheObjectContext());
-
-        val.marshal(context());
-
         if (transferExpiryPlc) {
             if (expiryPlcBytes == null)
                 expiryPlcBytes = CU.marshal(this.ctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
         }
         else
             expiryPlcBytes = null;
-
-        if (oldVal != null)
-            oldVal.marshal(context());
     }
 
     /**

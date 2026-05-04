@@ -448,11 +448,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
             idxQryDescBytes = CU.marshal(cctx, idxQryDesc);
         }
-
-        if (!F.isEmpty(skipKeys)) {
-            for (KeyCacheObject k : skipKeys)
-                k.prepareMarshal(cctx.cacheObjectContext());
-        }
     }
 
     /** {@inheritDoc} */
