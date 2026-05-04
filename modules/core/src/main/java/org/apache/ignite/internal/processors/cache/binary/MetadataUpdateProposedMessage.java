@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
@@ -28,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,39 +73,32 @@ import org.jetbrains.annotations.Nullable;
  * it gets blocked until {@link MetadataUpdateAcceptedMessage} arrives with <b>accepted version</b>
  * equals to <b>pending version</b> of this metadata to the moment when is was initially read by the thread.
  */
-public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage, MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    @Order(0)
-    IgniteUuid id;
-
+public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage implements MarshallableMessage {
     /** Node UUID which initiated metadata update. */
-    @Order(1)
+    @Order(0)
     UUID origNodeId;
 
     /** */
     private BinaryMetadata metadata;
 
     /** Serialized {@link #metadata}. */
-    @Order(2)
+    @Order(1)
     byte[] metadataBytes;
 
     /** Metadata type id. */
-    @Order(3)
+    @Order(2)
     int typeId;
 
     /** Metadata version which is pending for update. */
-    @Order(4)
+    @Order(3)
     int pendingVer;
 
     /** Metadata version which is already accepted by entire cluster. */
-    @Order(5)
+    @Order(4)
     int acceptedVer;
 
     /** */
-    @Order(6)
+    @Order(5)
     @Nullable ErrorMessage errMsg;
 
     /** Constructor. */
@@ -118,33 +111,23 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      * @param origNodeId ID of node requested update.
      */
     public MetadataUpdateProposedMessage(BinaryMetadata metadata, UUID origNodeId) {
+        super(IgniteUuid.randomUuid());
+
         assert origNodeId != null;
         assert metadata != null;
 
-        id = IgniteUuid.randomUuid();
         this.origNodeId = origNodeId;
 
         this.metadata = metadata;
         typeId = metadata.typeId();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return !rejected() ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
     }
@@ -156,9 +139,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         errMsg = new ErrorMessage(err);
     }
 
-    /**
-     *
-     */
+    /** */
     boolean rejected() {
         return errMsg != null;
     }
@@ -170,58 +151,42 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         return (BinaryObjectException)ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Pending version.
-     */
+    /** @return Pending version. */
     int pendingVersion() {
         return pendingVer;
     }
 
-    /**
-     * @param pendingVer New pending version.
-     */
+    /** @param pendingVer New pending version. */
     void pendingVersion(int pendingVer) {
         this.pendingVer = pendingVer;
     }
 
-    /**
-     *
-     */
+    /** */
     int acceptedVersion() {
         return acceptedVer;
     }
 
-    /**
-     * @param acceptedVer Accepted version.
-     */
+    /** @param acceptedVer Accepted version. */
     void acceptedVersion(int acceptedVer) {
         this.acceptedVer = acceptedVer;
     }
 
-    /**
-     *
-     */
+    /** */
     UUID origNodeId() {
         return origNodeId;
     }
 
-    /**
-     *
-     */
+    /** */
     public BinaryMetadata metadata() {
         return metadata;
     }
 
-    /**
-     * @param metadata Metadata.
-     */
+    /** @param metadata Metadata. */
     public void metadata(BinaryMetadata metadata) {
         this.metadata = metadata;
     }
 
-    /**
-     *
-     */
+    /** */
     public int typeId() {
         return typeId;
     }

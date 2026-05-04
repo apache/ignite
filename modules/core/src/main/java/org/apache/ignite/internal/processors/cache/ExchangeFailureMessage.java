@@ -36,37 +36,29 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents discovery message that is used to provide information about dynamic cache start failure.
  */
-public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ExchangeFailureMessage extends DiscoveryCustomMessage {
     /** Cache names. */
     @GridToStringInclude
     @Order(0)
     Collection<String> cacheNames;
 
-    /** Custom message ID. */
-    @Order(1)
-    IgniteUuid id;
-
     /** */
-    @Order(2)
+    @Order(1)
     GridDhtPartitionExchangeId exchId;
 
     /** */
     @GridToStringInclude
-    @Order(3)
+    @Order(2)
     Map<UUID, ErrorMessage> exchangeErrors;
 
     /** Actions to be done to rollback changes done before the exchange failure. */
-    private transient ExchangeActions exchangeRollbackActions;
+    private ExchangeActions exchangeRollbackActions;
 
     /** Default constructor for {@link MessageFactory}. */
     public ExchangeFailureMessage() {
@@ -86,20 +78,16 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage, Message {
         Map<UUID, Throwable> exchangeErrors,
         Collection<String> cacheNames
     ) {
+        super(IgniteUuid.randomUuid());
+
         assert exchId != null;
         assert !F.isEmpty(exchangeErrors);
         assert !F.isEmpty(cacheNames) : cacheNames;
 
-        this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
         this.cacheNames = cacheNames;
         this.exchangeErrors = exchangeErrors.entrySet().stream().collect(
             Collectors.toMap(Map.Entry::getKey, e -> new ErrorMessage(e.getValue()), (a, b) -> a, HashMap::new));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /**

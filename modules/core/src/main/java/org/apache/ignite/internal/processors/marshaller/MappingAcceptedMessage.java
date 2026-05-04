@@ -21,24 +21,16 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Is sent as an acknowledgement for successfully proposed new mapping (see {@link MappingProposedMessage}).
- *
+ * <p>
  * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
-public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class MappingAcceptedMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     MarshallerMappingItem item;
 
     /** */
@@ -50,13 +42,9 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
      * @param item Item.
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
-        id = IgniteUuid.randomUuid();
-        this.item = item;
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        this.item = item;
     }
 
     /** {@inheritDoc} */
@@ -68,7 +56,6 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage, Message {
     public MarshallerMappingItem getMappingItem() {
         return item;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

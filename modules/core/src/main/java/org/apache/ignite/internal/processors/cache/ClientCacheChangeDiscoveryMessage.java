@@ -28,28 +28,20 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Sent from cache client node to asynchronously notify about started.closed client caches.
  */
-public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    @Order(0)
-    IgniteUuid id;
-
+public class ClientCacheChangeDiscoveryMessage extends DiscoveryCustomMessage {
     /** */
     @GridToStringInclude
-    @Order(1)
+    @Order(0)
     Map<Integer, Boolean> startedCaches;
 
     /** */
     @GridToStringInclude
-    @Order(2)
+    @Order(1)
     Set<Integer> closedCaches;
 
     /** Update timeout object, used to batch multiple starts/close into single discovery message. */
@@ -63,7 +55,8 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
      * @param closedCaches Closed caches.
      */
     public ClientCacheChangeDiscoveryMessage(Map<Integer, Boolean> startedCaches, Set<Integer> closedCaches) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         this.startedCaches = startedCaches;
         this.closedCaches = closedCaches;
     }
@@ -164,15 +157,9 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -2365,7 +2365,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     localNode(),
                     null,
                     Collections.<ClusterNode>emptyList(),
-                    new ClientCacheChangeDummyDiscoveryMessage(remoteSecurityContext(ctx), reqId, startReqs, cachesToClose),
+                    new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose),
                     null,
                     remoteSecurityContext(ctx)
                 )

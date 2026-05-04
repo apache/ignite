@@ -24,6 +24,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
@@ -94,6 +96,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -104,7 +107,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -121,7 +123,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
@@ -138,6 +142,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -1810,14 +1815,13 @@ public final class GridTestUtils {
                 throw new IgniteException("Modification of static final field through reflection.");
 
             if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
 
-                GridUnsafe.putObjectField(obj, fieldOffset, val);
+                VarHandle varHandle = lookup.findVarHandle(Field.class, "modifiers", int.class);
 
-                return;
+                varHandle.set(field, field.getModifiers() & ~Modifier.FINAL);
             }
-
-            if (isFinal) {
+            else if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
 
                 modifiersField.setAccessible(true);
@@ -2627,5 +2631,31 @@ public final class GridTestUtils {
         GridNioServer<?> nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
 
         setFieldValue(nioSrvr, "skipRead", skip);
+    }
+
+    /** */
+    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls,
+        @Nullable Marshaller dfltMarsh, @Nullable ClassLoader dfltClsLdr) {
+        try {
+            boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
+
+            String clsPref = msgCls.getSimpleName() + (isMarshallable ? "Marshallable" : "");
+
+            Class<?> serCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + clsPref + "Serializer");
+
+            Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
+            ClassLoader cldLdr = dfltClsLdr != null ? dfltClsLdr : U.gridClassLoader();
+
+            Object msgSer = isMarshallable ?
+                serCls.getConstructor(Marshaller.class, ClassLoader.class)
+                     .newInstance(marsh, cldLdr) :
+                U.newInstance(serCls);
+
+            return (MessageSerializer<T>)msgSer;
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
+        }
     }
 }

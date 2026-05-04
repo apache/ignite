@@ -39,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -103,6 +102,7 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
@@ -111,6 +111,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -173,7 +174,6 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
-import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -214,6 +214,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -1096,7 +1097,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
-                startProcessor(new DataStreamProcessor(ctx));
+                startProcessor(new DataStreamProcessor<>(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
@@ -1112,7 +1113,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startTimer.finishGlobalStage("Start processors");
 
                 // Start plugins.
-                for (PluginProvider provider : ctx.plugins().allProviders()) {
+                for (PluginProvider<?> provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
@@ -1253,7 +1254,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
 
             // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders())
+            for (PluginProvider<?> provider : ctx.plugins().allProviders())
                 provider.onIgniteStart();
 
             if (recon)
@@ -1315,25 +1316,51 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     private void initMessageFactory() throws IgniteCheckedException {
         MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
-        if (msgs == null)
-            msgs = new MessageFactoryProvider[0];
-
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())));
+        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
+
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
-            if (f != null)
+            if (f != null) {
+                initProvider(f, resolvedClsLdr);
+
                 compMsgs.add(f);
+            }
+        }
+
+        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
+
+        if (discoSpi instanceof IgniteDiscoverySpi) {
+            MessageFactoryProvider discoMsgs = ((IgniteDiscoverySpi)discoSpi).messageFactoryProvider();
+
+            if (discoMsgs != null) {
+                initProvider(discoMsgs, resolvedClsLdr);
+
+                compMsgs.add(discoMsgs);
+            }
         }
 
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
+    }
+
+    /**
+     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
+     *
+     * @param factoryProvider Message factory provider.
+     * @param clsLdr Class loader.
+     */
+    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
+        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
+            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+                ctx.marshaller(), clsLdr);
+        }
     }
 
     /**
@@ -1350,37 +1377,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
             : new NoOpIgniteSecurityProcessor(ctx);
-    }
-
-    /**
-     * Create description of an executor service for logging.
-     *
-     * @param execSvcName Name of the service.
-     * @param execSvc Service to create a description for.
-     */
-    private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
-        int poolSize = 0;
-        int poolActiveThreads = 0;
-        int poolQSize = 0;
-
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-            poolSize = exec.getPoolSize();
-            poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-            poolQSize = exec.getQueue().size();
-        }
-        else if (execSvc instanceof IgniteStripedExecutor) {
-            IgniteStripedExecutor exec = (IgniteStripedExecutor)execSvc;
-
-            poolSize = exec.stripesCount();
-            poolActiveThreads = exec.activeStripesCount();
-            poolQSize = exec.queueSize();
-        }
-
-        int poolIdleThreads = poolSize - poolActiveThreads;
-
-        return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
     }
 
     /**

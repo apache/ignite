@@ -1017,35 +1017,28 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
-        try {
-            TcpDiscoveryCustomEventMessage msg;
+        TcpDiscoveryCustomEventMessage msg;
 
-            DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
+        DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
-            if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
-            else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
+        if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
+            msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
+        else
+            msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
 
-            Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
-                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
-                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                    () -> locNode.consistentId().toString())
-                .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
-                .addLog(() -> "Created");
+        Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
+            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
+            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                () -> locNode.consistentId().toString())
+            .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
+            .addLog(() -> "Created");
 
-            // This root span will be parent both from local and remote nodes.
-            msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+        // This root span will be parent both from local and remote nodes.
+        msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
 
-            msg.prepareMarshal(spi.marshaller());
+        msgWorker.addMessage(msg);
 
-            msgWorker.addMessage(msg);
-
-            rootSpan.addLog(() -> "Sent").end();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
-        }
+        rootSpan.addLog(() -> "Sent").end();
     }
 
     /** {@inheritDoc} */
@@ -2556,9 +2549,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
 
                 msg = new TcpDiscoveryCustomEventMessage(msg0);
-
-                // We shoulgn't store deserialized message in the queue because of msg is transient.
-                ((TcpDiscoveryCustomEventMessage)msg).clearMessage();
             }
 
             synchronized (msgs) {
@@ -3289,21 +3279,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (clientMsgWorkers.isEmpty())
                     return;
 
-                byte[] msgBytes = null;
+                byte[] msgBytes;
 
-                if (!(msg instanceof TcpDiscoveryNodeAddedMessage)) {
-                    try {
-                        msgBytes = clientMsgSer.serializeMessage(msg);
-                    }
-                    catch (IgniteCheckedException | IOException e) {
-                        U.error(log, "Failed to serialize message: " + msg, e);
+                try {
+                    msgBytes = clientMsgSer.serializeMessage(msg);
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    U.error(log, "Failed to serialize message: " + msg, e);
 
-                        return;
-                    }
+                    return;
                 }
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     TcpDiscoveryAbstractMessage msg0 = msg;
+                    byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
@@ -3312,10 +3301,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+
+                            try {
+                                msgBytes0 = clientMsgSer.serializeMessage(msg0);
+                            }
+                            catch (IgniteCheckedException | IOException e) {
+                                U.error(log, "Failed to serialize message: " + msg0, e);
+
+                                return;
+                            }
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes);
+                    clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
         }
@@ -6098,40 +6096,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                             processCustomMessage(msg, waitForNotification);
                         }
                     }
-
-                    msg.clearMessage();
                 }
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
-                    DiscoverySpiCustomMessage msgObj = null;
+                    DiscoverySpiCustomMessage customMsg = msg.message();
 
-                    try {
-                        msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                        msgObj = msg.message();
-                    }
-                    catch (Throwable e) {
-                        U.error(log, "Failed to unmarshal discovery custom message.", e);
-                    }
-
-                    if (msgObj != null) {
-                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
+                    if (customMsg != null) {
+                        DiscoverySpiCustomMessage nextMsg = customMsg.ackMessage();
 
                         if (nextMsg != null) {
-                            try {
-                                TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
-                                    getLocalNodeId(), nextMsg);
+                            TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
+                                getLocalNodeId(), nextMsg);
 
-                                ackMsg.topologyVersion(msg.topologyVersion());
+                            ackMsg.topologyVersion(msg.topologyVersion());
 
-                                ackMsg.prepareMarshal(spi.marshaller());
-
-                                processCustomMessage(ackMsg, waitForNotification);
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to marshal discovery custom message.", e);
-                            }
+                            processCustomMessage(ackMsg, waitForNotification);
                         }
                     }
                 }
@@ -6156,8 +6136,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifyDiscoveryListener(msg, waitForNotification);
                 }
-
-                msg.clearMessage();
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -6295,16 +6273,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (node == null)
                     return;
 
-                DiscoverySpiCustomMessage msgObj;
-
-                try {
-                    msg.finishUnmarshal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                    msgObj = msg.message();
-                }
-                catch (Throwable t) {
-                    throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
-                }
+                DiscoverySpiCustomMessage customMsg = msg.message();
 
                 IgniteFuture<?> fut = lsnr.onDiscovery(
                     new DiscoveryNotification(
@@ -6313,13 +6282,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         node,
                         snapshot,
                         hist,
-                        msgObj,
+                        customMsg,
                         msg.spanContainer())
                     );
 
                 notifiedDiscovery.set(true);
 
-                if (waitForNotification || msgObj.isMutable()) {
+                if (waitForNotification || customMsg.isMutable()) {
                     blockingSectionBegin();
 
                     try {
@@ -6327,15 +6296,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         blockingSectionEnd();
-                    }
-                }
-
-                if (msgObj.isMutable()) {
-                    try {
-                        msg.prepareMarshal(spi.marshaller());
-                    }
-                    catch (Throwable t) {
-                        throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
             }
@@ -6679,16 +6639,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
-                            log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this Ignite port, or is this an incompatible Ignite node?" +
-                                (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
+                            log.debug("Unknown connection detected (possible reasons: an incompatible Ignite node or " +
+                                "other software connecting to this Ignite port" +
+                                (!spi.isSslEnabled() ? ", or missing SSL configuration on remote node" : "") +
                                 ") [rmtAddr=" + rmtAddr +
                                 ", locAddr=" + sock.getLocalSocketAddress() +
                                 ", rcvdHdr=" + U.byteArray2HexString(buf) + ']');
 
-                        LT.warn(log, "Unknown connection detected (is some other software connecting to " +
-                            "this Ignite port, or is this an incompatible Ignite node?" +
-                            (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
+                        LT.warn(log, "Unknown connection detected (possible reasons: an incompatible Ignite node or " +
+                            "other software connecting to this Ignite port" +
+                            (!spi.isSslEnabled() ? ", or missing SSL configuration on remote node" : "") +
                             ") [rmtAddr=" + sock.getInetAddress() + ", rcvdHdr=" + U.byteArray2HexString(buf) + ']', true);
 
                         return;

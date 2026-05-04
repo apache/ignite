@@ -309,9 +309,10 @@ public class DdlCommandHandler {
 
     /** */
     private QueryEntity toQueryEntity(CreateTableCommand cmd) {
-        QueryEntity res = new QueryEntity();
+        QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(cmd.tableName());
+        res.sql(true);
 
         Set<String> notNullFields = null;
 
@@ -369,7 +370,7 @@ public class DdlCommandHandler {
             if (!F.isEmpty(cmd.primaryKeyColumns())) {
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
 
-                res = new QueryEntityEx(res).setPreserveKeysOrder(true);
+                res.setPreserveKeysOrder(true);
             }
         }
         else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
@@ -383,19 +384,14 @@ public class DdlCommandHandler {
             // if pk is not explicitly set, we create it ourselves
             keyTypeName = IgniteUuid.class.getName();
 
-            res = new QueryEntityEx(res).implicitPk(true);
+            res.implicitPk(true);
         }
 
         res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());
         res.setKeyType(keyTypeName);
 
-        if (!F.isEmpty(notNullFields)) {
-            QueryEntityEx res0 = new QueryEntityEx(res);
-
-            res0.setNotNullFields(notNullFields);
-
-            res = res0;
-        }
+        if (!F.isEmpty(notNullFields))
+            res.setNotNullFields(notNullFields);
 
         return res;
     }

@@ -54,7 +54,9 @@ public class OperationContextAwareCallable<T> extends OperationContextAwareWrapp
      * {@link OperationContextSnapshot} will be restored before {@link Callable} execution, potentially in another
      * thread.
      * If {@link OperationContext} holds no data when this method is called, it does nothing and returns original
-     * {@link Callable}.
+     * {@link Callable}. It helps to avoid creation of unnecessary wrappers when it is known in advance that
+     * {@link Callable#call()} will be called from a thread that does not have an {@link OperationContext} bound to it
+     * (e.g. thread of Thread Pool).
      */
     public static <T> Callable<T> wrapIfContextNotEmpty(Callable<T> delegate) {
         return wrap(delegate, OperationContextAwareCallable::new, true);

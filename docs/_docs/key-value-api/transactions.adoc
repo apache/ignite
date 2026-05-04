@@ -90,6 +90,34 @@ include::code-snippets/cpp/src/transactions.cpp[tag=transactions-execution,inden
 It is critical that an Ignite Transaction should be `closed` regardless of its commit state or ocurred exceptions. Using of `try-with-resources` is recommended approach, but you can also explicitly call `rollback` when catching exceptions. Calling of `close`, `commit` or `rollback` ensures that all resources are released and the transaction is no longer bound to the current thread.
 ====
 
+== Transaction Savepoints
+
+Savepoints allow you to mark an intermediate state inside an explicit transaction and later roll back only the changes made after that point.
+They are useful when a transaction contains several logical steps and one of the later steps can be discarded without rolling back the whole transaction.
+
+Ignite supports savepoints only for explicit `PESSIMISTIC` transactions.
+Savepoints are local to the transaction that created them and are removed when the transaction is committed or rolled back.
+
+Use `Transaction.savepoint(name)` to create a savepoint.
+If a savepoint with the same name already exists, Ignite throws a `TransactionException`.
+Use `Transaction.savepoint(name, true)` to replace an existing savepoint.
+
+Use `Transaction.rollbackToSavepoint(name)` to roll back transaction changes made after the savepoint was created.
+Savepoints created after the target savepoint are released as part of this operation.
+
+Use `Transaction.releaseSavepoint(name)` to release a savepoint without rolling back transaction changes.
+When a savepoint is released, all savepoints created after it are released as well.
+Releasing a missing savepoint is a no-op.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tags=savepoints,!exclude,indent=0]
+----
+--
+
 ////
 == Two-Phase-Commit
 

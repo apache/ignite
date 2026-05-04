@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -26,27 +27,25 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * WAL state change abstract message.
  */
-public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage, Message {
-    /** Message ID */
-    @Order(0)
-    IgniteUuid id;
+public abstract class WalStateAbstractMessage extends DiscoveryCustomMessage implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Unique operation ID. */
-    @Order(1)
+    @Order(0)
     UUID opId;
 
     /** Group ID. */
-    @Order(2)
+    @Order(1)
     int grpId;
 
     /** Group deployment ID. */
-    @Order(3)
+    @Order(2)
     IgniteUuid grpDepId;
 
     /** Message that should be processed through exchange thread. */
@@ -66,7 +65,8 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage,
      * @param grpDepId Group deployment ID.
      */
     protected WalStateAbstractMessage(UUID opId, int grpId, IgniteUuid grpDepId) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         this.opId = opId;
         this.grpId = grpId;
         this.grpDepId = grpDepId;
@@ -116,11 +116,6 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage,
      */
     public void exchangeMessage(WalStateProposeMessage exchangeMsg) {
         this.exchangeMsg = exchangeMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */

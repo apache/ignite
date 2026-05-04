@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 
 /**
@@ -50,7 +50,7 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
      * @return Object that completed the specified future.
      * @throws IgniteCheckedException for all failures.
      */
-    public static <T> T get(CompletableFuture<?> fut) throws IgniteCheckedException {
+    public static <T> T get(IgniteCompletableFuture<?> fut) throws IgniteCheckedException {
         try {
             return (T)fut.get();
         }
