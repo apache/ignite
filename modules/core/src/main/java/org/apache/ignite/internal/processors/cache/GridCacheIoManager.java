@@ -1166,15 +1166,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (!(msg instanceof GridCacheIdMessage))
             return;
 
-        CacheObjectContext cacheObjCtx = cctx.cacheObjectContext(((GridCacheIdMessage)msg).cacheId());
+        GridCacheContext<?, ?> ctx = cctx.cacheContext(((GridCacheIdMessage)msg).cacheId());
 
-        if (cacheObjCtx == null)
+        if (ctx == null)
             return;
 
         MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
 
         if (ser != null)
-            ser.prepareMarshalCacheObjects(msg, cacheObjCtx, cctx);
+            ser.prepareMarshalCacheObjects(msg, ctx);
     }
 
     /**

@@ -18,8 +18,7 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
 /** Message serialization logic. */
 public interface MessageSerializer<M extends Message> {
@@ -48,11 +47,10 @@ public interface MessageSerializer<M extends Message> {
      *
      * @param msg Message instance.
      * @param ctx Cache object value context for {@code msg}'s direct {@code CacheObject} fields and non-cacheId-aware
-     *     nested messages. Always non-null.
-     * @param sharedCtx Shared cache context for resolving per-cache contexts of nested cacheId-aware messages.
+     * nested messages. Always non-null.
      * @throws IgniteCheckedException If marshalling fails.
      */
-    public default void prepareMarshalCacheObjects(M msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx)
+    public default void prepareMarshalCacheObjects(M msg, GridCacheContext<?, ?> ctx)
         throws IgniteCheckedException {
         // No-op by default.
     }
