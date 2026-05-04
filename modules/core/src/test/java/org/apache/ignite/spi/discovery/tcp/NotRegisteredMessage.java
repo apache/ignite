@@ -33,7 +33,6 @@ public class NotRegisteredMessage extends DiscoveryCustomMessage {
         // No-op.
     }
 
-
     /** */
     public NotRegisteredMessage(String str) {
         super(IgniteUuid.randomUuid());

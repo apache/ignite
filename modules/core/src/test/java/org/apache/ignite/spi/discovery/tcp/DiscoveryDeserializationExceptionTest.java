@@ -138,11 +138,7 @@ public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, (factory) ->
-                factory.register(
-                    MSG_DIRECT_TYPE,
-                    NotRegisteredMessage::new,
-                    new NotRegisteredMessageSerializer()
-                )
+                factory.register(MSG_DIRECT_TYPE, NotRegisteredMessage::new, new NotRegisteredMessageSerializer())
             );
         }
     }
