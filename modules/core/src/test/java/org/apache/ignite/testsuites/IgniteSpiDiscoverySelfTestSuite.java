@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterClientRoutingTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterDeploymentTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryClientSocketTest;
+import org.apache.ignite.spi.discovery.tcp.DiscoveryDeserializationExceptionTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoverySerializationExceptionTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
@@ -194,6 +195,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryDeadNodeAddressResolvingTest.class,
 
     DiscoverySerializationExceptionTest.class,
+    DiscoveryDeserializationExceptionTest.class,
 
     // MDC.
     TcpDiscoveryMdcSelfTest.class,
