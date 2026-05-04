@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
-import static org.apache.ignite.internal.managers.communication.UnknownMessageException.INVALID_MESSAGE_TYPE;
+import static org.apache.ignite.internal.managers.communication.UnknownMessageException.INVALID_TYPE_MSG;
 
 /** */
 public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTest {
@@ -44,7 +44,7 @@ public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTes
     private static final int MSG_DIRECT_TYPE = -32764;
 
     /** */
-    private static final String ERR_MSG = String.format(INVALID_MESSAGE_TYPE, MSG_DIRECT_TYPE);
+    private static final String ERR_MSG = String.format(INVALID_TYPE_MSG, MSG_DIRECT_TYPE);
 
     /** */
     private ListeningTestLogger lsnrLog;

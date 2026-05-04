@@ -25,22 +25,22 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class UnknownMessageException extends IgniteException {
     /** */
-    public static final String NO_REGISTRATION_FOR_CLASS = "No registration for class: %s";
+    public static final String NO_REG_MSG = "No registration for class: %s";
 
     /** */
-    public static final String INVALID_MESSAGE_TYPE = "Invalid message type: %d";
+    public static final String INVALID_TYPE_MSG = "Invalid message type: %d";
 
     /**
      * @param directType Unknown direct type.
      */
     public UnknownMessageException(short directType) {
-        super(String.format(INVALID_MESSAGE_TYPE, directType));
+        super(String.format(INVALID_TYPE_MSG, directType));
     }
 
     /**
      * @param clazz Unregistered class.
      */
     public UnknownMessageException(Class<? extends Message> clazz) {
-        super(String.format(NO_REGISTRATION_FOR_CLASS, clazz.getSimpleName()));
+        super(String.format(NO_REG_MSG, clazz.getSimpleName()));
     }
 }

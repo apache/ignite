@@ -31,12 +31,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
-import static org.apache.ignite.internal.managers.communication.UnknownMessageException.NO_REGISTRATION_FOR_CLASS;
+import static org.apache.ignite.internal.managers.communication.UnknownMessageException.NO_REG_MSG;
 
 /** */
 public class DiscoverySerializationExceptionTest extends GridCommonAbstractTest {
     /** */
-    private static final String ERR_MSG = String.format(NO_REGISTRATION_FOR_CLASS, NotRegisteredMessage.class.getSimpleName());
+    private static final String ERR_MSG = String.format(NO_REG_MSG, NotRegisteredMessage.class.getSimpleName());
 
     /** */
     private ListeningTestLogger lsnrLog;
