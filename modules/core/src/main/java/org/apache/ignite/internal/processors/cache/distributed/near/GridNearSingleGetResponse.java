@@ -151,9 +151,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         if (res != null) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            if (res instanceof CacheObject)
-                prepareMarshalCacheObject((CacheObject)res, cctx);
-            else if (res instanceof CacheVersionedValue)
+            if (res instanceof CacheVersionedValue)
                 ((CacheVersionedValue)res).prepareMarshal(cctx.cacheObjectContext());
             else if (res instanceof GridCacheEntryInfo)
                 ((GridCacheEntryInfo)res).marshal(cctx);
