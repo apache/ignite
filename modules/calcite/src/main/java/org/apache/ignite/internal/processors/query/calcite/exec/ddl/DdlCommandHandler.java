@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableAddCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableDropCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
@@ -97,12 +99,11 @@ public class DdlCommandHandler {
     }
 
     /** */
-    public void handle(UUID qryId, DdlCommand cmd) throws IgniteCheckedException {
+    public void handle(UUID qryId, BaseQueryContext qryCtx, DdlCommand cmd) throws IgniteCheckedException {
         try {
             if (cmd instanceof TransactionCommand)
-                return;
-
-            if (cmd instanceof CreateTableCommand)
+                handle0(qryCtx, (TransactionCommand)cmd);
+            else if (cmd instanceof CreateTableCommand)
                 handle0((CreateTableCommand)cmd);
             else if (cmd instanceof DropTableCommand)
                 handle0((DropTableCommand)cmd);
@@ -120,6 +121,34 @@ public class DdlCommandHandler {
         }
         catch (SchemaOperationException e) {
             throw convert(e);
+        }
+    }
+
+    /** */
+    private void handle0(BaseQueryContext qryCtx, TransactionCommand cmd) throws IgniteCheckedException {
+        if (cmd.type() == TransactionCommand.Type.NOOP)
+            return;
+
+        GridNearTxLocal tx = Commons.queryTransaction(qryCtx, cacheProc.context());
+
+        if (tx == null) {
+            throw new IgniteSQLException("Savepoints can be used only inside explicit transactions.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        switch (cmd.type()) {
+            case SAVEPOINT:
+                tx.savepoint(cmd.savepointName(), true);
+
+                break;
+
+            case ROLLBACK_TO_SAVEPOINT:
+                tx.rollbackToSavepoint(cmd.savepointName());
+
+                break;
+
+            default:
+                throw new AssertionError("Unexpected transaction command type: " + cmd.type());
         }
     }
 

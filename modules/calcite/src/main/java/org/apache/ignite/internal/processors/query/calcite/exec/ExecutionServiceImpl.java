@@ -550,7 +550,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private FieldsQueryCursor<List<?>> executeDdl(RootQuery<Row> qry, DdlPlan plan) {
         try {
-            ddlCmdHnd.handle(qry.id(), plan.command());
+            ddlCmdHnd.handle(qry.id(), qry.context(), plan.command());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +

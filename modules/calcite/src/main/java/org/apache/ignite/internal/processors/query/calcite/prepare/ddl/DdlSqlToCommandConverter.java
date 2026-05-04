@@ -59,6 +59,8 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTa
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlRollback;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlRollbackToSavepoint;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlSavepoint;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -168,6 +170,18 @@ public class DdlSqlToCommandConverter {
 
         if (ddlNode instanceof IgniteSqlCommit || ddlNode instanceof IgniteSqlRollback)
             return new TransactionCommand();
+
+        if (ddlNode instanceof IgniteSqlSavepoint) {
+            return new TransactionCommand(
+                TransactionCommand.Type.SAVEPOINT,
+                ((IgniteSqlSavepoint)ddlNode).name().getSimple());
+        }
+
+        if (ddlNode instanceof IgniteSqlRollbackToSavepoint) {
+            return new TransactionCommand(
+                TransactionCommand.Type.ROLLBACK_TO_SAVEPOINT,
+                ((IgniteSqlRollbackToSavepoint)ddlNode).name().getSimple());
+        }
 
         if (SqlToNativeCommandConverter.isSupported(ddlNode))
             return SqlToNativeCommandConverter.convert(ddlNode, ctx);
