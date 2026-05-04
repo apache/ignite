@@ -362,8 +362,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
                 invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
         }
-        else
-            prepareMarshalCacheObjects(vals, cctx);
     }
 
     /** {@inheritDoc} */

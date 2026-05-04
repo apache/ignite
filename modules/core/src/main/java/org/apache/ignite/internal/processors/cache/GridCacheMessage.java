@@ -512,23 +512,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @param col Collection.
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
-        GridCacheContext ctx) throws IgniteCheckedException {
-        if (col == null)
-            return;
-
-        int size = col.size();
-
-        for (int i = 0; i < size; i++)
-            prepareMarshalCacheObject(col.get(i), ctx);
-    }
-
-    /**
      * @param obj Object.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
