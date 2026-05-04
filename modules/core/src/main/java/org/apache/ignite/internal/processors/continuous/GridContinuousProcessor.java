@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage.Mode;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.systemview.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
@@ -211,26 +212,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessage msg) {
-                    assert !immutableDiscoCustomMsg;
-
                     if (ctx.isStopping())
                         return;
 
-                    processStartRequestMutable(snd, msg);
-                }
-            });
-
-        ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessageV2.class,
-            new CustomEventListener<StartRoutineDiscoveryMessageV2>() {
-                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
-                    ClusterNode snd,
-                    StartRoutineDiscoveryMessageV2 msg) {
-                    assert immutableDiscoCustomMsg;
-
-                    if (ctx.isStopping())
-                        return;
-
-                    processStartRequestImmutable(topVer, snd, msg);
+                    if (immutableDiscoCustomMsg)
+                        processStartRequestImmutable(topVer, snd, msg);
+                    else
+                        processStartRequestMutable(snd, msg);
                 }
             });
 
@@ -992,9 +980,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         reqData.prepareMarshal(ctx);
 
         if (!immutableDiscoCustomMsg) {
-            StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(
-                    routineId,
-                    reqData);
+            StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(routineId, reqData, Mode.MUTABLE);
 
             if (hnd.updateCounters() != null)
                 msg.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
@@ -1002,7 +988,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return msg;
         }
         else
-            return new StartRoutineDiscoveryMessageV2(routineId, reqData);
+            return new StartRoutineDiscoveryMessage(routineId, reqData, Mode.IMMUTABLE);
     }
 
     /**
@@ -1468,7 +1454,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private void processStartRequestImmutable(final AffinityTopologyVersion topVer,
         final ClusterNode snd,
-        final StartRoutineDiscoveryMessageV2 msg) {
+        final StartRoutineDiscoveryMessage msg) {
         StartRequestData reqData = msg.startRequestData();
 
         ContinuousRoutineInfo routineInfo = new ContinuousRoutineInfo(snd.id(),

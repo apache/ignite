@@ -184,9 +184,7 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.StartRequestData;
-import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
-import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -512,8 +510,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withSchema(AtomicApplicationAttributesAwareRequest.class);
         withNoSchema(StartRequestData.class);
         withNoSchema(StartRoutineDiscoveryMessage.class);
-        withNoSchema(StartRoutineAckDiscoveryMessage.class);
-        withNoSchema(StartRoutineDiscoveryMessageV2.class);
         withNoSchema(StoredCacheData.class);
 
         // [10600-10800]: Affinity & partition maps.

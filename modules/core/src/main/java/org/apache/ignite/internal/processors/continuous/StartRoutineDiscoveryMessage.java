@@ -26,15 +26,26 @@ import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage.Mode.MUTABLE;
+
 /**
  * Discovery message used for Continuous Query registration.
  */
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
+    /** Discovery message mode. */
+    enum Mode {
+        /** Mutable discovery mode. */
+        MUTABLE,
+
+        /** Immutable discovery mode. */
+        IMMUTABLE
+    }
+
     /** */
     @Order(0)
     StartRequestData startReqData;
 
-    /** */
+    /** Errors collected by mutable discovery. */
     @Order(1)
     Map<UUID, ErrorMessage> errs = new HashMap<>();
 
@@ -46,14 +57,20 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     @Order(3)
     Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
 
+    /** Discovery message mode. */
+    @Order(4)
+    Mode mode;
+
     /**
      * @param routineId Routine id.
      * @param startReqData Start request data.
+     * @param mode Discovery message mode.
      */
-    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData) {
+    StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData, Mode mode) {
         super(routineId);
 
         this.startReqData = startReqData;
+        this.mode = mode;
     }
 
     /** */
@@ -110,11 +127,14 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
+        return mode == MUTABLE;
     }
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
+        if (!isMutable())
+            return null;
+
         return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
     }
 
