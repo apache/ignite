@@ -716,10 +716,7 @@ public class MessageSerializerGenerator {
     private String fieldAccessor(VariableElement field) {
         String name = field.getSimpleName().toString();
 
-        if (type.equals(field.getEnclosingElement()))
-            return "msg." + name;
-
-        return "((" + field.getEnclosingElement().getSimpleName() + ")msg)." + name;
+        return "msg." + name;
     }
 
     /**
