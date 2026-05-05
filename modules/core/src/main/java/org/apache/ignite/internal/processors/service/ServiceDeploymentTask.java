@@ -383,7 +383,8 @@ class ServiceDeploymentTask {
             Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results = new HashMap<>();
 
             for (IgniteUuid srvcId : depServicesIds) {
-                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(srvcProc.localInstancesCount(srvcId));
+                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
+                    srvcProc.localInstancesCount(srvcId), log);
 
                 depRes.errors(errors.get(srvcId));
 
@@ -394,7 +395,8 @@ class ServiceDeploymentTask {
                 if (results.containsKey(srvcId))
                     return;
 
-                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(srvcProc.localInstancesCount(srvcId));
+                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
+                    srvcProc.localInstancesCount(srvcId), log);
 
                 depRes.errors(err);
 
@@ -637,7 +639,7 @@ class ServiceDeploymentTask {
             if (cnt == 0 && res.errors().isEmpty())
                 return;
 
-            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt);
+            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt, log);
 
             if (!res.errors().isEmpty())
                 singleDepRes.errors(res.errors());
