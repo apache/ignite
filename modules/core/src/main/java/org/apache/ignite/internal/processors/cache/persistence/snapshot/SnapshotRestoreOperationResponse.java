@@ -38,8 +38,11 @@ public class SnapshotRestoreOperationResponse implements MarshallableMessage {
     byte[] ccfgsBytes;
     
     /** Snapshot metadata files on local node. */
+    private List<SnapshotMetadata> metas;
+
+    /** */
     @Order(1)
-    List<SnapshotMetadata> metas;
+    byte[] metasBytes;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotRestoreOperationResponse() {
@@ -71,12 +74,15 @@ public class SnapshotRestoreOperationResponse implements MarshallableMessage {
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         ccfgsBytes = U.marshal(marsh, ccfgs);
+        metasBytes = U.marshal(marsh, metas);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        ccfgs = U.unmarshal(marsh, ccfgsBytes, clsLdr);
+        if (ccfgsBytes != null)
+            ccfgs = U.unmarshal(marsh, ccfgsBytes, clsLdr);
 
-        ccfgsBytes = null;
+        if (metasBytes != null)
+            metas = U.unmarshal(marsh, metasBytes, clsLdr);
     }
 }
