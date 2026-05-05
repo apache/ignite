@@ -44,14 +44,19 @@ jobs:
       - name: Check out 'ignite' repository code
         uses: actions/checkout@v3
 
-      - name: Check that the version was released
-        run: |
-          mvn org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseDeps,requireReleaseVersion -pl modules/core
-
       - name: Get the version from POM file
         run: |
           version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "IGNITE_VERSION=$version" >> $GITHUB_ENV
+
+      - name: Check that the version was released
+        run: |
+          URL="https://repo.maven.apache.org/maven2/org/apache/ignite/ignite-core/${IGNITE_VERSION}/ignite-core-${IGNITE_VERSION}.pom"
+
+          if ! curl --silent --show-error --fail --head "$URL"; then
+            echo "ignite-core:${IGNITE_VERSION} not found in Maven Central"
+            exit 1
+          fi
 
       - name: Check out 'ignite-website' repository code
         uses: actions/checkout@v3
