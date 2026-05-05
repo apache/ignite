@@ -1,0 +1,76 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Transactions
+
+This page describes SQL transaction commands supported by the Calcite-based SQL engine.
+
+== SAVEPOINT
+
+Creates a named savepoint in the current transaction.
+
+[source,sql]
+----
+SAVEPOINT savepointName
+----
+
+=== Parameters
+
+- `savepointName` - the name of the savepoint to create.
+
+=== Description
+
+`SAVEPOINT` can be used only inside an explicit `PESSIMISTIC` transaction.
+
+The command records the current transaction state. Later, you can use `ROLLBACK TO SAVEPOINT` to roll back all transaction changes made after the savepoint was created.
+
+If a savepoint with the same name already exists, `SAVEPOINT` replaces it. The command does not roll back any transaction changes. It removes the previous savepoint with that name and makes the name refer to the current transaction state.
+
+== ROLLBACK TO SAVEPOINT
+
+Rolls back transaction changes to a previously created savepoint.
+
+[source,sql]
+----
+ROLLBACK TO SAVEPOINT savepointName
+----
+
+=== Parameters
+
+- `savepointName` - the name of the savepoint to roll back to.
+
+=== Description
+
+`ROLLBACK TO SAVEPOINT` can be used only inside an explicit `PESSIMISTIC` transaction.
+
+The command rolls back all transaction changes made after the specified savepoint was created. The transaction remains active and can be committed or rolled back later.
+
+When a transaction is rolled back to a savepoint, savepoints created after the target savepoint are released. The target savepoint remains available and can be used again.
+
+If the specified savepoint does not exist, the command fails.
+
+== Example
+
+[source,sql]
+----
+INSERT INTO Person(id, name) VALUES (1, 'John');
+
+SAVEPOINT before_update;
+
+UPDATE Person SET name = 'Jane' WHERE id = 1;
+
+ROLLBACK TO SAVEPOINT before_update;
+----
+
+After `ROLLBACK TO SAVEPOINT before_update`, the `UPDATE` statement is rolled back, but the preceding `INSERT` statement remains part of the active transaction.
