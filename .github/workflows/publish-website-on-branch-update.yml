@@ -33,6 +33,12 @@ on:
     paths:
       - docs/**
 
+  workflow_dispatch:
+    branches:
+      # Since ignite-2.10
+      - ignite-2.[0-9][0-9]
+      - ignite-2.[0-9][0-9].[0-9]
+
 concurrency:
   group: publish-website-group
 
