@@ -452,7 +452,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         SpanId iterCloseSpan = checkChildSpan(SQL_ITER_CLOSE, cursorCloseSpan);
 
-        checkSpan(SQL_QRY_CANCEL_REQ, iterCloseSpan, mapNodesCount(), null);
+        waitForSpan(SQL_QRY_CANCEL_REQ, iterCloseSpan, mapNodesCount());
 
         List<SpanId> pageFetchSpans = findChildSpans(SQL_PAGE_FETCH, rootSpan);
 
@@ -610,21 +610,21 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      *
      * @param type Span type.
      * @param parentSpan Parent span id.
-     * @return Id of the the child span.
+     * @return Id of the child span.
      */
     protected SpanId checkChildSpan(SpanType type, SpanId parentSpan) {
         return checkSpan(type, parentSpan, 1, null).get(0);
     }
 
     /**
-     * Waits until the parent span has expected child spans with the specified type.
+     * Waits until parent span has expected child spans with specified type.
      *
      * @param type Span type.
      * @param parentSpan Parent span id.
      * @param expSpansCnt Expected spans count.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    private void waitForSpan(
+    protected void waitForSpan(
         SpanType type,
         SpanId parentSpan,
         int expSpansCnt
