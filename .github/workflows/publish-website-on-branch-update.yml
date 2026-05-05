@@ -25,6 +25,7 @@
 #
 name: Publish website documentation
 on:
+  workflow_dispatch:
   push:
     branches:
       # Since ignite-2.10
