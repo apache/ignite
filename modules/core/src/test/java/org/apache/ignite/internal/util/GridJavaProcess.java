@@ -221,8 +221,10 @@ public final class GridJavaProcess {
                 log.info(String.format("Abnormal exit value of %s for trying to kill the pid %s", exitVal, pid));
         }
 
-        if (!proc.waitFor(5000, TimeUnit.MILLISECONDS))
-            throw new IllegalStateException("Failed to kill grid java process.");
+        if (!proc.waitFor(10, TimeUnit.SECONDS)) {
+            if (proc.isAlive())
+                throw new IllegalStateException("Failed to kill grid java process [pid=" + pid + ']');
+        }
 
         if (procKilledC != null)
             procKilledC.apply();

@@ -121,7 +121,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteConfiguration cfg;
 
     /** Local JVM grid. */
-    private final transient Supplier<Ignite> locJvmGrid;
+    private transient Supplier<Ignite> locJvmGrid;
 
     /** Logger. */
     private final transient IgniteLogger log;
@@ -344,6 +344,7 @@ public class IgniteProcessProxy implements IgniteEx {
         if (proxy != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
             final UUID rmNodeId = proxy.getId();
+            final Ignite locJvm = proxy.localJvmGrid();
 
             proxy.localJvmGrid().events().localListen(new IgnitePredicateX<Event>() {
                 @Override public boolean applyx(Event e) {
@@ -357,17 +358,26 @@ public class IgniteProcessProxy implements IgniteEx {
                 }
             }, EventType.EVT_NODE_LEFT);
 
+            boolean locIsClient = locJvm.configuration().isClientMode();
+            boolean rmtIsServer = !proxy.configuration().isClientMode();
+            boolean isLastServer = locIsClient && rmtIsServer && locJvm.cluster().forServers().nodes().size() <= 1;
+
             try {
                 proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
 
-                if (!rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS))
-                    throw new IllegalStateException("Remote node has not stopped [id=" + rmNodeId + ']');
+                if (!isLastServer) {
+                    if (!rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        if (locJvm.cluster().node(rmNodeId) != null)
+                            throw new IllegalStateException("Remote node has not stopped [id=" + rmNodeId + ']');
+                    }
+                }
             }
             catch (Throwable t) {
-                proxy.log().error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName +
-                    ", cancel=" + cancel + ']', t);
+                if (!isLastServer && locJvm.cluster().node(rmNodeId) != null) {
+                    proxy.log().error("Failed to send stop task to grid [name=" + igniteInstanceName + ']', t);
 
-                throw t;
+                    throw t;
+                }
             }
 
             proxy.getProcess().kill();
@@ -962,5 +972,10 @@ public class IgniteProcessProxy implements IgniteEx {
         @Override public ClusterNode call() throws Exception {
             return ((IgniteEx)ignite).localNode();
         }
+    }
+
+    /** */
+    public void localJvmGrid(Supplier<Ignite> locJvmGrid) {
+        this.locJvmGrid = locJvmGrid;
     }
 }

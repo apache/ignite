@@ -399,7 +399,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
+        compute.call(new StateTask(newState));
     }
 
     /** {@inheritDoc} */
@@ -464,6 +464,28 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
         /** {@inheritDoc} */
         @Override public Collection<String> call() throws Exception {
             return cluster().hostNames();
+        }
+    }
+
+    /**
+     * Task to update the cluster state.
+     */
+    private static class StateTask extends ClusterTaskAdapter<Void> {
+        /** New state. */
+        private final ClusterState newState;
+
+        /**
+         * @param newState New state.
+         */
+        public StateTask(ClusterState newState) {
+            this.newState = newState;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            cluster().state(newState);
+
+            return null;
         }
     }
 
