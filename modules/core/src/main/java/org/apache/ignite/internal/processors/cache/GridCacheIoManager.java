@@ -1162,18 +1162,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private void prepareMarshalCacheObjects(GridCacheMessage msg) throws IgniteCheckedException {
-        if (!(msg instanceof GridCacheIdMessage))
-            return;
-
-        GridCacheContext<?, ?> ctx = cctx.cacheContext(((GridCacheIdMessage)msg).cacheId());
-
-        if (ctx == null)
-            return;
-
         MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
 
         if (ser != null)
-            ser.prepareMarshalCacheObjects(msg, ctx);
+            ser.prepareMarshalCacheObjects(msg, cctx, null);
     }
 
     /**

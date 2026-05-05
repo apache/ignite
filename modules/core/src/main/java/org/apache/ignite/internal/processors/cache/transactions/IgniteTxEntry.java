@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -59,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Message {
+public class IgniteTxEntry implements GridPeerDeployAware, Message, CacheIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -588,7 +589,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Cache ID.
      */
-    public int cacheId() {
+    @Override public int cacheId() {
         return cacheId;
     }
 

@@ -272,11 +272,19 @@ public class MessageSerializerGenerator {
 
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
+        imports.add("org.apache.ignite.internal.processors.cache.GridCacheSharedContext");
         imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
 
         startCacheObjectMethod(prepareCacheObjects);
 
         indent++;
+
+        if (isGridCacheIdMessage(type) || isCacheIdAwareMessage(type))
+            prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
+        else
+            prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested;"));
+        
+        prepareCacheObjects.add(EMPTY);
 
         boolean first = true;
 
@@ -421,8 +429,13 @@ public class MessageSerializerGenerator {
     }
 
     /** True if {@code te} extends {@code GridCacheIdMessage} and therefore carries its own per-cache {@code cacheId()}. */
-    private boolean isCacheIdMessage(TypeElement te) {
+    private boolean isGridCacheIdMessage(TypeElement te) {
         return assignableFrom(te.asType(), type("org.apache.ignite.internal.processors.cache.GridCacheIdMessage"));
+    }
+
+    /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */
+    private boolean isCacheIdAwareMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.CacheIdAware"));
     }
 
     /** */
@@ -433,7 +446,7 @@ public class MessageSerializerGenerator {
 
         code.add(identedLine(
             "@Override public void prepareMarshalCacheObjects(" + type.getSimpleName() +
-                " msg, GridCacheContext<?, ?> ctx) throws IgniteCheckedException {"));
+                " msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
     }
 
     /** */
@@ -527,9 +540,7 @@ public class MessageSerializerGenerator {
 
             indent++;
 
-            boolean cacheIdAware = isCacheIdMessage(type);
-
-            if (cacheIdAware)
+            if (isGridCacheIdMessage(type))
                 code.add(identedLine("msg.prepareMarshalCacheObject(%s, ctx);", accessor));
             else {
                 code.add(identedLine("if (%s != null)", var));
@@ -562,7 +573,7 @@ public class MessageSerializerGenerator {
 
             indent++;
 
-            code.add(identedLine("%s.prepareMarshalCacheObjects(%s, ctx);", serRef, var));
+            code.add(identedLine("%s.prepareMarshalCacheObjects(%s, sctx, ctx);", serRef, var));
 
             indent--;
             indent--;
@@ -573,9 +584,7 @@ public class MessageSerializerGenerator {
 
     /** */
     private void emitCoDirect(List<String> code, String accessor) {
-        boolean cacheIdAware = isCacheIdMessage(type);
-
-        if (cacheIdAware)
+        if (isGridCacheIdMessage(type))
             code.add(identedLine("msg.prepareMarshalCacheObject(%s, ctx);", accessor));
         else {
             code.add(identedLine("if (%s != null)", accessor));
@@ -609,9 +618,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        boolean cacheIdAware = isCacheIdMessage(type);
-
-        if (cacheIdAware)
+        if (isGridCacheIdMessage(type))
             code.add(identedLine("msg.prepareMarshalCacheObject(obj, ctx);"));
         else {
             code.add(identedLine("if (obj != null)"));
@@ -640,7 +647,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(identedLine("%s.prepareMarshalCacheObjects(%s, ctx);", serRef, accessor));
+        code.add(identedLine("%s.prepareMarshalCacheObjects(%s, sctx, ctx);", serRef, accessor));
 
         indent--;
     }
@@ -665,7 +672,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(identedLine("%s.prepareMarshalCacheObjects(e, ctx);", serRef));
+        code.add(identedLine("%s.prepareMarshalCacheObjects(e, sctx, ctx);", serRef));
 
         indent--;
         indent--;
