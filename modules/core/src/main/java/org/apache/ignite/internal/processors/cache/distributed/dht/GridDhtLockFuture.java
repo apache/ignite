@@ -933,8 +933,14 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 boolean needVal;
 
                                 try {
-                                    // Must unswap entry so that isNewLocked returns correct value.
-                                    e.unswap(false);
+                                    cctx.shared().database().checkpointReadLock();
+                                    try {
+                                        // Must unswap entry so that isNewLocked returns correct value.
+                                        e.unswap(false);
+                                    }
+                                    finally {
+                                        cctx.shared().database().checkpointReadUnlock();
+                                    }
 
                                     needVal = e.isNewLocked();
 
