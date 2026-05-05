@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -389,7 +390,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
         assertEquals(TEST_TABLE_POPULATION, preparedRows);
         assertEquals(TEST_TABLE_POPULATION, idxRangeReqRows);
 
-        checkSpan(SQL_QRY_CANCEL_REQ, rootSpan, mapNodesCount(), null);
+        waitForSpan(SQL_QRY_CANCEL_REQ, rootSpan, mapNodesCount());
 
         assertFalse(findChildSpans(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
     }
@@ -461,7 +462,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             if (!nextPageReqSpans.isEmpty()) {
                 assertEquals(1, nextPageReqSpans.size());
 
-                checkChildSpan(SQL_FAIL_RESP, nextPageReqSpans.get(0));
+                waitForSpan(SQL_FAIL_RESP, nextPageReqSpans.get(0), 1);
             }
         }
     }
@@ -613,6 +614,24 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      */
     protected SpanId checkChildSpan(SpanType type, SpanId parentSpan) {
         return checkSpan(type, parentSpan, 1, null).get(0);
+    }
+
+    /**
+     * Waits until the parent span has expected child spans with the specified type.
+     *
+     * @param type Span type.
+     * @param parentSpan Parent span id.
+     * @param expSpansCnt Expected spans count.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    private void waitForSpan(
+        SpanType type,
+        SpanId parentSpan,
+        int expSpansCnt
+    ) throws IgniteInterruptedCheckedException {
+        assertTrue("Span was not exported [type=" + type + ", parent=" + parentSpan + ", expCnt=" + expSpansCnt + ']',
+            GridTestUtils.waitForCondition(() -> findChildSpans(type, parentSpan).size() == expSpansCnt,
+                10_000));
     }
 
     /**
