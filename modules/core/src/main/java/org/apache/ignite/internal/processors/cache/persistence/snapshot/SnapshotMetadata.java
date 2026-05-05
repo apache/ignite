@@ -98,13 +98,6 @@ public class SnapshotMetadata implements Message, Serializable {
     @Order(8)
     @Nullable WALPointer snpRecPtr;
 
-    /**
-     * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
-     * since for instance, due to the node filter there is no cache data on node.
-     */
-    @GridToStringInclude
-    transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
-
     /** Master key digest for encrypted caches. */
     @GridToStringInclude
     @Order(9)
@@ -136,6 +129,14 @@ public class SnapshotMetadata implements Message, Serializable {
     /** Encryption key. */
     @Order(14)
     @Nullable byte[] encKey;
+
+    /**
+     * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
+     * since for instance, due to the node filter there is no cache data on node.
+     */
+    @GridToStringInclude
+    @Order(15)
+    transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
     /** Empty constructor for a {@link MessageFactory}. */
     public SnapshotMetadata() {
