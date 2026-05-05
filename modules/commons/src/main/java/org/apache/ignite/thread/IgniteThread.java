@@ -246,7 +246,6 @@ public class IgniteThread extends Thread {
      * @return Thread name if found.
      */
     public static String resolveName(long threadId) {
-        //
         Thread[] threads = new Thread[Thread.activeCount()];
 
         int cnt = Thread.enumerate(threads);
