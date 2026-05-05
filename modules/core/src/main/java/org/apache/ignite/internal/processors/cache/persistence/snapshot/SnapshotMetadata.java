@@ -103,40 +103,38 @@ public class SnapshotMetadata implements Message, Serializable {
      * since for instance, due to the node filter there is no cache data on node.
      */
     @GridToStringInclude
-    @Order(9)
     transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
     /** Master key digest for encrypted caches. */
     @GridToStringInclude
-    @Order(10)
+    @Order(9)
     @Nullable byte[] masterKeyDigest;
 
     /** Warnings occurred at snapshot creation. */
     @GridToStringInclude
-    @Order(11)
+    @Order(10)
     @Nullable List<String> warnings;
 
     /** Creation timestamp in milliseconds since Unix epoch. */
-    @Order(12)
+    @Order(11)
     long snapshotTime;
 
     /** */
-    @Order(13)
     @Nullable transient Set<Integer> comprGrpIds;
 
     /** */
     private boolean hasComprGrps;
 
     /** If {@code true} snapshot only primary copies of partitions. */
-    @Order(14)
+    @Order(12)
     boolean onlyPrimary;
 
     /** If {@code true} cache group dump stored. */
-    @Order(15)
+    @Order(13)
     boolean dump;
 
     /** Encryption key. */
-    @Order(16)
+    @Order(14)
     @Nullable byte[] encKey;
 
     /** Empty constructor for a {@link MessageFactory}. */
