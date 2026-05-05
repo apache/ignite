@@ -1819,11 +1819,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         top.readLock();
 
                         try {
-                            if (top.stopping()) {
-                                if (ctx.shared().cache().isCacheRestarting(name()))
-                                    res.addFailedKeys(req.keys(), new IgniteCacheRestartingException(name()));
-                                else
-                                    res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
+                            Exception validationErr = validateCacheOperation(top);
+
+                            if (validationErr != null) {
+                                res.addFailedKeys(req.keys(), validationErr);
 
                                 completionCb.apply(req, res);
 
@@ -3691,6 +3690,21 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             U.error(msgLog, "Failed to send near update response [futId=" + res.futureId() +
                 ", node=" + nodeId + ", res=" + res + ']', e);
         }
+    }
+
+    /** */
+    @Nullable private Exception validateCacheOperation(GridDhtPartitionTopology top) {
+        if (ctx.kernalContext().isStopping())
+            return new NodeStoppingException("Failed to perform cache operation. Node is stopping [cacheName=" + name() + ']');
+
+        if (top.stopping()) {
+            if (ctx.shared().cache().isCacheRestarting(name()))
+                return new IgniteCacheRestartingException(name());
+            else
+                return new CacheStoppedException(name());
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */

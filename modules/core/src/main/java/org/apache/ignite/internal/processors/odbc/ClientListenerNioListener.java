@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -290,7 +291,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         if (e instanceof Error)
             U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
         else
-            U.warn(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
+            LT.warn(log, e, "Failed to process client request [req=" + req.getClass().getName() + "]", false, true);
 
         ses.send(parser.encode(hnd.handleException(e, req)));
 

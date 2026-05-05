@@ -126,6 +126,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         /// Tests that streamer does not lose data during random topology changes.
         /// </summary>
         [Test]
+        [Ignore("https://issues.apache.org/jira/browse/IGNITE-28660")]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
             const int maxNodes = 4;
