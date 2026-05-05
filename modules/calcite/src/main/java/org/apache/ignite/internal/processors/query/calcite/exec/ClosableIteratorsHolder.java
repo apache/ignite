@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -37,7 +38,7 @@ public class ClosableIteratorsHolder {
     private final ReferenceQueue refQueue;
 
     /** */
-    private final Map<Reference, Object> refMap;
+    private final Map<Reference, Iterator<?>> refMap;
 
     /** */
     private final IgniteLogger log;
@@ -97,7 +98,7 @@ public class ClosableIteratorsHolder {
     }
 
     /** */
-    private AutoCloseable closeable(Object referent, Object rsrc) {
+    private @Nullable AutoCloseable closeable(Object referent, Iterator<?> rsrc) {
         if (!(rsrc instanceof AutoCloseable))
             return null;
 
