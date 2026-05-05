@@ -52,7 +52,7 @@ No data exchange happens between the remaining nodes.
 
 TODO:
 You can implement a custom affinity function if you want to control the way data is distributed in the cluster.
-See the link:advanced-topics/affinity-function[Affinity Function] section in Advanced Topics.
+See the link:data-modeling/data-partitioning#affinity-function[Affinity Function] section.
 
 ////////////////////////////////////////////////////////////////////////////////
 

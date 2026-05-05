@@ -111,6 +111,6 @@ The Java methods are resolved the following way:
 Ignite invoke the matched method or throws an exception in case of ambiguity.
 * The method return type is ignored, since .NET and Java do not allow identical methods with different return types.
 
-See link:net-specific/platform-interoperability[Platform Interoperability, Type Compatibility section] for details on
+See link:net-specific/net-platform-interoperability[Platform Interoperability, Type Compatibility section] for details on
 method arguments and result mapping. Note, that the `params/varargs` are also supported, since in .NET and Java these are
 syntactic sugar for object arrays.
