@@ -1212,11 +1212,18 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             for (IgniteTxEntry entry : entries) {
                 GridCacheVersion serReadVer = entry.entryReadVersion();
 
-                if (serReadVer != null) {
-                    entry.cached().unswap();
+                cctx.database().checkpointReadLock();
 
-                    if (!entry.cached().checkSerializableReadVersion(serReadVer))
-                        return versionCheckError(entry);
+                try {
+                    if (serReadVer != null) {
+                        entry.cached().unswap();
+
+                        if (!entry.cached().checkSerializableReadVersion(serReadVer))
+                            return versionCheckError(entry);
+                    }
+                }
+                finally {
+                    cctx.database().checkpointReadUnlock();
                 }
             }
         }
