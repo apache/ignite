@@ -75,7 +75,8 @@ public class SnapshotRestoreOperationResponse implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (ccfgsBytes != null)
-            ccfgs = U.unmarshal(marsh, ccfgsBytes, clsLdr);
+        ccfgs = U.unmarshal(marsh, ccfgsBytes, clsLdr);
+
+        ccfgsBytes = null;
     }
 }

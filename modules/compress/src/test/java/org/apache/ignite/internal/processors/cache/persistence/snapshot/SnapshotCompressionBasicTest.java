@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
@@ -329,6 +330,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 else
                     cfg.setDiskPageCompression(DiskPageCompression.DISABLED);
 
+                cfg.setAffinity(new RendezvousAffinityFunction(4, null));
+
                 return cfg;
             }).toArray(CacheConfiguration[]::new);
 
@@ -434,16 +437,22 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             return 0;
 
         try (Stream<Path> walk = Files.walk(path)) {
-            return walk.filter(Files::isRegularFile)
+            long res = walk.filter(Files::isRegularFile)
                 .filter(f -> F.isEmpty(pattern) || f.getFileName().toString().matches(pattern))
                 .mapToLong(p -> {
                     try (FileIO fio = new RandomAccessFileIO(p.toFile(), StandardOpenOption.READ)) {
+                        System.err.println("TEST | fsize, f=" + p.toFile() + ", size = " + fio.getSparseSize());
+
                         return fio.getSparseSize();
                     }
                     catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }).sum();
+
+            System.err.println("TEST | dirSize, path=" + path + ", size = " + res);
+
+            return res;
         }
         catch (IOException e) {
             throw new IgniteException(e);
