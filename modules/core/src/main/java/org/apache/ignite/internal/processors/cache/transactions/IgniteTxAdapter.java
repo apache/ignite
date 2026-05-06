@@ -1430,8 +1430,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                         boolean intercept = e.context().config().getInterceptor() != null;
 
-                        if (intercept || !F.isEmpty(e.entryProcessors()))
-                            e.cached().unswap(false);
+                        if (intercept || !F.isEmpty(e.entryProcessors())) {
+                            cctx.database().checkpointReadLock();
+
+                            try {
+                                e.cached().unswap(false);
+                            }
+                            finally {
+                                cctx.database().checkpointReadUnlock();
+                            }
+                        }
 
                         IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
 
