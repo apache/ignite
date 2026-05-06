@@ -202,11 +202,10 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
         List<SpanId> txDhtFinishSpanIds = checkSpan(
             TX_DHT_FINISH,
@@ -349,11 +348,10 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
         List<SpanId> txDhtFinishSpanIds = checkSpan(
             TX_DHT_FINISH,
@@ -503,11 +501,10 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
         List<SpanId> txDhtFinishSpanIds = checkSpan(
             TX_DHT_FINISH,
@@ -650,11 +647,10 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
         List<SpanId> txDhtFinishSpanIds = checkSpan(
             TX_DHT_FINISH,
@@ -804,11 +800,10 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
         List<SpanId> txDhtFinishSpanIds = checkSpan(
             TX_DHT_FINISH,
@@ -951,11 +946,10 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
         List<SpanId> txDhtFinishSpanIds = checkSpan(
             TX_DHT_FINISH,

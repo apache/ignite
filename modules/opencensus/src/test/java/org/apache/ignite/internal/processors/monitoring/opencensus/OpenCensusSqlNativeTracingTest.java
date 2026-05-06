@@ -41,7 +41,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -175,11 +174,11 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
             checkChildSpan(SQL_QRY_EXECUTE, iterSpan);
 
-            fetchedRows += findChildSpans(SQL_PAGE_FETCH, execReqSpan).stream()
+            fetchedRows += findChildSpanIds(SQL_PAGE_FETCH, execReqSpan).stream()
                 .mapToInt(span -> parseInt(getAttribute(span, SQL_PAGE_ROWS)))
                 .sum();
 
-            List<SpanId> cacheUpdateSpans = findChildSpans(SQL_CACHE_UPDATE, execReqSpan);
+            List<SpanId> cacheUpdateSpans = findChildSpanIds(SQL_CACHE_UPDATE, execReqSpan);
 
             cacheUpdates += cacheUpdateSpans.stream()
                 .mapToInt(span -> parseInt(getAttribute(span, SQL_CACHE_UPDATES)))
@@ -339,7 +338,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
             preparedRows += parseInt(getAttribute(pagePrepareSpan, SQL_PAGE_ROWS));
 
-            List<SpanId> distLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, pagePrepareSpan);
+            List<SpanId> distLookupReqSpans = findChildSpanIds(SQL_IDX_RANGE_REQ, pagePrepareSpan);
 
             for (SpanId span : distLookupReqSpans) {
                 String rowsAttr = getAttribute(span, SQL_IDX_RANGE_ROWS);
@@ -366,14 +365,14 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         checkChildSpan(SQL_PAGE_RESP, nexPageSpan);
 
-        List<SpanId> pageFetchSpans = findChildSpans(SQL_PAGE_FETCH, rootSpan);
+        List<SpanId> pageFetchSpans = findChildSpanIds(SQL_PAGE_FETCH, rootSpan);
 
         for (SpanId span : pageFetchSpans) {
             fetchedRows += parseInt(getAttribute(span, SQL_PAGE_ROWS));
 
             checkChildSpan(SQL_PAGE_WAIT, span);
 
-            List<SpanId> nextPageSpans = findChildSpans(SQL_NEXT_PAGE_REQ, span);
+            List<SpanId> nextPageSpans = findChildSpanIds(SQL_NEXT_PAGE_REQ, span);
 
             if (!nextPageSpans.isEmpty()) {
                 assertEquals(1, nextPageSpans.size());
@@ -392,7 +391,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         waitForSpan(SQL_QRY_CANCEL_REQ, rootSpan, mapNodesCount());
 
-        assertFalse(findChildSpans(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
+        assertFalse(findChildSpanIds(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
     }
 
     /**
@@ -411,7 +410,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         SpanId iterOpenSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
 
-        List<SpanId> qryExecSpans = findChildSpans(SQL_QRY_EXEC_REQ, iterOpenSpan);
+        List<SpanId> qryExecSpans = findChildSpanIds(SQL_QRY_EXEC_REQ, iterOpenSpan);
 
         assertEquals(GRID_CNT * qryParallelism, qryExecSpans.size());
     }
@@ -454,10 +453,10 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         waitForSpan(SQL_QRY_CANCEL_REQ, iterCloseSpan, mapNodesCount());
 
-        List<SpanId> pageFetchSpans = findChildSpans(SQL_PAGE_FETCH, rootSpan);
+        List<SpanId> pageFetchSpans = findChildSpanIds(SQL_PAGE_FETCH, rootSpan);
 
         for (SpanId pageFetchSpan : pageFetchSpans) {
-            List<SpanId> nextPageReqSpans = findChildSpans(SQL_NEXT_PAGE_REQ, pageFetchSpan);
+            List<SpanId> nextPageReqSpans = findChildSpanIds(SQL_NEXT_PAGE_REQ, pageFetchSpan);
 
             if (!nextPageReqSpans.isEmpty()) {
                 assertEquals(1, nextPageReqSpans.size());
@@ -565,14 +564,14 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         fetchedRows += parseInt(getAttribute(fetchSpan, SQL_PAGE_ROWS));
 
-        List<SpanId> pageFetchSpans = findChildSpans(SQL_PAGE_FETCH, rootSpan);
+        List<SpanId> pageFetchSpans = findChildSpanIds(SQL_PAGE_FETCH, rootSpan);
 
         for (SpanId span : pageFetchSpans)
             fetchedRows += parseInt(getAttribute(span, SQL_PAGE_ROWS));
 
         assertEquals(expRows, fetchedRows);
 
-        assertFalse(findChildSpans(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
+        assertFalse(findChildSpanIds(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
     }
 
     /**
@@ -591,14 +590,14 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
         if (fetchRequired) {
             checkChildSpan(SQL_ITER_OPEN, dmlExecSpan);
 
-            int fetchedRows = findChildSpans(SQL_PAGE_FETCH, null).stream()
+            int fetchedRows = findChildSpanIds(SQL_PAGE_FETCH, null).stream()
                 .mapToInt(span -> parseInt(getAttribute(span, SQL_PAGE_ROWS)))
                 .sum();
 
             assertEquals(expCacheUpdates, fetchedRows);
         }
 
-        int cacheUpdates = findChildSpans(SQL_CACHE_UPDATE, dmlExecSpan).stream()
+        int cacheUpdates = findChildSpanIds(SQL_CACHE_UPDATE, dmlExecSpan).stream()
             .mapToInt(span -> parseInt(getAttribute(span, SQL_CACHE_UPDATES)))
             .sum();
 
@@ -614,40 +613,6 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      */
     protected SpanId checkChildSpan(SpanType type, SpanId parentSpan) {
         return checkSpan(type, parentSpan, 1, null).get(0);
-    }
-
-    /**
-     * Waits until parent span has expected child spans with specified type.
-     *
-     * @param type Span type.
-     * @param parentSpan Parent span id.
-     * @param expSpansCnt Expected spans count.
-     * @throws IgniteInterruptedCheckedException If interrupted.
-     */
-    protected void waitForSpan(
-        SpanType type,
-        SpanId parentSpan,
-        int expSpansCnt
-    ) throws IgniteInterruptedCheckedException {
-        assertTrue("Span was not exported [type=" + type + ", parent=" + parentSpan + ", expCnt=" + expSpansCnt + ']',
-            GridTestUtils.waitForCondition(() -> findChildSpans(type, parentSpan).size() == expSpansCnt,
-                10_000));
-    }
-
-    /**
-     * Finds child spans with specified type and parent span.
-     *
-     * @param type Span type.
-     * @param parentSpanId Parent span id.
-     * @return Ids of the found spans.
-     */
-    protected List<SpanId> findChildSpans(SpanType type, SpanId parentSpanId) {
-        return handler().allSpans()
-            .filter(span -> parentSpanId != null ?
-                parentSpanId.equals(span.getParentSpanId()) && type.spanName().equals(span.getName()) :
-                type.spanName().equals(span.getName()))
-            .map(span -> span.getContext().getSpanId())
-            .collect(Collectors.toList());
     }
 
     /**

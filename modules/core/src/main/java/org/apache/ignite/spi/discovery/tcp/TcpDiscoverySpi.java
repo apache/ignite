@@ -604,7 +604,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * Sets network addresses for the Discovery SPI.
      * <p>
      * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If the latter is not set
-     * as well, the the node binds to all available IP addresses of an environment it's running on.
+     * as well, the node binds to all available IP addresses of an environment it's running on.
      * If there is no a non-loopback address, then {@link InetAddress#getLocalHost()} is used.
      * <p>
      * <b>NOTE:</b> You should initialize the {@link IgniteConfiguration#getLocalHost()} or
