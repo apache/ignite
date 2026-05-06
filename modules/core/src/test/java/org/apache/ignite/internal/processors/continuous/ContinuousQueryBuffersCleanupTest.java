@@ -194,10 +194,6 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
         contProc.localRoutineInfos().forEach((routineId, locRoutineInfo) ->
             cqHandlers.add((CacheContinuousQueryHandler<?, ?>)locRoutineInfo.handler()));
 
-        contProc.clientRoutineInfos().forEach((nodeId, rmtRoutineInfos) ->
-            rmtRoutineInfos.forEach((routineId, locRoutineInfo) ->
-                cqHandlers.add((CacheContinuousQueryHandler<?, ?>)locRoutineInfo.handler())));
-
         for (CacheContinuousQueryHandler<?, ?> cqHnd : cqHandlers) {
             for (CacheContinuousQueryEventBuffer evtBuf : partitionContinuesQueryEntryBuffers(cqHnd).values()) {
                 if (backupQueueSize(evtBuf) != 0)
