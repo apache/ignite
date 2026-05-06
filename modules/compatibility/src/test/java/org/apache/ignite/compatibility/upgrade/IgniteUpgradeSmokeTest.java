@@ -24,7 +24,7 @@ public class IgniteUpgradeSmokeTest extends IgniteUpgradeAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(100 * 1024 * 1024)));
+                .setMaxSize(300 * 1024 * 1024)));
 
         cfg.setCacheConfiguration(getCacheConfiguration());
 

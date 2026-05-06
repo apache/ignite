@@ -11,10 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
-import javax.xml.transform.TransformerConfigurationException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -155,11 +152,16 @@ public abstract class IgniteUpgradeAbstractTest extends GridCommonAbstractTest {
 
         Path xmlCfgPath = cfgGenerator.generateIgniteConfigurationXml(cfg, logDir, cfgDir);
 
-        String label = isBase ? "[BASE]" : "[TRGT]";
+        String lbl = isBase ? "[BASE]" : "[TRGT]";
 
-        IgniteProcessProxy ign = new IgniteProcessProxy(cfg, log, locJvmInstance == null ? null : () -> locJvmInstance, false, Collections.emptyList()) {
+        IgniteProcessProxy ign = new IgniteProcessProxy(
+            cfg,
+            log,
+            locJvmInstance == null ? null : () -> locJvmInstance,
+            false,
+            Collections.emptyList()) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
-                return log.getLogger(ctgr + "#" + label + "node-" + idx);
+                return log.getLogger(ctgr + "#" + lbl + "node-" + idx);
             }
 
             @Override protected String igniteNodeRunnerClassName() throws Exception {
@@ -188,7 +190,8 @@ public abstract class IgniteUpgradeAbstractTest extends GridCommonAbstractTest {
                 filteredArgs.add(customCp);
 
                 return filteredArgs;
-            }};
+            }
+        };
 
         if (locJvmInstance == null) {
             locJvmInstance = startClientGrid(getConfiguration(getTestIgniteInstanceName(0)));

@@ -19,15 +19,15 @@ import org.apache.ignite.internal.util.typedef.X;
 public class DistributionProvider {
     /** Base Ignite distribution location */
     @SystemProperty(value = "Base Ignite distribution location", type = String.class)
-    private static final String BASE_DIST = "ignite.upgrade.base";
+    private static final String BASE_DIST = "ignite.upgrade.base.dist";
 
     /** Target Ignite distribution location */
     @SystemProperty(value = "Target Ignite distribution location", type = String.class)
-    private static final String TARGET_DIST = "ignite.upgrade.target";
+    private static final String TARGET_DIST = "ignite.upgrade.target.dist";
 
     /** Cached Ignite released distributions location */
     @SystemProperty(value = "Cached Ignite released distributions location", type = String.class)
-    private static final String RELEASES_DIR = "ignite.upgrade.releases";
+    private static final String RELEASES_DIR = "ignite.upgrade.releases.dir";
 
     /** */
     private static final String DEFAULT_TARGET_REL_PATH = "target/release-package-apache-ignite";
@@ -94,7 +94,7 @@ public class DistributionProvider {
     /** Downloads and unpacks Ignite distribution from Apache Archives. */
     private static void downloadAndUnpack(String ver, File dest) {
         String zipName = "apache-ignite-" + ver + "-bin.zip";
-        String downloadUrl = "https://archive.apache.org/dist/ignite/" + ver + "/" + zipName;
+        String downloadUrl = "https://www.apache.org/dyn/closer.lua/ignite/" + ver + "/" + zipName + "?action=download";
         File tmpZip = new File(dest.getParentFile(), zipName);
 
         try {
@@ -102,7 +102,8 @@ public class DistributionProvider {
 
             try {
                 downloadWithProgress(downloadUrl, tmpZip);
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 X.println("Download failed: " + e.getMessage());
             }
 
@@ -179,7 +180,8 @@ public class DistributionProvider {
 
                         lastPercent = percent;
                     }
-                } else
+                }
+                else
                     X.println("Downloaded: " + (totalRead / 1024) + " KB (Unknown size)");
             }
 
