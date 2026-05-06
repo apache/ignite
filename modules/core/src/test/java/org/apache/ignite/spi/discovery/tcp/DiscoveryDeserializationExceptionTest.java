@@ -122,7 +122,7 @@ public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTes
         IgniteEx cli = startClientGrid(failNodeIdx);
 
         // grid0 knows about NotRegisteredMessage.
-        // Expect grid1 fail to read it.
+        // Expect client node fail to read it.
         grid(0).context().discovery().sendCustomEvent(new NotRegisteredMessage(""));
 
         assertTrue("Error must be logged", errLsnr.check(30_000));
