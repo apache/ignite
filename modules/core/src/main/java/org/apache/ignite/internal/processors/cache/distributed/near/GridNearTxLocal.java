@@ -3035,9 +3035,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * Creates savepoint for a pessimistic transaction.
      *
-     * @param name Savepoint name.
+     * @param name      Savepoint name.
      * @param overwrite Whether to overwrite an existing savepoint with the same name.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state,
+     *                                or savepoint with the given name already exists and {@code overwrite} is {@code false}.
      */
     public void savepoint(String name, boolean overwrite) throws IgniteCheckedException {
         A.notNull(name, "name");
@@ -3073,7 +3074,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * Rolls back transaction changes to the specified savepoint.
      *
      * @param name Savepoint name.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state,
+     *                                or savepoint with the given name does not exist.
      */
     public void rollbackToSavepoint(String name) throws IgniteCheckedException {
         A.notNull(name, "name");

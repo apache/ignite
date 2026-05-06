@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
@@ -102,8 +103,11 @@ public class DdlCommandHandler {
     /** */
     public void handle(UUID qryId, BaseQueryContext qryCtx, DdlCommand cmd) throws IgniteCheckedException {
         try {
-            if (cmd instanceof TransactionCommand)
-                handle0(qryCtx, (TransactionCommand)cmd);
+            if (cmd instanceof TransactionCommand) {
+                GridNearTxLocal tx = Commons.queryTransaction(qryCtx, cacheProc.context());
+
+                handle0((TransactionCommand)cmd, tx);
+            }
             else if (cmd instanceof CreateTableCommand)
                 handle0((CreateTableCommand)cmd);
             else if (cmd instanceof DropTableCommand)
@@ -125,12 +129,16 @@ public class DdlCommandHandler {
         }
     }
 
-    /** */
-    private void handle0(BaseQueryContext qryCtx, TransactionCommand cmd) throws IgniteCheckedException {
+    /**
+     * Handles transaction control commands (SAVEPOINT and ROLLBACK TO SAVEPOINT).
+     *
+     * @param cmd Command.
+     * @param tx Transaction. Can be null if there is no transaction associated with the query context.
+     * @throws IgniteCheckedException If failed to execute the command.
+     */
+    private void handle0(TransactionCommand cmd, @Nullable GridNearTxLocal tx) throws IgniteCheckedException {
         if (cmd.type() == TransactionCommand.Type.NOOP)
             return;
-
-        GridNearTxLocal tx = Commons.queryTransaction(qryCtx, cacheProc.context());
 
         if (tx == null)
             throw new IgniteSQLException(SAVEPOINTS_EXPLICIT_TX_ONLY, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
