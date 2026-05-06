@@ -121,22 +121,23 @@ public class SnapshotMetadata implements Message, Serializable {
     long snapshotTime;
 
     /** */
+    @Order(13)
     @Nullable transient Set<Integer> comprGrpIds;
 
     /** */
-    @Order(13)
+    @Order(14)
     boolean hasComprGrps;
 
     /** If {@code true} snapshot only primary copies of partitions. */
-    @Order(14)
+    @Order(15)
     boolean onlyPrimary;
 
     /** If {@code true} cache group dump stored. */
-    @Order(15)
+    @Order(16)
     boolean dump;
 
     /** Encryption key. */
-    @Order(16)
+    @Order(17)
     @Nullable byte[] encKey;
 
     /** Empty constructor for a {@link MessageFactory}. */
