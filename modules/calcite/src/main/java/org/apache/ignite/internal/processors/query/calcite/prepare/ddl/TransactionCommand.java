@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import org.jetbrains.annotations.Nullable;
+
 /** Command for transaction control statements. */
 public class TransactionCommand implements DdlCommand {
     /** Transaction command type. */
@@ -34,7 +36,7 @@ public class TransactionCommand implements DdlCommand {
     private final Type type;
 
     /** Savepoint name. */
-    private final String savepointName;
+    @Nullable private final String savepointName;
 
     /** */
     public TransactionCommand() {

@@ -146,6 +146,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
 
+    /** Exception message. */
+    public static final String SAVEPOINTS_EXPLICIT_TX_ONLY = "Savepoints can be used only inside explicit transactions.";
+
     /** DHT mappings. */
     private final IgniteTxMappings mappings;
 
@@ -3043,7 +3046,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             checkValid();
 
             if (implicit())
-                throw new IgniteCheckedException("Savepoints can be used only inside explicit transactions.");
+                throw new IgniteCheckedException(SAVEPOINTS_EXPLICIT_TX_ONLY);
 
             if (!pessimistic())
                 throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
@@ -3079,7 +3082,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             checkValid();
 
             if (implicit())
-                throw new IgniteCheckedException("Savepoints can be used only inside explicit transactions.");
+                throw new IgniteCheckedException(SAVEPOINTS_EXPLICIT_TX_ONLY);
 
             if (!pessimistic())
                 throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");

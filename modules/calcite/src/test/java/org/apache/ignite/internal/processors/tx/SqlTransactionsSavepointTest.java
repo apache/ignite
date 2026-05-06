@@ -33,6 +33,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode.ALL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -200,13 +201,13 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
         assertThrows(
             "SAVEPOINT sp1",
             IgniteSQLException.class,
-            "Savepoints can be used only inside explicit transactions."
+            SAVEPOINTS_EXPLICIT_TX_ONLY
         );
 
         assertThrows(
             "ROLLBACK TO SAVEPOINT sp1",
             IgniteSQLException.class,
-            "Savepoints can be used only inside explicit transactions."
+            SAVEPOINTS_EXPLICIT_TX_ONLY
         );
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -54,7 +53,7 @@ public class IgniteSqlSavepoint extends SqlDdl {
 
     /** {@inheritDoc} */
     @Override public List<SqlNode> getOperandList() {
-        return ImmutableList.of(name);
+        return List.of(name);
     }
 
     /** {@inheritDoc} */

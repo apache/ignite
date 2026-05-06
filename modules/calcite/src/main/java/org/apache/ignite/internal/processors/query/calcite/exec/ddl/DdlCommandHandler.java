@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
@@ -131,10 +132,8 @@ public class DdlCommandHandler {
 
         GridNearTxLocal tx = Commons.queryTransaction(qryCtx, cacheProc.context());
 
-        if (tx == null) {
-            throw new IgniteSQLException("Savepoints can be used only inside explicit transactions.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
+        if (tx == null)
+            throw new IgniteSQLException(SAVEPOINTS_EXPLICIT_TX_ONLY, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         switch (cmd.type()) {
             case SAVEPOINT:

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -54,12 +53,12 @@ public class IgniteSqlRollbackToSavepoint extends SqlDdl {
 
     /** {@inheritDoc} */
     @Override public List<SqlNode> getOperandList() {
-        return ImmutableList.of(name);
+        return List.of(name);
     }
 
     /** {@inheritDoc} */
     @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("ROLLBACK TO SAVEPOINT");
+        writer.keyword(getOperator().getName());
         name.unparse(writer, leftPrec, rightPrec);
     }
 }
