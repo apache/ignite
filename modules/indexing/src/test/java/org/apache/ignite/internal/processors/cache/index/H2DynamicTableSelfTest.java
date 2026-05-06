@@ -1018,8 +1018,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         client().destroyCache(cacheName);
 
-        awaitPartitionMapExchange();
-
         for (Ignite g: G.allGrids()) {
             IgniteEx node = (IgniteEx)g;
 
