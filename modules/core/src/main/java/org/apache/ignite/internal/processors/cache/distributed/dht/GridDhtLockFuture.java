@@ -1066,7 +1066,14 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
             for (GridDhtCacheEntry entry : entries) {
                 try {
-                    entry.unswap(false);
+                    cctx.shared().database().checkpointReadLock();
+
+                    try {
+                        entry.unswap(false);
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
 
                     if (!entry.hasValue())
                         loadMap.put(entry.key(), entry);
