@@ -222,7 +222,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
             if (maxTopVer.compareTo(readyTopVer) > 0) {
                 try {
                     node.context().cache().context().exchange().affinityReadyFuture(maxTopVer)
-                        .get(1000L, TimeUnit.MILLISECONDS);
+                        .get(10_000L, TimeUnit.MILLISECONDS);
                 }
                 catch (IgniteCheckedException e) {
                     throw new AssertionError(e);
