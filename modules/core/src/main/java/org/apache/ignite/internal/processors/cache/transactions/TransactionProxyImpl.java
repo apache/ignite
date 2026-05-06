@@ -482,6 +482,56 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name) {
+        savepoint(name, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name, boolean overwrite) {
+        enter();
+
+        try {
+            tx.savepoint(name, overwrite);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(String name) {
+        enter();
+
+        try {
+            tx.rollbackToSavepoint(name);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(String name) {
+        enter();
+
+        try {
+            tx.releaseSavepoint(name);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
+
     /**
      * @param res Result to convert to finished future.
      */

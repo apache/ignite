@@ -145,7 +145,7 @@ Also, you can check a link:https://github.com/apache/ignite/blob/master/examples
 
 [NOTE]
 ====
-Partition Awareness also enables link:../services/services.adoc#service_awareness[Service Awareness]
+Partition Awareness also enables link:services/services#service_awareness[Service Awareness]
 ====
 
 == Using Key-Value API

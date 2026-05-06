@@ -900,7 +900,7 @@ When this approach is used, COMPACT_FOOTER flag is not set and the whole object 
 
 In this approach, COMPACT_FOOTER flag is set and only field offset sequence is written to the object footer. In this case client uses schema_id field to search objects schema in a previously stored meta store to find out fields order and associate field with its offset.
 
-If this approach is used, client needs to keep schemas in a special meta store and send/retrieve them to Ignite servers. See link:check[Binary Types] for details.
+If this approach is used, client needs to keep schemas in a special meta store and send/retrieve them to Ignite servers. See link:binary-client-protocol/binary-type-metadata[Binary Types] for details.
 
 The structure of the schema in this case can be found below:
 
@@ -1023,7 +1023,7 @@ int typeCode = readByteLittleEndian(in);
 int val = readIntLittleEndian(in);
 ----
 
-Refer to the link:example[example section] for implementation of `write...()` and `read..()` methods shown above.
+Refer to the link:binary-client-protocol/data-format#serialization-and-deserialization-examples[example section] for implementation of `write...()` and `read..()` methods shown above.
 
 As another example, for String type, the structure would be:
 

@@ -429,7 +429,7 @@ Presently, the cache is unlimited and can occupy as much RAM as allocated to you
 
 * Set the JVM max heap size equal to the total size of all the data regions that store caches for which this on-heap row cache is enabled.
 
-* link:perf-troubleshooting-guide/memory-tuning#java-heap-and-gc-tuning[Tune] JVM garbage collection accordingly.
+* link:perf-and-troubleshooting/memory-tuning#java-heap-and-gc-tuning[Tune] JVM garbage collection accordingly.
 ====
 
 == Using TIMESTAMP instead of DATE
