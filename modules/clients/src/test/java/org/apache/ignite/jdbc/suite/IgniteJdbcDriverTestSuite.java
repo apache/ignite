@@ -43,6 +43,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinConnectionAdditionalSecurityTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMultipleAddressesTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionPropertiesTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSSLTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionSavepointTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDataPageScanPropertySelfTest;
@@ -146,6 +147,7 @@ import org.junit.runners.Suite;
 
     // New thin JDBC
     JdbcThinConnectionSelfTest.class,
+    JdbcThinConnectionSavepointTest.class,
     JdbcThinConnectionMultipleAddressesTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinConnectionAdditionalSecurityTest.class,

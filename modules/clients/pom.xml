@@ -75,6 +75,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-calcite</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j2</artifactId>
             <scope>test</scope>
         </dependency>

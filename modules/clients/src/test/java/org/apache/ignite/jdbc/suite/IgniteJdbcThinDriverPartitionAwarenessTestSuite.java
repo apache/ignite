@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.suite;
 
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionSavepointTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessSelfTest;
@@ -34,6 +35,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     JdbcThinConnectionSelfTest.class,
+    JdbcThinConnectionSavepointTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinStatementSelfTest.class,
     JdbcThinPartitionAwarenessSelfTest.class,

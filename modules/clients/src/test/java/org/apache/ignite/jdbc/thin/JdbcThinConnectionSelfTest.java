@@ -1542,7 +1542,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
             assertThrows(log,
@@ -1573,7 +1573,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             assertThrows(log,
@@ -1619,7 +1619,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             assertThrows(log,
@@ -1678,7 +1678,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             assertThrows(log,
@@ -1695,11 +1695,17 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             final Savepoint savepoint = getFakeSavepoint();
 
-            checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
-                    conn.releaseSavepoint(savepoint);
-                }
-            });
+            assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.releaseSavepoint(savepoint);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid savepoint"
+            );
 
             conn.close();
 
