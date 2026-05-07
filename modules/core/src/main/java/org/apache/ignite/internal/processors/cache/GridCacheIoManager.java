@@ -1149,23 +1149,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             msg.messageId(idGen.incrementAndGet());
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
-            prepareMarshalCacheObjects(msg);
-            
             msg.prepareMarshal(cctx);
+            
+            MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
+
+            if (ser != null)
+                ser.prepareMarshalCacheObjects(msg, cctx, null);
 
             if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
 
         return true;
-    }
-
-    /** */
-    private void prepareMarshalCacheObjects(GridCacheMessage msg) throws IgniteCheckedException {
-        MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
-
-        if (ser != null)
-            ser.prepareMarshalCacheObjects(msg, cctx, null);
     }
 
     /**

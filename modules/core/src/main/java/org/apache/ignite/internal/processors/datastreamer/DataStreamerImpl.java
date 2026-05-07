@@ -1933,6 +1933,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 localUpdate(entries, topVer, curFut, plc);
             else {
                 try {
+                    for (DataStreamerEntry e : entries) {
+                        e.getKey().prepareMarshal(cacheObjCtx);
+
+                        CacheObject val = e.getValue();
+
+                        if (val != null)
+                            val.prepareMarshal(cacheObjCtx);
+                    }
+
                     if (updaterBytes == null) {
                         assert rcvr != null;
 

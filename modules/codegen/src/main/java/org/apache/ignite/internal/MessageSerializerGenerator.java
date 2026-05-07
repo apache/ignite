@@ -38,7 +38,6 @@ import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -53,6 +52,7 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -117,9 +117,6 @@ public class MessageSerializerGenerator {
 
     /** */
     private final List<String> prepareCacheObjects = new ArrayList<>();
-
-    /** Map of {@code <nested-serializer-static-var-name, serializer-FQN>} for recursion into nested messages. */
-    private final LinkedHashMap<String, String> nestedSerializerFields = new LinkedHashMap<>();
 
     /** */
     private int indent;
@@ -255,11 +252,11 @@ public class MessageSerializerGenerator {
         finish(write, false, false);
         finish(read, true, marshallableMessage());
 
-        generateCacheObjectMethods(fields);
+        generateCacheObjectMarshallMethods(fields);
     }
 
     /** */
-    private void generateCacheObjectMethods(List<VariableElement> orderedFields) throws Exception {
+    private void generateCacheObjectMarshallMethods(List<VariableElement> orderedFields) throws Exception {
         List<VariableElement> traversable = new ArrayList<>();
 
         for (VariableElement field: orderedFields) {
@@ -300,17 +297,9 @@ public class MessageSerializerGenerator {
         indent--;
 
         prepareCacheObjects.add(identedLine("}"));
-
-        for (Map.Entry<String, String> e : nestedSerializerFields.entrySet()) {
-            imports.add(e.getValue());
-
-            String serSimple = e.getValue().substring(e.getValue().lastIndexOf('.') + 1);
-
-            fields.add("private final static " + serSimple + " " + e.getKey() + " = new " + serSimple + "();");
-        }
     }
 
-    /** Traversal kinds for {@link #generateCacheObjectMethods}. */
+    /** Traversal kinds for {@link #generateCacheObjectMarshallMethods}. */
     private enum FieldKind {
         /** {@code CacheObject} / {@code KeyCacheObject} scalar. */
         CO,
@@ -409,21 +398,12 @@ public class MessageSerializerGenerator {
         if (msgIface == null || !assignableFrom(t, msgIface))
             return false;
 
-        if (assignableFrom(t, marshallableMsgType))
-            return false;
-
         Element el = env.getTypeUtils().asElement(t);
 
         if (!(el instanceof TypeElement))
             return false;
 
         TypeElement te = (TypeElement)el;
-
-        if (te.getKind() != ElementKind.CLASS)
-            return false;
-
-        if (te.getModifiers().contains(Modifier.ABSTRACT))
-            return false;
 
         return !te.equals(type);
     }
@@ -445,7 +425,7 @@ public class MessageSerializerGenerator {
         code.add(identedLine(METHOD_JAVADOC));
 
         code.add(identedLine(
-            "@Override public void prepareMarshalCacheObjects(" + type.getSimpleName() +
+            "@Override public void prepareMarshalCacheObjects(" + simpleNameWithGeneric(type) +
                 " msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
     }
 
@@ -466,7 +446,7 @@ public class MessageSerializerGenerator {
                 break;
 
             case MSG:
-                emitMsgDirect(code, accessor, (DeclaredType)t);
+                emitMsgDirect(code, accessor);
                 break;
 
             case MSG_COLL:
@@ -560,7 +540,6 @@ public class MessageSerializerGenerator {
             assert sideKind == FieldKind.MSG : sideKind;
 
             DeclaredType msgType = (DeclaredType)sideType;
-            String serRef = nestedSerializerRef(msgType);
             String elemSimple = msgType.asElement().getSimpleName().toString();
 
             imports.add(((TypeElement)msgType.asElement()).getQualifiedName().toString());
@@ -573,7 +552,8 @@ public class MessageSerializerGenerator {
 
             indent++;
 
-            code.add(identedLine("%s.prepareMarshalCacheObjects(%s, sctx, ctx);", serRef, var));
+            code.add(identedLine(
+                "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshalCacheObjects(%s, sctx, ctx);", var, var));
 
             indent--;
             indent--;
@@ -640,22 +620,19 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private void emitMsgDirect(List<String> code, String accessor, DeclaredType msgType) {
-        String serRef = nestedSerializerRef(msgType);
-
+    private void emitMsgDirect(List<String> code, String accessor) {
         code.add(identedLine("if (%s != null)", accessor));
 
         indent++;
 
-        code.add(identedLine("%s.prepareMarshalCacheObjects(%s, sctx, ctx);", serRef, accessor));
+        code.add(identedLine(
+            "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshalCacheObjects(%s, sctx, ctx);", accessor, accessor));
 
         indent--;
     }
 
     /** */
     private void emitMsgIterable(List<String> code, String accessor, DeclaredType elemType) {
-        String serRef = nestedSerializerRef(elemType);
-
         String elemSimple = elemType.asElement().getSimpleName().toString();
 
         imports.add(((TypeElement)elemType.asElement()).getQualifiedName().toString());
@@ -672,7 +649,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(identedLine("%s.prepareMarshalCacheObjects(e, sctx, ctx);", serRef));
+        code.add(identedLine("sctx.gridIO().messageFactory().serializer(e.directType()).prepareMarshalCacheObjects(e, sctx, ctx);"));
 
         indent--;
         indent--;
@@ -682,25 +659,6 @@ public class MessageSerializerGenerator {
         indent--;
 
         code.add(identedLine("}"));
-    }
-
-    /**
-     * Returns the expression for a static instance of the nested message's generated serializer (e.g.
-     * {@code CacheInvokeDirectResultSerializer.INSTANCE}), registering the class to be emitted as a {@code private
-     * static final} field on the enclosing serializer.
-     */
-    private String nestedSerializerRef(DeclaredType msgType) {
-        TypeElement el = (TypeElement)msgType.asElement();
-
-        String pkg = env.getElementUtils().getPackageOf(el).getQualifiedName().toString();
-        String serSimple = el.getSimpleName() + "Serializer";
-        String serFqn = pkg + "." + serSimple;
-
-        String varName = camelToConstant(el.getSimpleName().toString()) + "_SER";
-
-        nestedSerializerFields.put(varName, serFqn);
-
-        return varName;
     }
 
     /** Converts {@code CacheInvokeDirectResult} to {@code CACHE_INVOKE_DIRECT_RESULT}. */
@@ -746,7 +704,7 @@ public class MessageSerializerGenerator {
 
         code.add(identedLine(METHOD_JAVADOC));
 
-        code.add(identedLine("@Override public boolean %s(" + type.getSimpleName() + " msg, %s) {",
+        code.add(identedLine("@Override public boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
@@ -1530,7 +1488,7 @@ public class MessageSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
 
-        writer.write("public class " + serClsName + " implements MessageSerializer<" + type.getSimpleName() + "> {" + NL);
+        writer.write("public class " + serClsName + " implements MessageSerializer<" + simpleNameWithGeneric(type) + "> {" + NL);
     }
 
     /** */
@@ -1625,5 +1583,24 @@ public class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Compress annotation is used for an unsupported type: " + type);
+    }
+
+    /** @return Simple class name. */
+    private String simpleNameWithGeneric(TypeElement te) {
+        if (F.size(te.getTypeParameters()) == 0)
+            return te.getSimpleName().toString();
+
+        StringBuilder generic = new StringBuilder(te.getSimpleName() + "<");
+
+        for (int i = 0; i < F.size(te.getTypeParameters()); i++) {
+            if (i > 0)
+                generic.append(", ");
+
+            generic.append("?");
+        }
+
+        generic.append(">");
+
+        return generic.toString();
     }
 }

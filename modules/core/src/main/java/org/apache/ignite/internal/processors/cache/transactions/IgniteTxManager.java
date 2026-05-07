@@ -114,6 +114,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -2430,8 +2431,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TxLocksRequest req = new TxLocksRequest(fut.futureId(), txKeys);
 
         try {
-            if (!cctx.localNodeId().equals(nodeId))
+            if (!cctx.localNodeId().equals(nodeId)) {
                 req.prepareMarshal(cctx);
+                
+                MessageSerializer ser = cctx.gridIO().messageFactory().serializer(req.directType());
+
+                if (ser != null)
+                    ser.prepareMarshalCacheObjects(req, cctx, null);
+            }
 
             cctx.gridIO().sendToGridTopic(node, TOPIC_TX, req, SYSTEM_POOL);
         }
