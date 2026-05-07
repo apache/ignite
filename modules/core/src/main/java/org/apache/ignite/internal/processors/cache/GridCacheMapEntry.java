@@ -429,7 +429,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public final CacheObject unswap(CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        row = unswap(row, true);
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            row = unswap(row, true);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
 
         return row != null ? row.value() : null;
     }
@@ -437,9 +444,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Nullable @Override public final CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        CacheDataRow row = unswap(null, true);
-
-        return row != null ? row.value() : null;
+        return unswap(null);
     }
 
     /**

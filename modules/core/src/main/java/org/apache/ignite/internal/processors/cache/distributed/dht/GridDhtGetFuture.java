@@ -379,14 +379,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         boolean addReader = !e.deleted();
 
                         if (addReader) {
-                            cctx.shared().database().checkpointReadLock();
-
-                            try {
-                                e.unswap(false);
-                            }
-                            finally {
-                                cctx.shared().database().checkpointReadUnlock();
-                            }
+                            e.unswap(false);
 
                             // Entry will be removed on touch() if no data in cache,
                             // but they could be loaded from store,
