@@ -585,12 +585,18 @@ public class GridNioServer<T> {
 
         NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
 
-        try {
+       
+
+
+
+ try {
             impl.offerStateChange(fut);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
         }
+        
+
 
         return fut;
     }
@@ -780,9 +786,13 @@ public class GridNioServer<T> {
             try {
                 ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
             }
-            catch (IgniteCheckedException e) {
+        
+
+    catch (IgniteCheckedException e) {
                 U.error(log, "Failed to notify NIO Server while resending messages [rmtNode=" + recoveryDesc.node().id() + ']', e);
             }
+
+
         }
     }
 
@@ -889,14 +899,18 @@ public class GridNioServer<T> {
 
             opFut.msg = p;
 
+            GridFuture<String> workerFut;
+
             try {
                 clientWorkers.get(i).offer(opFut);
 
-                fut.add(opFut);
+                workerFut = opFut;
             }
             catch (IgniteCheckedException e) {
-                fut.add(new GridFinishedFuture<>(e));
+                workerFut = new GridFinishedFuture<>(e);
             }
+
+            fut.add(workerFut);
         }
 
         fut.markInitialized();
