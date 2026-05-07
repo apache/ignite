@@ -286,6 +286,34 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @param info Entry to marshal.
+     * @param ctx Context.
+     * @param cacheObjCtx Cache object context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void marshalInfo(GridCacheEntryInfo info,
+        GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx
+    ) throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (info != null) {
+            if (addDepInfo) {
+                if (info.key() != null)
+                    prepareObject(info.key().value(cacheObjCtx, false), ctx);
+
+                CacheObject val = info.value();
+
+                if (val != null) {
+                    val.finishUnmarshal(cacheObjCtx, ctx.deploy().globalLoader());
+
+                    prepareObject(val.value(cacheObjCtx, false), ctx);
+                }
+            }
+        }
+    }
+
+    /**
      * @param info Entry to unmarshal.
      * @param ctx Context.
      * @param ldr Loader.
@@ -298,6 +326,23 @@ public abstract class GridCacheMessage implements Message {
 
         if (info != null)
             info.unmarshal(ctx.cacheObjectContext(), ldr);
+    }
+
+    /**
+     * @param infos Entries to marshal.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void marshalInfos(
+        Iterable<? extends GridCacheEntryInfo> infos,
+        GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx
+    ) throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (infos != null)
+            for (GridCacheEntryInfo e : infos)
+                marshalInfo(e, ctx, cacheObjCtx);
     }
 
     /**
