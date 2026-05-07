@@ -484,6 +484,28 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         assertFalse("Failure handler should not be triggered.", failureHndTriggered);
     }
 
+    /** */
+    @Test
+    public void testNearCacheExpiredEntriesIteration() throws Exception {
+        IgniteEx srv = startGrids(2);
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = srv.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setNearConfiguration(new NearCacheConfiguration<>())
+            .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 1)))
+            .setEagerTtl(false)
+        );
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, "val");
+
+        doSleep(10); // Wait for expiration.
+
+        cache.clear();
+
+        assertEquals(0, cache.size());
+    }
+
     /**
      *
      */
