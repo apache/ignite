@@ -93,6 +93,14 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
+    }
+
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);

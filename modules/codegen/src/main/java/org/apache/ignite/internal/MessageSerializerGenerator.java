@@ -276,7 +276,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        if (isGridCacheIdMessage(type) || isCacheIdAwareMessage(type))
+        if (isCacheIdAwareMessage(type))
             prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
         else
             prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested;"));
@@ -408,11 +408,6 @@ public class MessageSerializerGenerator {
         return !te.equals(type);
     }
 
-    /** True if {@code te} extends {@code GridCacheIdMessage} and therefore carries its own per-cache {@code cacheId()}. */
-    private boolean isGridCacheIdMessage(TypeElement te) {
-        return assignableFrom(te.asType(), type("org.apache.ignite.internal.processors.cache.GridCacheIdMessage"));
-    }
-
     /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */
     private boolean isCacheIdAwareMessage(TypeElement te) {
         return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.CacheIdAware"));
@@ -520,18 +515,13 @@ public class MessageSerializerGenerator {
 
             indent++;
 
-            if (isGridCacheIdMessage(type))
-                code.add(identedLine("msg.prepareMarshalCacheObject(%s, ctx);", accessor));
-            else {
-                code.add(identedLine("if (%s != null)", var));
+            code.add(identedLine("if (%s != null)", var));
 
-                indent++;
+            indent++;
 
-                code.add(identedLine("%s.prepareMarshal(ctx.cacheObjectContext());", var));
+            code.add(identedLine("%s.prepareMarshal(ctx.cacheObjectContext());", var));
 
-                indent--;
-            }
-
+            indent--;
             indent--;
 
             code.add(identedLine("}"));
@@ -564,17 +554,13 @@ public class MessageSerializerGenerator {
 
     /** */
     private void emitCoDirect(List<String> code, String accessor) {
-        if (isGridCacheIdMessage(type))
-            code.add(identedLine("msg.prepareMarshalCacheObject(%s, ctx);", accessor));
-        else {
-            code.add(identedLine("if (%s != null)", accessor));
+        code.add(identedLine("if (%s != null)", accessor));
 
-            indent++;
+        indent++;
 
-            code.add(identedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor));
+        code.add(identedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor));
 
-            indent--;
-        }
+        indent--;
     }
 
     /** */
@@ -598,17 +584,13 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        if (isGridCacheIdMessage(type))
-            code.add(identedLine("msg.prepareMarshalCacheObject(obj, ctx);"));
-        else {
-            code.add(identedLine("if (obj != null)"));
+        code.add(identedLine("if (obj != null)"));
 
-            indent++;
+        indent++;
 
-            code.add(identedLine("obj.prepareMarshal(ctx.cacheObjectContext());"));
+        code.add(identedLine("obj.prepareMarshal(ctx.cacheObjectContext());"));
 
-            indent--;
-        }
+        indent--;
         
         indent--;
 

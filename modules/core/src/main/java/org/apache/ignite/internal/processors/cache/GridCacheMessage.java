@@ -510,16 +510,49 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @param col Collection.
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+        GridCacheContext ctx) throws IgniteCheckedException {
+        if (col == null)
+            return;
+
+        int size = col.size();
+
+        for (int i = 0; i < size; i++)
+            prepareMarshalCacheObject(col.get(i), ctx);
+    }
+
+    /**
      * @param obj Object.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public final void prepareMarshalCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
         if (obj != null) {
-            obj.prepareMarshal(ctx.cacheObjectContext());
-
             if (addDepInfo)
                 prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
+        }
+    }
+
+    /**
+     * @param col Collection.
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void prepareMarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
+        GridCacheContext ctx) throws IgniteCheckedException {
+        if (col == null)
+            return;
+
+        for (CacheObject obj : col) {
+            if (obj != null) {
+                if (addDepInfo)
+                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
+            }
         }
     }
 

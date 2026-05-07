@@ -336,6 +336,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
+        prepareMarshalCacheObjects(keys, cctx);
+
         if (filter != null) {
             boolean hasFilter = false;
 
@@ -362,6 +364,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
                 invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
         }
+        else
+            prepareMarshalCacheObjects(vals, cctx);
     }
 
     /** {@inheritDoc} */
