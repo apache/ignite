@@ -427,3 +427,54 @@ Disables certain optimizer rules. This is an optimizer level hint.
 ----
 SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 ON T1.V1=T2.V1 WHERE T2.V2=?
 ----
+
+== Transactions [[transactions]]
+
+Transactions on `READ_COMMITTED` isolation level are supported for SQL queries in Calcite query engine.
+To ensure backward compatibility transactions support disabled, by default.
+To enable, please, configure like the following:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="transactionConfiguration">
+        <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+            <property name="txAwareQueriesEnabled" value="true" />
+            ...
+        </bean>
+    </property>
+    ...
+</bean>
+----
+--
+
+The following API "transactional aware":
+
+* key-value API.
+* SQL queries with Calcite engine.
+* Scan queries.
+
+"Transactional aware" means:
+
+1. ACID in the same way as key-value API.
+2. Any data changed or removed by the query will not be visible to the concurrent query until transaction committed.
+3. Any data changed by the query will be returned updated by subsequent queries of the same transaction.
+4. And data removed by the query will not be returned by subsequent queries of the same transaction.
+
+So, when `txAwareQueriesEnabled = true` you can:
+
+* Perform INSERT, UPDATE, DELETE statements with regular transaction guarantees.
+* Mix key-value, SQL and Scan queries to process same dataset.
+
+
+[NOTE]
+====
+[discrete]
+=== SELECT ... FOR UPDATE
+Currently, no locks are held by the UPDATE or SELECT statements.
+`SELECT ... FOR UPDATE` statement not supported.
+This mean, lost update are possible with transactional SQL queries in case several transactions modifies one key concurrently.
+====
