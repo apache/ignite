@@ -193,4 +193,4 @@ NOTE: There are no guarantees of notifying the CDC consumer on concurrent cache 
 == cdc-ext
 
 Ignite extensions project has link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[cdc-ext] module which provides two way to setup cross cluster replication based on CDC.
-Detailed documentation can be found on link:extensions-and-integrations/change-data-capture-extensions[page].
+Detailed documentation can be found on link:extensions-and-integrations/change-data-capture/overview[page].
