@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Ignite capacity limit outcomes</title>
+  <desc id="desc">A diagram showing JVM memory failure separately from page-memory pressure, where page memory can either use disk-backed page replacement or fail.</desc>
+  <defs>
+    <style>
+      .t{font-family:Helvetica,Arial,sans-serif;fill:#3c3c3b}
+      .w{font-family:Helvetica,Arial,sans-serif;fill:#fff;font-weight:700}
+      .b{font-weight:700}
+    </style>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#ff6716"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="720" fill="#fff"/>
+  <rect x="250" y="45" width="780" height="65" rx="10" fill="#3c3c3b"/>
+  <text x="640" y="87" text-anchor="middle" class="w" font-size="32">Different Capacity Limits Fail Differently</text>
+
+  <rect x="85" y="155" width="510" height="430" rx="12" fill="#eeeded"/>
+  <text x="340" y="205" text-anchor="middle" class="t b" font-size="28">JVM memory limit</text>
+  <rect x="165" y="255" width="350" height="70" rx="10" fill="#de0e06"/>
+  <text x="340" y="299" text-anchor="middle" class="w" font-size="24">heap / direct / metaspace</text>
+  <path d="M340 330 V380" fill="none" stroke="#ff6716" stroke-width="5" marker-end="url(#arrow)"/>
+  <rect x="165" y="390" width="350" height="70" rx="10" fill="#ff6868" stroke="#de0e06" stroke-width="4"/>
+  <text x="340" y="434" text-anchor="middle" class="w" font-size="24">java.lang.OutOfMemoryError</text>
+  <text x="340" y="508" text-anchor="middle" class="t" font-size="21">large SQL results, query state,</text>
+  <text x="340" y="535" text-anchor="middle" class="t" font-size="21">batches, threads, code cache</text>
+
+  <rect x="685" y="155" width="510" height="430" rx="12" fill="#eeeded"/>
+  <text x="940" y="205" text-anchor="middle" class="t b" font-size="28">Ignite page memory limit</text>
+  <rect x="765" y="255" width="350" height="70" rx="10" fill="#de0e06"/>
+  <text x="940" y="299" text-anchor="middle" class="w" font-size="24">data region / checkpoint buffer</text>
+  <path d="M940 330 V365" fill="none" stroke="#ff6716" stroke-width="5" marker-end="url(#arrow)"/>
+  <rect x="765" y="375" width="350" height="82" rx="10" fill="#2f80c0"/>
+  <text x="940" y="408" text-anchor="middle" class="w" font-size="23">Alternative 1:</text>
+  <text x="940" y="438" text-anchor="middle" class="w" font-size="23">page replacement to disk</text>
+  <path d="M940 460 V490" fill="none" stroke="#ff6716" stroke-width="5" marker-end="url(#arrow)"/>
+  <rect x="765" y="500" width="350" height="78" rx="10" fill="#ff6868" stroke="#de0e06" stroke-width="4"/>
+  <text x="940" y="532" text-anchor="middle" class="w" font-size="23">Alternative 2:</text>
+  <text x="940" y="562" text-anchor="middle" class="w" font-size="23">operation or node failure</text>
+
+  <text x="640" y="652" text-anchor="middle" class="t" font-size="23">Heap-only monitoring misses Ignite page memory, direct buffers, OS page cache, and disk pressure.</text>
+</svg>

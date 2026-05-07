@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Ignite persistence data path and storage overhead</title>
+  <desc id="desc">A diagram showing how logical records become pages, indexes, partition files, backups, and overhead.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+    <marker id="arrow" markerWidth="13" markerHeight="10" refX="12" refY="5" orient="auto">
+      <path d="M0,0 L13,5 L0,10 Z" fill="#ff6716"/>
+    </marker>
+    <style>
+      .title{font:700 34px Helvetica,Arial,sans-serif;fill:#3c3c3b}
+      .label{font:700 22px Helvetica,Arial,sans-serif;fill:#fff}
+      .small{font:700 17px Helvetica,Arial,sans-serif;fill:#fff}
+      .note{font:700 18px Helvetica,Arial,sans-serif;fill:#3c3c3b}
+      .disk{fill:#72afd0;stroke:#4f8fb2;stroke-width:2}
+      .mem{fill:#ff6b6b;stroke:#e55353;stroke-width:2}
+      .gray{fill:#7f7f7f;stroke:#666;stroke-width:2}
+      .soft{fill:#eeeded;stroke:#d4d4d4;stroke-width:2}
+      .arrow{stroke:#ff6716;stroke-width:6;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1280" height="720" fill="#ffffff"/>
+  <text x="640" y="56" text-anchor="middle" class="title">From logical data to persistent storage</text>
+
+  <rect x="58" y="122" width="250" height="138" rx="18" class="gray" filter="url(#shadow)"/>
+  <text x="183" y="172" text-anchor="middle" class="label">Logical records</text>
+  <text x="183" y="205" text-anchor="middle" class="small">keys, values, fields</text>
+  <text x="183" y="232" text-anchor="middle" class="small">real size distribution</text>
+
+  <rect x="405" y="92" width="300" height="96" rx="16" class="mem" filter="url(#shadow)"/>
+  <text x="555" y="133" text-anchor="middle" class="label">Data pages</text>
+  <text x="555" y="162" text-anchor="middle" class="small">binary rows and page headers</text>
+  <rect x="405" y="220" width="300" height="96" rx="16" class="mem" filter="url(#shadow)"/>
+  <text x="555" y="262" text-anchor="middle" class="label">Primary index</text>
+  <text x="555" y="291" text-anchor="middle" class="small">key lookup structure</text>
+  <rect x="405" y="348" width="300" height="96" rx="16" class="mem" filter="url(#shadow)"/>
+  <text x="555" y="390" text-anchor="middle" class="label">SQL indexes</text>
+  <text x="555" y="419" text-anchor="middle" class="small">indexed values and inline data</text>
+  <rect x="405" y="476" width="300" height="96" rx="16" class="mem" filter="url(#shadow)"/>
+  <text x="555" y="518" text-anchor="middle" class="label">Free lists / metadata</text>
+  <text x="555" y="547" text-anchor="middle" class="small">reuse, partitions, fill factor</text>
+
+  <rect x="845" y="130" width="300" height="118" rx="18" class="disk" filter="url(#shadow)"/>
+  <text x="995" y="177" text-anchor="middle" class="label">Partition files</text>
+  <text x="995" y="208" text-anchor="middle" class="small">page memory persisted on disk</text>
+  <rect x="845" y="306" width="300" height="90" rx="18" class="disk" filter="url(#shadow)"/>
+  <text x="995" y="361" text-anchor="middle" class="label">Backups multiply data</text>
+  <rect x="845" y="454" width="300" height="90" rx="18" class="disk" filter="url(#shadow)"/>
+  <text x="995" y="509" text-anchor="middle" class="label">Snapshots copy data</text>
+
+  <path d="M308 191 H386" class="arrow"/>
+  <path d="M705 140 H828" class="arrow"/>
+  <path d="M705 268 H790 Q815 268 829 225" class="arrow"/>
+  <path d="M705 396 H790 Q815 396 829 225" class="arrow"/>
+  <path d="M705 524 H790 Q815 524 829 225" class="arrow"/>
+  <path d="M995 248 V292" class="arrow"/>
+  <path d="M995 396 V440" class="arrow"/>
+
+  <rect x="82" y="610" width="1115" height="52" rx="12" class="soft"/>
+  <text x="640" y="643" text-anchor="middle" class="note">Estimate with a representative load: object size, indexes, backups, page fill factor, and partitions all change disk usage.</text>
+</svg>

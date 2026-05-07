@@ -164,6 +164,13 @@ The purpose of the write-ahead log is to provide a recovery mechanism for scenar
 
 The WAL consists of several files (called active segments) and an archive. The active segments are filled out sequentially and are overwritten in a cyclical order. Once the 1st segment is full, its content is copied to the WAL archive (see the <<WAL Archive>> section below). While the 1st segment is being copied, the 2nd segment is treated as an active WAL file and accepts all the updates coming from the application side. By default, there are 10 active segments.
 
+[WARNING]
+====
+Do not change the number of active WAL segments (`DataStorageConfiguration.walSegments`) for an existing persistent work directory.
+Active WAL segment files are reused cyclically according to this value, so changing it after the node has already created its persistence storage can make the node look for different active WAL files during recovery or checkpoint processing.
+If you need a different number of active WAL segments, configure it before the persistent storage is created, or start the node with a clean work directory after taking the required backups.
+====
+
 ////////////////////////////////////////////////////////////////////////////////
 
 *TODO - Do we need this here? I think not. Move to the javadoc. (Garrett agrees, let's move this out)*
@@ -364,6 +371,7 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 | `walPath` | The path to the directory where active WAL segments are stored. | `${IGNITE_HOME}/work/db/wal/`
 | `walArchivePath` | The path to the WAL archive.  | `${IGNITE_HOME}/work/db/wal/archive/`
 | `walCompactionEnabled` | Set to `true` to enable <<WAL Archive Compaction, WAL archive compaction>>. | `false`
+| `walSegments` | The number of active WAL segments. Configure this value before creating persistent storage. Do not change it for an existing persistent work directory. | `10`
 | `walSegmentSize` | The size of a WAL segment file in bytes. | 64MB
 |`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
 

@@ -1,0 +1,258 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.8 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.8" pages="2">
+  <diagram id="ignite-multihdd-storage-compact" name="Storage Layout Compact">
+    <mxGraphModel dx="1134" dy="741" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="compactHost" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;arcSize=4;" parent="1" vertex="1">
+          <mxGeometry x="40" y="35" width="1200" height="650" as="geometry" />
+        </mxCell>
+        <mxCell id="compactTitleOuter" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;arcSize=12;" parent="1" vertex="1">
+          <mxGeometry x="270" y="48" width="740" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="compactTitleInner" value="Cache Storage Paths" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=#f08a88;strokeWidth=6;arcSize=12;fontSize=34;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="285" y="61" width="710" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="compactNodePanel" value="Ignite Server Node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=none;arcSize=6;fontSize=28;fontFamily=Helvetica;fontColor=#3c3c3b;fontStyle=1;verticalAlign=top;spacingTop=16;" parent="1" vertex="1">
+          <mxGeometry x="115" y="160" width="1050" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="compactNode" value="Node" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;fontSize=28;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="555" y="215" width="170" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="compactConfig" value="CacheConfiguration&#xa;name = &quot;xxx&quot;&#xa;storagePaths = [/mnt/disk1, /mnt/disk2]&#xa;indexPath = /mnt/disk3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff6868;strokeColor=#de0e06;strokeWidth=5;arcSize=14;fontSize=21;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="410" y="350" width="460" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="compactNodeToConfig" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=6;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="640" y="325" as="sourcePoint" />
+            <mxPoint x="640" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactDiskPanel" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=none;arcSize=6;" parent="1" vertex="1">
+          <mxGeometry x="115" y="585" width="1050" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="compactDisk1" value="/mnt/disk1" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#de0e06;strokeWidth=4;fontSize=22;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="170" y="598" width="210" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="compactDisk2" value="/mnt/disk2" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#de0e06;strokeWidth=4;fontSize=22;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="535" y="598" width="210" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="compactDisk3" value="/mnt/disk3" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#2f80c0;strokeWidth=4;fontSize=22;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="900" y="598" width="210" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="compactPart0" value="part-0&#xa;part-2&#xa;part-4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;fontSize=19;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="215" y="475" width="120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="compactPart1" value="part-1&#xa;part-3&#xa;part-5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;fontSize=19;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="580" y="475" width="120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="compactIndex" value="index.bin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#2f80c0;strokeColor=none;fontSize=22;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="945" y="475" width="120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="compactConfigToData1" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="500" y="460" as="sourcePoint" />
+            <mxPoint x="320" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactConfigToData2" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="640" y="460" as="sourcePoint" />
+            <mxPoint x="640" y="468" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactConfigToIndex" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="780" y="460" as="sourcePoint" />
+            <mxPoint x="960" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactPart0ToDisk" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="575" as="sourcePoint" />
+            <mxPoint x="275" y="598" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactPart1ToDisk" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="640" y="575" as="sourcePoint" />
+            <mxPoint x="640" y="598" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactIndexToDisk" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1005" y="575" as="sourcePoint" />
+            <mxPoint x="1005" y="598" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactFooterLine" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#de0e06;strokeWidth=6;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="215" y="690" as="sourcePoint" />
+            <mxPoint x="1065" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="compactFooterDot1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="203" y="678" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="compactFooterDot2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="1053" y="678" width="24" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="ignite-multihdd-storage" name="multiHDD Storage">
+    <mxGraphModel dx="1134" dy="741" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="host" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;arcSize=4;" parent="1" vertex="1">
+          <mxGeometry x="40" y="35" width="1200" height="650" as="geometry" />
+        </mxCell>
+        <mxCell id="titleOuter" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;arcSize=12;" parent="1" vertex="1">
+          <mxGeometry x="255" y="48" width="770" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="titleInner" value="Ignite multiHDD Storage Layout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=#f08a88;strokeWidth=6;arcSize=12;fontSize=32;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="270" y="61" width="740" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="configPanel" value="Configuration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=none;arcSize=6;fontSize=28;fontFamily=Helvetica;fontColor=#3c3c3b;fontStyle=1;verticalAlign=top;spacingTop=16;" parent="1" vertex="1">
+          <mxGeometry x="80" y="155" width="355" height="265" as="geometry" />
+        </mxCell>
+        <mxCell id="nodeStores" value="DataStorageConfiguration&#xa;storagePath + extraStoragePaths" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;arcSize=14;fontSize=20;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="120" y="225" width="275" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="cacheStores" value="CacheConfiguration&#xa;storagePaths + indexPath" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff6868;strokeColor=#de0e06;strokeWidth=5;arcSize=14;fontSize=20;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="120" y="325" width="275" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="resolverPanel" value="Resolver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=none;arcSize=6;fontSize=28;fontFamily=Helvetica;fontColor=#3c3c3b;fontStyle=1;verticalAlign=top;spacingTop=16;" parent="1" vertex="1">
+          <mxGeometry x="505" y="155" width="270" height="265" as="geometry" />
+        </mxCell>
+        <mxCell id="resolverCircle" value="NodeFileTree&#xa;partitionFile()" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;fontSize=22;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="560" y="235" width="160" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="modRule" value="data partition&#xa;partId % N" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#676666;strokeColor=none;arcSize=14;fontSize=20;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="535" y="382" width="210" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="validationPanel" value="Guardrails" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=none;arcSize=6;fontSize=28;fontFamily=Helvetica;fontColor=#3c3c3b;fontStyle=1;verticalAlign=top;spacingTop=16;" parent="1" vertex="1">
+          <mxGeometry x="845" y="155" width="355" height="265" as="geometry" />
+        </mxCell>
+        <mxCell id="knownPaths" value="paths must be known&#xa;node storages" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2f80c0;strokeColor=none;arcSize=14;fontSize=21;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="895" y="225" width="255" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="duplicates" value="duplicate storagePaths&#xa;are rejected" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff6868;strokeColor=#de0e06;strokeWidth=5;arcSize=14;fontSize=21;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="895" y="325" width="255" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="aConfigResolver1" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="395" y="258" as="sourcePoint" />
+            <mxPoint x="565" y="292" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aConfigResolver2" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="395" y="360" as="sourcePoint" />
+            <mxPoint x="565" y="325" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aGuardResolver1" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="895" y="260" as="sourcePoint" />
+            <mxPoint x="715" y="292" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aGuardResolver2" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="895" y="360" as="sourcePoint" />
+            <mxPoint x="715" y="325" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="filesLabel" value="Cache files on physical disks" style="text;html=1;strokeColor=none;fillColor=none;fontSize=28;fontFamily=Helvetica;fontColor=#676666;fontStyle=1;align=center;" parent="1" vertex="1">
+          <mxGeometry x="390" y="442" width="500" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="diskPanel" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeded;strokeColor=none;arcSize=6;" parent="1" vertex="1">
+          <mxGeometry x="80" y="558" width="1120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="disk1" value="/mnt/disk1" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#de0e06;strokeWidth=4;fontSize=21;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="120" y="574" width="185" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="disk2" value="/mnt/disk2" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#de0e06;strokeWidth=4;fontSize=21;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="350" y="574" width="185" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="disk3" value="/mnt/disk3" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#2f80c0;strokeWidth=4;fontSize=21;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="580" y="574" width="185" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="walDisk" value="WAL path" style="shape=cylinder3d;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=15;html=1;fillColor=#ffffff;strokeColor=#676666;strokeWidth=4;fontSize=21;fontFamily=Helvetica;fontColor=#676666;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="935" y="574" width="185" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="parts1" value="part-0&#xa;part-2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;fontSize=19;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="150" y="478" width="86" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="parts2" value="part-1&#xa;part-3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;fontSize=19;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="395" y="478" width="86" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="index" value="index.bin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#2f80c0;strokeColor=none;fontSize=21;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="625" y="478" width="86" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="wal" value="WAL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#676666;strokeColor=none;arcSize=14;fontSize=22;fontFamily=Helvetica;fontColor=#ffffff;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="970" y="492" width="115" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="aResolverFiles" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="640" y="440" as="sourcePoint" />
+            <mxPoint x="640" y="472" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aPart1" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="193" y="563" as="sourcePoint" />
+            <mxPoint x="193" y="584" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aPart2" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="438" y="563" as="sourcePoint" />
+            <mxPoint x="438" y="584" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aIndex" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="668" y="563" as="sourcePoint" />
+            <mxPoint x="668" y="584" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aWal" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#ff6716;strokeWidth=5;endFill=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1028" y="550" as="sourcePoint" />
+            <mxPoint x="1028" y="584" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="separator" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#dedcdc;strokeWidth=5;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="825" y="565" as="sourcePoint" />
+            <mxPoint x="825" y="628" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dataCaption" value="storagePaths select partition files" style="text;html=1;strokeColor=none;fillColor=none;fontSize=20;fontFamily=Helvetica;fontColor=#3c3c3b;align=center;" parent="1" vertex="1">
+          <mxGeometry x="105" y="635" width="650" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="walCaption" value="WAL is configured separately" style="text;html=1;strokeColor=none;fillColor=none;fontSize=20;fontFamily=Helvetica;fontColor=#3c3c3b;align=center;" parent="1" vertex="1">
+          <mxGeometry x="890" y="635" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="footerLine" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#de0e06;strokeWidth=6;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="190" y="674" as="sourcePoint" />
+            <mxPoint x="1090" y="674" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="footerDot1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="178" y="662" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="footerDot2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#de0e06;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="1078" y="662" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Red is cache data placement. Blue is the index partition. Gray is WAL, outside cache storagePaths." style="text;html=1;strokeColor=none;fillColor=none;fontSize=20;fontFamily=Helvetica;fontColor=#3c3c3b;align=center;" parent="1" vertex="1">
+          <mxGeometry x="210" y="684" width="860" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

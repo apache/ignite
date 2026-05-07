@@ -29,6 +29,8 @@ Multi-tiered architecture is a page-based memory architecture that is split into
 
 Ignite maintains the same binary data representation both in memory and on disk. This removes the need for costly serialization when moving data between memory and disk.
 
+For production sizing, see link:memory-configuration/memory-budget[Memory Budget for an Ignite Node].
+
 The picture below illustrates the architecture of the multi-tiered storage.
 
 image::images/durable-memory-diagram.png[height=700px]

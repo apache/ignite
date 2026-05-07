@@ -127,6 +127,8 @@
   items:
     - title: Memory Architecture
       url: memory-architecture
+    - title: Memory Budget for an Ignite Node
+      url: memory-configuration/memory-budget
     - title: Configuring Data Regions
       url: memory-configuration/data-regions
     - title: Eviction Policies
@@ -137,6 +139,8 @@
   items:
     - title: Ignite Persistence
       url: persistence/native-persistence
+    - title: Persistence Storage Budget
+      url: persistence/storage-budget
     - title: External Storage
       url: persistence/external-storage
     - title: Swapping

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Ignite node capacity budget</title>
+  <desc id="desc">A capacity diagram showing RAM budget, JVM process memory, disk budget, and the boundary between memory and disk capacity.</desc>
+  <defs>
+    <style>
+      .t{font-family:Helvetica,Arial,sans-serif;fill:#3c3c3b}
+      .w{font-family:Helvetica,Arial,sans-serif;fill:#fff;font-weight:700}
+      .b{font-weight:700}
+    </style>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#ff6716"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="720" fill="#fff"/>
+  <rect x="245" y="45" width="790" height="70" rx="10" fill="#de0e06"/>
+  <text x="640" y="91" text-anchor="middle" class="w" font-size="34">Ignite Node Capacity Budget</text>
+
+  <rect x="70" y="140" width="780" height="500" rx="12" fill="#f4f3f3" stroke="#dedcdc" stroke-width="4"/>
+  <text x="460" y="185" text-anchor="middle" class="t b" font-size="30">Host RAM</text>
+  <rect x="115" y="205" width="690" height="320" rx="10" fill="#eeeded" stroke="#b0b0b0" stroke-width="3"/>
+  <text x="460" y="250" text-anchor="middle" class="t b" font-size="26">JVM process RSS</text>
+
+  <rect x="155" y="285" width="150" height="90" rx="10" fill="#de0e06"/>
+  <text x="230" y="322" text-anchor="middle" class="w" font-size="24">Java heap</text>
+  <text x="230" y="352" text-anchor="middle" class="w" font-size="24">-Xmx</text>
+  <rect x="330" y="285" width="170" height="90" rx="10" fill="#de0e06"/>
+  <text x="415" y="322" text-anchor="middle" class="w" font-size="24">Data regions</text>
+  <text x="415" y="352" text-anchor="middle" class="w" font-size="24">page memory</text>
+  <rect x="525" y="285" width="150" height="90" rx="10" fill="#ff6868" stroke="#de0e06" stroke-width="4"/>
+  <text x="600" y="322" text-anchor="middle" class="w" font-size="23">Checkpoint</text>
+  <text x="600" y="352" text-anchor="middle" class="w" font-size="23">buffer</text>
+  <rect x="155" y="410" width="520" height="65" rx="10" fill="#777"/>
+  <text x="415" y="451" text-anchor="middle" class="w" font-size="22">Direct, mmap, metaspace, code cache, stacks</text>
+
+  <rect x="155" y="555" width="330" height="55" rx="10" fill="#dedcdc"/>
+  <text x="320" y="591" text-anchor="middle" class="t b" font-size="24">OS page cache and reserve</text>
+  <rect x="505" y="555" width="230" height="55" rx="10" fill="#dedcdc"/>
+  <text x="620" y="591" text-anchor="middle" class="t b" font-size="24">Agents / sidecars</text>
+
+  <path d="M815 365 H900" fill="none" stroke="#ff6716" stroke-width="6" marker-end="url(#arrow)"/>
+  <rect x="910" y="205" width="270" height="320" rx="10" fill="#2f80c0"/>
+  <text x="1045" y="255" text-anchor="middle" class="w" font-size="30">Disk capacity</text>
+  <rect x="945" y="285" width="200" height="55" rx="10" fill="#80aac8"/>
+  <text x="1045" y="321" text-anchor="middle" class="w" font-size="22">WAL and archive</text>
+  <rect x="945" y="365" width="200" height="55" rx="10" fill="#80aac8"/>
+  <text x="1045" y="401" text-anchor="middle" class="w" font-size="22">Partition files</text>
+  <rect x="945" y="445" width="200" height="55" rx="10" fill="#80aac8"/>
+  <text x="1045" y="481" text-anchor="middle" class="w" font-size="22">Snapshots / logs</text>
+
+  <rect x="125" y="660" width="235" height="38" rx="8" fill="#de0e06"/>
+  <text x="243" y="686" text-anchor="middle" class="w" font-size="20">Red: memory budget</text>
+  <rect x="385" y="660" width="220" height="38" rx="8" fill="#2f80c0"/>
+  <text x="495" y="686" text-anchor="middle" class="w" font-size="20">Blue: disk budget</text>
+</svg>

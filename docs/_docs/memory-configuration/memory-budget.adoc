@@ -1,0 +1,181 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Memory Budget for an Ignite Node
+
+This page describes the full memory budget of a production Ignite server node.
+Ignite stores cache data and indexes in off-heap page memory, but the Java heap, JVM native memory, direct buffers, operating system page cache, and other processes on the host are still part of the sizing exercise.
+
+image::images/memory-budget-capacity-process.svg[Ignite memory and disk capacity budget]
+
+[IMPORTANT]
+====
+`-Xmx` is only the maximum Java heap size.
+It is not the maximum size of the JVM process and it is not the maximum RAM used by an Ignite host.
+The process resident set can be much larger than `-Xmx` because it also includes off-heap data regions, direct or memory-mapped buffers, metaspace, code cache, thread stacks, JIT and JVM native structures, and native libraries.
+====
+
+== Where Memory Goes
+
+[cols="1,3",opts="header"]
+|===
+| Memory area | What it contains
+
+| Java heap
+| Objects created by Ignite and by application code running in the node: SQL result pages and reducer-side results, transaction state, cache operation batches, compute and service objects, discovery and communication metadata, near caches, on-heap caches, SQL on-heap row cache, continuous query state, distributed data structures, management tasks, metrics objects, and temporary objects created during serialization and deserialization. The Calcite-based SQL engine can additionally enforce link:SQL/sql-calcite#memory-quotas[per-query and global heap memory quotas].
+
+| Ignite data regions
+| Off-heap page memory configured with link:memory-configuration/data-regions[data regions]. This is where cache entries, primary key indexes, SQL indexes, partition metadata, free lists, reuse lists, and other page-based structures reside. The default data region can grow to 20% of available physical memory unless configured explicitly. The system data region also uses off-heap memory for internal caches and metadata.
+
+| Direct memory
+| Java NIO direct buffers and memory-mapped buffers used by communication, thin clients, REST, SSL, WAL writing and reading, page store I/O, snapshots, defragmentation, performance statistics, and other I/O paths. With persistence, the WAL path can use memory-mapped files by default, or direct buffers when memory mapping is disabled.
+
+| JVM native memory
+| JVM memory outside the heap, such as metaspace, compressed class space, code cache, thread stacks, garbage collector structures, JIT compiler memory, JNI allocations, and memory used by loaded native libraries. Thread count and loaded classes directly affect this area.
+
+| Checkpoint buffers
+| Temporary off-heap page buffers used when persistence is enabled. They hold copies of pages that are being written to disk while the same pages are updated concurrently. The buffer is configured per data region with `DataRegionConfiguration.checkpointPageBufferSize`; when unset, Ignite calculates it from the data region size.
+
+| OS page cache
+| Host RAM used by the operating system to cache partition files, WAL files, WAL archive files, indexes on disk, snapshots, logs, and other files. With link:persistence/native-persistence[native persistence], this cache is important for stable disk throughput and checkpoint behavior.
+
+| Other host processes
+| Monitoring agents, log collectors, backup tools, security agents or scanners, antivirus, sidecars, direct I/O helpers, shell sessions, and orchestration daemons. Their peak memory usage must be reserved outside the Ignite JVM budget.
+|===
+
+== Capacity Planning
+
+Plan memory before tuning persistence storage.
+This page focuses on memory inside and around an Ignite server node: Java heap, off-heap page memory, direct and native memory, OS page cache reserve, and other host processes.
+For WAL, partition files, snapshots, page replacement, and disk/IOPS sizing, see link:persistence/storage-budget[Persistence Storage Budget].
+
+For a new deployment, prefer measurement over guessing.
+Start a test node with production-like cache, data region, persistence, SQL, and JVM settings; load a representative data sample; run the expected read, write, SQL, rebalance, and maintenance operations; then record heap, process RSS, data region metrics, checkpoint buffer usage, direct/native memory, OS page cache pressure, and other host processes.
+Use analytical estimates only as an initial budget or as a cross-check for measured results.
+
+== Why Heap Is Still Needed
+
+Data and indexes are stored off-heap, but operations still create heap objects.
+When a query reads off-heap rows, Ignite may copy or deserialize data into heap objects before returning it to the caller.
+Distributed SQL queries also keep result pages, reducer-side intermediate data, sorting and grouping state, and query metadata on heap.
+Large `SELECT` results, joins, `GROUP BY`, `ORDER BY`, DML, `ScanQuery`, `getAll`, `putAll`, `invokeAll`, data loading, rebalancing, transactions, compute jobs, services, and application listeners can all create heap pressure.
+
+Heap usage is workload-dependent.
+A node with a small amount of stored data can still exhaust heap if it runs many large queries, colocated computations, services, continuous queries, or large cache operations.
+Conversely, a node can have low heap usage and still hit page-memory pressure if a data region or checkpoint buffer cannot allocate another page.
+
+== Data Region Budget
+
+For each server node, size every data region explicitly:
+
+image::images/memory-budget-data-region.svg[Ignite data region memory consumers]
+
+* Include primary and backup entries owned by the node.
+* Include binary object overhead, per-entry metadata, page headers, partially filled pages, partition metadata, free lists, reuse lists, primary key indexes, and SQL indexes.
+* Include index inline size and the number of indexed fields. A fixed percentage for indexes is often inaccurate because index size depends on the indexed values and inline configuration.
+* Include the system data region and any special regions used by the deployment.
+* Decide whether the region is persistent or in-memory only.
+
+For a new workload, load a representative data sample and monitor data region metrics such as `PhysicalMemorySize`, `TotalAllocatedSize`, `TotalUsedPages`, and `PagesFillFactor`.
+Then extrapolate from real data rather than from source file size.
+Make sure the sample represents key and value sizes, string lengths, indexed fields, partition distribution, backups, and update patterns.
+
+== Host Sizing Checklist
+
+Use this checklist per physical host or container:
+
+* Total RAM available to the node after container or cgroup limits.
+* Sum of all Ignite data region `maxSize` values, including the default and system regions.
+* Java heap size, with enough headroom for SQL result sets, transactions, cache batches, compute/services, application code, near/on-heap caches, operational tasks, and any link:SQL/sql-calcite#memory-quotas[Calcite SQL memory quotas].
+* Direct memory for WAL, communication, clients, SSL, page-store I/O, snapshots, defragmentation, page lock tracking, and performance statistics.
+* JVM native memory: metaspace, code cache, thread stacks, JIT, GC, JNI, and native libraries.
+* OS page cache reserve, especially when native persistence is enabled.
+* Monitoring, security, backup, logging, and sidecar overhead.
+* Emergency reserve for spikes, rolling upgrades, topology changes, rebalancing, index rebuilds, failover, and incident diagnostics such as heap dumps or Flight Recorder.
+
+A practical budget is:
+
+[source,text]
+----
+Host RAM >=
+    Java heap
+  + sum(data region maxSize)
+  + checkpoint buffers
+  + direct and mmap buffers
+  + JVM native memory
+  + OS page cache reserve
+  + other host processes
+  + emergency reserve
+----
+
+For in-memory deployments, the memory tuning guide recommends not allocating more than 90% of host RAM to Ignite nodes.
+For persistent deployments, leave additional RAM for the OS page cache and review link:persistence/storage-budget[Persistence Storage Budget].
+Treat these values as starting points and validate them with production-like load, checkpoints, rebalancing, failover, and monitoring agents enabled.
+
+== Monitoring
+
+Monitor both JVM memory and Ignite data region memory.
+Heap-only monitoring is not enough.
+
+Watch at least:
+
+* Process RSS or container memory usage from the operating system.
+* Java heap and non-heap metrics.
+* Data region metrics: `PhysicalMemorySize`, `TotalAllocatedSize`, `TotalUsedPages`, `PagesFillFactor`, `OffHeapSize`, `OffheapUsedSize`, `UsedCheckpointBufferSize`, and eviction or replacement rates.
+* For persistent nodes: checkpoint, WAL, archive, and disk metrics described in link:persistence/storage-budget[Persistence Storage Budget].
+* SQL query concurrency, result page size, slow queries, and large result sets.
+* GC logs, heap dumps, and JVM native memory if native memory tracking is enabled.
+
+== Understanding Out-of-Memory Errors
+
+image::images/memory-budget-capacity-oome.svg[Ignite memory capacity failure modes]
+
+`OutOfMemoryError` usually means the JVM could not allocate Java heap, direct buffer memory, metaspace, or another JVM-managed/native area.
+Examples include large SQL results, unlimited on-heap row cache, large cache operation batches, too many concurrent transactions, many threads, or too small `-XX:MaxDirectMemorySize`.
+
+`IgniteOutOfMemoryException` usually means Ignite page memory could not allocate a required page or checkpoint copy.
+Examples include an undersized data region, disabled or insufficient eviction for in-memory regions, a checkpoint buffer that is too small for a write-intensive persistent workload, or per-partition/index/free-list overhead that was not included in sizing.
+
+The remediation is different: increase or tune heap/direct/native JVM memory for `OutOfMemoryError`, and resize data regions, checkpoint buffers, page replacement/eviction settings, or the data model for `IgniteOutOfMemoryException`.
+
+== Common Mistakes
+
+* Allocating all RAM to Ignite and leaving no room for JVM native memory, OS page cache, monitoring agents, security tools, or emergency reserve.
+* Treating `-Xmx` as the total JVM process limit.
+* Ignoring OS page cache with native persistence enabled.
+* Relying only on Java heap usage for memory monitoring.
+* Enabling large SQL queries, high query concurrency, or SQL on-heap row cache without considering heap pressure.
+* Enabling the Calcite SQL engine without deciding whether link:SQL/sql-calcite#memory-quotas[query memory quotas] should protect the node from large sorts, joins, aggregates, and result materialization.
+* Sizing data regions from raw file size and ignoring binary format overhead, page fill factor, primary and SQL indexes, free lists, partition metadata, and backups.
+* Forgetting checkpoint buffers and WAL/direct memory when persistence is enabled.
+* Running multiple Ignite nodes on the same host or disk without dividing RAM, page cache, WAL throughput, and I/O capacity between them.
+* Forgetting memory used by snapshots, defragmentation, CDC, performance statistics, backups, idle verify, page lock tracking, platform caches, and index rebuilds.
+
+== Related Topics
+
+* link:memory-architecture[Memory Architecture]
+* link:memory-configuration/data-regions[Configuring Data Regions]
+* link:memory-configuration/eviction-policies[Eviction Policies]
+* link:memory-configuration/replacement-policies[Replacement Policies]
+* link:persistence/native-persistence[Ignite Persistence]
+* link:persistence/storage-budget[Persistence Storage Budget]
+* link:persistence/persistence-tuning[Tuning Persistence]
+* link:SQL/sql-tuning[SQL Tuning]
+* link:SQL/sql-calcite#memory-quotas[Calcite SQL Memory Quotas]
+* link:configuring-caches/on-heap-caching[On-Heap Caching]
+* link:configuring-caches/near-cache[Near Caches]
+* link:monitoring-metrics/new-metrics-system[Monitoring Metrics]
+* link:perf-and-troubleshooting/memory-tuning[Memory and JVM Tuning]
+* link:perf-and-troubleshooting/troubleshooting#debugging-gc-issues[Debugging GC Issues]
+* link:perf-and-troubleshooting/handling-exceptions[Handling Exceptions]

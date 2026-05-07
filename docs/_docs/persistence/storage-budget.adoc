@@ -1,0 +1,185 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Persistence Storage Budget
+
+This page helps plan the storage and I/O budget of an Ignite node with link:persistence/native-persistence[native persistence] enabled.
+If your goal is to reduce persistence cost, first identify which files and I/O paths consume capacity: partition files, WAL, WAL archive, snapshots, logs, and the OS page cache.
+For JVM heap, off-heap data regions, direct memory, and host RAM sizing, see link:memory-configuration/memory-budget[Memory Budget for an Ignite Node].
+
+image::images/persistence-budget-overview.svg[Ignite persistence storage budget]
+
+== What Uses Disk Space
+
+[cols="1,3",opts="header"]
+|===
+| Area | What to budget
+
+| Partition files
+| Persistent data pages, primary-key indexes, SQL indexes, free-list and reuse-list pages, partition metadata, page headers, and partially filled pages. Their size depends on binary object size, key size, backups, indexes, fill factor, and the number of partitions.
+
+| WAL active segments
+| The current write-ahead log files in `walPath`. They are reused cyclically. By default, Ignite creates 10 active WAL segments of 64 MB each.
+
+| WAL archive
+| Archived WAL segments needed for recovery, rebalance, CDC, snapshots, and operational safety. Reducing the archive too aggressively can increase operational risk.
+
+| Snapshots and backups
+| Full snapshots can require storage comparable to the persistent data set. Incremental snapshots and CDC also retain WAL-derived data.
+
+| OS page cache
+| Host RAM used by the operating system to cache partition files, WAL, WAL archive, snapshots, and logs. It is not disk space, but it is part of the persistence cost model because too little page cache turns into more physical reads.
+
+| Logs and diagnostics
+| Application logs, GC logs, heap dumps, WAL dumps, index rebuild artifacts, defragmentation work files, and other incident files.
+|===
+
+== How to Choose a Size
+
+Use one of two sizing methods, or combine them.
+
+The most reliable method is to build a test node with production-like configuration and load a representative data sample.
+The sample does not need to contain the full production data set, but it must preserve the real shape of the data: key size, value size, string lengths, indexed fields, backups, partition distribution, update rate, and query mix.
+After loading the sample, measure the actual footprints and extrapolate:
+
+* Partition file size under `storagePath`.
+* WAL active size under `walPath`: at least `walSegments * walSegmentSize`.
+* WAL archive growth under `walArchivePath` during load, updates, rebalancing, and snapshots.
+* Snapshot and backup size for the same sample.
+* Data region metrics such as `TotalAllocatedSize`, `TotalUsedPages`, and `PagesFillFactor`.
+* Checkpoint duration, dirty pages, page write duration, throttling time, and page replacement rate under realistic write load.
+* Operating system disk metrics: queue depth, read/write IOPS, throughput, and p95/p99 latency.
+
+Then scale the measured values by the expected production record count and add headroom for growth, rebalancing, topology changes, snapshots, maintenance, and incident files.
+Do not extrapolate from the source CSV, JSON, or database export size alone; Ignite stores binary rows, indexes, page metadata, and partially filled pages.
+
+The analytical method is useful before hardware is available or to cross-check a measured result.
+Start with:
+
+[source,text]
+----
+Persistent data size ~= 
+    data pages
+  + primary indexes
+  + SQL indexes
+  + partition metadata, free lists, and page overhead
+  + backup copies
+
+Required disk >=
+    persistent data size
+  + active WAL
+  + WAL archive retention
+  + snapshots and backups
+  + logs and diagnostics
+  + emergency free space
+----
+
+Analytical sizing is only an estimate.
+Validate it with a test node before reducing disks, WAL archive retention, or the RAM reserved for the OS page cache.
+
+== Estimate From Data, Not Source Files
+
+Raw source-file size is not a reliable predictor of persistence size.
+Ignite stores data in a binary format, splits storage into pages, and builds indexes and internal metadata.
+The same logical data set can have very different storage size depending on string lengths, binary object layout, backups, indexed fields, inline size, fill factor, and partition distribution.
+
+image::images/persistence-budget-data-path.svg[Ignite storage overhead from object to pages]
+
+For a new workload, load a representative data sample and measure:
+
+* Partition file growth.
+* WAL and WAL archive growth during the load.
+* Data region metrics such as `TotalAllocatedSize`, `TotalUsedPages`, and `PagesFillFactor`.
+* Index size impact after adding SQL indexes.
+* Backup factor and partition distribution.
+
+Use samples that preserve real distributions.
+If string lengths, nested objects, indexed values, or partition affinity are skewed in production, the sample must preserve that skew.
+The more variable the object sizes are, the larger the sample should be before extrapolating.
+
+== Memory-to-Disk Ratio
+
+With persistence enabled, data can be larger than the off-heap memory allocated to data regions.
+When a required page is not in memory, Ignite reads it from partition files; when memory is full, page replacement chooses another page to evict.
+Evicting a clean page is cheap, but reading it back is expensive and depends heavily on disk latency and IOPS.
+
+image::images/persistence-budget-page-replacement.svg[Ignite page replacement and disk IOPS]
+
+When choosing how much RAM to buy versus how much disk to buy, consider:
+
+* The hot data set that must stay in memory to meet latency targets.
+* The cold data set that can live mostly on disk.
+* The number of random reads caused by cache gets, SQL indexes, scans, and rebalancing.
+* Disk IOPS and latency percentiles, not only throughput in MB/s.
+* Whether full scans or rare indexes can evict useful hot pages.
+* Whether hot and cold caches should use separate data regions.
+
+Do not size this only by average latency.
+Page replacement usually shows up in tail latency first: the median may look fine while p95 or p99 is dominated by disk reads.
+
+== WAL, Checkpoints, and Archive
+
+Every update is written to the WAL before it is considered durable.
+Later, checkpointing writes dirty pages from memory to partition files.
+The WAL path, WAL archive path, and partition files can therefore compete for the same disk if they share a device.
+
+Budget for:
+
+* Active WAL segments: `walSegments * walSegmentSize`.
+* WAL archive size and retention needs for recovery, rebalance, CDC, and snapshots.
+* Checkpoint write throughput to partition files.
+* Temporary checkpoint buffer pressure in memory; see link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[Adjusting Checkpointing Buffer Size].
+* Snapshot, defragmentation, index rebuild, and backup temporary files.
+
+[WARNING]
+====
+Configure `DataStorageConfiguration.walSegments` before the persistent work directory is created.
+Do not change the number of active WAL segments for an existing persistent work directory.
+Active WAL segment files are reused cyclically according to this value, and changing it later can make recovery or checkpoint processing look for different active WAL files.
+====
+
+== Cost-Saving Checklist
+
+Use this checklist before reducing persistence cost:
+
+* Reduce unnecessary SQL indexes; index size depends on indexed values and inline size.
+* Keep only required backups.
+* Separate hot and cold data into different data regions where possible.
+* Keep enough RAM for the hot set and OS page cache; starving RAM can move cost from memory to disk latency.
+* Put WAL and partition files on separate physical devices for write-heavy workloads.
+* Avoid running multiple persistent Ignite nodes on the same physical disk unless IOPS are divided and validated.
+* Set WAL archive size based on recovery, rebalance, CDC, and snapshot requirements, not only on minimum disk usage.
+* Store snapshots on separate media when possible.
+* Use disk compression only after testing CPU cost and latency.
+* Validate with production-like load and monitor p95/p99 latency, checkpoint duration, WAL archive growth, and disk queue depth.
+
+== Monitoring
+
+Monitor:
+
+* Disk free space for storage, WAL, WAL archive, snapshots, and logs.
+* WAL archive segment count and archive growth rate.
+* Checkpoint duration, page write duration, dirty pages, and throttling time.
+* Page replacement and cache miss rates.
+* OS page cache pressure, disk queue depth, IOPS, and read/write latency percentiles.
+* Snapshot, CDC, defragmentation, and index rebuild activity.
+
+== Related Topics
+
+* link:persistence/native-persistence[Ignite Persistence]
+* link:persistence/persistence-tuning[Tuning Persistence]
+* link:persistence/snapshot-directory[Configuring Snapshot Directory]
+* link:persistence/disk-compression[Disk Compression]
+* link:memory-configuration/replacement-policies[Replacement Policies]
+* link:memory-configuration/memory-budget[Memory Budget for an Ignite Node]
