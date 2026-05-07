@@ -748,7 +748,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         throws IgniteCheckedException {
         assert msg != null;
 
-        if(msg instanceof GridDhtLockRequest) {
+        if (msg instanceof GridDhtLockRequest) {
             GridDhtLockRequest req = (GridDhtLockRequest)msg;
 
             GridDhtLockResponse res = new GridDhtLockResponse(
@@ -797,7 +797,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 sendResponseOnFailedMessage(req.nearNodeId(), nearRes, cctx, plc);
             }
-        } else if (msg instanceof GridNearAtomicFullUpdateRequest) {
+        }
+        else if (msg instanceof GridNearAtomicFullUpdateRequest) {
             GridNearAtomicFullUpdateRequest req = (GridNearAtomicFullUpdateRequest)msg;
 
             GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
@@ -810,7 +811,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             res.error(req.classError());
 
             sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-        } else if (msg instanceof GridDhtForceKeysRequest) {
+        }
+        else if (msg instanceof GridDhtForceKeysRequest) {
             GridDhtForceKeysRequest req = (GridDhtForceKeysRequest)msg;
 
             GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
@@ -821,7 +823,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             );
 
             sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-        } else if (msg instanceof GridNearGetRequest) {
+        }
+        else if (msg instanceof GridNearGetRequest) {
             GridNearGetRequest req = (GridNearGetRequest)msg;
 
             GridNearGetResponse res = new GridNearGetResponse(
@@ -834,7 +837,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             res.error(req.classError());
 
             sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-        } else if (msg instanceof GridNearGetResponse) {
+        }
+        else if (msg instanceof GridNearGetResponse) {
             GridNearGetResponse res = (GridNearGetResponse)msg;
 
             CacheGetFuture fut = (CacheGetFuture)cctx.mvcc().future(res.futureId());
