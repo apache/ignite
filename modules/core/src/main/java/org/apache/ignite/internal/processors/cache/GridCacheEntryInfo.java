@@ -18,17 +18,19 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Message {
+public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -63,10 +65,8 @@ public class GridCacheEntryInfo implements Message {
     /** Deleted flag. */
     private boolean deleted;
 
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
         return cacheId;
     }
 
@@ -201,19 +201,8 @@ public class GridCacheEntryInfo implements Message {
         return SIZE_OVERHEAD + size;
     }
 
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
-        marshal(ctx.cacheObjectContext());
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void marshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (expireTime == 0)
             expireTime = -1;
         else {
@@ -222,6 +211,10 @@ public class GridCacheEntryInfo implements Message {
             if (expireTime < 0)
                 expireTime = 0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /**

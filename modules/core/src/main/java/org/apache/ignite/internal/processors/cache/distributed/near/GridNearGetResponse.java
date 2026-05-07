@@ -173,19 +173,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             errMsg = new ErrorMessage(err);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (entries != null) {
-            for (GridCacheEntryInfo info : entries)
-                info.marshal(cctx);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);

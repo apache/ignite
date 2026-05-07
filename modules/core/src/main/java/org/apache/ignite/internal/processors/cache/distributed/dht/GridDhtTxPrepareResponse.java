@@ -170,19 +170,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (preloadEntries != null) {
-            for (GridCacheEntryInfo info : preloadEntries) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(info.cacheId());
-
-                info.marshal(cctx);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
