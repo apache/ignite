@@ -28,6 +28,9 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 /** */
 public class IgnitePdsOnClientTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */

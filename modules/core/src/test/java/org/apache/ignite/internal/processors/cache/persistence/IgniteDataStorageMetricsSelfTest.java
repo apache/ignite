@@ -77,6 +77,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -534,9 +538,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         if (ft.walArchiveEnabled()) {
             int expWalWorkSegements = igniteEx.configuration().getDataStorageConfiguration().getWalSegments();
 
-            assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000l));
+            assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000L));
 
-            assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000l));
+            assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000L));
         }
 
         long totalSize = FileWriteAheadLogManager.totalSize(walFiles(ft.wal()));
@@ -562,7 +566,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
      * List of all relevant wal files descriptors in a given directory.
      *
      * @param filesDir Directory where the wal files are located.
-     * @return List of relevant file descriptors
+     * @return Array of relevant file descriptors
      * @throws IgniteException If failed.
      */
     private FileDescriptor[] walFiles(final File filesDir) throws IgniteException {

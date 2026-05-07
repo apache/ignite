@@ -52,6 +52,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test {@link ExchangeLatchManager} throws {@link IgniteException} with appropriate message when topology history
@@ -211,14 +213,14 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
 
                 srvFuts.add(GridTestUtils.runAsync(() -> startGrid(currNodeIdx)));
 
-                assertTrue("Failed to wait for a new server node [joinedNodesCnt=" + joinedNodesCnt + "]",
-                    GridTestUtils.waitForCondition(
-                        () -> disco.totalJoinedNodes() >= (joinedNodesCnt + 1), DEFAULT_TIMEOUT));
+                assertTrue(GridTestUtils.waitForCondition(
+                    () -> disco.totalJoinedNodes() >= (joinedNodesCnt + 1), DEFAULT_TIMEOUT),
+                    "Failed to wait for a new server node [joinedNodesCnt=" + joinedNodesCnt + "]");
             }
 
             assertTrue(
-                "Disco cache history is not empty for the topology [majorTopVer=" + topVer + ']',
-                disco.isEmptyTopologyHistory(topVer));
+                disco.isEmptyTopologyHistory(topVer),
+                "Disco cache history is not empty for the topology [majorTopVer=" + topVer + ']');
 
             // Let's continue the ongoing exchange.
             exchangeLatch.countDown();
@@ -226,15 +228,15 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
             boolean failureHnd = GridTestUtils.waitForCondition(() -> cpFailureCtx.get() != null, DEFAULT_TIMEOUT);
 
             assertNull(
-                "Unexpected exception (probably, the topology history still exists [err=" + err + ']',
-                err.get());
+                err.get(),
+                "Unexpected exception (probably, the topology history still exists [err=" + err + ']');
 
-            assertTrue("Failure handler was not triggered.", failureHnd);
+            assertTrue(failureHnd, "Failure handler was not triggered.");
 
             // Check that IgniteException was thrown instead of NullPointerException.
             assertTrue(
-                "IgniteException must be thrown.",
-                X.hasCause(cpFailureCtx.get().error(), IgniteException.class));
+                X.hasCause(cpFailureCtx.get().error(), IgniteException.class),
+                "IgniteException must be thrown.");
 
             // Check that message contains a hint to fix the issue.
             GridTestUtils.assertContains(
@@ -255,7 +257,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
             });
         }
 
-        assertNull("Unexpected exception [err=" + err.get() + ']', err.get());
+        assertNull(err.get(), "Unexpected exception [err=" + err.get() + ']');
     }
 
     /**

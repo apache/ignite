@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /** */
 public abstract class AbstractPageLockTest extends GridCommonAbstractTest {
 

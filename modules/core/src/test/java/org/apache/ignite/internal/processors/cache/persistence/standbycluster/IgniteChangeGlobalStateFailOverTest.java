@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -81,7 +83,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
 
         try {
             final IgniteInternalFuture<Void> af = runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override public Void call() {
                     while (!stop.get()) {
                         Ignite ig = randomBackUp(false);
 
@@ -106,7 +108,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
             });
 
             final IgniteInternalFuture<Void> df = runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override public Void call() {
                     while (!stop.get()) {
                         Ignite ig = randomBackUp(false);
 

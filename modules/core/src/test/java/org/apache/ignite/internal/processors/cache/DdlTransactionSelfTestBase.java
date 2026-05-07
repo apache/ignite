@@ -39,6 +39,10 @@ import org.apache.ignite.transactions.TransactionState;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -138,7 +142,7 @@ public abstract class DdlTransactionSelfTestBase extends GridCommonAbstractTest 
 
             assertTrue(X.hasCause(cacheEx, errMsg, IgniteException.class));
 
-            assertTrue(tx.state() != TransactionState.COMMITTED);
+            assertNotSame(TransactionState.COMMITTED, tx.state());
         }
     }
 

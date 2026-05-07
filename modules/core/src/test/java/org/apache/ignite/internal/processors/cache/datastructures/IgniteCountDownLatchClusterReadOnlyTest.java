@@ -25,6 +25,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singleton;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests methods of {@link IgniteCountDownLatch} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -69,12 +71,12 @@ public class IgniteCountDownLatchClusterReadOnlyTest extends GridCommonAbstractT
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        assertEquals(latch.name(), LATCH_INITIAL_VALUE, latch.count());
+        assertEquals(LATCH_INITIAL_VALUE, latch.count(), latch.name());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertEquals(latch.name(), LATCH_INITIAL_VALUE, latch.count());
+        assertEquals(LATCH_INITIAL_VALUE, latch.count(), latch.name());
 
         super.afterTest();
     }

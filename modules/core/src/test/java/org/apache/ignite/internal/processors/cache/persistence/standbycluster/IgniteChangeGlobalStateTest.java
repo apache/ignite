@@ -37,6 +37,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -60,9 +63,9 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         assertTrue(ig2P.cluster().state().active());
         assertTrue(ig3P.cluster().state().active());
 
-        assertTrue(!ig1B.cluster().state().active());
-        assertTrue(!ig2B.cluster().state().active());
-        assertTrue(!ig3B.cluster().state().active());
+        assertFalse(ig1B.cluster().state().active());
+        assertFalse(ig2B.cluster().state().active());
+        assertFalse(ig3B.cluster().state().active());
 
         stopAllPrimary();
 
@@ -400,7 +403,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
      */
     private void checkExceptionTryUseCache(final Ignite ig) {
         assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 IgniteCache cache = ig.cache("cache");
 
                 return null;
@@ -408,11 +411,9 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         }, IgniteException.class, "Can not perform the operation because the cluster is inactive.");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testTryUseServiceInActiveCluster() throws Exception {
+    public void testTryUseServiceInActiveCluster() {
         Ignite ig1B = backUp(0);
         Ignite ig2B = backUp(1);
         Ignite ig3B = backUp(2);
@@ -421,13 +422,13 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         Ignite ig2C = backUpClient(1);
         Ignite ig3C = backUpClient(2);
 
-        assertTrue(!ig1B.cluster().state().active());
-        assertTrue(!ig2B.cluster().state().active());
-        assertTrue(!ig3B.cluster().state().active());
+        assertFalse(ig1B.cluster().state().active());
+        assertFalse(ig2B.cluster().state().active());
+        assertFalse(ig3B.cluster().state().active());
 
-        assertTrue(!ig1C.cluster().state().active());
-        assertTrue(!ig2C.cluster().state().active());
-        assertTrue(!ig3C.cluster().state().active());
+        assertFalse(ig1C.cluster().state().active());
+        assertFalse(ig2C.cluster().state().active());
+        assertFalse(ig3C.cluster().state().active());
 
         checkExceptionTryUseService(ig1B);
         checkExceptionTryUseService(ig2B);
@@ -464,13 +465,13 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         Ignite ig2C = backUpClient(1);
         Ignite ig3C = backUpClient(2);
 
-        assertTrue(!ig1B.cluster().state().active());
-        assertTrue(!ig2B.cluster().state().active());
-        assertTrue(!ig3B.cluster().state().active());
+        assertFalse(ig1B.cluster().state().active());
+        assertFalse(ig2B.cluster().state().active());
+        assertFalse(ig3B.cluster().state().active());
 
-        assertTrue(!ig1C.cluster().state().active());
-        assertTrue(!ig2C.cluster().state().active());
-        assertTrue(!ig3C.cluster().state().active());
+        assertFalse(ig1C.cluster().state().active());
+        assertFalse(ig2C.cluster().state().active());
+        assertFalse(ig3C.cluster().state().active());
 
         checkExceptionTryUseDataStructure(ig1B);
         checkExceptionTryUseDataStructure(ig2B);
@@ -543,13 +544,13 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         if (!exc)
             fail();
 
-        assertTrue(!ig1B.cluster().state().active());
-        assertTrue(!ig2B.cluster().state().active());
-        assertTrue(!ig3B.cluster().state().active());
+        assertFalse(ig1B.cluster().state().active());
+        assertFalse(ig2B.cluster().state().active());
+        assertFalse(ig3B.cluster().state().active());
 
-        assertTrue(!ig1C.cluster().state().active());
-        assertTrue(!ig2C.cluster().state().active());
-        assertTrue(!ig3C.cluster().state().active());
+        assertFalse(ig1C.cluster().state().active());
+        assertFalse(ig2C.cluster().state().active());
+        assertFalse(ig3C.cluster().state().active());
     }
 
     /**

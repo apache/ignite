@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *

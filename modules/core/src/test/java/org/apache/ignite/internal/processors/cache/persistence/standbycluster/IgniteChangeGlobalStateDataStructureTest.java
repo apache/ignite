@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -147,9 +150,9 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig3.cluster().state(ClusterState.ACTIVE);
 
@@ -162,7 +165,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         final IgniteCountDownLatch latchAct3 = ig3.countDownLatch(latchName, 0, false, false);
 
         runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 latchAct1.await();
                 cnt.incrementAndGet();
                 return null;
@@ -170,7 +173,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         });
 
         runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 latchAct2.await();
                 cnt.incrementAndGet();
                 return null;
@@ -178,7 +181,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         });
 
         runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 latchAct3.await();
                 cnt.incrementAndGet();
                 return null;
@@ -245,9 +248,9 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig3.cluster().state(ClusterState.ACTIVE);
 

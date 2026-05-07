@@ -53,6 +53,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests a scenario when delayed partition owning on exchange overlaps with new rebalancing.

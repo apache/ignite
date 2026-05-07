@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getAtomicConfigurations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests methods of {@link IgniteAtomicSequence} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -37,7 +39,7 @@ public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractT
     private static final int INITIAL_VAL = 0;
 
     /** Ignite atomic longs. */
-    private static List<IgniteAtomicSequence> atomicSeqs = new ArrayList<>();
+    private static final List<IgniteAtomicSequence> atomicSeqs = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -66,12 +68,12 @@ public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractT
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicSeqs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+        atomicSeqs.forEach(l -> assertEquals(INITIAL_VAL, l.get(), l.name()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicSeqs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+        atomicSeqs.forEach(l -> assertEquals(INITIAL_VAL, l.get(), l.name()));
 
         super.afterTest();
     }
@@ -79,14 +81,14 @@ public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractT
     /** */
     @Test
     public void testGetAllowed() {
-        atomicSeqs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+        atomicSeqs.forEach(l -> assertEquals(INITIAL_VAL, l.get(), l.name()));
     }
 
     /** */
     @Test
     public void testGetInstanceWithoutCreateAllowed() {
         for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
-            assertNotNull(e.getKey(), grid(0).atomicSequence(e.getKey(), e.getValue(), INITIAL_VAL, false));
+            assertNotNull(grid(0).atomicSequence(e.getKey(), e.getValue(), INITIAL_VAL, false), e.getKey());
     }
 
     /** */

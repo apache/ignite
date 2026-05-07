@@ -58,6 +58,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests for client nodes with slow discovery.
@@ -344,11 +346,10 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         public void consistencyCheck() {
             for (Map.Entry<K, Object> entry : map.entrySet()) {
                 if (entry.getValue() == RMV)
-                    assertNull("Value is not null for key: " + entry.getKey(), cache.get(entry.getKey()));
+                    assertNull(cache.get(entry.getKey()), "Value is not null for key: " + entry.getKey());
                 else
-                    assertEquals("Values are different for key: " + entry.getKey(),
-                        entry.getValue(),
-                        cache.get(entry.getKey())
+                    assertEquals(entry.getValue(), cache.get(entry.getKey()),
+                        "Values are different for key: " + entry.getKey()
                     );
             }
         }
@@ -463,7 +464,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
 
             // Check that initial data is not changed by rollbacked transaction.
             for (int k = 0; k < KEYS_SET; k++)
-                assertEquals("Cache consistency is broken for key: " + k, 0, clnt.cache(CACHE_NAME).get(k));
+                assertEquals(0, clnt.cache(CACHE_NAME).get(k), "Cache consistency is broken for key: " + k);
         }
         else {
             txFut.get();

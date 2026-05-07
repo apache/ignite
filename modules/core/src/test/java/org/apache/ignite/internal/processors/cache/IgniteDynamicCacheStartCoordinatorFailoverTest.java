@@ -45,6 +45,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /** */
 public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAbstractTest {
     /** Latch which blocks DynamicCacheChangeFailureMessage until main thread has sent node fail signal. */

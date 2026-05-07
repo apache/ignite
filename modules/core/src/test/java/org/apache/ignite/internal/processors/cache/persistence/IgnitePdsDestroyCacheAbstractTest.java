@@ -34,6 +34,10 @@ import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Base class for  {@link IgnitePdsDestroyCacheTest} and {@link IgnitePdsDestroyCacheWithoutCheckpointsTest}
  */
@@ -123,13 +127,13 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         log.warning("Grid started");
 
-        assertEquals("Check that caches don't survived", CACHES - 2, ignite.cacheNames().size());
+        assertEquals(CACHES - 2, ignite.cacheNames().size(), "Check that caches don't survived");
 
         for (Ignite ig: G.allGrids()) {
             IgniteCache cache = ig.cache(cacheName(2));
 
             for (int j = 0; j < NUM_OF_KEYS; j++)
-                assertNotNull("Check that cache2 contains key: " + j + " node: " + ignite.name(), cache.get(j));
+                assertNotNull(cache.get(j), "Check that cache2 contains key: " + j + " node: " + ignite.name());
         }
     }
 
@@ -164,7 +168,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
             IgniteCache cache = ig.cache(cacheName(2));
 
             for (int j = 0; j < NUM_OF_KEYS; j++)
-                assertNotNull("Check that survived cache cache2 contains key: " + j + " node: " + ig.name(), cache.get(j));
+                assertNotNull(cache.get(j), "Check that survived cache cache2 contains key: " + j + " node: " + ig.name());
         }
     }
 

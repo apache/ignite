@@ -49,6 +49,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * The test validates assignment after nodes restart with enabled persistence.
@@ -211,17 +212,15 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
                 if (u0 == null)
                     depIds.put(entry.getKey(), u);
                 else
-                    assertEquals("Descriptors do not match", u0, u);
+                    assertEquals(u0, u, "Descriptors do not match");
             }
         }
 
         assertEquals(grpCnt + 1, depIds.size());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    private void checkAffinity() throws Exception {
+    /** */
+    private void checkAffinity() {
         List<Ignite> nodes = G.allGrids();
 
         ClusterNode crdNode = null;

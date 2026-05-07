@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests check that unnecessary rebalance doesn't happen.

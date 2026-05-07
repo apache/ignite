@@ -22,6 +22,9 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -123,9 +126,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!client.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(client.cluster().state().active());
 
         info(">>>> activate grid");
 

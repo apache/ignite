@@ -27,6 +27,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -57,13 +62,13 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
         IgniteCache<String, String> cache2B = ig2B.cache(cacheName);
         IgniteCache<String, String> cache3B = ig3B.cache(cacheName);
 
-        assertTrue(cache1B != null);
-        assertTrue(cache2B != null);
-        assertTrue(cache3B != null);
+        assertNotNull(cache1B);
+        assertNotNull(cache2B);
+        assertNotNull(cache3B);
 
-        assertEquals(cache1B.get("key"), "value");
-        assertEquals(cache2B.get("key"), "value");
-        assertEquals(cache3B.get("key"), "value");
+        assertEquals("value", cache1B.get("key"));
+        assertEquals("value", cache2B.get("key"));
+        assertEquals("value", cache3B.get("key"));
     }
 
     /**
@@ -106,9 +111,9 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
         IgniteCache<String, String> cache2B = ig2B.cache(cacheName);
         IgniteCache<String, String> cache3B = ig3B.cache(cacheName);
 
-        assertTrue(cache1B != null);
-        assertTrue(cache2B != null);
-        assertTrue(cache3B != null);
+        assertNotNull(cache1B);
+        assertNotNull(cache2B);
+        assertNotNull(cache3B);
 
         for (int i = 0; i < 4_000; i++)
             assertEquals("value" + i, cache1B.get("key" + i));
@@ -120,11 +125,9 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
             assertEquals("value" + i, cache3B.get("key" + i));
     }
 
-    /**
-     * @throws Exception if fail.
-     */
+    /** */
     @Test
-    public void testDeActivateAndActivateCacheValue() throws Exception {
+    public void testDeActivateAndActivateCacheValue() {
         String chName = "myCache";
 
         Ignite ig1 = primary(0);
@@ -153,9 +156,9 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig3.cluster().state(ClusterState.ACTIVE);
 

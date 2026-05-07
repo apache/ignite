@@ -23,6 +23,11 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -69,13 +74,13 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
 
         ig2C.cluster().state(ClusterState.INACTIVE);
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
-        assertTrue(!ig1C.cluster().state().active());
-        assertTrue(!ig2C.cluster().state().active());
-        assertTrue(!ig3C.cluster().state().active());
+        assertFalse(ig1C.cluster().state().active());
+        assertFalse(ig2C.cluster().state().active());
+        assertFalse(ig3C.cluster().state().active());
 
         boolean fail = false;
 

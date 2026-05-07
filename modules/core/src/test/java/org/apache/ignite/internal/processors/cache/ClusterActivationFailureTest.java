@@ -35,6 +35,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** */
 public class ClusterActivationFailureTest extends GridCommonAbstractTest {

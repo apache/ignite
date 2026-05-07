@@ -47,6 +47,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -350,7 +355,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         SharedPageLockTrackerDump dump = sharedPageLockTracker.dump();
 
         assertTrue(dump.time > 0);
-        assertTrue(!dump.threadPageLockStates.isEmpty());
+        assertFalse(dump.threadPageLockStates.isEmpty());
 
         for (ThreadPageLockState threadPageLockState : dump.threadPageLockStates) {
             assertNull(threadPageLockState.invalidContext);

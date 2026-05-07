@@ -67,6 +67,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test for rebalancing and persistence integration.
@@ -269,7 +271,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteCache<Integer, Integer> cache3 = ignite2.cache(CACHE);
 
         for (int i = 0; i < 100; i++)
-            assertEquals(String.valueOf(i), (Integer)(i * 2), cache3.get(i));
+            assertEquals((Integer)(i * 2), cache3.get(i), String.valueOf(i));
     }
 
     /**
@@ -331,8 +333,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteCache<Integer, Integer> cache3 = ignite3.cache(CACHE);
 
         for (int i = 0; i < 100; i++) {
-            assertEquals(String.valueOf(i), (Integer)(i * 2), cache2.get(i));
-            assertEquals(String.valueOf(i), (Integer)(i * 2), cache3.get(i));
+            assertEquals((Integer)(i * 2), cache2.get(i), String.valueOf(i));
+            assertEquals((Integer)(i * 2), cache3.get(i), String.valueOf(i));
         }
     }
 
@@ -510,7 +512,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                     TestValue actual = cache.get(entry.getKey());
 
                     if (expected.removed) {
-                        assertNull(assertMsg + " should be removed.", actual);
+                        assertNull(actual, assertMsg + " should be removed.");
 
                         continue;
                     }
@@ -518,7 +520,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                     if (entry.getValue().order < maxOrder)
                         continue;
 
-                    assertEquals(assertMsg, expected, actual);
+                    assertEquals(expected, actual, assertMsg);
                 }
 
                 // Resume progress for loader.
@@ -669,7 +671,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
                     if (cntrs.containsKey(part.id()))
-                        assertEquals(String.valueOf(part.id()), (long)cntrs.get(part.id()), part.updateCounter());
+                        assertEquals((long)cntrs.get(part.id()), part.updateCounter(), String.valueOf(part.id()));
                     else
                         cntrs.put(part.id(), part.updateCounter());
                 }

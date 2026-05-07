@@ -42,6 +42,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test dynamic WAL mode change.
@@ -292,7 +295,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Node configuration.
      */
     protected IgniteConfiguration config(String name, boolean cli, boolean filter) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(name);
+        IgniteConfiguration cfg = getConfiguration(name);
 
         cfg.setIgniteInstanceName(name);
         cfg.setClientMode(cli);

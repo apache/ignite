@@ -115,6 +115,12 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11820 https://issues.apache.org/jira/browse/IGNITE-11797
@@ -2706,7 +2712,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         fut3.get();
         fut4.get();
 
-        assertFalse("Unexpected error, see log for details", err.get());
+        assertFalse(err.get(), "Unexpected error, see log for details");
     }
 
     /**
@@ -2910,7 +2916,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         opFut.get();
         cacheFut.get();
 
-        assertFalse("Unexpected error, see log for details", err.get());
+        assertFalse(err.get(), "Unexpected error, see log for details");
     }
 
     /**
@@ -3239,8 +3245,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 fail();
             }
             catch (CacheException e) {
-                assertTrue("Unexpected message: " + e.getMessage(),
-                    e.getMessage().contains("Cache mode mismatch for caches related to the same group [groupName=grp1"));
+                assertTrue(e.getMessage().contains("Cache mode mismatch for caches related to the same group [groupName=grp1"),
+                    "Unexpected message: " + e.getMessage());
             }
 
             try {
@@ -3249,8 +3255,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 fail();
             }
             catch (CacheException e) {
-                assertTrue("Unexpected message: " + e.getMessage(),
-                    e.getMessage().contains("Backups mismatch for caches related to the same group [groupName=grp1"));
+                assertTrue(e.getMessage().contains("Backups mismatch for caches related to the same group [groupName=grp1"),
+                    "Unexpected message: " + e.getMessage());
             }
         }
     }
@@ -3865,7 +3871,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 cacheFut.get();
                 opFut.get();
 
-                assertNull("Unexpected error during test, see log for details", err.get());
+                assertNull(err.get(), "Unexpected error during test, see log for details");
 
                 awaitPartitionMapExchange();
 

@@ -31,6 +31,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -100,7 +102,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
 
             boolean cntReachedZero = latch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
 
-            assertTrue("IgniteClientDisconnectedException was not thrown", cntReachedZero);
+            assertTrue(cntReachedZero, "IgniteClientDisconnectedException was not thrown");
         }
         finally {
             stopAllGrids();

@@ -31,6 +31,8 @@ import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * The test shows that the WalWritingRate metric is not calculated when walMode in all modes.
  */

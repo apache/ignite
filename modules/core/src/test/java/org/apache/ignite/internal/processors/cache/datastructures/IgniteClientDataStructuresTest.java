@@ -40,6 +40,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  */
@@ -97,14 +104,9 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
         }
 
         for (IgniteAtomicSequence seq : sequences) {
-            try {
-                seq.getAndAdd(seq.batchSize());
+            seq.getAndAdd(seq.batchSize());
 
-                fail("Operations with closed sequence must fail");
-            }
-            catch (Throwable ignore) {
-                // No-op.
-            }
+            fail("Operations with closed sequence must fail");
         }
 
         for (Ignite ignite : F.asList(creator, other)) {
@@ -131,9 +133,8 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
     /**
      * @param creator Creator node.
      * @param other Other node.
-     * @throws Exception If failed.
      */
-    private void testAtomicLong(Ignite creator, Ignite other) throws Exception {
+    private void testAtomicLong(Ignite creator, Ignite other) {
         assertNull(creator.atomicLong("long1", 1L, false));
         assertNull(other.atomicLong("long1", 1L, false));
 
@@ -181,16 +182,16 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
                 String expectedMsg = "Sequence was removed from cache";
 
                 assertTrue(
-                    String.format("Exception should start with '%s' but was '%s'", expectedMsg, e.getMessage()),
-                    e.getMessage().startsWith(expectedMsg)
+                    e.getMessage().startsWith(expectedMsg),
+                    String.format("Exception should start with '%s' but was '%s'", expectedMsg, e.getMessage())
                 );
             }
             catch (IgniteException e) {
                 String expectedMsg = "Failed to find atomic long:";
 
                 assertTrue(
-                    String.format("Exception should start with '%s' but was '%s'", expectedMsg, e.getMessage()),
-                    e.getMessage().startsWith(expectedMsg)
+                    e.getMessage().startsWith(expectedMsg),
+                    String.format("Exception should start with '%s' but was '%s'", expectedMsg, e.getMessage())
                 );
             }
         }
@@ -213,7 +214,7 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
      * @param other Other node.
      * @throws Exception If failed.
      */
-    private void testSet(Ignite creator, Ignite other) throws Exception {
+    private void testSet(Ignite creator, Ignite other) {
         assertNull(creator.set("set1", null));
         assertNull(other.set("set1", null));
 
@@ -275,7 +276,7 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
 
             assertEquals(1, latch.count());
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<>() {
                 @Override public Object call() throws Exception {
                     U.sleep(1000);
 
@@ -305,14 +306,9 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
         }
 
         for (IgniteCountDownLatch latch : latches) {
-            try {
-                latch.await(5_000L);
+            latch.await(5_000L);
 
-                fail("Operations with closed latch must fail");
-            }
-            catch (Throwable ignore) {
-                // No-op.
-            }
+            fail("Operations with closed latch must fail");
         }
 
         for (Ignite ignite : F.asList(creator, other)) {
@@ -345,7 +341,7 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
         assertNull(creator.semaphore("semaphore1", 1, true, false));
         assertNull(other.semaphore("semaphore1", 1, true, false));
 
-        final List<IgniteSemaphore> semaphores = new ArrayList(2);
+        final List<IgniteSemaphore> semaphores = new ArrayList<>(2);
 
         try (IgniteSemaphore semaphore = creator.semaphore("semaphore1", -1, true, true)) {
             semaphores.add(semaphore);
@@ -354,7 +350,7 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
 
             assertEquals(-1, semaphore.availablePermits());
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<>() {
                 @Override public Object call() throws Exception {
                     U.sleep(1000);
 
@@ -384,14 +380,9 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
         }
 
         for (IgniteSemaphore semaphore : semaphores) {
-            try {
-                semaphore.release();
+            semaphore.release();
 
-                fail("Operations with closed semaphore must fail");
-            }
-            catch (Throwable ignore) {
-                // No-op.
-            }
+            fail("Operations with closed semaphore must fail");
         }
 
         for (Ignite ignite : F.asList(creator, other)) {
@@ -435,7 +426,7 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
 
             final Semaphore semaphore = new Semaphore(0);
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<>() {
                 @Override public Object call() throws Exception {
                     IgniteLock lock0 = other.reentrantLock("lock1", true, false, false);
 
@@ -443,15 +434,18 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
 
                     lock0.lock();
 
-                    assertTrue(lock0.isLocked());
+                    try {
+                        assertTrue(lock0.isLocked());
 
-                    semaphore.release();
+                        semaphore.release();
 
-                    U.sleep(1000);
+                        U.sleep(1000);
 
-                    log.info("Release reentrant lock.");
-
-                    lock0.unlock();
+                        log.info("Release reentrant lock.");
+                    }
+                    finally {
+                        lock0.unlock();
+                    }
 
                     return null;
                 }
@@ -475,14 +469,9 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
         }
 
         for (IgniteLock lock : locks) {
-            try {
-                lock.tryLock(5_000L, TimeUnit.MILLISECONDS);
+            lock.tryLock(5_000L, TimeUnit.MILLISECONDS);
 
-                fail("Operations with closed lock must fail");
-            }
-            catch (Throwable ignore) {
-                // No-op.
-            }
+            fail("Operations with closed lock must fail");
         }
 
         for (Ignite ignite : F.asList(creator, other)) {
@@ -522,7 +511,7 @@ public class IgniteClientDataStructuresTest extends GridCommonAbstractTest {
 
             assertEquals(1, queue.poll().intValue());
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<>() {
                 @Override public Object call() throws Exception {
                     U.sleep(1000);
 

@@ -29,6 +29,9 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  *
  */
@@ -76,11 +79,11 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
 
         Collection<ServiceDescriptor> descs = ig1B.services().serviceDescriptors();
 
-        assertTrue(!F.isEmpty(descs));
+        assertFalse(F.isEmpty(descs));
 
         TestService srv = ig1B.services().service(serName);
 
-        assertTrue(srv != null);
+        assertNotNull(srv);
     }
 
     /**
@@ -96,12 +99,12 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) {
             System.out.println("init service");
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
+        @Override public void execute(ServiceContext ctx) {
             System.out.println("execute service");
         }
     }

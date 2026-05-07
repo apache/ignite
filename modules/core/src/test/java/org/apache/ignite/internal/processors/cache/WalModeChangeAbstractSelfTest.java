@@ -33,6 +33,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test dynamic WAL mode change.
@@ -74,10 +77,10 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      */
     @Test
     public void testNullCacheName() throws Exception {
-        forAllNodes(new IgniteInClosureX<Ignite>() {
+        forAllNodes(new IgniteInClosureX<>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                assertThrows(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+                assertThrows(new Callable<>() {
+                    @Override public Void call() {
                         walEnable(ignite, null);
 
                         return null;
@@ -94,10 +97,10 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      */
     @Test
     public void testNoCache() throws Exception {
-        forAllNodes(new IgniteInClosureX<Ignite>() {
+        forAllNodes(new IgniteInClosureX<>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                assertThrows(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+                assertThrows(new Callable<>() {
+                    @Override public Void call() {
                         walEnable(ignite, CACHE_NAME);
 
                         return null;
@@ -115,13 +118,13 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      */
     @Test
     public void testSharedCacheGroup() throws Exception {
-        forAllNodes(new IgniteInClosureX<Ignite>() {
+        forAllNodes(new IgniteInClosureX<>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
                 createCache(ignite, cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
 
-                assertThrows(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+                assertThrows(new Callable<>() {
+                    @Override public Void call() {
                         walDisable(ignite, CACHE_NAME);
 
                         return null;
@@ -129,8 +132,8 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
                 }, IgniteException.class, "Cannot change WAL mode because not all cache names belonging to the " +
                     "group are provided");
 
-                assertThrows(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+                assertThrows(new Callable<>() {
+                    @Override public Void call() {
                         walEnable(ignite, CACHE_NAME);
 
                         return null;
@@ -151,7 +154,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      */
     @Test
     public void testPersistenceDisabled() throws Exception {
-        forAllNodes(new IgniteInClosureX<Ignite>() {
+        forAllNodes(new IgniteInClosureX<>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 U.sleep(500);
 

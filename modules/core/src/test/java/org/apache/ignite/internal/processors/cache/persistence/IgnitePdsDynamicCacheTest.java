@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTe
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  *
  */

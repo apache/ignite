@@ -36,6 +36,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests behavior of volatile data structures and regular caches
@@ -147,7 +150,7 @@ public class OutOfMemoryVolatileRegionTest extends GridCommonAbstractTest {
             cache.clear();
         }
 
-        assertFalse("Failure handler should not be notified", failure);
+        assertFalse(failure, "Failure handler should not be notified");
 
         try {
             for (int j = 0; j < 100000; j++) {
@@ -168,7 +171,7 @@ public class OutOfMemoryVolatileRegionTest extends GridCommonAbstractTest {
             log.info("Expected exception, n: " + e);
         }
 
-        assertTrue("Failure handler wasn't notified", failure);
+        assertTrue(failure, "Failure handler wasn't notified");
 
         for (int i = 0; i < attempts; ++i) {
             for (int key = 0; key < 5_000; ++key)

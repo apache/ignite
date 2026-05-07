@@ -45,6 +45,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -376,8 +382,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                 if (res instanceof IgniteException || res instanceof IgniteCheckedException)
                     continue;
 
-                assertTrue("Unexpected object: " + res,
-                    res instanceof IgniteAtomicLong ||
+                assertTrue(res instanceof IgniteAtomicLong ||
                         res instanceof IgniteAtomicSequence ||
                         res instanceof IgniteAtomicReference ||
                         res instanceof IgniteAtomicStamped ||
@@ -385,7 +390,8 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                         res instanceof IgniteQueue ||
                         res instanceof IgniteSet ||
                         res instanceof IgniteSemaphore ||
-                        res instanceof IgniteLock);
+                        res instanceof IgniteLock,
+                    "Unexpected object: " + res);
 
                 log.info("Data structure created: " + dataStructure);
 
