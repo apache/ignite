@@ -339,23 +339,18 @@ public class SharedPageLockTracker {
          * @param sleepInterval sleep interval before each iteration
          */
         protected TimeOutWorker(String igniteInstanceName, long sleepInterval, IgniteLogger log) {
-            super(igniteInstanceName, "page-lock-tracker-timeout", log);
+            super(igniteInstanceName, "page-lock-timeout-tracker-worker", log);
 
             this.sleepInterval = sleepInterval;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("BusyWait")
-        @Override public final void body() {
-            try {
-                while (!runner().isInterrupted()) {
-                    Thread.sleep(sleepInterval);
+        @Override public final void body() throws InterruptedException {
+            while (!runner().isInterrupted()) {
+                Thread.sleep(sleepInterval);
 
-                    iteration();
-                }
-            }
-            catch (InterruptedException e) {
-                // No-op
+                iteration();
             }
         }
 

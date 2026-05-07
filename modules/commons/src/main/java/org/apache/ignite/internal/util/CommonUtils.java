@@ -545,23 +545,21 @@ public abstract class CommonUtils {
      *
      * @param igniteInstanceName Ignite instance name.
      */
+    @SuppressWarnings({"BusyWait"})
     public static void onGridStart(String igniteInstanceName) {
         synchronized (mux) {
             if (gridCnt == 0) {
                 assert timer == null;
 
-                timer = new IgniteThread(igniteInstanceName, "ignite-clock", new Runnable() {
-                    @SuppressWarnings({"BusyWait"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
+                timer = new IgniteThread(igniteInstanceName, "ignite-clock", () -> {
+                    while (!IgniteThread.currentThread().isInterrupted()) {
+                        curTimeMillis = System.currentTimeMillis();
 
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
+                        try {
+                            Thread.sleep(10);
+                        }
+                        catch (InterruptedException ignored) {
+                            break;
                         }
                     }
                 });

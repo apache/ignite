@@ -91,32 +91,32 @@ class GridUpdateNotifier {
      * @param ver Compound Ignite version.
      * @param reportOnlyNew Whether or not to report only new version.
      * @param updatesChecker Service for getting Ignite updates
-     * @throws IgniteCheckedException If failed.
      */
     GridUpdateNotifier(
         String igniteInstanceName,
         String ver,
         boolean reportOnlyNew,
         HttpIgniteUpdatesChecker updatesChecker
-    ) throws IgniteCheckedException {
+    ) {
         this.ver = ver;
         this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
         this.updatesChecker = updatesChecker;
         this.reportOnlyNew = reportOnlyNew;
 
         workerThread = new IgniteThread(igniteInstanceName, "upd-ver-checker", () -> {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    Runnable cmd0 = cmd.getAndSet(null);
+            while (!Thread.currentThread().isInterrupted()) {
+                Runnable cmd0 = cmd.getAndSet(null);
 
-                    if (cmd0 != null)
-                        cmd0.run();
-                    else
+                if (cmd0 != null)
+                    cmd0.run();
+                else {
+                    try {
                         Thread.sleep(WORKER_THREAD_SLEEP_TIME);
+                    }
+                    catch (InterruptedException ignored) {
+                        break;
+                    }
                 }
-            }
-            catch (InterruptedException ignore) {
-                // No-op.
             }
         });
 

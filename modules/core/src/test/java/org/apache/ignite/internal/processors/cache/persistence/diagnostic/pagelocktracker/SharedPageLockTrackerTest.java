@@ -304,7 +304,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
     public void testMemoryLeakOnThreadTerminates() throws Exception {
         int threadLimits = 1000;
         int timeOutWorkerInterval = 10_000;
-        Consumer<Set<PageLockThreadState>> hnd = (threads) -> {};
+        Consumer<Set<PageLockThreadState>> hnd = threads -> {};
 
         SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker(
             "testIgniteInstance",

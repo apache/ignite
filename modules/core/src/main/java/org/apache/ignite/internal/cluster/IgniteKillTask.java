@@ -73,11 +73,11 @@ class IgniteKillTask extends ComputeTaskAdapter<Boolean, Void> {
      */
     private class IgniteKillJob extends ComputeJobAdapter {
         /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
+        private static final long serialVersionUID = 0L;
 
         /** */
-        private static final long serialVersionUID = 0L;
+        @IgniteInstanceResource
+        private transient Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Object execute() {
