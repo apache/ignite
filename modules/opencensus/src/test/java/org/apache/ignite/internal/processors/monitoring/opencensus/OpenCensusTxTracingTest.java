@@ -202,29 +202,25 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        List<SpanId> txDhtFinishSpanIds = checkSpan(
+        List<SpanId> txDhtFinishSpanIds = waitForSpan(
             TX_DHT_FINISH,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        checkSpan(
+        waitForSpan(
             TX_PROCESS_DHT_FINISH_REQ,
             txDhtFinishSpanIds.get(0),
-            2,
-            null);
+            2);
 
-        checkSpan(
+        waitForSpan(
             TX_NEAR_FINISH_RESP,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
     }
 
     /**
@@ -349,29 +345,25 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        List<SpanId> txDhtFinishSpanIds = checkSpan(
+        List<SpanId> txDhtFinishSpanIds = waitForSpan(
             TX_DHT_FINISH,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        checkSpan(
+        waitForSpan(
             TX_PROCESS_DHT_FINISH_REQ,
             txDhtFinishSpanIds.get(0),
-            2,
-            null);
+            2);
 
-        checkSpan(
+        waitForSpan(
             TX_NEAR_FINISH_RESP,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
     }
 
     /**
@@ -503,29 +495,25 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        List<SpanId> txDhtFinishSpanIds = checkSpan(
+        List<SpanId> txDhtFinishSpanIds = waitForSpan(
             TX_DHT_FINISH,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        checkSpan(
+        waitForSpan(
             TX_PROCESS_DHT_FINISH_REQ,
             txDhtFinishSpanIds.get(0),
-            2,
-            null);
+            2);
 
-        checkSpan(
+        waitForSpan(
             TX_NEAR_FINISH_RESP,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
     }
 
     /**
@@ -650,29 +638,25 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        List<SpanId> txDhtFinishSpanIds = checkSpan(
+        List<SpanId> txDhtFinishSpanIds = waitForSpan(
             TX_DHT_FINISH,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        checkSpan(
+        waitForSpan(
             TX_PROCESS_DHT_FINISH_REQ,
             txDhtFinishSpanIds.get(0),
-            2,
-            null);
+            2);
 
-        checkSpan(
+        waitForSpan(
             TX_NEAR_FINISH_RESP,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
     }
 
     /**
@@ -804,29 +788,25 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        List<SpanId> txDhtFinishSpanIds = checkSpan(
+        List<SpanId> txDhtFinishSpanIds = waitForSpan(
             TX_DHT_FINISH,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        checkSpan(
+        waitForSpan(
             TX_PROCESS_DHT_FINISH_REQ,
             txDhtFinishSpanIds.get(0),
-            2,
-            null);
+            2);
 
-        checkSpan(
+        waitForSpan(
             TX_NEAR_FINISH_RESP,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
     }
 
     /**
@@ -951,29 +931,25 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
             1,
             null);
 
-        List<SpanId> txNearFinishReqSpanIds = checkSpan(
+        List<SpanId> txNearFinishReqSpanIds = waitForSpan(
             TX_NEAR_FINISH_REQ,
             txNearFinishSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        List<SpanId> txDhtFinishSpanIds = checkSpan(
+        List<SpanId> txDhtFinishSpanIds = waitForSpan(
             TX_DHT_FINISH,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
 
-        checkSpan(
+        waitForSpan(
             TX_PROCESS_DHT_FINISH_REQ,
             txDhtFinishSpanIds.get(0),
-            2,
-            null);
+            2);
 
-        checkSpan(
+        waitForSpan(
             TX_NEAR_FINISH_RESP,
             txNearFinishReqSpanIds.get(0),
-            1,
-            null);
+            1);
     }
 
     /**

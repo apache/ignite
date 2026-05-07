@@ -232,7 +232,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param fut Move future.
      * @return {@code True} if session move was scheduled.
      */
-    boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
+    boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) throws IgniteCheckedException {
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -251,7 +251,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     /**
      * @param fut Future.
      */
-    void offerStateChange(GridNioServer.SessionChangeRequest fut) {
+    void offerStateChange(GridNioServer.SessionChangeRequest fut) throws IgniteCheckedException {
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -295,7 +295,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     /**
      * @param moveTo New session worker.
      */
-    void finishMoveSession(GridNioWorker moveTo) {
+    void finishMoveSession(GridNioWorker moveTo) throws IgniteCheckedException {
         synchronized (this) {
             assert worker == null;
 

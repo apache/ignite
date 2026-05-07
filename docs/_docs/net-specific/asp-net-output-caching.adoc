@@ -27,7 +27,7 @@ be shared between web servers.
 == Launching Ignite Automatically
 
 To start Ignite automatically for output caching, configure it
-link:net-specific/configuration-options#configure-with-application-or-web-config-files[in the web.config file via IgniteConfigurationSection]
+link:net-specific/net-configuration-options#configure-with-application-or-web-config-files[in the web.config file via IgniteConfigurationSection]
 
 [tabs]
 --
@@ -90,4 +90,4 @@ tab:web.config[]
 
 The Ignite instance needs to be started before any request is served. Typically this is done in the `Application_Start` method of the `global.asax`.
 
-See link:net-specific/deployment-options#asp-net-deployment[ASP.NET Deployment] for web deployment specifics related to the `IGNITE_HOME` variable.
+See link:net-specific/net-deployment-options#asp-net-deployment[ASP.NET Deployment] for web deployment specifics related to the `IGNITE_HOME` variable.

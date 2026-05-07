@@ -210,7 +210,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
      * @param expAttrs Attributes to check.
      * @return List of founded span ids.
      */
-    java.util.List<SpanId> checkSpan(
+    List<SpanId> checkSpan(
         SpanType spanType,
         SpanId parentSpanId,
         int expSpansCnt,
@@ -228,23 +228,18 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
      * @param expAttrs Attributes to check.
      * @return List of founded span ids.
      */
-    java.util.List<SpanId> checkSpan(
+    List<SpanId> checkSpan(
         SpanType spanType,
         SpanId parentSpanId,
         int expSpansCnt,
         /* tagName: tagValue*/ Map<String, String> expAttrs,
         CheckAttributes attrCheckType
     ) {
-        java.util.List<SpanData> gotSpans = hnd.allSpans()
-            .filter(
-                span -> parentSpanId != null ?
-                    parentSpanId.equals(span.getParentSpanId()) && spanType.spanName().equals(span.getName()) :
-                    spanType.spanName().equals(span.getName()))
-            .collect(Collectors.toList());
+        List<SpanData> gotSpans = findChildSpans(spanType, parentSpanId);
 
         assertEquals(expSpansCnt, gotSpans.size());
 
-        java.util.List<SpanId> spanIds = new ArrayList<>();
+        List<SpanId> spanIds = new ArrayList<>();
 
         gotSpans.forEach(spanData -> {
             spanIds.add(spanData.getContext().getSpanId());
@@ -253,6 +248,54 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         });
 
         return spanIds;
+    }
+
+    /**
+     * Waits until parent span has expected child spans with specified type.
+     *
+     * @param type Span type.
+     * @param parentSpan Parent span id.
+     * @param expSpansCnt Expected spans count.
+     * @return Ids of the child spans.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    List<SpanId> waitForSpan(
+        SpanType type,
+        SpanId parentSpan,
+        int expSpansCnt
+    ) throws IgniteInterruptedCheckedException {
+        assertTrue("Span was not exported [type=" + type + ", parent=" + parentSpan + ", expCnt=" + expSpansCnt + ']',
+            waitForCondition(() -> findChildSpans(type, parentSpan).size() == expSpansCnt, getTestTimeout()));
+
+        return findChildSpanIds(type, parentSpan);
+    }
+
+    /**
+     * Finds child spans with specified type and parent span.
+     *
+     * @param type Span type.
+     * @param parentSpan Parent span id.
+     * @return Ids of the found spans.
+     */
+    List<SpanId> findChildSpanIds(SpanType type, SpanId parentSpan) {
+        return findChildSpans(type, parentSpan).stream()
+            .map(span -> span.getContext().getSpanId())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Finds child spans with specified type and parent span.
+     *
+     * @param type Span type.
+     * @param parentSpan Parent span id.
+     * @return List of spans data.
+     */
+    List<SpanData> findChildSpans(SpanType type, SpanId parentSpan) {
+        return hnd.allSpans()
+            .filter(span -> parentSpan != null ?
+                parentSpan.equals(span.getParentSpanId()) && type.spanName().equals(span.getName()) :
+                type.spanName().equals(span.getName()))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -266,7 +309,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         SpanType spanType,
         /* tagName: tagValue*/ Map<String, String> expAttrs
     ) {
-        java.util.List<SpanData> gotSpans = hnd.allSpans()
+        List<SpanData> gotSpans = hnd.allSpans()
             .filter(span -> spanType.spanName().equals(span.getName())).collect(Collectors.toList());
 
         for (SpanData specificTypeSpans : gotSpans) {
@@ -344,7 +387,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         private final Map<SpanId, SpanData> collectedSpans = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<SpanId, java.util.List<SpanData>> collectedSpansByParents = new ConcurrentHashMap<>();
+        private final Map<SpanId, List<SpanData>> collectedSpansByParents = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void export(Collection<SpanData> spanDataList) {
@@ -386,7 +429,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
          * @param parentId Parent id.
          * @return All spans by parent id.
          */
-        java.util.List<SpanData> spanByParentId(SpanId parentId) {
+        List<SpanData> spanByParentId(SpanId parentId) {
             return collectedSpansByParents.get(parentId);
         }
 
@@ -394,7 +437,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
          * @param parentSpan Top span.
          * @return All span which are child of parentSpan in any generation.
          */
-        java.util.List<SpanData> unrollByParent(SpanData parentSpan) {
+        List<SpanData> unrollByParent(SpanData parentSpan) {
             ArrayList<SpanData> spanChain = new ArrayList<>();
 
             LinkedList<SpanData> queue = new LinkedList<>();

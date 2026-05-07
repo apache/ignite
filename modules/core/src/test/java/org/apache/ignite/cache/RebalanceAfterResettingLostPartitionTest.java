@@ -112,7 +112,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
 
         String g1Name = grid(1).name();
 
-        // Stopping the the second node.
+        // Stopping the second node.
         stopGrid(1);
 
         // Cleaning the persistence for second node.

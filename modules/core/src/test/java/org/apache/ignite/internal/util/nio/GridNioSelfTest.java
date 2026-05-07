@@ -678,7 +678,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     public void testAsyncSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(10);
 
-        NioListener lsnr = new NioListener(latch);
+        NioListener lsnr = new NoAckNioListener(latch);
 
         GridNioServer<?> srvr1 = startServer(new BufferedParser(false), lsnr);
         GridNioServer<?> srvr2 = startServer(new BufferedParser(false), lsnr);
@@ -1302,13 +1302,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     private static class NioListener extends GridNioServerListenerAdapter<byte[]> {
         /** */
-        private final AtomicInteger msgCnt = new AtomicInteger(0);
+        protected final AtomicInteger msgCnt = new AtomicInteger(0);
 
         /** */
-        private final AtomicBoolean sizeFailed = new AtomicBoolean(false);
+        protected final AtomicBoolean sizeFailed = new AtomicBoolean(false);
 
         /** */
-        private final CountDownLatch latch;
+        protected final CountDownLatch latch;
 
         /**
          * @param latch The latch.
@@ -1364,6 +1364,34 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          */
         public boolean isSizeFailed() {
             return sizeFailed.get();
+        }
+    }
+
+    /**
+     * NIO listener that does not send an ack on receive. Used by tests where both peers run
+     * a {@link GridNioServer} with {@link BufferedParser} (whose {@code encode} skips the size
+     * prefix) — the default ack would be sent as a single raw {@code 0xEF} byte and the receiver's
+     * {@link GridBufferedParser} would later parse four such bytes as {@code 0xEFEFEFEF} and fail.
+     */
+    private static class NoAckNioListener extends NioListener {
+        /**
+         * @param latch The latch.
+         */
+        NoAckNioListener(CountDownLatch latch) {
+            super(latch);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMessage(GridNioSession ses, byte[] data) {
+            int expMsgSize = getExpectedMessageSize();
+
+            if (data == null || (expMsgSize != 0 && data.length != expMsgSize))
+                sizeFailed.set(true);
+
+            msgCnt.incrementAndGet();
+
+            if (latch != null)
+                latch.countDown();
         }
     }
 

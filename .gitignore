@@ -95,3 +95,5 @@ modules/ducktests/tests/certs/*
 modules/ducktests/tests/ignitetest.egg-info/**
 modules/ducktests/tests/build/**
 modules/ducktests/tests/dist/**
+/.gigaide/gigaide.properties
+*.bkp

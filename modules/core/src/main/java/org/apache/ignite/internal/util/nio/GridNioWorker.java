@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,12 +29,12 @@ interface GridNioWorker {
     /**
      * @param req Change request.
      */
-    public void offer(GridNioServer.SessionChangeRequest req);
+    public void offer(GridNioServer.SessionChangeRequest req) throws IgniteCheckedException;
 
     /**
      * @param reqs Change requests.
      */
-    public void offer(Collection<GridNioServer.SessionChangeRequest> reqs);
+    public void offer(Collection<GridNioServer.SessionChangeRequest> reqs) throws IgniteCheckedException;
 
     /**
      * @param ses Session.

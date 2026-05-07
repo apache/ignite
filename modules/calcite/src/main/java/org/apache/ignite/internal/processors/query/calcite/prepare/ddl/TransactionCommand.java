@@ -16,8 +16,49 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
-/**
- * No-op command for COMMIT and ROLLBACK
- */
+import org.jetbrains.annotations.Nullable;
+
+/** Command for transaction control statements. */
 public class TransactionCommand implements DdlCommand {
+    /** Transaction command type. */
+    public enum Type {
+        /** No-op command for COMMIT and ROLLBACK. */
+        NOOP,
+
+        /** Create a transaction savepoint. */
+        SAVEPOINT,
+
+        /** Roll transaction changes back to a savepoint. */
+        ROLLBACK_TO_SAVEPOINT
+    }
+
+    /** */
+    private final Type type;
+
+    /** Savepoint name. */
+    @Nullable private final String savepointName;
+
+    /** */
+    public TransactionCommand() {
+        this(Type.NOOP, null);
+    }
+
+    /**
+     * @param type Command type.
+     * @param savepointName Savepoint name.
+     */
+    public TransactionCommand(Type type, String savepointName) {
+        this.type = type;
+        this.savepointName = savepointName;
+    }
+
+    /** */
+    public Type type() {
+        return type;
+    }
+
+    /** */
+    public String savepointName() {
+        return savepointName;
+    }
 }
