@@ -2378,7 +2378,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
-        return peek(true, false, topVer, null);
+        assert cctx.shared().database().checkpointLockIsHeldByThread() || !lockedByCurrentThread() :
+            "Lock order violation, checkpoint lock must be acquired before entry lock";
+
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            return peek(true, false, topVer, null);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /**
