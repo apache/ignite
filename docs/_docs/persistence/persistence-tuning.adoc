@@ -16,7 +16,6 @@
 :javaFile: {javaCodeDir}/PersistenceTuning.java
 :xmlFile: code-snippets/xml/persistence-tuning.xml
 :dotnetFile: code-snippets/dotnet/PersistenceTuning.cs
-:imagesdir: ../images/
 
 This article summarizes best practices for Ignite native persistence tuning.
 If you are using an external (3rd party) storage for persistence needs, please refer to performance guides from the 3rd party vendor.
@@ -114,7 +113,7 @@ However, if a dirty page, scheduled for checkpointing, is updated before being w
 If the buffer gets overflowed, Ignite will stop processing all updates until the checkpointing is over.
 As a result, write performance can drop to zero as shown in​ this diagram, until the checkpointing cycle is completed:
 
-image::checkpointing-chainsaw.png[Checkpointing Chainsaw]
+image::../images/checkpointing-chainsaw.png[Checkpointing Chainsaw]
 
 The same situation occurs if the dirty pages threshold is reached again while the checkpointing is in progress.
 This will force Ignite to schedule one more checkpointing execution and to halt all the update operations until the first checkpointing cycle is over.
