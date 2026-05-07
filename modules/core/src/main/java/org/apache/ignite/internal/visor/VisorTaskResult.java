@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.visor;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,13 +30,8 @@ public class VisorTaskResult<R> implements Serializable {
     /** Task result. */
     @Nullable R res;
 
-    /** Bytes of {@link #res}. */
-    @Order(0)
-    @Nullable byte[] resBytes;
-
     /** Error. */
-    @Order(1)
-    @Nullable ErrorMessage errMsg;
+    @Nullable Exception err;
 
     /** */
     public VisorTaskResult() {
@@ -51,9 +44,7 @@ public class VisorTaskResult<R> implements Serializable {
      */
     public VisorTaskResult(@Nullable R res, @Nullable Exception err) {
         this.res = res;
-
-        if (err != null)
-            errMsg = new ErrorMessage(err);
+        this.err = err;
     }
 
     /**
@@ -61,8 +52,8 @@ public class VisorTaskResult<R> implements Serializable {
      * @throws Exception if the task was completed with an error.
      */
     public @Nullable R result() throws Exception {
-        if (errMsg != null)
-            throw (Exception)ErrorMessage.error(errMsg);
+        if (err != null)
+            throw err;
 
         return res;
     }
