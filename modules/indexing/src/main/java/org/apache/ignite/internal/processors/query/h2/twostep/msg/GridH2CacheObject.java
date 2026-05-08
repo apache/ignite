@@ -43,7 +43,7 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     /**
      * @param v Value.
      */
-    public GridH2CacheObject(GridH2ValueCacheObject v)  {
+    public GridH2CacheObject(GridH2ValueCacheObject v) {
         obj = v.getCacheObject();
     }
 
