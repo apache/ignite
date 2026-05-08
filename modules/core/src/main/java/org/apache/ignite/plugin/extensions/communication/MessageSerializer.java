@@ -47,8 +47,8 @@ public interface MessageSerializer<M extends Message> {
      * non-null when invoking this method; resolution-with-null-skip happens at call sites.
      *
      * @param msg Message instance.
-     * @param ctx Cache object value context for {@code msg}'s direct {@code CacheObject} fields and non-cacheId-aware
-     * nested messages. Always non-null.
+     * @param sctx Shared context.
+     * @param nested Nested context.
      * @throws IgniteCheckedException If marshalling fails.
      */
     public default void prepareMarshalCacheObjects(M msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested)
