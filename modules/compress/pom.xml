@@ -137,13 +137,6 @@
             <version>${commons.lang3.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons.io.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
