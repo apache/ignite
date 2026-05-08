@@ -2030,9 +2030,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             int incIdx = -1;
 
             synchronized (snpOpMux) {
-                assert clusterSnpFut != null;
-
-                if (!clusterSnpFut.isDone()) {
+                if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
                     throw new IgniteException(
                         "Create snapshot request has been rejected. The previous snapshot operation was not completed."
                     );
