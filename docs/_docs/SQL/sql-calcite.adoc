@@ -504,6 +504,12 @@ tab:XML[]
     ...
 </bean>
 ----
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+----
 --
 
 The following API "transactional aware":
