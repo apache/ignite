@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -96,21 +95,15 @@ public class PageLockTrackerManager implements LifecycleAware {
     private final boolean trackingEnabled;
 
     /**
-     * Default constructor.
-     */
-    public PageLockTrackerManager(IgniteLogger log) {
-        this(log, "mgr_" + UUID.randomUUID());
-    }
-
-    /**
-     * @param log Ignite logger.
+     * @param igniteInstanceName Ignite instance name.
      * @param managerNameId Manager name.
+     * @param log Ignite logger.
      */
-    public PageLockTrackerManager(IgniteLogger log, String managerNameId) {
+    public PageLockTrackerManager(String igniteInstanceName, String managerNameId, IgniteLogger log) {
         this.trackingEnabled = getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, HEAP_LOG) != -1;
         this.managerNameId = managerNameId;
         this.mxBean = new PageLockTrackerMXBeanImpl(this, memoryCalculator);
-        this.sharedPageLockTracker = new SharedPageLockTracker(this::onHangThreads, memoryCalculator);
+        this.sharedPageLockTracker = new SharedPageLockTracker(igniteInstanceName, this::onHangThreads, memoryCalculator, log);
         this.log = log;
 
         memoryCalculator.onHeapAllocated(OVERHEAD_SIZE);

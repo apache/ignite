@@ -159,6 +159,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.tracing.SpanStatus;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -3041,20 +3042,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
                             "Stopping the node in order to prevent cluster wide instability.", e);
 
-                        new Thread(new Runnable() {
-                            @Override public void run() {
-                                try {
-                                    IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
+                        new IgniteThread(igniteInstanceName(), "node-stop-thread", () -> {
+                            try {
+                                IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
-                                    U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
-                                        "message worker thread abnormal termination.");
-                                }
-                                catch (Throwable e) {
-                                    U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
-                                        "message worker thread abnormal termination.", e);
-                                }
+                                U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
+                                    "message worker thread abnormal termination.");
                             }
-                        }, "node-stop-thread").start();
+                            catch (Throwable nodeStopErr) {
+                                U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
+                                    "message worker thread abnormal termination.", nodeStopErr);
+                            }
+                        }).start();
                     }
                 }
 
@@ -7291,7 +7290,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 --threadsLeft;
 
-                utilityPool.execute(new Thread() {
+                utilityPool.execute(new Runnable() {
                     private final int addrsToCheck = addrPerThread;
 
                     /** */
