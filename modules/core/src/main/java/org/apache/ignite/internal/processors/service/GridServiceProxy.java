@@ -111,8 +111,8 @@ public class GridServiceProxy<T> implements Serializable {
     /** Whether multi-node request should be done. */
     private final boolean sticky;
 
-    /** Service invocation timeout. A timeout of zero is interpreted as an infinite timeout. */
-    private final long invokeTimeout;
+    /** Service availability wait timeout. */
+    private final long waitTimeout;
 
     /** */
     private final boolean keepBinary;
@@ -144,7 +144,7 @@ public class GridServiceProxy<T> implements Serializable {
         this.sticky = sticky;
         this.keepBinary = keepBinary;
 
-        invokeTimeout = timeout;
+        waitTimeout = timeout;
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
@@ -224,7 +224,7 @@ public class GridServiceProxy<T> implements Serializable {
                                 options(Collections.singleton(node))
                                     .withPool(SERVICE_POOL)
                                     .withFailoverDisabled()
-                                    .withTimeout(invokeTimeout)
+                                    .withTimeout(waitTimeout)
                             ).get());
                     }
                 }
@@ -275,8 +275,8 @@ public class GridServiceProxy<T> implements Serializable {
                     throw new IgniteException(e);
                 }
 
-                if (invokeTimeout > 0 && U.currentTimeMillis() - startTime >= invokeTimeout)
-                    throw new IgniteException("Service invocation timeout was reached, stopping [timeout=" + invokeTimeout + "]");
+                if (waitTimeout > 0 && U.currentTimeMillis() - startTime >= waitTimeout)
+                    throw new IgniteException("Service acquire timeout was reached, stopping [timeout=" + waitTimeout + "]");
             }
         }
         finally {
@@ -388,9 +388,7 @@ public class GridServiceProxy<T> implements Serializable {
         if (hasLocNode && ctx.service().service(name) != null)
             return ctx.discovery().localNode();
 
-        Map<UUID, Integer> snapshot = invokeTimeout > 0
-            ? ctx.service().serviceTopology(name, invokeTimeout)
-            : ctx.service().serviceTopology(name);
+        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name, waitTimeout);
 
         if (snapshot == null || snapshot.isEmpty())
             return null;

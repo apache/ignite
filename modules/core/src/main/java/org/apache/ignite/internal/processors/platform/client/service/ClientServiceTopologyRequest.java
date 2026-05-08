@@ -52,7 +52,7 @@ public class ClientServiceTopologyRequest extends ClientRequest {
         Map<UUID, Integer> srvcTop;
 
         try {
-            srvcTop = ctx.kernalContext().service().serviceTopology(name);
+            srvcTop = ctx.kernalContext().service().serviceTopology(name, 0);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteClientException(ClientStatus.FAILED, "Failed to get topology for service '" + name + "'.", e);
