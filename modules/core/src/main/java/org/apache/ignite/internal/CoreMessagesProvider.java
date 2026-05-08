@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -146,6 +147,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
@@ -154,6 +156,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -232,6 +235,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -296,23 +300,28 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, ClassLoader)
+     * @see #init(Marshaller, Marshaller, ClassLoader)
      */
     public CoreMessagesProvider() {
         // No-op.
     }
 
     /**
-     * Constructor allowing not to call {@link #init(Marshaller, ClassLoader)}.
+     * Constructor allowing not to call {@link #init(Marshaller, Marshaller, ClassLoader)}.
      *
+     * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
      * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
      * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
      */
-    public CoreMessagesProvider(Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
-        init(schemaAwareMarsh, resolvedClsLdr);
+    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+        init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
     }
 
-    /** The order is important. If wish to remove a message, put 'msgIdx++' on its place. */
+    /**
+     * Registers all the messages into {@code factory}.
+     * The listing order is important here. If wish to remove a message, put 'msgIdx++' on its place. If wish to add,
+     * put it to end of a group.
+     */
     @Override public void registerAll(MessageFactory factory) {
         assert this.factory == null;
 
@@ -336,6 +345,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheVersionedValue.class);
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
+        withNoSchema(WALPointer.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
@@ -377,6 +387,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(SnapshotPartitionsVerifyHandlerResponse.class);
         withNoSchema(SnapshotRestoreOperationResponse.class);
         withNoSchema(SnapshotMetadataResponse.class);
+        withNoSchema(SnapshotMetadata.class);
         withNoSchema(SnapshotCheckPartitionHashesResponse.class);
         withNoSchema(SnapshotCheckHandlersResponse.class);
         withNoSchema(SnapshotFilesRequestMessage.class);
@@ -532,6 +543,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(SchemaProposeDiscoveryMessage.class);
         withNoSchema(SchemaFinishDiscoveryMessage.class);
         withNoSchema(QueryField.class);
+        withNoSchema(QueryIndexMessage.class);
         withNoSchema(GridCacheSqlQuery.class);
         withSchema(GridCacheQueryRequest.class);
         withSchema(GridCacheQueryResponse.class);
@@ -649,7 +661,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(cls, schemaAwareMarsh, dftlClsLdr);
     }
 
-    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
+    /** Registers message using {@link #dfltMarsh} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
         register(cls, dfltMarsh, resolvedClsLdr);
     }

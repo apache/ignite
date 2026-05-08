@@ -17,18 +17,25 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
+import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
 public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
-    /** TODO: revise the external serialization https://issues.apache.org/jira/browse/IGNITE-28058. */
+    /** */
+    private @Nullable Serializable expVal;
+
+    /** */
     @Order(0)
-    byte[] expectedVal;
+    byte[] expValBytes;
 
     /** */
     @Order(1)
@@ -40,16 +47,16 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
     }
 
     /** */
-    public DistributedMetaStorageCasMessage(UUID reqId, String key, byte[] expValBytes, byte[] valBytes) {
-        super(reqId, key, valBytes);
+    public DistributedMetaStorageCasMessage(UUID reqId, String key, @Nullable Serializable expVal, @Nullable Serializable val) {
+        super(reqId, key, val);
 
-        expectedVal = expValBytes;
+        this.expVal = expVal;
         matches = true;
     }
 
     /** */
-    public byte[] expectedValue() {
-        return expectedVal;
+    public Serializable expectedValue() {
+        return expVal;
     }
 
     /** */
@@ -64,7 +71,23 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), matches);
+        return new DistributedMetaStorageCasAckMessage(reqId, matches);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.prepareMarshal(marsh);
+
+        if (expVal != null && expValBytes == null)
+            expValBytes = U.marshal(marsh, expVal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.finishUnmarshal(marsh);
+
+        if (expValBytes != null && expVal == null)
+            expVal = U.unmarshal(marsh, expValBytes, U.gridClassLoader());
     }
 
     /** {@inheritDoc} */

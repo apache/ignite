@@ -13,26 +13,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.tools.checkstyle;
 
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import static java.util.concurrent.ForkJoinPool.commonPool;
 
-/**
- * Initial snapshot discovery message with possibility to trigger exchange.
- */
-public interface SnapshotDiscoveryMessage extends DiscoveryCustomMessage {
-    /**
-     * Is exchange needed after receiving this message.
-     *
-     * @return True if exchange is needed, false in other case.
-     */
-    public boolean needExchange();
-
-    /**
-     *
-     */
-    public boolean needAssignPartitions();
+/** */
+public class RestrictedFactoryMethodStaticImport {
+    /** */
+    void method() {
+        Object pool = commonPool();
+    }
 }

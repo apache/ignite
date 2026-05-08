@@ -36,33 +36,29 @@ import org.jetbrains.annotations.Nullable;
  * CacheAffinityChangeMessage represent a message that switches to a new affinity assignmentafter rebalance is finished.
  * This message should not be mutated  in any way outside the "disco-notifier-worker" thread.
  */
-public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
+public class CacheAffinityChangeMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     AffinityTopologyVersion topVer;
 
     /** */
-    @Order(2)
+    @Order(1)
     GridDhtPartitionExchangeId exchId;
 
     /** */
-    @Order(3)
+    @Order(2)
     Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
 
     /** */
-    @Order(4)
+    @Order(3)
     Map<Integer, IgniteUuid> cacheDeploymentIds;
 
     /** */
-    @Order(5)
+    @Order(4)
     GridDhtPartitionsFullMessage partsMsg;
 
     /** If this flag is {@code true} then this message should lead to partition map exchnage. */
-    @Order(6)
+    @Order(5)
     boolean exchangeNeeded;
 
     /**
@@ -85,7 +81,8 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * @param cacheDeploymentIds Cache deployment ID.
      */
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer, Map<Integer, IgniteUuid> cacheDeploymentIds) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         this.topVer = topVer;
         this.cacheDeploymentIds = cacheDeploymentIds;
     }
@@ -100,8 +97,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     public CacheAffinityChangeMessage(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsFullMessage partsMsg,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
-        id = IgniteUuid.randomUuid();
+        Map<Integer, Map<Integer, List<UUID>>> assignmentChange
+    ) {
+        super(IgniteUuid.randomUuid());
+
         this.exchId = exchId;
         this.partsMsg = partsMsg;
         this.assignmentChange = assignmentChange;
@@ -154,11 +153,6 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -36,7 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
  */
 public abstract class AbstractMarshallableMessageFactoryProvider implements MessageFactoryProvider {
     /** Default schema-less marshaller. */
-    protected final Marshaller dfltMarsh = Marshallers.jdk();
+    protected Marshaller dfltMarsh;
 
     /** Default class loader. */
     protected final ClassLoader dftlClsLdr = U.gridClassLoader();
@@ -48,10 +48,12 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     protected ClassLoader resolvedClsLdr;
 
     /**
+     * @param dfltMarsh Default schema-less marshaller like {@link JdkMarshaller}.
      * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
      * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
      */
-    public void init(Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+    public void init(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+        this.dfltMarsh = dfltMarsh;
         this.schemaAwareMarsh = schemaAwareMarsh;
         this.resolvedClsLdr = resolvedClsLdr;
     }
