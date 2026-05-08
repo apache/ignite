@@ -3975,7 +3975,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             // The corner node case. Next node is from neighbour DC. Another DC might be entierly unavailable.
             // To prevent sequential nodes failure in current DC we have to guess whether we can reach neighbour DC.
-            // We ping nodes from another DC within the same timeot in parallel.
+            // We ping nodes from another DC within the same timeout in parallel.
             if (!F.isEmpty(locNode.dataCenterId())) {
                 assert !F.isEmpty(next.dataCenterId());
 
@@ -3985,9 +3985,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     synchronized (mux) {
                         otherDcsSrvrs = otherDcsSrvrs.filter(n -> !failedNodes.containsKey(n));
-                    }
 
-                    recoveryState.pingRemoteDCs(otherDcsSrvrs.collect(toList()));
+                        recoveryState.pingRemoteDCs(otherDcsSrvrs.collect(toList()));
+                    }
                 }
             }
 
@@ -4012,37 +4012,35 @@ class ServerImpl extends TcpDiscoveryImpl {
                 || connRecoverState.unavailableDCs != null)
                 return false;
 
-            // Remote DC statuses: avlive or not, Dc id -> true/false.
+            // Remote DC statuses: alive or not, Dc id -> true/false.
             Collection<String> rmtDcIds = connRecoverState.rmtDcPingRes.keySet().stream().map(ClusterNode::dataCenterId)
                 .collect(Collectors.toSet());
 
             Collection<String> failedDCs = U.newHashSet(rmtDcIds.size());
 
             Map<String, Integer> availablePerDC = countPerDC(connRecoverState.availableNodes());
-            Map<String, Integer> unavailablePerDC = countPerDC(connRecoverState.unavailableNodes());
 
             for (String dcId : rmtDcIds) {
                 int availCnt = Optional.ofNullable(availablePerDC.get(dcId)).orElse(0);
-                int unavailCnt = Optional.ofNullable(unavailablePerDC.get(dcId)).orElse(0);
 
-                if (availCnt <= unavailCnt)
+                if (availCnt == 0)
                     failedDCs.add(dcId);
             }
 
             String msg = "During the connection recovery, nodes ping of DCs '" + String.join(", ", rmtDcIds)
-                + "' from current corner node has finished. Responded nodes: " + connRecoverState.availableNodes()
+                + "' from current edge node has finished. Responded nodes: " + connRecoverState.availableNodes()
                 + ". Unavailable nodes: " + connRecoverState.unavailableNodes()
                 + ". Time to recover the ring connection left: "
                 + Math.max(0, U.nanosToMillis(connRecoverState.failTimeNanos - System.nanoTime())) + "ms.";
 
             if (failedDCs.isEmpty()) {
-                msg += " More than half of each remote DC has responded. Keep trying to reconnect to the ring.";
+                msg += " At least one node of each DC has responded. Keep trying to reconnect to the ring.";
 
                 if (log.isInfoEnabled())
                     log.info(msg);
             }
             else {
-                msg += " Half or less of the following remote DCs responded. Considering DCs '" + String.join(", ", failedDCs)
+                msg += " No node of the following remote DCs responded. Considering DCs '" + String.join(", ", failedDCs)
                     + "' unavailable. Due to the remote DC unavailability policy, current node will try to skip those DCs.";
 
                 log.warning(msg);
