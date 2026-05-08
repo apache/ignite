@@ -431,8 +431,7 @@ SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 
 == Transactions [[transactions]]
 
 The Calcite-based query engine supports SQL transactions with READ_COMMITTED isolation.
-To ensure backward compatibility transactions support disabled, by default.
-To enable, please, configure like the following:
+To ensure backward compatibility, transaction support is disabled by default. To enable it, use the following configuration:
 
 [tabs]
 --
