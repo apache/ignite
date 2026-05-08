@@ -486,9 +486,8 @@ SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 
 
 == Transactions [[transactions]]
 
-Transactions on `READ_COMMITTED` isolation level are supported for SQL queries in Calcite query engine.
-To ensure backward compatibility transactions support disabled, by default.
-To enable, please, configure like the following:
+The Calcite-based query engine supports SQL transactions with READ_COMMITTED isolation.
+To ensure backward compatibility, transaction support is disabled by default. To enable it, use the following configuration:
 
 [tabs]
 --
@@ -516,7 +515,7 @@ The following API "transactional aware":
 "Transactional aware" means:
 
 1. ACID in the same way as key-value API.
-2. Any data changed or removed by the query will not be visible to the concurrent query until transaction committed.
+2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
 3. Any data modified by a query will be returned with updated values by subsequent queries within the same transaction.
 
 So, when `txAwareQueriesEnabled = true` enabled the usage:
