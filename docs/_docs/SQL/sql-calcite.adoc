@@ -459,7 +459,7 @@ The following API "transactional aware":
 "Transactional aware" means:
 
 1. ACID in the same way as key-value API.
-2. Any data changed or removed by the query will not be visible to the concurrent query until transaction committed.
+2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
 3. Any data changed by the query will be returned updated by subsequent queries of the same transaction.
 4. And data removed by the query will not be returned by subsequent queries of the same transaction.
 
