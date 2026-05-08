@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
  * Base class for all communication messages.
@@ -68,7 +69,7 @@ public interface Message {
         Short type = REGISTRATIONS.get(clazz);
 
         if (type == null)
-            throw new IgniteException("No registration for class " + clazz.getSimpleName());
+            throw new UnknownMessageException(clazz);
 
         return type;
     }

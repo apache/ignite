@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.Collection;
-import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
-/**
- *
- */
-interface GridNioWorker {
-    /**
-     * @param req Change request.
-     */
-    public void offer(GridNioServer.SessionChangeRequest req) throws IgniteCheckedException;
+/** */
+public class NotRegisteredMessage extends DiscoveryCustomMessage {
+    /** */
+    @Order(0)
+    String str;
 
-    /**
-     * @param reqs Change requests.
-     */
-    public void offer(Collection<GridNioServer.SessionChangeRequest> reqs) throws IgniteCheckedException;
+    /** */
+    public NotRegisteredMessage() {
+        // No-op.
+    }
 
-    /**
-     * @param ses Session.
-     * @return Session state change requests.
-     */
-    @Nullable public List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
+    /** */
+    public NotRegisteredMessage(String str) {
+        super(IgniteUuid.randomUuid());
+
+        this.str = str;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoverySpiCustomMessage ackMessage() {
+        return null;
+    }
 }

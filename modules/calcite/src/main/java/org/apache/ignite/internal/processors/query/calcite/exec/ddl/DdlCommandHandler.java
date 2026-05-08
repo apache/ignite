@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableAddCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableDropCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
@@ -62,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
@@ -97,12 +101,14 @@ public class DdlCommandHandler {
     }
 
     /** */
-    public void handle(UUID qryId, DdlCommand cmd) throws IgniteCheckedException {
+    public void handle(UUID qryId, BaseQueryContext qryCtx, DdlCommand cmd) throws IgniteCheckedException {
         try {
-            if (cmd instanceof TransactionCommand)
-                return;
+            if (cmd instanceof TransactionCommand) {
+                GridNearTxLocal tx = Commons.queryTransaction(qryCtx, cacheProc.context());
 
-            if (cmd instanceof CreateTableCommand)
+                handle0((TransactionCommand)cmd, tx);
+            }
+            else if (cmd instanceof CreateTableCommand)
                 handle0((CreateTableCommand)cmd);
             else if (cmd instanceof DropTableCommand)
                 handle0((DropTableCommand)cmd);
@@ -120,6 +126,36 @@ public class DdlCommandHandler {
         }
         catch (SchemaOperationException e) {
             throw convert(e);
+        }
+    }
+
+    /**
+     * Handles transaction control commands (SAVEPOINT and ROLLBACK TO SAVEPOINT).
+     *
+     * @param cmd Command.
+     * @param tx Transaction. Can be null if there is no transaction associated with the query context.
+     * @throws IgniteCheckedException If failed to execute the command.
+     */
+    private void handle0(TransactionCommand cmd, @Nullable GridNearTxLocal tx) throws IgniteCheckedException {
+        if (cmd.type() == TransactionCommand.Type.NOOP)
+            return;
+
+        if (tx == null)
+            throw new IgniteSQLException(SAVEPOINTS_EXPLICIT_TX_ONLY, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        switch (cmd.type()) {
+            case SAVEPOINT:
+                tx.savepoint(cmd.savepointName(), true);
+
+                break;
+
+            case ROLLBACK_TO_SAVEPOINT:
+                tx.rollbackToSavepoint(cmd.savepointName());
+
+                break;
+
+            default:
+                throw new AssertionError("Unexpected transaction command type: " + cmd.type());
         }
     }
 
