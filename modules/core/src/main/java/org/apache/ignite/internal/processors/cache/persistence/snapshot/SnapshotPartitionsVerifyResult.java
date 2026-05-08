@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -26,25 +25,24 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * The result of execution snapshot partitions verify task which besides calculating partition hashes of
  * {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
  */
-public class SnapshotPartitionsVerifyResult implements Message, Serializable {
+public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Map of snapshot metadata information found on each cluster node. */
     @Order(0)
-    Map<TcpDiscoveryNode, List<SnapshotMetadata>> metas;
+    Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
     @Order(1)
@@ -63,7 +61,7 @@ public class SnapshotPartitionsVerifyResult implements Message, Serializable {
         Map<ClusterNode, List<SnapshotMetadata>> metas,
         @Nullable IdleVerifyResult idleRes
     ) {
-        this.metas = TcpDiscoveryNode.downcast(metas);
+        this.metas = metas;
         this.idleRes = idleRes;
     }
 
@@ -71,7 +69,7 @@ public class SnapshotPartitionsVerifyResult implements Message, Serializable {
      * @return Map of snapshot metadata information found on each cluster node.
      */
     public Map<ClusterNode, List<SnapshotMetadata>> metas() {
-        return TcpDiscoveryNode.upcast(metas);
+        return metas;
     }
 
     /**

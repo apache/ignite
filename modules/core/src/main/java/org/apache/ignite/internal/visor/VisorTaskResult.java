@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.visor;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Management task result.
  */
-public class VisorTaskResult<R> implements Serializable {
+public class VisorTaskResult<R> extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
+    @Order(0)
     @Nullable R res;
 
     /** Error. */
+    @Order(1)
     @Nullable Exception err;
 
     /** */

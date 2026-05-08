@@ -16,20 +16,18 @@
 */
 package org.apache.ignite.internal.management.cache;
 
-import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsDumpTask}.
  */
-public class IdleVerifyDumpResult implements Message, Serializable {
+public class IdleVerifyDumpResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,10 +43,9 @@ public class IdleVerifyDumpResult implements Message, Serializable {
     }
 
     /**
-     * Default constructor for a {@link MessageFactory}.
+     * Default constructor for Externalizable.
      */
     public IdleVerifyDumpResult() {
-        // No-op.
     }
 
     /**

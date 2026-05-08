@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.management.cache;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,17 +31,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -50,7 +45,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.nl;
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTask}.
  */
-public class IdleVerifyResult implements Message, Serializable {
+public class IdleVerifyResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,18 +77,17 @@ public class IdleVerifyResult implements Message, Serializable {
     /** Partial committed transactions. */
     @Order(5)
     @GridToStringInclude
-    @Nullable Map<TcpDiscoveryNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+    @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
     @Order(6)
     @GridToStringInclude
-    Map<TcpDiscoveryNode, ErrorMessage> exceptions;
+    Map<ClusterNode, Exception> exceptions;
 
     /**
-     * Default constructor for a {@link MessageFactory}.
+     * Default constructor for Externalizable.
      */
     public IdleVerifyResult() {
-        // No-op.
     }
 
     /**
@@ -113,22 +107,9 @@ public class IdleVerifyResult implements Message, Serializable {
         this.movingPartitions = movingPartitions;
         this.lostPartitions = lostPartitions;
         this.txHashConflicts = txHashConflicts;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
 
-        if (!F.isEmpty(partiallyCommittedTxs)) {
-            // May consist of ZookeeperClusterNode
-            if (F.first(partiallyCommittedTxs.keySet()) instanceof TcpDiscoveryNode)
-                this.partiallyCommittedTxs = TcpDiscoveryNode.downcast(partiallyCommittedTxs);
-            else {
-                this.partiallyCommittedTxs = U.newHashMap(partiallyCommittedTxs.size());
-                partiallyCommittedTxs.forEach((n, cl) -> this.partiallyCommittedTxs.put(TcpDiscoveryNode.of(n), cl));
-            }
-        }
-
-        if (!F.isEmpty(exceptions)) {
-            this.exceptions = U.newHashMap(exceptions.size());
-            // May consist of ZookeeperClusterNode
-            exceptions.forEach((n, e) -> this.exceptions.put(TcpDiscoveryNode.of(n), new ErrorMessage(e)));
-        }
+        this.exceptions = exceptions;
     }
 
     /**
@@ -171,14 +152,7 @@ public class IdleVerifyResult implements Message, Serializable {
      * @return Exceptions on nodes.
      */
     public Map<ClusterNode, Exception> exceptions() {
-        if (F.isEmpty(exceptions))
-            return Collections.emptyMap();
-
-        Map<ClusterNode, Exception> res = TcpDiscoveryNode.upcast(U.newHashMap(exceptions.size()));
-
-        exceptions.forEach((n, errMsg) -> res.put(n, (Exception)ErrorMessage.error(errMsg)));
-
-        return res;
+        return exceptions;
     }
 
     /**
@@ -209,7 +183,7 @@ public class IdleVerifyResult implements Message, Serializable {
 
         printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
-        if (!F.isEmpty(F.view(exceptions.values(), errMsg -> ErrorMessage.error(errMsg) instanceof NoMatchingCachesException)))
+        if (!F.isEmpty(F.view(exceptions.values(), e -> e instanceof NoMatchingCachesException)))
             printer.accept("\nThere are no caches matching given filter options.\n");
 
         printer.accept("\nThe check procedure failed on nodes:\n");
@@ -260,8 +234,8 @@ public class IdleVerifyResult implements Message, Serializable {
 
         printer.accept("The check procedure has failed, conflict partitions has been found: [" +
             "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
-            + (F.isEmpty(txHashConflicts) ? "" : ", txHashConflicts=" + txHashConflicts.size())
-            + (F.isEmpty(partiallyCommittedTxs) ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
+            + (txHashConflicts == null ? "" : ", txHashConflicts=" + txHashConflicts.size())
+            + (partiallyCommittedTxs == null ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
             + "]" + nl());
 
         Set<PartitionKey> allConflicts = new HashSet<>();
@@ -302,7 +276,7 @@ public class IdleVerifyResult implements Message, Serializable {
         if (!F.isEmpty(partiallyCommittedTxs)) {
             printer.accept("Partially committed transactions:" + nl());
 
-            for (Map.Entry<TcpDiscoveryNode, Collection<GridCacheVersion>> entry : partiallyCommittedTxs.entrySet()) {
+            for (Map.Entry<ClusterNode, Collection<GridCacheVersion>> entry : partiallyCommittedTxs.entrySet()) {
                 printer.accept("Node: " + entry.getKey() + nl());
 
                 printer.accept("Transactions: " + entry.getValue() + nl());
@@ -344,7 +318,7 @@ public class IdleVerifyResult implements Message, Serializable {
 
         return Objects.equals(cntrConflicts, v.cntrConflicts) && Objects.equals(hashConflicts, v.hashConflicts) &&
             Objects.equals(movingPartitions, v.movingPartitions) && Objects.equals(lostPartitions, v.lostPartitions) &&
-            Objects.equals(exceptions(), v.exceptions()) && Objects.equals(txHashConflicts, v.txHashConflicts) &&
+            Objects.equals(exceptions, v.exceptions) && Objects.equals(txHashConflicts, v.txHashConflicts) &&
             Objects.equals(partiallyCommittedTxs, v.partiallyCommittedTxs);
     }
 
@@ -355,7 +329,7 @@ public class IdleVerifyResult implements Message, Serializable {
             hashConflicts,
             movingPartitions,
             lostPartitions,
-            exceptions(),
+            exceptions,
             txHashConflicts,
             partiallyCommittedTxs);
     }
