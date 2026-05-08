@@ -371,12 +371,9 @@ public abstract class GridCacheMessage implements Message {
         assert ctx != null;
 
         if (txEntries != null) {
-            boolean transferExpiry = transferExpiryPolicy();
             boolean p2pEnabled = ctx.deploymentEnabled();
 
             for (IgniteTxEntry e : txEntries) {
-                e.marshal(ctx, transferExpiry);
-
                 GridCacheContext cctx = e.context();
 
                 if (addDepInfo) {
@@ -400,13 +397,6 @@ public abstract class GridCacheMessage implements Message {
                 }
             }
         }
-    }
-
-    /**
-     * @return {@code True} if entries expire policy should be marshalled.
-     */
-    protected boolean transferExpiryPolicy() {
-        return false;
     }
 
     /**

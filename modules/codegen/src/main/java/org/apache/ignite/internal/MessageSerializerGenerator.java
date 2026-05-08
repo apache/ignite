@@ -307,13 +307,19 @@ public class MessageSerializerGenerator {
         CO_COLL,
         /** {@code CacheObject[]} / {@code KeyCacheObject[]}. */
         CO_ARR,
+        /** {@code CacheEntryPredicate} scalar. */
+        CEP,
+        /** {@code Collection<CacheEntryPredicate>}. */
+        CEP_COLL,
+        /** {@code CacheEntryPredicate[]}. */
+        CEP_ARR,
         /** Nested concrete {@code Message}. */
         MSG,
         /** {@code Collection<? extends Message>} with concrete element type. */
         MSG_COLL,
         /** {@code Message[]} with concrete component type. */
         MSG_ARR,
-        /** {@code Map<K, V>} with at least one CO/Message side. */
+        /** {@code Map<K, V>} with at least one CacheObject/Message side. */
         MAP,
         /** Skipped — abstract Message, cross-cache nested Message, Map with no traversable side, unsupported. */
         SKIP
@@ -329,6 +335,9 @@ public class MessageSerializerGenerator {
 
             if (isCacheObjectType(comp))
                 return FieldKind.CO_ARR;
+            
+            if (isCacheEntryPredicate(comp))
+                return FieldKind.CEP_ARR;
 
             return isRecursableMessage(comp) ? FieldKind.MSG_ARR : FieldKind.SKIP;
         }
@@ -338,6 +347,9 @@ public class MessageSerializerGenerator {
 
         if (isCacheObjectType(t))
             return FieldKind.CO;
+
+        if (isCacheEntryPredicate(t))
+            return FieldKind.CEP;
 
         if (assignableFrom(erasedType(t), type(Map.class.getName()))) {
             List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
@@ -368,6 +380,9 @@ public class MessageSerializerGenerator {
             if (isCacheObjectType(arg))
                 return FieldKind.CO_COLL;
 
+            if (isCacheEntryPredicate(arg))
+                return FieldKind.CEP_COLL;
+
             return isRecursableMessage(arg) ? FieldKind.MSG_COLL : FieldKind.SKIP;
         }
 
@@ -383,12 +398,20 @@ public class MessageSerializerGenerator {
         if (isCacheObjectType(t))
             return FieldKind.CO;
 
+        if (isCacheEntryPredicate(t))
+            return FieldKind.CEP;
+
         return isRecursableMessage(t) ? FieldKind.MSG : FieldKind.SKIP;
     }
 
     /** */
     private boolean isCacheObjectType(TypeMirror type) {
         return assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject"));
+    }
+
+    /** */
+    private boolean isCacheEntryPredicate(TypeMirror type) {
+        return assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheEntryPredicate"));
     }
 
     /** True if {@code t} is a concrete non-abstract {@code Message} safe to recurse into (no self-ref). */
@@ -438,6 +461,15 @@ public class MessageSerializerGenerator {
             case CO_COLL:
             case CO_ARR:
                 emitCoIterable(code, accessor, t, kind == FieldKind.CO_ARR);
+                break;
+
+            case CEP:
+                emitCepDirect(code, accessor);
+                break;
+
+            case CEP_COLL:
+            case CEP_ARR:
+                emitCepIterable(code, accessor);
                 break;
 
             case MSG:
@@ -592,6 +624,48 @@ public class MessageSerializerGenerator {
 
         indent--;
         
+        indent--;
+
+        code.add(identedLine("}"));
+
+        indent--;
+
+        code.add(identedLine("}"));
+    }
+
+    private void emitCepDirect(List<String> code, String accessor) {
+        code.add(identedLine("if (%s != null)", accessor));
+
+        indent++;
+
+        code.add(identedLine("%s.prepareMarshal(ctx);", accessor));
+
+        indent--;
+    }
+
+    private void emitCepIterable(List<String> code, String accessor) {
+        String elementType = "org.apache.ignite.internal.processors.cache.CacheEntryPredicate";
+
+        imports.add(elementType);
+
+        String simple = elementType.substring(elementType.lastIndexOf('.') + 1);
+
+        code.add(identedLine("if (%s != null) {", accessor));
+
+        indent++;
+
+        code.add(identedLine("for (%s obj : %s) {", simple, accessor));
+
+        indent++;
+
+        code.add(identedLine("if (obj != null)"));
+
+        indent++;
+
+        code.add(identedLine("obj.prepareMarshal(ctx);"));
+
+        indent--;
+
         indent--;
 
         code.add(identedLine("}"));

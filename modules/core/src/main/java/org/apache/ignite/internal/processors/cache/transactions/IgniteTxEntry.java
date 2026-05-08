@@ -25,6 +25,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -47,8 +48,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +61,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Message, CacheIdAware {
+public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, CacheIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1022,25 +1023,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, CacheIdAware
         this.filtersSet = filtersSet;
     }
 
-    /**
-     * @param ctx Context.
-     * @param transferExpiry {@code True} if expire policy should be marshalled.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
-        if (filters != null) {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.prepareMarshal(this.ctx);
-            }
-        }
-
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
         if (transformClosBytes == null && entryProcessorsCol != null)
             transformClosBytes = CU.marshal(this.ctx, entryProcessorsCol);
 
-        if (transferExpiry)
-            transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
+        transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
         if (transferExpiryPlc) {
             if (expiryPlcBytes == null)
@@ -1048,6 +1037,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message, CacheIdAware
         }
         else
             expiryPlcBytes = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /**
