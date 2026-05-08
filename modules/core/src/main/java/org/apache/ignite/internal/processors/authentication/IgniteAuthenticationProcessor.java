@@ -623,6 +623,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             else {
                 ClusterNode res = null;
 
+                if (ctx.discovery().aliveServerNodes().isEmpty())
+                    throw new IgniteException("Failed to get the coordinator node. Topology is empty.");
+
                 for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
                     if (res == null || res.order() > node.order())
                         res = node;
