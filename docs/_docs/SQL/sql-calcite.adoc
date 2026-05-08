@@ -461,7 +461,7 @@ The following API "transactional aware":
 1. ACID in the same way as key-value API.
 2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
 3. Any data changed by the query will be returned updated by subsequent queries of the same transaction.
-4. And data removed by the query will not be returned by subsequent queries of the same transaction.
+4. Any data removed by the query will not be returned by subsequent queries of the same transaction.
 
 So, when `txAwareQueriesEnabled = true` you can:
 
