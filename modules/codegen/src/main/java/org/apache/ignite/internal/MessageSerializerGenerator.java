@@ -277,7 +277,8 @@ public class MessageSerializerGenerator {
         indent++;
 
         if (isCacheIdAwareMessage(type))
-            prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
+            prepareCacheObjects.add(
+                identedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
         else
             prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested;"));
         
@@ -633,6 +634,7 @@ public class MessageSerializerGenerator {
         code.add(identedLine("}"));
     }
 
+    /** */
     private void emitCepDirect(List<String> code, String accessor) {
         code.add(identedLine("if (%s != null)", accessor));
 
@@ -643,6 +645,7 @@ public class MessageSerializerGenerator {
         indent--;
     }
 
+    /** */
     private void emitCepIterable(List<String> code, String accessor) {
         String elementType = "org.apache.ignite.internal.processors.cache.CacheEntryPredicate";
 
