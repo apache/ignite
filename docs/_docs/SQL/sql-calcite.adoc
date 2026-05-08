@@ -537,4 +537,7 @@ So, when `txAwareQueriesEnabled = true` enabled the usage:
 Currently, no locks are held by the UPDATE or SELECT statements.
 `SELECT ... FOR UPDATE` statement not supported.
 This means lost updates can occur when multiple transactions concurrently modify the same key.
+
+For example, if you execute a query like `SET salary = salary + 50 WHERE id = 1` concurrently across multiple threads,
+note that due to the lost-update anomaly, the final value may not equal the original salary plus 50 multiplied by the number of threads.
 ====
