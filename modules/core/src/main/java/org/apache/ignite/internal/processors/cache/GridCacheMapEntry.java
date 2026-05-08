@@ -429,6 +429,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public final CacheObject unswap(CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert cctx.shared().database().checkpointLockIsHeldByThread() || !lockedByCurrentThread() :
+            "Lock order violation, checkpoint lock must be acquired before entry lock";
+
         cctx.shared().database().checkpointReadLock();
 
         try {
@@ -462,7 +465,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean deferred = false;
         GridCacheVersion ver0 = null;
 
-        assert !checkExpire || cctx.shared().database().checkpointLockIsHeldByThread();
+        assert !checkExpire || cctx.shared().database().checkpointLockIsHeldByThread() :
+            "Checkpoint read lock should be acquired to perform entry expiration";
 
         lockEntry();
 

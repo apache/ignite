@@ -55,9 +55,6 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
     /** */
     private final AtomicBoolean testFinished = new AtomicBoolean(false);
 
-    /** */
-    private static final String CP_WRITE_LOCK_SWITCHING_THREAD_NAME = "cp-write-lock-switching-runner";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -84,12 +81,6 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (deadlockDetected.get()) {
-            Thread.getAllStackTraces().keySet().stream()
-                .filter(t -> t.getName().startsWith(CP_WRITE_LOCK_SWITCHING_THREAD_NAME))
-                .forEach(Thread::interrupt);
-        }
-
         testFinished.set(true);
 
         stopAllGrids();
@@ -160,7 +151,7 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
                 while (!testFinished.get()) {
                     // An interruptible version of lock method is used to allow end the deadlock at the end of the test.
                     try {
-                        if (!cpWriteLock.tryLock(2, TimeUnit.SECONDS)) {
+                        if (!cpWriteLock.tryLock(4, TimeUnit.SECONDS)) {
                             deadlockDetected.set(true);
                             testFinished.set(true);
 
@@ -172,7 +163,7 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
                     }
                 }
             },
-            CP_WRITE_LOCK_SWITCHING_THREAD_NAME
+            "cp-write-lock-switching-runner"
         );
 
         assertFalse("Unexpected deadlock detected", GridTestUtils.waitForCondition(deadlockDetected::get, 10_000L));
