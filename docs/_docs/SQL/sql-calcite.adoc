@@ -517,12 +517,11 @@ The following API "transactional aware":
 
 1. ACID in the same way as key-value API.
 2. Any data changed or removed by the query will not be visible to the concurrent query until transaction committed.
-3. Any data changed by the query will be returned updated by subsequent queries of the same transaction.
-4. And data removed by the query will not be returned by subsequent queries of the same transaction.
+3. Any data modified by a query will be returned with updated values by subsequent queries within the same transaction.
 
-So, when `txAwareQueriesEnabled = true` you can:
+So, when `txAwareQueriesEnabled = true` enabled the usage:
 
-* Perform INSERT, UPDATE, DELETE statements with regular transaction guarantees.
+* INSERT, UPDATE, DELETE statements with regular transaction guarantees.
 * Mix key-value, SQL and Scan queries to process same dataset.
 
 
@@ -532,5 +531,5 @@ So, when `txAwareQueriesEnabled = true` you can:
 === SELECT ... FOR UPDATE
 Currently, no locks are held by the UPDATE or SELECT statements.
 `SELECT ... FOR UPDATE` statement not supported.
-This mean, lost update are possible with transactional SQL queries in case several transactions modifies one key concurrently.
+This means lost updates can occur when multiple transactions concurrently modify the same key concurrently.
 ====
