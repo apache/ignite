@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -1012,9 +1012,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 sendResponseOnFailedMessage(req.nearNodeId(), nearRes, cctx, plc);
             }
         }
-        else if (msg instanceof GridDhtPartitionDemandMessage) {
+        else if (msg instanceof GridDhtPartitionSupplyMessage)
             processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
-        }
         else {
             throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
                 + msg + "]", msg.classError());
