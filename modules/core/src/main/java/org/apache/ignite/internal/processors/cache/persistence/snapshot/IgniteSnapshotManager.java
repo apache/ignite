@@ -393,7 +393,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile boolean recovered;
 
     /** Last seen cluster snapshot operation. */
-    private volatile ClusterSnapshotFuture lastSeenSnpFut = new ClusterSnapshotFuture();
+    private volatile ClusterSnapshotFuture lastSeenSnpFut;
 
     /** Last seen incremental snapshot operation. */
     private volatile ClusterSnapshotFuture lastSeenIncSnpFut;
@@ -773,8 +773,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + curSnpOp + ']'));
         }
 
+        ClusterSnapshotFuture snpFut0 = new ClusterSnapshotFuture(req.reqId, req.snpName, req.incremental() ? req.incrementIndex() : null);
+
+        clusterSnpFut = snpFut0;
+
+        log.error("TEST | set lastSeenSnpFut on " + cctx.localNode().order());
+
+        if (req.incremental())
+            lastSeenIncSnpFut = snpFut0;
+        else
+            lastSeenSnpFut = snpFut0;
+
         SnapshotOperation snpOp = new SnapshotOperation(req,
             new SnapshotFileTree(cctx.kernalContext(), req.snapshotName(), req.snapshotPath()));
+
+        log.error("TEST | initLocalSnapshotStartStage() on " + cctx.localNode().order());
 
         curSnpOp = snpOp;
 
@@ -1116,7 +1129,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null || !snpReq.requestId().equals(id)) {
             synchronized (snpOpMux) {
-                if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
+                assert clusterSnpFut != null;
+
+                if (clusterSnpFut.rqId.equals(id)) {
                     if (cancelled) {
                         clusterSnpFut.onDone(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                             "has been cancelled by external process [err=" + err + ", snpReq=" + snpReq + ']'));
@@ -1377,45 +1392,49 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             incSnpId = null;
 
-            if (clusterSnpFut != null && endFail.isEmpty() && snpOp.error() == null)
+            assert clusterSnpFut != null;
+
+            if (endFail.isEmpty() && snpOp.error() == null)
                 warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
         }
 
         curSnpOp = null;
 
         synchronized (snpOpMux) {
-            if (clusterSnpFut != null) {
-                if (endFail.isEmpty() && snpOp.error() == null) {
-                    if (!F.isEmpty(snpOp.warnings())) {
-                        String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpOp.warnings());
+            assert clusterSnpFut != null;
 
-                        SnapshotWarningException wrn = new SnapshotWarningException(
-                            "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
-                                (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") + "]:" + wrnsLst);
+            log.error("TEST | finishing clusterSnpFut on " + cctx.localNode().order());
 
-                        clusterSnpFut.onDone(wrn);
+            if (endFail.isEmpty() && snpOp.error() == null) {
+                if (!F.isEmpty(snpOp.warnings())) {
+                    String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpOp.warnings());
 
-                        log.warning(SNAPSHOT_FINISHED_WRN_MSG + snpReq + ". Warnings:" + wrnsLst);
-                    }
-                    else {
-                        clusterSnpFut.onDone();
+                    SnapshotWarningException wrn = new SnapshotWarningException(
+                        "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
+                            (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") + "]:" + wrnsLst);
 
-                        if (log.isInfoEnabled())
-                            log.info(SNAPSHOT_FINISHED_MSG + snpReq);
-                    }
+                    clusterSnpFut.onDone(wrn);
+
+                    log.warning(SNAPSHOT_FINISHED_WRN_MSG + snpReq + ". Warnings:" + wrnsLst);
                 }
-                else if (snpOp.error() == null) {
-                    log.warning("Snapshot error: ", snpOp.error());
+                else {
+                    clusterSnpFut.onDone();
 
-                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
-                        "Local snapshot tasks may not finished completely or finalizing results fails " +
-                        "[fail=" + endFail + ", err=" + err + ']'));
+                    if (log.isInfoEnabled())
+                        log.info(SNAPSHOT_FINISHED_MSG + snpReq);
                 }
-                else
-                    clusterSnpFut.onDone(snpOp.error());
-
-                clusterSnpFut = null;
             }
+            else if (snpOp.error() == null) {
+                log.warning("Snapshot error: ", snpOp.error());
+
+                clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
+                    "Local snapshot tasks may not finished completely or finalizing results fails " +
+                    "[fail=" + endFail + ", err=" + err + ']'));
+            }
+            else
+                clusterSnpFut.onDone(snpOp.error());
+
+            clusterSnpFut = null;
         }
     }
 
@@ -2011,7 +2030,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             int incIdx = -1;
 
             synchronized (snpOpMux) {
-                if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
+                assert clusterSnpFut != null;
+
+                if (!clusterSnpFut.isDone()) {
                     throw new IgniteException(
                         "Create snapshot request has been rejected. The previous snapshot operation was not completed."
                     );
@@ -2048,13 +2069,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, incIdx);
-
-                clusterSnpFut = snpFut0;
-
-                if (incremental)
-                    lastSeenIncSnpFut = snpFut0;
-                else
-                    lastSeenSnpFut = snpFut0;
             }
 
             Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
@@ -4152,7 +4166,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             rqId = null;
             name = "";
             startTime = 0;
-            endTime = 0;
             incIdx = null;
         }
 
@@ -4165,7 +4178,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             this.name = name;
             startTime = U.currentTimeMillis();
-            endTime = 0;
             rqId = null;
             incIdx = null;
         }

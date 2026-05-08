@@ -71,7 +71,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
     private static final String DEDICATED_DIR_PREFIX = "dedicated-";
 
     /** Number of nodes using a separate working directory. */
-    private static final int DEDICATED_CNT = 2;
+    private static final int DEDICATED_CNT = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
