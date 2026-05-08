@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -83,7 +83,6 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"deprecation"})
     @Override protected void afterTest() throws Exception {
         if (deadlockDetected.get()) {
             Thread.getAllStackTraces().keySet().stream()
@@ -127,13 +126,11 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = ignite
             .getOrCreateCache(new CacheConfiguration<>("test").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        AtomicInteger cnt = new AtomicInteger(-1);
-
         GridTestUtils.runAsync(
             () -> {
                 while (!testFinished.get()) {
                     try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                        cache.put(0, cnt.incrementAndGet());
+                        cache.put(0, 1);
                         tx.commit();
                     }
                 }
@@ -161,37 +158,23 @@ public class TxPutTxGetCheckpointerDeadlockTest extends GridCommonAbstractTest {
                     "checkpointReadWriteLock", "checkpointLock", "writeLock");
 
                 while (!testFinished.get()) {
-                    // an interruptible version of lock method is used to allow end the deadlock at the end of the test
-                    cpWriteLock.lockInterruptibly();
-                    cpWriteLock.unlock();
+                    // An interruptible version of lock method is used to allow end the deadlock at the end of the test.
+                    try {
+                        if (!cpWriteLock.tryLock(2, TimeUnit.SECONDS)) {
+                            deadlockDetected.set(true);
+                            testFinished.set(true);
+
+                            return;
+                        }
+                    }
+                    finally {
+                        cpWriteLock.unlock();
+                    }
                 }
             },
             CP_WRITE_LOCK_SWITCHING_THREAD_NAME
         );
 
-        GridTestUtils.runAsync(
-            () -> {
-                int prevVal = -1;
-
-                while (!testFinished.get()) {
-                    int curVal = cnt.get();
-
-                    if (curVal != -1 && curVal == prevVal) {
-                        deadlockDetected.set(true);
-
-                        return;
-                    }
-                    else {
-                        prevVal = curVal;
-
-                        doSleep(200);
-                    }
-                }
-            },
-            "progress-monitor"
-        );
-
-        assertTrue(GridTestUtils.waitForCondition(() -> cnt.get() != -1, 10_000L));
         assertFalse("Unexpected deadlock detected", GridTestUtils.waitForCondition(deadlockDetected::get, 10_000L));
     }
 }
