@@ -138,7 +138,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (missedKeys != null)
-            prepareMarshalCacheObjects(missedKeys, cctx);
+            prepareCacheObjects(missedKeys, cctx);
     }
 
     /** {@inheritDoc} */

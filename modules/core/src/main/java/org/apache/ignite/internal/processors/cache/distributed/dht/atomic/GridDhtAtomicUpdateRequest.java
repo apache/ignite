@@ -467,15 +467,15 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(keys, cctx);
+        prepareCacheObjects(keys, cctx);
 
-        prepareMarshalCacheObjects(vals, cctx);
+        prepareCacheObjects(vals, cctx);
 
-        prepareMarshalCacheObjects(nearKeys, cctx);
+        prepareCacheObjects(nearKeys, cctx);
 
-        prepareMarshalCacheObjects(nearVals, cctx);
+        prepareCacheObjects(nearVals, cctx);
 
-        prepareMarshalCacheObjects(prevVals, cctx);
+        prepareCacheObjects(prevVals, cctx);
 
         if (forceTransformBackups) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
@@ -486,10 +486,10 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
 
             if (entryProcessorsBytes == null)
-                entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+                entryProcessorsBytes = marshalAndPrepareCollection(entryProcessors, cctx);
 
             if (nearEntryProcessorsBytes == null)
-                nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, cctx);
+                nearEntryProcessorsBytes = marshalAndPrepareCollection(nearEntryProcessors, cctx);
         }
     }
 

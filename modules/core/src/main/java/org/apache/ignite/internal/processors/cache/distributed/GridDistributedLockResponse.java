@@ -164,7 +164,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        prepareMarshalCacheObjects(vals, ctx.cacheContext(cacheId));
+        prepareCacheObjects(vals, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */

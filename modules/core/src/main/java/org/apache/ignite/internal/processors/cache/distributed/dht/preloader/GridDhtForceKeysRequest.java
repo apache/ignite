@@ -119,7 +119,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(keys, cctx);
+        prepareCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */

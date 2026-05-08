@@ -257,7 +257,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObject(key, cctx);
+        prepareCacheObject(key, cctx);
     }
 
     /** {@inheritDoc} */

@@ -126,7 +126,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
         // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
         if (cctx != null)
-            prepareMarshalCacheObjects(nearEvicted, cctx);
+            prepareCacheObjects(nearEvicted, cctx);
     }
 
     /** {@inheritDoc} */

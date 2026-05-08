@@ -336,22 +336,10 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
-        prepareMarshalCacheObjects(keys, cctx);
+        prepareCacheObjects(keys, cctx);
 
-        if (filter != null) {
-            boolean hasFilter = false;
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null) {
-                    hasFilter = true;
-
-                    p.prepareMarshal(cctx);
-                }
-            }
-
-            if (!hasFilter)
-                filter = null;
-        }
+        if (filter != null && filter.length == 0)
+            filter = null;
 
         if (operation() == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
@@ -359,13 +347,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 addDepInfo = true;
 
             if (entryProcessorsBytes == null)
-                entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+                entryProcessorsBytes = marshalAndPrepareCollection(entryProcessors, cctx);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
                 invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
         }
         else
-            prepareMarshalCacheObjects(vals, cctx);
+            prepareCacheObjects(vals, cctx);
     }
 
     /** {@inheritDoc} */

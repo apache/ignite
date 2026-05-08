@@ -222,10 +222,10 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObject(key, cctx);
+        prepareCacheObject(key, cctx);
 
         if (val != null)
-            prepareMarshalCacheObject(val, cctx);
+            prepareCacheObject(val, cctx);
     }
 
     /** {@inheritDoc} */

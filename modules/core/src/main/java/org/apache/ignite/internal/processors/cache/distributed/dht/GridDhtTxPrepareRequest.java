@@ -337,7 +337,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
 
         if (nearWrites != null)
-            marshalTx(nearWrites, ctx);
+            prepareTx(nearWrites, ctx);
     }
 
     /** {@inheritDoc} */

@@ -353,7 +353,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(keys, cctx);
+        prepareCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */

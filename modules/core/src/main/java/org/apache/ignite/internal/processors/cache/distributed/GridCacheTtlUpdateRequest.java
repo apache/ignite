@@ -161,9 +161,9 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(keys, cctx);
+        prepareCacheObjects(keys, cctx);
 
-        prepareMarshalCacheObjects(nearKeys, cctx);
+        prepareCacheObjects(nearKeys, cctx);
     }
 
     /** {@inheritDoc} */

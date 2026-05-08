@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -376,10 +375,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         super.prepareMarshal(ctx);
 
         if (writes != null)
-            marshalTx(writes, ctx);
+            prepareTx(writes, ctx);
 
         if (reads != null)
-            marshalTx(reads, ctx);
+            prepareTx(reads, ctx);
 
         if (dhtVers != null && dhtVerKeys == null) {
             dhtVerKeys = dhtVers.keySet();

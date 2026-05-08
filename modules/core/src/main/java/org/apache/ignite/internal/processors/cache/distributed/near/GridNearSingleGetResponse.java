@@ -152,7 +152,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             if (res instanceof CacheObject)
-                prepareMarshalCacheObject((CacheObject)res, cctx);
+                prepareCacheObject((CacheObject)res, cctx);
         }
     }
 

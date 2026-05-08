@@ -111,7 +111,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (dataBytes == null && data != null)
-            dataBytes = marshalCollection(data, cctx);
+            dataBytes = marshalAndPrepareCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {

@@ -291,7 +291,7 @@ public abstract class GridCacheMessage implements Message {
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfo(GridCacheEntryInfo info,
+    protected final void prepareInfo(GridCacheEntryInfo info,
         GridCacheSharedContext ctx,
         CacheObjectContext cacheObjCtx
     ) throws IgniteCheckedException {
@@ -333,7 +333,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfos(
+    protected final void prepareInfos(
         Iterable<? extends GridCacheEntryInfo> infos,
         GridCacheSharedContext ctx,
         CacheObjectContext cacheObjCtx
@@ -342,7 +342,7 @@ public abstract class GridCacheMessage implements Message {
 
         if (infos != null)
             for (GridCacheEntryInfo e : infos)
-                marshalInfo(e, ctx, cacheObjCtx);
+                prepareInfo(e, ctx, cacheObjCtx);
     }
 
     /**
@@ -366,7 +366,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalTx(Iterable<IgniteTxEntry> txEntries, GridCacheSharedContext ctx)
+    protected final void prepareTx(Iterable<IgniteTxEntry> txEntries, GridCacheSharedContext ctx)
         throws IgniteCheckedException {
         assert ctx != null;
 
@@ -480,7 +480,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected List<byte[]> marshalCollection(@Nullable Collection<?> col,
+    @Nullable protected List<byte[]> marshalAndPrepareCollection(@Nullable Collection<?> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
@@ -505,7 +505,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+    public final void prepareCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
@@ -513,7 +513,7 @@ public abstract class GridCacheMessage implements Message {
         int size = col.size();
 
         for (int i = 0; i < size; i++)
-            prepareMarshalCacheObject(col.get(i), ctx);
+            prepareCacheObject(col.get(i), ctx);
     }
 
     /**
@@ -521,7 +521,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepareMarshalCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
+    public final void prepareCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
         if (obj != null) {
             if (addDepInfo)
                 prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
@@ -533,7 +533,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareMarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
+    protected final void prepareCacheObjects(@Nullable Collection<? extends CacheObject> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
