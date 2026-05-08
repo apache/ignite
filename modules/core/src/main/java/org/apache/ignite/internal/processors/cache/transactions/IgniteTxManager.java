@@ -2769,20 +2769,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * The task for changing transaction timeout on partition map exchange processed by exchange worker.
-     *
-     * @param msg Message.
-     */
-    public void processTxTimeoutOnPartitionMapExchangeChange(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
-        assert msg != null;
-
-        long timeout = cctx.kernalContext().config().getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
-        if (timeout != msg.getTimeout())
-            cctx.kernalContext().config().getTransactionConfiguration().setTxTimeoutOnPartitionMapExchange(msg.getTimeout());
-    }
-
-    /**
      * Method checks that current thread does not have active transactions.
      * If transaction or topology lock is hold by current thread
      * exception {@link IgniteException} with given {@code errMsgConstructor} message will be thrown.

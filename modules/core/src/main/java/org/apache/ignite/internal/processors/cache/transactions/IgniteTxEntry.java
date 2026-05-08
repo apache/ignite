@@ -379,6 +379,104 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @return Deep-enough copy of this entry to restore its state later.
+     */
+    public IgniteTxEntry copy() {
+        IgniteTxEntry cp = new IgniteTxEntry();
+
+        cp.tx = tx;
+        cp.key = key;
+        cp.cacheId = cacheId;
+        cp.txKey = txKey;
+        cp.ctx = ctx;
+        cp.val = copyHolder(val);
+        cp.prevVal.value(prevVal.operation(), prevVal.value(), prevVal.hasWriteValue(), prevVal.hasReadValue());
+        cp.oldVal = copyHolder(oldVal);
+        cp.entryProcessorsCol = entryProcessorsCol == null ? null : new LinkedList<>(entryProcessorsCol);
+        cp.entryProcessorCalcVal = entryProcessorCalcVal;
+        cp.transformClosBytes = transformClosBytes;
+        cp.ttl = ttl;
+        cp.conflictExpireTime = conflictExpireTime;
+        cp.conflictVer = conflictVer;
+        cp.explicitVer = explicitVer;
+        cp.dhtVer = dhtVer;
+        cp.filters = filters;
+        cp.filtersPassed = filtersPassed;
+        cp.filtersSet = filtersSet;
+        cp.entry = entry;
+        cp.prepared = prepared;
+        cp.locked = locked;
+        cp.nodeId = nodeId;
+        cp.locMapped = locMapped;
+        cp.expiryPlc = expiryPlc;
+        cp.transferExpiryPlc = transferExpiryPlc;
+        cp.expiryPlcBytes = expiryPlcBytes;
+        cp.flags = flags;
+        cp.partUpdateCntr = partUpdateCntr;
+        cp.serReadVer = serReadVer;
+
+        return cp;
+    }
+
+    /**
+     * Restores this entry from a previously captured snapshot.
+     *
+     * @param snapshot Snapshot.
+     */
+    public void restoreFrom(IgniteTxEntry snapshot) {
+        tx = snapshot.tx;
+        key = snapshot.key;
+        cacheId = snapshot.cacheId;
+        txKey = snapshot.txKey;
+        ctx = snapshot.ctx;
+        val = copyHolder(snapshot.val);
+        prevVal.value(
+            snapshot.prevVal.operation(),
+            snapshot.prevVal.value(),
+            snapshot.prevVal.hasWriteValue(),
+            snapshot.prevVal.hasReadValue()
+        );
+        oldVal = copyHolder(snapshot.oldVal);
+        entryProcessorsCol = snapshot.entryProcessorsCol == null ? null : new LinkedList<>(snapshot.entryProcessorsCol);
+        entryProcessorCalcVal = snapshot.entryProcessorCalcVal;
+        transformClosBytes = snapshot.transformClosBytes;
+        ttl = snapshot.ttl;
+        conflictExpireTime = snapshot.conflictExpireTime;
+        conflictVer = snapshot.conflictVer;
+        explicitVer = snapshot.explicitVer;
+        dhtVer = snapshot.dhtVer;
+        filters = snapshot.filters;
+        filtersPassed = snapshot.filtersPassed;
+        filtersSet = snapshot.filtersSet;
+        entry = snapshot.entry;
+        prepared = snapshot.prepared;
+        locked = snapshot.locked;
+        nodeId = snapshot.nodeId;
+        locMapped = snapshot.locMapped;
+        expiryPlc = snapshot.expiryPlc;
+        transferExpiryPlc = snapshot.transferExpiryPlc;
+        expiryPlcBytes = snapshot.expiryPlcBytes;
+        flags = snapshot.flags;
+        partUpdateCntr = snapshot.partUpdateCntr;
+        serReadVer = snapshot.serReadVer;
+    }
+
+    /**
+     * @param holder Holder to copy.
+     * @return Copy.
+     */
+    private static @Nullable TxEntryValueHolder copyHolder(@Nullable TxEntryValueHolder holder) {
+        if (holder == null)
+            return null;
+
+        TxEntryValueHolder cp = new TxEntryValueHolder();
+
+        cp.value(holder.operation(), holder.value(), holder.hasWriteValue(), holder.hasReadValue());
+
+        return cp;
+    }
+
+    /**
      * @return Node ID.
      */
     public UUID nodeId() {

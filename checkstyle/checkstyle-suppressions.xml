@@ -18,8 +18,8 @@
 -->
 
 <!DOCTYPE suppressions PUBLIC
-    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
-    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+    "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
 <suppressions>
     <suppress checks="RightCurly|LeftCurly|EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
               files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
@@ -68,4 +68,7 @@
 
     <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
               files="DumpReader\.java|CacheLoadOnlyStoreAdapter\.java"/>
+
+    <suppress-xpath checks="AnnotationOnSameLine"
+                    query="//ANNOTATION[.//IDENT[not(@text='Override')]]"/>
 </suppressions>

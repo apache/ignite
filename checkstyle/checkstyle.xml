@@ -26,7 +26,7 @@
 
     <!-- Suppressions. See: https://checkstyle.sourceforge.io/filters/suppressionfilter.html -->
     <module name="SuppressionFilter">
-        <property name="file" value="checkstyle/checkstyle-suppressions.xml"/>
+        <property name="file" value="${checkstyle.suppressions.file}"/>
     </module>
 
     <!-- Whitespaces Checks. See: http://checkstyle.sourceforge.net/config_whitespace.html -->
@@ -46,7 +46,7 @@
     <module name="TreeWalker">
         <!-- Suppressions. See: https://checkstyle.sourceforge.io/filters/suppressionxpathfilter.html -->
         <module name="SuppressionXpathFilter">
-            <property name="file" value="checkstyle/checkstyle-xpath-suppressions.xml"/>
+            <property name="file" value="${checkstyle.suppressions.file}"/>
         </module>
 
         <!-- Coding Checks. See: https://checkstyle.sourceforge.io/config_coding.html -->
@@ -217,6 +217,12 @@
         <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
             <property name="className" value="java.util.concurrent.ScheduledThreadPoolExecutor"/>
             <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.CompletableFuture"/>
+            <property name="factoryMethods" value="allOf, anyOf, supplyAsync, runAsync, completedFuture"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture"/>
         </module>
     </module>
 

@@ -17,14 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.junit.Test;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
@@ -238,6 +248,42 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
         // Deterministic function with non-deterministic function not reduced.
         assertPlan("SELECT * FROM t WHERE id = 0 AND echo(echo_nd(1)) = 1", publicSchema, isTableScan("T")
             .and(s -> "AND(=($t0, 0), =(ECHO(ECHO_ND(1)), 1))".equals(s.condition().toString())));
+    }
+
+    /** */
+    @Test
+    public void testSearchOperandsGrouping() throws Exception {
+        IgniteSchema publicSchema = createSchema(createTable("T", single(), "ID", INTEGER));
+
+        String in = IntStream.range(1, RexUtils.SEARCH_EXPAND_OPERANDS_LIMIT * 3)
+            .mapToObj(Integer::toString).collect(Collectors.joining(", "));
+
+        assertPlan("SELECT * FROM t WHERE id IN (" + in + ")", publicSchema, isTableScan("T")
+            .and(checkOperandsLimit()));
+
+        assertPlan("SELECT * FROM t WHERE id NOT IN (" + in + ")", publicSchema, isTableScan("T")
+            .and(checkOperandsLimit()));
+    }
+
+    /** */
+    private Predicate<IgniteTableScan> checkOperandsLimit() {
+        return n -> {
+            RexNode expandedSearch = RexUtils.expandSearchNullableRecursive(Commons.emptyCluster().getRexBuilder(),
+                null, n.condition());
+
+            RexVisitor<Void> operandsChecker = new RexVisitorImpl<>(true) {
+                @Override public Void visitCall(RexCall call) {
+                    assertTrue("Unexpected operands count: " + call.getOperands().size(),
+                        call.getOperands().size() <= RexUtils.SEARCH_EXPAND_OPERANDS_LIMIT);
+
+                    return super.visitCall(call);
+                }
+            };
+
+            expandedSearch.accept(operandsChecker);
+
+            return true;
+        };
     }
 
     /** */

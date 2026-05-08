@@ -529,7 +529,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         if (rmtTransFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
-                    return new CacheContinuousQueryHandlerV3(
+                    return new CacheContinuousQueryHandler(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locTransLsnr,
@@ -545,7 +545,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         else if (rmtFilterFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
-                    return new CacheContinuousQueryHandlerV2(
+                    return new CacheContinuousQueryHandler(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
@@ -1109,7 +1109,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         Factory<CacheEntryEventFilter<K, V>> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
 
                         if (rmtFilterFactory != null)
-                            hnd = new CacheContinuousQueryHandlerV2(
+                            hnd = new CacheContinuousQueryHandler(
                                 cctx.name(),
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,

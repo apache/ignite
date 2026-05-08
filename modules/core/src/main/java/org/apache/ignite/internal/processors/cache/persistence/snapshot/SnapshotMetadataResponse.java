@@ -18,21 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class SnapshotMetadataResponse implements MarshallableMessage {
+public class SnapshotMetadataResponse implements Message {
     /** */
     @Order(0)
-    byte[] metadataBytes;
-
-    /** */
-    private List<SnapshotMetadata> metadata;
+    List<SnapshotMetadata> metadata;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotMetadataResponse() {
@@ -48,16 +42,4 @@ public class SnapshotMetadataResponse implements MarshallableMessage {
     public List<SnapshotMetadata> metadata() {
         return metadata;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        metadataBytes = U.marshal(marsh, metadata);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (metadataBytes != null)
-            metadata = U.unmarshal(marsh, metadataBytes, clsLdr);
-    }
-
 }

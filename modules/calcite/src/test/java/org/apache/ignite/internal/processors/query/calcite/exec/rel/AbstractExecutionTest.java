@@ -87,7 +87,10 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected static final String PARAMS_STRING = "Task executor = {0}, Execution strategy = {1}";
 
     /** */
-    protected static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
+    public static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
+
+    /** */
+    public static final int MODIFY_BATCH_SIZE = AbstractNode.MODIFY_BATCH_SIZE;
 
     /** */
     private Throwable lastE;

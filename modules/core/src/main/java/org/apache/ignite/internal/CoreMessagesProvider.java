@@ -147,6 +147,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
@@ -155,6 +156,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -343,6 +345,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheVersionedValue.class);
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
+        withNoSchema(WALPointer.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
@@ -384,6 +387,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(SnapshotPartitionsVerifyHandlerResponse.class);
         withNoSchema(SnapshotRestoreOperationResponse.class);
         withNoSchema(SnapshotMetadataResponse.class);
+        withNoSchema(SnapshotMetadata.class);
         withNoSchema(SnapshotCheckPartitionHashesResponse.class);
         withNoSchema(SnapshotCheckHandlersResponse.class);
         withNoSchema(SnapshotFilesRequestMessage.class);
