@@ -530,5 +530,5 @@ So, when `txAwareQueriesEnabled = true` enabled the usage:
 === SELECT ... FOR UPDATE
 Currently, no locks are held by the UPDATE or SELECT statements.
 `SELECT ... FOR UPDATE` statement not supported.
-This means lost updates can occur when multiple transactions concurrently modify the same key concurrently.
+This means lost updates can occur when multiple transactions concurrently modify the same key.
 ====
