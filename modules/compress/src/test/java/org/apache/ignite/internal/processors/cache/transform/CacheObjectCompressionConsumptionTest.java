@@ -18,12 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transform;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -368,7 +362,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
                 File nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().fileTree().nodeStorage();
 
                 if (nodeFolder != null)
-                    pers += sizeOfDirectory(nodeFolder);
+                    pers += GridTestUtils.sizeOfDirectory(nodeFolder);
 
                 if (mode != ConsumptionTestMode.PERSISTENT)
                     assertEquals(0, pers);
@@ -432,30 +426,5 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
         /** Node + Persistent. */
         PERSISTENT
-    }
-
-    /**
-     * Calculates directory size, tolerating files that disappear during traversal
-     *
-     * @param dir Directory to measure.
-     * @return Total size in bytes.
-     */
-    private static long sizeOfDirectory(File dir) throws IOException {
-        long[] size = {0L};
-
-        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
-            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                size[0] += attrs.size();
-
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                // Ignore files that disappeared during traversal (e.g. checkpoint .tmp files).
-                return FileVisitResult.CONTINUE;
-            }
-        });
-
-        return size[0];
     }
 }
