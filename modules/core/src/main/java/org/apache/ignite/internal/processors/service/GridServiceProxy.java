@@ -397,7 +397,7 @@ public class GridServiceProxy<T> implements Serializable {
         if (snapshot.size() == 1) {
             UUID nodeId = snapshot.keySet().iterator().next();
 
-            ClusterNode node = clusterNode(nodeId);
+            ClusterNode node = getAliveNode(nodeId);
 
             return prj.predicate().apply(node) ? node : null;
         }
@@ -421,7 +421,7 @@ public class GridServiceProxy<T> implements Serializable {
             for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
                 if (i++ >= idx) {
                     if (e.getValue() > 0)
-                        return clusterNode(e.getKey());
+                        return getAliveNode(e.getKey());
                 }
             }
 
@@ -430,7 +430,7 @@ public class GridServiceProxy<T> implements Serializable {
             // Circle back.
             for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
                 if (e.getValue() > 0)
-                    return clusterNode(e.getKey());
+                    return getAliveNode(e.getKey());
 
                 if (i++ == idx)
                     return null;
@@ -465,7 +465,7 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /** */
-    public ClusterNode clusterNode(UUID nodeId) throws ClusterTopologyCheckedException {
+    public ClusterNode getAliveNode(UUID nodeId) throws ClusterTopologyCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
