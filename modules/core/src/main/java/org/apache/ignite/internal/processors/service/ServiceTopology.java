@@ -37,17 +37,17 @@ public class ServiceTopology implements Serializable {
     private final Map<UUID, Integer> snapshot;
 
     /**
-     * Whether topology is int transition. Nodes may leave the cluster while the service topology is being recalculated.
+     * Whether topology is transitional. Nodes may leave the cluster while the service topology is being recalculated.
      * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
      * transitional and expect it to be recalculated soon.
      */
     @GridToStringInclude
-    private final boolean inTransition;
+    private final boolean isTransitional;
 
     /** */
     private ServiceTopology() {
         snapshot = Collections.emptyMap();
-        inTransition = true;
+        isTransitional = true;
     }
 
     /** */
@@ -57,13 +57,13 @@ public class ServiceTopology implements Serializable {
 
     /**
      * @param snapshot Service topology snapshot.
-     * @param inTransition Whether topology is transitional. Nodes may leave the cluster while the service topology is being recalculated.
+     * @param isTransitional Whether topology is transitional. Nodes may leave the cluster while the service topology is being recalculated.
      * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
      * transitional and expect it to be recalculated soon.
      */
-    public ServiceTopology(Map<UUID, Integer> snapshot, boolean inTransition) {
+    public ServiceTopology(Map<UUID, Integer> snapshot, boolean isTransitional) {
         this.snapshot = Collections.unmodifiableMap(snapshot);
-        this.inTransition = inTransition;
+        this.isTransitional = isTransitional;
     }
 
     /** */
@@ -72,8 +72,8 @@ public class ServiceTopology implements Serializable {
     }
 
     /** */
-    public boolean inTransition() {
-        return inTransition;
+    public boolean isTransitional() {
+        return isTransitional;
     }
 
     /** */

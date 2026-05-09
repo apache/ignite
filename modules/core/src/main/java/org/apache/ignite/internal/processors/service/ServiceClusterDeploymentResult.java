@@ -44,12 +44,12 @@ public class ServiceClusterDeploymentResult implements Message {
     Map<UUID, ServiceSingleNodeDeploymentResult> results;
 
     /**
-     * Whether topology is in transition. Nodes may leave the cluster while the service topology is being recalculated.
+     * Whether topology is transitional. Nodes may leave the cluster while the service topology is being recalculated.
      * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
      * transitional and expect it to be recalculated soon.
      */
     @Order(2)
-    boolean isSvcTopInTransition;
+    boolean isSvcTopTransitional;
 
      /** Default constructor for {@link MessageFactory}. */
     public ServiceClusterDeploymentResult() {
@@ -82,8 +82,8 @@ public class ServiceClusterDeploymentResult implements Message {
     }
 
     /** */
-    public boolean isServiceTopologyInTransition() {
-        return isSvcTopInTransition;
+    public boolean isServiceTopologyTransitional() {
+        return isSvcTopTransitional;
     }
 
     /**
@@ -91,8 +91,8 @@ public class ServiceClusterDeploymentResult implements Message {
      * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
      * transitional and expect it to be recalculated soon.
      */
-    public void markServiceTopologyInTransition() {
-        isSvcTopInTransition = true;
+    public void markServiceTopologyTransitional() {
+        isSvcTopTransitional = true;
     }
 
     /** {@inheritDoc} */

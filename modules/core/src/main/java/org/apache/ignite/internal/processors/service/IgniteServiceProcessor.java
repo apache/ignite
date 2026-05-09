@@ -966,7 +966,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 if (timeout == 0 && desc == null)
                     return null;
 
-                if (desc != null && !desc.serviceTopology().inTransition())
+                if (desc != null && !desc.serviceTopology().isTransitional())
                     return desc.topologySnapshot();
 
                 long wait = 0;
@@ -1959,7 +1959,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (!errors.isEmpty())
                 fullErrors.computeIfAbsent(srvcId, e -> new ArrayList<>()).addAll(errors);
 
-            fullTops.put(srvcId, new ServiceTopology(top, depRes.isServiceTopologyInTransition()));
+            fullTops.put(srvcId, new ServiceTopology(top, depRes.isServiceTopologyTransitional()));
         }
 
         synchronized (servicesTopsUpdateMux) {

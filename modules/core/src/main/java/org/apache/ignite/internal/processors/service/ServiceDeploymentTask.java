@@ -226,7 +226,7 @@ class ServiceDeploymentTask {
                             ServiceTopology top = desc.serviceTopology();
 
                             if (
-                                top.inTransition() ||
+                                top.isTransitional() ||
                                 top.containsNode(evtNode.id()) ||
                                 desc.cacheName() != null && !evtNode.isClient() // If affinity service
                             )
@@ -663,13 +663,13 @@ class ServiceDeploymentTask {
 
         final Collection<ServiceClusterDeploymentResult> fullResults = new ArrayList<>();
 
-        Set<IgniteUuid> inTransitionSrvcTops = collectInTransitionTopologies();
+        Set<IgniteUuid> transitionalSrvcTops = collectTransitionalTopologies();
 
         singleResults.forEach((srvcId, dep) -> {
             ServiceClusterDeploymentResult res = new ServiceClusterDeploymentResult(srvcId, dep);
 
-            if (inTransitionSrvcTops.contains(srvcId))
-                res.markServiceTopologyInTransition();
+            if (transitionalSrvcTops.contains(srvcId))
+                res.markServiceTopologyTransitional();
 
             fullResults.add(res);
         });
@@ -682,7 +682,7 @@ class ServiceDeploymentTask {
      * topology may be incomplete. We consider the mentioned service topology transitional and expect it to be recalculated
      * soon.
      */
-    private Set<IgniteUuid> collectInTransitionTopologies() {
+    private Set<IgniteUuid> collectTransitionalTopologies() {
         if (failedToReply.isEmpty())
             return Collections.emptySet();
 
