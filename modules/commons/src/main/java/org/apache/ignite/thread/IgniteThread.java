@@ -241,6 +241,22 @@ public class IgniteThread extends Thread {
         return threadName + "-#" + num + (igniteInstanceName != null ? '%' + igniteInstanceName + '%' : "");
     }
 
+    /**
+     * @param threadId Thread ID.
+     * @return Thread name if found.
+     */
+    public static String resolveName(long threadId) {
+        Thread[] threads = new Thread[Thread.activeCount()];
+
+        int cnt = Thread.enumerate(threads);
+
+        for (int i = 0; i < cnt; i++)
+            if (threads[i].getId() == threadId)
+                return threads[i].getName();
+
+        return "<failed to find active thread " + threadId + '>';
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteThread.class, this, "name", getName());

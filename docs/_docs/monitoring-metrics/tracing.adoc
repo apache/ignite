@@ -88,7 +88,7 @@ Enable tracing for a specific API:
 ./control.sh --tracing-configuration set --scope TX --sampling-rate 1
 ----
 
-Refer to the link:control-script#tracing-configuration[Control Script] sections for the list of all parameters.
+Refer to the link:tools/control-script#tracing-configuration[Control Script] sections for the list of all parameters.
 
 === Programmatically
 

@@ -218,7 +218,7 @@ The following modules are available:
 
 
 |ignite-ml | Ignite ML Grid provides machine learning features and relevant data structures and methods of linear algebra, including on heap and off heap, dense and sparse, local and distributed implementations.
-Refer to the link:machine-learning/ml[Machine Learning] documentation for details.
+Refer to the link:machine-learning/machine-learning[Machine Learning] documentation for details.
 
 |ignite-rest-http | Ignite REST-HTTP starts a Jetty-based server within a node that can be used to execute tasks and/or cache commands in grid using HTTP-based link:restapi[RESTful APIs].
 

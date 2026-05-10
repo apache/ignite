@@ -218,6 +218,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -902,7 +903,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
 
-        longJVMPauseDetector = new LongJVMPauseDetector(log);
+        longJVMPauseDetector = new LongJVMPauseDetector(igniteInstanceName, log);
 
         longJVMPauseDetector.start();
 
@@ -946,7 +947,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(clusterProc);
 
-            U.onGridStart();
+            U.onGridStart(igniteInstanceName);
 
             // Start and configure resource processor first as it contains resources used
             // by all other managers and processors.
@@ -3182,11 +3183,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
                             reconnectState.firstReconnectFut.onDone(e);
 
-                            new Thread(() -> {
+                            new IgniteThread(igniteInstanceName, "node-stopper", () -> {
                                 U.error(log, "Stopping the node after a failed reconnect attempt.");
 
                                 close();
-                            }, "node-stopper").start();
+                            }).start();
                         }
                         else {
                             assert ctx.discovery().reconnectSupported();
