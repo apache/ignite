@@ -483,3 +483,61 @@ Disables certain optimizer rules. This is an optimizer level hint.
 ----
 SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 ON T1.V1=T2.V1 WHERE T2.V2=?
 ----
+
+== Transactions [[transactions]]
+
+The Calcite-based query engine supports SQL transactions with READ_COMMITTED isolation.
+To ensure backward compatibility, transaction support is disabled by default. To enable it, use the following configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="transactionConfiguration">
+        <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+            <property name="txAwareQueriesEnabled" value="true" />
+            ...
+        </bean>
+    </property>
+    ...
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+----
+--
+
+The following API "transactional aware":
+
+* key-value API.
+* SQL queries with Calcite engine.
+* Scan queries.
+
+"Transactional aware" means:
+
+1. ACID in the same way as key-value API.
+2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
+3. Any data modified by a query will be returned with updated values by subsequent queries within the same transaction.
+
+So, when `txAwareQueriesEnabled = true` enabled the usage:
+
+* INSERT, UPDATE, DELETE statements with regular transaction guarantees.
+* Mix key-value, SQL and Scan queries to process same dataset.
+
+
+[NOTE]
+====
+[discrete]
+=== SELECT ... FOR UPDATE
+Currently, no locks are held by the UPDATE or SELECT statements.
+`SELECT ... FOR UPDATE` statement not supported.
+This means lost updates can occur when multiple transactions concurrently modify the same key.
+
+For example, if you execute a query like `SET salary = salary + 50 WHERE id = 1` concurrently across multiple threads,
+note that due to the lost-update anomaly, the final value may not equal the original salary plus 50 multiplied by the number of threads.
+====

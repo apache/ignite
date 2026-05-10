@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -90,36 +91,34 @@ class GridUpdateNotifier {
      * @param ver Compound Ignite version.
      * @param reportOnlyNew Whether or not to report only new version.
      * @param updatesChecker Service for getting Ignite updates
-     * @throws IgniteCheckedException If failed.
      */
     GridUpdateNotifier(
         String igniteInstanceName,
         String ver,
         boolean reportOnlyNew,
         HttpIgniteUpdatesChecker updatesChecker
-    ) throws IgniteCheckedException {
+    ) {
         this.ver = ver;
         this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
         this.updatesChecker = updatesChecker;
         this.reportOnlyNew = reportOnlyNew;
 
-        workerThread = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Runnable cmd0 = cmd.getAndSet(null);
+        workerThread = new IgniteThread(igniteInstanceName, "upd-ver-checker", () -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                Runnable cmd0 = cmd.getAndSet(null);
 
-                        if (cmd0 != null)
-                            cmd0.run();
-                        else
-                            Thread.sleep(WORKER_THREAD_SLEEP_TIME);
+                if (cmd0 != null)
+                    cmd0.run();
+                else {
+                    try {
+                        Thread.sleep(WORKER_THREAD_SLEEP_TIME);
+                    }
+                    catch (InterruptedException ignored) {
+                        break;
                     }
                 }
-                catch (InterruptedException ignore) {
-                    // No-op.
-                }
             }
-        }, "upd-ver-checker");
+        });
 
         workerThread.setDaemon(true);
 
