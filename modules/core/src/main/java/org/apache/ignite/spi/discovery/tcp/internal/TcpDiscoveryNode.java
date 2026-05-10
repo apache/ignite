@@ -219,23 +219,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
-    /** */
-    public TcpDiscoveryNode(ClusterNode node) {
-        id = node.id();
-        consistentId = node.consistentId();
-        addrs = node.addresses();
-        hostNames = node.hostNames();
-        attrs = node.attributes();
-        order = node.order();
-        ver = node.version();
-        clientRouterNodeId = node.isClient() ? node.id() : null;
-    }
-
-    /** */
-    public static TcpDiscoveryNode of(ClusterNode n) {
-        return n instanceof TcpDiscoveryNode ? (TcpDiscoveryNode)n : new TcpDiscoveryNode(n);
-    }
-
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (attrs != null)
@@ -703,28 +686,19 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /**
-     * Downcasts type of map's key value.
-     *
-     * @param <PK> Map parent key type.
-     * @param <CK> Child key type.
-     * @param <V> Map value type.
-     * @param m Initial collections map.
-     * @return Resulting map.
+     * IMPORTANT!
+     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
+     * @param node to copy data from
      */
-    public static <PK, CK extends PK, V> Map<CK, V> downcast(Map<PK, V> m) {
-        return (Map<CK, V>)m;
-    }
+    public TcpDiscoveryNode(ClusterNode node) {
+        this.id = node.id();
+        this.consistentId = node.consistentId();
+        this.addrs = node.addresses();
+        this.hostNames = node.hostNames();
+        this.order = node.order();
+        this.ver = node.version();
+        this.clientRouterNodeId = node.isClient() ? node.id() : null;
 
-    /**
-     * Upcasts type of map's key value.
-     *
-     * @param <PK> Map parent key type.
-     * @param <CK> Child key type.
-     * @param <V> Map value type.
-     * @param m Initial collections map.
-     * @return Resulting map.
-     */
-    public static <PK, CK extends PK, V> Map<PK, V> upcast(Map<CK, V> m) {
-        return (Map<PK, V>)m;
+        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
     }
 }
