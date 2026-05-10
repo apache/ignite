@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
 /**
  * Class to pass to remote nodes transaction changes.
@@ -38,7 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * @see ExecutionContext#transactionChanges(int, int[], Function, Comparator)
  * @see QueryStartRequest#queryTransactionEntries()
  */
-public class QueryTxEntry implements CalciteContextMarshallableMessage {
+public class QueryTxEntry implements CalciteContextMarshallableMessage, CacheIdAware {
     /** Cache id. */
     @Order(0)
     int cacheId;
@@ -75,8 +76,8 @@ public class QueryTxEntry implements CalciteContextMarshallableMessage {
         this.ver = ver;
     }
 
-    /** @return Cache id. */
-    public int cacheId() {
+    /** {@inheritDoc}  */
+    @Override public int cacheId() {
         return cacheId;
     }
 
