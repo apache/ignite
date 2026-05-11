@@ -69,7 +69,7 @@ public class IgniteVersionUtils {
 
         BUILD_TSTAMP_FROM_PROPERTY = IgniteProperties.get("ignite.build");
 
-        //Development ignite.properties file contains ignite.build = 0, so we will add the check for it.
+        //Development ignite-build-info.properties file contains ignite.build = 0, so we will add the check for it.
         BUILD_TSTAMP = !BUILD_TSTAMP_FROM_PROPERTY.isEmpty() && Long.parseLong(BUILD_TSTAMP_FROM_PROPERTY) != 0
             ? Long.parseLong(BUILD_TSTAMP_FROM_PROPERTY) : System.currentTimeMillis() / 1000;
 
