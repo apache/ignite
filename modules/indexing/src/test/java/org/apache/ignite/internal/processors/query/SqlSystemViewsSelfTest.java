@@ -769,15 +769,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** */
     private boolean hasMapQueryView(IgniteEx originNode, String initiatorId, int nodes) {
         for (int i = 0; i < nodes; i++) {
-            UUID nodeId = grid(i).localNode().id();
-
             SystemView<SqlQueryView> view = grid(i).context().systemView().view(SQL_QRY_VIEW);
 
             for (SqlQueryView qry : view) {
-                if (qry.mapQuery()
-                    && nodeId.equals(qry.nodeId())
-                    && originNode.localNode().id().equals(qry.originNodeId())
-                    && initiatorId.equals(qry.initiatorId()))
+                if (qry.mapQuery() && originNode.localNode().id().equals(qry.originNodeId()) && initiatorId.equals(qry.initiatorId()))
                     return true;
             }
         }

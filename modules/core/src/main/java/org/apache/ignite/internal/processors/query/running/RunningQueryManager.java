@@ -346,7 +346,7 @@ public class RunningQueryManager {
         String qryInitiatorId,
         boolean enforceJoinOrder,
         boolean distributedJoins,
-        UUID originNodeId,
+        UUID nodeId,
         boolean mapQry
     ) {
         long qryId = qryIdGen.incrementAndGet();
@@ -356,8 +356,7 @@ public class RunningQueryManager {
 
         final GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
-            localNodeId,
-            originNodeId,
+            nodeId,
             qry,
             qryType,
             schemaName,

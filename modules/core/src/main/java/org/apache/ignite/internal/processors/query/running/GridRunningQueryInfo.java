@@ -33,11 +33,8 @@ public class GridRunningQueryInfo {
     /** */
     private final long id;
 
-    /** Node that owns query. */
+    /** Originating Node ID. */
     private final UUID nodeId;
-
-    /** Query coordinator node ID. */
-    private final UUID originNodeId;
 
     /** */
     private final String qry;
@@ -86,8 +83,7 @@ public class GridRunningQueryInfo {
      * Constructor.
      *
      * @param id Query ID.
-     * @param nodeId Node that owns query.
-     * @param originNodeId Query coordinator node ID.
+     * @param nodeId Originating node ID.
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
@@ -104,7 +100,6 @@ public class GridRunningQueryInfo {
     public GridRunningQueryInfo(
         long id,
         UUID nodeId,
-        UUID originNodeId,
         String qry,
         GridCacheQueryType qryType,
         String schemaName,
@@ -120,7 +115,6 @@ public class GridRunningQueryInfo {
     ) {
         this.id = id;
         this.nodeId = nodeId;
-        this.originNodeId = originNodeId;
         this.qry = qry;
         this.qryType = qryType;
         this.schemaName = schemaName;
@@ -215,17 +209,10 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Node that owns query.
+     * @return Originating node ID.
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @return Query coordinator node ID.
-     */
-    public UUID originNodeId() {
-        return originNodeId;
     }
 
     /**
