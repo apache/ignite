@@ -682,29 +682,16 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
-    /** Test map query flag in running queries system view. */
+    /** Test SELECT and DML map query flags in running queries system view. */
     @Test
     public void testMapQueryRunningQueriesView() throws Exception {
         IgniteEx ignite = startGrids(2);
 
         IgniteCache<Integer, Integer> cache = createMapQueryTestCache(ignite);
 
-        String initiatorId = UUID.randomUUID().toString();
+        checkMapQueryView(ignite, cache, "SELECT * FROM Integer WHERE sleep(?) >= 0");
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE sleep(?) >= 0")
-                .setQueryInitiatorId(initiatorId)
-                .setArgs(5_000)).getAll()
-        );
-
-        try {
-            assertTrue(waitForCondition(() -> hasMapQueryView(ignite, initiatorId, 2), 5_000));
-        }
-        finally {
-            fut.get();
-        }
-
-        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId, 2), 5_000));
+        checkMapQueryView(ignite, cache, "DELETE FROM Integer WHERE sleep(?) >= 0");
     }
 
     /** Test map query is unregistered from running queries system view on error. */
@@ -725,19 +712,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId, 2), 5_000));
     }
 
-    /** Test DML map query in running queries system view. */
-    @Test
-    public void testDmlMapQueryRunningQueriesView() throws Exception {
-        IgniteEx ignite = startGrids(2);
-
-        IgniteCache<Integer, Integer> cache = createMapQueryTestCache(ignite);
-
+    /** */
+    private void checkMapQueryView(IgniteEx ignite, IgniteCache<Integer, Integer> cache, String sql) throws Exception {
         String initiatorId = UUID.randomUUID().toString();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            cache.query(new SqlFieldsQuery("DELETE FROM Integer WHERE sleep(?) >= 0")
-                .setQueryInitiatorId(initiatorId)
-                .setArgs(5_000)).getAll()
+            cache.query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(5_000)).getAll()
         );
 
         try {

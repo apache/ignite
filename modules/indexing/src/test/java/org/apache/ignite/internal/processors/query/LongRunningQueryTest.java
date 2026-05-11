@@ -509,6 +509,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     @MultiNodeTest
     public void testLongMapQueryLogInfo() {
+        ListeningTestLogger testLog = testLog();
+
         String initiatorId = UUID.randomUUID().toString();
 
         UUID originNodeId = ignite.cluster().localNode().id();
@@ -520,7 +522,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .andMatches("initiatorId=" + initiatorId)
             .build();
 
-        testLog().registerListener(lsnr);
+        testLog.registerListener(lsnr);
 
         ignite.cache("test").query(new SqlFieldsQuery("SELECT val FROM test WHERE id = sleep_func(?, 0)")
             .setQueryInitiatorId(initiatorId)
