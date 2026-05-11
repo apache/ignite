@@ -25,8 +25,7 @@ public class RollingUpgradeCommand extends CommandRegistryImpl {
     public RollingUpgradeCommand() {
         super(
             new RollingUpgradeEnableCommand(),
-            new RollingUpgradeDisableCommand(),
-            new RollingUpgradeStatusCommand()
+            new RollingUpgradeDisableCommand()
         );
     }
 }

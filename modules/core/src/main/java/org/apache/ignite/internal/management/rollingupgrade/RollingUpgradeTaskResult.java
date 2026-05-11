@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
-import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,26 +39,10 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     @Order(2)
     String errMsg;
 
-    /** */
-    @Order(3)
-    List<RollingUpgradeStatusNode> nodes;
-
-    /** */
     public RollingUpgradeTaskResult(IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg) {
-        this(curVer, targetVer, errMsg, null);
-    }
-
-    /** */
-    public RollingUpgradeTaskResult(
-        IgniteProductVersion curVer,
-        IgniteProductVersion targetVer,
-        String errMsg,
-        List<RollingUpgradeStatusNode> nodes
-    ) {
         this.curVer = curVer;
         this.targetVer = targetVer;
         this.errMsg = errMsg;
-        this.nodes = nodes;
     }
 
     /** */
@@ -97,17 +80,6 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
         this.errMsg = errMsg;
     }
 
-    /** */
-    public List<RollingUpgradeStatusNode> nodes() {
-        return nodes;
-    }
-
-    /** */
-    public void nodes(List<RollingUpgradeStatusNode> nodes) {
-        this.nodes = nodes;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(RollingUpgradeTaskResult.class, this);
     }
