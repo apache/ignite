@@ -442,25 +442,26 @@ public class RunningQueryManager {
             if (isSqlQuery(qry)) {
                 qry.runningFuture().onDone();
 
-                // We need to collect query history and metrics only for external SQL queries.
-                if (!qry.mapQuery()) {
-                    qryHistTracker.collectHistory(qry, failed);
+                if (qry.mapQuery())
+                    return;
 
-                    if (!failed)
-                        successQrsCnt.increment();
-                    else {
-                        failedQrsCnt.increment();
+                // We need to collect query history and metrics only for SQL queries initiated by user.
+                qryHistTracker.collectHistory(qry, failed);
 
-                        // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
-                        // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
-                        // right when query failed due to some other reason.
-                        if (QueryUtils.wasCancelled(failReason))
-                            canceledQrsCnt.increment();
-                    }
+                if (!failed)
+                    successQrsCnt.increment();
+                else {
+                    failedQrsCnt.increment();
+
+                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                    // right when query failed due to some other reason.
+                    if (QueryUtils.wasCancelled(failReason))
+                        canceledQrsCnt.increment();
                 }
             }
 
-            if (!qry.mapQuery() && ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
                 String flags = null;
 
                 // Create string for flags with not default values.
@@ -492,7 +493,7 @@ public class RunningQueryManager {
                     !failed);
             }
 
-            if (!qry.mapQuery() && !qryFinishedListeners.isEmpty()) {
+            if (!qryFinishedListeners.isEmpty()) {
                 GridQueryFinishedInfo info = new GridQueryFinishedInfo(
                     qry.id(),
                     localNodeId,
