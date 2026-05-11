@@ -391,7 +391,7 @@ class MapQueryResult {
 
             h2.heavyQueriesTracker().stopTracking(qryInfo, null);
 
-            h2.runningQueryManager().unregister(qryInfo.runningQueryId(), null);
+            h2.runningQueryManager().unregister(qryInfo.localQueryId(), null);
         }
     }
 }
