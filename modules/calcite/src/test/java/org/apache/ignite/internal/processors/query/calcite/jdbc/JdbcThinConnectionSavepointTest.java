@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -30,18 +30,16 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+
 /** Savepoint tests for thin JDBC connection. */
-public class JdbcThinConnectionSavepointTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     /** */
     private static final String TBL = "SAVEPOINT_TEST_TABLE";
 
-    /** URL. */
-    private String url = partitionAwareness ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
-        "jdbc:ignite:thin://127.0.0.1";
-
-    /** Nodes count. */
-    private int nodesCnt = partitionAwareness ? 4 : 2;
+    /** JDBC URL. */
+    private static final String SAVEPOINT_URL = URL + "?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME +
+        "&transactionConcurrency=PESSIMISTIC";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,7 +54,7 @@ public class JdbcThinConnectionSavepointTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(nodesCnt);
+        startGridsMultiThreaded(2);
     }
 
     /** {@inheritDoc} */
@@ -72,7 +70,8 @@ public class JdbcThinConnectionSavepointTest extends JdbcThinAbstractSelfTest {
 
         try (Connection conn = connection()) {
             execute(conn, "DROP TABLE IF EXISTS " + TBL);
-            execute(conn, "CREATE TABLE " + TBL + "(ID INT PRIMARY KEY, VAL VARCHAR) WITH atomicity=transactional");
+            execute(conn, "CREATE TABLE " + TBL +
+                "(ID INT PRIMARY KEY, VAL VARCHAR) WITH atomicity=transactional");
         }
     }
 
@@ -217,6 +216,12 @@ public class JdbcThinConnectionSavepointTest extends JdbcThinAbstractSelfTest {
                 conn.rollback(sp);
                 conn.releaseSavepoint(sp);
 
+                assertThrows(log, () -> {
+                    conn.rollback(sp);
+
+                    return null;
+                }, SQLException.class, "Savepoint has been released.");
+
                 assertQuery(conn, 1, "before_sp1");
 
                 conn.commit();
@@ -237,8 +242,17 @@ public class JdbcThinConnectionSavepointTest extends JdbcThinAbstractSelfTest {
      * @return Connection.
      */
     private Connection connection() throws SQLException {
-        return DriverManager.getConnection(url + "?partitionAwareness=" + partitionAwareness +
-            "&transactionConcurrency=PESSIMISTIC");
+        return DriverManager.getConnection(SAVEPOINT_URL);
+    }
+
+    /**
+     * @param conn Connection.
+     * @param sql SQL.
+     */
+    private void execute(Connection conn, String sql) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
     }
 
     /**
@@ -246,7 +260,7 @@ public class JdbcThinConnectionSavepointTest extends JdbcThinAbstractSelfTest {
      * @param exp Expected values as column pairs.
      */
     private void assertQuery(Connection conn, Object... exp) throws SQLException {
-        List<List<?>> rows = execute(conn, "SELECT ID, VAL FROM " + TBL + " ORDER BY ID");
+        List<List<Object>> rows = executeQuery(conn, "SELECT ID, VAL FROM " + TBL + " ORDER BY ID");
 
         assertEquals(exp.length / 2, rows.size());
 

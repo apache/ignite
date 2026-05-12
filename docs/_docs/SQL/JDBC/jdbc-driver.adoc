@@ -566,6 +566,7 @@ JDBC Thin Driver supports the standard JDBC savepoint API for explicit transacti
 
 Savepoints are available for JDBC connections that use the Calcite-based SQL engine and explicit `PESSIMISTIC` transactions.
 Disable auto-commit before creating a savepoint.
+If auto-commit remains enabled, JDBC savepoint API calls that require an explicit transaction fail with `SQLException`.
 
 [source,java]
 ----
@@ -592,7 +593,7 @@ try (Connection conn = DriverManager.getConnection(
 }
 ----
 
-You can also use SQL savepoint commands, such as `SAVEPOINT` and `ROLLBACK TO SAVEPOINT`, from JDBC statements.
+SQL savepoint commands can be used, such as `SAVEPOINT` and `ROLLBACK TO SAVEPOINT`, from JDBC statements.
 See link:sql-reference/transactions[Transactions, window=_blank] for SQL syntax and usage details.
 
 == Examples
