@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -118,6 +117,8 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaSqlViewManager;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.message.ActiveProposals;
+import org.apache.ignite.internal.processors.query.schema.message.InlineSizesData;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
@@ -181,9 +182,6 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaOperation
  */
 @SuppressWarnings("rawtypes")
 public class GridQueryProcessor extends GridProcessorAdapter {
-    /** */
-    private static final String INLINE_SIZES_DISCO_BAG_KEY = "inline_sizes";
-
     /** Warn message if some indexes have different inline sizes on the nodes. */
     public static final String INLINE_SIZES_DIFFER_WARN_MSG_FORMAT = "Inline sizes on local node and node %s are different. " +
         "Please drop and create again these indexes to avoid performance problems with SQL queries. Problem indexes: %s";
@@ -473,36 +471,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> proposals;
+        ActiveProposals proposals;
 
         // Collect active proposals.
         synchronized (stateMux) {
-            proposals = new LinkedHashMap<>(activeProposals);
+            proposals = new ActiveProposals(activeProposals);
         }
 
         dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), proposals);
 
         // We should send inline index sizes information only to server nodes.
         if (!dataBag.isJoiningNodeClient()) {
-            HashMap<String, Serializable> nodeSpecificMap = new HashMap<>();
-
-            Serializable oldVal = nodeSpecificMap.put(INLINE_SIZES_DISCO_BAG_KEY, collectSecondaryIndexesInlineSize());
-
-            assert oldVal == null : oldVal;
-
-            dataBag.addNodeSpecificData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), nodeSpecificMap);
+            dataBag.addNodeSpecificData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(),
+                new InlineSizesData(secondaryIndexesInlineSize()));
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        Object joiningNodeData = data.joiningNodeData();
+        InlineSizesData joiningNodeData = data.joiningNodeData();
 
-        if (joiningNodeData instanceof InlineSizesData) {
-            Map<String, Integer> joiningNodeIndexesInlineSize = ((InlineSizesData)joiningNodeData).sizes;
-
-            checkInlineSizes(secondaryIndexesInlineSize(), joiningNodeIndexesInlineSize, data.joiningNodeId());
-        }
+        if (joiningNodeData != null)
+            checkInlineSizes(secondaryIndexesInlineSize(), joiningNodeData.sizes(), data.joiningNodeId());
     }
 
     /** {@inheritDoc} */
@@ -514,30 +504,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         // Preserve proposals.
-        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals =
-            (LinkedHashMap<UUID, SchemaProposeDiscoveryMessage>)data.commonData();
+        ActiveProposals discoData = data.commonData();
 
         // Process proposals as if they were received as regular discovery messages.
-        if (!F.isEmpty(activeProposals)) {
+        if (discoData != null && !F.isEmpty(discoData.activeProposals())) {
             synchronized (stateMux) {
-                for (SchemaProposeDiscoveryMessage activeProposal : activeProposals.values())
+                for (SchemaProposeDiscoveryMessage activeProposal : discoData.activeProposals().values())
                     onSchemaProposeDiscovery0(activeProposal);
             }
         }
 
-        if (!F.isEmpty(data.nodeSpecificData())) {
+        Map<UUID, InlineSizesData> nodedSpecificData = data.nodeSpecificData();
+
+        if (!F.isEmpty(nodedSpecificData)) {
             Map<String, Integer> indexesInlineSize = secondaryIndexesInlineSize();
 
             if (!F.isEmpty(indexesInlineSize)) {
-                for (UUID nodeId : data.nodeSpecificData().keySet()) {
-                    Serializable serializable = data.nodeSpecificData().get(nodeId);
+                for (UUID nodeId : nodedSpecificData.keySet()) {
+                    InlineSizesData inlineSizesData = nodedSpecificData.get(nodeId);
 
-                    assert serializable instanceof Map : serializable;
-
-                    Map<String, Serializable> nodeSpecificData = (Map<String, Serializable>)serializable;
-
-                    if (nodeSpecificData.containsKey(INLINE_SIZES_DISCO_BAG_KEY))
-                        checkInlineSizes(indexesInlineSize, (Map<String, Integer>)nodeSpecificData.get(INLINE_SIZES_DISCO_BAG_KEY), nodeId);
+                    if (inlineSizesData != null)
+                        checkInlineSizes(indexesInlineSize, inlineSizesData.sizes(), nodeId);
                 }
             }
         }
@@ -683,16 +670,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             log.warning(String.format(INLINE_SIZES_DIFFER_WARN_MSG_FORMAT, remoteNodeId, sb));
         }
-    }
-
-    /**
-     * @return Serializable information about secondary indexes inline size.
-     * @see #secondaryIndexesInlineSize()
-     */
-    private Serializable collectSecondaryIndexesInlineSize() {
-        Map<String, Integer> map = secondaryIndexesInlineSize();
-
-        return map instanceof Serializable ? (Serializable)map : new HashMap<>(map);
     }
 
     /**

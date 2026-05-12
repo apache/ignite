@@ -15,33 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.internal.processors.cluster;
 
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshallerMappingsData implements Message {
-    /** */
+public class ClusterFlags implements Message {
+    /** Update notifier enabled flag. */
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    boolean updateNotifierEnabled;
 
     /** */
-    public MarshallerMappingsData() {}
+    public ClusterFlags() { }
 
     /**
-     * @param mappings Mappings.
+     * @param updateNotifierEnabled Update notifier enabled flag.
      */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
-    }
-
-    /**
-     * @return Mappings.
-     */
-    public List<Map<Integer, MappedName>> mappings() {
-        return mappings;
+    public ClusterFlags(boolean updateNotifierEnabled) {
+        this.updateNotifierEnabled = updateNotifierEnabled;
     }
 }

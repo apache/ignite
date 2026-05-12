@@ -2068,21 +2068,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
-        //create data bag, pass it to exchange.collect
         DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
         exchange.collect(dataBag);
 
-        //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
             dataPacket.addJoiningNodeData(dataBag);
         else
-            dataPacket.marshalGridNodeData(
-                dataBag,
-                locNode.id(),
-                marshaller(),
-                ignite.configuration().getNetworkCompressionLevel(),
-                log);
+            dataPacket.addNodeData(dataBag, locNode.id());
 
         return dataPacket;
     }
@@ -2097,19 +2090,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
+        List<IgniteCheckedException> errs = dataPacket.checkUnmarshallingErrors(ignite());
+
         if (dataPacket.joiningNodeId().equals(locNode.id())) {
-            try {
-                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-            }
-            catch (IgniteCheckedException e) {
+            if (!F.isEmpty(errs)) {
                 if (ignite() instanceof IgniteEx) {
                     FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
 
-                    failure.process(new FailureContext(CRITICAL_ERROR, e));
+                    failure.process(new FailureContext(CRITICAL_ERROR, errs.get(0)));
                 }
 
-                throw new IgniteException(e);
+                throw new IgniteException(errs.get(0));
             }
+
+            dataBag = dataPacket.bagWithNodeData();
         }
         else
             dataBag = dataPacket.bagWithJoiningNodeData();

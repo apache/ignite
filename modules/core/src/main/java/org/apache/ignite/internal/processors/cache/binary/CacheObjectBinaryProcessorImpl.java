@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1464,7 +1463,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     res.put(e.getKey(), e.getValue());
             }
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable)res);
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), new BinaryMetadataVersionsData(res));
         }
     }
 
@@ -1530,10 +1529,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Integer, BinaryMetadataVersionInfo> receivedData = (Map<Integer, BinaryMetadataVersionInfo>)data.commonData();
+        BinaryMetadataVersionsData receivedData = data.commonData();
 
-        if (receivedData != null) {
-            for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.entrySet()) {
+        if (receivedData != null && !F.isEmpty(receivedData.data)) {
+            for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.data.entrySet()) {
                 BinaryMetadataVersionInfo metaVerInfo = e.getValue();
 
                 BinaryMetadataVersionInfo locMetaVerInfo = new BinaryMetadataVersionInfo(metaVerInfo.metadata(),

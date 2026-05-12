@@ -40,10 +40,13 @@ import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionReque
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
+import org.apache.ignite.internal.managers.encryption.KnownEncryptionKeys;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
+import org.apache.ignite.internal.managers.eventstorage.EnabledEvents;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.processors.authentication.InitialUsersData;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -181,6 +184,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.ClusterFlags;
+import org.apache.ignite.internal.processors.cluster.ClusterIdAndTag;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
@@ -205,7 +210,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
-import org.apache.ignite.internal.processors.query.InlineSizesData;
+import org.apache.ignite.internal.processors.plugin.PluginsData;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -213,6 +218,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
+import org.apache.ignite.internal.processors.query.schema.message.ActiveProposals;
+import org.apache.ignite.internal.processors.query.schema.message.InlineSizesData;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
@@ -253,7 +260,7 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
-import org.apache.ignite.spi.discovery.ObjectData;
+import org.apache.ignite.spi.discovery.DataBagItem;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -353,7 +360,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
         withNoSchema(WALPointer.class);
-        withNoSchemaResolvedClassLoader(ObjectData.class);
+        withNoSchemaResolvedClassLoader(DataBagItem.class);
         withSchemaResolvedClassLoader(GridTopicMessage.class);
 
         // [5700 - 5900]: Discovery originated messages.
@@ -446,6 +453,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
         withNoSchema(DynamicCacheChangeBatch.class);
+        withSchema(InitialUsersData.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -575,6 +583,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheContinuousQueryBatchAck.class);
         withSchema(CacheContinuousQueryEntry.class);
         withNoSchema(InlineSizesData.class);
+        withSchema(ActiveProposals.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
@@ -652,6 +661,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(MasterKeyChangeRequest.class);
         withNoSchema(GroupKeyEncrypted.class);
         withNoSchema(NodeEncryptionKeys.class);
+        withNoSchema(KnownEncryptionKeys.class);
 
         // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
         msgIdx = 13000;
@@ -665,6 +675,10 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
+        withNoSchema(ClusterIdAndTag.class);
+        withNoSchema(ClusterFlags.class);
+        withNoSchemaResolvedClassLoader(PluginsData.class);
+        withSchema(EnabledEvents.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }

@@ -563,7 +563,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         }
 
-        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
+        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), new KnownEncryptionKeys(knownEncKeys));
     }
 
     /** {@inheritDoc} */
@@ -571,20 +571,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             return;
 
-        Map<Integer, Object> encKeysFromCluster = (Map<Integer, Object>)data.commonData();
+        KnownEncryptionKeys encKeysFromCluster = data.commonData();
 
-        if (F.isEmpty(encKeysFromCluster))
+        if (encKeysFromCluster == null || F.isEmpty(encKeysFromCluster.keys))
             return;
 
-        for (Map.Entry<Integer, Object> entry : encKeysFromCluster.entrySet()) {
+        for (Map.Entry<Integer, GroupKeyEncrypted> entry : encKeysFromCluster.keys.entrySet()) {
             int grpId = entry.getKey();
 
-            GroupKeyEncrypted rmtKey;
-
-            if (entry.getValue() instanceof GroupKeyEncrypted)
-                rmtKey = (GroupKeyEncrypted)entry.getValue();
-            else
-                rmtKey = new GroupKeyEncrypted(INITIAL_KEY_ID, (byte[])entry.getValue());
+            GroupKeyEncrypted rmtKey = entry.getValue();
 
             GroupKey locGrpKey = getActiveKey(grpId);
 

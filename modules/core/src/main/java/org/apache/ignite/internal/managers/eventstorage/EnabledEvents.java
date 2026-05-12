@@ -15,33 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.internal.managers.eventstorage;
 
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class MarshallerMappingsData implements Message {
+/**
+ *
+ */
+public class EnabledEvents implements Message {
     /** */
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    int[] evts;
 
     /** */
-    public MarshallerMappingsData() {}
+    public EnabledEvents() { }
 
     /**
-     * @param mappings Mappings.
+     * @param events Enabled events.
      */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
-    }
-
-    /**
-     * @return Mappings.
-     */
-    public List<Map<Integer, MappedName>> mappings() {
-        return mappings;
+    public EnabledEvents(int[] events) {
+        this.evts = events;
     }
 }

@@ -58,6 +58,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingsData;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -2440,12 +2442,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     exchange.onExchange(dataBag);
                 }
 
-                private List getAllMappings(DiscoveryDataBag bag) {
-                    return (List)bag.commonData().get(MARSHALLER_PROC.ordinal());
+                private MarshallerMappingsData getAllMappings(DiscoveryDataBag bag) {
+                    return (MarshallerMappingsData)bag.commonData().get(MARSHALLER_PROC.ordinal());
                 }
 
-                private Map getJavaMappings(List allMappings) {
-                    return (Map)allMappings.get(JAVA_ID);
+                private Map<Integer, MappedName> getJavaMappings(MarshallerMappingsData allMappings) {
+                    return allMappings.mappings().get(JAVA_ID);
                 }
             });
         }

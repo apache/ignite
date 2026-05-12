@@ -15,33 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/** */
-public class MarshallerMappingsData implements Message {
+/** Data bag data holder. */
+public class ZkDiscoData implements Message {
     /** */
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
-
-    /** */
-    public MarshallerMappingsData() {}
+    Map<Integer, Message> data;
 
     /**
-     * @param mappings Mappings.
+     * Default constructor for {@link MessageFactory}.
      */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
+    public ZkDiscoData() {
+        // No-op.
     }
 
     /**
-     * @return Mappings.
+     * @param data Discovery data.
      */
-    public List<Map<Integer, MappedName>> mappings() {
-        return mappings;
+    public ZkDiscoData(Map<Integer, Message> data) {
+        this.data = data;
+    }
+
+    /**
+     * @return Data.
+     */
+    public Map<Integer, Message> data() {
+        return data;
     }
 }

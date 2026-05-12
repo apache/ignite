@@ -15,33 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.internal.processors.authentication;
 
-import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class MarshallerMappingsData implements Message {
-    /** */
+/** Initial data is collected on coordinator to send to join node. */
+public class InitialUsersData implements Message {
+    /** Users. */
+    @GridToStringInclude
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    ArrayList<User> usrs;
+
+    /** Active user operations. */
+    @GridToStringInclude
+    @Order(1)
+    ArrayList<UserManagementOperation> activeOps;
 
     /** */
-    public MarshallerMappingsData() {}
+    public InitialUsersData() { }
 
     /**
-     * @param mappings Mappings.
+     * @param usrs Users.
+     * @param ops  Active operations on cluster.
      */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
+    InitialUsersData(Collection<User> usrs, Collection<UserManagementOperation> ops) {
+        this.usrs = new ArrayList<>(usrs);
+        activeOps = new ArrayList<>(ops);
     }
 
-    /**
-     * @return Mappings.
-     */
-    public List<Map<Integer, MappedName>> mappings() {
-        return mappings;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(InitialUsersData.class, this);
     }
 }

@@ -166,24 +166,24 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
+        PluginsData discoData = getDiscoveryData(dataBag.joiningNodeId());
 
-        if (pluginsData != null)
-            dataBag.addJoiningNodeData(PLUGIN.ordinal(), pluginsData);
+        if (!F.isEmpty(discoData.data))
+            dataBag.addJoiningNodeData(PLUGIN.ordinal(), discoData);
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
+        PluginsData discoData = getDiscoveryData(dataBag.joiningNodeId());
 
-        if (pluginsData != null)
-            dataBag.addNodeSpecificData(PLUGIN.ordinal(), pluginsData);
+        if (!F.isEmpty(discoData.data))
+            dataBag.addNodeSpecificData(PLUGIN.ordinal(), discoData);
     }
 
     /**
      * @param joiningNodeId Joining node id.
      */
-    private Serializable getDiscoveryData(UUID joiningNodeId) {
+    private PluginsData getDiscoveryData(UUID joiningNodeId) {
         HashMap<String, Serializable> pluginsData = null;
 
         for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
@@ -197,31 +197,27 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
             }
         }
 
-        return pluginsData;
+        return new PluginsData(pluginsData);
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
-        if (data.hasJoiningNodeData()) {
-            Map<String, Serializable> pluginsData = data.joiningNodeData();
+        PluginsData discoData = data.joiningNodeData();
 
-            applyPluginsData(data.joiningNodeId(), pluginsData);
-        }
+        if (discoData != null && !F.isEmpty(discoData.data))
+            applyPluginsData(data.joiningNodeId(), discoData.data);
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Serializable> nodeSpecificData = data.nodeSpecificData();
+        Map<UUID, PluginsData> nodeSpecificData = data.nodeSpecificData();
 
         if (nodeSpecificData != null) {
             UUID joiningNodeId = data.joiningNodeId();
 
-            for (Serializable v : nodeSpecificData.values()) {
-                if (v != null) {
-                    Map<String, Serializable> pluginsData = (Map<String, Serializable>)v;
-
-                    applyPluginsData(joiningNodeId, pluginsData);
-                }
+            for (PluginsData pluginsData : nodeSpecificData.values()) {
+                if (pluginsData != null && !F.isEmpty(pluginsData.data))
+                    applyPluginsData(joiningNodeId, pluginsData.data);
             }
         }
     }

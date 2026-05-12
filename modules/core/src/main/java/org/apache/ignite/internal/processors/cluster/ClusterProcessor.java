@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -76,6 +75,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -465,42 +465,31 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), new ClusterFlags(notifyEnabled.get()));
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ClusterFlags(notifyEnabled.get()));
 
-        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ClusterIdAndTag(cluster.id(), cluster.tag()));
-    }
-
-    /**
-     * @return Discovery data.
-     */
-    private Serializable getDiscoveryData() {
-        HashMap<String, Object> map = new HashMap<>(2);
-
-        map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled.get());
-
-        return map;
+        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), (Message)new ClusterIdAndTag(cluster.id(), cluster.tag()));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, ClusterFlags> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
-            Boolean lstFlag = findLastFlag(nodeSpecData.values());
+            Boolean lstFlag = findLastUpdateNotifierFlag(nodeSpecData.values());
 
             if (lstFlag != null)
                 notifyEnabled.set(lstFlag);
         }
 
-        ClusterIdAndTag commonData = (ClusterIdAndTag)data.commonData();
+        ClusterIdAndTag commonData = data.commonData();
 
         if (commonData != null) {
-            Serializable remoteClusterId = commonData.id();
+            UUID remoteClusterId = commonData.id();
 
             if (remoteClusterId != null) {
                 if (locClusterId != null && !locClusterId.equals(remoteClusterId)) {
@@ -510,7 +499,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                         ", local cluster ID: " + locClusterId);
                 }
 
-                locClusterId = (UUID)remoteClusterId;
+                locClusterId = remoteClusterId;
             }
 
             String remoteClusterTag = commonData.tag();
@@ -521,21 +510,17 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     }
 
     /**
-     * @param vals collection to seek through.
+     * @param flags Flags collection to seek through.
      */
-    private Boolean findLastFlag(Collection<Serializable> vals) {
-        Boolean flag = null;
+    private Boolean findLastUpdateNotifierFlag(Collection<ClusterFlags> flags) {
+        Boolean notifierFlag = null;
 
-        for (Serializable ser : vals) {
-            if (ser != null) {
-                Map<String, Object> map = (Map<String, Object>)ser;
-
-                if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                    flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
-            }
+        for (ClusterFlags flag : flags) {
+            if (flag != null)
+                notifierFlag = flag.updateNotifierEnabled;
         }
 
-        return flag;
+        return notifierFlag;
     }
 
     /** {@inheritDoc} */

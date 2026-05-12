@@ -15,33 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.internal.processors.query.schema.message;
 
-import java.util.List;
-import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class MarshallerMappingsData implements Message {
-    /** */
+/**
+ * Holder for active schema change propose discovery messages.
+ */
+public class ActiveProposals implements Message {
+    /** Active proposals. */
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals;
 
     /** */
-    public MarshallerMappingsData() {}
-
-    /**
-     * @param mappings Mappings.
-     */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
+    public ActiveProposals() {
+        // No-op.
     }
 
     /**
-     * @return Mappings.
+     * @param activeProposals Active proposals.
      */
-    public List<Map<Integer, MappedName>> mappings() {
-        return mappings;
+    public ActiveProposals(LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals) {
+        this.activeProposals = activeProposals;
+    }
+
+    /**
+     * @return Active proposals.
+     */
+    public LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals() {
+        return activeProposals;
     }
 }

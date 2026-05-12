@@ -1173,13 +1173,15 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        if (data.commonData() == null)
+        EnabledEvents enabled = data.commonData();
+
+        if (enabled == null)
             return;
 
         if (ctx.clientNode())
             return;
 
-        GridIntList clusterData = new GridIntList((int[])data.commonData());
+        GridIntList clusterData = new GridIntList(enabled.evts);
         GridIntList nodeData = new GridIntList(enabledEvents());
 
         GridIntList toEnable = new GridIntList(clusterData.size());
@@ -1207,9 +1209,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         if (dataBag.isJoiningNodeClient() && dataBag.commonDataCollectedFor(EVENT_MGR.ordinal()))
             return;
 
-        int[] clusterData = enabledEvents();
-
-        dataBag.addGridCommonData(EVENT_MGR.ordinal(), clusterData);
+        dataBag.addGridCommonData(EVENT_MGR.ordinal(), new EnabledEvents(enabledEvents()));
     }
 
     /**

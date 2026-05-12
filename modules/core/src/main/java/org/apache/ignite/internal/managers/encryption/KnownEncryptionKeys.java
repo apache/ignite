@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class InlineSizesData implements Message {
+public class KnownEncryptionKeys implements Message {
     /** */
     @Order(0)
-    Map<String, Integer> sizes;
+    Map<Integer, GroupKeyEncrypted> keys;
 
     /** */
-    public InlineSizesData() {}
+    public KnownEncryptionKeys() {}
 
-    /**
-     * @param sizes Inline sizes.
-     */
-    public InlineSizesData(Map<String, Integer> sizes) {
-        this.sizes = sizes;
+    /** */
+    KnownEncryptionKeys(Map<Integer, GroupKeyEncrypted> keys) {
+        this.keys = keys;
     }
 }
