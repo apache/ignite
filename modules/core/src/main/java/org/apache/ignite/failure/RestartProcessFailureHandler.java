@@ -22,6 +22,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * This handler could be used only with ignite.(sh|bat) script.
@@ -30,16 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class RestartProcessFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
     @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    U.error(ignite.log(), "Restarting JVM on Ignite failure: [failureCtx=" + failureCtx + ']');
+        new IgniteThread(ignite.name(), "node-restarter", () -> {
+            U.error(ignite.log(), "Restarting JVM on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                    G.restart(true);
-                }
-            },
-            "node-restarter"
-        ).start();
+            G.restart(true);
+        }).start();
 
         return true;
     }

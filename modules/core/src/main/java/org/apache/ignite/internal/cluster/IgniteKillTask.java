@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cluster;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -28,6 +29,8 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -72,22 +75,16 @@ class IgniteKillTask extends ComputeTaskAdapter<Boolean, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public Object execute() {
             if (restart)
-                new Thread(new Runnable() {
-                    @Override public void run() {
-                        G.restart(true);
-                    }
-                },
-                "ignite-restarter").start();
+                new IgniteThread(ignite.name(), "ignite-restarter", () -> G.restart(true)).start();
             else
-                new Thread(new Runnable() {
-                    @Override public void run() {
-                        G.kill(true);
-                    }
-                },
-                "ignite-stopper").start();
+                new IgniteThread(ignite.name(), "ignite-stopper", () -> G.kill(true)).start();
 
             return null;
         }

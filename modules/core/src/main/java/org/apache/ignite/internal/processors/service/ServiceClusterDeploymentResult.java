@@ -43,6 +43,14 @@ public class ServiceClusterDeploymentResult implements Message {
     @GridToStringInclude
     Map<UUID, ServiceSingleNodeDeploymentResult> results;
 
+    /**
+     * Whether topology is transitional. Nodes may leave the cluster while the service topology is being recalculated.
+     * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
+     * transitional and expect it to be recalculated soon.
+     */
+    @Order(2)
+    boolean isSvcTopTransitional;
+
      /** Default constructor for {@link MessageFactory}. */
     public ServiceClusterDeploymentResult() {
     }
@@ -51,8 +59,10 @@ public class ServiceClusterDeploymentResult implements Message {
      * @param srvcId Service id.
      * @param results Deployments results.
      */
-    public ServiceClusterDeploymentResult(@NotNull IgniteUuid srvcId,
-        @NotNull Map<UUID, ServiceSingleNodeDeploymentResult> results) {
+    public ServiceClusterDeploymentResult(
+        @NotNull IgniteUuid srvcId,
+        @NotNull Map<UUID, ServiceSingleNodeDeploymentResult> results
+    ) {
         this.srvcId = srvcId;
         this.results = results;
     }
@@ -69,6 +79,20 @@ public class ServiceClusterDeploymentResult implements Message {
      */
     public Map<UUID, ServiceSingleNodeDeploymentResult> results() {
         return Collections.unmodifiableMap(results);
+    }
+
+    /** */
+    public boolean isServiceTopologyTransitional() {
+        return isSvcTopTransitional;
+    }
+
+    /**
+     * Marks topology as transitional. Nodes may leave the cluster while the service topology is being recalculated.
+     * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
+     * transitional and expect it to be recalculated soon.
+     */
+    public void markServiceTopologyTransitional() {
+        isSvcTopTransitional = true;
     }
 
     /** {@inheritDoc} */

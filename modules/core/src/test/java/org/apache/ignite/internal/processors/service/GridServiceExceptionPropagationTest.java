@@ -38,9 +38,6 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     private static final String BROKEN_EX_MSG = "Exception occurred on serialization step";
 
     /** */
-    private static final String BROKEN_EX_WRAPPER_MSG = ", see server logs for details";
-
-    /** */
     private static final String EX_MSG = "Exception message";
 
     /** */
@@ -183,17 +180,24 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
             catch (ServiceDeploymentException ex) {
                 assertTrue(shouldThrow);
 
-                String errMsg = ex.getSuppressed()[0].getMessage();
-
                 if (isNodeInfoAvailableInExMsg) {
-                    assertTrue(errMsg.contains(srv.cluster().localNode().id().toString()));
-                    assertTrue(errMsg.contains(SERVICE_NAME));
+                    String locNodeId = srv.cluster().localNode().id().toString();
+
+                    assertTrue(ex.getSuppressed()[0].getMessage().contains(locNodeId)
+                        || ex.getSuppressed()[0].getSuppressed()[0].getMessage().contains(locNodeId));
+
+                    assertTrue(ex.getSuppressed()[0].getMessage().contains(SERVICE_NAME)
+                        || ex.getSuppressed()[0].getSuppressed()[0].getMessage().contains(SERVICE_NAME));
                 }
 
                 Throwable cause = ex.getSuppressed()[0].getCause();
 
-                if (cause == null)
-                    assertTrue(errMsg.contains(BROKEN_EX_WRAPPER_MSG));
+                if (cause == null) {
+                    String errMsg = ex.getSuppressed()[0].getMessage();
+
+                    assertTrue(errMsg.contains(BrokenExternalizableException.class.getSimpleName()) &&
+                        (errMsg.contains("Failed to marshall an exception") || errMsg.contains("Failed to unmarshall an exception")));
+                }
                 else
                     assertTrue(cause.getMessage().contains(EX_MSG));
             }

@@ -15,38 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
-/**
- * For TESTING only.
- */
-public interface IgniteDiscoverySpiInternalListener {
-    /**
-     * @param locNode Local node.
-     * @param log Log.
-     */
-    public default void beforeJoin(ClusterNode locNode, IgniteLogger log) {
+/** */
+public class NotRegisteredMessage extends DiscoveryCustomMessage {
+    /** */
+    @Order(0)
+    String str;
+
+    /** */
+    public NotRegisteredMessage() {
         // No-op.
     }
 
-    /**
-     * @param locNode Local node.
-     * @param log Logger.
-     */
-    public default void beforeReconnect(ClusterNode locNode, IgniteLogger log) {
-        // No-op.
+    /** */
+    public NotRegisteredMessage(String str) {
+        super(IgniteUuid.randomUuid());
+
+        this.str = str;
     }
 
-    /**
-     * @param spi SPI instance.
-     * @param log Logger.
-     * @param msg Custom message.
-     * @return {@code False} to cancel event send.
-     */
-    public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg);
+    /** {@inheritDoc} */
+    @Override public DiscoverySpiCustomMessage ackMessage() {
+        return null;
+    }
 }
