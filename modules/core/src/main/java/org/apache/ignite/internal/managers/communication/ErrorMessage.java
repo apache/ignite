@@ -77,8 +77,6 @@ public class ErrorMessage implements MarshallableMessage {
         catch (Throwable e) {
             err = wrapError(false, e);
         }
-
-        errBytes = null;
     }
 
     /** */
