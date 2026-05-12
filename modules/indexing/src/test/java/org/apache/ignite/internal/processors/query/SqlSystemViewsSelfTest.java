@@ -709,7 +709,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             CacheException.class,
             "Exception calling user-defined function");
 
-        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId, 2), 5_000));
+        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId), 5_000));
     }
 
     /** */
@@ -721,13 +721,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         );
 
         try {
-            assertTrue(waitForCondition(() -> hasMapQueryView(ignite, initiatorId, 2), 5_000));
+            assertTrue(waitForCondition(() -> hasMapQueryView(ignite, initiatorId), 5_000));
         }
         finally {
             fut.get();
         }
 
-        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId, 2), 5_000));
+        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId), 5_000));
     }
 
     /** */
@@ -747,9 +747,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private boolean hasMapQueryView(IgniteEx originNode, String initiatorId, int nodes) {
-        for (int i = 0; i < nodes; i++) {
-            SystemView<SqlQueryView> view = grid(i).context().systemView().view(SQL_QRY_VIEW);
+    private boolean hasMapQueryView(IgniteEx originNode, String initiatorId) {
+        for (Ignite ignite : G.allGrids()) {
+            SystemView<SqlQueryView> view = ((IgniteEx)ignite).context().systemView().view(SQL_QRY_VIEW);
 
             for (SqlQueryView qry : view) {
                 if (qry.mapQuery() && originNode.localNode().id().equals(qry.originNodeId()) && initiatorId.equals(qry.initiatorId()))
