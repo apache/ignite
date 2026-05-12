@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -97,7 +99,12 @@ public abstract class IgniteNoClassOnServerAbstractTest extends GridCommonAbstra
 
             final CountDownLatch clientReadyLatch = new CountDownLatch(1);
 
-            Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
+            Collection<String> jvmArgs = new ArrayList<>(List.of("-ea", "-DIGNITE_QUIET=false"));
+
+            if (U.majorJavaVersion(U.jdkVersion()) >= 17) {
+                jvmArgs.add("--add-opens=java.base/java.nio=ALL-UNNAMED");
+                jvmArgs.add("--add-opens=java.base/java.util=ALL-UNNAMED");
+            }
 
             GridJavaProcess clientNode = null;
 
