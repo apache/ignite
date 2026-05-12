@@ -42,7 +42,7 @@ class ContinuousRoutinesInfo {
         synchronized (startedRoutines) {
             if (!dataBag.commonDataCollectedFor(CONTINUOUS_PROC.ordinal()))
                 dataBag.addGridCommonData(CONTINUOUS_PROC.ordinal(),
-                    new ContinuousRoutinesCommonDiscoveryData(new ArrayList<>(startedRoutines.values())));
+                    new ObjectData(new ContinuousRoutinesCommonDiscoveryData(new ArrayList<>(startedRoutines.values()))));
         }
     }
 

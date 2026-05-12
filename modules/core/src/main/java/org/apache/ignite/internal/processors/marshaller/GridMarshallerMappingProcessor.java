@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.ObjectData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -332,7 +333,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
-            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
+            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), new ObjectData(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
@@ -344,7 +345,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.commonData();
+        List<Map<Integer, MappedName>> mappings = ObjectData.unwrap(data.commonData());
 
         processIncomingMappings(mappings);
     }

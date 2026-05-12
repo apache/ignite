@@ -831,7 +831,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (remoteVer.id() >= locVer.id()) {
                 Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
 
-                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                dataBag.addGridCommonData(COMPONENT_ID, new ObjectData(nodeData));
             }
             else {
                 if (locVer.id() - remoteVer.id() <= histCache.size() && !dataBag.isJoiningNodeClient()) {
@@ -839,7 +839,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
 
-                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    dataBag.addGridCommonData(COMPONENT_ID, new ObjectData(nodeData));
                 }
                 else {
                     DistributedMetaStorageVersion ver0 = ver;
@@ -855,7 +855,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, null);
 
-                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    dataBag.addGridCommonData(COMPONENT_ID, new ObjectData(nodeData));
                 }
             }
         }
@@ -958,7 +958,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock.writeLock().lock();
 
         try {
-            DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
+            DistributedMetaStorageClusterNodeData nodeData = ObjectData.unwrap(data.commonData());
 
             if (nodeData != null) {
                 if (nodeData.fullData != null) {

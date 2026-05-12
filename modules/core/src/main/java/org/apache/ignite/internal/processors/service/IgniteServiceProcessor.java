@@ -381,7 +381,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             new ArrayList<>(registeredServices.values())
         );
 
-        dataBag.addGridCommonData(SERVICE_PROC.ordinal(), clusterData);
+        dataBag.addGridCommonData(SERVICE_PROC.ordinal(), new ObjectData(clusterData));
     }
 
     /** {@inheritDoc} */
@@ -389,7 +389,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.commonData() == null)
             return;
 
-        ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
+        ServiceProcessorCommonDiscoveryData clusterData = ObjectData.unwrap(data.commonData());
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             try {

@@ -1411,7 +1411,7 @@ public class ClusterCachesInfo {
      */
     public void collectGridNodeData(DiscoveryDataBag dataBag, CacheConfigurationSplitter splitter) {
         if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal()))
-            dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData(splitter));
+            dataBag.addGridCommonData(CACHE_PROC.ordinal(), new ObjectData(collectCommonDiscoveryData(splitter)));
     }
 
     /**
@@ -1504,10 +1504,10 @@ public class ClusterCachesInfo {
         if (data.commonData() == null)
             return;
 
-        assert joinDiscoData != null || disconnectedState();
-        assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
+        CacheNodeCommonDiscoveryData cachesData = ObjectData.unwrap(data.commonData());
 
-        CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
+        assert joinDiscoData != null || disconnectedState();
+        assert cachesData instanceof CacheNodeCommonDiscoveryData : data;
 
         // CacheGroup configurations that were created from local node configuration.
         Map<Integer, CacheGroupDescriptor> locCacheGrps = new HashMap<>(registeredCacheGroups());

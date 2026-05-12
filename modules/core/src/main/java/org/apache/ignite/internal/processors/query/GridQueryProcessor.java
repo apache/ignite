@@ -154,6 +154,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.ObjectData;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -480,7 +481,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             proposals = new LinkedHashMap<>(activeProposals);
         }
 
-        dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), proposals);
+        dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), new ObjectData(proposals));
 
         // We should send inline index sizes information only to server nodes.
         if (!dataBag.isJoiningNodeClient()) {
@@ -490,7 +491,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             assert oldVal == null : oldVal;
 
-            dataBag.addNodeSpecificData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), nodeSpecificMap);
+            dataBag.addNodeSpecificData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), new ObjectData(nodeSpecificMap));
         }
     }
 
@@ -499,7 +500,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Object joiningNodeData = data.joiningNodeData();
 
         if (joiningNodeData instanceof InlineSizesData) {
-            Map<String, Integer> joiningNodeIndexesInlineSize = ((InlineSizesData)joiningNodeData).sizes;
+            Map<String, Integer> joiningNodeIndexesInlineSize = ((InlineSizesData)joiningNodeData).sizes();
 
             checkInlineSizes(secondaryIndexesInlineSize(), joiningNodeIndexesInlineSize, data.joiningNodeId());
         }
@@ -514,8 +515,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         // Preserve proposals.
-        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals =
-            (LinkedHashMap<UUID, SchemaProposeDiscoveryMessage>)data.commonData();
+        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = ObjectData.unwrap(data.commonData());
 
         // Process proposals as if they were received as regular discovery messages.
         if (!F.isEmpty(activeProposals)) {
@@ -530,14 +530,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (!F.isEmpty(indexesInlineSize)) {
                 for (UUID nodeId : data.nodeSpecificData().keySet()) {
-                    Serializable serializable = data.nodeSpecificData().get(nodeId);
+                    Map<String, Message> nodeSpecificData = ObjectData.unwrap(data.nodeSpecificData().get(nodeId));
 
-                    assert serializable instanceof Map : serializable;
-
-                    Map<String, Serializable> nodeSpecificData = (Map<String, Serializable>)serializable;
-
-                    if (nodeSpecificData.containsKey(INLINE_SIZES_DISCO_BAG_KEY))
-                        checkInlineSizes(indexesInlineSize, (Map<String, Integer>)nodeSpecificData.get(INLINE_SIZES_DISCO_BAG_KEY), nodeId);
+                    if (nodeSpecificData.containsKey(INLINE_SIZES_DISCO_BAG_KEY)) {
+                        checkInlineSizes(indexesInlineSize,
+                            ((InlineSizesData)nodeSpecificData.get(INLINE_SIZES_DISCO_BAG_KEY)).sizes(), nodeId);
+                    }
                 }
             }
         }

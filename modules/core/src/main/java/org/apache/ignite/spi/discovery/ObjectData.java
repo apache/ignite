@@ -18,6 +18,8 @@
 package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
@@ -58,11 +60,8 @@ public class ObjectData implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dataBytes != null) {
+        if (dataBytes != null)
             data = U.unmarshal(marsh, dataBytes, clsLdr);
-
-            dataBytes = null;
-        }
     }
 
     /**
@@ -78,5 +77,15 @@ public class ObjectData implements MarshallableMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ObjectData.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ObjectData data1 = (ObjectData)o;
+
+        return Objects.equals(data, data1.data) || Arrays.equals(dataBytes, data1.dataBytes);
     }
 }

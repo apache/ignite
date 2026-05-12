@@ -106,6 +106,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.spi.discovery.ObjectData;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -1464,7 +1465,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     res.put(e.getKey(), e.getValue());
             }
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable)res);
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), new ObjectData((Serializable)res));
         }
     }
 
@@ -1530,7 +1531,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Integer, BinaryMetadataVersionInfo> receivedData = (Map<Integer, BinaryMetadataVersionInfo>)data.commonData();
+        Map<Integer, BinaryMetadataVersionInfo> receivedData = ObjectData.unwrap(data.commonData());
 
         if (receivedData != null) {
             for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.entrySet()) {

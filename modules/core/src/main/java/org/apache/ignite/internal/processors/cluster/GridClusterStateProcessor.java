@@ -941,7 +941,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
             //compatibility mode: old nodes don't send any data on join, so coordinator of new version
             //doesn't send BaselineTopology history, only its current globalState
-            dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
+            dataBag.addGridCommonData(STATE_PROC.ordinal(), new ObjectData(globalState));
 
             return;
         }
@@ -960,19 +960,21 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 historyToSend = bltHist;
         }
 
-        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
+        dataBag.addGridCommonData(STATE_PROC.ordinal(), new ObjectData(new BaselineStateAndHistoryData(globalState, historyToSend)));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        if (data.commonData() instanceof DiscoveryDataClusterState) {
+        Serializable commonData = ObjectData.unwrap(data.commonData());
+
+        if (commonData instanceof DiscoveryDataClusterState) {
             if (globalState != null && globalState.baselineTopology() != null)
                 //node with BaselineTopology is not allowed to join mixed cluster
                 // (where some nodes don't support BaselineTopology)
                 throw new IgniteException("Node with BaselineTopology cannot join" +
                     " mixed cluster running in compatibility mode");
 
-            globalState = (DiscoveryDataClusterState)data.commonData();
+            globalState = (DiscoveryDataClusterState)commonData;
 
             compatibilityMode = true;
 
@@ -981,7 +983,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return;
         }
 
-        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
+        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)commonData;
 
         if (stateDiscoData != null) {
             DiscoveryDataClusterState state = stateDiscoData.globalState;

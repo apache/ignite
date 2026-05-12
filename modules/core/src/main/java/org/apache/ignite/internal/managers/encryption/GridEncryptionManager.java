@@ -77,6 +77,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.ObjectData;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -563,7 +564,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         }
 
-        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
+        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), new ObjectData(knownEncKeys));
     }
 
     /** {@inheritDoc} */
@@ -571,7 +572,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             return;
 
-        Map<Integer, Object> encKeysFromCluster = (Map<Integer, Object>)data.commonData();
+        Map<Integer, Object> encKeysFromCluster = ObjectData.unwrap(data.commonData());
 
         if (F.isEmpty(encKeysFromCluster))
             return;

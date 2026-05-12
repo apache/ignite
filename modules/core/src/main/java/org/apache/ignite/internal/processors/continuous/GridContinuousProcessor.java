@@ -431,7 +431,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         Serializable data = getDiscoveryData(dataBag.joiningNodeId());
 
         if (data != null)
-            dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
+            dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), new ObjectData(data));
     }
 
     /**
@@ -541,7 +541,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (immutableDiscoCustomMsg) {
             if (data.commonData() != null) {
                 ContinuousRoutinesCommonDiscoveryData commonData =
-                    (ContinuousRoutinesCommonDiscoveryData)data.commonData();
+                    ObjectData.unwrap(data.commonData());
 
                 for (ContinuousRoutineInfo routineInfo : commonData.startedRoutines) {
                     if (routinesInfo.routineExists(routineInfo.routineId))
@@ -554,11 +554,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+            Map<UUID, Message> nodeSpecData = data.nodeSpecificData();
 
             if (nodeSpecData != null) {
-                for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                    onDiscoveryDataReceivedMutable((DiscoveryData)e.getValue());
+                for (Map.Entry<UUID, Message> e : nodeSpecData.entrySet())
+                    onDiscoveryDataReceivedMutable(ObjectData.unwrap(e.getValue()));
             }
         }
     }

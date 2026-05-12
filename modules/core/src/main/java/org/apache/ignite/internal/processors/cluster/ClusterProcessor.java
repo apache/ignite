@@ -76,6 +76,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -470,9 +471,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ObjectData(getDiscoveryData()));
 
-        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ClusterIdAndTag(cluster.id(), cluster.tag()));
+        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ObjectData(new ClusterIdAndTag(cluster.id(), cluster.tag())));
     }
 
     /**
@@ -488,7 +489,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, Message> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
             Boolean lstFlag = findLastFlag(nodeSpecData.values());
@@ -497,7 +498,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 notifyEnabled.set(lstFlag);
         }
 
-        ClusterIdAndTag commonData = (ClusterIdAndTag)data.commonData();
+        ClusterIdAndTag commonData = ObjectData.unwrap(data.commonData());
 
         if (commonData != null) {
             Serializable remoteClusterId = commonData.id();
@@ -523,12 +524,12 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**
      * @param vals collection to seek through.
      */
-    private Boolean findLastFlag(Collection<Serializable> vals) {
+    private Boolean findLastFlag(Collection<Message> vals) {
         Boolean flag = null;
 
-        for (Serializable ser : vals) {
-            if (ser != null) {
-                Map<String, Object> map = (Map<String, Object>)ser;
+        for (Message msg : vals) {
+            if (msg != null) {
+                Map<String, Object> map = ObjectData.unwrap(msg);
 
                 if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
                     flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
