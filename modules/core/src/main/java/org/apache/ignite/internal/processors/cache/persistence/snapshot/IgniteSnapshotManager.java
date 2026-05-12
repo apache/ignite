@@ -393,7 +393,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile boolean recovered;
 
     /** Last seen cluster snapshot operation. */
-    private volatile ClusterSnapshotFuture lastSeenSnpFut;
+    private volatile ClusterSnapshotFuture lastSeenSnpFut = new ClusterSnapshotFuture();
 
     /** Last seen incremental snapshot operation. */
     private volatile ClusterSnapshotFuture lastSeenIncSnpFut;
@@ -4172,6 +4172,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             rqId = null;
             name = "";
             startTime = 0;
+            endTime = 0;
             incIdx = null;
         }
 
@@ -4184,6 +4185,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             this.name = name;
             startTime = U.currentTimeMillis();
+            endTime = 0;
             rqId = null;
             incIdx = null;
         }

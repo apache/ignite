@@ -857,14 +857,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         snp(ignite).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
 
-        for(Ignite g : G.allGrids()) {
-            MetricRegistry mreg0 = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
+        for (Ignite g : G.allGrids()) {
+            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
 
-            LongMetric startTime = mreg0.findMetric("LastSnapshotStartTime");
-            LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
-            ObjectGauge<String> snpName = mreg0.findMetric("LastSnapshotName");
-            ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
-            ObjectGauge<List<String>> snpList = mreg0.findMetric("LocalSnapshotNames");
+            LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
+            LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+            ObjectGauge<String> snpName = mreg.findMetric("LastSnapshotName");
+            ObjectGauge<String> errMsg = mreg.findMetric("LastSnapshotErrorMessage");
+            ObjectGauge<List<String>> snpList = mreg.findMetric("LocalSnapshotNames");
 
             assertEquals("Snapshot start time must be undefined prior to snapshot operation started.",
                 0, startTime.value());
@@ -877,17 +877,17 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         long cutoffStartTime = U.currentTimeMillis();
 
-        IgniteFuture<Void> fut0 = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         U.await(deltaApply);
 
-        for(Ignite g : G.allGrids()) {
-            MetricRegistry mreg0 = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
+        for (Ignite g : G.allGrids()) {
+            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
 
-            LongMetric startTime = mreg0.findMetric("LastSnapshotStartTime");
-            LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
-            ObjectGauge<String> snpName = mreg0.findMetric("LastSnapshotName");
-            ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
+            LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
+            LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+            ObjectGauge<String> snpName = mreg.findMetric("LastSnapshotName");
+            ObjectGauge<String> errMsg = mreg.findMetric("LastSnapshotErrorMessage");
 
             assertTrue("Snapshot start time must be set prior to snapshot operation started " +
                     "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
@@ -902,7 +902,17 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         deltaBlock.countDown();
 
-        fut0.get();
+        fut.get();
+
+        for (Ignite g : G.allGrids()) {
+            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
+
+            LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
+            LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+
+            waitForCondition(() -> endTime.value() != 0L && startTime.value() != 0 && endTime.value() > startTime.value(),
+                getTestTimeout());
+        }
     }
 
     /** @throws Exception If fails. */
