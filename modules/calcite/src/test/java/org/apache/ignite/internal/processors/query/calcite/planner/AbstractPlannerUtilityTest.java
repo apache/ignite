@@ -121,7 +121,9 @@ public class AbstractPlannerUtilityTest extends AbstractPlannerTest {
 
             ProjectableFilterableTableScan scan = buildNode(cluster, filter);
 
-            Predicate<ProjectableFilterableTableScan> cond = satisfyCondition("AND(OR(=($t0, 0), =($t1, 0)), SEARCH($t2, Sarg[IS NOT NULL]))");
+            Predicate<ProjectableFilterableTableScan> cond =
+                satisfyCondition("AND(OR(=($t0, 0), =($t1, 0)), SEARCH($t2, Sarg[IS NOT NULL]))");
+
             boolean res = cond.test(scan);
 
             assertTrue(lastErrorMsg, res);
