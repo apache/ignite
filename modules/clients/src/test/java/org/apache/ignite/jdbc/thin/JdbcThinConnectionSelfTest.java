@@ -1617,6 +1617,43 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testSavepointsDisabledFeature() throws Exception {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp +
+            "&disabledFeatures=savepoints")) {
+            assertFalse(conn.getMetaData().supportsSavepoints());
+
+            conn.setAutoCommit(false);
+
+            assertThrows(log,
+                new Callable<>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported."
+            );
+
+            assertThrows(log,
+                new Callable<>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint("savepoint");
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported."
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert conn.getMetaData().supportsSavepoints();

@@ -378,6 +378,11 @@ public class JdbcThinConnection implements Connection {
         return isTxAwareQueriesSupported;
     }
 
+    /** @return {@code True} if savepoints supported by the server, {@code false} otherwise. */
+    boolean savepointsSupportedByServer() {
+        return defaultIo().isSavepointsSupported();
+    }
+
     /** @return {@code True} if certain isolation level supported by the server, {@code false} otherwise. */
     boolean isolationLevelSupported(int level) throws SQLException {
         if (level == TRANSACTION_NONE)
@@ -1087,6 +1092,9 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException If failed.
      */
     private void savepoint(byte op, String name) throws SQLException {
+        if (!savepointsSupportedByServer())
+            throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+
         if (!txEnabledForConnection()) {
             logTransactionWarning();
 
