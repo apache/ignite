@@ -174,7 +174,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Asserts that executeSql throws an exception.
+     * Asserts that query throws an exception.
      *
      * @param sql Query.
      * @param cls Exception class.
@@ -182,6 +182,18 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      */
     protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
         assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
+    }
+
+    /**
+     * Asserts that query throws an exception.
+     *
+     * @param ignite Ignite instance.
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    protected void assertThrows(IgniteEx ignite, String sql, Class<? extends Exception> cls, String msg, Object... args) {
+        assertThrowsAnyCause(log, () -> sql(ignite, sql, args), cls, msg);
     }
 
     /** */

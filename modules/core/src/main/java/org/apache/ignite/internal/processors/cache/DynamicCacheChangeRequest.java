@@ -19,96 +19,139 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start/stop request.
  */
-public class DynamicCacheChangeRequest implements Serializable {
+public class DynamicCacheChangeRequest implements MarshallableMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Start ID. */
-    private IgniteUuid deploymentId;
+    @Order(1)
+    IgniteUuid deploymentId;
 
     /** Stop cache name. */
     @GridToStringExclude
-    private String cacheName;
+    @Order(2)
+    String cacheName;
 
     /** Cache start configuration. */
     @GridToStringExclude
-    private CacheConfiguration startCfg;
+    private CacheConfiguration<?, ?> startCfg;
+
+    /** Bytes of {@link #startCfg}. */
+    @Order(3)
+    byte[] cfgBytes;
 
     /** Cache type. */
-    private CacheType cacheType;
+    @Order(4)
+    CacheType cacheType;
 
     /** Near node ID in case if near cache is being started. */
-    private UUID initiatingNodeId;
+    @Order(5)
+    UUID initiatingNodeId;
 
     /** Near cache configuration. */
     @GridToStringExclude
-    private NearCacheConfiguration nearCacheCfg;
+    private NearCacheConfiguration<?, ?> nearCacheCfg;
+
+    /** Bytes of {@link #nearCacheCfg}. */
+    @Order(6)
+    byte[] nearCfgBytes;
 
     /** Start only client cache, do not start data nodes. */
-    private boolean clientStartOnly;
+    @Order(7)
+    boolean clientStartOnly;
 
     /** Stop flag. */
-    private boolean stop;
+    @Order(8)
+    boolean stop;
 
     /** Restart flag. */
-    private boolean restart;
+    @Order(9)
+    boolean restart;
 
     /** Finalize update counters flag. */
-    private boolean finalizePartitionCounters;
+    @Order(10)
+    boolean finalizePartitionCounters;
 
     /** Restart operation id. */
-    private IgniteUuid restartId;
+    @Order(11)
+    IgniteUuid restartId;
 
     /** Cache active on start or not*/
-    private boolean disabledAfterStart;
+    @Order(12)
+    boolean disabledAfterStart;
 
     /** Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.*/
-    private boolean destroy;
+    @Order(13)
+    boolean destroy;
 
     /** Whether cache was created through SQL. */
-    private boolean sql;
+    @Order(14)
+    boolean sql;
 
     /** Fail if exists flag. */
-    private boolean failIfExists;
+    @Order(15)
+    boolean failIfExists;
 
     /** Template configuration flag. */
-    private boolean template;
+    @Order(16)
+    boolean template;
 
     /** Reset lost partitions flag. */
-    private boolean resetLostPartitions;
+    @Order(17)
+    boolean resetLostPartitions;
 
     /** Dynamic schema. */
-    private QuerySchema schema;
+    QuerySchema schema;
 
-    /** */
-    private transient boolean locallyConfigured;
+    /** Bytes of {@link #schema}. */
+    @Order(18)
+    byte[] schemaBytes;
+
+    /** Is transient. */
+    private boolean locallyConfigured;
 
     /** Encryption key. */
-    @Nullable private byte[] encKey;
+    @Order(19)
+    @Nullable byte[] encKey;
 
     /** Id of encryption key. */
-    @Nullable private Integer encKeyId;
+    @Order(20)
+    int encKeyId;
 
     /** Master key digest. */
-    @Nullable private byte[] masterKeyDigest;
+    @Order(21)
+    @Nullable byte[] masterKeyDigest;
 
     /** Cache configuration enrichment. */
-    private CacheConfigurationEnrichment cacheCfgEnrichment;
+    @Order(22)
+    CacheConfigurationEnrichment cacheCfgEnrichment;
+
+    /** Empty constructor for {@link CoreMessagesProvider}. */
+    public DynamicCacheChangeRequest() {
+        // No-op.
+    }
 
     /**
      * @param reqId Unique request ID.
@@ -121,6 +164,32 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        cfgBytes = U.marshal(marsh, startCfg);
+
+        if (nearCacheCfg != null)
+            nearCfgBytes = U.marshal(marsh, nearCacheCfg);
+
+        if (schema != null)
+            schemaBytes = U.marshal(marsh, schema);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        startCfg = U.unmarshal(marsh, cfgBytes, clsLdr);
+
+        if (nearCfgBytes != null)
+            nearCacheCfg = U.unmarshal(marsh, nearCfgBytes, clsLdr);
+
+        if (schemaBytes != null)
+            schema = U.unmarshal(marsh, schemaBytes, clsLdr);
+
+        cfgBytes = null;
+        nearCfgBytes = null;
+        schemaBytes = null;
     }
 
     /**
@@ -338,28 +407,28 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return Near cache configuration.
      */
-    public NearCacheConfiguration nearCacheConfiguration() {
+    public NearCacheConfiguration<?, ?> nearCacheConfiguration() {
         return nearCacheCfg;
     }
 
     /**
      * @param nearCacheCfg Near cache configuration.
      */
-    public void nearCacheConfiguration(NearCacheConfiguration nearCacheCfg) {
+    public void nearCacheConfiguration(NearCacheConfiguration<?, ?> nearCacheCfg) {
         this.nearCacheCfg = nearCacheCfg;
     }
 
     /**
      * @return Cache configuration.
      */
-    public CacheConfiguration startCacheConfiguration() {
+    public CacheConfiguration<?, ?> startCacheConfiguration() {
         return startCfg;
     }
 
     /**
      * @param startCfg Cache configuration.
      */
-    public void startCacheConfiguration(CacheConfiguration startCfg) {
+    public void startCacheConfiguration(CacheConfiguration<?, ?> startCfg) {
         this.startCfg = startCfg;
 
         if (startCfg.getNearConfiguration() != null)
@@ -485,14 +554,14 @@ public class DynamicCacheChangeRequest implements Serializable {
      *
      * @param encKeyId Encryption key id.
      */
-    public void encryptionKeyId(@Nullable Integer encKeyId) {
+    public void encryptionKeyId(int encKeyId) {
         this.encKeyId = encKeyId;
     }
 
     /**
      * @return Encryption key id.
      */
-    @Nullable public Integer encryptionKeyId() {
+    @Nullable public int encryptionKeyId() {
         return encKeyId;
     }
 

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.reflect.Constructor;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyReque
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
@@ -56,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMess
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -70,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposed
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -121,7 +125,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -144,6 +147,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
@@ -152,6 +156,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -228,15 +233,11 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
@@ -256,7 +257,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetri
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCollectionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
@@ -278,7 +278,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CoreMessagesProvider implements MessageFactoryProvider {
+public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProvider {
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = 11500;
 
@@ -291,15 +291,6 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     /** */
     public static final short MAX_MESSAGE_ID = 15_000;
 
-    /** Binary marshaller. */
-    private final Marshaller schemaAwareMarhaller;
-
-    /** Binary marshaller. */
-    private final Marshaller schemaLessMarshaller;
-
-    /** Resolved classloader. */
-    private final ClassLoader resolvedClsLdr;
-
     /** */
     private short msgIdx;
 
@@ -307,17 +298,30 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
     private @Nullable MessageFactory factory;
 
     /**
-     * @param schemaAwareMarhaller Schema-aware marshaller like {@link BinaryMarshaller}.
-     * @param schemaLessMarshaller Pure, schemaless marshaller like {@link JdkMarshaller}.
-     * @param resolvedClsLdr Resolved classloader.
+     * Default plugin-purposes constructor.
+     *
+     * @see #init(Marshaller, Marshaller, ClassLoader)
      */
-    public CoreMessagesProvider(Marshaller schemaAwareMarhaller, Marshaller schemaLessMarshaller, ClassLoader resolvedClsLdr) {
-        this.schemaAwareMarhaller = schemaAwareMarhaller;
-        this.schemaLessMarshaller = schemaLessMarshaller;
-        this.resolvedClsLdr = resolvedClsLdr;
+    public CoreMessagesProvider() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Constructor allowing not to call {@link #init(Marshaller, Marshaller, ClassLoader)}.
+     *
+     * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
+     * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
+     * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
+     */
+    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
+        init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
+    }
+
+    /**
+     * Registers all the messages into {@code factory}.
+     * The listing order is important here. If wish to remove a message, put 'msgIdx++' on its place. If wish to add,
+     * put it to end of a group.
+     */
     @Override public void registerAll(MessageFactory factory) {
         assert this.factory == null;
 
@@ -341,9 +345,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(CacheVersionedValue.class);
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
-
-        msgIdx = 5500;
-        withNoSchema(TcpDiscoveryCollectionMessage.class);
+        withNoSchema(WALPointer.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
@@ -385,6 +387,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(SnapshotPartitionsVerifyHandlerResponse.class);
         withNoSchema(SnapshotRestoreOperationResponse.class);
         withNoSchema(SnapshotMetadataResponse.class);
+        withNoSchema(SnapshotMetadata.class);
         withNoSchema(SnapshotCheckPartitionHashesResponse.class);
         withNoSchema(SnapshotCheckHandlersResponse.class);
         withNoSchema(SnapshotFilesRequestMessage.class);
@@ -395,7 +398,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         // [6300 - 6400]: Services messages. Most of them originally come from Discovery.
         msgIdx = 6300;
         withNoSchema(ServiceDeploymentProcessId.class);
-        withNoSchema(ServiceSingleNodeDeploymentResult.class);
+        withSchema(ServiceSingleNodeDeploymentResult.class);
         withNoSchema(ServiceClusterDeploymentResult.class);
         withNoSchema(ServiceDeploymentRequest.class);
         withNoSchema(ServiceUndeploymentRequest.class);
@@ -419,6 +422,7 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(WalStateFinishMessage.class);
         withNoSchema(WalStateProposeMessage.class);
         withNoSchema(MetadataUpdateAcceptedMessage.class);
+        withNoSchema(MetadataUpdateProposedMessage.class);
         withNoSchema(TxTimeoutOnPartitionMapExchangeChangeMessage.class);
         withNoSchema(UserAcceptedMessage.class);
         withNoSchema(UserProposedMessage.class);
@@ -434,46 +438,46 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
         withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
 
-        // [10000 - 10200]: Transaction and lock related messages. Most of the originally comes from Communication.
+        // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
-        withSchema(TxInfo.class);
+        withNoSchema(TxInfo.class);
         withSchema(TxEntriesInfo.class);
-        withSchema(TxLock.class);
+        withNoSchema(TxLock.class);
         withSchema(TxLocksRequest.class);
         withSchema(TxLocksResponse.class);
         withSchema(IgniteTxKey.class);
         withSchema(IgniteTxEntry.class);
         withSchema(TxEntryValueHolder.class);
-        withSchema(GridCacheTxRecoveryRequest.class);
-        withSchema(GridCacheTxRecoveryResponse.class);
-        withSchema(GridDistributedTxFinishRequest.class);
-        withSchema(GridDistributedTxFinishResponse.class);
+        withNoSchema(GridCacheTxRecoveryRequest.class);
+        withNoSchema(GridCacheTxRecoveryResponse.class);
+        withNoSchema(GridDistributedTxFinishRequest.class);
+        withNoSchema(GridDistributedTxFinishResponse.class);
         withSchema(GridDistributedTxPrepareRequest.class);
-        withSchema(GridDistributedTxPrepareResponse.class);
-        withSchema(GridDhtTxFinishRequest.class);
+        withNoSchema(GridDistributedTxPrepareResponse.class);
+        withNoSchema(GridDhtTxFinishRequest.class);
         withSchema(GridDhtTxFinishResponse.class);
         withSchema(GridDhtTxPrepareRequest.class);
         withSchema(GridDhtTxPrepareResponse.class);
-        withSchema(GridNearTxFinishRequest.class);
-        withSchema(GridNearTxFinishResponse.class);
-        withSchema(GridNearTxPrepareRequest.class);
+        withNoSchema(GridNearTxFinishRequest.class);
+        withNoSchema(GridNearTxFinishResponse.class);
+        withNoSchema(GridNearTxPrepareRequest.class);
         withSchema(GridNearTxPrepareResponse.class);
         withSchema(GridDhtLockRequest.class);
         withSchema(GridDhtLockResponse.class);
         withSchema(GridDhtUnlockRequest.class);
-        withSchema(GridNearLockRequest.class);
-        withSchema(GridNearLockResponse.class);
+        withNoSchema(GridNearLockRequest.class);
+        withNoSchema(GridNearLockResponse.class);
         withSchema(GridNearUnlockRequest.class);
         withSchema(GridDistributedLockRequest.class);
         withSchema(GridDistributedLockResponse.class);
-        withSchema(GridDhtTxOnePhaseCommitAckRequest.class);
+        withNoSchema(GridDhtTxOnePhaseCommitAckRequest.class);
         withSchema(TransactionAttributesAwareRequest.class);
 
         // [10300 - 10500]: Cache, DHT messages.
         msgIdx = 10300;
         withSchema(GridDhtForceKeysRequest.class);
         withSchema(GridDhtForceKeysResponse.class);
-        withSchema(GridDhtAtomicDeferredUpdateResponse.class);
+        withNoSchema(GridDhtAtomicDeferredUpdateResponse.class);
         withSchema(GridDhtAtomicUpdateRequest.class);
         withSchema(GridDhtAtomicUpdateResponse.class);
         withSchema(GridNearAtomicFullUpdateRequest.class);
@@ -482,24 +486,24 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withSchema(GridNearAtomicSingleUpdateRequest.class);
         withSchema(GridNearAtomicSingleUpdateInvokeRequest.class);
         withSchema(GridNearAtomicSingleUpdateFilterRequest.class);
-        withSchema(GridNearAtomicCheckUpdateRequest.class);
+        withNoSchema(GridNearAtomicCheckUpdateRequest.class);
         withSchema(NearCacheUpdates.class);
         withSchema(GridNearGetRequest.class);
         withSchema(GridNearGetResponse.class);
         withSchema(GridNearSingleGetRequest.class);
         withSchema(GridNearSingleGetResponse.class);
-        withSchema(GridDhtAtomicNearResponse.class);
+        withNoSchema(GridDhtAtomicNearResponse.class);
         withSchema(GridCacheTtlUpdateRequest.class);
         withSchema(GridCacheReturn.class);
         withSchema(GridCacheEntryInfo.class);
         withSchema(CacheInvokeDirectResult.class);
-        withSchema(GridCacheRawVersionedEntry.class);
+        withNoSchema(GridCacheRawVersionedEntry.class);
         withSchema(CacheEvictionEntry.class);
         withSchema(CacheEntryPredicateAdapter.class);
-        withSchema(GridContinuousMessage.class);
-        withSchema(ContinuousRoutineStartResultMessage.class);
+        withNoSchema(GridContinuousMessage.class);
+        withNoSchema(ContinuousRoutineStartResultMessage.class);
         withSchema(UpdateErrors.class);
-        withSchema(LatchAckMessage.class);
+        withNoSchema(LatchAckMessage.class);
         withSchema(AtomicApplicationAttributesAwareRequest.class);
         withNoSchema(StartRequestData.class);
         withNoSchema(StartRoutineDiscoveryMessage.class);
@@ -508,26 +512,25 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
 
         // [10600-10800]: Affinity & partition maps.
         msgIdx = 10600;
-        withSchema(GridDhtAffinityAssignmentRequest.class);
-        withSchema(GridDhtAffinityAssignmentResponse.class);
-        withSchema(CacheGroupAffinityMessage.class);
-        withSchema(ExchangeInfo.class);
-        withSchema(PartitionUpdateCountersMessage.class);
-        withSchema(CachePartitionPartialCountersMap.class);
-        withSchema(IgniteDhtDemandedPartitionsMap.class);
-        withSchema(CachePartitionFullCountersMap.class);
-        withSchema(GroupPartitionIdPair.class);
-        withSchema(IgniteDhtPartitionHistorySuppliersMap.class);
-        withSchema(GridPartitionStateMap.class);
-        withSchema(GridDhtPartitionMap.class);
-        withSchema(GridDhtPartitionFullMap.class);
+        withNoSchema(GridDhtAffinityAssignmentRequest.class);
+        withNoSchema(GridDhtAffinityAssignmentResponse.class);
+        withNoSchema(CacheGroupAffinityMessage.class);
+        withNoSchema(ExchangeInfo.class);
+        withNoSchema(PartitionUpdateCountersMessage.class);
+        withNoSchema(CachePartitionPartialCountersMap.class);
+        withNoSchema(IgniteDhtDemandedPartitionsMap.class);
+        withNoSchema(CachePartitionFullCountersMap.class);
+        withNoSchema(GroupPartitionIdPair.class);
+        withNoSchema(GridPartitionStateMap.class);
+        withNoSchema(GridDhtPartitionMap.class);
+        withNoSchema(GridDhtPartitionFullMap.class);
         withNoSchema(GridDhtPartitionExchangeId.class);
         withNoSchema(GridCheckpointRequest.class);
-        withSchema(GridDhtPartitionDemandMessage.class);
+        withNoSchema(GridDhtPartitionDemandMessage.class);
         withSchema(GridDhtPartitionSupplyMessage.class);
-        withSchema(GridDhtPartitionsFullMessage.class);
-        withSchema(GridDhtPartitionsSingleMessage.class);
-        withSchema(GridDhtPartitionsSingleRequest.class);
+        withNoSchema(GridDhtPartitionsFullMessage.class);
+        withNoSchema(GridDhtPartitionsSingleMessage.class);
+        withNoSchema(GridDhtPartitionsSingleRequest.class);
 
         // [10900-11100]: Query, schema and SQL related messages.
         msgIdx = 10900;
@@ -540,18 +543,19 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(SchemaProposeDiscoveryMessage.class);
         withNoSchema(SchemaFinishDiscoveryMessage.class);
         withNoSchema(QueryField.class);
-        withSchema(GridCacheSqlQuery.class);
+        withNoSchema(QueryIndexMessage.class);
+        withNoSchema(GridCacheSqlQuery.class);
         withSchema(GridCacheQueryRequest.class);
         withSchema(GridCacheQueryResponse.class);
-        withSchema(GridQueryCancelRequest.class);
-        withSchema(GridQueryFailResponse.class);
-        withSchema(GridQueryNextPageRequest.class);
-        withSchema(GridQueryNextPageResponse.class);
-        withSchema(GridQueryKillRequest.class);
-        withSchema(GridQueryKillResponse.class);
-        withSchema(IndexKeyDefinition.class);
-        withSchema(IndexKeyTypeSettings.class);
-        withSchema(IndexQueryResultMeta.class);
+        withNoSchema(GridQueryCancelRequest.class);
+        withNoSchema(GridQueryFailResponse.class);
+        withNoSchema(GridQueryNextPageRequest.class);
+        withNoSchema(GridQueryNextPageResponse.class);
+        withNoSchema(GridQueryKillRequest.class);
+        withNoSchema(GridQueryKillResponse.class);
+        withNoSchema(IndexKeyDefinition.class);
+        withNoSchema(IndexKeyTypeSettings.class);
+        withNoSchema(IndexQueryResultMeta.class);
         withNoSchema(StatisticsKeyMessage.class);
         withNoSchema(StatisticsDecimalMessage.class);
         withNoSchema(StatisticsObjectData.class);
@@ -633,64 +637,37 @@ public class CoreMessagesProvider implements MessageFactoryProvider {
         withNoSchema(ChangeCacheEncryptionRequest.class);
         withNoSchema(MasterKeyChangeRequest.class);
 
-        // [13000 - 13300]: Control, diagnostincs and other messages.
+        // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
         withNoSchema(GridChangeGlobalStateMessageResponse.class);
         withSchema(IgniteDiagnosticRequest.class);
-        withSchema(IgniteDiagnosticResponse.class);
+        withNoSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
+        withNoSchema(CacheConfigurationEnrichment.class);
+        withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
 
-    /** Registers message using {@link #schemaAwareMarhaller} and {@link U#gridClassLoader()}. */
-    private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarhaller, U.gridClassLoader());
-    }
-
-    /** Registers message using {@link #schemaLessMarshaller} and {@link U#gridClassLoader()}. */
+    /** Registers message using {@link #dfltMarsh} and {@link #dftlClsLdr}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        register(cls, schemaLessMarshaller, U.gridClassLoader());
+        register(cls, dfltMarsh, dftlClsLdr);
     }
 
-    /** Registers message using {@link #schemaLessMarshaller} and {@link #resolvedClsLdr}. */
+    /** Registers message using {@link #schemaAwareMarsh} and {@link #dftlClsLdr}. */
+    private <T extends Message> void withSchema(Class<T> cls) {
+        register(cls, schemaAwareMarsh, dftlClsLdr);
+    }
+
+    /** Registers message using {@link #dfltMarsh} and {@link #resolvedClsLdr}. */
     private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
-        register(cls, schemaLessMarshaller, resolvedClsLdr);
+        register(cls, dfltMarsh, resolvedClsLdr);
     }
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
     private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLrd) {
-        Constructor<T> ctor;
-        MessageSerializer<T> serializer;
-
-        try {
-            ctor = cls.getConstructor();
-
-            boolean marshallable = MarshallableMessage.class.isAssignableFrom(cls);
-
-            Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
-
-            serializer = marshallable
-                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLrd)
-                : (MessageSerializer<T>)serCls.getConstructor().newInstance();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
-        }
-
-        factory.register(
-            msgIdx++,
-            () -> {
-                try {
-                    return ctor.newInstance();
-                }
-                catch (Exception e) {
-                    throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
-                }
-            },
-            serializer
-        );
+        register(factory, cls, msgIdx++, marsh, clsLrd);
     }
 }

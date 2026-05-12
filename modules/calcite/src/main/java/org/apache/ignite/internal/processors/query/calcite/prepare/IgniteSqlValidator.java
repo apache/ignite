@@ -30,6 +30,7 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.JoinConditionType;
+import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
@@ -325,6 +326,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateAggregateFunction(aggCall, (SqlAggFunction)aggCall.getOperator());
 
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateJoin(SqlJoin join, SqlValidatorScope scope) {
+        if (join.getJoinType() == JoinType.ASOF || join.getJoinType() == JoinType.LEFT_ASOF)
+            throw newValidationError(join, IgniteResource.INSTANCE.unsupportedJoinType(join.getJoinType().name().replace('_', ' ')));
+
+        super.validateJoin(join, scope);
     }
 
     /** {@inheritDoc} */

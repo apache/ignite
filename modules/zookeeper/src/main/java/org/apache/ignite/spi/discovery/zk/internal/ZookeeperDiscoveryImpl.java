@@ -269,7 +269,7 @@ public class ZookeeperDiscoveryImpl {
 
         this.stats = stats;
 
-        msgParser = new DiscoveryMessageParser(jdkMarshaller, msgFactory);
+        msgParser = new DiscoveryMessageParser(msgFactory);
     }
 
     /**

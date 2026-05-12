@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,7 +76,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(3)
     @Compress
     @GridToStringInclude
-    IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
+    Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
     @Order(4)
@@ -143,7 +143,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        @Nullable Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
         @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload) {
         super(id, lastVer);
 
@@ -326,7 +326,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @return Partitions history suppliers.
      */
-    public IgniteDhtPartitionHistorySuppliersMap partitionHistorySuppliers() {
+    public Map<UUID, Map<GroupPartitionIdPair, Long>> partitionHistorySuppliers() {
         return partHistSuppliers;
     }
 
@@ -443,9 +443,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (parts == null)
             parts = new HashMap<>();
-
-        if (partHistSuppliers == null)
-            partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
         errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }

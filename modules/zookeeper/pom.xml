@@ -41,6 +41,12 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-codegen</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
             <version>${zookeeper.version}</version>

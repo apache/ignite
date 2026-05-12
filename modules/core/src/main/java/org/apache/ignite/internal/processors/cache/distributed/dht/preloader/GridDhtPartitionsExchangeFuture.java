@@ -99,7 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -324,7 +324,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     @GridToStringExclude
-    private final IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
+    private Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers = new HashMap<>();
 
     /** Set of nodes that cannot be used for wal rebalancing due to some reason. */
     private final Set<UUID> exclusionsFromHistoricalRebalance = ConcurrentHashMap.newKeySet();
@@ -397,9 +397,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** This future finished with 'cluster is fully rebalanced' state. */
     private volatile boolean rebalanced;
-
-    /** Some of owned by affinity partitions were changed state to moving on this exchange. */
-    private volatile boolean affinityReassign;
 
     /** Tracing span. */
     private Span span = NoopSpan.INSTANCE;
@@ -587,7 +584,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return List of IDs of history supplier nodes or empty list if these doesn't exist.
      */
     public List<UUID> partitionHistorySupplier(int grpId, int partId, long cntrSince) {
-        List<UUID> histSuppliers = partHistSuppliers.getSupplier(grpId, partId, cntrSince);
+        List<UUID> histSuppliers;
+
+        synchronized (partHistSuppliers) {
+            if (partHistSuppliers.isEmpty())
+                return Collections.emptyList();
+
+            histSuppliers = new ArrayList<>();
+
+            for (Map.Entry<UUID, Map<GroupPartitionIdPair, Long>> e : partHistSuppliers.entrySet()) {
+                Long historyCounter = e.getValue().get(new GroupPartitionIdPair(grpId, partId));
+
+                if (historyCounter != null && historyCounter <= cntrSince)
+                    histSuppliers.add(e.getKey());
+            }
+        }
 
         histSuppliers.removeIf(exclusionsFromHistoricalRebalance::contains);
 
@@ -974,7 +985,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage)
+                else if (msg instanceof SnapshotStartDiscoveryMessage)
                     exchange = onCustomMessageNoAffinityChange();
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange();
@@ -2436,7 +2447,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(this, err);
 
-            Map<GroupPartitionIdPair, Long> locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            Map<GroupPartitionIdPair, Long> locReserved;
+
+            synchronized (partHistSuppliers) {
+                locReserved = partHistSuppliers.get(cctx.localNodeId());
+            }
 
             if (locReserved != null) {
                 boolean success = cctx.database().reserveHistoryForPreloading(locReserved);
@@ -3544,7 +3559,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 break;
 
             if (preferWalRebalance || maxOwnerCntr - ceilingMinReserved < ownerSize) {
-                partHistSuppliers.put(ownerId, grpId, p, ceilingMinReserved);
+                synchronized (partHistSuppliers) {
+                    Map<GroupPartitionIdPair, Long> nodeMap = partHistSuppliers.computeIfAbsent(ownerId, k -> new HashMap<>());
+
+                    nodeMap.put(new GroupPartitionIdPair(grpId, p), ceilingMinReserved);
+                }
 
                 haveHistory.add(p);
 
@@ -3653,7 +3672,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             assert crd.isLocal();
 
-            assert partHistSuppliers.isEmpty() : partHistSuppliers;
+            synchronized (partHistSuppliers) {
+                assert partHistSuppliers.isEmpty() : partHistSuppliers;
+            }
 
             if (!exchCtx.mergeExchanges() && !crd.equals(events().discoveryCache().serverNodes().get(0))) {
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
@@ -3799,12 +3820,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (exchActions.finalizePartitionCounters())
                             finalizePartitionCounters();
                     }
-                }
-                else if (discoveryCustomMsg instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMsg).needAssignPartitions()) {
-                    markAffinityReassign();
-
-                    assignPartitionsStates(null);
                 }
             }
             else if (exchCtx.events().hasServerJoin())
@@ -4609,14 +4624,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (stateChangeExchange() && !F.isEmpty(msg.getErrorsMap()))
                 cctx.kernalContext().state().onStateChangeError(msg.getErrorsMap(), exchActions.stateChangeRequest());
 
-            if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                DiscoveryCustomMessage discoveryCustomMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
-
-                if (discoveryCustomMsg instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMsg).needAssignPartitions())
-                    markAffinityReassign();
-            }
-
             onDone(resTopVer, null);
         }
         catch (IgniteCheckedException e) {
@@ -4633,10 +4640,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void updatePartitionFullMap(AffinityTopologyVersion resTopVer, GridDhtPartitionsFullMessage msg) {
         cctx.versions().onExchange(msg.lastVersion().order());
 
-        assert partHistSuppliers.isEmpty();
+        synchronized (partHistSuppliers) {
+            assert partHistSuppliers.isEmpty();
 
-        partHistSuppliers.putAll(msg.partitionHistorySuppliers() != null ? msg.partitionHistorySuppliers() :
-            IgniteDhtPartitionHistorySuppliersMap.empty());
+            if (msg.partitionHistorySuppliers() != null)
+                partHistSuppliers = msg.partitionHistorySuppliers();
+        }
 
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
@@ -5235,20 +5244,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert wasRebalanced();
 
         markRebalanced();
-    }
-
-    /**
-     * Marks this future as affinity reassign.
-     */
-    public void markAffinityReassign() {
-        affinityReassign = true;
-    }
-
-    /**
-     * @return True if some owned partition was reassigned, false otherwise.
-     */
-    public boolean affinityReassign() {
-        return affinityReassign;
     }
 
     /**

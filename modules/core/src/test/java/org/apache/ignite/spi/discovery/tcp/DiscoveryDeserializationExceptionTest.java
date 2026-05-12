@@ -1,0 +1,145 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.spi.discovery.tcp;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+import static org.apache.ignite.internal.managers.communication.UnknownMessageException.INVALID_TYPE_MSG;
+
+/** */
+public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTest {
+    /** */
+    private static final int MSG_DIRECT_TYPE = -32764;
+
+    /** */
+    private static final String ERR_MSG = String.format(INVALID_TYPE_MSG, MSG_DIRECT_TYPE);
+
+    /** */
+    private ListeningTestLogger lsnrLog;
+
+    /** */
+    private volatile int failNodeIdx;
+
+    /** */
+    private volatile CountDownLatch failureHandlerLatch;
+
+    /** */
+    private final LogListener errLsnr = LogListener.matches(ERR_MSG).build();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (getTestIgniteInstanceName(failNodeIdx).equals(igniteInstanceName)) {
+            cfg.setGridLogger(lsnrLog).setFailureHandler(new AbstractFailureHandler() {
+                    @Override protected boolean handle(Ignite ignite, FailureContext fctx) {
+                        assertEquals(FailureType.SYSTEM_WORKER_TERMINATION, fctx.type());
+                        assertEquals(getTestIgniteInstanceName(failNodeIdx), ignite.configuration().getIgniteInstanceName());
+
+                        assertNotNull(fctx.error());
+                        assertEquals(ERR_MSG, fctx.error().getMessage());
+
+                        failureHandlerLatch.countDown();
+
+                        return true;
+                    }
+                });
+        }
+        else
+            cfg.setPluginProviders(new NotRegisteredMessageProvider());
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
+        lsnrLog = new ListeningTestLogger(log);
+
+        lsnrLog.registerListener(errLsnr);
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "fasle")
+    public void testReadExceptionLogged() throws Exception {
+        failureHandlerLatch = new CountDownLatch(1);
+        failNodeIdx = 1;
+
+        startGrids(2);
+
+        // grid0 knows about NotRegisteredMessage.
+        // Expect grid1 fail to read it.
+        grid(0).context().discovery().sendCustomEvent(new NotRegisteredMessage(""));
+
+        assertTrue("Failure handler must be invoked", failureHandlerLatch.await(1, TimeUnit.MINUTES));
+        assertTrue("Error must be logged", errLsnr.check(30_000));
+        assertTrue(grid(failNodeIdx).context().invalid());
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "fasle")
+    public void testReadExceptionLoggedOnClient() throws Exception {
+        failureHandlerLatch = new CountDownLatch(1);
+        failNodeIdx = 3;
+
+        startGrids(2);
+
+        IgniteEx cli = startClientGrid(failNodeIdx);
+
+        // grid0 knows about NotRegisteredMessage.
+        // Expect client node fail to read it.
+        grid(0).context().discovery().sendCustomEvent(new NotRegisteredMessage(""));
+
+        assertTrue("Error must be logged", errLsnr.check(30_000));
+    }
+
+    /** */
+    public static class NotRegisteredMessageProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return getClass().getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactoryProvider.class, (factory) ->
+                factory.register(MSG_DIRECT_TYPE, NotRegisteredMessage::new, new NotRegisteredMessageSerializer())
+            );
+        }
+    }
+}

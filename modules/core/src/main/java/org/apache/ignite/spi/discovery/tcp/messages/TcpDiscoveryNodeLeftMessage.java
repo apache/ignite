@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryNodeLeftMessage() {
         // No-op.
@@ -44,7 +41,6 @@ public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMe
     public TcpDiscoveryNodeLeftMessage(UUID creatorNodeId) {
         super(creatorNodeId);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

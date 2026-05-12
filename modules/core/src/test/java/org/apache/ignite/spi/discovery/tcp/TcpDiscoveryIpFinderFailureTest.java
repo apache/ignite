@@ -85,6 +85,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
     public void testClientNodeStaticIpFinderFailure() throws Exception {
         dynamicIpFinder.setAddresses(Collections.singleton("127.0.0.1:47500"));
         dynamicIpFinder.setShared(false);
+
         runClientNodeIpFinderFailureTest(TcpDiscoverySpi.DFLT_RECONNECT_DELAY);
     }
 
@@ -116,9 +117,11 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfgSrv = getConfigurationDynamicIpFinder("Server", false);
 
+        long netTimeout = 4000;
+
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
         discoverySpi.setJoinTimeout(10000);
-        discoverySpi.setNetworkTimeout(4000);
+        discoverySpi.setNetworkTimeout(netTimeout);
         discoverySpi.setReconnectDelay((int)reconnectDelay);
         discoverySpi.setIpFinder(dynamicIpFinder);
 
@@ -143,7 +146,8 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
             return true;
         }, EVT_CLIENT_NODE_DISCONNECTED);
 
-        assertTrue("Failed to wait for client node disconnected.", latch.await(6, SECONDS));
+        assertTrue("Failed to wait for client node disconnected.",
+            latch.await(2 * Math.max(reconnectDelay, netTimeout) / 1000, SECONDS));
     }
 
     /**

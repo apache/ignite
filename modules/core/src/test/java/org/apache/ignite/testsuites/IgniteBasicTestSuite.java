@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationT
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.LogEvictionResultsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
@@ -151,7 +152,8 @@ import org.junit.runners.Suite;
     ErrorMessageSelfTest.class,
     DefaultEnumMapperTest.class,
     IgniteDataTransferObjectProcessorTest.class,
-    CompressedMessageTest.class
+    CompressedMessageTest.class,
+    LogEvictionResultsTest.class,
 })
 public class IgniteBasicTestSuite {
 }

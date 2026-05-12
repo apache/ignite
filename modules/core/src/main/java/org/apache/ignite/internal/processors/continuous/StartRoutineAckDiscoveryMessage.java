@@ -33,9 +33,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     Map<UUID, ErrorMessage> errs;
 

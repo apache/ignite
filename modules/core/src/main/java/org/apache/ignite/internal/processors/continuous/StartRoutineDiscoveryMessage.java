@@ -31,9 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     StartRequestData startReqData;
 

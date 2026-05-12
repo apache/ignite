@@ -631,6 +631,28 @@ SqlNode SqlRollbackTransaction():
     }
 }
 
+SqlNode SqlSavepoint():
+{
+    final Span s;
+    final SqlIdentifier name;
+}
+{
+    <SAVEPOINT> { s = span(); } name = SimpleIdentifier() {
+        return new IgniteSqlSavepoint(s.end(this), name);
+    }
+}
+
+SqlNode SqlRollbackToSavepoint():
+{
+    final Span s;
+    final SqlIdentifier name;
+}
+{
+    <ROLLBACK> { s = span(); } <TO> <SAVEPOINT> name = SimpleIdentifier() {
+        return new IgniteSqlRollbackToSavepoint(s.end(this), name);
+    }
+}
+
 IgniteSqlStatisticsTable StatisticsTable():
 {
     final Span s = Span.of();

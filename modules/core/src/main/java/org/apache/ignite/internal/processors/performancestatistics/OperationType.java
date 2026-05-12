@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+
 /**
  * Performance statistics operation type.
  */
@@ -295,7 +297,7 @@ public enum OperationType {
 
     /** @return Version record size. */
     public static int versionRecordSize() {
-        return Short.BYTES;
+        return Short.BYTES + 1 + Integer.BYTES + VER_STR.length();
     }
 
     /** @return Pages write throttle record size. */

@@ -21,16 +21,12 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message sent by coordinator when some operation handling is over. All receiving
  * nodes should discard this and all preceding messages in local buffers.
  */
-public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
     /** ID of the message to discard (this and all preceding). */
     @Order(0)
     IgniteUuid msgId;
@@ -80,5 +76,4 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
     @Override public String toString() {
         return S.toString(TcpDiscoveryDiscardMessage.class, this, "super", super.toString());
     }
-
 }

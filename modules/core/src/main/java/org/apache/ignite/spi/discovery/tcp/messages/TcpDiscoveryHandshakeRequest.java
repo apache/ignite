@@ -20,17 +20,13 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake request.
  */
-public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)
     @Nullable UUID prevNodeId;
@@ -82,7 +78,6 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
     public void dcId(String dcId) {
         this.dcId = dcId;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

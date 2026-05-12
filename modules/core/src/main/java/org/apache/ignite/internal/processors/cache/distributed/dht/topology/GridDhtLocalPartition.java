@@ -132,7 +132,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Rent future. */
     @GridToStringExclude
-    private final GridFutureAdapter<?> rent;
+    private final RentFuture rent;
 
     /** */
     @GridToStringExclude
@@ -212,11 +212,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             cacheMaps = null;
         }
 
-        rent = new GridFutureAdapter<Object>() {
-            @Override public String toString() {
-                return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ']';
-            }
-        };
+        rent = new RentFuture();
 
         int delQueueSize = grp.systemCache() ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / grp.affinity().partitions(), 20);
@@ -694,7 +690,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Future to signal that this node is no longer an owner or backup or null if corresponding partition
      * state is {@code RENTING} or {@code EVICTED}.
      */
-    public IgniteInternalFuture<?> rent() {
+    public RentFuture rent() {
         long state0 = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state0);
@@ -1408,5 +1404,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         buf.a(']');
+    }
+
+    /** */
+    public class RentFuture extends GridFutureAdapter<Void> {
+        /** */
+        public int partitionId() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RentFuture.class, this);
+        }
     }
 }

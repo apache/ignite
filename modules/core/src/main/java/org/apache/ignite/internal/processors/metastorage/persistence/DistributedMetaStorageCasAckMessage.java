@@ -25,9 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /** */
 public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAckMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     boolean updated;
 
@@ -47,7 +44,6 @@ public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageU
     public boolean updated() {
         return updated;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

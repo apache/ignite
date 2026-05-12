@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
-/**
- *
- */
-public class QueryBatchMessage implements CalciteMarshalableMessage, ExecutionContextAware {
+/** */
+public class QueryBatchMessage implements ExecutionContextAware {
     /** */
     @Order(0)
     UUID qryId;
@@ -49,14 +45,12 @@ public class QueryBatchMessage implements CalciteMarshalableMessage, ExecutionCo
     boolean last;
 
     /** */
-    private List<Object> rows;
-
-    /** */
     @Order(5)
-    List<ValueMessage> mRows;
+    List<GenericValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {
+        // No-op.
     }
 
     /** */
@@ -66,7 +60,8 @@ public class QueryBatchMessage implements CalciteMarshalableMessage, ExecutionCo
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.last = last;
-        this.rows = rows;
+
+        mRows = rows.stream().map(o -> o == null ? null : new GenericValueMessage(o)).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -104,45 +99,6 @@ public class QueryBatchMessage implements CalciteMarshalableMessage, ExecutionCo
      * @return Rows.
      */
     public List<Object> rows() {
-        return rows;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (mRows != null || rows == null)
-            return;
-
-        mRows = new ArrayList<>(rows.size());
-
-        for (Object row : rows) {
-            ValueMessage mRow = CalciteMessageFactory.asMessage(row);
-
-            assert mRow != null;
-
-            mRow.prepareMarshal(ctx);
-
-            mRows.add(mRow);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (rows != null || mRows == null)
-            return;
-
-        rows = new ArrayList<>(mRows.size());
-
-        for (ValueMessage mRow : mRows) {
-            assert mRow != null;
-
-            mRow.prepareUnmarshal(ctx);
-
-            rows.add(mRow.value());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_BATCH_MESSAGE;
+        return mRows.stream().map(GenericValueMessage::value).collect(Collectors.toList());
     }
 }

@@ -1418,12 +1418,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 try {
                     Object topic = TOPIC_JOB_SIBLINGS.topic(req.sessionId(), req.topicId());
 
-                    boolean loc = ctx.localNodeId().equals(nodeId);
-
                     GridJobSiblingsResponse resp = new GridJobSiblingsResponse(siblings);
-
-                    if (!loc)
-                        resp.marshalSiblings(marsh);
 
                     ctx.io().sendToCustomTopic(nodeId, topic, resp, SYSTEM_POOL);
                 }

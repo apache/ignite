@@ -178,7 +178,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         GridDhtPartitionTopology top = grp.topology();
 
         if (!grp.rebalanceEnabled())
-            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion(), false);
+            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
 
         int partitions = grp.affinity().partitions();
 
@@ -193,8 +193,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 ", grp=" + grp.name() +
                 ", topVer=" + top.readyTopologyVersion() + ']';
 
-        GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer,
-            exchFut != null && exchFut.affinityReassign());
+        GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 

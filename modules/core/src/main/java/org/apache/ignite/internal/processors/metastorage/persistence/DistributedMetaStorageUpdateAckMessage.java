@@ -23,20 +23,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    @Order(0)
-    IgniteUuid id;
-
+public class DistributedMetaStorageUpdateAckMessage extends DiscoveryCustomMessage {
     /** Request ID. */
-    @Order(1)
+    @Order(0)
     UUID reqId;
 
     /** Empty constructor of {@link CoreMessagesProvider}. */
@@ -46,13 +38,9 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
 
     /** */
     public DistributedMetaStorageUpdateAckMessage(UUID reqId) {
-        id = IgniteUuid.randomUuid();
-        this.reqId = reqId;
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        this.reqId = reqId;
     }
 
     /** */
@@ -64,7 +52,6 @@ public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMe
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return null;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

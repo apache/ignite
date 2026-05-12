@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -59,9 +58,6 @@ class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message))
-            return U.marshal(spi.marshaller(), msg);
-
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             serializeMessage((Message)msg, out);
 
