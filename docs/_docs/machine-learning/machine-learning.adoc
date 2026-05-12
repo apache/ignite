@@ -46,7 +46,7 @@ Identifying to which category a new observation belongs, on the basis of a train
 
 *Applicability:* spam detection, image recognition, credit scoring, disease identification.
 
-*Algorithms:* link:machine-learning/binary-classification/logistic-regression[Logistic Regression], link:machine-learning/binary-classification/linear-svm[Linear SVM (Support Vector Machine)], link:machine-learning/binary-classification/knn-classification[k-NN Classification], link:machine-learning/binary-classification/naive-bayes[Naive Bayes], link:machine-learning/binary-classification/decision-trees[Decision Trees], link:machine-learning/binary-classification/random-forest[Random Forest], link:machine-learning/binary-classification/multilayer-perceptron[Multilayer perceptron], link:machine-learning/ensemble-methods/gradient-boosting[Gradient Boosting], link:machine-learning/binary-classification/ann[ANN (Approximate Nearest Neighbor)].
+*Algorithms:* link:machine-learning/binary-classification/logistic-regression[Logistic Regression], link:machine-learning/binary-classification/linear-svm[Linear SVM (Support Vector Machine)], link:machine-learning/binary-classification/knn-classification[k-NN Classification], link:machine-learning/binary-classification/naive-bayes[Naive Bayes], link:machine-learning/binary-classification/decision-trees[Decision Trees], link:machine-learning/ensemble-methods/random-forest[Random Forest], link:machine-learning/binary-classification/multilayer-perceptron[Multilayer perceptron], link:machine-learning/ensemble-methods/gradient-boosting[Gradient Boosting], link:machine-learning/binary-classification/ann[ANN (Approximate Nearest Neighbor)].
 
 
 === Regression

@@ -274,7 +274,7 @@ It is reused when new entries need to be added to the storage on subsequent writ
 The allocated size is available at the level of data storage, data region, and cache group metrics.
 The metric is called `TotalAllocatedSize`.
 
-You can also get an estimate of the actual size of data by multiplying the number of link:memory-centric-storage#data-pages[data pages] in use by the fill factor. The fill factor is the ratio of the size of data in a page to the page size, averaged over all pages. The number of pages in use and the fill factor are available at the level of data <<Data Region Size,region metrics>>.
+You can also get an estimate of the actual size of data by multiplying the number of link:memory-architecture#data-pages[data pages] in use by the fill factor. The fill factor is the ratio of the size of data in a page to the page size, averaged over all pages. The number of pages in use and the fill factor are available at the level of data <<Data Region Size,region metrics>>.
 
 Add up the estimated size of all data regions to get the estimated total amount of data on the node.
 
