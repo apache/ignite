@@ -18,13 +18,16 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * File WAL pointer.
  */
-public class WALPointer implements Serializable, Comparable<WALPointer> {
+public class WALPointer implements Message, Comparable<WALPointer>, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -32,13 +35,21 @@ public class WALPointer implements Serializable, Comparable<WALPointer> {
     public static final int POINTER_SIZE = 16;
 
     /** Absolute WAL segment file index (incrementing counter) */
-    private final long idx;
+    @Order(0)
+    long idx;
 
     /** */
-    private final int fileOff;
+    @Order(1)
+    int fileOff;
 
     /** Written record length */
-    private int len;
+    @Order(2)
+    int len;
+
+    /** Empty constructor for a {@link MessageFactory}. */
+    public WALPointer() {
+        // No-op.
+    }
 
     /**
      * @param idx Absolute WAL segment file index (incremental counter).

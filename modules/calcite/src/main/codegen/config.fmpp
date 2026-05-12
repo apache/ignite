@@ -445,6 +445,8 @@ data: {
       "SqlKillTransaction()",
       "SqlKillComputeTask()",
       "SqlKillQuery()",
+      "SqlSavepoint()",
+      "SqlRollbackToSavepoint()",
       "SqlCommitTransaction()",
       "SqlRollbackTransaction()"
       "SqlStatisticsAnalyze()"

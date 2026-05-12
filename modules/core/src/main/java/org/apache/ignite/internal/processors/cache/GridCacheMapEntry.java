@@ -2308,9 +2308,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        @Nullable IgniteCacheExpiryPolicy expiryPlc
+    ) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert heap || offheap;
+        assert cctx.shared().database().checkpointLockIsHeldByThread();
 
         boolean rmv = false;
 
@@ -2377,7 +2378,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
-        return peek(true, false, topVer, null);
+        assert cctx.shared().database().checkpointLockIsHeldByThread() || !lockedByCurrentThread() :
+            "Lock order violation, checkpoint lock must be acquired before entry lock";
+
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            return peek(true, false, topVer, null);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -3790,6 +3801,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     public final boolean visitable(CacheEntryPredicate[] filter) {
         boolean rmv = false;
 
+        assert cctx.shared().database().checkpointLockIsHeldByThread() || !lockedByCurrentThread() :
+            "Lock order violation, checkpoint lock must be acquired before entry lock";
+
+        cctx.shared().database().checkpointReadLock();
+
         try {
             lockEntry();
 
@@ -3826,6 +3842,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return false;
         }
         finally {
+            cctx.shared().database().checkpointReadUnlock();
+
             if (rmv) {
                 onMarkedObsolete();
 

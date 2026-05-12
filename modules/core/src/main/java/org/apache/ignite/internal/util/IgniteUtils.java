@@ -351,7 +351,7 @@ public abstract class IgniteUtils extends CommonUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x0049474E);
+    public static final byte[] IGNITE_HEADER = intToBytes(0x0149474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -6687,22 +6687,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static boolean isToStringMethod(Method mtd) {
         return toStringMtd.equals(mtd);
-    }
-
-    /**
-     * @param threadId Thread ID.
-     * @return Thread name if found.
-     */
-    public static String threadName(long threadId) {
-        Thread[] threads = new Thread[Thread.activeCount()];
-
-        int cnt = Thread.enumerate(threads);
-
-        for (int i = 0; i < cnt; i++)
-            if (threads[i].getId() == threadId)
-                return threads[i].getName();
-
-        return "<failed to find active thread " + threadId + '>';
     }
 
     /**

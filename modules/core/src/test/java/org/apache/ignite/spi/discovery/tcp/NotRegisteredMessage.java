@@ -13,26 +13,35 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
-/**
- * Initial snapshot discovery message with possibility to trigger exchange.
- */
-public interface SnapshotDiscoveryMessage extends DiscoveryCustomMessage {
-    /**
-     * Is exchange needed after receiving this message.
-     *
-     * @return True if exchange is needed, false in other case.
-     */
-    public boolean needExchange();
+/** */
+public class NotRegisteredMessage extends DiscoveryCustomMessage {
+    /** */
+    @Order(0)
+    String str;
 
-    /**
-     *
-     */
-    public boolean needAssignPartitions();
+    /** */
+    public NotRegisteredMessage() {
+        // No-op.
+    }
+
+    /** */
+    public NotRegisteredMessage(String str) {
+        super(IgniteUuid.randomUuid());
+
+        this.str = str;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoverySpiCustomMessage ackMessage() {
+        return null;
+    }
 }

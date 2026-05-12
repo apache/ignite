@@ -82,6 +82,13 @@ public class MessageProcessor extends AbstractProcessor {
         "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
     };
 
+    /** Messages with no fields. A serializer generation intentionally skipped. */
+    static final String[] SKIP_MESSAGES = {
+        "org.apache.ignite.internal.processors.odbc.ClientMessage",
+        "org.apache.ignite.internal.managers.communication.CompressedMessage",
+        "org.apache.ignite.loadtests.communication.GridTestMessage"
+    };
+
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
@@ -90,11 +97,9 @@ public class MessageProcessor extends AbstractProcessor {
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
-        List<TypeMirror> emptyMsgs = Arrays.stream(EMPTY_MESSAGES)
-            .map(cls -> processingEnv.getElementUtils().getTypeElement(cls))
-            .filter(Objects::nonNull)
-            .map(Element::asType)
-            .collect(Collectors.toList());
+
+        List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
+        List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -104,7 +109,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             TypeElement clazz = (TypeElement)el;
 
-            if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), msgType))
+            if (!isAssignable(msgType, clazz))
                 continue;
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
@@ -112,8 +117,18 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (!fields.isEmpty() || emptyMsgs.stream().anyMatch(t -> processingEnv.getTypeUtils().isAssignable(clazz.asType(), t)))
-                msgFields.put(clazz, fields);
+            if (fields.isEmpty() && emptyMsgs.stream().noneMatch(t -> isAssignable(t, clazz))) {
+                if (skipMsgs.stream().anyMatch(t -> isAssignable(t, clazz)))
+                    continue;
+
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Message class doesn't have any ordered fields. " +
+                        "Annotate fields with @Order or add to known empty classes MessageProcessor#EMPTY_MESSAGES",
+                    clazz);
+            }
+
+            msgFields.put(clazz, fields);
         }
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
@@ -238,5 +253,19 @@ public class MessageProcessor extends AbstractProcessor {
             return false;
 
         return processingEnv.getTypeUtils().asElement(elType).getKind() == ElementKind.ENUM;
+    }
+
+    /** Map class names to {@link TypeMirror} objects. */
+    private List<TypeMirror> typesToTypeMirrors(String[] types) {
+        return Arrays.stream(types)
+            .map(cls -> processingEnv.getElementUtils().getTypeElement(cls))
+            .filter(Objects::nonNull)
+            .map(Element::asType)
+            .collect(Collectors.toList());
+    }
+
+    /** */
+    private boolean isAssignable(TypeMirror t, TypeElement clazz) {
+        return processingEnv.getTypeUtils().isAssignable(clazz.asType(), t);
     }
 }

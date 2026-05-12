@@ -90,14 +90,14 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
 
         checkChildSpan(SQL_QRY_EXECUTE, iterSpan);
 
-        int fetchedRows = findChildSpans(SQL_PAGE_FETCH, rootSpan).stream()
+        int fetchedRows = findChildSpanIds(SQL_PAGE_FETCH, rootSpan).stream()
             .mapToInt(span -> Integer.parseInt(getAttribute(span, SQL_PAGE_ROWS)))
             .sum();
 
         assertEquals(TEST_TABLE_POPULATION, fetchedRows);
 
         checkChildSpan(SQL_ITER_CLOSE, rootSpan);
-        assertFalse(findChildSpans(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
+        assertFalse(findChildSpanIds(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
     }
 
     /**

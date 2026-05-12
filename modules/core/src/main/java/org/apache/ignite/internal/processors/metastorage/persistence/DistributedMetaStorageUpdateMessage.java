@@ -31,26 +31,22 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
-    /** */
-    @Order(0)
-    IgniteUuid id;
-
+public class DistributedMetaStorageUpdateMessage extends DiscoveryCustomMessage {
     /** Request ID. */
     @GridToStringInclude
-    @Order(1)
+    @Order(0)
     UUID reqId;
 
     /** */
     @GridToStringInclude
-    @Order(2)
+    @Order(1)
     String key;
 
     /** */
     private @Nullable Serializable val;
 
     /** */
-    @Order(3)
+    @Order(2)
     byte[] valBytes;
 
     /** Empty constructor for {@link MessageFactory}. */
@@ -60,16 +56,11 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
 
     /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, @Nullable Serializable val) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
 
         this.reqId = reqId;
         this.key = key;
         this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** */

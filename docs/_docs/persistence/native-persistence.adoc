@@ -346,7 +346,7 @@ This process helps to utilize disk space frugally by keeping pages in the most u
 
 See the following related documentation:
 
-* link:monitoring-metrics/metrics#monitoring-checkpointing-operations[Monitoring Checkpointing Operations].
+* link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[Monitoring Checkpointing Operations].
 * link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[Adjusting Checkpointing Buffer Size]
 
 == Configuration Properties

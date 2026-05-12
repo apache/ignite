@@ -32,14 +32,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Service change batch request discovery message.
  */
-public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
-    /** Unique custom message ID. */
-    @Order(0)
-    IgniteUuid id;
-
+public class ServiceChangeBatchRequest extends DiscoveryCustomMessage {
     /** Change requests. */
     @GridToStringInclude
-    @Order(1)
+    @Order(0)
     Collection<ServiceChangeAbstractRequest> reqs;
 
     /** Services deployment actions to be processed on services deployment process. */
@@ -54,9 +50,10 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
      * @param reqs Change requests.
      */
     public ServiceChangeBatchRequest(Collection<ServiceChangeAbstractRequest> reqs) {
+        super(IgniteUuid.randomUuid());
+
         assert !F.isEmpty(reqs);
 
-        id = IgniteUuid.randomUuid();
         this.reqs = reqs;
     }
 
@@ -82,13 +79,7 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        // No-op.
         return null;
     }
 

@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -108,6 +109,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -604,7 +606,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * Sets network addresses for the Discovery SPI.
      * <p>
      * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If the latter is not set
-     * as well, the the node binds to all available IP addresses of an environment it's running on.
+     * as well, the node binds to all available IP addresses of an environment it's running on.
      * If there is no a non-loopback address, then {@link InetAddress#getLocalHost()} is used.
      * <p>
      * <b>NOTE:</b> You should initialize the {@link IgniteConfiguration#getLocalHost()} or
@@ -2434,6 +2436,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         marsh.nodeName(igniteInstanceName);
 
         return marsh;
+    }
+
+    /**
+     * On handshake it's OK to receive unknown message.
+     * Wrapping in {@link IgniteCheckedException} allows caller to handle case properly.
+     */
+    TcpDiscoveryHandshakeResponse readHandshakeResponse(
+        TcpDiscoveryIoSession ses,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
+        try {
+            return readMessage(ses, timeout);
+        }
+        catch (UnknownMessageException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /** {@inheritDoc} */
