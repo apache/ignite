@@ -60,6 +60,10 @@ class JavaVersionCommand {
      * @throws IOException If something goes wrong.
      */
     private String readStream(InputStream inputStream) throws IOException {
+        // commons-io (IOUtils) is intentionally not used here.
+        // JavaVersionCommand is executed inside a forked JVM process launched by IgniteProcessProxy.
+        // Surefire's IsolatedClassLoader does not include test-scoped dependencies in the forked
+        // process classpath, so commons-io is unavailable.
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] buf = new byte[4096];
         int len;
