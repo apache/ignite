@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -62,13 +61,7 @@ public class ComputeCacheCollectionsP2PTest extends GridCommonAbstractTest {
     /** */
     private void runTest(String taskName) throws Exception {
         try (Ignite ignore = Ignition.start(createConfiguration())) {
-            Collection<String> jvmArgs = new ArrayList<>(List.of("-ea", "-DIGNITE_QUIET=false"));
-
-            if (U.majorJavaVersion(U.jdkVersion()) >= 17) {
-                jvmArgs.add("--add-opens=java.base/java.nio=ALL-UNNAMED");
-                jvmArgs.add("--add-opens=java.base/java.util=ALL-UNNAMED");
-            }
-
+            Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
             String cp = U.getIgniteHome() + "/modules/extdata/p2p/target/classes/";
 
             GridJavaProcess clientNode = GridJavaProcess.exec(

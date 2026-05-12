@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -145,7 +147,11 @@ public final class GridJavaProcess {
         String javaBin = resolveJavaBin(javaHome);
 
         procCmds.add(javaBin);
-        procCmds.addAll(jvmArgs == null ? U.jvmArgs() : jvmArgs);
+        procCmds.addAll(jvmArgs == null
+            ? U.jvmArgs()
+            : Stream.concat(U.jvmArgs().stream().filter(arg -> arg.startsWith("--add-opens")), jvmArgs.stream())
+                .collect(Collectors.toList())
+        );
 
         if (jvmArgs == null || (!jvmArgs.contains("-cp") && !jvmArgs.contains("-classpath"))) {
             String classpath = System.getProperty("java.class.path");
