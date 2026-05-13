@@ -2176,6 +2176,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (warnCaches.isEmpty())
             return;
 
+        System.err.println("TEST | " + "Incremental snapshot [snpName=" + snpName + ", incIdx=" + incIdx + "] contains ATOMIC caches with backups: "
+            + warnCaches + ". Please note, incremental snapshots doesn't guarantee consistency of restored atomic caches. " +
+            "It is highly recommended to verify these caches after restoring with the \"idle_verify\" command. " +
+            "If it is needed it's possible to repair inconsistent partitions with the \"consistency\" command. " +
+            "Please, check the \"Control Script\" section of Ignite docs for more information about these commands.");
+
         U.warn(log, "Incremental snapshot [snpName=" + snpName + ", incIdx=" + incIdx + "] contains ATOMIC caches with backups: "
             + warnCaches + ". Please note, incremental snapshots doesn't guarantee consistency of restored atomic caches. " +
             "It is highly recommended to verify these caches after restoring with the \"idle_verify\" command. " +

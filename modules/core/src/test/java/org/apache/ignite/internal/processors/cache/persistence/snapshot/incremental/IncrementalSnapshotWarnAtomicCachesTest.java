@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.increme
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +33,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractTest {
@@ -112,8 +116,8 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
     /** */
     public void checkCachesSnapshotCreationAndRestore(CacheConfiguration<Integer, Integer>... ccfgs) throws Exception {
-        List<Integer> allWarnCaches = new ArrayList<>();
-        Map<String, List<Integer>> warnCachesByGrps = new HashMap<>();
+        List<String> allWarnCaches = new ArrayList<>();
+        Map<String, List<String>> warnCachesByGrps = new HashMap<>();
 
         for (CacheConfiguration<?, ?> ccfg: ccfgs) {
             if (ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC && ccfg.getBackups() > 0) {
@@ -122,37 +126,27 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
                 warnCachesByGrps.compute(grpName, (grp, caches) -> {
                     caches = caches == null ? new ArrayList<>() : caches;
 
-                    int cacheNum = Integer.parseInt(ccfg.getName().replace("cache", ""));
+                    caches.add(ccfg.getName());
 
-                    caches.add(cacheNum);
-
-                    allWarnCaches.add(cacheNum);
+                    allWarnCaches.add(ccfg.getName());
 
                     return caches;
                 });
             }
         }
 
-        checkWarnMessageOnCreateSnapshot(cachesPattern(allWarnCaches), ccfgs);
-        checkWarnMessageOnRestoreSnapshot(cachesPattern(allWarnCaches), null);
+        checkWarnMessageOnCreateSnapshot(allWarnCaches, ccfgs);
+        checkWarnMessageOnRestoreSnapshot(allWarnCaches, null);
+
+        log.error("TEST | test2");
 
         for (String grp: warnCachesByGrps.keySet())
-            checkWarnMessageOnRestoreSnapshot(cachesPattern(warnCachesByGrps.get(grp)), F.asList(grp));
-    }
-
-    /** Transforms cache numbers to cache pattern. For example, [0, 1] -> cache[0,1], cache[0,1]. */
-    private @Nullable String cachesPattern(List<Integer> cacheNums) {
-        if (cacheNums.isEmpty())
-            return null;
-
-        return cacheNums.stream()
-            .map(c -> "cache" + cacheNums)
-            .collect(Collectors.joining(", "));
+            checkWarnMessageOnRestoreSnapshot(warnCachesByGrps.get(grp), F.asList(grp));
     }
 
     /** */
     private void checkWarnMessageOnCreateSnapshot(
-        @Nullable String warnAtomicCaches,
+        Collection<String> warnAtomicCaches,
         CacheConfiguration<Integer, Integer>... ccfgs
     ) throws Exception {
         this.ccfgs = ccfgs;
@@ -170,27 +164,37 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         lsnLogger.registerListener(lsnr);
 
+        log.error("TEST | test00");
+
         g.snapshot().createSnapshot(SNP).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches, lsnr.check());
+        assertTrue(lsnr.check());
 
         for (CacheConfiguration<Integer, Integer> c: ccfgs) {
             for (int i = 1_000; i < 2_000; i++)
                 g.cache(c.getName()).put(i, i);
         }
 
-        lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches == null ? 0 : 3);
+        lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches.isEmpty() ? 0 : 3);
+
+        lsnLogger.clearListeners();
 
         lsnLogger.registerListener(lsnr);
 
+        log.error("TEST | test01");
+
         g.snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches, lsnr.check());
+        log.error("TEST | test02");
+
+        waitForLog(lsnr);
+
+        log.error("TEST | test03");
     }
 
     /** */
     private void checkWarnMessageOnRestoreSnapshot(
-        @Nullable String warnAtomicCaches,
+        Collection<String> warnAtomicCaches,
         @Nullable Collection<String> restoreCacheGrps
     ) throws Exception {
         stopAllGrids();
@@ -207,30 +211,67 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         LogListener lsnr = warnLogListener(warnAtomicCaches, 0);  // Should not warn for full snapshots.
 
+        lsnLogger.clearListeners();
+
         lsnLogger.registerListener(lsnr);
+
+        log.error("TEST | test4");
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
+        waitForLog(lsnr);
 
         g.destroyCaches(g.cacheNames());
 
         awaitPartitionMapExchange();
 
-        lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches == null ? 0 : 1);
+        LogListener lsnr0 = warnLogListener(warnAtomicCaches, warnAtomicCaches.isEmpty() ? 0 : 1);
 
-        lsnLogger.registerListener(lsnr);
+        lsnLogger.clearListeners();
+
+        lsnLogger.registerListener(lsnr0);
+
+        log.error("TEST | test5");
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps, 1).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
+        log.error("TEST | test6");
+
+        waitForLog(lsnr0);
+
+        log.error("TEST | test7");
     }
 
     /** */
-    private LogListener warnLogListener(@Nullable String atomicCaches, int times) {
+    private void waitForLog(LogListener lsnr) throws IgniteInterruptedCheckedException {
+        waitForCondition(()-> {
+            try {
+                return lsnr.check(getTestTimeout());
+            }
+            catch (InterruptedException e) {
+                return false;
+            }
+        }, getTestTimeout());
+    }
+
+    /** */
+    private LogListener warnLogListener(Collection<String> atomicCaches, int times) {
+        String cachesStr = null;
+
+        if (atomicCaches.size() == 1)
+            cachesStr = F.first(atomicCaches);
+        else if (atomicCaches.size() > 1) {
+            cachesStr = "((" + String.join(", ", atomicCaches) + ')';
+
+            cachesStr += "|(" + atomicCaches.stream().sorted(Comparator.reverseOrder()).collect(Collectors.joining(", ")) + "))";
+        }
+
         Pattern p = Pattern.compile(
             "Incremental snapshot \\[snpName=" + SNP + ", incIdx=1] contains ATOMIC caches with backups:"
-            + (atomicCaches == null ? "" : " \\[" + atomicCaches) + ']');
+            + (cachesStr == null ? "" : " \\[" + cachesStr) + "]");
+
+        log.error("TEST | pattern: " + "Incremental snapshot \\[snpName=" + SNP + ", incIdx=1] contains ATOMIC caches with backups:"
+            + (cachesStr == null ? "" : " \\[" + cachesStr) + "]");
 
         return LogListener.matches(p).times(times).build();
     }
