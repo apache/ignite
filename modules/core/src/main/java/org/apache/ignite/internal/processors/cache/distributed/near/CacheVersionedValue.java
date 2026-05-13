@@ -24,12 +24,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cache object and version.
  */
-public class CacheVersionedValue implements Message {
+public class CacheVersionedValue implements Message, CacheIdAware {
     /** Value. */
     @Order(0)
     @GridToStringInclude
@@ -39,6 +40,9 @@ public class CacheVersionedValue implements Message {
     @Order(1)
     @GridToStringInclude
     GridCacheVersion ver;
+    
+    /** */
+    private int cacheId;
 
     /** */
     public CacheVersionedValue() {
@@ -49,9 +53,10 @@ public class CacheVersionedValue implements Message {
      * @param val Cache value.
      * @param ver Cache version.
      */
-    public CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
+    public CacheVersionedValue(CacheObject val, GridCacheVersion ver, int cacheId) {
         this.val = val;
         this.ver = ver;
+        this.cacheId = cacheId;
     }
 
     /**
@@ -85,5 +90,10 @@ public class CacheVersionedValue implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheVersionedValue.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheId;
     }
 }
