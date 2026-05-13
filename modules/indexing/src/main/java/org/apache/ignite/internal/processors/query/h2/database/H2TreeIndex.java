@@ -294,7 +294,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 else {
                     InlineIndexKeyType colKeyType = InlineIndexKeyTypeRegistry.get(colType, queryIndex.keyTypeSettings());
 
-                    IndexKey idxKey = IndexKeyFactory.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext(),
+                    IndexKey idxKey = IndexKeyFactory.wrap(H2Utils.unwrap(v), v.getType(), cctx.cacheObjectContext(),
                         queryIndex.keyTypeSettings());
 
                     if (colKeyType.isComparableTo(idxKey)) {
@@ -312,7 +312,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             }
 
             keys[i] = IndexKeyFactory.wrap(
-                v.getObject(), v.getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
+                H2Utils.unwrap(v), v.getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
         }
 
         return new IndexPlainRowImpl(keys, rowHnd);

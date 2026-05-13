@@ -2417,10 +2417,8 @@ http://host:port/ignite?cmd=top&attr=true&mtr=true&id=c981d2a1-878b-4c67-96f6-70
 |`caches`
 | boolean
 | Yes
-| When set to `true` the cache information returned by top will include: `name`, `mode`, and `SQL Schema`.
- When set to `false` the top command does not return any cache information.
- Default value is `true`.
- true
+| When set to `true` the cache information returned by top will include: `name`, `mode`, and `SQL Schema`. When set to `false` the top command does not return any cache information. Default value is `true`.
+| true
 |=======
 
 *Response:*::

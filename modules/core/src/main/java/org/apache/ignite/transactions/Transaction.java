@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -289,6 +290,61 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws IgniteException If suspension failed.
      */
     public void suspend() throws IgniteException;
+
+    /**
+     * Creates a savepoint in the current transaction.
+     * <p>
+     * Savepoints are supported only for explicit transactions with
+     * {@link TransactionConcurrency#PESSIMISTIC} concurrency. The savepoint keeps the current transaction state and can
+     * later be used by {@link #rollbackToSavepoint(String)} to discard changes made after it was created.
+     *
+     * @param name Savepoint name.
+     * @throws TransactionException If savepoint with the same name already exists.
+     * @throws IgniteException If savepoints are not supported for this transaction.
+     */
+    @IgniteExperimental
+    public void savepoint(String name);
+
+    /**
+     * Creates a savepoint in the current transaction.
+     * <p>
+     * Savepoints are supported only for explicit transactions with
+     * {@link TransactionConcurrency#PESSIMISTIC} concurrency. If {@code overwrite} is {@code true} and a savepoint with
+     * the same name exists, the existing savepoint is replaced with a snapshot of the current transaction state.
+     *
+     * @param name Savepoint name.
+     * @param overwrite Whether to overwrite an existing savepoint with the same name.
+     * @throws TransactionException If savepoint with the same name already exists and {@code overwrite} is
+     *      {@code false}.
+     * @throws IgniteException If savepoints are not supported for this transaction.
+     */
+    @IgniteExperimental
+    public void savepoint(String name, boolean overwrite);
+
+    /**
+     * Rolls back transaction changes to the specified savepoint.
+     * <p>
+     * Changes made after the savepoint was created are discarded. Savepoints created after the specified savepoint are
+     * released. The transaction remains active and can be committed or rolled back after this method returns.
+     *
+     * @param name Savepoint name.
+     * @throws TransactionException If savepoint with the given name does not exist.
+     * @throws IgniteException If savepoints are not supported for this transaction.
+     */
+    @IgniteExperimental
+    public void rollbackToSavepoint(String name);
+
+    /**
+     * Releases a savepoint. If savepoint does not exist this operation does nothing.
+     * <p>
+     * Releasing a savepoint does not roll back transaction changes. It removes the specified savepoint and all
+     * savepoints created after it, so none of them can be used by {@link #rollbackToSavepoint(String)} anymore.
+     *
+     * @param name Savepoint name.
+     * @throws IgniteException If savepoints are not supported for this transaction.
+     */
+    @IgniteExperimental
+    public void releaseSavepoint(String name);
 
     /**
      * Returns transaction's label.

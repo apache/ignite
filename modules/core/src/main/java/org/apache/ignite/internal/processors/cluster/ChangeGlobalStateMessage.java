@@ -40,39 +40,32 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message represent request for change cluster global state.
  */
-public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, MarshallableMessage {
-    /** Custom message ID. */
-    @Order(0)
-    IgniteUuid id;
-
+public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements MarshallableMessage {
     /** Request ID */
-    @Order(1)
+    @Order(0)
     UUID reqId;
 
     /** Initiator node ID. */
-    @Order(2)
+    @Order(1)
     UUID initiatingNodeId;
 
     /** Cluster state */
-    @Order(3)
+    @Order(2)
     ClusterState state;
 
     /** Configurations read from persistent store. */
-    private List<StoredCacheData> storedCfgs;
-
-    /** JDK Serialized version of storedCfgs. */
-    @Order(4)
-    byte[] storedCfgsBytes;
+    @Order(3)
+    List<StoredCacheData> storedCfgs;
 
     /** */
     @Nullable private BaselineTopology baselineTopology;
 
     /** JDK Serialized version of baselineTopology. */
-    @Order(5)
+    @Order(4)
     byte[] baselineTopologyBytes;
 
     /** */
-    @Order(6)
+    @Order(5)
     boolean forceChangeBaselineTopology;
 
     /** */
@@ -84,7 +77,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Marshal
     @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
     /** If {@code true}, cluster deactivation will be forced. */
-    @Order(7)
+    @Order(6)
     boolean forceDeactivation;
 
     /** No-arg constructor for deserialization. */
@@ -111,10 +104,11 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Marshal
         boolean forceChangeBaselineTopology,
         long timestamp
     ) {
+        super(IgniteUuid.randomUuid());
+
         assert reqId != null;
         assert initiatingNodeId != null;
 
-        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
@@ -159,11 +153,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Marshal
      */
     public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
         this.serviceDeploymentActions = serviceDeploymentActions;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */
@@ -234,18 +223,12 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage, Marshal
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (storedCfgs != null)
-            storedCfgsBytes = U.marshal(marsh, storedCfgs);
-
         if (baselineTopology != null)
             baselineTopologyBytes = U.marshal(marsh, baselineTopology);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (storedCfgsBytes != null)
-            storedCfgs = U.unmarshal(marsh, storedCfgsBytes, clsLdr);
-
         if (baselineTopologyBytes != null)
             baselineTopology = U.unmarshal(marsh, baselineTopologyBytes, clsLdr);
     }

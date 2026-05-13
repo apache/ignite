@@ -2769,20 +2769,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * The task for changing transaction timeout on partition map exchange processed by exchange worker.
-     *
-     * @param msg Message.
-     */
-    public void processTxTimeoutOnPartitionMapExchangeChange(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
-        assert msg != null;
-
-        long timeout = cctx.kernalContext().config().getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
-        if (timeout != msg.getTimeout())
-            cctx.kernalContext().config().getTransactionConfiguration().setTxTimeoutOnPartitionMapExchange(msg.getTimeout());
-    }
-
-    /**
      * Method checks that current thread does not have active transactions.
      * If transaction or topology lock is hold by current thread
      * exception {@link IgniteException} with given {@code errMsgConstructor} message will be thrown.
@@ -3409,54 +3395,46 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param msg Message.
          */
         private void processFailedMessage(UUID nodeId, GridCacheMessage msg, Throwable err) throws IgniteCheckedException {
-            switch (msg.directType()) {
-                case 10003: {
-                    TxLocksRequest req = (TxLocksRequest)msg;
+            if (msg instanceof TxLocksRequest) {
+                TxLocksRequest req = (TxLocksRequest)msg;
 
-                    TxLocksResponse res = new TxLocksResponse();
+                TxLocksResponse res = new TxLocksResponse();
 
-                    res.futureId(req.futureId());
+                res.futureId(req.futureId());
 
-                    try {
-                        cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send response, node failed: " + nodeId);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
-                            ", res=" + res + ']', e);
-                    }
+                try {
+                    cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                 }
-
-                break;
-
-                case 10004: {
-                    TxLocksResponse res = (TxLocksResponse)msg;
-
-                    TxDeadlockFuture fut = future(res.futureId());
-
-                    if (fut == null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to find future for response [sender=" + nodeId + ", res=" + res + ']');
-
-                        return;
-                    }
-
-                    if (err == null)
-                        fut.onResult(nodeId, res);
-                    else
-                        fut.onDone(null, err);
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send response, node failed: " + nodeId);
                 }
-
-                break;
-
-                default:
-                    throw new IgniteCheckedException("Failed to process message. Unsupported direct type [msg=" +
-                        msg + ']', msg.classError());
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
+                        ", res=" + res + ']', e);
+                }
             }
+            else if (msg instanceof TxLocksResponse) {
+                TxLocksResponse res = (TxLocksResponse)msg;
 
+                TxDeadlockFuture fut = future(res.futureId());
+
+                if (fut == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to find future for response [sender=" + nodeId + ", res=" + res + ']');
+
+                    return;
+                }
+
+                if (err == null)
+                    fut.onResult(nodeId, res);
+                else
+                    fut.onDone(null, err);
+            }
+            else {
+                throw new IgniteCheckedException("Failed to process message. Unsupported direct type [msg=" +
+                    msg + ']', msg.classError());
+            }
         }
 
         /**

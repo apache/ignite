@@ -218,6 +218,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -902,7 +903,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
 
-        longJVMPauseDetector = new LongJVMPauseDetector(log);
+        longJVMPauseDetector = new LongJVMPauseDetector(igniteInstanceName, log);
 
         longJVMPauseDetector.start();
 
@@ -946,7 +947,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(clusterProc);
 
-            U.onGridStart();
+            U.onGridStart(igniteInstanceName);
 
             // Start and configure resource processor first as it contains resources used
             // by all other managers and processors.
@@ -1326,10 +1327,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null) {
-                if (f instanceof AbstractMarshallableMessageFactoryProvider) {
-                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshallerContext().jdkMarshaller(),
-                        ctx.marshaller(), resolvedClsLdr);
-                }
+                initProvider(f, resolvedClsLdr);
 
                 compMsgs.add(f);
             }
@@ -1340,14 +1338,30 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (discoSpi instanceof IgniteDiscoverySpi) {
             MessageFactoryProvider discoMsgs = ((IgniteDiscoverySpi)discoSpi).messageFactoryProvider();
 
-            if (discoMsgs != null)
+            if (discoMsgs != null) {
+                initProvider(discoMsgs, resolvedClsLdr);
+
                 compMsgs.add(discoMsgs);
+            }
         }
 
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
+    }
+
+    /**
+     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
+     *
+     * @param factoryProvider Message factory provider.
+     * @param clsLdr Class loader.
+     */
+    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
+        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
+            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+                ctx.marshaller(), clsLdr);
+        }
     }
 
     /**
@@ -3169,11 +3183,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
                             reconnectState.firstReconnectFut.onDone(e);
 
-                            new Thread(() -> {
+                            new IgniteThread(igniteInstanceName, "node-stopper", () -> {
                                 U.error(log, "Stopping the node after a failed reconnect attempt.");
 
                                 close();
-                            }, "node-stopper").start();
+                            }).start();
                         }
                         else {
                             assert ctx.discovery().reconnectSupported();
