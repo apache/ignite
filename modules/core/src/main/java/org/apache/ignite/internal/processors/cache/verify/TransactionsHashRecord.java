@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
 /** Represents committed transactions hash for a pair of nodes. */
-public class TransactionsHashRecord  implements MarshallableMessage, Serializable {
+public class TransactionsHashRecord implements MarshallableMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

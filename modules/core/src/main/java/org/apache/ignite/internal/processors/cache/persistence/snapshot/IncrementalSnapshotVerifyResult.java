@@ -31,6 +31,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class IncrementalSnapshotVerifyResult implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Transaction hashes collection. */
     @Order(0)
     Collection<TransactionsHashRecord> txHashRes;
