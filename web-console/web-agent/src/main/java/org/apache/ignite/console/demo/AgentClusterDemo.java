@@ -1,5 +1,3 @@
-
-
 package org.apache.ignite.console.demo;
 
 import java.io.File;
@@ -35,7 +33,6 @@ import org.apache.ignite.console.demo.service.DemoServiceMultipleInstances;
 import org.apache.ignite.console.demo.service.DemoServiceNodeSingleton;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,10 +48,9 @@ import org.slf4j.LoggerFactory;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
-import static org.apache.ignite.console.demo.AgentDemoUtils.newScheduledThreadPool;
+
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+
 
 
 /**
@@ -74,7 +70,6 @@ public class AgentClusterDemo {
 
     /** WAL file segment size, 16MBytes. */
     private static final int WAL_SEGMENT_SZ = 16 * 1024 * 1024;
-
 
     /** */
     private static volatile String demoUrl;
@@ -148,7 +143,7 @@ public class AgentClusterDemo {
         dataRegCfg.setLazyMemoryAllocation(true);
 
         DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
-        dataStorageCfg.setMetricsEnabled(true);
+            dataStorageCfg.setMetricsEnabled(true);
         
         dataStorageCfg.setStoragePath("data");
         dataStorageCfg.setDefaultDataRegionConfiguration(dataRegCfg);
@@ -213,7 +208,7 @@ public class AgentClusterDemo {
         }
 
         // 启动Demo节点，并且在最后一个节点部署服务
-        ignite = AgentClusterDemo.tryStart(icfg,idx,lastNode,springCtx);
+        ignite = tryStart(icfg,idx,lastNode,springCtx);
         return ignite;
     }
 
@@ -274,9 +269,9 @@ public class AgentClusterDemo {
             finally {
                 if (lastNode && ignite != null) {
                     try {    
-                    	Thread.sleep(1000*idx);
+                    	Thread.sleep(1000L*idx);
                     	while(ignite.cluster().nodes().size()<idx) {
-                    		Thread.sleep(1000);
+                    		Thread.sleep(1000L);
                     	}                       
                     	ignite.cluster().state(ClusterState.ACTIVE);
 

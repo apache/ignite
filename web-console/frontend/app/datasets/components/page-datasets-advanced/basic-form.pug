@@ -4,16 +4,15 @@
 
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Cluster Name:',
-                model: `${model}.name`,
-                readOnly: true,
+                label: 'Catalog Name:',
+                model: `${model}.catalogName`,               
                 name: '"name"',
                 placeholder: ''
             })
 
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Default database:',
+                label: 'Default schema:',
                 model: `${model}.schemaName`,
                 name: '"schemaName"',
                 placeholder: 'public'
@@ -23,8 +22,8 @@
             +form-field__text({
                 label: 'Mongo URL:',
                 model: `${model}.jdbcUrl`,
-                name: '"jdbcUrl"',                        
-                placeholder: 'mongodb://'
+                name: '"jdbcUrl"',                    
+                placeholder: 'mongodb://127.0.0.1:2701/admin'
             })    
           
         .pc-form-grid-col-30
@@ -32,19 +31,21 @@
                 label: 'Mongo Admin URL:',
                 model: `${model}.crudui_web_url`,
                 name: '"crudui_web_url"',                        
-                placeholder: 'http://'
+                placeholder: 'http://127.0.0.1:3000/mongoAdmin/queryDocuments#admin'
             })         
             
         .pc-form-grid-col-30
             +form-field__text({
                 label: 'User name:',
                 model: `${model}.userName`,
-                name: '"userName"'
+                name: '"userName"',
+                placeholder: 'empty'
             })
             
         .pc-form-grid-col-30
             +form-field__password({
                 label: 'Password:',
                 model: `${model}.password`,
-                name: '"password"'
+                name: '"password"',
+                placeholder: 'empty'
             })

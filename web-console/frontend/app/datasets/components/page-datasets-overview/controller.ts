@@ -17,7 +17,14 @@ const cellTemplateGo = (state) => `
             class="link-success"
             ui-sref="${state}({datasetID: row.entity.id})"
             title='Click to Visit'
-        >{{ 'CRUD UI' }}</a>
+            target="_blank"
+        >{{ 'CRUD UI' }}</a> 
+           &nbsp; | &nbsp;
+        <a
+            class="link-success"
+            ui-sref="base.datasets.edit.advanced({datasetID: row.entity.id})"
+            title='Click to edit'
+        > Setting </a>
     </div>
 `;
 
@@ -74,7 +81,7 @@ export default class PageDatasourceOverviewController {
                 sort: {direction: 'asc', priority: 0},
                 sortingAlgorithm: naturalCompare,
                 cellTemplate: cellTemplate('base.configuration.edit'),
-                width: 200
+                width: 180
             },
             {
                 name: 'comment',
@@ -87,7 +94,19 @@ export default class PageDatasourceOverviewController {
                 sort: {direction: 'asc', priority: 0},
                 sortingAlgorithm: naturalCompare,
                 cellTemplate: cellTemplate('base.configuration.edit.basic'),
-                minWidth: 200
+                minWidth: 240
+            },            
+            {
+                name: 'catalogName',
+                displayName: 'Catalog Name',
+                field: 'catalogName',
+                filter: {
+                    placeholder: 'Filter by catalog…'
+                },
+                sort: {direction: 'asc', priority: 0},
+                sortingAlgorithm: naturalCompare,
+                type: 'string',             
+                width: 200
             },
             {
                 name: 'id',
@@ -96,14 +115,7 @@ export default class PageDatasourceOverviewController {
                 enableHiding: false,
                 enableFiltering: false,
                 cellTemplate: cellTemplateGo('base.datasets.edit.basic'),
-                minWidth: 165
-            },
-            {
-                name: 'discovery',
-                displayName: 'Discovery',
-                field: 'discovery',
-                multiselectFilterOptions: this.Clusters.discoveries,
-                width: 200
+                minWidth: 140
             },
             {
                 name: 'caches',

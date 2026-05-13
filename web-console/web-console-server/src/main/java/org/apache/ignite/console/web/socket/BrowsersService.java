@@ -3,6 +3,7 @@
 package org.apache.ignite.console.web.socket;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import org.apache.ignite.console.websocket.WebSocketEvent;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -34,6 +36,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.adapter.NativeWebSocketSession;
 import org.springframework.web.socket.adapter.jetty.JettyWebSocketSession;
 
 import io.vertx.core.json.JsonArray;
@@ -101,17 +104,18 @@ public class BrowsersService extends AbstractSocketHandler {
     /**
      * Periodically ping connected clients to keep connections alive.
      */
-    @Scheduled(fixedRate = 3_000)
+    @Scheduled(fixedRate = 10_000)
     public void heartbeat() {
-        locBrowsers.values().stream().flatMap(Collection::stream).collect(toList()).forEach(this::ping);
+        locBrowsers.values().stream().flatMap(Collection::stream).toList().forEach(this::ping);
     }
 
     /** {@inheritDoc} */
-    @Override public void afterConnectionEstablished(WebSocketSession ws) {
-        log.info("Browser session opened [socket=" + ws + "]");
-        JettyWebSocketSession ses = (JettyWebSocketSession) ws;
-        ses.setBinaryMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);        
+    @Override public void afterConnectionEstablished(WebSocketSession ses) {
+        log.info("Browser session opened [socket=" + ses + "]");
+        ses.setBinaryMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
         ses.setTextMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
+        Session jettySession = ((NativeWebSocketSession) ses).getNativeSession(Session.class);
+        jettySession.setIdleTimeout(Duration.ofMinutes(60));
 
         UserKey id = getId(ses);
 
@@ -188,24 +192,27 @@ public class BrowsersService extends AbstractSocketHandler {
                         // last node will active cluster
                         int nodeIndex = 0;
                         AgentKey key = new AgentKey(accId);
-                        List<WebSocketSession> nids = agentsSrvc.findLocalAgents(key);
-                        if (!nids.isEmpty()) {
-                        	for(WebSocketSession sess: nids) {                        		
-                        		if(nodeIndex==nids.size()-1) {
-                        			payload.put("nodeSeq",nodeIndex);
-                        			payload.put("isLastNode",true);
-                        			evt.setPayload(payload.encode());
-                        			agentsSrvc.sendMessageWithResponse(sess, evt, this.transitionSrvc.localNodeId());
+                        List<WebSocketSession> agents = agentsSrvc.findLocalAgents(key);
+                        if (!agents.isEmpty()) {
+                            String reqId = evt.getRequestId();
+                        	for(WebSocketSession sess: agents) {
+
+                        		if(nodeIndex==agents.size()-1) {
+                                    evt.setRequestId(reqId+"-"+nodeIndex+"-lastNode");
+                                    agentsSrvc.sendMessage(sess, evt);
+                        			//agentsSrvc.sendMessageWithResponse(sess, evt, this.transitionSrvc.localNodeId());
                         		}
                         		else {
+                                    evt.setRequestId(reqId+"-"+nodeIndex);
                         			agentsSrvc.sendMessage(sess, evt);
+                                    locRequests.put(evt.getRequestId(), ses);
                         		}
                         		nodeIndex++;
                         	}
                         }                        	
                         else {
                         	log.warn("Not found any cluster agent for : " + evt);
-                        	sendMessageQuiet(ses, evt.response("Failed to send event to agent: Not found any cluster agent"));
+                        	sendMessageQuiet(ses, evt.withError("Failed to send event to agent: Not found any cluster agent",null));
                         }
                     }
                     catch (ClusterGroupEmptyException ignored) {
@@ -239,7 +246,7 @@ public class BrowsersService extends AbstractSocketHandler {
                             }
                             else {
                             	log.warn("Not found any cluster agent for : " + evt);
-                            	sendMessageQuiet(ses, evt.response("Failed to send event to agent: Not found any cluster agent"));
+                            	sendMessageQuiet(ses, evt.withError("Failed to send event to agent: Not found any cluster agent",null));
                             }
                         }
                     }
@@ -251,7 +258,7 @@ public class BrowsersService extends AbstractSocketHandler {
                     }
                     break;
                     
-                case "BROADCAST":
+                case BROADCAST:
                 	try {
                         
                 		for (Collection<WebSocketSession> sessions : locBrowsers.values()) {

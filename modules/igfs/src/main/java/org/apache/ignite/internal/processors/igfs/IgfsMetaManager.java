@@ -1739,7 +1739,7 @@ public class IgfsMetaManager extends IgfsManager {
             id2InfoPrj.invoke(srcId, new IgfsMetaDirectoryListingRenameProcessor(srcName, destName));
         else {
 
-            Map<IgniteUuid, EntryProcessor<IgniteUuid, IgfsEntryInfo, Void>> procMap = new HashMap<>();
+            Map<IgniteUuid, EntryProcessor<IgniteUuid, IgfsEntryInfo, Void>> procMap = new TreeMap<>();
 
             procMap.put(srcId, new IgfsMetaDirectoryListingRemoveProcessor(srcName, entry.fileId()));
             procMap.put(destId, new IgfsMetaDirectoryListingAddProcessor(destName, entry));
@@ -3204,7 +3204,7 @@ public class IgfsMetaManager extends IgfsManager {
             secondaryOutHolder.set(secondaryCtx.create());
         }
 
-        Map<IgniteUuid, EntryProcessor> procMap = new HashMap<>();
+        Map<IgniteUuid, EntryProcessor> procMap = new TreeMap<>();
 
         // First step: add new entry to the last existing element.
         procMap.put(lastExistingInfo.id(), new IgfsMetaDirectoryListingAddProcessor(curPart,

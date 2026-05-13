@@ -3,6 +3,7 @@
 package org.apache.ignite.console.web.socket;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.adapter.NativeWebSocketSession;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
@@ -241,9 +244,11 @@ public class AgentsService extends AbstractSocketHandler {
 
     /** {@inheritDoc} */
     @Override public void afterConnectionEstablished(WebSocketSession ws) {
-        log.info("Agent session opened [socket=" + ws + "]");        
-        ws.setBinaryMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);      
+        log.info("Agent session opened [socket=" + ws + "]");
+        ws.setBinaryMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
         ws.setTextMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
+        Session jettySession = ((NativeWebSocketSession) ws).getNativeSession(Session.class);
+        jettySession.setIdleTimeout(Duration.ofMinutes(60));
     }
 
     /** {@inheritDoc} */
@@ -283,7 +288,7 @@ public class AgentsService extends AbstractSocketHandler {
     /**
      * Periodically ping connected agent to keep connections alive or detect failed.
      */
-    @Scheduled(fixedRate = 60_000)
+    @Scheduled(fixedRate = 10_000)
     public void heartbeat() {
         locAgents.keySet().forEach(this::ping);
     }

@@ -61,19 +61,23 @@ public class DataSourceManager {
 			super(environment);
 		}
 
-	    public void bind(String key, Object value) {
+	    @Override
+		public void bind(String key, Object value) {
 	    	POOL.put(key.toLowerCase(), value);
 	    }
 	    
-	    public void rebind(String key, Object value) {
+	    @Override
+		public void rebind(String key, Object value) {
 	    	POOL.put(key.toLowerCase(), value);
 	    }
 	    
-	    public void unbind(String name){
+	    @Override
+		public void unbind(String name){
 	    	POOL.remove(name);
 	    }
 
-	    public Object lookup(String key) throws NamingException {
+	    @Override
+		public Object lookup(String key) throws NamingException {
 	        Object result = POOL.get(key.toLowerCase());
 	        if(result==null && key.startsWith("java:jdbc/")) {
 	        	result = getJNDIDataSource(key.substring("java:jdbc/".length()));
@@ -84,7 +88,8 @@ public class DataSourceManager {
 	        return result;
 	    }
 	    
-	    public void close() throws NamingException {
+	    @Override
+		public void close() throws NamingException {
 	    	
 	    }
 	};

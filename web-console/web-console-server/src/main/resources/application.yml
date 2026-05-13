@@ -24,11 +24,15 @@ server:
 
 ####Jetty properties########
   jetty:
-    acceptors: 2 # acceptor线程数
-    selectors: 4 # selector线程数
+    acceptors: 1 # acceptor线程数
+    selectors: 8 # selector线程数
     max-http-post-size: 1073741824 # put或post方法最大字节数    
     max-threads: 128
     work-directory: .
+
+websocket:
+  idle-timeout: 300000  # 增加到5分钟
+  connection-timeout: 10000
 
 spring:
   main:

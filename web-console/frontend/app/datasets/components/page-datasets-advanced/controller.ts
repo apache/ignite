@@ -10,7 +10,6 @@ import ConfigSelectors from '../../../configuration/store/selectors';
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
 import Datasource from 'app/datasource/services/Datasource';
-import {DatasourceDto} from 'app/configuration/types';
 import {Cluster} from 'app/configuration/types';
 
 export default class PageDatasetsAdvancedController {    
@@ -22,8 +21,6 @@ export default class PageDatasetsAdvancedController {
     form: ng.IFormController;
     
     onBeforeTransition: CallableFunction;
-
-    baseUrl = 'http://localhost:3000';
 
     constructor(
         private Confirm: Confirm,
@@ -97,9 +94,10 @@ export default class PageDatasetsAdvancedController {
         return true;
     }
 
-    save({cluster}) {
+    save(cluster) {
         this.ConfigureState.dispatchAction(advancedSaveCluster(cluster, false));
     }
+
     reset() {
         this.clonedDatasource = cloneDeep(this.originalDatasource);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});

@@ -30,7 +30,7 @@ export default angular.module('ignite-console.sql', [
             activeSref: 'base.sql.**',
             icon: 'sql',
             label: $translate.instant('navigationMenu.queriesLinkLabel'),
-            order: 2,
+            order: 3,
             sref: 'base.sql.tabs.notebooks-list'
         }));
     }])

@@ -3,6 +3,7 @@
 package org.apache.ignite.console.web.security;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -249,8 +250,11 @@ public class SecurityConfig {
      */
     @Bean
     public SessionRepository<MapSession> sessionRepository(@Autowired Ignite ignite) {
-        if(true || !ignite.cluster().state().active())
-            return new MapSessionRepository(sessions);
+        if(true || !ignite.cluster().state().active()){
+            MapSessionRepository sessionRepository = new MapSessionRepository(sessions);
+            sessionRepository.setDefaultMaxInactiveInterval(Duration.ofSeconds(MAX_INACTIVE_INTERVAL_SECONDS));
+            return sessionRepository;
+        }
         return new IgniteSessionRepository(ignite)
             .setDefaultMaxInactiveInterval(MAX_INACTIVE_INTERVAL_SECONDS);
     }

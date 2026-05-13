@@ -4,8 +4,7 @@ import io.vertx.ext.web.Router;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;

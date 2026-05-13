@@ -202,7 +202,28 @@ public abstract class SingleRouterHandler {
         log.info("[vertx web] objects:{}", Arrays.toString(parameters));
         log.info("[vertx web] api has benn invoke.The api name is:" + prefix + url);
         boolean isAync = Future.class.isAssignableFrom(method.getReturnType()) || java.util.concurrent.Future.class.isAssignableFrom(method.getReturnType());
-        if (isAync || "void".equalsIgnoreCase(method.getReturnType().getTypeName())) {
+        if (isAync) {
+            log.info("[vertx web] this method returnType is Future");
+            try {
+                //method.invoke(classBean,parameters);
+                ReflectionUtils.invokeMethod(method, classBean, parameters);
+            } catch (Exception e) {
+                if(e instanceof IllegalArgumentException) {
+                    ctx.response().setStatusCode(404);
+                }
+                else {
+                    ctx.response().setStatusCode(500);
+                }
+                if(e.getMessage()!=null)
+                    ctx.response().setStatusMessage(e.getMessage());
+                else
+                    ctx.response().setStatusMessage(e.toString());
+                ctx.response().end();
+
+            }
+
+        }
+        else if ("void".equalsIgnoreCase(method.getReturnType().getTypeName())) {
             log.info("[vertx web] this method returnType is void");
             try {
                 //method.invoke(classBean,parameters);
@@ -214,7 +235,10 @@ public abstract class SingleRouterHandler {
             	else {
             		ctx.response().setStatusCode(500);
             	}
-            	ctx.response().setStatusMessage(e.getMessage());
+                if(e.getMessage()!=null)
+                    ctx.response().setStatusMessage(e.getMessage());
+                else
+                    ctx.response().setStatusMessage(e.toString());
             	ctx.response().end();
                 
             }
@@ -231,7 +255,10 @@ public abstract class SingleRouterHandler {
             	else {
             		ctx.response().setStatusCode(500);
             	}
-            	ctx.response().setStatusMessage(e.getMessage());
+                if(e.getMessage()!=null)
+            	    ctx.response().setStatusMessage(e.getMessage());
+                else
+                    ctx.response().setStatusMessage(e.toString());
             	ctx.response().end();
             }
         }

@@ -4,18 +4,20 @@ import get from 'lodash/get';
 import {Observable, combineLatest, from, of} from 'rxjs';
 import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import ConfigureState from 'app/configuration/services/ConfigureState';
+import ConfigSelectors from '../../../configuration/store/selectors';
 import {UIRouter} from '@uirouter/angularjs';
 
 export default class PageDatasetsController {
-    static $inject = ['$uiRouter', 'ConfigureState'];
+    static $inject = ['$uiRouter', 'ConfigureState','ConfigSelectors'];
 
     constructor(
         private $uiRouter: UIRouter,
-        private ConfigureState: ConfigureState
+        private ConfigureState: ConfigureState,
+        private ConfigSelectors: ConfigSelectors
     ) {}
 
     clusterID$: Observable<string>;
-    clusterName$: Observable<string>;
+    catalogName$: Observable<string>;
     tooltipsVisible = true;
 
     $onInit() {
@@ -24,7 +26,7 @@ export default class PageDatasetsController {
         let cluster$ = this.clusterID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return from(of(this._loadMongoExpress(id)));
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
             }),
             distinctUntilChanged(),
             publishReplay(1),
@@ -34,24 +36,12 @@ export default class PageDatasetsController {
 
         const isNew$ = this.clusterID$.pipe(map((v) => v === 'new'));
 
-        this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
+        this.catalogName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
             return `${isNew ? 'Create' : 'Edit'} DataSets configuration 
-            ${isNew ? '' : `‘${get(cluster, 'clusterName','')}’`}`;
+            ${isNew ? '' : `‘${get(cluster, 'catalogName','{}')}’`}`;
         });
     }
 
-    _loadMongoExpress(id: string) {
-        try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress && mongoExpress[id]) {            
-                return mongoExpress[id];
-            }
-        }
-        catch (ignored) {
-            
-        }
-        return {id: id, clusterName: "Mongo Express", url: "/mongoAdmin/queryDocuments#"+id}      
-    }
 
     $onDestroy() {}
 }

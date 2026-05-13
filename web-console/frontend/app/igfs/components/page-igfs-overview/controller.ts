@@ -16,6 +16,7 @@ const cellTemplate = (state) => `
             class="link-success"
             ui-sref="base.igfs.edit.basic({storageID: row.entity.id})"
             title='Click to Visit data'
+            target="_blank"
         >{{ 'File Manager' }}</a> &nbsp;|&nbsp;
         <a
             class="link-success"
@@ -110,7 +111,7 @@ export default class PageIgfsOverviewController {
     ];
     
     // 创建一个函数，用于从localStorage中读取JSON数组并返回Observable流
-    getLocalStorageJsonList(key) {
+    getLocalStorageJsonList(key:string) {
         return new Observable((observer) => {
             try {
                 // 尝试从localStorage中读取数据

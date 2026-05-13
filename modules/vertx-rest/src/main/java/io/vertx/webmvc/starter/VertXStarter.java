@@ -12,11 +12,8 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
-
-
 import java.util.Properties;
 
-import javax.annotation.PostConstruct;
 
 /**
  * vert.x starter
@@ -31,7 +28,7 @@ public class VertXStarter implements ApplicationContextAware {
     private final String contexPath;
     
     public VertXStarter(String contexPath) {
-    	this.contexPath = contexPath;
+        this.contexPath = contexPath;
     }
     
     public WebApiCreater getWebApiCreater() {
@@ -47,8 +44,7 @@ public class VertXStarter implements ApplicationContextAware {
         this.springContext = applicationContext;
     }
 
-    @PostConstruct
-    public void init() {
+    public void start() {
         long startwatch = System.currentTimeMillis();
         log.info("[Vertx web] Vertx web's vert.x system start to bootstrap...");
         int port = springContext.getEnvironment().getProperty("server.port", Integer.class);

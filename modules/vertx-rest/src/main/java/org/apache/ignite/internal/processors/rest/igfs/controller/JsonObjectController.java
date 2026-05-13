@@ -37,9 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.mail.internet.MimeUtility;
-
+import jakarta.mail.internet.MimeUtility;
 
 /**
  * for amis

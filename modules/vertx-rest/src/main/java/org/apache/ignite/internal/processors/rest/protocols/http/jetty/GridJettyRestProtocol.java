@@ -64,7 +64,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.webmvc.annotation.VertxletMapping;
 import io.vertx.webmvc.creater.WebApiCreater;
-import io.vertx.webmvc.starter.VertXStarter;
 
 /**
  * Vertx REST protocol implementation.
@@ -80,6 +79,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** HTTP server. */
     private WebApiCreater httpSrv;
+
+    private Vertx vertx;
     
     private ServerSocket serverSocketPlaceholder;
     
@@ -175,16 +176,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	    			}					
     	    		}
     	    		
-    	    		Vertx vertx;
-    	    		if(!ignite.cluster().active()) {
-    	        		log.info("[Vertx web] Vertx started in standard mode.");
-    	        		vertx = Vertx.vertx();
-    	        	}
-    	        	else {
-    	        		log.info("[Vertx web] Vertx started in cluster mode.");
-    	        		IgniteVertxPlugin plugin = ignite.plugin("Vertx");
-    	        		vertx = plugin.vertx();
-    	        	}
+
+                    log.info("[Vertx web] Vertx started in cluster mode.");
+                    IgniteVertxPlugin plugin = ignite.plugin("Vertx");
+                    vertx = plugin.vertx();
     	    		
     	    		Future<String> rv = vertx.deployVerticle(httpSrv);
     	        	while(!rv.isComplete()) {
@@ -401,8 +396,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 // Record current interrupted status of calling thread.
                 boolean interrupted = Thread.interrupted();
 
-                try {                	
+                try {
+                    httpSrv.stop();
                 	httpSrv = null;
+                    vertx.close();
                 }
                 finally {
                     // Reset interrupted flag on calling thread.

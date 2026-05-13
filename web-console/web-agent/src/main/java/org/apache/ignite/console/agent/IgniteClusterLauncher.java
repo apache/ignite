@@ -81,7 +81,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
     /** */
     private static final AtomicBoolean initGuard = new AtomicBoolean();
 
-    private final static AtomicInteger basePort = new AtomicInteger(20700);
+    private static final AtomicInteger basePort = new AtomicInteger(20700);
 
     /** */
     private static final int WAL_SEGMENTS = 5;
@@ -118,7 +118,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         this.timeout = timeout;
     }
     
-    static public IgniteConfiguration mergeIgniteConfiguration(IgniteConfiguration cfg,IgniteConfiguration from)
+    public static IgniteConfiguration mergeIgniteConfiguration(IgniteConfiguration cfg, IgniteConfiguration from)
             throws IgniteCheckedException {
     	if(from!=null && cfg!=from) {
     		BeanMerger.mergeBeans(from,cfg);
@@ -126,7 +126,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         return cfg;
     }
     
-    static public IgniteConfiguration singleIgniteConfiguration(IgniteConfiguration cfg,IgniteConfiguration preCfg)
+    public static IgniteConfiguration singleIgniteConfiguration(IgniteConfiguration cfg, IgniteConfiguration preCfg)
             throws IgniteCheckedException {
     	
     	cfg = IgniteClusterLauncher.mergeIgniteConfiguration(cfg,preCfg);
@@ -217,8 +217,9 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
 		String jettyHost = "127.0.0.1";
 		for(String host: jettyAddrs) {
-			if(!host.startsWith("0")) {
+			if(host.indexOf(":")<0) {
 				jettyHost = host;
+				break;
 			}
 		}
 
@@ -310,7 +311,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 				
 			}
 			else {
-				cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+				//-cfg.setClusterStateOnStart(ClusterState.INACTIVE);
 				if(cfg.getConsistentId()==null)
 					cfg.setConsistentId(clusterId+"_"+nodeIndex);		
 			}
@@ -346,9 +347,9 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         
         if(isLastNode && ignite!=null) {
         	try {
-				Thread.sleep(1000*nodeIndex);
+				Thread.sleep(1000L*nodeIndex);
 				while(ignite.cluster().nodes().size()<nodeIndex) {
-            		Thread.sleep(1000);                    		
+            		Thread.sleep(1000L);
             	}
 			} catch (InterruptedException e) {				
 				e.printStackTrace();
@@ -433,7 +434,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         if(ignite!=null) {
 	        
         	ClusterNode node = ignite.cluster().localNode();
-	        Collection<String> tcpAddrs = node.attribute(ATTR_REST_TCP_ADDRS);
+	        Collection<String> tcpAddrs = node.addresses();
 	        String host = tcpAddrs.iterator().next();
 	        if(host!=null && !host.isBlank()) {
 		        argsList.add("--host");
@@ -484,7 +485,12 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	        		hnd.printUsage(javaLogger,c);
 	        		javaLogger.flush();
 	        		String usage = outHandder.getOutput();
-	        		String desc = c.description();
+	        		String desc = "";
+					try {
+						desc = c.description();
+					}catch (Exception e){
+						// ignore
+					}
 	        		
 	            	JsonObject cmd = new JsonObject();
 	            	cmd.put("name", pair.getKey());
@@ -494,7 +500,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	            	results.add(cmd);
         		}
         		catch(Exception e) {
-        			
+					// ignore
         		}
             }           
         	

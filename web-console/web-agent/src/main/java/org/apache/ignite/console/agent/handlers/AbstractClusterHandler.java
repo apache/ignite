@@ -71,10 +71,13 @@ public abstract class AbstractClusterHandler implements ClusterHandler {
      * @return Command result.
      * @throws Exception If failed to execute.
      */
-    public abstract RestResult restCommand(String clusterId,JsonObject params) throws Throwable;
+    @Override
+    public abstract RestResult restCommand(String clusterId, JsonObject params) throws Throwable;
     
+    @Override
     public abstract List<TopologySnapshot> topologySnapshot();
     
+    @Override
     public void close() {
     	
     }

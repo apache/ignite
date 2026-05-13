@@ -2533,10 +2533,11 @@ export default class IgniteConfigurationGenerator {
                 .pathProperty('tokenDirectoryPath')
                 .intProperty('threadCount');
 
+            cfg.boolProperty('ipcEndpointEnabled');
+
             if (bean.nonEmpty())
                 cfg.beanProperty('ipcEndpointConfiguration', bean);
         }
-
         return cfg;
     }
 

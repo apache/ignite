@@ -23,13 +23,16 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 
 	public synchronized Vertx vertx() {
 		
-		if (vertx == null) {
+		if (vertx == null && options.getClusterManager()!=null) {
 			try {
 				long startwatch = System.currentTimeMillis();
 				finish = false;
 				Vertx.clusteredVertx(options, res -> {
 					if (res.succeeded()) {
 						vertx = res.result();
+						vertx.exceptionHandler(event -> {
+							log.error("Vertx:", event);
+						});
 						finish = true;
 
 						long stopwatch = System.currentTimeMillis();
@@ -38,7 +41,12 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 
 					} else {
 						// 失败的时候做什么！
-						log.error("Failt to start Vertx cluster.", res.cause());
+						log.error("Failt to start Vertx cluster.Use standalone vertx", res.cause());
+						vertx = Vertx.vertx();
+						vertx.exceptionHandler(event -> {
+							log.error("Vertx:", event);
+						});
+						finish = true;
 					}
 				});
 
@@ -46,15 +54,21 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 				log.error("[Vertx web] create vertx fail.", e);
 				finish = true;
 			}
-		}
-		
-		while(!finish) {
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			while(!finish) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
+		}
+		if(vertx==null){
+			vertx = Vertx.vertx();
+			vertx.exceptionHandler(event -> {
+				log.error("Vertx:", event);
+			});
+			finish = true;
 		}
 		return vertx;
 	}

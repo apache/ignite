@@ -18,7 +18,7 @@ public class HttpGetTop extends AbstractVerticle {
 		HttpClient client = vertx.createHttpClient();
 	    Future<HttpClientRequest> req = client.request(
 	      HttpMethod.GET,
-	      18080,
+	      8087,
 	      "localhost",
 	      "/ignite?cmd=top");
 	    

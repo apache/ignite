@@ -183,7 +183,7 @@ public class AgentLauncher implements IgniteSshHelper {
     /**
      * @param args Args.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         AgentConfiguration cfg = parseArgs(args);
 
         // Failed to parse configuration or help printed.
@@ -191,22 +191,9 @@ public class AgentLauncher implements IgniteSshHelper {
             return;
         
         WebSocketRouter websocket = new WebSocketRouter(cfg);
-
-        while(true) {
-	        try {
-	        	
-	            websocket.start();
-	
-	            websocket.awaitClose();
-	            
-	            Thread.sleep(1000);
-	        }
-	        catch (Throwable ignored) {
-	            // No-op.
-	        	ignored.printStackTrace();
-	        	break;
-	        }
-        }
+        websocket.setMaxReconnectAttempts(-1);
+        websocket.start();
+        websocket.awaitClose();
         websocket.close();
     }
 }

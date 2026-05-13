@@ -23,7 +23,7 @@ export default class IGFSs {
     getBlankIGFS() {
         return {
             id: uuidv4(),
-            ipcEndpointEnabled: true,
+            ipcEndpointEnabled: false,
             fragmentizerEnabled: true,
             colocateMetadata: true,
             relaxedConsistency: true,

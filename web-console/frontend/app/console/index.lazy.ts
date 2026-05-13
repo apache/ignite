@@ -24,7 +24,7 @@ export default angular
             activeSref: 'base.console.**',
             icon: 'console',
             label: 'Console',
-            order: 3,
+            order: 2,
             sref: 'base.console.overview'
         }));
     }])

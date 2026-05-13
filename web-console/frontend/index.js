@@ -14,7 +14,7 @@ import {downgradeModuleFactory} from './app-angular/downgrade';
 angular.bootstrap(document, [
 	igniteConsole.name,
     
-    datasourceLazyModule.name,
+  datasourceLazyModule.name,
     
 	configurationLazyModule.name,
     

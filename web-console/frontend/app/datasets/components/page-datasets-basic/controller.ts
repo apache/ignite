@@ -4,7 +4,7 @@ import {forkJoin, merge, from, of} from 'rxjs';
 import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import ConfigureState from '../../../configuration/services/ConfigureState';
 import ConfigSelectors from '../../../configuration/store/selectors';
-import Clusters from '../../../configuration/services/Clusters';
+import {Cluster} from 'app/configuration/types';
 
 import cloneDeep from 'lodash/cloneDeep';
 import {UIRouter} from '@uirouter/angularjs';
@@ -12,16 +12,20 @@ import {UIRouter} from '@uirouter/angularjs';
 import Datasource from 'app/datasource/services/Datasource';
 
 export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit {
-    static $inject = ['$sanitize','$sce','$uiRouter','Datasource','ConfigureState','ConfigSelectors'];
+    static $inject = ['$sanitize','$sce','$window','$uiRouter','Datasource','ConfigureState','ConfigSelectors'];
 
-    url = 'http://localhost:18080/mongoAdmin/queryDocuments#admin';
+    url = '/mongoAdmin/queryDocuments#admin';
 
     safeUrl: SafeResourceUrl;
 
     safeStringUrl: SafeResourceUrl;
 
+    clonedCluster: Cluster;
+
     constructor(
-        private $sanitize,private $sce,
+        private $sanitize,
+        private $sce,
+        private $window,
         private $uiRouter: UIRouter,
         private Datasource: Datasource,
         private ConfigureState: ConfigureState,
@@ -59,18 +63,25 @@ export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit
         );
         
         
-        this.originalCluster$.subscribe((c) =>{
+        this.originalCluster$.subscribe((c:Cluster) =>{
             this.clonedCluster = cloneDeep(c);
-            let jndi_url  = 'mongodb://127.0.0.1:2701/'+this.clonedCluster.name;               
+            let jndi_url  = 'mongodb://127.0.0.1:2701/'+this.clonedCluster.name;          
             this.setCookie('currentDatasetUrl',jndi_url,30);
             if (this.clonedCluster.crudui_web_url){
                 this.url = this.clonedCluster.crudui_web_url;
                 this.safeUrl = this.$sce.trustAsResourceUrl(this.url);
-                this.safeStringUrl = this.$sanitize(this.url);   
-                console.log(this.safeUrl);
-                console.log(this.safeStringUrl); 
+                this.safeStringUrl = this.$sanitize(this.url);
+
+                console.log('safeStringUrl: '+this.safeStringUrl); 
             }
-                       
+            this.$uiRouter.stateService.go('base.datasets.overview',{},{
+                location: 'replace',  
+                reload: false,      
+                inherit: false
+            }).then(()=>{                   
+                this.$window.location.href = this.safeStringUrl;
+            });         
+
         })
              
     }

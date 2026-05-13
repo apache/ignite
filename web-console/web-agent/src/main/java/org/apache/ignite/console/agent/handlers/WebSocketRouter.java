@@ -1,7 +1,4 @@
-
-
 package org.apache.ignite.console.agent.handlers;
-
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -9,6 +6,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
@@ -43,11 +41,13 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -66,7 +66,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.*;
 @WebSocket(maxTextMessageSize = 8 * 1024 * 1024, maxBinaryMessageSize = 8 * 1024 * 1024)
 public class WebSocketRouter implements AutoCloseable {
     /** */
-    private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(WebSocketRouter.class));
+    private static final IgniteLogger logger = new Slf4jLogger(LoggerFactory.getLogger(WebSocketRouter.class));
 
     /** Pong message. */
     private static final ByteBuffer PONG_MSG = UTF_8.encode("PONG");
@@ -81,13 +81,13 @@ public class WebSocketRouter implements AutoCloseable {
         collect(entriesToMap()));
 
     /** Close agent latch. */
-    private CountDownLatch closeLatch = new CountDownLatch(1);
+    private CountDownLatch closeLatch = null;
 
     /** Agent configuration. */
     private final AgentConfiguration cfg;
 
     /** Websocket Client. */
-    private WebSocketClient client;
+    private final WebSocketClient client;
 
 	/** Schema import handler. */
     private final DatabaseHandler dbHnd;
@@ -105,14 +105,27 @@ public class WebSocketRouter implements AutoCloseable {
     private final ClustersWatcher watcher;
 
     /** Reconnect count. */
-    private AtomicInteger reconnectCnt = new AtomicInteger();
+    private AtomicInteger reconnectAttempts = new AtomicInteger(0);
+
+    private AtomicBoolean connected = new AtomicBoolean(false);
 
     /** Active tokens after handshake. */
     private Collection<String> validTokens;     
     
     private HttpClient httpClient;
+
+    private Session session;
+
+    private URI uri;
+
+    private ScheduledExecutorService reconnectExecutor = ClustersWatcher.pool;
     
-    private static Map<String,Object> runningServices = new ConcurrentHashMap<>();
+    private Map<String,Object> runningServices = new ConcurrentHashMap<>();
+
+    // 重连配置
+    private int maxReconnectAttempts = -1;      // 最大重连次数，-1 表示无限
+    private int initialDelay = 1000;             // 初始重连延迟（毫秒）
+    private int maxDelay = 60000;               // 最大重连延迟（毫秒）
     
     /**
      * @param cfg Configuration.
@@ -126,22 +139,27 @@ public class WebSocketRouter implements AutoCloseable {
         vertxClusterHnd = new VertxClusterHandler(cfg);
 
         watcher = new ClustersWatcher(cfg, clusterHnd,demoClusterHnd,dbHnd,vertxClusterHnd);
+        uri = URI.create(cfg.serverUri()).resolve(AGENTS_PATH);
         
-        // createServerSslFactory(cfg)
+        createServerSslFactory(cfg);
         httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerDestination(2);
+        httpClient.setMaxConnectionsPerDestination(4);
         httpClient.setConnectBlocking(false);
         httpClient.setConnectTimeout(1000);
         httpClient.setFollowRedirects(false);
         
-        
         // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
-        configureProxy(httpClient, cfg.serverUri());
+        //- configureProxy(httpClient, cfg.serverUri());
+
+        client = new WebSocketClient(httpClient);
+        client.setIdleTimeout(Duration.ofSeconds(-1));
+        client.setAutoFragment(true);
 
         try {
 			httpClient.start();
-		} catch (Exception e) {
-			log.error("Failed to start http client: ", e);
+            client.start();
+        } catch (Exception e) {
+			logger.error("Failed to start http client: ", e);
 		}
     }
 
@@ -152,7 +170,7 @@ public class WebSocketRouter implements AutoCloseable {
         boolean trustAll = Boolean.getBoolean("trust.all");
 
         if (trustAll && !F.isEmpty(cfg.serverTrustStore())) {
-            log.warning("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+            logger.warning("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
                 "Option '-Dtrust.all=true' will be ignored on connect to Web server.");
 
             trustAll = false;
@@ -171,13 +189,19 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * Start websocket client.
      */
-    public void start() {
-        log.info("Starting Web Console Agent...");
+    public void start() throws Exception {
+        logger.info("Starting Web Console Agent...");
         closeLatch = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread(closeLatch::countDown));
-        
-        connect();
+
+        this.connect();
+
+    }
+
+    // Getter/Setter
+    public void setMaxReconnectAttempts(int maxReconnectAttempts) {
+        this.maxReconnectAttempts = maxReconnectAttempts;
     }
 
     /**
@@ -190,7 +214,6 @@ public class WebSocketRouter implements AutoCloseable {
             try {
                 client.stop();
                 client.destroy();
-                client = null;
             }
             catch (Exception ignored) {
                 // No-op.
@@ -200,7 +223,7 @@ public class WebSocketRouter implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        log.info("Stopping Web Console Agent...");
+        logger.info("Stopping Web Console Agent...");
         watcher.stop();
         vertxClusterHnd.close();
         dbHnd.close();
@@ -214,58 +237,62 @@ public class WebSocketRouter implements AutoCloseable {
         watcher.close();
     }
 
-    /**
-     * Connect to backend.
-     */
-    private void connect0() {
-        boolean connecting = reconnectCnt.getAndIncrement() == 0;
+    // 开始连接
+    public void connect() {
+        if(session==null || !session.isOpen())
+            connectWithRetry();
+    }
 
+    // 主动连接并重连
+    private void connectWithRetry() {
         try {
-            stopClient();
+            CompletableFuture<Session> future = client.connect(this, uri);
 
-            if (!isRunning())
-                return;
+            future.whenComplete((session, throwable) -> {
+                if (throwable != null) {
+                    logger.error("连接失败", throwable);
+                    scheduleReconnect();
+                } else {
+                    this.session = session;
+                    connected.set(true);
+                    reconnectAttempts.set(0);
+                    logger.info("WebSocket 连接成功，会话 ID: "+session.getRemoteAddress());
+                    onConnected();
+                }
+            });
 
-            if (connecting)
-                log.info("Connecting to server: " + cfg.serverUri());
-
-            Thread.sleep((reconnectCnt.get() - 1) * 1000);
-
-            if (!isRunning())
-                return;
-
-            
-            client = new WebSocketClient(httpClient); 
-                     
-            
-            client.start();
-            Session session = client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);         
-                        
-            session.setIdleTimeout(Duration.ofSeconds(3600));
-            
-            reconnectCnt.set(0);
-            
-        }
-        catch (InterruptedException e) {
-            closeLatch.countDown();
-        }
-        catch (TimeoutException | ExecutionException | CancellationException ignored) {
-            // No-op.
-        	log.error("Failed to establish websocket connection with server: " + cfg.serverUri(), ignored);
-        }
-        catch (Exception e) {
-            if (connecting)
-                log.error("Failed to establish websocket connection with server: " + cfg.serverUri(), e);
-            closeLatch.countDown();
+        } catch (IOException e) {
+            logger.error("Failed to establish websocket connection with server: " + cfg.serverUri());
         }
     }
 
-    /**
-     * Connect to backend.
-     */
-    private void connect() {
-        //-connectorPool.submit(this::connect0);
-        this.connect0();
+    // 调度重连任务
+    private void scheduleReconnect() {
+        if (maxReconnectAttempts != -1 && reconnectAttempts.get() >= maxReconnectAttempts) {
+            logger.error(String.format("达到最大重连次数 {}，停止重连", maxReconnectAttempts));
+            logger.error("Failed to establish websocket connection with server: " + cfg.serverUri());
+            closeLatch.countDown();
+            return;
+        }
+
+        int attempts = reconnectAttempts.incrementAndGet();
+        // 指数退避策略
+        long delay = calculateDelay(attempts);
+
+        logger.info(String.format("将在 {} 毫秒后进行第 {} 次重连", delay, attempts));
+        reconnectExecutor.schedule(this::connectWithRetry, delay, TimeUnit.MILLISECONDS);
+    }
+
+    // 计算重连延迟（指数退避）
+    private long calculateDelay(int attempts) {
+        long delay = initialDelay * (long) Math.pow(2, attempts - 1);
+        return Math.min(delay, maxDelay);
+    }
+
+
+    // 连接成功后的回调
+    private void onConnected() {
+        // 可以在这里启动心跳保持连接
     }
 
     /**
@@ -280,7 +307,7 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * @return {@code true} If web agent is running.
      */
-    private boolean isRunning() {
+    public boolean isRunning() {
         return closeLatch.getCount() > 0;
     }
 
@@ -295,9 +322,38 @@ public class WebSocketRouter implements AutoCloseable {
             AgentUtils.send(ses, new WebSocketResponse(AGENT_HANDSHAKE, req), 10L, TimeUnit.SECONDS);
         }
         catch (Throwable e) {
-            log.error("Failed to send handshake to server", e);
+            logger.error("Failed to send handshake to server", e);
 
             connect();
+        }
+    }
+
+    /**
+     * @param statusCode Close status code.
+     * @param reason Close reason.
+     */
+    @OnWebSocketClose
+    public void onClose(int statusCode, String reason) {
+        logger.info("Websocket connection closed with code: " + statusCode+ ", reason:"+reason);
+        connected.set(false);
+
+        // 如果是非正常关闭（非 1000 正常关闭），触发重连
+        if (statusCode != 1000 && statusCode != 1001) {
+            logger.info("检测到非正常关闭，触发重连");
+            scheduleReconnect();
+        }
+        else{
+            closeLatch.countDown();
+        }
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause) {
+        logger.error("WebSocket 错误", cause);
+        // 错误时也可能需要重连
+        if (connected.get()) {
+            connected.set(false);
+            scheduleReconnect();
         }
     }
 
@@ -313,12 +369,12 @@ public class WebSocketRouter implements AutoCloseable {
             missedTokens.removeAll(validTokens);
 
             if (!F.isEmpty(missedTokens)) {
-                log.warning("Failed to validate token(s): " + secured(missedTokens) + "." +
+                logger.warning("Failed to validate token(s): " + secured(missedTokens) + "." +
                     " Please reload agent archive or check settings");
             }
 
             if (F.isEmpty(validTokens)) {
-                log.warning("Valid tokens not found. Stopping agent...");
+                logger.warning("Valid tokens not found. Stopping agent...");
 
                 closeLatch.countDown();
             }
@@ -326,10 +382,10 @@ public class WebSocketRouter implements AutoCloseable {
             	DataSourceManager.init(getHttpClient(),cfg.serverUri(),validTokens);
             }
 
-            log.info("Successfully completes handshake with server");
+            logger.info("Successfully completes handshake with server");
         }
         else {
-            log.error(res.getError() + " Please reload agent or check settings");
+            logger.error(res.getError() + " Please reload agent or check settings");
 
             closeLatch.countDown();
         }
@@ -339,12 +395,12 @@ public class WebSocketRouter implements AutoCloseable {
      * @param tok Token to revoke.
      */
     private void processRevokeToken(String tok) {
-        log.warning("Security token has been revoked: " + tok);
+        logger.warning("Security token has been revoked: " + tok);
 
         validTokens.remove(tok);
 
         if (F.isEmpty(validTokens)) {
-            log.warning("Web Console Agent will be stopped because no more valid tokens available");
+            logger.warning("Web Console Agent will be stopped because no more valid tokens available");
 
             closeLatch.countDown();
         }
@@ -403,7 +459,7 @@ public class WebSocketRouter implements AutoCloseable {
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
         
-        boolean isLastNode = json.getBoolean("isLastNode",false);
+        boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
         String clusterId = json.getString("id");
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(clusterId.equals(DEMO_CLUSTER_ID) || DEMO_CLUSTER_NAME.equals(clusterName)) {
@@ -413,7 +469,7 @@ public class WebSocketRouter implements AutoCloseable {
 
         List<String> messages = new ArrayList<>();
         
-        log.info("Cluster start msg has been revoked: " + clusterName);
+        logger.info("Cluster start msg has been revoked: " + clusterName);
 		
         try {
             String work = U.workDirectory(null, null);
@@ -450,16 +506,15 @@ public class WebSocketRouter implements AutoCloseable {
 			if(!isDemo) {
 				// 如果包含hosts，ports则远程启动节点。
 				
-				File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");				
-				
+				File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
 				File configFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-config.xml");
 				
 				if(startIniFile.exists()) {
 					if(isLastNode) {
 						try {						
 			        		ignite = Ignition.allGrids().get(0);
-			        		ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
-                            stat.put("message", "start nodes by {name}-start-nodes.ini file.");
+                            Collection<ClusterStartNodeResult> results = ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
+                            stat.put("message", "start nodes by {name}-start-nodes.ini file.\n"+results);
                             stat.put("status", "started");
 			    		}
 				    	catch(IgniteIllegalStateException e) {	
@@ -536,10 +591,10 @@ public class WebSocketRouter implements AutoCloseable {
      * @param evt Token to revoke.
      */
     private JsonObject processClusterStop(WebSocketRequest evt) {
-        log.info("Cluster stop msg has been revoked: " + evt.getPayload());
+        logger.info("Cluster stop msg has been revoked: " + evt.getPayload());
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
-        boolean isLastNode = json.getBoolean("isLastNode",false);     
+        boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(json.getBoolean("demo",false)) {
         	AgentClusterDemo.stop();
@@ -572,21 +627,18 @@ public class WebSocketRouter implements AutoCloseable {
      * @param msg Token to revoke.
      */
     private JsonObject processCallClusterService(String msg) {
-        log.info("Cluster status msg has been revoked: " + msg);
+        logger.info("Cluster status msg has been revoked: " + msg);
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(msg);
         String cluterId = json.getString("id");
         String serviceName = json.getString("serviceName","");
         
         if(dbHnd.canHandle(serviceName)) {
-        	
         	JsonObject args = json.getJsonObject("args");
-        	ServiceResult rv = dbHnd.handleCommand(cluterId,serviceName,args);        	
-    		
+        	ServiceResult rv = dbHnd.handleCommand(cluterId,serviceName,args);
     		return rv.toJson();
         	
         }
-        
         
         Ignite ignite = getIgnite(json,stat);
         if(ignite!=null && !serviceName.isEmpty()) {
@@ -603,9 +655,7 @@ public class WebSocketRouter implements AutoCloseable {
         		return result.toJson();
         	}
         	
-        	
         	try {
-        		
         		if(runningServices.containsKey(serviceName)) {
         			stat.put("message", String.format("%s already running!", serviceName));
         			return stat;
@@ -675,7 +725,7 @@ public class WebSocketRouter implements AutoCloseable {
      * @param msg Token to revoke.
      */
     private JsonObject processCallClusterCommand(String msg) {
-        log.info("Cluster cmd has been revoked: " + msg);        
+        logger.info("Cluster cmd has been revoked: " + msg);        
         JsonObject json = fromJson(msg);
         
         String cmdName = json.getString("cmdName","");
@@ -750,8 +800,8 @@ public class WebSocketRouter implements AutoCloseable {
 
                 case NODE_REST:
                 case NODE_VISOR:
-                    if (log.isDebugEnabled())
-                        log.debug("Processing REST request: " + evt);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Processing REST request: " + evt);
 
                     RestRequest reqRest = fromJson(evt.getPayload(), RestRequest.class);
 
@@ -822,24 +872,22 @@ public class WebSocketRouter implements AutoCloseable {
                     break;
 
                 default:
-                    log.warning("Unknown event: " + evt);
+                    logger.warning("Unknown event: " + evt);
             }
         }
         catch (Throwable e) {
             if (evt == null) {
-                log.error("Failed to process message: " + msg, e);
-
+                logger.error("Failed to process message: " + msg, e);
                 return;
             }
             
-            log.error("Failed to process message: " + evt, e);
+            logger.error("Failed to process message: " + evt, e);
 
             try {
                 send(ses, evt.withError(ERROR_MSGS.get(evt.getEventType()), e));
             }
             catch (Exception ex) {
-                log.error("Failed to send response with error", e);
-
+                logger.error("Failed to send response with error", e);
                 connect();
             }
         }
@@ -852,43 +900,15 @@ public class WebSocketRouter implements AutoCloseable {
     @OnWebSocketFrame
     public void onFrame(Session ses, Frame frame) {
         if (isRunning() && frame.getType() == Frame.Type.PING) {
-            if (log.isTraceEnabled())
-                log.trace("Received ping message [socket=" + ses + ", msg=" + frame + "]");
+            if (logger.isTraceEnabled())
+                logger.trace("Received ping message [socket=" + ses + ", msg=" + frame + "]");
 
             try {
                 ses.getRemote().sendPong(PONG_MSG);
             }
             catch (Throwable e) {
-                log.error("Failed to send pong to: " + ses, e);
+                logger.error("Failed to send pong to: " + ses, e);
             }
-        }
-    }
-
-    /**
-     * @param ignored Error.
-     */
-    @OnWebSocketError
-    public void onError(Throwable ignored) {
-        if (reconnectCnt.get() == 1)
-            log.error("Failed to establish websocket connection with server: " + cfg.serverUri());
-
-        if (reconnectCnt.get() >= 1)
-            connect();
-    }
-
-    /**
-     * @param statusCode Close status code.
-     * @param reason Close reason.
-     */
-    @OnWebSocketClose
-    public void onClose(int statusCode, String reason) {
-        if (reconnectCnt.get() == 0) {
-            log.info("Websocket connection closed with code: " + statusCode+ ", reason:"+reason);
-
-            connect();
-        }
-        else {
-        	closeLatch.countDown();
         }
     }
 

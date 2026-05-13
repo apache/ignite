@@ -74,7 +74,7 @@ public class FileSystemConfiguration {
     public static final int DFLT_MGMT_PORT = 11400;
 
     /** Default IPC endpoint enabled flag. */
-    public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
+    public static final boolean DFLT_IPC_ENDPOINT_ENABLED = false;
 
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;

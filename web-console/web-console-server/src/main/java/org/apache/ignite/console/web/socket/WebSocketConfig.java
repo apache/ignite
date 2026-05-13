@@ -44,8 +44,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
      */
     @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(agentsSrvc, AGENTS_PATH).setAllowedOrigins("*");
-        registry.addHandler(browsersSrvc, BROWSERS_PATH).setAllowedOrigins("*");      
-        
+        registry.addHandler(browsersSrvc, BROWSERS_PATH).setAllowedOrigins("*");
     }  
  
 }

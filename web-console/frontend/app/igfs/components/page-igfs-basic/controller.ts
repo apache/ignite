@@ -1,20 +1,26 @@
+import {Observable, combineLatest, from, of} from 'rxjs';
+import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
+import ConfigureState from 'app/configuration/services/ConfigureState';
 import { Component, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-
+import {UIRouter} from '@uirouter/angularjs';
 
 export default class PageIgfsBasicComponent implements OnInit {
-    static $inject = ['$sanitize','$sce'];
+    static $inject = ['$sanitize','$sce','$window','$uiRouter', 'ConfigureState'];
 
-    url = '/filemanager/index.html';
+    url = '/filemanager/';
 
     safeUrl: SafeResourceUrl;
 
     safeStringUrl: SafeResourceUrl;
 
-    constructor(private $sanitize,private $sce) {
+    constructor(private $sanitize,private $sce,private $window,
+        private $uiRouter: UIRouter,
+        private ConfigureState: ConfigureState
+    ) {
         
-        this.safeUrl = this.$sce.trustAsResourceUrl(this.url)
-        this.safeStringUrl = this.$sanitize(this.url);
+        this.safeUrl = this.$sce.trustAsResourceUrl(this.url+'index.html')
+        this.safeStringUrl = this.$sanitize(this.safeUrl);
     }
 
     _loadMongoExpress(id: string) {
@@ -38,8 +44,25 @@ export default class PageIgfsBasicComponent implements OnInit {
     }
 
     ngOnInit() {
-        console.log(this.safeUrl);
-        console.log(this.safeStringUrl);
+        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('storageID')); 
+
+        this.clusterID$.subscribe((id) =>{
+            let c = this._loadMongoExpress(id)
+            if (c && (c.url || c.accessMode=='logs' || c.accessMode=='s3')){
+                localStorage.currentStorageHost = c.url;
+                this.$uiRouter.stateService.go('base.igfs.overview',{},{
+                    location: 'replace',  
+                    reload: false,      
+                    inherit: false
+                }).then(()=>{
+                    let endpont = c.accessMode || 'index';
+                    this.$window.location.href = this.url+ endpont+'.html';
+                });
+            }
+            else{
+                this.$uiRouter.stateService.go('base.igfs.edit.advanced',{storageID: id});
+            }
+        })
     }
 
     ngAfterViewInit() {            

@@ -290,6 +290,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
         return authRestCommand(nid,params);
     }
     
+    @Override
     public List<TopologySnapshot> topologySnapshot() {
     	List<TopologySnapshot> tops = new LinkedList<>(); 
     	

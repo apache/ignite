@@ -61,6 +61,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
     /**
      * @return Topology snapshot for demo cluster.
      */
+    @Override
     public List<TopologySnapshot> topologySnapshot() {
         if (cfg.disableDemo())
             return null;

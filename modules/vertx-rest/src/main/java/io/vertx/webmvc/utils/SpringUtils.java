@@ -4,8 +4,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 
 /**
@@ -44,7 +42,7 @@ public class SpringUtils implements ApplicationContextAware {
         return context.getBean(name, clazz);
     }
 
-    public static String[] getBeanNamesForType(@Nullable Class<?> aClass) {
+    public static String[] getBeanNamesForType(Class<?> aClass) {
         return context.getBeanNamesForType(aClass);
     }
 

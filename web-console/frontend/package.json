@@ -17,7 +17,7 @@
   ],
   "homepage": "https://ignite.apache.org/",
   "engines": {
-    "node": ">=8.0.0 <17.0.0"
+    "node": ">=8.0.0 <=24.0.0"
   },
   "os": [
     "darwin",

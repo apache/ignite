@@ -36,6 +36,9 @@ public interface WebSocketEvents {
     /** 调用集群Control Command */
     public static final String AGENT_CALL_CLUSTER_COMMAND = "agent:callClusterCommand";
 
+    /** 给所有客户端发送消息 */
+    public static final String BROADCAST = "BROADCAST";
+
     /** */
     public static final String ADMIN_ANNOUNCEMENT = "admin:announcement";
 

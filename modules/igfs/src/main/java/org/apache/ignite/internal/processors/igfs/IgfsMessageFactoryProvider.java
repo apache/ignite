@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.igfs.client.*;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
@@ -34,7 +35,7 @@ import java.util.Set;
 /**
  * Binary context.
  */
-public class IgfsMessageFactoryProvider implements MessageFactoryProvider {
+public class IgfsMessageFactoryProvider extends AbstractMarshallableMessageFactoryProvider {
    
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
@@ -93,16 +94,16 @@ public class IgfsMessageFactoryProvider implements MessageFactoryProvider {
 
 	@Override
 	public void registerAll(MessageFactory factory) {
-		
-		factory.register((short)64, IgfsAckMessage::new);
-    	factory.register((short)65, IgfsBlockKey::new);
-    	factory.register((short)66, IgfsBlocksMessage::new);
-    	factory.register((short)67, IgfsDeleteMessage::new);
-    	factory.register((short)68, IgfsFileAffinityRange::new);
-    	factory.register((short)69, IgfsFragmentizerRequest::new);
-    	factory.register((short)70, IgfsFragmentizerResponse::new);
-    	factory.register((short)71, IgfsSyncMessage::new);
-		
+        factory.register((short)68, IgfsFileAffinityRange::new);
+
+        register(factory,IgfsAckMessage.class,(short)64, schemaAwareMarsh, resolvedClsLdr);
+        register(factory,IgfsBlockKey.class,(short)65, schemaAwareMarsh, resolvedClsLdr);
+        register(factory,IgfsBlocksMessage.class,(short)66, schemaAwareMarsh, resolvedClsLdr);
+        register(factory,IgfsDeleteMessage.class,(short)67, schemaAwareMarsh, resolvedClsLdr);
+
+        register(factory,IgfsFragmentizerRequest.class,(short)69, schemaAwareMarsh, resolvedClsLdr);
+        register(factory,IgfsFragmentizerResponse.class,(short)70, schemaAwareMarsh, resolvedClsLdr);
+        register(factory,IgfsSyncMessage.class,(short)71, schemaAwareMarsh, resolvedClsLdr);
 	}
   
 }

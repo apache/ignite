@@ -36,10 +36,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.activation.MimetypesFileTypeMap;
-import javax.mail.internet.MimeUtility;
-
-
+import jakarta.activation.MimetypesFileTypeMap;
+import jakarta.mail.internet.MimeUtility;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;

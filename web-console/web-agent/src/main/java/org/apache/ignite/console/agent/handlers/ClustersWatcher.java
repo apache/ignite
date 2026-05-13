@@ -59,12 +59,9 @@ public class ClustersWatcher implements Closeable {
     private AgentConfiguration cfg;    
 
     /** Cluster handler. */
-    private ClusterHandler[] clusterHnds;    
-
-
-
+    private ClusterHandler[] clusterHnds;
     /** Executor pool. */
-    private final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
+    public static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
 
     /** Refresh task. */
     private ScheduledFuture<?> refreshTask;
@@ -72,7 +69,7 @@ public class ClustersWatcher implements Closeable {
 
     /**
      * @param cfg Agent configuration.
-     * @param clusterHnd Cluster handler.
+     * @param clusterHnds Cluster handler.
      */
     ClustersWatcher(AgentConfiguration cfg, ClusterHandler... clusterHnds) {
         this.cfg = cfg;
