@@ -99,7 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -397,9 +397,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** This future finished with 'cluster is fully rebalanced' state. */
     private volatile boolean rebalanced;
-
-    /** Some of owned by affinity partitions were changed state to moving on this exchange. */
-    private volatile boolean affinityReassign;
 
     /** Tracing span. */
     private Span span = NoopSpan.INSTANCE;
@@ -995,7 +992,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage)
+                else if (msg instanceof SnapshotStartDiscoveryMessage)
                     exchange = onCustomMessageNoAffinityChange();
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange();
@@ -3831,12 +3828,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             finalizePartitionCounters();
                     }
                 }
-                else if (discoveryCustomMsg instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMsg).needAssignPartitions()) {
-                    markAffinityReassign();
-
-                    assignPartitionsStates(null);
-                }
             }
             else if (exchCtx.events().hasServerJoin())
                 assignPartitionsStates(null);
@@ -4640,14 +4631,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (stateChangeExchange() && !F.isEmpty(msg.getErrorsMap()))
                 cctx.kernalContext().state().onStateChangeError(msg.getErrorsMap(), exchActions.stateChangeRequest());
 
-            if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                DiscoveryCustomMessage discoveryCustomMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
-
-                if (discoveryCustomMsg instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMsg).needAssignPartitions())
-                    markAffinityReassign();
-            }
-
             onDone(resTopVer, null);
         }
         catch (IgniteCheckedException e) {
@@ -5268,20 +5251,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert wasRebalanced();
 
         markRebalanced();
-    }
-
-    /**
-     * Marks this future as affinity reassign.
-     */
-    public void markAffinityReassign() {
-        affinityReassign = true;
-    }
-
-    /**
-     * @return True if some owned partition was reassigned, false otherwise.
-     */
-    public boolean affinityReassign() {
-        return affinityReassign;
     }
 
     /**

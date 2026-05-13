@@ -23,7 +23,7 @@ link:#print-statistics[print statistics] from the collected files.
 
 == Building the Report
 
-Ignite provides a tool to generate the report from the performance statistics files.
+The extension provides a tool to generate an offline HTML report from performance statistics files.
 
 Follow these steps to build the performance report:
 
@@ -31,8 +31,12 @@ Follow these steps to build the performance report:
 
     /path_to_files/
         ├── node-162c7147-fef8-4ea2-bd25-8653c41fc7fa.prf
+        ├── node-162c7147-fef8-4ea2-bd25-8653c41fc7fa-system-views.prf
         ├── node-7b8a7c5c-f3b7-46c3-90da-e66103c00001.prf
-        └── node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf
+        └── node-7b8a7c5c-f3b7-46c3-90da-e66103c00001-system-views.prf
+
++
+`node-\*-system-views*.prf` files are stored next to regular performance statistics files. If the system view files are too large, you can omit them. The report will still be generated, but without `System views` data.
 
 2.  Run the script from the release package of the tool:
 
@@ -45,6 +49,10 @@ The performance report is created in the new directory under the performance sta
 `path_to_files/report_yyyy-MM-dd_HH-mm-ss/`.
 Open `report_yyyy-MM-dd_HH-mm-ss/index.html` in the browser to see the report.
 
+The report includes `Cluster info`, `Cache operations`, `Transactions`, `SQL queries`, `Scan queries`,
+`Index queries`, `Tasks and jobs`, and `System views`. When `node-\*-system-views*.prf` files are available in the
+input directory, the `System views` tab is populated with their data.
+
 For more details run the help command:
 
 [source,shell]
@@ -52,27 +60,97 @@ For more details run the help command:
 performance-statistics-tool/build-report.sh --help
 ----
 
-=== Performance Statistics Report Example
+=== HTML Report Tabs
 
 :perf_stat_url: images/integrations/performance-statistics
+:perf_stat_image_url: /docs/images/integrations/performance-statistics
 
-[tabs]
---
-tab:Cache operations[]
-image:{perf_stat_url}/perf_stat_2.jpg[Cache operations report]
-tab:Transactions[]
-image:{perf_stat_url}/perf_stat_3.jpg[Transactions report]
-tab:Queries[]
-image:{perf_stat_url}/perf_stat_4.jpg[Queries report]
-tab:Compute[]
-image:{perf_stat_url}/perf_stat_5.jpg[Compute report]
-tab:Cluster info[]
-image:{perf_stat_url}/perf_stat_1.jpg[Cluster info report]
---
+==== Cluster info
+
+Cluster topology and caches found in the input files: `Cluster nodes` and `Started caches` tables.
+
+image::{perf_stat_url}/perf_stat_cluster_info.png[Cluster info report, link={perf_stat_image_url}/perf_stat_cluster_info.png]
+
+==== Cache operations
+
+Cache and cache store activity for the selected cache and node. Cache and node selectors filter all charts on the page.
+
+A bar chart summarizes the distribution of cache operation counts by type:
+
+image::{perf_stat_url}/perf_stat_cache_operations.png[Distribution of cache operations, link={perf_stat_image_url}/perf_stat_cache_operations.png]
+
+For each operation type, a line chart shows the operation count over time:
+
+image::{perf_stat_url}/perf_stat_cache_operations_1.png[Cache operation count over time, link={perf_stat_image_url}/perf_stat_cache_operations_1.png]
+
+The `Cache store operations` section provides the same breakdowns for cache store calls. A distribution chart
+summarizes cache store operation counts by type:
+
+image::{perf_stat_url}/perf_stat_cache_operations_2.png[Distribution of cache store operations, link={perf_stat_image_url}/perf_stat_cache_operations_2.png]
+
+Line charts show cache store operation counts over time:
+
+image::{perf_stat_url}/perf_stat_cache_operations_3.png[Cache store operation count over time, link={perf_stat_image_url}/perf_stat_cache_operations_3.png]
+
+==== Transactions
+
+Transaction activity for the selected cache and node. A histogram shows the distribution of transaction durations:
+
+image::{perf_stat_url}/perf_stat_transactions.png[Transactions histogram, link={perf_stat_image_url}/perf_stat_transactions.png]
+
+Below it, line charts plot `commit` and `rollback` counts over time:
+
+image::{perf_stat_url}/perf_stat_transactions_1.png[Transactions commit chart, link={perf_stat_image_url}/perf_stat_transactions_1.png]
+
+==== SQL queries
+
+Aggregated SQL query statistics. The `Overall statistics` table shows total executions, duration, and reads for each
+query. Each row expands into a `Properties` subtable with map and reduce phase plans, and a `Rows` subtable with
+rows fetched on mapper and reducer nodes:
+
+image::{perf_stat_url}/perf_stat_sql_queries.png[SQL queries overall statistics, link={perf_stat_image_url}/perf_stat_sql_queries.png]
+
+The `Top of slowest queries` table lists slow query executions with the same expandable details:
+
+image::{perf_stat_url}/perf_stat_sql_queries_1.png[Top of slowest SQL queries, link={perf_stat_image_url}/perf_stat_sql_queries_1.png]
+
+==== Scan queries
+
+Aggregated scan query statistics by cache and the slowest scan queries: `Overall statistics` and `Top of slowest
+queries` tables.
+
+image::{perf_stat_url}/perf_stat_scan_queries.png[Scan queries report, link={perf_stat_image_url}/perf_stat_scan_queries.png]
+
+==== Index queries
+
+Aggregated index query statistics and the slowest index queries: `Overall statistics` and `Top of slowest queries`
+tables.
+
+image::{perf_stat_url}/perf_stat_index_queries.png[Index queries report, link={perf_stat_image_url}/perf_stat_index_queries.png]
+
+==== Tasks and jobs
+
+Aggregated task execution statistics. The `Overall statistics` table shows executions, total duration, and job
+counts per task:
+
+image::{perf_stat_url}/perf_stat_tasks_and_jobs.png[Tasks and jobs overall statistics, link={perf_stat_image_url}/perf_stat_tasks_and_jobs.png]
+
+The `Top of slowest tasks` table lists slow task executions. Each row expands into a `Jobs` subtable with per-node
+job durations:
+
+image::{perf_stat_url}/perf_stat_tasks_and_jobs_1.png[Top of slowest tasks with jobs subtable, link={perf_stat_image_url}/perf_stat_tasks_and_jobs_1.png]
+
+==== System views
+
+Rows from collected system views. The tab provides a node selector, a system view selector, and a searchable
+paginated table for the selected view.
+
+image::{perf_stat_url}/perf_stat_system_views.png[System views report, link={perf_stat_image_url}/perf_stat_system_views.png]
 
 == Print Statistics
 
-Ignite provides a tool to print statistics to a console or to a file in JSON format.
+The extension provides a tool to print raw performance statistics records to the console or to a file in JSON format.
+Use this tool when you need access to individual records.
 
 Run the script from the release package of the tool to print statistics:
 
@@ -81,14 +159,38 @@ Run the script from the release package of the tool to print statistics:
 performance-statistics-tool/print-statistics.sh path_to_files
 ----
 
-Note that `path_to_files` is a path to the performance statistics file or files directory.
+Note that `path_to_files` can point either to a single performance statistics file or to a directory with multiple
+files.
 
-The script provides the ability to filter operations by operation's type, time, or cache. For more details run the
-help command:
+The tool supports the following options:
+
+[cols="1,3",opts="header"]
+|===
+|Option |Description
+
+|`--out out_file` |Appends JSON output to the specified file.
+|`--ops op_types` |Prints only the specified comma-separated operation types.
+|`--from start_time_from` |Prints only records whose start time is greater than or equal to the specified value (Unix epoch milliseconds).
+|`--to start_time_to` |Prints only records whose start time is less than or equal to the specified value (Unix epoch milliseconds).
+|`--caches cache_names` |Prints only records related to the specified comma-separated cache names.
+|===
+
+For more details run the help command:
 
 [source,shell]
 ----
 performance-statistics-tool/print-statistics.sh --help
+----
+
+Examples:
+
+[source,shell]
+----
+performance-statistics-tool/print-statistics.sh path_to_files --ops QUERY,QUERY_ROWS,QUERY_PROPERTY
+performance-statistics-tool/print-statistics.sh path_to_files --ops SYSTEM_VIEW_ROW
+performance-statistics-tool/print-statistics.sh path_to_files --ops CHECKPOINT,PAGES_WRITE_THROTTLE
+performance-statistics-tool/print-statistics.sh path_to_files --from 1713700000000 --to 1713703600000
+performance-statistics-tool/print-statistics.sh path_to_files --caches cache1,cache2 --out perfstat.json
 ----
 
 See the output example below:

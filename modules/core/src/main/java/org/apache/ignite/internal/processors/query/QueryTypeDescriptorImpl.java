@@ -162,6 +162,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** @see SqlConfiguration#isValidationEnabled() */
     private final boolean validateTypes;
 
+    /** */
+    private boolean sql;
+
     /**
      * Constructor.
      *
@@ -832,6 +835,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void implicitPk(boolean implicitPk) {
         this.implicitPk = implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean sql() {
+        return sql;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sql(boolean sql) {
+        this.sql = sql;
     }
 
     /** {@inheritDoc} */

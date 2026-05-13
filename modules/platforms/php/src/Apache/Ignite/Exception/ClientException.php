@@ -1,7 +1,4 @@
-<<<<<<<< HEAD:modules/platforms/php/src/Apache/Ignite/Exception/ClientException.php
 <?php
-========
->>>>>>>> upstream/master:modules/calcite/src/test/java/org/apache/ignite/testsuites/IgniteCalciteTestSuite2.java
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-<<<<<<<< HEAD:modules/platforms/php/src/Apache/Ignite/Exception/ClientException.php
 namespace Apache\Ignite\Exception;
 
 /**
@@ -36,23 +31,4 @@ class ClientException extends \Exception
     {
         parent::__construct($message);
     }
-========
-package org.apache.ignite.testsuites;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Calcite tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    PlannerTestSuite.class,
-    ExecutionTestSuite.class,
-    JdbcTestSuite.class,
-
-    ScriptTestSuite.class,
-})
-public class IgniteCalciteTestSuite2 {
->>>>>>>> upstream/master:modules/calcite/src/test/java/org/apache/ignite/testsuites/IgniteCalciteTestSuite2.java
 }

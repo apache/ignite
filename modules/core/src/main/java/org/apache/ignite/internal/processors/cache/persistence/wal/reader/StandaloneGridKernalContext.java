@@ -743,7 +743,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public LongJVMPauseDetector longJvmPauseDetector() {
-        return new LongJVMPauseDetector(log);
+        return new LongJVMPauseDetector("standalone-ignite-kernal", log);
     }
 
     /** {@inheritDoc} */
