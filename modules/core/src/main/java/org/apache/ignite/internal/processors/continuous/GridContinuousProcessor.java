@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1094,6 +1095,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** */
+    private boolean checkNodeFilter(StartRequestData reqData) {
+        IgnitePredicate<ClusterNode> nodeFilter;
+
+        return reqData == null || (nodeFilter = reqData.nodeFilter()) == null
+            || nodeFilter.apply(ctx.discovery().localNode());
+    }
+
     /**
      * @param sndId Sender node ID.
      * @param msg Message.
@@ -1152,6 +1161,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     U.error(log, "Failed to unmarshal continuous request data [" +
                         "routineId=" + msg.routineId +
                         ", srcNodeId=" + snd.id() + ']', e);
+
+                    if (X.hasCause(e, ClassNotFoundException.class) && !checkNodeFilter(reqData)) {
+                        sendMessageStartResult(snd, msg.routineId(), null, null);
+
+                        return;
+                    }
                 }
 
                 IgnitePredicate<ClusterNode> nodeFilter = reqData.nodeFilter();
