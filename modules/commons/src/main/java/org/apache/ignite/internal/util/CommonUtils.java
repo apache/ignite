@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
@@ -541,27 +542,27 @@ public abstract class CommonUtils {
 
     /**
      * Starts clock timer if grid is first.
+     *
+     * @param igniteInstanceName Ignite instance name.
      */
-    public static void onGridStart() {
+    @SuppressWarnings({"BusyWait"})
+    public static void onGridStart(String igniteInstanceName) {
         synchronized (mux) {
             if (gridCnt == 0) {
                 assert timer == null;
 
-                timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
+                timer = new IgniteThread(igniteInstanceName, "ignite-clock", () -> {
+                    while (!IgniteThread.currentThread().isInterrupted()) {
+                        curTimeMillis = System.currentTimeMillis();
 
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
+                        try {
+                            Thread.sleep(10);
+                        }
+                        catch (InterruptedException ignored) {
+                            break;
                         }
                     }
-                }, "ignite-clock");
+                });
 
                 timer.setDaemon(true);
 

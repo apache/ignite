@@ -74,7 +74,7 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         pageMem = createPageMemory();
 
-        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager");
+        lockTrackerManager = new PageLockTrackerManager("testIgniteInstance", "testTreeManager", log);
 
         lockTrackerManager.start();
     }

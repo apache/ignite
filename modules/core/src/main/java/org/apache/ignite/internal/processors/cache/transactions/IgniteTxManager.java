@@ -3395,54 +3395,46 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param msg Message.
          */
         private void processFailedMessage(UUID nodeId, GridCacheMessage msg, Throwable err) throws IgniteCheckedException {
-            switch (msg.directType()) {
-                case 10003: {
-                    TxLocksRequest req = (TxLocksRequest)msg;
+            if (msg instanceof TxLocksRequest) {
+                TxLocksRequest req = (TxLocksRequest)msg;
 
-                    TxLocksResponse res = new TxLocksResponse();
+                TxLocksResponse res = new TxLocksResponse();
 
-                    res.futureId(req.futureId());
+                res.futureId(req.futureId());
 
-                    try {
-                        cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send response, node failed: " + nodeId);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
-                            ", res=" + res + ']', e);
-                    }
+                try {
+                    cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                 }
-
-                break;
-
-                case 10004: {
-                    TxLocksResponse res = (TxLocksResponse)msg;
-
-                    TxDeadlockFuture fut = future(res.futureId());
-
-                    if (fut == null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to find future for response [sender=" + nodeId + ", res=" + res + ']');
-
-                        return;
-                    }
-
-                    if (err == null)
-                        fut.onResult(nodeId, res);
-                    else
-                        fut.onDone(null, err);
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send response, node failed: " + nodeId);
                 }
-
-                break;
-
-                default:
-                    throw new IgniteCheckedException("Failed to process message. Unsupported direct type [msg=" +
-                        msg + ']', msg.classError());
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
+                        ", res=" + res + ']', e);
+                }
             }
+            else if (msg instanceof TxLocksResponse) {
+                TxLocksResponse res = (TxLocksResponse)msg;
 
+                TxDeadlockFuture fut = future(res.futureId());
+
+                if (fut == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to find future for response [sender=" + nodeId + ", res=" + res + ']');
+
+                    return;
+                }
+
+                if (err == null)
+                    fut.onResult(nodeId, res);
+                else
+                    fut.onDone(null, err);
+            }
+            else {
+                throw new IgniteCheckedException("Failed to process message. Unsupported direct type [msg=" +
+                    msg + ']', msg.classError());
+            }
         }
 
         /**
