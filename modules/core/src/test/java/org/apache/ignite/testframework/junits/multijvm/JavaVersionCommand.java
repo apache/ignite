@@ -17,13 +17,10 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -43,32 +40,12 @@ class JavaVersionCommand {
 
         if (proc.exitValue() != 0) {
             throw new IllegalStateException("'java -version' failed, stdin '" +
-                readStream(proc.getInputStream()) + "', stdout '" +
-                readStream(proc.getErrorStream()) + "'");
+                GridTestIoUtils.readStream(proc.getInputStream()) + "', stdout '" +
+                GridTestIoUtils.readStream(proc.getErrorStream()) + "'");
         }
 
-        String verOutput = readStream(proc.getErrorStream());
+        String verOutput = GridTestIoUtils.readStream(proc.getErrorStream());
 
         return JavaVersionCommandParser.extractMajorVersion(verOutput);
-    }
-
-    /**
-     * Reads whole stream content and returns it as a string. UTF-8 is used to convert from bytes to string.
-     *
-     * @param inputStream Stream to read.
-     * @return Stream content as a string.
-     * @throws IOException If something goes wrong.
-     */
-    private String readStream(InputStream inputStream) throws IOException {
-        // commons-io (IOUtils) is intentionally not used here.
-        // JavaVersionCommand is executed inside a forked JVM process launched by IgniteProcessProxy.
-        // Surefire's IsolatedClassLoader does not include test-scoped dependencies in the forked
-        // process classpath, so commons-io is unavailable.
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int len;
-        while ((len = inputStream.read(buf)) != -1)
-            baos.write(buf, 0, len);
-        return new String(baos.toByteArray(), UTF_8);
     }
 }
