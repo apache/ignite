@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.*;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -37,7 +39,7 @@ import java.util.Objects;
 /**
  * File's binary data block key.
  */
-public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable,
+public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable, Binarylizable,
     Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -150,7 +152,23 @@ public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externaliz
         evictExclude = in.readBoolean();
         blockId = in.readLong();
     }
+    @Override
+    public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter bwriter = writer.rawWriter();
+        BinaryUtils.writeIgniteUuid(bwriter, fileId);
+        BinaryUtils.writeIgniteUuid(bwriter, affKey);
+        bwriter.writeBoolean(evictExclude);
+        bwriter.writeLong(blockId);
+    }
 
+    @Override
+    public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader breader = reader.rawReader();
+        fileId = BinaryUtils.readIgniteUuid(breader);
+        affKey = BinaryUtils.readIgniteUuid(breader);
+        evictExclude = breader.readBoolean();
+        blockId = breader.readLong();
+    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
@@ -181,4 +199,5 @@ public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externaliz
     @Override public String toString() {
         return S.toString(IgfsBlockKey.class, this);
     }
+
 }

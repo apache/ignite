@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.binary.*;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -54,19 +55,24 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
     public static final int RANGE_STATUS_MOVED = 2;
 
     /** Range affinity key. */
-    private IgniteUuid affKey;
+    @Order(0)
+    IgniteUuid affKey;
 
     /** {@code True} if currently being moved by fragmentizer. */
-    private int status = RANGE_STATUS_INITIAL;
+    @Order(4)
+    int status = RANGE_STATUS_INITIAL;
 
     /** Range start offset (divisible by block size). */
-    private long startOff;
+    @Order(1)
+    long startOff;
 
     /** Range end offset (endOff + 1 divisible by block size). */
-    private long endOff;
+    @Order(2)
+    long endOff;
 
     /** Field kept for backward compatibility. */
-    private boolean done;
+    @Order(3)
+    boolean done;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -273,102 +279,6 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
         status = reader.readInt();
         startOff = reader.readLong();
         endOff = reader.readLong();
-    }
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(affKey))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean(done))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong( endOff))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeLong(startOff))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeInt(status))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                affKey = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                done = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                endOff = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                startOff = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                status = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

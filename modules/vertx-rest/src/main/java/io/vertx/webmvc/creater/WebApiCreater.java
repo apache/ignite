@@ -247,7 +247,8 @@ public class WebApiCreater extends AbstractVerticle {
     @Override
     public void stop(Promise<Void> stopPromise) throws Exception {
     	state = 0;
-        destroyVertxlet(stopPromise);        
+        destroyVertxlet(stopPromise);
+        server.close();
     }
    
     

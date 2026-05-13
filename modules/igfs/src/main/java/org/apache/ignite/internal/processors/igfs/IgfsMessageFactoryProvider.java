@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.igfs.client.*;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
@@ -29,6 +31,9 @@ import org.apache.ignite.internal.processors.igfs.meta.*;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
+import java.io.ObjectInputStream;
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,14 +41,12 @@ import java.util.Set;
  * Binary context.
  */
 public class IgfsMessageFactoryProvider extends AbstractMarshallableMessageFactoryProvider {
-   
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
-
+    static Set<String> sysClss = new HashSet<>();
 
     /* Binarylizable system classes set initialization. */
     static {
-        Set<String> sysClss = new HashSet<>();
 
         // IGFS classes.
         sysClss.add(IgfsPath.class.getName());
@@ -94,13 +97,25 @@ public class IgfsMessageFactoryProvider extends AbstractMarshallableMessageFacto
 
 	@Override
 	public void registerAll(MessageFactory factory) {
-        factory.register((short)68, IgfsFileAffinityRange::new);
+
+        try {
+            BinaryMarshaller binaryMarshaller = (BinaryMarshaller)schemaAwareMarsh;
+            MarshallerContextImpl context = (MarshallerContextImpl)binaryMarshaller.getContext();
+            Field sysTypeSetField =  MarshallerContextImpl.class.getDeclaredField("sysTypesSet");
+            sysTypeSetField.setAccessible(true);
+            Collection<String> sysTypeSet = (Collection<String>) sysTypeSetField.get(context);
+            sysTypeSet.addAll(sysClss);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
 
         register(factory,IgfsAckMessage.class,(short)64, schemaAwareMarsh, resolvedClsLdr);
         register(factory,IgfsBlockKey.class,(short)65, schemaAwareMarsh, resolvedClsLdr);
         register(factory,IgfsBlocksMessage.class,(short)66, schemaAwareMarsh, resolvedClsLdr);
         register(factory,IgfsDeleteMessage.class,(short)67, schemaAwareMarsh, resolvedClsLdr);
-
+        register(factory,IgfsFileAffinityRange.class,(short)68, schemaAwareMarsh, resolvedClsLdr);
         register(factory,IgfsFragmentizerRequest.class,(short)69, schemaAwareMarsh, resolvedClsLdr);
         register(factory,IgfsFragmentizerResponse.class,(short)70, schemaAwareMarsh, resolvedClsLdr);
         register(factory,IgfsSyncMessage.class,(short)71, schemaAwareMarsh, resolvedClsLdr);

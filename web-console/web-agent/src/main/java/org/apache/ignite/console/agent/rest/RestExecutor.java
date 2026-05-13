@@ -58,7 +58,7 @@ public class RestExecutor implements AutoCloseable {
      */
     public RestExecutor(SslContextFactory sslCtxFactory) {
         httpClient = HttpClient.newBuilder()
-        		.connectTimeout(Duration.ofSeconds(60))
+        		.connectTimeout(Duration.ofSeconds(10))
         		.followRedirects(Redirect.NEVER)
         		.build();
         
@@ -69,7 +69,7 @@ public class RestExecutor implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         try {
-            //httpClient.stop();
+			cacheMap.clear();
         }
         catch (Throwable e) {
             log.error("Failed to close HTTP client", e);
@@ -161,7 +161,7 @@ public class RestExecutor implements AutoCloseable {
             return result;
         }
         catch (Exception e) {
-            throw e.getCause();
+            throw e.getCause()!=null?e.getCause():e;
         }
         
     }
@@ -189,7 +189,7 @@ public class RestExecutor implements AutoCloseable {
 	        });
     	}
         if(fields.length()>0) {
-        	url = url+"?"+fields.toString();
+        	url = url+"?"+fields;
         }
         URL urlO = new URL(url);         
         
@@ -249,7 +249,7 @@ public class RestExecutor implements AutoCloseable {
     
     public JsonObject getCachedMetadata(String serverUri,String clusterId,String token) throws Throwable {
     	String key = clusterId;
-    	JsonObject result = (JsonObject)cacheMap.get(key);
+    	JsonObject result = cacheMap.get(key);
     	if(result==null) {
     		result = getMetadata(serverUri,clusterId,token);
     		cacheMap.put(key,result);

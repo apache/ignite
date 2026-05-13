@@ -231,20 +231,23 @@ public class WebSocketRouter implements AutoCloseable {
         clusterHnd.close();
 
         stopClient();
-        
         httpClient.destroy();
-        
         watcher.close();
+
     }
 
     // 开始连接
-    public void connect() {
-        if(session==null || !session.isOpen())
-            connectWithRetry();
+    private void connect() {
+        connectWithRetry();
     }
 
     // 主动连接并重连
     private void connectWithRetry() {
+        if(session!=null && session.isOpen()){
+            logger.info("WebSocket 已经连接成功，会话 ID: "+session.getRemoteAddress());
+            return;
+        }
+
         try {
             CompletableFuture<Session> future = client.connect(this, uri);
 
@@ -269,7 +272,7 @@ public class WebSocketRouter implements AutoCloseable {
     // 调度重连任务
     private void scheduleReconnect() {
         if (maxReconnectAttempts != -1 && reconnectAttempts.get() >= maxReconnectAttempts) {
-            logger.error(String.format("达到最大重连次数 {}，停止重连", maxReconnectAttempts));
+            logger.error(String.format("达到最大重连次数%d，停止重连", maxReconnectAttempts));
             logger.error("Failed to establish websocket connection with server: " + cfg.serverUri());
             closeLatch.countDown();
             return;
@@ -279,7 +282,7 @@ public class WebSocketRouter implements AutoCloseable {
         // 指数退避策略
         long delay = calculateDelay(attempts);
 
-        logger.info(String.format("将在 {} 毫秒后进行第 {} 次重连", delay, attempts));
+        logger.info(String.format("将在%d毫秒后进行第%d次重连", delay, attempts));
         reconnectExecutor.schedule(this::connectWithRetry, delay, TimeUnit.MILLISECONDS);
     }
 
@@ -324,7 +327,7 @@ public class WebSocketRouter implements AutoCloseable {
         catch (Throwable e) {
             logger.error("Failed to send handshake to server", e);
 
-            connect();
+            scheduleReconnect();
         }
     }
 
@@ -343,6 +346,7 @@ public class WebSocketRouter implements AutoCloseable {
             scheduleReconnect();
         }
         else{
+            logger.info("服务正常关闭，即将退出");
             closeLatch.countDown();
         }
     }
@@ -353,8 +357,8 @@ public class WebSocketRouter implements AutoCloseable {
         // 错误时也可能需要重连
         if (connected.get()) {
             connected.set(false);
-            scheduleReconnect();
         }
+        scheduleReconnect();
     }
 
     /**
@@ -888,7 +892,7 @@ public class WebSocketRouter implements AutoCloseable {
             }
             catch (Exception ex) {
                 logger.error("Failed to send response with error", e);
-                connect();
+                scheduleReconnect();
             }
         }
     }

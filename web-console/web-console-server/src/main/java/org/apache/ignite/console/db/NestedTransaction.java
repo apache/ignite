@@ -128,6 +128,26 @@ public class NestedTransaction implements Transaction {
         delegate.suspend();
     }
 
+    @Override
+    public void savepoint(String name) {
+
+    }
+
+    @Override
+    public void savepoint(String name, boolean overwrite) {
+
+    }
+
+    @Override
+    public void rollbackToSavepoint(String name) {
+
+    }
+
+    @Override
+    public void releaseSavepoint(String name) {
+
+    }
+
     /** {@inheritDoc} */
     @Override public @Nullable String label() {
         return delegate.label();

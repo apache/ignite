@@ -235,6 +235,26 @@ public class MockConfiguration {
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public void savepoint(String name) {
+
+        }
+
+        @Override
+        public void savepoint(String name, boolean overwrite) {
+
+        }
+
+        @Override
+        public void rollbackToSavepoint(String name) {
+
+        }
+
+        @Override
+        public void releaseSavepoint(String name) {
+
+        }
+
         /** {@inheritDoc} */
         @Override public @Nullable String label() {
             throw new UnsupportedOperationException();

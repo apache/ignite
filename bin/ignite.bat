@@ -18,7 +18,7 @@
 ::
 :: Grid command line loader.
 ::
-
+chcp 65001
 @echo off
 Setlocal EnableDelayedExpansion
 
