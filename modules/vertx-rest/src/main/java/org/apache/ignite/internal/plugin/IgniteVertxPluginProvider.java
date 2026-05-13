@@ -130,20 +130,21 @@ public class IgniteVertxPluginProvider implements PluginProvider<PluginConfigura
 	/** {@inheritDoc} */
 	@Override
 	public void onIgniteStart() {
-		
+		counter++;
 	}
 
 	/** {@inheritDoc} */
 	@Override
 	public void onIgniteStop(boolean cancel) {
+		counter--;
 		Vertx vertx = this.plugin.getVertx();
 		if (vertx != null) {
-			counter--;
+
 			synchronized (IgniteVertxPluginProvider.class) {
-				if (vertx != null) {
+				if (vertx != null && counter==0) {
 					log.info("[Vertx web]", "shutting down " + vertx.toString());
 					vertx.close();
-					this.plugin.vertx = null;
+					IgniteVertxPlugin.vertx = null;
 				}
 			}
 		}

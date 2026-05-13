@@ -7,7 +7,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 
 public class IgniteVertxPlugin implements IgnitePlugin {
-	Vertx vertx;
+	static Vertx vertx = null;  // 一个jvm只有一个vertx
 	private VertxOptions options;
 	private IgniteLogger log;
 	volatile boolean finish = false;
@@ -42,7 +42,7 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 					} else {
 						// 失败的时候做什么！
 						log.error("Failt to start Vertx cluster.Use standalone vertx", res.cause());
-						vertx = Vertx.vertx();
+						vertx = Vertx.vertx(options);
 						vertx.exceptionHandler(event -> {
 							log.error("Vertx:", event);
 						});
@@ -64,7 +64,7 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 			}
 		}
 		if(vertx==null){
-			vertx = Vertx.vertx();
+			vertx = Vertx.vertx(options);
 			vertx.exceptionHandler(event -> {
 				log.error("Vertx:", event);
 			});

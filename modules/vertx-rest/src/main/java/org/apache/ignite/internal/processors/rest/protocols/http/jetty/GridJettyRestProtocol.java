@@ -80,7 +80,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** HTTP server. */
     private WebApiCreater httpSrv;
 
-    private Vertx vertx;
+    private static Vertx vertx;
     
     private ServerSocket serverSocketPlaceholder;
     
@@ -175,7 +175,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	    				log.info("Wait for cluster {} active...",ignite.name());
     	    			}					
     	    		}
-    	    		
 
                     log.info("[Vertx web] Vertx started in cluster mode.");
                     IgniteVertxPlugin plugin = ignite.plugin("Vertx");
@@ -399,7 +398,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 try {
                     httpSrv.stop();
                 	httpSrv = null;
-                    vertx.close();
+
                 }
                 finally {
                     // Reset interrupted flag on calling thread.
@@ -416,16 +415,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @Override public void stop() {
     	handlerCount--;
-    	
 
     	if(httpSrv!=null && httpSrv.isStarted()) {
-    		
-    		if(handlerCount <= 0) {
-    	        stopJetty();	
-    	        httpSrv = null;
+            stopJetty();
+    		if(handlerCount <= 0 && vertx!=null) {
+                vertx.close();
+                vertx = null;
         	}
-        	 
-        
         	if (log.isInfoEnabled())
                 log.info(stopInfo());
     	}  
