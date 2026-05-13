@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerUtilityTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregateDistinctPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
@@ -92,6 +93,7 @@ import org.junit.runners.Suite;
     SerializationPlannerTest.class,
     UncollectPlannerTest.class,
     WindowPlannerTest.class,
+    AbstractPlannerUtilityTest.class,
 
     HintsTestSuite.class,
 })

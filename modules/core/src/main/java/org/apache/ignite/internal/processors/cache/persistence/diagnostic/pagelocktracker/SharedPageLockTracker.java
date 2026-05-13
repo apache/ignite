@@ -30,10 +30,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.worker.CycleThread;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -69,7 +71,7 @@ public class SharedPageLockTracker {
     private final Map<String, Integer> structureNameToId = new ConcurrentHashMap<>();
 
     /** Thread for clean terminated threads from map. */
-    private final TimeOutWorker timeOutWorker;
+    private final IgniteThread timeOutWorker;
 
     /** */
     private Map<Long, PageLockThreadState> prevThreadsState = new HashMap<>();
@@ -84,29 +86,36 @@ public class SharedPageLockTracker {
     private final ThreadLocal<PageLockTracker<?>> lockTracker = ThreadLocal.withInitial(this::createTracker);
 
     /** */
-    public SharedPageLockTracker() {
-        this(ids -> {}, new MemoryCalculator());
-    }
-
-    /** */
-    public SharedPageLockTracker(Consumer<Set<PageLockThreadState>> hangThreadsCallBack, MemoryCalculator memCalc) {
+    public SharedPageLockTracker(
+        String igniteInstanceName,
+        Consumer<Set<PageLockThreadState>> hangThreadsCallBack,
+        MemoryCalculator memCalc,
+        IgniteLogger log
+    ) {
         this(
+            igniteInstanceName,
             1000,
             getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL),
             hangThreadsCallBack,
-            memCalc
+            memCalc,
+            log
         );
     }
 
     /** */
     public SharedPageLockTracker(
+        String igniteInstanceName,
         int threadLimits,
         int timeOutWorkerInterval,
         Consumer<Set<PageLockThreadState>> hangThreadsCallBack,
-        MemoryCalculator memCalc
+        MemoryCalculator memCalc,
+        IgniteLogger log
     ) {
         this.threadLimits = threadLimits;
-        this.timeOutWorker = new TimeOutWorker(timeOutWorkerInterval);
+        this.timeOutWorker = new IgniteThread(
+            igniteInstanceName,
+            "page-lock-timeout-tracker",
+            new TimeOutWorker(igniteInstanceName, timeOutWorkerInterval, log));
         this.hangThreadsCallBack = hangThreadsCallBack;
         this.memCalc = memCalc;
 
@@ -320,17 +329,33 @@ public class SharedPageLockTracker {
     /**
      *
      */
-    private class TimeOutWorker extends CycleThread {
+    private class TimeOutWorker extends GridWorker {
+        /** Sleep interval before each iteration. */
+        private final long sleepInterval;
 
         /**
+         * Creates new timeout worker with given parameters.
          *
+         * @param sleepInterval sleep interval before each iteration
          */
-        TimeOutWorker(long interval) {
-            super("page-lock-tracker-timeout", interval);
+        protected TimeOutWorker(String igniteInstanceName, long sleepInterval, IgniteLogger log) {
+            super(igniteInstanceName, "page-lock-timeout-tracker-worker", log);
+
+            this.sleepInterval = sleepInterval;
         }
 
         /** {@inheritDoc} */
-        @Override public void iteration() {
+        @SuppressWarnings("BusyWait")
+        @Override public final void body() throws InterruptedException {
+            while (!runner().isInterrupted()) {
+                Thread.sleep(sleepInterval);
+
+                iteration();
+            }
+        }
+
+        /** */
+        private void iteration() {
             cleanTerminatedThreads();
 
             if (hangThreadsCallBack != null) {

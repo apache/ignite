@@ -54,11 +54,8 @@ public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements 
     ClusterState state;
 
     /** Configurations read from persistent store. */
-    private List<StoredCacheData> storedCfgs;
-
-    /** JDK Serialized version of storedCfgs. */
     @Order(3)
-    byte[] storedCfgsBytes;
+    List<StoredCacheData> storedCfgs;
 
     /** */
     @Nullable private BaselineTopology baselineTopology;
@@ -226,18 +223,12 @@ public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements 
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (storedCfgs != null)
-            storedCfgsBytes = U.marshal(marsh, storedCfgs);
-
         if (baselineTopology != null)
             baselineTopologyBytes = U.marshal(marsh, baselineTopology);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (storedCfgsBytes != null)
-            storedCfgs = U.unmarshal(marsh, storedCfgsBytes, clsLdr);
-
         if (baselineTopologyBytes != null)
             baselineTopology = U.unmarshal(marsh, baselineTopologyBytes, clsLdr);
     }

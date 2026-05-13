@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -48,6 +49,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -58,6 +60,7 @@ import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -211,6 +214,22 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @return Map from table name to type.
      */
     protected static Map<String, QueryTypeDescriptorImpl> types(IgniteEx node, String cacheName) {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx igniteEx = (IgniteEx)ignite;
+            AffinityTopologyVersion readyTopVer = node.context().cache().context().exchange().readyAffinityVersion();
+            AffinityTopologyVersion maxTopVer = igniteEx.context().cache().context().exchange().readyAffinityVersion();
+
+            if (maxTopVer.compareTo(readyTopVer) > 0) {
+                try {
+                    node.context().cache().context().exchange().affinityReadyFuture(maxTopVer)
+                        .get(10_000L, TimeUnit.MILLISECONDS);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
+
         Map<String, QueryTypeDescriptorImpl> res = new HashMap<>();
 
         Collection<GridQueryTypeDescriptor> descs = node.context().query().types(cacheName);

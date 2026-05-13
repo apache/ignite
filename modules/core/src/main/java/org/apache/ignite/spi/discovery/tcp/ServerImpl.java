@@ -78,6 +78,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -158,6 +159,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.spi.tracing.SpanStatus;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -1488,7 +1490,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Handshake.
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -3040,20 +3042,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
                             "Stopping the node in order to prevent cluster wide instability.", e);
 
-                        new Thread(new Runnable() {
-                            @Override public void run() {
-                                try {
-                                    IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
+                        new IgniteThread(igniteInstanceName(), "node-stop-thread", () -> {
+                            try {
+                                IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
-                                    U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
-                                        "message worker thread abnormal termination.");
-                                }
-                                catch (Throwable e) {
-                                    U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
-                                        "message worker thread abnormal termination.", e);
-                                }
+                                U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
+                                    "message worker thread abnormal termination.");
                             }
-                        }, "node-stop-thread").start();
+                            catch (Throwable nodeStopErr) {
+                                U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
+                                    "message worker thread abnormal termination.", nodeStopErr);
+                            }
+                        }).start();
                     }
                 }
 
@@ -3462,7 +3462,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         timeoutHelper.nextTimeoutChunk(ackTimeout0));
                                 }
 
-                                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                TcpDiscoveryHandshakeResponse res =
+                                    spi.readHandshakeResponse(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
@@ -7185,8 +7186,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
 
                         // Always report marshalling errors.
-                        boolean err = e.hasCause(ObjectStreamException.class) ||
-                            (nodeAlive(nodeId) && spiStateCopy() == CONNECTED && !X.hasCause(e, IOException.class));
+                        // Can receive unknown message on handshake. It's ok - must continue to try find proper port.
+                        boolean err = e.hasCause(ObjectStreamException.class)
+                            || e.hasCause(UnknownMessageException.class)
+                            || (nodeAlive(nodeId) && spiStateCopy() == CONNECTED && !X.hasCause(e, IOException.class));
 
                         if (err)
                             LT.error(log, e, "Failed to read message [sock=" + sock + ", locNodeId=" + locNodeId +
@@ -7218,6 +7221,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         SecurityUtils.restoreDefaultSerializeVersion();
                     }
+                }
+            }
+            catch (UnknownMessageException e) {
+                if (spi.ignite() instanceof IgniteEx) {
+                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
                 }
             }
             finally {
@@ -7280,7 +7290,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 --threadsLeft;
 
-                utilityPool.execute(new Thread() {
+                utilityPool.execute(new Runnable() {
                     private final int addrsToCheck = addrPerThread;
 
                     /** */

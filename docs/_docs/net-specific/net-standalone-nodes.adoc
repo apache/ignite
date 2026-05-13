@@ -96,7 +96,7 @@ via `-Assembly` command line argument or `Ignite.Assembly` app setting.
 
 The following functionality requires a corresponding assembly to be loaded on all nodes:
 
-* ICompute (supports automatic loading, see link:net-specific/remote-assembly-loading[Remote Assembly Loading])
+* ICompute (supports automatic loading, see link:net-specific/net-remote-assembly-loading[Remote Assembly Loading])
 * Scan Queries with filter
 * Continuous Queries with filter
 * ICache.Invoke methods

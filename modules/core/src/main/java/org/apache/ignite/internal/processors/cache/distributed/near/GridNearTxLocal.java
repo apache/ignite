@@ -106,6 +106,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -145,6 +146,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
+
+    /** Exception message. */
+    public static final String SAVEPOINTS_EXPLICIT_TX_ONLY = "Savepoints can be used only inside explicit transactions.";
 
     /** DHT mappings. */
     private final IgniteTxMappings mappings;
@@ -3032,9 +3036,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * Creates savepoint for a pessimistic transaction.
      *
-     * @param name Savepoint name.
+     * @param name      Savepoint name.
      * @param overwrite Whether to overwrite an existing savepoint with the same name.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state,
+     *                                or savepoint with the given name already exists and {@code overwrite} is {@code false}.
      */
     public void savepoint(String name, boolean overwrite) throws IgniteCheckedException {
         A.notNull(name, "name");
@@ -3043,7 +3048,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             checkValid();
 
             if (implicit())
-                throw new IgniteCheckedException("Savepoints can be used only inside explicit transactions.");
+                throw new IgniteCheckedException(SAVEPOINTS_EXPLICIT_TX_ONLY);
 
             if (!pessimistic())
                 throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
@@ -3070,7 +3075,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * Rolls back transaction changes to the specified savepoint.
      *
      * @param name Savepoint name.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state,
+     *                                or savepoint with the given name does not exist.
      */
     public void rollbackToSavepoint(String name) throws IgniteCheckedException {
         A.notNull(name, "name");
@@ -3079,7 +3085,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             checkValid();
 
             if (implicit())
-                throw new IgniteCheckedException("Savepoints can be used only inside explicit transactions.");
+                throw new IgniteCheckedException(SAVEPOINTS_EXPLICIT_TX_ONLY);
 
             if (!pessimistic())
                 throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
@@ -4846,7 +4852,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxLocal.class, this,
-            "thread", IgniteUtils.threadName(threadId),
+            "thread", IgniteThread.resolveName(threadId),
             "mappings", mappings,
             "super", super.toString());
     }

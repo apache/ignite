@@ -220,5 +220,5 @@ Refer to link:extensions-and-integrations/cassandra/overview[this documentation 
 ////
 == Implementing Custom CacheStore
 
-See link:advanced-topics/custom-cache-store[Implementing Custom Cache Store].
+See link:persistence/custom-cache-store[Implementing Custom Cache Store].
 ////
