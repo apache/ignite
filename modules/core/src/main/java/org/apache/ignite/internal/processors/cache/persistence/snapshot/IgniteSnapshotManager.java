@@ -781,14 +781,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 lastSeenIncSnpFut = clusterSnpFut;
             else
                 lastSeenSnpFut = clusterSnpFut;
-
-            log.error("TEST | set lastSeenSnpFut on " + cctx.localNode().order());
         }
 
         SnapshotOperation snpOp = new SnapshotOperation(req,
             new SnapshotFileTree(cctx.kernalContext(), req.snapshotName(), req.snapshotPath()));
-
-        log.error("TEST | initLocalSnapshotStartStage() on " + cctx.localNode().order());
 
         curSnpOp = snpOp;
 
@@ -1403,8 +1399,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         synchronized (snpOpMux) {
             assert clusterSnpFut != null;
-
-            log.error("TEST | finishing clusterSnpFut on " + cctx.localNode().order());
 
             if (endFail.isEmpty() && snpOp.error() == null) {
                 if (!F.isEmpty(snpOp.warnings())) {

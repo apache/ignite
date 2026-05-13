@@ -179,7 +179,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
                 g.cache(c.getName()).put(i, i);
         }
 
-        lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches == null ? 0 : 1);
+        lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches == null ? 0 : 3);
 
         lsnLogger.registerListener(lsnr);
 
