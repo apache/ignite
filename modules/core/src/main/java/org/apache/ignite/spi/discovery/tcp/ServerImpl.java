@@ -6569,6 +6569,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     ) {
         String locDcId = locNode.dataCenterId();
 
+        // Do not make any decision if: no ping started at all; the ping isn't finished yet; a decision is already made.
         if (connRecoverState == null || locDcId == null || !connRecoverState.remoteDcPingStarted()
             || locDcId.equals(nextTried.dataCenterId()))
             return false;
