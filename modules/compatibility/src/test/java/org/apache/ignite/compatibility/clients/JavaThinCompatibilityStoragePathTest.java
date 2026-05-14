@@ -59,9 +59,18 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
     @Override protected void processRemoteConfiguration(IgniteConfiguration cfg) {
         super.processRemoteConfiguration(cfg);
 
-        cfg.setCacheConfiguration(new CacheConfiguration<>("nodeCache"))
-            .setDataStorageConfiguration(new DataStorageConfiguration()
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>("nodeCache");
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+
+        if (ver.compareTo(VER_2_18_0) >= 0) {
+            ccfg.setIndexPath("one").setStoragePaths(STORAGE_PATH);
+
+            cfg.getDataStorageConfiguration().setExtraStoragePaths("one", "two", "three");
+        }
+
+        cfg.setCacheConfiguration(ccfg);
     }
 
     /** {@inheritDoc} */
