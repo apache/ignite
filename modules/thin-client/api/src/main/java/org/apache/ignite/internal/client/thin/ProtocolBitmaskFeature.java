@@ -20,12 +20,6 @@ package org.apache.ignite.internal.client.thin;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.EnumSet;
-import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientServices;
-import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 
 /**
  * Defines supported bitmask features for thin client.

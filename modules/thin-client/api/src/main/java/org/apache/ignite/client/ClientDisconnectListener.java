@@ -18,12 +18,12 @@
 package org.apache.ignite.client;
 
 import javax.cache.configuration.CacheEntryListenerConfiguration;
-import org.apache.ignite.cache.query.ContinuousQuery;
 
 /**
- * Client disconnected event listener. Such listeners can be used in {@link ClientCache#query(ContinuousQuery,
- * ClientDisconnectListener)} or {@link ClientCache#registerCacheEntryListener(CacheEntryListenerConfiguration,
- * ClientDisconnectListener)} methods to handle client channel failure.
+ * Client disconnected event listener. Such listeners can be used in
+ * {@link ClientCache#query(org.apache.ignite.cache.query.ContinuousQuery, ClientDisconnectListener)} or
+ * {@link ClientCache#registerCacheEntryListener(CacheEntryListenerConfiguration, ClientDisconnectListener)}
+ * methods to handle client channel failure.
  */
 public interface ClientDisconnectListener {
     /**

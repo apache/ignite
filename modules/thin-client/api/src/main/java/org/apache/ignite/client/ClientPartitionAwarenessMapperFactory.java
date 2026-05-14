@@ -17,9 +17,6 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-
 /**
  * This factory is used on the client side and only when the partition awareness thin client feature is enabled. By default,
  * on a new cache the RendezvousAffinityFunction will be used for calculating mappings 'key-to-partition' and 'partition-to-node'.

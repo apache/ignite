@@ -17,8 +17,6 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;

@@ -17,10 +17,6 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-import org.apache.ignite.configuration.ClientConfiguration;
-
 /**
  * This function calculates the cache key to a partition mapping for each cache key. It is used only for local calculation on a client side.
  * <p>

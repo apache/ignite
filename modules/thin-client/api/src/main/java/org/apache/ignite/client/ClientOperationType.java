@@ -20,10 +20,6 @@ package org.apache.ignite.client;
 import java.util.Collection;
 import java.util.Set;
 import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterState;
 
 /**
  * Client operation type.

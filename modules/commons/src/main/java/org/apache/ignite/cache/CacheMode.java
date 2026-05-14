@@ -18,8 +18,6 @@
 package org.apache.ignite.cache;
 
 import java.util.stream.Stream;
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
