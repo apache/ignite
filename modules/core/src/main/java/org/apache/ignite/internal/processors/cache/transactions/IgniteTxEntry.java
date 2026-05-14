@@ -1028,9 +1028,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         // Do not serialize filters if they are null.
         if (transformClosBytes == null && entryProcessorsCol != null)
             transformClosBytes = U.marshal(marsh, entryProcessorsCol);
-        
-        if (ctx.isNear())
-            transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
+
+        transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
 
         if (transferExpiryPlc) {
             if (expiryPlcBytes == null)
