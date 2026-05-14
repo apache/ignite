@@ -875,8 +875,8 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
      * @param clientNodeId Client node ID.
      * @param timeout Timeout on operation in milliseconds. If 0, a value based on {@link TcpDiscoverySpi} is used.
-     * @param reconNum Reconnects number.
-     * @param reconDelayRatio Delay ration compared to {@code timeout} / {@code reconNum}.
+     * @param reconnectAttempts Reconnects number.
+     * @param reconDelayRatio Part of ping attempt timeout spent on waiting before actual reconnection try.
      * @param logError Boolean flag indicating whether information should be printed into the node log.
      * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
      *         left a topology during the ping process.
@@ -887,19 +887,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Nullable UUID nodeId,
         @Nullable UUID clientNodeId,
         long timeout,
-        int reconNum,
+        int reconnectAttempts,
         float reconDelayRatio,
         boolean logError
     ) throws IgniteCheckedException {
-        long timeThreshold = timeout > 0 ? System.nanoTime() + U.millisToNanos(timeout) : 0;
+        long timeoutThreshold = timeout > 0 ? System.nanoTime() + U.millisToNanos(timeout) : 0;
 
-        assert reconNum > 0;
+        assert reconnectAttempts > 0;
         assert addr != null;
         assert timeout >= 0;
         assert reconDelayRatio >= 0.0f;
 
-        long attemptTimeout = (long)(timeout * (1.0f - reconDelayRatio)) / reconNum;
-        long attemptDelayTiemout = reconNum > 1 ? (long)(timeout * reconDelayRatio) / (reconNum - 1) : 0;
+        long attemptTimeout = (long)(timeout * (1.0f - reconDelayRatio)) / reconnectAttempts;
+        long attemptDelayTimeout = reconnectAttempts > 1 ? (long)(timeout * reconDelayRatio) / (reconnectAttempts - 1) : 0;
 
         UUID locNodeId = getLocalNodeId();
 
@@ -1000,7 +1000,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         reconCnt++;
 
-                        if ((timeThreshold > 0 && System.nanoTime() >= timeThreshold) || (spi.failureDetectionTimeoutEnabled()
+                        if ((timeoutThreshold > 0 && System.nanoTime() >= timeoutThreshold) || (spi.failureDetectionTimeoutEnabled()
                             && IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e))) {
                             logPingError(errMsgPrefix + "Reached the timeout " +
                                 (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
@@ -1008,9 +1008,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             break;
                         }
-                        else if (reconCnt >= reconNum) {
-                            logPingError(errMsgPrefix + "Reached the reconnection count " + reconNum + ". Cause: "
-                                + e.getMessage(), logError);
+                        else if (reconCnt >= reconnectAttempts) {
+                            logPingError(errMsgPrefix + "Max reconnect attempts have been reached: " + reconnectAttempts
+                                + ". Cause: " + e.getMessage(), logError);
 
                             break;
                         }
@@ -1025,8 +1025,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.closeQuiet(sock);
                     }
 
-                    if (attemptDelayTiemout > 0)
-                        U.sleep(attemptDelayTiemout);
+                    if (attemptDelayTimeout > 0)
+                        U.sleep(attemptDelayTimeout);
                 }
             }
             catch (Throwable t) {
@@ -3512,8 +3512,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // Handshake.
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
-                                // If want a forced connection, we set the change-topology node flag to current node id.
                                 if (sndState != null) {
+                                    // If want a forced connection, we set the change-topology node flag to current node id.
+                                    // The forced reconnect means we should not check previous node.
                                     if (!F.isEmpty(sndState.unavailableDCs))
                                         hndMsg.previousNodeId(locNodeId);
                                     else if (!sndState.isStartingPoint())
@@ -3868,7 +3869,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     else if (sndState != null && checkConnectionRecoveryFailed(sndState, failedNodes))
                         return; // Nothing to do here.
 
-                    // The next node might be reset as result of the parallel remote DC ping process.
+                    // The next node might be reset a result of the parallel remote DC ping process.
                     boolean failedNextNode = next != null && (sndState == null || sndState.markNextNodeFailed());
 
                     if (failedNextNode && !failedNodes.contains(next)) {
@@ -3878,9 +3879,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (allRemoteDCsTraversed(sndState, failedNodes, next)) {
                             if (log.isInfoEnabled()) {
-                                log.info("During the connection recovery, all the remote DCs have been traversed. " +
-                                    "Failed to connect to any. Due to the remote DC unavailability policy, current node " +
-                                    "will try to skip those DCs. Time to recover the ring connection left: "
+                                log.info("During the connection recovery, all remote DCs have been traversed, none available. " +
+                                    "Current node will skip failed DCs. Ring connection recovery time remaining: "
                                     + Math.max(0, U.nanosToMillis(sndState.failTimeNanos - System.nanoTime())) + "ms.");
                             }
 
@@ -6973,12 +6973,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;
                         long now = System.nanoTime();
-                        long timeThreshold = rcvdTime + U.millisToNanos(effectiveExchangeTimeout());
+                        long timeoutThreshold = rcvdTime + U.millisToNanos(effectiveExchangeTimeout());
                         // Incoming node has set the previous-to-check node as itself and requests the forced connection.
+                        // The forced incoming reconnect means we should not check previous node.
                         boolean forcedConnection = nodeId.equals(req.previousNodeId());
 
                         // We got message from previous in less than effective exchange timeout.
-                        boolean prevNodeIsAvailable = !forcedConnection && timeThreshold > now;
+                        boolean prevNodeIsAvailable = !forcedConnection && timeoutThreshold > now;
                         TcpDiscoveryNode previous = null;
 
                         if (prevNodeIsAvailable) {

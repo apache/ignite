@@ -161,8 +161,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         LogListener logSplit1 = LogListener.matches("No node of the following remote DCs responded. Considering DCs '"
             + DC_ID_0 + ", " + DC_ID_2 + "' unavailable").times(1).build();
 
-        LogListener logSplit2 = LogListener.matches("During the connection recovery, all the remote DCs have been traversed. " +
-                "Failed to connect to any.").build();
+        LogListener logSplit2 = LogListener.matches("During the connection recovery, all remote DCs have been traversed, " +
+            "none available.").build();
 
         listeningLog.registerAllListeners(logStartPing, logSplit0, logSplit1, logSplit2);
 
