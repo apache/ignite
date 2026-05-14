@@ -33,15 +33,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractTest {
@@ -138,8 +135,6 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
         checkWarnMessageOnCreateSnapshot(allWarnCaches, ccfgs);
         checkWarnMessageOnRestoreSnapshot(allWarnCaches, null);
 
-        log.error("TEST | test2");
-
         for (String grp: warnCachesByGrps.keySet())
             checkWarnMessageOnRestoreSnapshot(warnCachesByGrps.get(grp), F.asList(grp));
     }
@@ -164,8 +159,6 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         lsnLogger.registerListener(lsnr);
 
-        log.error("TEST | test00");
-
         g.snapshot().createSnapshot(SNP).get(getTestTimeout());
 
         assertTrue(lsnr.check());
@@ -177,19 +170,11 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches.isEmpty() ? 0 : 3);
 
-        lsnLogger.clearListeners();
-
         lsnLogger.registerListener(lsnr);
-
-        log.error("TEST | test01");
 
         g.snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        log.error("TEST | test02");
-
-        waitForLog(lsnr);
-
-        log.error("TEST | test03");
+        assertTrue(lsnr.check(getTestTimeout()));
     }
 
     /** */
@@ -211,47 +196,23 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         LogListener lsnr = warnLogListener(warnAtomicCaches, 0);  // Should not warn for full snapshots.
 
-        lsnLogger.clearListeners();
-
         lsnLogger.registerListener(lsnr);
-
-        log.error("TEST | test4");
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps).get(getTestTimeout());
 
-        waitForLog(lsnr);
+        assertTrue(lsnr.check());
 
         g.destroyCaches(g.cacheNames());
 
         awaitPartitionMapExchange();
 
-        LogListener lsnr0 = warnLogListener(warnAtomicCaches, warnAtomicCaches.isEmpty() ? 0 : 1);
+        lsnr = warnLogListener(warnAtomicCaches, warnAtomicCaches.isEmpty() ? 0 : 1);
 
-        lsnLogger.clearListeners();
-
-        lsnLogger.registerListener(lsnr0);
-
-        log.error("TEST | test5");
+        lsnLogger.registerListener(lsnr);
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps, 1).get(getTestTimeout());
 
-        log.error("TEST | test6");
-
-        waitForLog(lsnr0);
-
-        log.error("TEST | test7");
-    }
-
-    /** */
-    private void waitForLog(LogListener lsnr) throws IgniteInterruptedCheckedException {
-        waitForCondition(()-> {
-            try {
-                return lsnr.check(getTestTimeout());
-            }
-            catch (InterruptedException e) {
-                return false;
-            }
-        }, getTestTimeout());
+        assertTrue(lsnr.check());
     }
 
     /** */
@@ -268,9 +229,6 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         Pattern p = Pattern.compile(
             "Incremental snapshot \\[snpName=" + SNP + ", incIdx=1] contains ATOMIC caches with backups:"
-            + (cachesStr == null ? "" : " \\[" + cachesStr) + "]");
-
-        log.error("TEST | pattern: " + "Incremental snapshot \\[snpName=" + SNP + ", incIdx=1] contains ATOMIC caches with backups:"
             + (cachesStr == null ? "" : " \\[" + cachesStr) + "]");
 
         return LogListener.matches(p).times(times).build();

@@ -30,7 +30,7 @@ Ignite implements CDC with the `ignite-cdc.sh` application and link:https://gith
 
 Below are the CDC application and the Ignite node integrated via WAL archive segments:
 
-image:../../assets/images/integrations/CDC-design.svg[]
+image::images/integrations/CDC-design.svg[]
 
 When CDC is enabled, the Ignite server node creates a hard link to each WAL archive segment in the special `db/cdc/\{consistency_id\}` directory.
 The `ignite-cdc.sh` application runs on a different JVM and processes newly archived link:persistence/native-persistence#_write-ahead_log[WAL segments].

@@ -723,6 +723,15 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Whether transaction savepoint operations are supported by the server or not.
+     *
+     * @return {@code true} if transaction savepoint operations supported, {@code false} otherwise.
+     */
+    boolean isSavepointsSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.SAVEPOINTS);
+    }
+
+    /**
      * @param isolation Transaction isolation level.
      * @return {@code True} if transaction isolation mode supported by the server, {@code false} otherwise.
      */

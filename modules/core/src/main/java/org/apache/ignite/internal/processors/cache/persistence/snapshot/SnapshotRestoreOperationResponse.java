@@ -20,23 +20,17 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Snapshot operation prepare response. */
-public class SnapshotRestoreOperationResponse implements MarshallableMessage {
+public class SnapshotRestoreOperationResponse implements Message {
     /** Cache configurations on local node. */
-    private List<StoredCacheData> ccfgs;
-
-    /** */
     @Order(0)
-    byte[] ccfgsBytes;
-    
+    List<StoredCacheData> ccfgs;
+
     /** Snapshot metadata files on local node. */
     @Order(1)
     List<SnapshotMetadata> metas;
@@ -66,15 +60,5 @@ public class SnapshotRestoreOperationResponse implements MarshallableMessage {
     /** */
     public List<SnapshotMetadata> metadata() {
         return metas;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        ccfgsBytes = U.marshal(marsh, ccfgs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        ccfgs = U.unmarshal(marsh, ccfgsBytes, clsLdr);
     }
 }
