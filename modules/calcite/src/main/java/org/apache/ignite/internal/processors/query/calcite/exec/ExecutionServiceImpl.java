@@ -537,7 +537,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
 
             case EXPLAIN:
-                return executeExplain(qry, (ExplainPlan)plan);
+                return executeExplain((ExplainPlan)plan);
 
             case DDL:
                 return executeDdl(qry, (DdlPlan)plan);
@@ -883,7 +883,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
+    private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
 
