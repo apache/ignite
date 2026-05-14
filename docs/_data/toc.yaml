@@ -33,7 +33,7 @@
     - title: REST API
       url: quick-start/restapi
 - title: Installation
-  url: installation
+  url: installation/installing-using-zip
   items:
   - title: Installing Using ZIP Archive
     url: installation/installing-using-zip
@@ -224,7 +224,7 @@
     - title: Calcite-based SQL Engine
       url: SQL/sql-calcite
 - title: SQL Reference
-  url: sql-reference/sql-reference-overview
+  url: sql-reference/index
   items:
     - title: SQL Conformance
       url: sql-reference/sql-conformance
@@ -233,7 +233,7 @@
     - title: Data Manipulation Language (DML)
       url: sql-reference/dml
     - title: Transactions
-      url: sql-reference/transactions
+      url: key-value-api/transactions
     - title: Operational Commands
       url: sql-reference/operational-commands
     - title: Aggregate functions
@@ -341,7 +341,7 @@
         - title: Stacking
           url: machine-learning/ensemble-methods/stacking
         - title: Bagging
-          url: machine-learning/ensemble-methods/baggin
+          url: machine-learning/ensemble-methods/bagging
         - title: Random Forest
           url: machine-learning/ensemble-methods/random-forest
         - title: Gradient Boosting
@@ -475,7 +475,7 @@
     - title: Index Reader
       url: tools/index-reader
 - title: Security
-  url: security
+  url: security/index
   items:
     - title: Security Model
       url: security/security-model

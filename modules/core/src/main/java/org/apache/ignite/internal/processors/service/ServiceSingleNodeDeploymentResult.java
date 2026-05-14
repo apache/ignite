@@ -18,17 +18,13 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.MarshallableMessage;
+import java.util.Collections;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * <p/>
  * Contains count of deployed service instances on single node and deployment errors if exist.
  */
-public class ServiceSingleNodeDeploymentResult implements MarshallableMessage, Serializable {
+public class ServiceSingleNodeDeploymentResult implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,28 +41,21 @@ public class ServiceSingleNodeDeploymentResult implements MarshallableMessage, S
     int cnt;
 
     /** Exceptions. */
-    private @Nullable Collection<Throwable> errors;
-
-    /** Serialized {@link #errors}. */
     @Order(1)
-    @Nullable Collection<byte[]> errorsBytes;
-
-    /** Logger. */
-    private IgniteLogger log;
+    @Nullable Collection<ErrorMessage> errors;
 
     /**
      * Empty constructor for marshalling purposes.
      */
     public ServiceSingleNodeDeploymentResult() {
+        // No-op.
     }
 
     /**
      * @param cnt Count of service's instances.
-     * @param log Logger.
      */
-    public ServiceSingleNodeDeploymentResult(int cnt, IgniteLogger log) {
+    public ServiceSingleNodeDeploymentResult(int cnt) {
         this.cnt = cnt;
-        this.log = log;
     }
 
     /**
@@ -79,62 +68,16 @@ public class ServiceSingleNodeDeploymentResult implements MarshallableMessage, S
     /**
      * @return Exceptions.
      */
-    public @NotNull Collection<Throwable> errors() {
-        return F.emptyIfNull(errors);
+    public Collection<Throwable> errors() {
+        return F.isEmpty(errors) ? Collections.emptyList() : F.viewReadOnly(errors, em -> ErrorMessage.error(em));
     }
 
     /**
      * @param errors Exceptions.
      */
     public void errors(@Nullable Collection<Throwable> errors) {
-        this.errors = errors;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (F.isEmpty(errors))
-            return;
-
-        errorsBytes = new ArrayList<>();
-
-        for (Throwable th : errors) {
-            try {
-                errorsBytes.add(U.marshal(marsh, th));
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to marshal deployment error, err=" + th, e);
-
-                try {
-                    byte[] arr = U.marshal(
-                        marsh,
-                        new IgniteCheckedException("Failed to marshal deployment error, see server logs for details, err=" + th)
-                    );
-
-                    errorsBytes.add(arr);
-                }
-                catch (IgniteCheckedException ex) {
-                    log.error("Failed to attach deployment error information to deployment result message", ex);
-                }
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (errorsBytes != null && errors == null) {
-            errors = new ArrayList<>();
-
-            for (byte[] arr : errorsBytes) {
-                try {
-                    errors.add(U.unmarshal(marsh, arr, clsLdr));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(null, "Failed to unmarshal deployment error.", e);
-
-                    errors.add(new IgniteCheckedException("Failed to unmarshal deployment error, see server logs for details."));
-                }
-            }
-        }
+        if (!F.isEmpty(errors))
+            this.errors = F.viewReadOnly(errors, ErrorMessage::new);
     }
 
     /** {@inheritDoc} */

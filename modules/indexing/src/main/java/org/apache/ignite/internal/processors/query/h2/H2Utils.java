@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -602,6 +603,24 @@ public class H2Utils {
         }
 
         throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
+    }
+
+    /**
+     * Unwraps {@link Value} to respective object.
+     *
+     * @param val Value.
+     * @return Unwrapped object.
+     */
+    public static Object unwrap(Value val) {
+        if (val instanceof ValueTime) {
+            // Gets time preserving nanoseconds. Method ValueTime#getObject() returns Time object without nanoseconds.
+            ValueTime val0 = (ValueTime)val;
+
+            if (val0.getNanos() % TimeUnit.MILLISECONDS.toNanos(1L) != 0)
+                return LocalDateTimeUtils.valueToLocalTime(val);
+        }
+
+        return val.getObject();
     }
 
     /**

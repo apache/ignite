@@ -864,6 +864,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         prepareCacheDefragmentation(fromStore(task).cacheNames());
 
                         return new DefragmentationWorkflowCallback(
+                            cctx.igniteInstanceName(),
                             cctx.kernalContext()::log,
                             defrgMgr,
                             cctx.kernalContext().failure()

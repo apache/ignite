@@ -629,6 +629,7 @@ public class QueryUtils {
 
             desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
             desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+            desc.sql(qe.sql());
         }
         else {
             desc.primaryKeyInlineSize(-1);

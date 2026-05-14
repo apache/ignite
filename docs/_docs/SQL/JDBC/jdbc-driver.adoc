@@ -555,6 +555,47 @@ In addition to generic DataSource properties, `IgniteJdbcThinDataSource` support
 
 Refer to the link:{javadoc_base_url}/org/apache/ignite/IgniteJdbcThinDataSource.html[JavaDocs] for more details.
 
+== Transaction Savepoints
+
+JDBC Thin Driver supports the standard JDBC savepoint API for explicit transactions:
+
+* `Connection.setSavepoint()`
+* `Connection.setSavepoint(String name)`
+* `Connection.rollback(Savepoint savepoint)`
+* `Connection.releaseSavepoint(Savepoint savepoint)`
+
+Savepoints are available for JDBC connections that use the Calcite-based SQL engine and explicit `PESSIMISTIC` transactions.
+Disable auto-commit before creating a savepoint.
+If auto-commit is left enabled, JDBC savepoint API calls requiring an explicit transaction will fail with 'SQLException'.
+
+[source,java]
+----
+try (Connection conn = DriverManager.getConnection(
+        "jdbc:ignite:thin://127.0.0.1?transactionConcurrency=PESSIMISTIC")) {
+    conn.setAutoCommit(false);
+
+    try (Statement stmt = conn.createStatement()) {
+        stmt.executeUpdate("INSERT INTO Person(id, name) VALUES (1, 'John')");
+
+        Savepoint savepoint = conn.setSavepoint("before_update");
+
+        stmt.executeUpdate("UPDATE Person SET name = 'Jane' WHERE id = 1");
+
+        conn.rollback(savepoint);
+        conn.releaseSavepoint(savepoint);
+        conn.commit();
+    }
+    catch (Throwable t) {
+        conn.rollback();
+
+        throw t;
+    }
+}
+----
+
+SQL savepoint commands can be used, such as `SAVEPOINT` and `ROLLBACK TO SAVEPOINT`, from JDBC statements.
+See link:sql-reference/transactions[Transactions, window=_blank] for SQL syntax and usage details.
+
 == Examples
 
 To start processing the data located in the cluster, you need to create a JDBC Connection object via one of the methods below:

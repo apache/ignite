@@ -311,7 +311,7 @@ If you want to use the key and value objects inside `IgniteCallable` and `Ignite
 
 In the cases where you do not need to colocate computations with data but simply want to process all data remotely, you can run local cache queries inside the `call()` method. Consider the following example.
 
-Let's say we have a cache that stores information about persons and we want to calculate the average age of all persons. One way to accomplish this is to run a link:key-value-api/querying[scan query] that will fetch the ages of all persons to the local node, where you can calculate the average age.
+Let's say we have a cache that stores information about persons and we want to calculate the average age of all persons. One way to accomplish this is to run a link:key-value-api/using-cache-queries[scan query] that will fetch the ages of all persons to the local node, where you can calculate the average age.
 
 A more efficient way, however, is to avoid network calls to other nodes by running the query locally on each remote node and aggregating the result on the local node.
 

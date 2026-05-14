@@ -285,8 +285,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled, updateBatchSize,
             concurrency, isolation, timeout, lb,
             ver, this);
-
-        handler.start();
     }
 
     /** {@inheritDoc} */
