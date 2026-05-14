@@ -18,23 +18,17 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class SnapshotCheckPartitionHashesResponse implements MarshallableMessage {
+public class SnapshotCheckPartitionHashesResponse implements Message {
     /** Per metas result: consistent id -> check results per partition key. */
-    private Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults;
-
-    /** */
     @Order(0)
-    byte[] perMetaResultsBytes;
+    Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotCheckPartitionHashesResponse() {
@@ -50,16 +44,4 @@ public class SnapshotCheckPartitionHashesResponse implements MarshallableMessage
     public Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults() {
         return perMetaResults;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        perMetaResultsBytes = U.marshal(marsh, perMetaResults);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (perMetaResultsBytes != null)
-            perMetaResults = U.unmarshal(marsh, perMetaResultsBytes, clsLdr);
-    }
-
 }
