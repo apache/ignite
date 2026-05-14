@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  * Tests transaction savepoint functionality.
  */
-public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
+public class TxSavepointItTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
 
@@ -72,7 +72,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRollabackSeveralSavepoints() throws Exception {
+    public void testRollabackSeveralSavepoints() {
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int key = 1;
@@ -104,7 +104,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDuplicateSavepointWithoutOverwriteThrows() throws Exception {
+    public void testDuplicateSavepointWithoutOverwriteThrows() {
         try (Transaction tx = ignite.transactions().txStart()) {
             tx.savepoint("sp");
 

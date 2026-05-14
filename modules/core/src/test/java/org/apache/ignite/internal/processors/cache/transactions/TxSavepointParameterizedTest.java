@@ -442,10 +442,10 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testRollbackToSavepointForOptimisticTransaction() throws Exception {
+    public void testRollbackToSavepointForOptimisticTransaction() {
         IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0);
 
         int key1 = keyForPrimaryAndBackup(ignite0, ignite1);
