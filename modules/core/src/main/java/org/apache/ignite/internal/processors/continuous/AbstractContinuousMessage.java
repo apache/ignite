@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -50,10 +49,5 @@ public abstract class AbstractContinuousMessage extends DiscoveryCustomMessage {
      */
     public UUID routineId() {
         return routineId;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
     }
 }

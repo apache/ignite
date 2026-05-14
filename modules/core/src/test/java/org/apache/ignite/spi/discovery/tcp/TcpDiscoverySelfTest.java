@@ -57,7 +57,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -2073,9 +2073,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             spi0.stopBeforeSndAck = true;
 
-            UUID routineId = ignite1.message().remoteListen("test", new DummyPredicate());
-
-            ignite1.message().stopRemoteListen(routineId);
+            ignite1.message().remoteListen("test", new DummyPredicate());
 
             waitNodeStop(ignite0.name());
 
@@ -2651,7 +2649,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         DiscoveryCustomMessage custMsg = U.unwrapCustomMessage(evtMsg.message());
 
-                        if (custMsg instanceof StopRoutineAckDiscoveryMessage) {
+                        if (custMsg instanceof StartRoutineAckDiscoveryMessage) {
                             log.info("Skip message send and stop node: " + msg);
 
                             ses.socket().close();
