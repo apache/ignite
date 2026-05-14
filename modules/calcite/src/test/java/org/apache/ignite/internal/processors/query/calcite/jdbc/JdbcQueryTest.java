@@ -33,6 +33,8 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,12 +42,16 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -475,6 +481,180 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertTrue(meta.isSigned(2));
             assertTrue(meta.isSigned(3));
         }
+    }
+
+    /**
+     * Test behavior when neither key nor value should be wrapped.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testNoWrap() throws SQLException {
+        doTestKeyValueWrap(false, false, false);
+    }
+
+    /**
+     * Test behavior when only key is wrapped.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testKeyWrap() throws SQLException {
+        doTestKeyValueWrap(true, false, false);
+    }
+
+    /**
+     * Test behavior when only value is wrapped.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testValueWrap() throws SQLException {
+        doTestKeyValueWrap(false, true, false);
+    }
+
+    /**
+     * Test behavior when both key and value is wrapped.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testKeyAndValueWrap() throws SQLException {
+        doTestKeyValueWrap(true, true, false);
+    }
+
+    /**
+     * Test behavior when neither key nor value should be wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testUuidNoWrap() throws SQLException {
+        doTestKeyValueWrap(false, false, true);
+    }
+
+    /**
+     * Test behavior when only key is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testUuidKeyWrap() throws SQLException {
+        doTestKeyValueWrap(true, false, true);
+    }
+
+    /**
+     * Test behavior when only value is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testUuidValueWrap() throws SQLException {
+        doTestKeyValueWrap(false, true, true);
+    }
+
+    /**
+     * Test behavior when both key and value is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    @Test
+    public void testUuidKeyAndValueWrap() throws SQLException {
+        doTestKeyValueWrap(true, true, true);
+    }
+
+    /**
+     * Test behavior for given combination of wrap flags.
+     * @param wrapKey Whether key wrap should be enforced.
+     * @param wrapVal Whether value wrap should be enforced.
+     * @throws SQLException if failed.
+     */
+    private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal, boolean testUuid) throws SQLException {
+        try {
+            String sql = testUuid ? String.format("CREATE TABLE T (\"Id\" UUID primary key, \"xX\" UUID) WITH " +
+                "\"wrap_key=%b,wrap_value=%b", wrapKey, wrapVal) :
+                String.format("CREATE TABLE T (\"Id\" int primary key, \"xX\" varchar) WITH " +
+                    "\"wrap_key=%b,wrap_value=%b", wrapKey, wrapVal);
+
+            UUID guid = UUID.randomUUID();
+
+            if (wrapVal)
+                sql += ",value_type=" + (testUuid ? "tval_guid" : "tval");
+
+            sql += "\"";
+
+            stmt.execute(sql);
+
+            if (testUuid)
+                stmt.executeUpdate("INSERT INTO T(\"Id\", \"xX\") values('" + guid + "', '" + guid + "')");
+            else
+                stmt.executeUpdate("INSERT INTO T(\"Id\", \"xX\") values(1, 'a')");
+
+            LinkedHashMap<String, String> resCols = new LinkedHashMap<>();
+
+            List<Object> resData = new ArrayList<>();
+
+            try (ResultSet colsRs = stmt.executeQuery("SELECT * FROM T;")) {
+                assertTrue(colsRs.next());
+
+                ResultSetMetaData md = colsRs.getMetaData();
+
+                for (int i = 1; i < md.getColumnCount() + 1; i++)
+                    resCols.put(md.getColumnName(i), md.getColumnClassName(i));
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM T")) {
+                try (ResultSet dataRs = ps.executeQuery()) {
+                    assertTrue(dataRs.next());
+
+                    for (int i = 0; i < dataRs.getMetaData().getColumnCount(); i++)
+                        resData.add(dataRs.getObject(i + 1));
+                }
+            }
+
+            LinkedHashMap<String, String> expCols = new LinkedHashMap<>();
+
+            if (testUuid) {
+                expCols.put("Id", UUID.class.getName());
+                expCols.put("xX", UUID.class.getName());
+            }
+            else {
+                expCols.put("Id", Integer.class.getName());
+                expCols.put("xX", String.class.getName());
+            }
+
+            assertEquals(expCols, resCols);
+
+            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a"), resData);
+
+            IgniteCache<Object, Object> cache = grid(0).cache(QueryUtils.createTableCacheName("PUBLIC", "T"));
+            cache = cache.withKeepBinary();
+
+            Iterator<Cache.Entry<Object, Object>> it = cache.iterator();
+            assertTrue(it.hasNext());
+
+            Cache.Entry<Object, Object> cacheItem = it.next();
+
+            Object key = cacheItem.getKey();
+
+            assertEquals(wrapKey, key instanceof BinaryObject);
+
+            Object val = cache.get(key);
+            assertNotNull(val);
+
+            assertEquals(createValueForWrapTest(testUuid ? guid : "a", wrapVal), val);
+        }
+        finally {
+            stmt.execute("DROP TABLE IF EXISTS T");
+        }
+    }
+
+    /**
+     * @param val Value to wrap.
+     * @param wrap Whether value should be wrapped.
+     * @return (optionally wrapped) value.
+     */
+    private Object createValueForWrapTest(Object val, boolean wrap) {
+        if (!wrap)
+            return val;
+
+        return grid(0).binary().builder(val instanceof UUID ? "tval_guid" : "tval").setField("some", val).build();
     }
 
     /** Some object to store. */

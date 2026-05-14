@@ -192,6 +192,7 @@ In most cases, statement syntax is compliant with the old SQL engine. But there 
 === Transactions
 
 The Calcite-based SQL engine supports SQL savepoint commands for explicit transactions. See link:sql-reference/transactions[Transactions, window=_blank] for syntax and usage details.
+JDBC connections can also use the standard JDBC savepoint API. See link:SQL/JDBC/jdbc-driver#transaction-savepoints[JDBC Transaction Savepoints, window=_blank] for details.
 
 === Supported Functions
 
