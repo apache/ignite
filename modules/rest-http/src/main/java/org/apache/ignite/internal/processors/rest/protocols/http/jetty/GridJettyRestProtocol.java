@@ -61,9 +61,6 @@ import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
  * Jetty REST protocol implementation.
  */
 public class GridJettyRestProtocol extends GridRestProtocolAdapter {
-    /**
-     *
-     */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
             // See also https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging

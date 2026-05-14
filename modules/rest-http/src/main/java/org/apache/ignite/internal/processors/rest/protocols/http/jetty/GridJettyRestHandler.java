@@ -383,7 +383,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return REST request.
      * @throws IgniteCheckedException If creation failed.
      */
-    @Nullable private GridRestRequest createRequest(
+    private GridRestRequest createRequest(
         GridRestCommand cmd,
         Map<String, String> params,
         HttpServletRequest req
