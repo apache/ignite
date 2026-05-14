@@ -95,7 +95,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class GridJettyRestHandler extends AbstractHandler {
     /** */
-    public static final String IGNITE_CMD_PATH = "/ignite";
+    private static final String IGNITE_CMD_PATH = "/ignite";
 
     /** */
     private static final String FAILED_TO_PARSE_FORMAT = "Failed to parse parameter of %s type [%s=%s]";
