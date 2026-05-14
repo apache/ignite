@@ -1111,7 +1111,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         awaitPartitionMapExchange();
 
-        res = sql(grid(0),"select * from my_table ");
+        res = sql(grid(0), "select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
