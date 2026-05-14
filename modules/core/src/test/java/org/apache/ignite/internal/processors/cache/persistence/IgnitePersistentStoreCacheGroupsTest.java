@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -47,16 +48,27 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
-/**
- *
- */
+/** */
+@RunWith(Parameterized.class)
 public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest {
+    /** Checkpoint write order. */
+    @Parameterized.Parameter
+    public CheckpointWriteOrder cpWriteOrder;
+
+    /** */
+    @Parameterized.Parameters(name = "cpWriteOrder={0}")
+    public static Object[] parameters() {
+        return CheckpointWriteOrder.values();
+    }
+
     /** */
     private static final String GROUP1 = "grp1";
 
@@ -88,6 +100,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
             .setPageSize(1024)
+            .setCheckpointWriteOrder(cpWriteOrder)
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
