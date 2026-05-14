@@ -717,7 +717,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         String initiatorId = UUID.randomUUID().toString();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            cache.query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(5_000)).getAll()
+            cache.query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(1_000)).getAll()
         );
 
         try {
