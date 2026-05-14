@@ -520,7 +520,7 @@ public class MessageSerializerGenerator {
 
             indent++;
 
-            code.add(identedLine("%s.prepareMarshal(ctx.cacheObjectContext());", var));
+            code.add(identedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", var));
 
             indent--;
             indent--;
@@ -559,7 +559,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(identedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor));
+        code.add(identedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
 
         indent--;
     }
@@ -589,7 +589,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(identedLine("obj.prepareMarshal(ctx.cacheObjectContext());"));
+        code.add(identedLine("obj.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);"));
 
         indent--;
         
