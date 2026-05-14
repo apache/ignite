@@ -8485,7 +8485,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert !remoteDcPingStarted();
             assert !F.isEmpty(nodesToPing);
 
-            rmtDcPingMaxTimeNs = System.nanoTime() + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO);
+            rmtDcPingMaxTimeNs = System.nanoTime() + (U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) * RMT_DC_PING_TIMEOUT_RATIO;
 
             rmtDcPingPool = new IgniteThreadPoolExecutor(
                 "disco-remote-dc-ping-worker",
