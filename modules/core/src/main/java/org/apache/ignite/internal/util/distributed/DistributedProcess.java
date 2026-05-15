@@ -120,7 +120,8 @@ public class DistributedProcess<I extends Message, R extends Message> {
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
         this(ctx, type, exec, finish, initMsgFactory,
-            req -> "Failed to start distributed process " + type + ": rolling upgrade is enabled");
+            req -> ctx.rollingUpgrade().enabled() ?
+                "Failed to start distributed process " + type + ": rolling upgrade is enabled" : null);
     }
 
     /**
@@ -129,7 +130,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
-     * @param rollingUpgradeValidator Rolling upgrade validator. Returns rejection reason or {@code null} if the process is allowed.
+     * @param startValidator Process start validator. Returns rejection reason or {@code null} if the process is allowed.
      */
     public DistributedProcess(
         GridKernalContext ctx,
@@ -137,7 +138,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory,
-        Function<I, String> rollingUpgradeValidator
+        Function<I, String> startValidator
     ) {
         this.ctx = ctx;
         this.type = type;
@@ -176,7 +177,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
 
                 I req = (I)msg.request();
 
-                String rejectMsg = ctx.rollingUpgrade().enabled() ? rollingUpgradeValidator.apply(req) : null;
+                String rejectMsg = startValidator.apply(req);
 
                 if (rejectMsg != null)
                     fut = new GridFinishedFuture<>(new IgniteException(rejectMsg));

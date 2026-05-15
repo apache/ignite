@@ -436,7 +436,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
             this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new,
-            req -> req.incremental() ?
+            req -> ctx.rollingUpgrade().enabled() && req.incremental() ?
                 "Incremental snapshot creation is not allowed when rolling upgrade is enabled." : null);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
