@@ -78,4 +78,4 @@ for each application via `cacheName` attribute.
 |===
 
 For more details on how to start Ignite within an ASP.NET application, refer to link:net-specific/asp-net-output-caching[ASP.NET Output Caching].
-Also, see link:net-specific/deployment-options#asp-net-deployment[ASP.NET Deployment] for web deployment specifics related to the `IGNITE_HOME` variable.
+Also, see link:net-specific/net-deployment-options#asp-net-deployment[ASP.NET Deployment] for web deployment specifics related to the `IGNITE_HOME` variable.

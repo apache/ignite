@@ -21,9 +21,11 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service single node deployment result.
@@ -38,14 +40,15 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     @Order(0)
     int cnt;
 
-    /** Serialized exceptions. */
+    /** Exceptions. */
     @Order(1)
-    Collection<byte[]> errors;
+    @Nullable Collection<ErrorMessage> errors;
 
     /**
      * Empty constructor for marshalling purposes.
      */
     public ServiceSingleNodeDeploymentResult() {
+        // No-op.
     }
 
     /**
@@ -63,19 +66,19 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     }
 
     /**
-     * @return Serialized exceptions.
+     * @return Exceptions.
      */
-    @NotNull public Collection<byte[]> errors() {
-        return errors != null ? errors : Collections.emptyList();
+    public Collection<Throwable> errors() {
+        return F.isEmpty(errors) ? Collections.emptyList() : F.viewReadOnly(errors, em -> ErrorMessage.error(em));
     }
 
     /**
-     * @param errors Serialized exceptions.
+     * @param errors Exceptions.
      */
-    public void errors(Collection<byte[]> errors) {
-        this.errors = errors;
+    public void errors(@Nullable Collection<Throwable> errors) {
+        if (!F.isEmpty(errors))
+            this.errors = F.viewReadOnly(errors, ErrorMessage::new);
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -85,7 +86,7 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
      * Checks that an exception is thrown if WAL segment size is larger than max WAL archive size.
      */
     @Test
-    public void testIncorrectMaxArchiveSizeConfiguration() throws Exception {
+    public void testIncorrectMaxArchiveSizeConfiguration() {
         DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
             .setWalSegmentSize((int)U.MB)
             .setMaxWalArchiveSize(10)
@@ -93,12 +94,22 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration().setPersistenceEnabled(true)
             );
 
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
+        LogListener npeChecker = LogListener.matches(NullPointerException.class.getName()).build();
+        listeningLog.registerListener(npeChecker);
+
         assertThrowsAnyCause(
             log,
-            () -> startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dataStorageConfiguration)),
+            () -> startGrid(0, (IgniteConfiguration cfg) ->
+                cfg
+                    .setDataStorageConfiguration(dataStorageConfiguration)
+                    .setGridLogger(listeningLog)
+            ),
             IgniteCheckedException.class,
             "maxWalArchiveSize must be no less than"
         );
+
+        assertFalse(npeChecker.check());
     }
 
     /**

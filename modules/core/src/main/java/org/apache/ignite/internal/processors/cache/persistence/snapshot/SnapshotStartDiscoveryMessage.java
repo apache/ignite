@@ -26,10 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 
 /** Snapshot operation start message. */
-public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperationRequest> implements SnapshotDiscoveryMessage {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperationRequest> {
     /** */
     @Order(0)
     boolean needExchange;
@@ -49,16 +46,14 @@ public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperation
         needExchange = !req.incremental();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean needExchange() {
+    /**
+     * Is exchange needed after receiving this message.
+     *
+     * @return True if exchange is needed, false in other case.
+     */
+    public boolean needExchange() {
         return needExchange;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean needAssignPartitions() {
-        return false;
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

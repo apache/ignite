@@ -17,11 +17,9 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.io.Serializable;
-
 /**
  *
  */
-interface ZkInternalMessage extends Serializable {
+interface ZkInternalMessage {
     // No-op.
 }

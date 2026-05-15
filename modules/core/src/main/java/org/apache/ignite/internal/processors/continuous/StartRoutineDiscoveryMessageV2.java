@@ -27,9 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class StartRoutineDiscoveryMessageV2 extends AbstractContinuousMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     StartRequestData startReqData;
 
@@ -52,7 +49,6 @@ public class StartRoutineDiscoveryMessageV2 extends AbstractContinuousMessage {
     public StartRequestData startRequestData() {
         return startReqData;
     }
-
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {

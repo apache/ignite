@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.net.SocketException;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -102,7 +103,9 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
             nioSrvWrapper.socketChannelFactory(() -> {
                 throw new SocketException("Too many open files");
             });
-            connPool.forceCloseConnection(txNode.localNode().id());
+            // Sometimes we can get `org.apache.ignite.IgniteCheckedException: Too many open files` due to parallel
+            // connection creation, since the forceCloseConnection is for tests, then we can ignore the exception.
+            forceCloseConnectionSafe(connPool, txNode.localNode().id());
 
             cache.put(1, 2);
             cache.put(2, 3);
@@ -116,5 +119,21 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
         }
 
         assertTrue(waitForCondition(((IgniteKernal)stopNode)::isStopping, 60_000));
+    }
+
+    /** */
+    private static void forceCloseConnectionSafe(ConnectionClientPool connPool, UUID nodeId) throws Exception {
+        assertTrue(waitForCondition(() -> {
+            try {
+                connPool.forceCloseConnection(nodeId);
+
+                return true;
+            }
+            catch (Throwable t) {
+                log.error("Error occurred while attempting to force close connections for node: " + nodeId, t);
+
+                return false;
+            }
+        }, 10_000));
     }
 }

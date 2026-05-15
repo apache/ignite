@@ -38,28 +38,21 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see SingleNodeMessage
  */
-public class InitMessage<I extends Message> implements Message, DiscoveryCustomMessage {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
-    /** Custom message ID. */
-    @Order(0)
-    public IgniteUuid id;
-
+public class InitMessage<I extends Message> extends DiscoveryCustomMessage {
     /** Process id. */
-    @Order(1)
+    @Order(0)
     public UUID procId;
 
     /** Process type. */
-    @Order(2)
+    @Order(1)
     public int type;
 
     /** Request. */
-    @Order(3)
+    @Order(2)
     public Message req;
 
     /** Whether coordinator waits client nodes results. */
-    @Order(4)
+    @Order(3)
     public boolean waitClnRes;
 
     /** Default constructor for {@link MessageFactory}. */
@@ -73,16 +66,12 @@ public class InitMessage<I extends Message> implements Message, DiscoveryCustomM
      * @param req Request.
      */
     public InitMessage(UUID procId, DistributedProcessType type, I req, boolean waitClnRes) {
-        this.id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         this.procId = procId;
         this.type = type.ordinal();
         this.req = req;
         this.waitClnRes = waitClnRes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */
@@ -120,5 +109,4 @@ public class InitMessage<I extends Message> implements Message, DiscoveryCustomM
     @Override public String toString() {
         return S.toString(InitMessage.class, this);
     }
-
 }

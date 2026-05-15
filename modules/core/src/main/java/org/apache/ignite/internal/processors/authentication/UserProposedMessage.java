@@ -23,7 +23,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMe
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,16 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * {@link UserAcceptedMessage} is sent as an acknowledgement that operation is finished on the all nodes of the cluster.
  */
-public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class UserProposedMessage extends DiscoveryServerOnlyCustomMessage {
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     @GridToStringInclude
     UserManagementOperation op;
 
@@ -55,20 +47,14 @@ public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage, Me
      * @param op User action.
      */
     UserProposedMessage(UserManagementOperation op) {
+        super(IgniteUuid.randomUuid());
+
         assert op != null;
 
         this.op = op;
-        id = IgniteUuid.randomUuid();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
@@ -84,5 +70,4 @@ public class UserProposedMessage implements DiscoveryServerOnlyCustomMessage, Me
     @Override public String toString() {
         return S.toString(UserProposedMessage.class, this);
     }
-
 }

@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import static java.util.UUID.randomUUID;
 import static java.util.function.Function.identity;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
@@ -197,6 +198,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
 
             buf.put(OperationType.VERSION.id());
             buf.putShort(FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION);
+            writeString(buf, VER_STR, false);
 
             writeSystemView(buf, "customView", "customWalker", null);
 

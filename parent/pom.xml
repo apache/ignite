@@ -77,7 +77,8 @@
         <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.19.0</jackson.version>
+        <jackson.version>2.21.1</jackson.version>
+        <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
@@ -91,7 +92,7 @@
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
-        <log4j2.version>2.25.3</log4j2.version>
+        <log4j2.version>2.25.4</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.2</lucene.version>
         <lz4.version>1.10.1</lz4.version>
@@ -118,7 +119,7 @@
         <xstream.version>1.4.17</xstream.version>
 
         <!-- Maven plugins versions -->
-        <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
         <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
 
         <sonar.organization>apache</sonar.organization>
@@ -240,6 +241,7 @@
                         <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
                         <configLocation>checkstyle/checkstyle.xml</configLocation>
                         <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                        <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>
@@ -626,7 +628,7 @@
                 <configuration>
                     <rules>
                         <requireMavenVersion>
-                            <version>[3.9.6]</version>
+                            <version>[3.9.6,)</version>
                         </requireMavenVersion>
                     </rules>
                 </configuration>
@@ -701,6 +703,7 @@
                             <name>ignite.buildNumber</name>
                             <!-- See: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/text/SimpleDateFormat.html -->
                             <pattern>yywwu</pattern>
+                            <locale>en_US</locale>
                         </configuration>
                     </execution>
                 </executions>
@@ -1081,6 +1084,7 @@
                                 --add-opens=java.base/java.time=ALL-UNNAMED
                                 --add-opens=java.base/java.text=ALL-UNNAMED
                                 --add-opens=java.base/java.security=ALL-UNNAMED
+                                --add-opens=java.logging/java.util.logging=ALL-UNNAMED
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
                                 --add-opens java.desktop/java.awt.font=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED

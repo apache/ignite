@@ -74,5 +74,4 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     @Override public String toString() {
         return S.toString(SchemaFinishDiscoveryMessage.class, this, "parent", super.toString());
     }
-
 }

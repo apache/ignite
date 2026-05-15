@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
@@ -31,7 +32,7 @@ public interface MessageService extends Service {
      * @param nodeId Node ID.
      * @param msg Message.
      */
-    void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException;
+    void send(UUID nodeId, Message msg) throws IgniteCheckedException;
 
     /**
      * Checks whether a node with given ID is alive.

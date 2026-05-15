@@ -19,14 +19,16 @@ package org.apache.ignite.spi;
 
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+
+import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
 
 /**
  * Plugin provider for registering test messages in the communication and discovery protocols.
@@ -39,7 +41,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
     @SafeVarargs
     public MessagesPluginProvider(Class<? extends Message>... msgs) {
         msgFactoryProvider = f -> {
-            short directType = 10_000;
+            short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
 
             for (Class<? extends Message> msg : msgs) {
                 Supplier<Message> msgSupp = () -> {
@@ -51,7 +53,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
                     }
                 };
 
-                f.register(directType, msgSupp, loadSerializer(msg));
+                f.register(directType, msgSupp, loadSerializer(msg, null, null));
 
                 directType++;
             }
@@ -74,19 +76,6 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         // Register messages into the discovery protocol.
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ctx.igniteConfiguration().getDiscoverySpi();
 
-        discoSpi.messageFactory(msgFactoryProvider);
-    }
-
-    /** */
-    private MessageSerializer<? extends Message> loadSerializer(Class<? extends Message> msgCls) {
-        try {
-            Class<?> serCls = U.gridClassLoader()
-                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
-
-            return (MessageSerializer<? extends Message>)U.newInstance(serCls);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
-        }
+        discoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
     }
 }

@@ -96,5 +96,4 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     @Override public String toString() {
         return S.toString(WalStateProposeMessage.class, this, "super", super.toString());
     }
-
 }

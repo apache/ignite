@@ -17,10 +17,21 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+
 /**
  * <b>DiscoveryServerOnlyCustomMessage</b> is the special subtype of the <b>DiscoveryCustomMessage</b> message
  * that is delivered only on server nodes of the cluster.
  */
-public interface DiscoveryServerOnlyCustomMessage extends DiscoveryCustomMessage {
-    // No-op.
+public abstract class DiscoveryServerOnlyCustomMessage extends DiscoveryCustomMessage {
+    /** Constructor for {@link MessageFactory}. */
+    protected DiscoveryServerOnlyCustomMessage() {
+        // No-op.
+    }
+
+    /** @param id Message ID. */
+    protected DiscoveryServerOnlyCustomMessage(IgniteUuid id) {
+        super(id);
+    }
 }

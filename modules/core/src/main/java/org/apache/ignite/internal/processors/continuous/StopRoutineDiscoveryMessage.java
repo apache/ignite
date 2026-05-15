@@ -27,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public StopRoutineDiscoveryMessage() {
         // No-op.
     }
