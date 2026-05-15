@@ -232,8 +232,8 @@
       url: sql-reference/ddl
     - title: Data Manipulation Language (DML)
       url: sql-reference/dml
-    - title: Transactions
-      url: key-value-api/transactions
+    - title: Transaction-aware Queries
+      url: SQL/sql-calcite#transaction-aware-queries
     - title: Operational Commands
       url: sql-reference/operational-commands
     - title: Aggregate functions
