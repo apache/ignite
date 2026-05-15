@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.tx;
 
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -30,18 +31,38 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode.ALL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** Tests SQL savepoint commands executed by Calcite. */
+@RunWith(Parameterized.class)
 public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String TBL = "SAVEPOINT_TEST_TABLE";
+
+    /** */
+    @Parameter
+    public TransactionConcurrency txConcurrency;
+
+    /** */
+    @Parameters(name = "{0}")
+    public static Iterable<Object[]> testData() {
+        return Arrays.asList(new Object[][] {
+            {PESSIMISTIC},
+            {OPTIMISTIC}
+        });
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,7 +90,7 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSavepointCommandsInSqlScript() {
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = client.transactions().txStart(txConcurrency, READ_COMMITTED)) {
             sqlScript(
                 "INSERT INTO " + TBL + " VALUES (1, 'before_sp1');" +
                 "SAVEPOINT sp1;" +
@@ -110,7 +131,7 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSqlDmlChangesCanBeRolledBackToSavepointUsingSqlCommands() {
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = client.transactions().txStart(txConcurrency, READ_COMMITTED)) {
             sql("INSERT INTO " + TBL + " VALUES (1, 'before_sp1')");
 
             sql("SAVEPOINT sp1");
@@ -154,7 +175,7 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSqlDmlChangesCanBeRolledBackToSavepoint() {
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = client.transactions().txStart(txConcurrency, READ_COMMITTED)) {
             sql("INSERT INTO " + TBL + " VALUES (1, 'before_sp1')");
 
             tx.savepoint("sp1");

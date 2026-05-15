@@ -1913,7 +1913,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @return Discovery collection cache.
      */
-    public DiscoCache discoCache() {
+    @Nullable public DiscoCache discoCache() {
         Snapshot cur = topSnap.get();
 
         assert cur != null;
@@ -1930,24 +1930,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCacheHist.get(topVer);
     }
 
-    /** @return All remote nodes in topology. */
+    /** @return All remote nodes in topology or empty collection if topology is not initialized. */
     public Collection<ClusterNode> remoteNodes() {
-        return discoCache().remoteNodes();
+        @Nullable DiscoCache cached = discoCache();
+
+        return cached == null ? List.of() : cached.remoteNodes();
     }
 
-    /** @return All nodes in topology. */
+    /** @return All nodes in topology or empty collection if topology is not initialized. */
     public Collection<ClusterNode> allNodes() {
-        return discoCache().allNodes();
+        @Nullable DiscoCache cached = discoCache();
+
+        return cached == null ? List.of() : discoCache().allNodes();
     }
 
-    /** @return all alive server nodes in topology */
+    /** @return Alive server nodes in topology or empty collection if topology is not initialized. */
     public Collection<ClusterNode> aliveServerNodes() {
-        return discoCache().aliveServerNodes();
+        @Nullable DiscoCache cached = discoCache();
+
+        return cached == null ? List.of() : cached.aliveServerNodes();
     }
 
-    /** @return Full topology size. */
+    /** @return Full topology size, {@code 0} if topology is not initialized. */
     public int size() {
-        return discoCache().allNodes().size();
+        return allNodes().size();
     }
 
     /**
@@ -3368,13 +3374,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** */
         @GridToStringExclude
-        private final DiscoCache discoCache;
+        @Nullable private final DiscoCache discoCache;
 
         /**
          * @param topVer Topology version.
          * @param discoCache Disco cache.
          */
-        private Snapshot(AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        private Snapshot(AffinityTopologyVersion topVer, @Nullable DiscoCache discoCache) {
             this.topVer = topVer;
             this.discoCache = discoCache;
         }

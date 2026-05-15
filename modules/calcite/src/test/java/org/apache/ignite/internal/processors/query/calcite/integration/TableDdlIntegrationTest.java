@@ -47,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
@@ -345,6 +344,201 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             IgniteSQLException.class, "Table already exists: MY_TABLE");
 
         sql("create table if not exists my_table (id int, val varchar)");
+    }
+
+    /** Test that it's impossible to create tables with same name regardless of key/value wrapping settings. */
+    @Test
+    public void createTableWithWrappedKeyVal() {
+        {
+            sql("create table t1 (id int primary key) WITH \"wrap_value=false\"");
+            sql("create table t2 (id1 int, id2 int, primary key(id1, id2)) WITH \"wrap_value=false\"");
+
+            sql("DROP TABLE t1; DROP TABLE t2");
+        }
+        {
+            sql("create table my_table (id int, val varchar)");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            //  WRAP_KEY, by default, this flag is set to false
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+
+        {
+            sql("create table my_table (id int, val varchar) WITH \"wrap_key=true\"");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+
+        {
+            sql("create table my_table (id int, val varchar) WITH \"wrap_value=false\"");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
+                "Table already exists: MY_TABLE");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+
+        {
+            sql("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+    }
+
+    /** Tests wrap=false is forbidden when key or value has more than one column. */
+    @Test
+    public void testWrappingAlwaysOnWithComplexKV() {
+        assertThrowsSqlException("create table a (id int, x varchar, c bigint, primary key(id, c)) with \"wrap_key=false\"",
+            "WRAP_KEY parameter cannot be \"false\" when composite primary key exists.");
+
+        assertThrowsSqlException(
+            "create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_key=false, key_type=custom\"",
+            "WRAP_KEY parameter cannot be \"false\" when KEY_TYPE is defined.");
+
+        assertThrowsSqlException("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_value=false\"",
+            "WRAP_VALUE parameter cannot be \"false\" with multiple columns.");
+
+        assertThrowsSqlException(
+            "create table a (id int, x varchar, primary key(id)) with \"wrap_value=false, value_type=custom\"",
+            "WRAP_VALUE parameter cannot be \"false\" when VALUE_TYPE is defined.");
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails.
+     */
+    @Test
+    public void testAlterTableFailOnSingleCacheValue() {
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("ints");
+        ccfg
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
+        try {
+            client.getOrCreateCache(ccfg);
+
+            doTestAlterTableOnFlatValue("INTEGER");
+        }
+        finally {
+            client.destroyCache("ints");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails.
+     */
+    @Test
+    public void testAlterTableFailOnSingleTableValue() {
+        try {
+            sql("CREATE TABLE TEST (id INT PRIMARY KEY, x VARCHAR) with \"wrap_value=false\"");
+
+            doTestAlterTableOnFlatValue("TEST");
+        }
+        finally {
+            sql("DROP TABLE TEST");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for tables that have single value.
+     *
+     * @param tblName table name.
+     */
+    private void doTestAlterTableOnFlatValue(String tblName) {
+        assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar", IgniteSQLException.class,
+            "Cannot add column(s) because table was created");
+    }
+
+    /**
+     * Test single column PK with different wrapping params calculate correct inline size.
+     * PK index is always unwrapped if table was created via DDL.
+     */
+    @Test
+    public void testInlineSizeKeyWrapParam() {
+        String qry = "CREATE TABLE IF NOT EXISTS T ( " +
+            "  id varchar(15), " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id) ) ";
+
+        try {
+            for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"", qry + "WITH \"wrap_key=false\"")) {
+                sql(ddl);
+
+                assertEquals("Unexpected result for query [ddl=" + ddl + ']', 18, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+
+                sql("DROP TABLE IF EXISTS T");
+            }
+        }
+        finally {
+            sql("DROP TABLE IF EXISTS T");
+        }
+    }
+
+    /**
+     * Test two column PK with different wrapping params calculate correct inline size.
+     * PK index is always unwrapped if table was created via DDL.
+     */
+    @Test
+    public void testInlineSizeMultiKeyWrapParam() {
+        String qry = "CREATE TABLE IF NOT EXISTS T ( " +
+            "  id varchar(15), " +
+            "  id2 uuid, " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id, id2) ) ";
+
+        try {
+            for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"")) {
+                sql(ddl);
+
+                assertEquals("Unexpected result for query [ddl=" + ddl + ']', 35,
+                    sql("select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+
+                sql("DROP TABLE IF EXISTS T");
+            }
+        }
+        finally {
+            sql("DROP TABLE IF EXISTS T");
+        }
     }
 
     /**
@@ -884,7 +1078,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table from server and client nodes.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16292")
     public void alterTableServerAndClient() throws Exception {
         sql(grid(0), "create table my_table (id int primary key, val varchar)");
 
@@ -918,7 +1111,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         awaitPartitionMapExchange();
 
-        res = sql("select * from my_table ");
+        res = sql(grid(0), "select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());

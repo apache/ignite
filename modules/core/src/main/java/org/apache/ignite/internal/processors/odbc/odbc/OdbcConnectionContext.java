@@ -204,8 +204,6 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             replicatedOnly, collocated, skipReducerOnUpdate, qryEngine, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);
-
-        handler.start();
     }
 
     /** {@inheritDoc} */

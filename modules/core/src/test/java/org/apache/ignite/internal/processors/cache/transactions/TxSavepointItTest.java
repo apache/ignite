@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,16 +29,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionException;
 import org.junit.Test;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-
 /**
  * Tests transaction savepoint functionality.
- * Currently, savepoint API is supported only for pessimistic transactions.
  */
-public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
+public class TxSavepointItTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
 
@@ -79,29 +72,12 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSavepointRejectedForOptimisticTx() throws Exception {
-        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            GridTestUtils.assertThrowsAnyCause(log,
-                () -> {
-                    tx.savepoint("sp");
-
-                    return null;
-                },
-                IgniteCheckedException.class,
-                "Savepoints are supported only for PESSIMISTIC transactions.");
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRollabackSeveralSavepoints() throws Exception {
+    public void testRollabackSeveralSavepoints() {
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int key = 1;
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = ignite.transactions().txStart()) {
             cache.put(key, 1);
 
             tx.savepoint("sp1");
@@ -128,8 +104,8 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDuplicateSavepointWithoutOverwriteThrows() throws Exception {
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+    public void testDuplicateSavepointWithoutOverwriteThrows() {
+        try (Transaction tx = ignite.transactions().txStart()) {
             tx.savepoint("sp");
 
             GridTestUtils.assertThrowsAnyCause(
@@ -156,7 +132,7 @@ public class TxSavepointPessimisticTest extends GridCommonAbstractTest {
 
         int key = 1;
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = ignite.transactions().txStart()) {
             cache.put(key, 1);
             tx.savepoint("sp1");
 
