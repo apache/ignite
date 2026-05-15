@@ -63,6 +63,9 @@ public class MemoryMetricsCommandHandler extends GridRestCommandHandlerAdapter {
 
         switch (cmd) {
             case DATA_REGION_METRICS:
+                // SECURITY NOTE: Data region (memory) metrics may reveal operational characteristics of the node/cluster.
+                // If this REST endpoint is exposed to untrusted users, consider enforcing stricter authorization at a higher
+                // layer or within this handler to reduce information disclosure.
                 return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().dataRegionMetrics()));
 
             default:
