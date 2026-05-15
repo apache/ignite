@@ -19,35 +19,37 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Partition update counters message.
+ *
+ * @see #finishUpdating()
  */
-public class PartitionUpdateCountersMessage implements MarshallableMessage {
+public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
-    /** Byte representation of partition counters. */
+    /** */
     @Order(0)
+    int cacheId;
+
+    /** Byte representation of partition counters. */
+    @Order(1)
     byte[] data;
 
     /** */
-    @Order(1)
-    int cacheId;
-
-    /** */
-    private int size;
+    @Order(2)
+    int size;
 
     /** Used for assigning counters to cache entries during tx finish. */
     private Map<Integer, Long> counters;
 
-    /** */
+    /** Empty constructor for a {@link MessageFactory}. */
     public PartitionUpdateCountersMessage() {
         // No-op.
     }
@@ -120,6 +122,8 @@ public class PartitionUpdateCountersMessage implements MarshallableMessage {
      * @param part Partition number.
      * @param init Init partition counter.
      * @param updatesCnt Update counter delta.
+     *
+     * @see #finishUpdating()
      */
     public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
@@ -129,6 +133,15 @@ public class PartitionUpdateCountersMessage implements MarshallableMessage {
         GridUnsafe.putInt(data, off, part); off += 4;
         GridUnsafe.putLong(data, off, init); off += 8;
         GridUnsafe.putLong(data, off, updatesCnt);
+    }
+
+    /** Optimizes the memory used after adding counters with {@link #add(int, long, long)}. */
+    public void finishUpdating() {
+        if (data != null && data.length != size) {
+            assert data.length > size;
+
+            data = Arrays.copyOf(data, size * ITEM_SIZE);
+        }
     }
 
     /**
@@ -157,10 +170,10 @@ public class PartitionUpdateCountersMessage implements MarshallableMessage {
     private void ensureSpace(int newSize) {
         int req = newSize * ITEM_SIZE;
 
+        // Calling of #finishUpdating() isn't mantatory. If not called, let's do not use too much extra memory.
         if (data.length < req)
-            data = Arrays.copyOf(data, data.length << 1);
+            data = Arrays.copyOf(data, (int)(data.length * 1.33f));
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
@@ -181,15 +194,5 @@ public class PartitionUpdateCountersMessage implements MarshallableMessage {
             ", size=" + size +
             ", cntrs=" + sb +
             '}';
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        data = Arrays.copyOf(data, size * ITEM_SIZE);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        size = data == null ? 0 : data.length / ITEM_SIZE;
     }
 }
