@@ -69,4 +69,7 @@ public interface CacheConfigurationDefaults {
 
     /** Default maximum inline size for sql indexes. */
     public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
+
+    /** Maximum number of partitions. */
+    public static final int MAX_PARTITIONS_COUNT = 65000;
 }

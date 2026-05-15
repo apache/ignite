@@ -21,11 +21,7 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteAsyncCallback;
 
 /**
  * API for configuring continuous cache queries.

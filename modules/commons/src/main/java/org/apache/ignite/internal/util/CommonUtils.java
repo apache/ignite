@@ -2183,6 +2183,22 @@ public abstract class CommonUtils {
     }
 
     /**
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     * @return Converted time.
+     */
+    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
+        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
+            "timeUnit minimal resolution is millisecond.");
+
+        A.ensure(timeout >= 0, "timeout value should be non-negative.");
+
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        return (int)tmp;
+    }
+
+    /**
      * Creates SQL types set.
      *
      * @return SQL types set.

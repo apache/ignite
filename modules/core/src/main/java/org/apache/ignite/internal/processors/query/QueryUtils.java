@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexC
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1192,22 +1191,6 @@ public class QueryUtils {
         }
 
         return typeName;
-    }
-
-    /**
-     * @param timeout Timeout.
-     * @param timeUnit Time unit.
-     * @return Converted time.
-     */
-    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
-        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
-
-        A.ensure(timeout >= 0, "timeout value should be non-negative.");
-
-        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-
-        return (int)tmp;
     }
 
     /**

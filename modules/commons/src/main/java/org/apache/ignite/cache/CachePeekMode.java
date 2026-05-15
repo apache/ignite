@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.IgniteCache;
 import org.jetbrains.annotations.Nullable;
 
 /**

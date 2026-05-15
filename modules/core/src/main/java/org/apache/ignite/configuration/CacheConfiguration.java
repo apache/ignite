@@ -83,9 +83,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Maximum number of partitions. */
-    public static final int MAX_PARTITIONS_COUNT = 65000;
-
     /**
      * Default size of rebalance thread pool.
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THREAD_POOL_SIZE} instead.
