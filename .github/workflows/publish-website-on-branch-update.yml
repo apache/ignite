@@ -59,6 +59,26 @@ jobs:
             exit 1
           fi
 
+      - name: Validate ignite-website token
+        env:
+          GH_TOKEN: ${{ secrets.IGNITE_WEBSITE_BUILD }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Secret IGNITE_WEBSITE_BUILD is empty or missing."
+            echo "::error::Please contact Apache INFRA to create or update the token."
+            echo "::error::Example INFRA ticket:"
+            echo "::error::https://issues.apache.org/jira/browse/INFRA-27835"
+            exit 1
+          fi
+
+          if ! git ls-remote https://x-access-token:${GH_TOKEN}@github.com/apache/ignite-website.git &>/dev/null; then
+            echo "::error::Invalid or expired IGNITE_WEBSITE_BUILD token."
+            echo "::error::Please contact Apache INFRA to renew or recreate the token."
+            echo "::error::Example INFRA ticket:"
+            echo "::error::https://issues.apache.org/jira/browse/INFRA-27835"
+            exit 1
+          fi
+
       - name: Check out 'ignite-website' repository code
         uses: actions/checkout@v3
         with:
