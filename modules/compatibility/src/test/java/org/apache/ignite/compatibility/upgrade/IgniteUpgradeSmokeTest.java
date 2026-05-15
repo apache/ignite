@@ -9,13 +9,26 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Smoke test for rolling upgrade with persistence.
  */
+@RunWith(Parameterized.class)
 public class IgniteUpgradeSmokeTest extends IgniteUpgradeAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "transactional-cache";
+
+    /** */
+    @Parameterized.Parameter
+    public boolean persistentEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "persistentEnabled={0}")
+    public static Object[] params() {
+        return new Object[] {false, true};
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -23,7 +36,7 @@ public class IgniteUpgradeSmokeTest extends IgniteUpgradeAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
+                .setPersistenceEnabled(persistentEnabled)
                 .setMaxSize(300 * 1024 * 1024)));
 
         cfg.setCacheConfiguration(getCacheConfiguration());
