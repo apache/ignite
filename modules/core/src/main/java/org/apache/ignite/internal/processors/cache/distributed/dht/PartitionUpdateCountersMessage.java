@@ -170,7 +170,6 @@ public class PartitionUpdateCountersMessage implements Message {
     private void ensureSpace(int newSize) {
         int req = newSize * ITEM_SIZE;
 
-        // Calling of #finishUpdating() isn't mantatory. If not called, let's do not use too much extra memory.
         if (data.length < req)
             data = Arrays.copyOf(data, (int)(data.length * 1.33f));
     }
