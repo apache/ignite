@@ -26,9 +26,8 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.CacheConfigurationDefaults;
+import org.apache.ignite.configuration.IgniteConfigurationDefaults;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
@@ -42,55 +41,55 @@ public final class ClientCacheConfiguration implements Serializable {
     private String name;
 
     /** @serial Atomicity mode. */
-    private CacheAtomicityMode atomicityMode = CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE;
+    private CacheAtomicityMode atomicityMode = CacheConfigurationDefaults.DFLT_CACHE_ATOMICITY_MODE;
 
     /** @serial Backups. */
-    private int backups = CacheConfiguration.DFLT_BACKUPS;
+    private int backups = CacheConfigurationDefaults.DFLT_BACKUPS;
 
     /** @serial Cache mode. */
-    private CacheMode cacheMode = CacheConfiguration.DFLT_CACHE_MODE;
+    private CacheMode cacheMode = CacheConfigurationDefaults.DFLT_CACHE_MODE;
 
     /** @serial Eager TTL flag. */
-    private boolean eagerTtl = CacheConfiguration.DFLT_EAGER_TTL;
+    private boolean eagerTtl = CacheConfigurationDefaults.DFLT_EAGER_TTL;
 
     /** @serial Group name. */
     private String grpName = null;
 
     /** @serial Default lock timeout. */
-    private long dfltLockTimeout = CacheConfiguration.DFLT_LOCK_TIMEOUT;
+    private long dfltLockTimeout = CacheConfigurationDefaults.DFLT_LOCK_TIMEOUT;
 
     /** @serial Partition loss policy. */
-    private PartitionLossPolicy partLossPlc = CacheConfiguration.DFLT_PARTITION_LOSS_POLICY;
+    private PartitionLossPolicy partLossPlc = CacheConfigurationDefaults.DFLT_PARTITION_LOSS_POLICY;
 
     /** @serial Read from backup. */
-    private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
+    private boolean readFromBackup = CacheConfigurationDefaults.DFLT_READ_FROM_BACKUP;
 
     /** @serial Rebalance batch size. */
-    private int rebalanceBatchSize = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+    private int rebalanceBatchSize = IgniteConfigurationDefaults.DFLT_REBALANCE_BATCH_SIZE;
 
     /** @serial Rebalance batches prefetch count. */
-    private long rebalanceBatchesPrefetchCnt = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    private long rebalanceBatchesPrefetchCnt = IgniteConfigurationDefaults.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** @serial Rebalance delay. */
     private long rebalanceDelay = 0;
 
     /** @serial Rebalance mode. */
-    private CacheRebalanceMode rebalanceMode = CacheConfiguration.DFLT_REBALANCE_MODE;
+    private CacheRebalanceMode rebalanceMode = CacheConfigurationDefaults.DFLT_REBALANCE_MODE;
 
     /** @serial Rebalance order. */
     private int rebalanceOrder = 0;
 
     /** @serial Rebalance throttle. */
-    private long rebalanceThrottle = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
+    private long rebalanceThrottle = IgniteConfigurationDefaults.DFLT_REBALANCE_THROTTLE;
 
     /** @serial Rebalance timeout. */
-    private long rebalanceTimeout = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
+    private long rebalanceTimeout = IgniteConfigurationDefaults.DFLT_REBALANCE_TIMEOUT;
 
     /** @serial Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSynchronizationMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
     /** @serial Copy on read. */
-    private boolean cpOnRead = CacheConfiguration.DFLT_COPY_ON_READ;
+    private boolean cpOnRead = CacheConfigurationDefaults.DFLT_COPY_ON_READ;
 
     /** @serial Data region name. */
     private String dataRegionName = null;
@@ -99,25 +98,25 @@ public final class ClientCacheConfiguration implements Serializable {
     private boolean statisticsEnabled = false;
 
     /** @serial Max concurrent async operations. */
-    private int maxConcurrentAsyncOperations = CacheConfiguration.DFLT_MAX_CONCURRENT_ASYNC_OPS;
+    private int maxConcurrentAsyncOperations = CacheConfigurationDefaults.DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
     /** @serial Max query iterators count. */
-    private int maxQryIteratorsCnt = CacheConfiguration.DFLT_MAX_QUERY_ITERATOR_CNT;
+    private int maxQryIteratorsCnt = CacheConfigurationDefaults.DFLT_MAX_QUERY_ITERATOR_CNT;
 
     /** @serial Onheap cache enabled. */
     private boolean onheapCacheEnabled = false;
 
     /** @serial Query detail metrics size. */
-    private int qryDetailMetricsSize = CacheConfiguration.DFLT_QRY_DETAIL_METRICS_SIZE;
+    private int qryDetailMetricsSize = CacheConfigurationDefaults.DFLT_QRY_DETAIL_METRICS_SIZE;
 
     /** @serial Query parallelism. */
-    private int qryParallelism = CacheConfiguration.DFLT_QUERY_PARALLELISM;
+    private int qryParallelism = CacheConfigurationDefaults.DFLT_QUERY_PARALLELISM;
 
     /** @serial Sql escape all. */
     private boolean sqlEscapeAll = false;
 
     /** @serial Sql index max inline size. */
-    private int sqlIdxMaxInlineSize = CacheConfiguration.DFLT_SQL_INDEX_MAX_INLINE_SIZE;
+    private int sqlIdxMaxInlineSize = CacheConfigurationDefaults.DFLT_SQL_INDEX_MAX_INLINE_SIZE;
 
     /** @serial Sql schema. */
     private String sqlSchema = null;
