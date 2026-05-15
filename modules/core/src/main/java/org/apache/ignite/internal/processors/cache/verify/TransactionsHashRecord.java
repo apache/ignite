@@ -37,7 +37,7 @@ public class TransactionsHashRecord implements MarshallableMessage, Serializable
 
     /** Bytes of {@link #locConsistentId}. */
     @Order(0)
-    byte[] locConsistentIdBytes;
+    transient byte[] locConsistentIdBytes;
 
     /** Consistent ID of remote node that participated in the transactions. */
     @GridToStringInclude
@@ -45,7 +45,7 @@ public class TransactionsHashRecord implements MarshallableMessage, Serializable
 
     /** Bytes of {@link #rmtConsistentId}. */
     @Order(1)
-    byte[] rmtConsistentIdBytes;
+    transient byte[] rmtConsistentIdBytes;
 
     /** Committed transactions IDs hash. */
     @Order(2)
