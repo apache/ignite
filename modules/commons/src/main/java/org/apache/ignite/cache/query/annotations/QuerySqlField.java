@@ -23,8 +23,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have

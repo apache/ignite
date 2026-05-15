@@ -140,7 +140,7 @@ public class QuerySchema implements Serializable {
                 if (locEntities.containsKey(qryEntity.getTableName())) {
                     QueryEntity locEntity = locEntities.get(qryEntity.getTableName());
 
-                    QueryEntityPatch entityPatch = locEntity.makePatch(qryEntity);
+                    QueryEntityPatch entityPatch = QueryUtils.makePatch(locEntity, qryEntity);
 
                     if (entityPatch.hasConflict()) {
                         if (conflicts.length() > 0)

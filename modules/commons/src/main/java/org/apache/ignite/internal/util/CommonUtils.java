@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -44,18 +45,25 @@ import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -82,6 +90,7 @@ import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
@@ -223,6 +232,18 @@ public abstract class CommonUtils {
     /** */
     private static final Class<?> GEOMETRY_CLASS = classForName("org.locationtech.jts.geom.Geometry", null);
 
+    /** Boxed class map. */
+    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
+
+    /** Field name for key. */
+    public static final String KEY_FIELD_NAME = "_KEY";
+
+    /** Field name for value. */
+    public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** */
+    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
     static {
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -233,6 +254,16 @@ public abstract class CommonUtils {
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
         primitiveMap.put("void", void.class);
+
+        boxedClsMap.put(byte.class, Byte.class);
+        boxedClsMap.put(short.class, Short.class);
+        boxedClsMap.put(int.class, Integer.class);
+        boxedClsMap.put(long.class, Long.class);
+        boxedClsMap.put(float.class, Float.class);
+        boxedClsMap.put(double.class, Double.class);
+        boxedClsMap.put(char.class, Character.class);
+        boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -2121,5 +2152,63 @@ public abstract class CommonUtils {
      */
     public static boolean isGeometryClass(Class<?> cls) {
         return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+    }
+
+    /**
+     * Gets wrapper class for a primitive type.
+     *
+     * @param cls Class. If {@code null}, method is no-op.
+     * @return Wrapper class or original class if it is non-primitive.
+     */
+    @Nullable public static Class<?> box(@Nullable Class<?> cls) {
+        if (cls == null)
+            return null;
+
+        if (!cls.isPrimitive())
+            return cls;
+
+        return boxedClsMap.get(cls);
+    }
+
+    /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public static boolean isSqlType(Class<?> cls) {
+        cls = box(cls);
+
+        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
+    }
+
+    /**
+     * Creates SQL types set.
+     *
+     * @return SQL types set.
+     */
+    @NotNull private static Set<Class<?>> createSqlTypes() {
+        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
+            Integer.class,
+            Boolean.class,
+            Byte.class,
+            Short.class,
+            Long.class,
+            BigDecimal.class,
+            Double.class,
+            Float.class,
+            Time.class,
+            Timestamp.class,
+            Date.class,
+            java.sql.Date.class,
+            LocalTime.class,
+            LocalDate.class,
+            LocalDateTime.class,
+            String.class,
+            UUID.class,
+            byte[].class
+        ));
+
+        return sqlClasses;
     }
 }

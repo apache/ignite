@@ -377,9 +377,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Supplier of network interfaces. Could be used for tests purposes, must not be changed in production code. */
     public static InterfaceSupplier INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
 
-    /** Boxed class map. */
-    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
-
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
@@ -485,16 +482,6 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteUtils.jvmImplName = jvmImplName;
 
         jvm32Bit = "32".equals(jvmArchDataModel);
-
-        boxedClsMap.put(byte.class, Byte.class);
-        boxedClsMap.put(short.class, Short.class);
-        boxedClsMap.put(int.class, Integer.class);
-        boxedClsMap.put(long.class, Long.class);
-        boxedClsMap.put(float.class, Float.class);
-        boxedClsMap.put(double.class, Double.class);
-        boxedClsMap.put(char.class, Character.class);
-        boxedClsMap.put(boolean.class, Boolean.class);
-        boxedClsMap.put(void.class, Void.class);
 
         // Disable hostname SSL verification for development and testing with self-signed certificates.
         if (Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_HOSTNAME_VERIFIER))) {
@@ -5804,22 +5791,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static long ensurePositive(long i, long dflt) {
         return i <= 0 ? dflt : i;
-    }
-
-    /**
-     * Gets wrapper class for a primitive type.
-     *
-     * @param cls Class. If {@code null}, method is no-op.
-     * @return Wrapper class or original class if it is non-primitive.
-     */
-    @Nullable public static Class<?> box(@Nullable Class<?> cls) {
-        if (cls == null)
-            return null;
-
-        if (!cls.isPrimitive())
-            return cls;
-
-        return boxedClsMap.get(cls);
     }
 
     /**

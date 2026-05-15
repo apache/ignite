@@ -27,11 +27,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -39,16 +37,11 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -159,223 +152,6 @@ public class QueryEntity implements Serializable {
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
         this(convert(processKeyAndValueClasses(keyCls, valCls)));
-    }
-
-    /**
-     * Make query entity patch. This patch can only add properties to entity and can't remove them.
-     * Other words, the patch will contain only add operations(e.g. add column, create index) and not remove ones.
-     *
-     * @param target Query entity to which this entity should be expanded.
-     * @return Patch which contains operations for expanding this entity.
-     */
-    @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
-        if (target == null)
-            return QueryEntityPatch.empty();
-
-        StringBuilder conflicts = new StringBuilder();
-
-        checkEquals(conflicts, "keyType", keyType, target.keyType);
-        checkEquals(conflicts, "valType", valType, target.valType);
-        checkEquals(conflicts, "keyFieldName", keyFieldName, target.keyFieldName);
-        checkEquals(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
-        checkEquals(conflicts, "tableName", tableName, target.tableName);
-
-        List<QueryField> qryFieldsToAdd = checkFields(target, conflicts);
-
-        Collection<QueryIndex> indexesToAdd = checkIndexes(target, conflicts);
-
-        if (conflicts.length() != 0)
-            return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
-
-        Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
-
-        if (!qryFieldsToAdd.isEmpty())
-            patchOperations.add(new SchemaAlterTableAddColumnOperation(
-                UUID.randomUUID(),
-                null,
-                null,
-                tableName,
-                qryFieldsToAdd,
-                true,
-                true
-            ));
-
-        if (!indexesToAdd.isEmpty()) {
-            for (QueryIndex idx : indexesToAdd) {
-                patchOperations.add(new SchemaIndexCreateOperation(
-                    UUID.randomUUID(),
-                    null,
-                    null,
-                    tableName,
-                    idx,
-                    true,
-                    0
-                ));
-            }
-        }
-
-        return QueryEntityPatch.patch(patchOperations);
-    }
-
-    /**
-     * Comparing local fields and target fields.
-     *
-     * @param target Query entity for check.
-     * @param conflicts Storage of conflicts.
-     * @return Indexes which exist in target and not exist in local.
-     */
-    @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
-        HashSet<QueryIndex> indexesToAdd = new HashSet<>();
-
-        Map<String, QueryIndex> curIndexes = new HashMap<>();
-
-        for (QueryIndex idx : getIndexes()) {
-            if (curIndexes.put(idx.getName(), idx) != null)
-                throw new IllegalStateException("Duplicate key");
-        }
-
-        for (QueryIndex qryIdx : target.getIndexes()) {
-            if (curIndexes.containsKey(qryIdx.getName())) {
-                checkEquals(
-                    conflicts,
-                    "index " + qryIdx.getName(),
-                    curIndexes.get(qryIdx.getName()),
-                    qryIdx
-                );
-            }
-            else
-                indexesToAdd.add(qryIdx);
-        }
-        return indexesToAdd;
-    }
-
-    /**
-     * Comparing local entity fields and target entity fields.
-     *
-     * @param target Query entity for check.
-     * @param conflicts Storage of conflicts.
-     * @return Fields which exist in target and not exist in local.
-     */
-    private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
-        List<QueryField> qryFieldsToAdd = new ArrayList<>();
-
-        for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
-            String targetFieldName = targetField.getKey();
-            String targetFieldType = targetField.getValue();
-            String targetFieldAlias = target.getAliases().get(targetFieldName);
-
-            if (getFields().containsKey(targetFieldName)) {
-                checkEquals(
-                    conflicts,
-                    "alias of " + targetFieldName,
-                    getAliases().get(targetFieldName),
-                    targetFieldAlias
-                );
-
-                checkEquals(
-                    conflicts,
-                    "fieldType of " + targetFieldName,
-                    getFields().get(targetFieldName),
-                    targetFieldType
-                );
-
-                checkEquals(
-                    conflicts,
-                    "nullable of " + targetFieldName,
-                    contains(getNotNullFields(), targetFieldName),
-                    contains(target.getNotNullFields(), targetFieldName)
-                );
-
-                checkEquals(
-                    conflicts,
-                    "default value of " + targetFieldName,
-                    getFromMap(getDefaultFieldValues(), targetFieldName),
-                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
-                );
-
-                checkEquals(conflicts,
-                    "precision of " + targetFieldName,
-                    getFromMap(getFieldsPrecision(), targetFieldName),
-                    getFromMap(target.getFieldsPrecision(), targetFieldName));
-
-                checkEquals(
-                    conflicts,
-                    "scale of " + targetFieldName,
-                    getFromMap(getFieldsScale(), targetFieldName),
-                    getFromMap(target.getFieldsScale(), targetFieldName));
-            }
-            else {
-                boolean isAliasConflictsFound = findAliasConflicts(targetFieldAlias, targetFieldName, conflicts);
-
-                if (!isAliasConflictsFound) {
-                    Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
-                    Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
-
-                    qryFieldsToAdd.add(new QueryField(
-                        targetFieldName,
-                        targetFieldType,
-                        targetFieldAlias,
-                        !contains(target.getNotNullFields(), targetFieldName),
-                        getFromMap(target.getDefaultFieldValues(), targetFieldName),
-                        precision == null ? -1 : precision,
-                        scale == null ? -1 : scale
-                    ));
-                }
-            }
-        }
-
-        return qryFieldsToAdd;
-    }
-
-    /**
-     * Checks if received query entity field has the alias which is already used by a field on the local node.
-     *
-     * @return Whether conflicts were found.
-     */
-    private boolean findAliasConflicts(String targetFieldAlias, String targetFieldName, StringBuilder conflicts) {
-        for (Map.Entry<String, String> entry : getAliases().entrySet()) {
-            if (Objects.equals(entry.getValue(), targetFieldAlias)) {
-                conflicts.append(String.format(
-                    "multiple fields are associated with the same alias: alias=%s, localField=%s, receivedField=%s\n",
-                    targetFieldAlias,
-                    entry.getKey(),
-                    targetFieldName)
-                );
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param collection Collection for checking.
-     * @param elementToCheck Element for checking to containing in collection.
-     * @return {@code true} if collection contain elementToCheck.
-     */
-    private static boolean contains(Collection<String> collection, String elementToCheck) {
-        return collection != null && collection.contains(elementToCheck);
-    }
-
-    /**
-     * @return Value from sourceMap or null if map is null.
-     */
-    private static <V> V getFromMap(Map<String, V> sourceMap, String key) {
-        return sourceMap == null ? null : sourceMap.get(key);
-    }
-
-    /**
-     * Comparing two objects and add formatted text to conflicts if needed.
-     *
-     * @param conflicts Storage of conflicts resulting error message.
-     * @param name Name of comparing object.
-     * @param local Local object.
-     * @param received Received object.
-     */
-    private <V> void checkEquals(StringBuilder conflicts, String name, V local, V received) {
-        if (!Objects.equals(local, received))
-            conflicts.append(String.format("%s is different: local=%s, received=%s\n", name, local, received));
     }
 
     /**
@@ -716,7 +492,7 @@ public class QueryEntity implements Serializable {
         entity.setValueType(desc.valueClass().getName());
 
         for (QueryEntityClassProperty prop : desc.properties().values())
-            entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
+            entity.addQueryField(prop.fullName(), CommonUtils.box(prop.type()).getName(), prop.alias());
 
         entity.setKeyFields(desc.keyProperties());
 
@@ -762,10 +538,10 @@ public class QueryEntity implements Serializable {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
+                txtIdx.setFieldNames(Arrays.asList(CommonUtils.VAL_FIELD_NAME), true);
             }
             else
-                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
+                txtIdx.getFields().put(CommonUtils.VAL_FIELD_NAME, true);
         }
 
         if (txtIdx != null)
@@ -813,14 +589,14 @@ public class QueryEntity implements Serializable {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
         @Nullable QueryEntityClassProperty parent) {
-        if (U.isJdk(cls) || U.isGeometryClass(cls)) {
-            if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
+        if (CommonUtils.isJdk(cls) || CommonUtils.isGeometryClass(cls)) {
+            if (parent == null && !key && CommonUtils.isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = cls.getSimpleName() + "_" + CommonUtils.VAL_FIELD_NAME + "_idx";
 
-                type.addIndex(idxName, U.isGeometryClass(cls) ?
+                type.addIndex(idxName, CommonUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
-                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
+                type.addFieldToIndex(idxName, CommonUtils.VAL_FIELD_NAME, 0, false);
             }
 
             return;
@@ -896,7 +672,7 @@ public class QueryEntity implements Serializable {
                 if (cls != curCls)
                     idxName = cls.getSimpleName() + "_" + idxName;
 
-                desc.addIndex(idxName, U.isGeometryClass(prop.type()) ?
+                desc.addIndex(idxName, CommonUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
