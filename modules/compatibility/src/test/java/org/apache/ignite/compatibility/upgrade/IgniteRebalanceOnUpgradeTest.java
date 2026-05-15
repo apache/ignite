@@ -16,7 +16,7 @@ import org.junit.runners.Parameterized;
  * Smoke test for rolling upgrade with persistence.
  */
 @RunWith(Parameterized.class)
-public class IgniteUpgradeSmokeTest extends IgniteUpgradeAbstractTest {
+public class IgniteRebalanceOnUpgradeTest extends IgniteUpgradeAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "transactional-cache";
 
