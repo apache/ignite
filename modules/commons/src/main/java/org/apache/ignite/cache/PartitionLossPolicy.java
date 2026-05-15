@@ -18,8 +18,6 @@
 package org.apache.ignite.cache;
 
 import java.util.Collection;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.jetbrains.annotations.Nullable;
 
 /**
