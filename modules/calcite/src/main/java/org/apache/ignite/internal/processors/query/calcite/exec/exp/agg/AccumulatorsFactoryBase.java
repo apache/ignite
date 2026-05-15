@@ -142,7 +142,7 @@ public abstract class AccumulatorsFactoryBase<Row> {
     }
 
     /** */
-    private final ExecutionContext<Row> ctx;
+    protected final ExecutionContext<Row> ctx;
 
     /** */
     protected AccumulatorsFactoryBase(ExecutionContext<Row> ctx) {

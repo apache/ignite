@@ -35,7 +35,7 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
     /** Frame within partition. */
     private final WindowFunctionFrame<Row> frame;
 
-    /**  */
+    /** */
     BufferingWindowPartition(
         Comparator<Row> peerCmp,
         WindowFunctionFactory<Row> funcFactory,
@@ -90,6 +90,7 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
         frame.reset();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isStreaming() {
         return false;
     }

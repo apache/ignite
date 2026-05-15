@@ -39,19 +39,19 @@ import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 /** */
 public final class WindowFunctions {
     /** Check window group can be processed with streaming partition. */
-    public static boolean streamable(Window.Group group) {
+    public static boolean streamable(Window.Group grp) {
         // Can execute window streaming in case:
         // - group aggs does not contain operators can access whole partition.
-        if (group.aggCalls.stream().anyMatch(it -> BUFFERING_FUNCTIONS.contains(it.op)))
+        if (grp.aggCalls.stream().anyMatch(it -> BUFFERING_FUNCTIONS.contains(it.op)))
             return false;
 
         // - group aggs contains only ROW_NUMBER, RANK, DENSE_RANK operators
-        if (group.aggCalls.stream().allMatch(it -> STREAMING_FUNCTIONS.contains(it.op)))
+        if (grp.aggCalls.stream().allMatch(it -> STREAMING_FUNCTIONS.contains(it.op)))
             return true;
 
         // group frame in 'ROWS BETWEEN UNBOUNDED PRESCENDING AND CURRENT ROW'
         //noinspection RedundantIfStatement
-        if (group.isRows && group.lowerBound.isUnbounded() && group.upperBound.isCurrentRow())
+        if (grp.isRows && grp.lowerBound.isUnbounded() && grp.upperBound.isCurrentRow())
             return true;
 
         return false;

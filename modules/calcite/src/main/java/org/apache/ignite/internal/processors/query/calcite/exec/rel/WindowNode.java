@@ -29,34 +29,34 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /** Window node. */
 public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /**  */
+    /** */
     private final Comparator<Row> partCmp;
 
-    /**  */
+    /** */
     private final Supplier<WindowPartition<Row>> partFactory;
 
-    /**  */
+    /** */
     private final RowHandler.RowFactory<Row> rowFactory;
 
-    /**  */
+    /** */
     private WindowPartition<Row> part;
 
-    /**  */
+    /** */
     private int requested;
 
-    /**  */
+    /** */
     private int waiting;
 
-    /**  */
+    /** */
     private Row prevRow;
 
-    /**  */
+    /** */
     private final Deque<Row> outBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     private boolean inLoop;
 
-    /**  */
+    /** */
     public WindowNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
@@ -81,10 +81,10 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         if (!inLoop) {
             flush();
-        }
 
-        if (waiting == 0)
-            source().request(waiting = IN_BUFFER_SIZE);
+            if (waiting == 0)
+                source().request(waiting = IN_BUFFER_SIZE);
+        }
     }
 
     /** {@inheritDoc} */
@@ -160,7 +160,7 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         return this;
     }
 
-    /**  */
+    /** */
     private void flush() throws Exception {
         inLoop = true;
         try {
@@ -172,7 +172,8 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
             if (waiting < 0 && outBuf.isEmpty())
                 downstream().end();
-        } finally {
+        }
+        finally {
             inLoop = false;
         }
     }

@@ -66,20 +66,17 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
 
         int inputFldCnt = result.getRowType().getFieldCount();
         RexShuttle restoreConstant = new RexShuttle() {
-
-            @Override
-            public RexNode visitInputRef(RexInputRef inputRef) {
+            @Override public RexNode visitInputRef(RexInputRef inputRef) {
                 int idx = inputRef.getIndex();
-                if (idx < inputFldCnt) {
+                if (idx < inputFldCnt)
                     return inputRef;
-                } else {
-                    // index above input field count reffers to window constant
+                else {
+                    // Index above input field count reffers to window constant
                     idx -= inputFldCnt;
                     return window.constants.get(idx);
                 }
             }
         };
-
 
         for (int grpIdx = 0; grpIdx < window.groups.size(); grpIdx++) {
             Window.Group grp = window.groups.get(grpIdx);
@@ -136,7 +133,6 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
         ImmutableList<Window.RexWinAggCall> calls = grp.aggCalls;
         for (int i = 0; i < calls.size(); i++) {
             Window.RexWinAggCall aggCall = calls.get(i);
-
 
             Window.RexWinAggCall newCall = new Window.RexWinAggCall(
                 (SqlAggFunction)aggCall.op,

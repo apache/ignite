@@ -130,9 +130,8 @@ final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
             IgniteTypeFactory typeFactory = Commons.typeFactory();
             RexBuilder builder = new IgniteRexBuilder(typeFactory);
             RexNode result = builder.makeCast(typeFactory.createSqlType(INTEGER), bound.getOffset());
-            if (bound.isPreceding()) {
+            if (bound.isPreceding())
                 result = builder.makeCall(SqlStdOperatorTable.UNARY_MINUS, ImmutableList.of(result));
-            }
             Function<Row, Row> project = ctx.expressionFactory().project(List.of(result), rowType);
             return project.andThen(row -> (Integer)ctx.rowHandler().get(0, row));
         }

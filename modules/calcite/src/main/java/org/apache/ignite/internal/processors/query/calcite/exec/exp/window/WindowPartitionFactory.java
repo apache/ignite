@@ -38,28 +38,28 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Factory to create {@link WindowPartitionBase} factory from {@link Window.Group}. */
 public final class WindowPartitionFactory<Row> implements Supplier<WindowPartition<Row>> {
-    /**  */
+    /** */
     private final WindowFunctionFactory<Row> funcFactory;
 
-    /**  */
+    /** */
     private final ExecutionContext<Row> ctx;
 
-    /**  */
+    /** */
     private final Window.Group grp;
 
-    /**  */
+    /** */
     private final RelDataType inputRowType;
 
-    /**  */
+    /** */
     private final RowHandler.RowFactory<Row> rowFactory;
 
-    /**  */
+    /** */
     private final Comparator<Row> peerCmp;
 
-    /**  */
+    /** */
     private final Function<Row, Row> project;
 
-    /**  */
+    /** */
     public WindowPartitionFactory(
         ExecutionContext<Row> ctx,
         Window.Group grp,
@@ -102,9 +102,8 @@ public final class WindowPartitionFactory<Row> implements Supplier<WindowPartiti
         for (Window.RexWinAggCall call : grp.aggCalls) {
             for (int i = 0; i < call.operands.size(); i++) {
                 RexNode operand = call.operands.get(i);
-                if (rexToOrd.containsKey(operand)) {
+                if (rexToOrd.containsKey(operand))
                     continue;
-                }
 
                 String name;
                 if (operand instanceof RexSlot)

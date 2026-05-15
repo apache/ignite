@@ -38,16 +38,13 @@ import org.jetbrains.annotations.NotNull;
 
 /** A factory class responsible for instantiating window functions. */
 final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
-    /**  */
+    /** */
     private final List<WindowFunctionPrototype<Row>> prototypes;
-
-    /**  */
-    private final ExecutionContext<Row> ctx;
 
     /** */
     private final RelDataType inputRowType;
 
-    /**  */
+    /** */
     WindowFunctionFactory(
         ExecutionContext<Row> ctx,
         Window.Group grp,
@@ -56,7 +53,6 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         RelDataType inputRowType
     ) {
         super(ctx);
-        this.ctx = ctx;
         this.inputRowType = inputRowType;
 
         ImmutableList.Builder<WindowFunctionPrototype<Row>> prototypes = ImmutableList.builder();
@@ -72,7 +68,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         this.prototypes = prototypes.build();
     }
 
-    /** {@inheritDoc} */
+    /** */
     List<WindowFunctionWrapper<Row>> createWrappers() {
         return Commons.transform(prototypes, Supplier::get);
     }
@@ -85,7 +81,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
     /** Converts window agg call to aggregate call. */
     private AggregateCall convertToAggregateCall(Window.RexWinAggCall call, Map<RexNode, Integer> rexToOrd) {
         // see org.apache.calcite.rel.core.Window.Group.getAggregateCalls
-        SqlAggFunction op = (SqlAggFunction) call.getOperator();
+        SqlAggFunction op = (SqlAggFunction)call.getOperator();
         List<Integer> argList = call.operands.stream()
             .map(it -> {
                 Integer ord = rexToOrd.get(it);
@@ -109,33 +105,33 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         );
     }
 
-    /**  */
+    /** */
     private interface WindowFunctionPrototype<Row> extends Supplier<WindowFunctionWrapper<Row>> {
-        /**  */
+        /** */
         boolean isStreamable();
     }
 
-    /**  */
+    /** */
     private final class WindowFunctionWrapperPrototype implements WindowFunctionPrototype<Row> {
-        /**  */
+        /** */
         private Supplier<WindowFunction<Row>> funcFactory;
 
-        /**  */
+        /** */
         private final AggregateCall call;
 
         /** */
         private final Function<Row, Row> project;
 
-        /**  */
+        /** */
         private Function<Row, Row> inAdapter;
 
-        /**  */
+        /** */
         private Function<Object, Object> outAdapter;
 
-        /**  */
+        /** */
         private final boolean supportsStreaming;
 
-        /**  */
+        /** */
         private WindowFunctionWrapperPrototype(AggregateCall call, Function<Row, Row> project) {
             this.call = call;
             this.project = project;
@@ -148,7 +144,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
             return new FunctionWrapper(windowFunction, project.andThen(inAdapter), outAdapter);
         }
 
-        /**  */
+        /** */
         @NotNull private WindowFunction<Row> windowFunction() {
             if (funcFactory != null)
                 return funcFactory.get();
@@ -165,13 +161,13 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
             return windowFunction;
         }
 
-        /**  */
+        /** */
         @NotNull private Function<Row, Row> createInAdapter(WindowFunction<Row> windowFunction) {
             List<RelDataType> outTypes = windowFunction.argumentTypes(ctx.getTypeFactory());
             return WindowFunctionFactory.this.createInAdapter(call, inputRowType, outTypes, false);
         }
 
-        /**  */
+        /** */
         @NotNull private Function<Object, Object> createOutAdapter(WindowFunction<Row> windowFunction) {
             RelDataType inType = windowFunction.returnType(ctx.getTypeFactory());
             return WindowFunctionFactory.this.createOutAdapter(call, inType);
@@ -183,18 +179,18 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         }
     }
 
-    /**  */
+    /** */
     private final class FunctionWrapper implements WindowFunctionWrapper<Row> {
-        /**  */
+        /** */
         private final WindowFunction<Row> windowFunction;
 
-        /**  */
+        /** */
         private final Function<Row, Row> inAdapter;
 
-        /**  */
+        /** */
         private final Function<Object, Object> outAdapter;
 
-        /**  */
+        /** */
         FunctionWrapper(
             WindowFunction<Row> windowFunction,
             Function<Row, Row> inAdapter,
@@ -226,19 +222,19 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         }
     }
 
-    /**  */
+    /** */
     private final class WindowFunctionAccumulatorAdapterPrototype implements WindowFunctionPrototype<Row> {
 
-        /**  */
+        /** */
         private final Supplier<AccumulatorWrapper<Row>> factory;
 
-        /**  */
+        /** */
         private final Function<Row, Row> project;
 
-        /**  */
+        /** */
         private final boolean streamable;
 
-        /**  */
+        /** */
         private WindowFunctionAccumulatorAdapterPrototype(AggregateCall call, Window.Group grp,
             Function<Row, Row> project) {
             Supplier<List<AccumulatorWrapper<Row>>> accFactory =
@@ -259,27 +255,27 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         }
     }
 
-    /**  */
+    /** */
     private static final class WindowAccumulatorWrapper<Row> implements WindowFunctionWrapper<Row> {
-        /**  */
+        /** */
         private final Supplier<AccumulatorWrapper<Row>> factory;
 
-        /**  */
+        /** */
         private final Function<Row, Row> inProject;
 
-        /**  */
+        /** */
         private final boolean streamable;
 
-        /**  */
+        /** */
         private AccumulatorWrapper<Row> accHolder;
 
-        /**  */
+        /** */
         private int frameStart = -1;
 
-        /**  */
+        /** */
         private int frameEnd = -1;
 
-        /**  */
+        /** */
         private WindowAccumulatorWrapper(Supplier<AccumulatorWrapper<Row>> factory,
             Function<Row, Row> inProject,
             boolean streamable) {
@@ -324,7 +320,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
             return acc.end();
         }
 
-        /**  */
+        /** */
         private AccumulatorWrapper<Row> accumulator() {
             if (accHolder != null)
                 return accHolder;

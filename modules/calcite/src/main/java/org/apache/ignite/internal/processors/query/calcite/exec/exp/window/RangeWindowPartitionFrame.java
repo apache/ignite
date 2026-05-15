@@ -47,13 +47,13 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     /** Returns the row that marks the start of the frame. */
     private final Function<Row, Row> lowerBound;
 
-    /**  */
+    /** */
     private final boolean cacheableLowerBound;
 
     /** Returns the row that marks the end of the frame. */
     private final Function<Row, Row> upperBound;
 
-    /**  */
+    /** */
     private final boolean cacheableUpperBound;
 
     /** Total number of peers in the current partition. */
@@ -71,7 +71,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     /** Cached end row idx of frame. */
     private int cachedEndIdx;
 
-    /**  */
+    /** */
     RangeWindowPartitionFrame(
         List<Row> buf,
         Function<Row, Row> project,
@@ -100,7 +100,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         if (lowerBoundRow == null)
             cachedStartIdx = 0;
         else
-            cachedStartIdx = bsearchLowerBound(lowerBoundRow, buf);
+            cachedStartIdx = bsearchBound(lowerBoundRow, buf, true);
 
         return cachedStartIdx;
     }
@@ -117,7 +117,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         if (upperBoundRow == null)
             cachedEndIdx = size() - 1;
         else
-            cachedEndIdx = bsearchUpperBound(upperBoundRow, buf);
+            cachedEndIdx = bsearchBound(upperBoundRow, buf, false);
 
         return cachedEndIdx;
     }
@@ -151,8 +151,8 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         peerCnt = -1;
     }
 
-    /** Binary search of lower bound. */
-    private int bsearchLowerBound(Row row, List<Row> buf) {
+    /** Binary search bound. */
+    private int bsearchBound(Row row, List<Row> buf, boolean lower) {
         int start = 0;
         int end = buf.size() - 1;
 
@@ -162,40 +162,16 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
             Row midRow = buf.get(mid);
             int cmp = compareRowPeer(midRow, row);
 
-            if (cmp == 0)
-                end = mid - 1;
-            else if (cmp > 0)
+            if (cmp > 0 || (lower && cmp == 0))
                 end = mid - 1;
             else
                 start = mid + 1;
         }
 
-        return start;
+        return lower ? start : end;
     }
 
-    /** Binary search of upper bound. */
-    private int bsearchUpperBound(Row row, List<Row> buf) {
-        int start = 0;
-        int end = buf.size() - 1;
-
-        while (start <= end) {
-            int mid = (start + end) / 2;
-
-            Row midRow = buf.get(mid);
-            int cmp = compareRowPeer(midRow, row);
-
-            if (cmp == 0)
-                start = mid + 1;
-            else if (cmp > 0)
-                end = mid - 1;
-            else
-                start = mid + 1;
-        }
-
-        return end;
-    }
-
-    /**  */
+    /** */
     private int compareRowPeer(Row row1, Row row2) {
         // in case peerCmp is not set - all rows has one peer
         return peerCmp == null ? 0 : peerCmp.compare(row1, row2);

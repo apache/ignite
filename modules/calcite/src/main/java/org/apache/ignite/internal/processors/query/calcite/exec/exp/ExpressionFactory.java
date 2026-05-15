@@ -49,7 +49,7 @@ public interface ExpressionFactory<Row> {
 
     /** */
     Supplier<WindowPartition<Row>> windowPartitionFactory(
-        Window.Group group,
+        Window.Group grp,
         RelDataType rowType
     );
 

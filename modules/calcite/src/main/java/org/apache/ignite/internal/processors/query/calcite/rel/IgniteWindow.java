@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
@@ -47,6 +49,7 @@ import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.AVERAGE_FIELD_SIZE;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.ROW_COMPARISON_COST;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
  * A relational expression representing a set of window aggregates.
@@ -82,6 +85,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         assert !grp.aggCalls.isEmpty();
     }
 
+    /** */
     public IgniteWindow(RelInput input) {
         // Streaming flag required only on planning phase, and has not affect on execution.
         this(input.getCluster(),
@@ -153,7 +157,7 @@ public class IgniteWindow extends Window implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        RelTraitSet traits = passThroughOrDerivedTraits(required);
+        RelTraitSet traits = passThroughOrDerivedTraits(required, true);
         if (traits == null)
             return null;
 
@@ -164,7 +168,7 @@ public class IgniteWindow extends Window implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
 
-        RelTraitSet traits = passThroughOrDerivedTraits(childTraits);
+        RelTraitSet traits = passThroughOrDerivedTraits(childTraits, false);
         if (traits == null)
             return null;
 
@@ -179,7 +183,7 @@ public class IgniteWindow extends Window implements IgniteRel {
      * - If they are not, replace them with suitable traits.
      * - Request a new trait set from the input accordingly.
      */
-    private @Nullable RelTraitSet passThroughOrDerivedTraits(RelTraitSet target) {
+    private @Nullable RelTraitSet passThroughOrDerivedTraits(RelTraitSet target, boolean passThrough) {
         if (target.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
@@ -187,6 +191,21 @@ public class IgniteWindow extends Window implements IgniteRel {
         RelCollation requiredCollation = TraitUtils.collation(target);
         if (!satisfiesCollationSansGroupFields(requiredCollation))
             traits = traits.replace(collation());
+        else if (passThrough) {
+            // In case of pass through, required collation can use fields outside of input row type.
+            // So, we should truncate required collation to input row type.
+            // We do not need any additional range checks, since current collation keys is a prefix to required collation keys.
+            // Therefore, only additional keys in suffix can be removed here.
+            ImmutableBitSet inputColls = ImmutableBitSet.range(input.getRowType().getFieldCount());
+
+            List<Integer> newCollationColls = maxPrefix(requiredCollation.getKeys(), inputColls.asSet());
+            List<RelFieldCollation> newCollationFields = requiredCollation.getFieldCollations()
+                .stream().filter(k -> newCollationColls.contains(k.getFieldIndex())).collect(Collectors.toList());
+
+            RelCollation newCollation = RelCollations.of(newCollationFields);
+
+            traits = traits.replace(newCollation);
+        }
 
         IgniteDistribution distribution = TraitUtils.distribution(target);
         if (!satisfiesDistribution(distribution))
@@ -201,17 +220,12 @@ public class IgniteWindow extends Window implements IgniteRel {
     }
 
     /** Check input distribution satisfies collation of this window. */
-    private boolean satisfiesDistribution(IgniteDistribution distribution) {
-        if (distribution.satisfies(IgniteDistributions.single()) || distribution.function().correlated())
+    private boolean satisfiesDistribution(IgniteDistribution desiredDistribution) {
+        if (desiredDistribution.satisfies(IgniteDistributions.single()) || desiredDistribution.function().correlated())
             return true;
 
-        if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
-            for (Integer key : distribution.getKeys()) {
-                if (!grp.keys.get(key))
-                    // can't derive distribution with fields unmatched to group keys
-                    return false;
-            }
-            return true;
+        if (desiredDistribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
+            return grp.keys.contains(ImmutableBitSet.of(desiredDistribution.getKeys()));
         }
 
         return false;

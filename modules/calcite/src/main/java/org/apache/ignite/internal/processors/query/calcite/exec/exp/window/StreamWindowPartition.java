@@ -93,6 +93,7 @@ final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
         accumulators = null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isStreaming() {
         return true;
     }

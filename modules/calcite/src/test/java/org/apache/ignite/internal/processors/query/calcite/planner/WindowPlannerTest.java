@@ -26,6 +26,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -42,7 +43,7 @@ public class WindowPlannerTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
     /** */
-    private final IgniteDistribution affinity = IgniteDistributions.affinity(0, "affinity_tbl", "hash");
+    private final IgniteDistribution affinity = IgniteDistributions.affinity(1, "affinity_tbl", "hash");
 
     /** */
     private final IgniteDistribution hash = IgniteDistributions.hash(ImmutableIntList.of(0));
@@ -57,8 +58,10 @@ public class WindowPlannerTest extends AbstractPlannerTest {
             createTable("SINGLE_TBL", IgniteDistributions.single(),
                 "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
             createTable("AFFINITY_TBL", affinity,
+                "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
+            createTable("INDEXED_AFFINITY_TBL", affinity,
                 "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER)
-                .addIndex("AFFINITY_TBL_IDX", 0),
+                .addIndex("INDEXED_AFFINITY_TBL_IDX", 1),
             createTable("HASH_TBL", hash,
                 "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
             createTable("INDEXED_TBL", IgniteDistributions.single(),
@@ -162,12 +165,12 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testIndexedAffinityTableAndWindow() throws Exception {
-        String sql = "SELECT MAX(VALUE) OVER (PARTITION BY ID) FROM (SELECT * FROM AFFINITY_TBL) S";
+        String sql = "SELECT MAX(ID) OVER (PARTITION BY VALUE) FROM (SELECT * FROM INDEXED_AFFINITY_TBL) S";
 
         assertPlan(sql, publicSchema, isInstanceOf(IgniteExchange.class)
             .and(input(hasChildThat(isInstanceOf(IgniteWindow.class)
                 .and(hasDistribution(affinity))
-                .and(input(isIndexScan("AFFINITY_TBL", "AFFINITY_TBL_IDX")))))));
+                .and(input(isIndexScan("INDEXED_AFFINITY_TBL", "INDEXED_AFFINITY_TBL_IDX")))))));
     }
 
     /**
@@ -202,5 +205,40 @@ public class WindowPlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
             .and(input(not(isIndexScan("INDEXED_TBL", "INDEXED_TBL_IDX"))))));
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testPassThroughCollationWiderThanInputRow() throws Exception {
+        String sql = "SELECT ID, row_number() OVER (ORDER BY ID) FROM RANDOM_TBL ORDER BY 1, 2";
+
+        RelCollation sortCollation = RelCollations.of(
+            TraitUtils.createFieldCollation(0, true),
+            TraitUtils.createFieldCollation(1, true)
+        );
+
+        RelCollation derivedCollation = RelCollations.of(
+            TraitUtils.createFieldCollation(0, true)
+        );
+
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
+            .and(it -> it.collation().equals(sortCollation))
+            .and(input(isInstanceOf(IgniteWindow.class)
+                .and(it -> it.collation().equals(derivedCollation))))));
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testDeriveAffinityDistribution() throws Exception {
+        String sql = "SELECT row_number() OVER (PARTITION BY VALUE ORDER BY ID) FROM AFFINITY_TBL";
+
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            .and(it -> it.distribution().equals(affinity))
+            .and(input(isInstanceOf(IgniteSort.class)
+                .and(it -> it.distribution().equals(affinity))))));
     }
 }

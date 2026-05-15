@@ -733,7 +733,8 @@ class RelJson {
             lowerBound = toRexWindowBound(input, (Map)grp.get("range-lower"));
             upperBound = toRexWindowBound(input, (Map)grp.get("range-upper"));
             rows = false;
-        } else
+        }
+        else
             throw new IllegalStateException("RANGE or ROWS clause missing");
 
         RexWindowExclusion exclude = toEnum(grp.get("exclude"));

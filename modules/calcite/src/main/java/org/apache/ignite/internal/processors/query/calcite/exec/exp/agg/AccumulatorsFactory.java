@@ -30,9 +30,6 @@ import org.jetbrains.annotations.NotNull;
 /** */
 public class AccumulatorsFactory<Row> extends AccumulatorsFactoryBase<Row> implements Supplier<List<AccumulatorWrapper<Row>>> {
     /** */
-    private final ExecutionContext<Row> ctx;
-
-    /** */
     private final AggregateType type;
 
     /** */
@@ -49,7 +46,6 @@ public class AccumulatorsFactory<Row> extends AccumulatorsFactoryBase<Row> imple
         RelDataType inputRowType
     ) {
         super(ctx);
-        this.ctx = ctx;
         this.type = type;
         this.inputRowType = inputRowType;
 
