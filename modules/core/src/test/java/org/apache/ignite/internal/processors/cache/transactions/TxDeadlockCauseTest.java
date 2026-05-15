@@ -164,6 +164,9 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final TransactionIsolation isolation,
         final boolean oneOp
     ) throws Exception {
+        if (nodes > 1)
+            awaitPartitionMapExchange();
+
         final Ignite ignite = grid(new Random().nextInt(nodes));
 
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);
