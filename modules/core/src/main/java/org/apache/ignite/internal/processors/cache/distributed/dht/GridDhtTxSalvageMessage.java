@@ -48,9 +48,4 @@ public class GridDhtTxSalvageMessage extends GridCacheMessage {
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
-
-    /** */
-    @Override public short directType() {
-        return 119;
-    }
 }

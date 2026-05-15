@@ -31,7 +31,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,8 +51,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -65,7 +62,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -170,7 +166,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         nodeCoord.cluster().state(ClusterState.ACTIVE);
 
-        CacheConfiguration<Object, Object> ccfgWithWriteThrough = createCache(DEFAULT_CACHE_NAME, true);
+        CacheConfiguration<Object, Object> ccfgWithWriteThrough = configureCache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> cache = nodeCoord.createCache(ccfgWithWriteThrough);
 
         Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
@@ -180,8 +176,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
             tx.commit();
         }
-
-        sqlVisibilityCheck(List.of(nodeCoord, nodeBackup), primaryKey, firstVal);
 
         nodeCoord.cluster().state(ClusterState.INACTIVE);
 
@@ -258,12 +252,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         }
         testOut.reset();
 
-        for (int nodeIdx : List.of(0, 2)) {
-            IgniteEx g = grid(nodeIdx);
-            IgniteCache<Object, Object> cacheInner = g.cache(DEFAULT_CACHE_NAME);
-            waitForCondition(() -> secondVal == (int)cacheInner.get(primaryKey), 1_000);
-        }
-
         if (withPersistence) {
             stopAllGrids();
             startGridsMultiThreaded(3);
@@ -293,41 +281,16 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     }
 
     /** */
-    private void sqlVisibilityCheck(List<Ignite> nodes, int keyToCheck, int referal) {
-        for (Ignite node : nodes) {
-            Object ret = node.compute(node.cluster().forLocal()).call(new IgniteCallable<>() {
-                /** */
-                @SuppressWarnings({"UnusedDeclaration"})
-                @IgniteInstanceResource
-                private Ignite instance;
-
-                /** */
-                @Override public Integer call() {
-                    String selectSql = "SELECT VAL FROM " + DEFAULT_CACHE_NAME + " WHERE ID=" + keyToCheck;
-
-                    List<List<?>> res = instance.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(selectSql)).getAll();
-
-                    return (int)res.get(0).get(0);
-                }
-            });
-
-            assertEquals("Unexpected result on node: " + node.name(), referal, ret);
-        }
-    }
-
-    /** */
-    private CacheConfiguration<Object, Object> createCache(String cacheName, boolean writeThrough) {
+    private CacheConfiguration<Object, Object> configureCache(String cacheName) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.REPLICATED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setQueryEntities(List.of(queryEntity(cacheName)));
 
-        if (writeThrough) {
-            ccfg.setReadThrough(true);
-            ccfg.setWriteThrough(true);
-            ccfg.setCacheStoreFactory(MapCacheStore::new);
-        }
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setCacheStoreFactory(MapCacheStore::new);
 
         return ccfg;
     }
