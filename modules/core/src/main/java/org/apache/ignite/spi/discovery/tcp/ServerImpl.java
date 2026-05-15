@@ -245,10 +245,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     private long connCheckInterval;
 
     /**
-     * Foundumental timeout tick for actions related to the ring connection recovery. Often, we cannot use whole
-     * connection recovery timeout for a one single action. We may have to check several nodes in a row.
-     * The less this value, the more connection checking actions we can do within the connection recovery timeout.
-     * The more nodes we can check. But the less timeout we have for each such an action.
+     * The fundamental timeout tick for actions associated with the recovery of a ring connection.
+     * In many scenarios, the total connection recovery timeout cannot be allocated to a single action.
+     * This is because the recovery process may require sequentially checking multiple nodes.
+     * A smaller timeout tick value enables a greater number of connection-checking actions to be performed within
+     * the overall recovery timeout, allowing more nodes to be examined. However, this comes at the cost of a reduced
+     * timeout for each individual action.
      */
     private long connCheckTick;
 
@@ -3972,9 +3974,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         protected CrossRingMessageSendState createConnectionRecoveryState(TcpDiscoveryNode newNextNode) {
             CrossRingMessageSendState recoveryState = new CrossRingMessageSendState();
 
-            // The corner node case. Next node is from neighbour DC. Another DC might be entierly unavailable.
-            // To prevent sequential nodes failure in current DC we have to guess whether we can reach neighbour DC.
-            // We ping nodes from another DC within the same timeout in parallel.
+            // Edge node scenario. The next node belongs to a neighboring DC, which may be completely unavailable.
+            // To avoid sequential node failures within the current DC, we need to determine if the neighboring DC is reachable.
+            // We perform parallel pings to nodes in the other DC using the same timeout.
             if (!F.isEmpty(locNode.dataCenterId())) {
                 assert !F.isEmpty(next.dataCenterId());
 
@@ -3995,78 +3997,58 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** @return {@code True} if current node fails to recover the ring connection. */
         private boolean checkConnectionRecoveryFailed(
-            CrossRingMessageSendState connRecoverState,
+            CrossRingMessageSendState connRecoveryState,
             List<TcpDiscoveryNode> failedNodes
         ) {
-            if (connRecoverState.timeout()) {
+            if (connRecoveryState.timeoutReached()) {
                 // Ensure of the ping pool release.
-                connRecoverState.stopRemoteDcPing();
+                connRecoveryState.stopRemoteDcPing();
 
                 segmentLocalNodeOnSendFail(failedNodes);
 
                 return true;
             }
 
-            if (!connRecoverState.remoteDcPingStarted() || !connRecoverState.remoteDcPingFinished()
-                || connRecoverState.unavailableDCs != null)
+            if (!connRecoveryState.remoteDcPingStarted() || !connRecoveryState.remoteDcPingFinished()
+                || connRecoveryState.unavailableDCs != null)
                 return false;
 
-            // Remote DC statuses: alive or not, Dc id -> true/false.
-            Collection<String> rmtDcIds = connRecoverState.rmtDcPingRes.keySet().stream().map(ClusterNode::dataCenterId)
+            Collection<String> rmtDcIds = connRecoveryState.rmtDcPingRes.keySet().stream().map(ClusterNode::dataCenterId)
                 .collect(Collectors.toSet());
 
             Collection<String> failedDCs = U.newHashSet(rmtDcIds.size());
 
-            Map<String, Integer> availablePerDC = countPerDC(connRecoverState.availableNodes());
+            Map<String, Integer> aliveNodesPerDC = connRecoveryState.availableNodesPerDc();
 
             for (String dcId : rmtDcIds) {
-                int availCnt = Optional.ofNullable(availablePerDC.get(dcId)).orElse(0);
+                int aliveNodesCnt = Optional.ofNullable(aliveNodesPerDC.get(dcId)).orElse(0);
 
-                if (availCnt == 0)
+                if (aliveNodesCnt == 0)
                     failedDCs.add(dcId);
             }
 
             String msg = "During the connection recovery, nodes ping of DCs '" + String.join(", ", rmtDcIds)
-                + "' from current edge node has finished. Responded nodes: " + connRecoverState.availableNodes()
-                + ". Unavailable nodes: " + connRecoverState.unavailableNodes()
-                + ". Time to recover the ring connection left: "
-                + Math.max(0, U.nanosToMillis(connRecoverState.failTimeNanos - System.nanoTime())) + "ms.";
+                + "' from current edge node has finished. Alive nodes: " + connRecoveryState.availableNodes()
+                + ", unavailable nodes: " + connRecoveryState.unavailableNodes()
+                + ". Time left to recover the ring connection: "
+                + Math.max(0, U.nanosToMillis(connRecoveryState.failTimeNanos - System.nanoTime())) + "ms.";
 
             if (failedDCs.isEmpty()) {
-                msg += " At least one node of each DC has responded. Keep trying to reconnect to the ring.";
+                msg += " At least one node from each DC has responded. Connection recovery will keep trying to restore the ring.";
 
                 if (log.isInfoEnabled())
                     log.info(msg);
             }
             else {
                 msg += " No node of the following remote DCs responded. Considering DCs '" + String.join(", ", failedDCs)
-                    + "' unavailable. Due to the remote DC unavailability policy, current node will try to skip those DCs.";
+                    + "' as unavailable. Current node will skip those DCs and close the ring without them.";
 
                 log.warning(msg);
 
-                skipDCs(connRecoverState, failedDCs, failedNodes);
+                skipDCs(connRecoveryState, failedDCs, failedNodes);
             }
 
             return false;
-        }
-
-        /** @return Noes numbers per data canter. */
-        private Map<String, Integer> countPerDC(Collection<UUID> nodesIds) {
-            if (nodesIds.isEmpty())
-                return Collections.emptyMap();
-
-            Map<String, Integer> res = U.newHashMap(nodesIds.size());
-
-            for (UUID nid : nodesIds) {
-                res.compute(ring.node(nid).dataCenterId(), (dcId, cnt) -> {
-                    if (cnt == null)
-                        cnt = 0;
-
-                    return ++cnt;
-                });
-            }
-
-            return res;
         }
 
         /**
@@ -4162,15 +4144,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** Skips nodes of failed data centers. */
         protected void skipDCs(
-            CrossRingMessageSendState connRecoverState,
+            CrossRingMessageSendState connRecoveryState,
             Collection<String> failedDCs,
             Collection<TcpDiscoveryNode> failedNodes
         ) {
-            assert connRecoverState.unavailableDCs == null : "Forced DC skipping should not be requested yet.";
+            assert connRecoveryState.unavailableDCs == null : "Forced DC skipping should not be requested yet.";
 
-            connRecoverState.stopRemoteDcPing();
+            connRecoveryState.stopRemoteDcPing();
 
-            connRecoverState.unavailableDCs = failedDCs;
+            connRecoveryState.unavailableDCs = failedDCs;
 
             for (TcpDiscoveryNode n : ring.serverNodes()) {
                 if (!failedDCs.contains(n.dataCenterId()))
@@ -4185,8 +4167,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             newNextNode(null);
 
             // Let's keep the recovery state consistent.
-            connRecoverState.state = RingMessageSendState.FORWARD_PASS;
-            connRecoverState.failedNodes = failedNodes.size();
+            connRecoveryState.state = RingMessageSendState.FORWARD_PASS;
+            connRecoveryState.failedNodes = failedNodes.size();
         }
 
         /**
@@ -6561,25 +6543,25 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /** @return {@code True} if we've tries all the other nodes and should close the ring to current DC. */
+    /** @return {@code True} if we've checked all nodes from remote DCs and should close the ring to local DC. */
     private boolean allRemoteDCsTraversed(
-        @Nullable CrossRingMessageSendState connRecoverState,
+        @Nullable CrossRingMessageSendState connRecoveryState,
         Collection<TcpDiscoveryNode> failedNodes,
-        TcpDiscoveryNode nextTried
+        TcpDiscoveryNode curNextNode
     ) {
         String locDcId = locNode.dataCenterId();
 
         // Do not make any decision if: no ping started at all; the ping isn't finished yet; a decision is already made.
-        if (connRecoverState == null || locDcId == null || !connRecoverState.remoteDcPingStarted()
-            || locDcId.equals(nextTried.dataCenterId()))
+        if (connRecoveryState == null || locDcId == null || !connRecoveryState.remoteDcPingStarted()
+            || locDcId.equals(curNextNode.dataCenterId()))
             return false;
 
-        assert failedNodes.contains(nextTried);
+        assert failedNodes.contains(curNextNode);
 
-        TcpDiscoveryNode nextNext = ring.nextNode(failedNodes);
-        String nextNextDcId = nextNext == null ? null : nextNext.dataCenterId();
+        TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
+        String nextNextDcId = newNext == null ? null : newNext.dataCenterId();
 
-        // We just met local DC again or even we met a third DC.
+        // Entire next DC traversed. We've met next, other DC or even closed back to local DC.
         return nextNextDcId == null || locDcId.equals(nextNextDcId);
     }
 
@@ -7023,16 +7005,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 prevNodeIsAvailable = failedNodes.keySet().stream().anyMatch(n -> n.id().equals(nodeId));
                             }
 
-                            String msg0 = "Incoming node [id=" + nodeId + "] has requested a forced connection " +
-                                "(without checking the previous node). This may happen if a corner node in local DC " +
-                                "tries to close ring into this DC.";
+                            prevNodeIsAvailable = prevNodeIsAvailable || ring.serverNodes().stream().noneMatch(n -> n.id().equals(nodeId));
+
+                            String logMsg = "Incoming node [id=" + nodeId + "] has requested a forced connection " +
+                                "without checking the previous node. This may happen if an edge node in local DC " +
+                                "tries to close the ring into this DC.";
 
                             if (prevNodeIsAvailable)
-                                log.warning(msg0 + " But the node is already considered as failed. Denying.");
-                            else if (prevNodeIsAvailable = ring.serverNodes().stream().noneMatch(n -> n.id().equals(nodeId)))
-                                log.warning(msg0 + " But the ring has no server with such node id. Denying.");
+                                log.warning(logMsg + " But the ring has no server with such node id. Denying.");
                             else if (log.isInfoEnabled())
-                                log.info(msg0);
+                                log.info(logMsg);
                         }
                         else if (log.isInfoEnabled()) {
                             log.info("Previous node alive status [alive=" + prevNodeIsAvailable +
@@ -8388,13 +8370,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final long failTimeNanos;
 
         /**
-         * Decision upon results of remote DC ping. {@code Null} if state of remote DC is not estimated yet.
-         * Not {@code null} but empty if all the remote DCs are considered available.
-         * Not {@code null} and not empty if contains ids of remoted DCs considered unavailable.
+         * Decision upon results of remote DC ping. Contains ids of unavailable DCs.
+         * {@code Null} if state of remote DC is not estimated yet.
          */
         private @Nullable Collection<String> unavailableDCs;
 
-        /** Nodes ping results. */
+        /** Remote DCs ping result per node. Values:
+         * <ul>
+         *     <li>Empty map: ping not started.</li>
+         *     <li>-1: ping started, result is unknown yet./li>
+         *     <li>1: ping successfuly finished, node has responded./li>
+         *     <li>0 - ping finished, node has not responded./li>
+         * </ul>
+         */
         @Nullable private Map<TcpDiscoveryNode, Integer> rmtDcPingRes;
 
         /**
@@ -8434,7 +8422,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return {@code True} if state timeout expired.
          */
-        boolean timeout() {
+        boolean timeoutReached() {
             return System.nanoTime() >= failTimeNanos;
         }
 
@@ -8486,7 +8474,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert !remoteDcPingStarted();
             assert !F.isEmpty(nodesToPing);
 
-            rmtDcPingMaxTimeNs = System.nanoTime() + (U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) * RMT_DC_PING_TIMEOUT_RATIO;
+            rmtDcPingMaxTimeNs = System.nanoTime() + (long)((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO);
 
             rmtDcPingPool = new IgniteThreadPoolExecutor(
                 "disco-remote-dc-ping-worker",
@@ -8498,7 +8486,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             );
 
             if (log.isInfoEnabled()) {
-                log.info("During the connection recovery, starting ping of the remote DCs. Nodes number to ping: "
+                log.info("Parallel ping of nodes in remote DCs is starting. Number of nodes to ping: "
                     + nodesToPing.size() + ". Timeout: " + U.nanosToMillis(rmtDcPingMaxTimeNs - System.nanoTime()) + "ms.");
             }
 
@@ -8507,17 +8495,18 @@ class ServerImpl extends TcpDiscoveryImpl {
             // Mark every node ping started.
             nodesToPing.forEach(n -> rmtDcPingRes.put(n, -1));
 
-            // We should assume that the ping won't receive any response or exception and would spend its whole timeout.
-            // If the nodes number exceeds the pool size we have to split the timeout and enqueue the ping jobs.
-            int steps = nodesToPing.size() / rmtDcPingPool.getMaximumPoolSize()
+            // In the worst case scenario ping of each node would take the whole timeout.
+            // If nodes number exceeds the pool size, we need to reduce a timeout for each ping to make sure that
+            // all nodes are pinged.
+            int batches = nodesToPing.size() / rmtDcPingPool.getMaximumPoolSize()
                 + (nodesToPing.size() % rmtDcPingPool.getMaximumPoolSize() == 0 ? 0 : 1);
 
             for (TcpDiscoveryNode node : nodesToPing)
-                scheduleNodePingJob(node, steps);
+                scheduleNodePingJob(node, batches);
         }
 
         /** */
-        void scheduleNodePingJob(TcpDiscoveryNode node, int steps) {
+        void scheduleNodePingJob(TcpDiscoveryNode node, int batches) {
             if (stopRmtDcPing)
                 return;
 
@@ -8526,7 +8515,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
 
                 try {
-                    rmtDcPingPool.execute(() -> pingNodeJob(node, steps));
+                    rmtDcPingPool.execute(() -> pingNodeJob(node, batches));
                 }
                 catch (Throwable t) {
                     log.warning("During the connection recovery, attempt to ping " + node + " of DC '"
@@ -8536,19 +8525,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        void pingNodeJob(TcpDiscoveryNode node, int steps) {
-            // Total allowed ping timeout per step.
-            double stepTimeoutNs = ((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO) / steps;
+        void pingNodeJob(TcpDiscoveryNode node, int batches) {
+            // Total allowed ping timeout per batches.
+            double nodePingTimeoutNs = ((failTimeNanos - System.nanoTime()) * RMT_DC_PING_TIMEOUT_RATIO) / batches;
 
             Collection<InetSocketAddress> nodeAddrs = spi.getEffectiveNodeAddresses(node);
 
-            // Tmeout per node address.
-            long addrsTimeoutMs = U.nanosToMillis((long)(stepTimeoutNs / nodeAddrs.size()));
+            // Timeout per node address.
+            long addrsTimeoutMs = U.nanosToMillis((long)(nodePingTimeoutNs / nodeAddrs.size()));
 
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("During the connection recovery, pinging " + node + " of DC '" + node.dataCenterId()
-                        + ". Total time left (ms): " + remoteDcPingTimeLeft() + ". Nodes to ping left: " + nodesToPingLeft() + '.');
+                    log.debug("Pinging " + node + " of DC '" + node.dataCenterId() + ". Total time left: "
+                        + remoteDcPingTimeLeft() + "ms. Nodes to ping left: " + nodesToPingLeft() + '.');
                 }
 
                 for (InetSocketAddress addrs : nodeAddrs) {
@@ -8561,15 +8550,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (pingNode(addrs, node.id(), null, addrsTimeoutMs, CONNECTION_RECOVERY_TICKS,
                         RMT_DC_PING_ATTEMPT_DELAY_RATIO, false) != null) {
-                        // Mark node has pesponded.
+                        // Mark node pesponded.
                         rmtDcPingRes.put(node, 1);
 
-                        if (log.isDebugEnabled()) {
-                            log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
-                                + "' has responded to the ping.");
-                        }
+                        if (log.isDebugEnabled())
+                            log.debug("Node " + node + " of DC '" + node.dataCenterId() + "' has responded to the ping.");
 
-                        // At least one node's address reached.
+                        // At least one node's address responded to ping.
                         return;
                     }
                 }
@@ -8584,8 +8571,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     stopRemoteDcPing();
 
                 if (log.isDebugEnabled() && 1 != rmtDcPingRes.get(node)) {
-                    log.debug("During the connection recovery, node " + node + " of DC '" + node.dataCenterId()
-                        + "' didn't respond to the ping within the timeout " + addrsTimeoutMs + "ms.");
+                    log.debug("Node " + node + " of DC '" + node.dataCenterId()
+                        + "' hasn't responded to the ping within the timeout " + U.nanosToMillis((long)nodePingTimeoutNs) + "ms.");
                 }
             }
         }
@@ -8658,6 +8645,27 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert remoteDcPingStarted();
 
             return (int)(rmtDcPingRes.size() - rmtDcPingRes.values().stream().filter(nodeRes -> -1 != nodeRes).count());
+        }
+
+        /** @return Number of nodes per data center. */
+        private Map<String, Integer> availableNodesPerDc() {
+            Collection<UUID> nodesIds = availableNodes();
+
+            if (nodesIds.isEmpty())
+                return Collections.emptyMap();
+
+            Map<String, Integer> res = U.newHashMap(nodesIds.size());
+
+            for (UUID nid : nodesIds) {
+                res.compute(ring.node(nid).dataCenterId(), (dcId, cnt) -> {
+                    if (cnt == null)
+                        cnt = 0;
+
+                    return ++cnt;
+                });
+            }
+
+            return res;
         }
     }
 

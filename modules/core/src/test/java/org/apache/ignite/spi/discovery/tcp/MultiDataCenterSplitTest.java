@@ -152,17 +152,17 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
         // in some time before the connection recovery timeout and before corner node gets segmented; 2 - corner node
         // is able to traverse entire remote DC in the connection recovery timeout;
-        LogListener logStartPing = LogListener.matches("During the connection recovery, starting ping of the remote DCs. " +
-            "Nodes number to ping: " + srvrsPerDc * (dcCnt - 1)).times(2).build();
+        LogListener logStartPing = LogListener.matches("Parallel ping of nodes in remote DCs is starting. " +
+            "Number of nodes to ping: " + srvrsPerDc * (dcCnt - 1)).times(2).build();
 
         LogListener logSplit0 = LogListener.matches("No node of the following remote DCs responded. Considering DCs '"
-            + DC_ID_1 + "' unavailable").times(1).build();
+            + DC_ID_1 + "' as unavailable").times(1).build();
 
         LogListener logSplit1 = LogListener.matches("No node of the following remote DCs responded. Considering DCs '"
-            + DC_ID_0 + ", " + DC_ID_2 + "' unavailable").times(1).build();
+            + DC_ID_0 + ", " + DC_ID_2 + "' as unavailable").times(1).build();
 
-        LogListener logSplit2 = LogListener.matches("During the connection recovery, all remote DCs have been traversed, " +
-            "none available.").build();
+        LogListener logSplit2 = LogListener.matches("During the connection recovery, all remote DCs have been traversed, "
+            + "none available.").build();
 
         listeningLog.registerAllListeners(logStartPing, logSplit0, logSplit1, logSplit2);
 
