@@ -82,7 +82,8 @@ public class WelcomeHandler extends AbstractHandler {
     private byte[] loadResource(String path) {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream(path)) {
             return in != null ? in.readAllBytes() : null;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             log.error("Failed to load REST resource [path=" + path + ']', e);
 
             return null;
