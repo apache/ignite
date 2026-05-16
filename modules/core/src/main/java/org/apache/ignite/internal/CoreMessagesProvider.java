@@ -184,6 +184,7 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.StartRequestData;
+import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
@@ -509,6 +510,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(LatchAckMessage.class);
         withSchema(AtomicApplicationAttributesAwareRequest.class);
         withNoSchema(StartRequestData.class);
+        withNoSchema(StartRoutineAckDiscoveryMessage.class);
         withNoSchema(StartRoutineDiscoveryMessage.class);
         withNoSchema(StoredCacheData.class);
 
