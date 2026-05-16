@@ -666,6 +666,11 @@ public class SnapshotCheckProcess {
     ) {
         assert !F.isEmpty(snpName);
 
+        if (kctx.rollingUpgrade().enabled()) {
+            return new GridFinishedFuture<>(
+                new IgniteException("Snapshot check operation was rejected. Rolling upgrade is enabled."));
+        }
+
         UUID reqId = UUID.randomUUID();
 
         Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), node2id()));

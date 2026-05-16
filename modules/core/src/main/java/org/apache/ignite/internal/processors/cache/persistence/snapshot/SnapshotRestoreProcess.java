@@ -275,6 +275,9 @@ public class SnapshotRestoreProcess {
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException(OP_REJECT_MSG + "The baseline topology is not configured for cluster.");
 
+            if (ctx.rollingUpgrade().enabled())
+                throw new IgniteException(OP_REJECT_MSG + "Rolling upgrade is enabled.");
+
             if (snpMgr.isSnapshotCreating())
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 

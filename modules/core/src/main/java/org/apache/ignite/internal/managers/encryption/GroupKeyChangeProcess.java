@@ -111,6 +111,11 @@ class GroupKeyChangeProcess {
         if (!ctx.state().clusterState().state().active())
             throw new IgniteException("Operation was rejected. The cluster is inactive.");
 
+        if (ctx.rollingUpgrade().enabled()) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Cache group key change was rejected. " +
+                "Rolling upgrade is enabled."));
+        }
+
         IgniteInternalFuture<Void> fut0 = fut;
 
         if (fut0 != null && !fut0.isDone()) {

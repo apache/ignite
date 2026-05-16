@@ -435,13 +435,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .order(ByteOrder.nativeOrder()));
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
-            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new,
-            req -> ctx.rollingUpgrade().enabled() && req.incremental() ?
-                "Incremental snapshot creation is not allowed when rolling upgrade is enabled." : null);
+            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
-            this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true),
-            req -> null);
+            this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
         marsh = ctx.marshallerContext().jdkMarshaller();
 
@@ -769,6 +766,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
+        if (cctx.kernalContext().rollingUpgrade().enabled() && req.incremental()) {
+            return new GridFinishedFuture<>(
+                new IgniteException("Incremental snapshot creation is not allowed when rolling upgrade is enabled."));
+        }
+
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (curSnpOp != null) {

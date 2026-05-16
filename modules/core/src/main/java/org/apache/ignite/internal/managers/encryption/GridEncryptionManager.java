@@ -665,6 +665,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "The cluster is inactive."));
         }
 
+        if (ctx.rollingUpgrade().enabled()) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
+                "Rolling upgrade is enabled."));
+        }
+
         if (masterKeyName.equals(getMasterKeyName())) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
                 "New name equal to the current."));

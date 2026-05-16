@@ -334,6 +334,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
+        if (ctx.rollingUpgrade().enabled())
+            throw new IgniteCheckedException("Performance statistics rotation was rejected. Rolling upgrade is enabled.");
+
         rotateProc.start(UUID.randomUUID(), null);
     }
 
