@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test check that on leave baseline node's partitions marked as lost on mixed region grid.
@@ -156,11 +158,11 @@ public class IgniteLostPartitionsOnLeaveBaselineSelfTest extends GridCommonAbstr
 
             resetBaselineTopology();
 
-            assertTrue("List of lost partitions for cache without persistence should not be empty.",
-                !cacheNoPersistence.context().topology().lostPartitions().isEmpty());
+            assertFalse(cacheNoPersistence.context().topology().lostPartitions().isEmpty(),
+                "List of lost partitions for cache without persistence should not be empty.");
 
-            assertTrue("List of lost partitions for cache with persistence should not be empty.",
-                !cachePersistence.context().topology().lostPartitions().isEmpty());
+            assertFalse(cachePersistence.context().topology().lostPartitions().isEmpty(),
+                "List of lost partitions for cache with persistence should not be empty.");
         }
         finally {
             stopAllGrids();

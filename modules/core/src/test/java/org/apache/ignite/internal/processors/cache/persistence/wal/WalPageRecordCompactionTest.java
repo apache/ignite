@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test SKIP_GARBAGE compression mode for WAL page snapshot records without extra dependencies.
@@ -81,6 +82,6 @@ public class WalPageRecordCompactionTest extends GridCommonAbstractTest {
         } while (loggingRate.value() - prevCnt > 1); // Ensure that no more than one record logged.
 
         // Check that record is compacted.
-        assertTrue("Unexpected WAL record size: " + size, size > 0 && size < pageSize);
+        assertTrue(size > 0 && size < pageSize, "Unexpected WAL record size: " + size);
     }
 }

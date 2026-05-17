@@ -43,6 +43,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.ONHEAP;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -577,7 +581,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
                             assertEquals(0, bbuf.remaining());
 
-                            assertTrue("Ooops! The same value is already exist in Set! ", items.add(obj));
+                            assertTrue(items.add(obj), "Ooops! The same value is already exist in Set! ");
                         }
                         finally {
                             seg.release();

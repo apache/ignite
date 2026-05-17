@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -184,9 +187,9 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
                 mixedCachesGrpFound = true;
         }
 
-        assertTrue(String.format("Default group found: %b, mixed group found: %b",
+        assertTrue(dfltGrpFound && mixedCachesGrpFound,
+            String.format("Default group found: %b, mixed group found: %b",
             dfltGrpFound,
-            mixedCachesGrpFound),
-            dfltGrpFound && mixedCachesGrpFound);
+            mixedCachesGrpFound));
     }
 }

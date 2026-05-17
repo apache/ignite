@@ -41,6 +41,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test onheap caching of freelists.
  */
@@ -160,13 +165,13 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
                 if (!list.isReuseBucket(i)) {
                     notReuseSize += bucketsSize.get(i);
 
-                    assertNull("Expected null bucket [partId=" + cacheData.partId() + ", i=" + i + ", bucket=" +
-                        bucket + ']', bucket);
+                    assertNull(bucket, "Expected null bucket [partId=" + cacheData.partId() + ", i=" + i + ", bucket=" +
+                        bucket + ']');
 
                     PagesList.PagesCache pagesCache = list.getBucketCache(i, false);
 
-                    assertEquals("Wrong pages cache size [partId=" + cacheData.partId() + ", i=" + i + ']',
-                        bucketsSize.get(i), pagesCache == null ? 0 : pagesCache.size());
+                    assertEquals(bucketsSize.get(i), pagesCache == null ? 0 : pagesCache.size(),
+                        "Wrong pages cache size [partId=" + cacheData.partId() + ", i=" + i + ']');
                 }
             }
 
@@ -189,17 +194,16 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
                 // After checkpoint all buckets must flush onheap cache to page memory.
                 if (bucketSize > 0) {
-                    assertNotNull("Expected not null bucket [partId=" + cacheData.partId() + ", i=" + i + ']',
-                        bucket);
+                    assertNotNull(bucket, "Expected not null bucket [partId=" + cacheData.partId() + ", i=" + i + ']');
                 }
 
                 PagesList.PagesCache pagesCache = list.getBucketCache(i, false);
 
-                assertEquals("Wrong pages cache size [partId=" + cacheData.partId() + ", i=" + i + ']',
-                    0, pagesCache == null ? 0 : pagesCache.size());
+                assertEquals(0, pagesCache == null ? 0 : pagesCache.size(),
+                    "Wrong pages cache size [partId=" + cacheData.partId() + ", i=" + i + ']');
 
-                assertEquals("Bucket size changed after checkpoint [partId=" + cacheData.partId() + ", i=" + i + ']',
-                    (long)partsBucketsSize.get(cacheData.partId()).get(i), bucketSize);
+                assertEquals((long)partsBucketsSize.get(cacheData.partId()).get(i), bucketSize,
+                    "Bucket size changed after checkpoint [partId=" + cacheData.partId() + ", i=" + i + ']');
             }
         });
 
@@ -221,7 +225,8 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
                 totalCacheSize += pagesCache == null ? 0 : pagesCache.size();
             }
 
-            assertTrue("Some buckets should be cached [partId=" + cacheData.partId() + ']', totalCacheSize > 0);
+            assertTrue(totalCacheSize > 0,
+                "Some buckets should be cached [partId=" + cacheData.partId() + ']');
         });
     }
 
@@ -280,9 +285,9 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
                     }
 
                     // There can be a race and actual page list caches count can exceed the limit in very rare cases.
-                    assertTrue("Page list caches count is more than expected [count: " + pageCachesCnt.get() +
-                        ", limit=" + limit + ']', pageCachesCnt.get() <= limit + ignite.configuration()
-                        .getDataStreamerThreadPoolSize() - 1);
+                    assertTrue(pageCachesCnt.get() <= limit + ignite.configuration().getDataStreamerThreadPoolSize() - 1,
+                        "Page list caches count is more than expected [count: " + pageCachesCnt.get() +
+                        ", limit=" + limit + ']');
                 }
             }
         }

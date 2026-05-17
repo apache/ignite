@@ -56,6 +56,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The test check, that StandaloneWalRecordsIterator correctly close file descriptors associated with WAL files.
@@ -145,11 +150,11 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         createWalIterator(createWalFiles()).forEach(x -> {
         });
 
-        assertTrue("At least one WAL file must be opened!", CountedFileIO.getCountOpenedWalFiles() > 0);
+        assertTrue(CountedFileIO.getCountOpenedWalFiles() > 0, "At least one WAL file must be opened!");
 
         assertTrue(
-            "All WAL files must be closed at least ones!",
-            CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles()
+            CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles(),
+            "All WAL files must be closed at least ones!"
         );
     }
 
@@ -166,7 +171,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> curr = iter.next();
 
-            assertEquals("Last read should point to the current record", curr.get1(), iter.lastRead().get());
+            assertEquals(curr.get1(), iter.lastRead().get(), "Last read should point to the current record");
         }
 
         iter.close();
@@ -189,7 +194,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         IgniteBiTuple<WALPointer, WALRecord> prev = iter.next();
 
-        assertEquals("Last read should point to the current record", prev.get1(), iter.lastRead().get());
+        assertEquals(prev.get1(), iter.lastRead().get(), "Last read should point to the current record");
 
         iter.close();
 
@@ -201,12 +206,10 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> cur = iter.next();
 
-            assertEquals("Last read should point to the current record", cur.get1(), iter.lastRead().get());
+            assertEquals(cur.get1(), iter.lastRead().get(), "Last read should point to the current record");
 
-            assertFalse(
-                "Should read next record[prev=" + prev.get1() + ", cur=" + cur.get1() + ']',
-                prev.get1().equals(cur.get1())
-            );
+            assertNotEquals(prev.get1(), cur.get1(),
+                "Should read next record[prev=" + prev.get1() + ", cur=" + cur.get1() + ']');
 
             prev = cur;
 
@@ -259,13 +262,13 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         assertNotNull(lastRec);
 
         assertEquals(
-            "LastRead should point to the last WAL Record even it filtered",
             lastPointer,
-            iter.lastRead().get()
+            iter.lastRead().get(),
+            "LastRead should point to the last WAL Record even it filtered"
         );
 
         // Record on `lastPointer` is filtered so.
-        assertEquals("Last returned record should be before lastPointer", -1, lastRec.get1().compareTo(lastPointer));
+        assertEquals(-1, lastRec.get1().compareTo(lastPointer), "Last returned record should be before lastPointer");
     }
 
     /**

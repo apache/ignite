@@ -36,6 +36,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for testing cases when WAL archive configuration was changed and the node was able to start.

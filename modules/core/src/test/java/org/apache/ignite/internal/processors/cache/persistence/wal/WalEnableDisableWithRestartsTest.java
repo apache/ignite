@@ -40,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /** */
 public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {

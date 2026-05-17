@@ -29,6 +29,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCH
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.minWalArchiveSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Class for testing {@link FileWriteAheadLogManager}.

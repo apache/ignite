@@ -47,6 +47,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
@@ -358,8 +363,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         String actualMsg = thrown.getCause().getCause().getMessage();
 
-        assertTrue("Cause is not correct [expected='" + expectedMsg + "', actual='" + actualMsg + "'].",
-            actualMsg.contains(expectedMsg));
+        assertTrue(actualMsg.contains(expectedMsg), "Cause is not correct [expected='" + expectedMsg + "', actual='" + actualMsg + "'].");
     }
 
     /**

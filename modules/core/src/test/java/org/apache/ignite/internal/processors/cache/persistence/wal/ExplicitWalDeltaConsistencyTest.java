@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.Pa
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * WAL delta records consistency test with explicit checks.
  */
